@@ -1,0 +1,184 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: support-operator-auth
+roleRef:
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  namespace: openshift-support
+  name: operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: support-operator-auth
+  namespace: kube-system
+roleRef:
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+- kind: ServiceAccount
+  namespace: openshift-support
+  name: operator
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: support-operator
+rules:
+# allow the operator to update cluster operator status
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - clusteroperators
+  resourceNames:
+  - support
+  verbs:
+  - get
+  - watch
+- apiGroups:
+  - "config.openshift.io"
+  resources:
+  - clusteroperators/status
+  resourceNames:
+  - support
+  verbs:
+  - get
+  - update
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: support-operator
+roleRef:
+  kind: ClusterRole
+  name: support-operator
+subjects:
+- kind: ServiceAccount
+  namespace: openshift-support
+  name: operator
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: support-operator-gather
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - proxy
+- apiGroups:
+  - ""
+  resources:
+  - nodes/log
+  - nodes/metrics
+  - nodes/proxy
+  - nodes/stats
+  verbs:
+  - get
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - "*"
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: support-operator-gather
+roleRef:
+  kind: ClusterRole
+  name: support-operator
+subjects:
+- kind: ServiceAccount
+  namespace: openshift-support
+  name: gather
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: support-operator-gather-reader
+roleRef:
+  kind: ClusterRole
+  name: cluster-reader
+subjects:
+- kind: ServiceAccount
+  namespace: openshift-support
+  name: gather
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: support-operator
+  namespace: openshift-config
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  resourceNames:
+  - support
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: support-operator
+  namespace: openshift-config
+roleRef:
+  kind: Role
+  name: support-operator
+subjects:
+- kind: ServiceAccount
+  name: operator
+  namespace: openshift-support
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: support-operator
+  namespace: openshift-support
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  resourceNames:
+  - gather
+  verbs:
+  - impersonate
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: support-operator
+  namespace: openshift-support
+roleRef:
+  kind: Role
+  name: support-operator
+subjects:
+- kind: ServiceAccount
+  name: operator
+  namespace: openshift-support

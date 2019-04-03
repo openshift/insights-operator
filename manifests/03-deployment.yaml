@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: support-operator
+  namespace: openshift-support
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: support-operator
+  template:
+    metadata:
+      labels:
+        app: support-operator
+    spec:
+      serviceAccountName: operator
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - operator: Exists 
+      volumes:
+      - name: snapshots
+        emptyDir:
+          sizeLimit: 1Gi
+      priorityClassName: system-cluster-critical
+      containers:
+      - name: operator
+        image: openshift/origin-support-operator:latest
+        volumeMounts:
+        - name: snapshots
+          mountPath: /var/lib/support-operator
+        ports:
+        - containerPort: 8443
+          name: https
+        resources:
+          requests:
+            cpu: 10m
+            memory: 30Mi
+        env:
+          - name: RELEASE_VERSION
+            value: "0.0.1-snapshot"
+        args:
+        - start
+        - -v=2
+        - --config=/etc/support-operator/server.yaml
