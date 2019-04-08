@@ -10,7 +10,7 @@ To build the operator, install Go 1.11 or above and run:
 
 To test the operator against a remote cluster, run:
 
-    bin/support-operator --config=config/local.yaml --kubeconfig=$KUBECONFIG
+    bin/support-operator start --config=config/local.yaml --kubeconfig=$KUBECONFIG
 
 where `$KUBECONFIG` has sufficiently high permissions against the target cluster.
 
