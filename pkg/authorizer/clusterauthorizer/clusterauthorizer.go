@@ -52,6 +52,7 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 		if err != nil {
 			return fmt.Errorf("configured endpoint is not a valid URL: %v", err)
 		}
+		req.Host = endpoint.Host
 		req.URL = endpoint
 	}
 	if len(result.username) > 0 || len(result.password) > 0 {

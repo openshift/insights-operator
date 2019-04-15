@@ -99,9 +99,12 @@ func (c *Controller) Run(ctx context.Context) {
 
 		if enabled {
 			// send the results
-			klog.V(4).Infof("Uploading latest report since %s", lastReported.Format(time.RFC3339))
+			id := lastReported.Format(time.RFC3339)
+			klog.V(4).Infof("Uploading latest report since %s", id)
+			start := time.Now()
 			if err := c.client.Send(ctx, insightsclient.Source{
-				Type:     "application/vnd.redhat.openshift.support.test+tgz",
+				ID:       id,
+				Type:     "application/vnd.redhat.advisor.test+tgz",
 				Contents: source,
 			}); err != nil {
 				if err == insightsclient.ErrWaitingForVersion {
@@ -119,6 +122,7 @@ func (c *Controller) Run(ctx context.Context) {
 				return
 			}
 
+			klog.V(4).Infof("Uploaded report successfully in %s", time.Now().Sub(start))
 			lastReported = time.Now().UTC()
 			c.reporter.SetLastReportedTime(lastReported)
 			c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
