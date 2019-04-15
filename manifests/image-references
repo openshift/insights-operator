@@ -5,4 +5,4 @@ spec:
   - name: support-operator
     from: 
       kind: "DockerImage"
-      name: "openshift/origin-support-operator:latest"
+      name: "quay.io/openshift/origin-support-operator:latest"
