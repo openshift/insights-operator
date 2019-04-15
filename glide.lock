@@ -1,5 +1,5 @@
-hash: 35912cee71bed9345238d7b6bdcec81e3ae54a9481a21558e1eb86048c11880f
-updated: 2019-04-06T23:18:26.971833017-04:00
+hash: 56809e9ba78e906d4cfc542e101578c3e1006c96368e87d76d1b5585ec64227b
+updated: 2019-04-10T19:13:04.413853237-04:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -16,86 +16,20 @@ imports:
 - name: github.com/coreos/etcd
   version: 27fc7e2296f506182f58ce846e48f36b34fe6842
   subpackages:
-  - alarm
-  - auth
   - auth/authpb
-  - client
   - clientv3
-  - clientv3/concurrency
-  - clientv3/namespace
-  - clientv3/naming
-  - compactor
-  - discovery
-  - embed
-  - error
-  - etcdserver
-  - etcdserver/api
-  - etcdserver/api/etcdhttp
-  - etcdserver/api/v2http
-  - etcdserver/api/v2http/httptypes
-  - etcdserver/api/v2v3
-  - etcdserver/api/v3client
-  - etcdserver/api/v3election
-  - etcdserver/api/v3election/v3electionpb
-  - etcdserver/api/v3election/v3electionpb/gw
-  - etcdserver/api/v3lock
-  - etcdserver/api/v3lock/v3lockpb
-  - etcdserver/api/v3lock/v3lockpb/gw
-  - etcdserver/api/v3rpc
   - etcdserver/api/v3rpc/rpctypes
-  - etcdserver/auth
   - etcdserver/etcdserverpb
-  - etcdserver/etcdserverpb/gw
-  - etcdserver/membership
-  - etcdserver/stats
-  - integration
-  - lease
-  - lease/leasehttp
-  - lease/leasepb
-  - mvcc
-  - mvcc/backend
   - mvcc/mvccpb
-  - pkg/adt
-  - pkg/contention
-  - pkg/cors
-  - pkg/cpuutil
-  - pkg/crc
-  - pkg/debugutil
-  - pkg/fileutil
-  - pkg/httputil
-  - pkg/idutil
-  - pkg/ioutil
-  - pkg/logutil
-  - pkg/netutil
-  - pkg/pathutil
-  - pkg/pbutil
-  - pkg/runtime
-  - pkg/schedule
-  - pkg/srv
-  - pkg/testutil
   - pkg/tlsutil
   - pkg/transport
   - pkg/types
-  - pkg/wait
-  - proxy/grpcproxy
-  - proxy/grpcproxy/adapter
-  - proxy/grpcproxy/cache
-  - raft
-  - raft/raftpb
-  - rafthttp
-  - snap
-  - snap/snappb
-  - store
-  - version
-  - wal
-  - wal/walpb
 - name: github.com/coreos/go-systemd
   version: 39ca1b05acc7ad1220e09f133283b8859a8b71ab
   subpackages:
   - daemon
-  - journal
 - name: github.com/davecgh/go-spew
-  version: 782f4967f2dc4564575ca782fe2d04090b5faca8
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
 - name: github.com/docker/docker
@@ -112,17 +46,19 @@ imports:
 - name: github.com/emicklei/go-restful-swagger12
   version: dcef7f55730566d41eae5db10e7d6981829720f6
 - name: github.com/evanphx/json-patch
-  version: 36442dbdb585210f8d5a1b45e67aa323c197d5c4
+  version: 5858425f75500d40c52783dce87d085a483ce135
 - name: github.com/getsentry/raven-go
   version: 32a13797442ccb601b11761d74232773c1402d14
+- name: github.com/ghodss/yaml
+  version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-openapi/jsonpointer
-  version: ef5f0afec364d3b9396b7b77b43dbe26bf1f8004
+  version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
   version: 8483a886a90412cd6858df4ea3483dce9c8e35a3
 - name: github.com/go-openapi/spec
-  version: 5bae59e25b21498baea7f9d46e9c147ec106a42e
+  version: 6aced65f8501fe1217321abf0749d354824ba2ff
 - name: github.com/go-openapi/swag
-  version: 5899d5c5e619fda5fa86e14795a835f473ca284c
+  version: 1d0bd113de87027671077d3c71eb3ac5d7dbba72
 - name: github.com/gogo/protobuf
   version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
   subpackages:
@@ -130,28 +66,24 @@ imports:
   - proto
   - protoc-gen-gogo/descriptor
   - sortkeys
-- name: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
   - lru
 - name: github.com/golang/protobuf
-  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
+  version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
-  - jsonpb
   - proto
   - ptypes
   - ptypes/any
   - ptypes/duration
-  - ptypes/struct
   - ptypes/timestamp
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/googleapis/gnostic
-  version: 0c5108395e2debce0d731cf0287ddf7242066aba
+  version: 68f4ded48ba9414dab2ae69b3f0d69971da73aa5
   subpackages:
   - OpenAPIv2
   - compiler
@@ -173,7 +105,7 @@ imports:
 - name: github.com/json-iterator/go
   version: ab8a2e0c74be9d3be70b3184d9acc634935ded82
 - name: github.com/mailru/easyjson
-  version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
+  version: d5b7844b561a7bc640052f1b935f7b800330d7e0
   subpackages:
   - buffer
   - jlexer
@@ -189,17 +121,17 @@ imports:
 - name: github.com/NYTimes/gziphandler
   version: 56545f4a5d46df9a6648819d1664c3a03a13ffdb
 - name: github.com/openshift/api
-  version: 4706c46ddae58211c6602e6e7f3486df3f21687a
+  version: 87f97e6c35f4e067e1c744b3013fd902c5baa4ad
   subpackages:
   - config/v1
   - operator/v1alpha1
 - name: github.com/openshift/client-go
-  version: 7cc0953bbbb7925e30232c056606d666942bb542
+  version: 53641229593ccc560f837da082350e91f51a76a5
   subpackages:
   - config/clientset/versioned/scheme
   - config/clientset/versioned/typed/config/v1
 - name: github.com/openshift/library-go
-  version: dab26bb3a8dc7fccde7227194af755bbff30ce5d
+  version: 2def66eaefc4307e78c8660c6b409c38f7eb92aa
   subpackages:
   - pkg/config/client
   - pkg/config/configdefaults
@@ -220,7 +152,7 @@ imports:
 - name: github.com/pkg/profile
   version: f6fe06335df110bcf1ed6d4e852b760bfc15beee
 - name: github.com/prometheus/client_golang
-  version: e7e903064f5e9eb5da98208bae10b475d4db0f8c
+  version: 5cec1d0429b02e4323e042eb04dafdb079ddf568
   subpackages:
   - prometheus
 - name: github.com/prometheus/client_model
@@ -250,16 +182,6 @@ imports:
 - name: golang.org/x/crypto
   version: de0752318171da717af4ce24d0a2e8626afaeb11
   subpackages:
-  - bcrypt
-  - blowfish
-  - cryptobyte
-  - cryptobyte/asn1
-  - ed25519
-  - ed25519/internal/edwards25519
-  - internal/subtle
-  - nacl/secretbox
-  - poly1305
-  - salsa20/salsa
   - ssh/terminal
 - name: golang.org/x/net
   version: 0ed95abb35c445290478a5348a7b38bb154135fd
@@ -314,30 +236,21 @@ imports:
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 168a6198bcb0ef175f7dacec0b8691fc141dc9b8
+  version: 5b3c4e850e90a4cf6a20ebd46c8b32a0a3afcb9e
   subpackages:
   - balancer
-  - balancer/base
-  - balancer/roundrobin
   - codes
   - connectivity
   - credentials
-  - encoding
-  - encoding/proto
+  - grpclb/grpc_lb_v1/messages
   - grpclog
-  - health
   - health/grpc_health_v1
   - internal
-  - internal/backoff
-  - internal/channelz
-  - internal/grpcrand
   - keepalive
   - metadata
   - naming
   - peer
   - resolver
-  - resolver/dns
-  - resolver/passthrough
   - stats
   - status
   - tap
@@ -347,9 +260,10 @@ imports:
 - name: gopkg.in/natefinch/lumberjack.v2
   version: 20b71e5b60d756d3d2f80def009790325acc2b23
 - name: gopkg.in/yaml.v2
-  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+  version: 670d4cfef0544295bc27a114dbac37980d83185a
 - name: k8s.io/api
-  version: 89a74a8d264df0e993299876a8cde88379b940ee
+  version: 91a629a47dd4b8816f5d974f41ae0335b6468ec1
+  repo: https://github.com/openshift/kubernetes-api.git
   subpackages:
   - admission/v1beta1
   - admissionregistration/v1alpha1
@@ -385,7 +299,8 @@ imports:
   - storage/v1alpha1
   - storage/v1beta1
 - name: k8s.io/apimachinery
-  version: 2b1284ed4c93a43499e781493253e2ac5959c4fd
+  version: f9b69888dcd7c45ba7b718862a9d21684a991aac
+  repo: https://github.com/openshift/kubernetes-apimachinery.git
   subpackages:
   - pkg/api/equality
   - pkg/api/errors
@@ -437,7 +352,8 @@ imports:
   - third_party/forked/golang/json
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 9caa0299108fbdf51d3d9b8e8956834ae84dac75
+  version: 1cc2d2c4d2d5a46c02f609d5320f817dd23d643c
+  repo: https://github.com/openshift/kubernetes-apiserver.git
   subpackages:
   - pkg/admission
   - pkg/admission/configuration
@@ -500,6 +416,7 @@ imports:
   - pkg/registry/generic/registry
   - pkg/registry/rest
   - pkg/server
+  - pkg/server/certs
   - pkg/server/filters
   - pkg/server/healthz
   - pkg/server/httplog
@@ -537,7 +454,8 @@ imports:
   - plugin/pkg/authenticator/token/webhook
   - plugin/pkg/authorizer/webhook
 - name: k8s.io/client-go
-  version: e64494209f554a6723674bd494d69445fb76a1d4
+  version: e7e9d19af44cca1c3aacd92448ed662ce65d5312
+  repo: https://github.com/openshift/kubernetes-client-go.git
   subpackages:
   - discovery
   - informers
@@ -677,7 +595,7 @@ imports:
   - util/retry
   - util/workqueue
 - name: k8s.io/klog
-  version: 8139d8cb77af419532b33dfa7dd09fbc5f1d344f
+  version: b9b56d5dfc9208f60ea747056670942d8b0afdc8
 - name: k8s.io/kube-openapi
   version: c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d
   subpackages:

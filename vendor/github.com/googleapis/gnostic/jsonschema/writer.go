@@ -19,16 +19,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const indentation = "  "
+const INDENT = "  "
 
 func renderMap(info interface{}, indent string) (result string) {
 	result = "{\n"
-	innerIndent := indent + indentation
+	inner_indent := indent + INDENT
 	switch pairs := info.(type) {
 	case yaml.MapSlice:
 		for i, pair := range pairs {
 			// first print the key
-			result += fmt.Sprintf("%s\"%+v\": ", innerIndent, pair.Key)
+			result += fmt.Sprintf("%s\"%+v\": ", inner_indent, pair.Key)
 			// then the value
 			switch value := pair.Value.(type) {
 			case string:
@@ -40,15 +40,15 @@ func renderMap(info interface{}, indent string) (result string) {
 					result += "false"
 				}
 			case []interface{}:
-				result += renderArray(value, innerIndent)
+				result += renderArray(value, inner_indent)
 			case yaml.MapSlice:
-				result += renderMap(value, innerIndent)
+				result += renderMap(value, inner_indent)
 			case int:
 				result += fmt.Sprintf("%d", value)
 			case int64:
 				result += fmt.Sprintf("%d", value)
 			case []string:
-				result += renderStringArray(value, innerIndent)
+				result += renderStringArray(value, inner_indent)
 			default:
 				result += fmt.Sprintf("???MapItem(%+v, %T)", value, value)
 			}
@@ -67,21 +67,21 @@ func renderMap(info interface{}, indent string) (result string) {
 
 func renderArray(array []interface{}, indent string) (result string) {
 	result = "[\n"
-	innerIndent := indent + indentation
+	inner_indent := indent + INDENT
 	for i, item := range array {
 		switch item := item.(type) {
 		case string:
-			result += innerIndent + "\"" + item + "\""
+			result += inner_indent + "\"" + item + "\""
 		case bool:
 			if item {
-				result += innerIndent + "true"
+				result += inner_indent + "true"
 			} else {
-				result += innerIndent + "false"
+				result += inner_indent + "false"
 			}
 		case yaml.MapSlice:
-			result += innerIndent + renderMap(item, innerIndent) + ""
+			result += inner_indent + renderMap(item, inner_indent) + ""
 		default:
-			result += innerIndent + fmt.Sprintf("???ArrayItem(%+v)", item)
+			result += inner_indent + fmt.Sprintf("???ArrayItem(%+v)", item)
 		}
 		if i < len(array)-1 {
 			result += ","
@@ -94,9 +94,9 @@ func renderArray(array []interface{}, indent string) (result string) {
 
 func renderStringArray(array []string, indent string) (result string) {
 	result = "[\n"
-	innerIndent := indent + indentation
+	inner_indent := indent + INDENT
 	for i, item := range array {
-		result += innerIndent + "\"" + item + "\""
+		result += inner_indent + "\"" + item + "\""
 		if i < len(array)-1 {
 			result += ","
 		}
@@ -106,7 +106,7 @@ func renderStringArray(array []string, indent string) (result string) {
 	return result
 }
 
-func render(info yaml.MapSlice) string {
+func Render(info yaml.MapSlice) string {
 	return renderMap(info, "") + "\n"
 }
 
@@ -225,8 +225,8 @@ func (schema *Schema) jsonValue() yaml.MapSlice {
 	if schema.Title != nil {
 		m = append(m, yaml.MapItem{"title", *schema.Title})
 	}
-	if schema.ID != nil {
-		m = append(m, yaml.MapItem{"id", *schema.ID})
+	if schema.Id != nil {
+		m = append(m, yaml.MapItem{"id", *schema.Id})
 	}
 	if schema.Schema != nil {
 		m = append(m, yaml.MapItem{"$schema", *schema.Schema})
@@ -327,8 +327,7 @@ func (schema *Schema) jsonValue() yaml.MapSlice {
 	return m
 }
 
-// JSONString returns a json representation of a schema.
 func (schema *Schema) JSONString() string {
 	info := schema.jsonValue()
-	return render(info)
+	return Render(info)
 }

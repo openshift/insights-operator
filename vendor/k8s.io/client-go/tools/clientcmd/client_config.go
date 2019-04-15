@@ -35,22 +35,13 @@ import (
 var (
 	// ClusterDefaults has the same behavior as the old EnvVar and DefaultCluster fields
 	// DEPRECATED will be replaced
-	ClusterDefaults = clientcmdapi.Cluster{Server: getDefaultServer()}
+	ClusterDefaults = clientcmdapi.Cluster{Server: os.Getenv("KUBERNETES_MASTER")}
 	// DefaultClientConfig represents the legacy behavior of this package for defaulting
 	// DEPRECATED will be replace
 	DefaultClientConfig = DirectClientConfig{*clientcmdapi.NewConfig(), "", &ConfigOverrides{
 		ClusterDefaults: ClusterDefaults,
 	}, nil, NewDefaultClientConfigLoadingRules(), promptedCredentials{}}
 )
-
-// getDefaultServer returns a default setting for DefaultClientConfig
-// DEPRECATED
-func getDefaultServer() string {
-	if server := os.Getenv("KUBERNETES_MASTER"); len(server) > 0 {
-		return server
-	}
-	return "http://localhost:8080"
-}
 
 // ClientConfig is used to make it easy to get an api server client
 type ClientConfig interface {
@@ -229,11 +220,12 @@ func (config *DirectClientConfig) getUserIdentificationPartialConfig(configAuthI
 	if len(configAuthInfo.Token) > 0 {
 		mergedConfig.BearerToken = configAuthInfo.Token
 	} else if len(configAuthInfo.TokenFile) > 0 {
-		ts := restclient.NewCachedFileTokenSource(configAuthInfo.TokenFile)
-		if _, err := ts.Token(); err != nil {
+		tokenBytes, err := ioutil.ReadFile(configAuthInfo.TokenFile)
+		if err != nil {
 			return nil, err
 		}
-		mergedConfig.WrapTransport = restclient.TokenSourceWrapTransport(ts)
+		mergedConfig.BearerToken = string(tokenBytes)
+		mergedConfig.BearerTokenFile = configAuthInfo.TokenFile
 	}
 	if len(configAuthInfo.Impersonate) > 0 {
 		mergedConfig.Impersonate = restclient.ImpersonationConfig{

@@ -45,6 +45,7 @@ type ClusterVersionInfo interface {
 }
 
 type Source struct {
+	ID       string
 	Type     string
 	Contents io.Reader
 }
@@ -140,6 +141,8 @@ func (c *Client) Send(ctx context.Context, source Source) error {
 	switch resp.StatusCode {
 	case http.StatusOK:
 		gaugeRequestSend.WithLabelValues(c.metricsName, "200").Inc()
+	case http.StatusAccepted:
+		gaugeRequestSend.WithLabelValues(c.metricsName, "202").Inc()
 	case http.StatusUnauthorized:
 		gaugeRequestSend.WithLabelValues(c.metricsName, "401").Inc()
 		return authorizer.Error{Err: fmt.Errorf("gateway server requires authentication: %s", resp.Request.URL)}
@@ -160,6 +163,10 @@ func (c *Client) Send(ctx context.Context, source Source) error {
 			body = body[:1024]
 		}
 		return fmt.Errorf("gateway server reported unexpected error code: %d: %s", resp.StatusCode, string(body))
+	}
+
+	if value := resp.Header.Get("x-rh-insights-request-id"); len(value) > 0 {
+		klog.Infof("Successfully reported id=%s x-rh-insights-request-id=%s", source.ID, value)
 	}
 
 	return nil

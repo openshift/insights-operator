@@ -25,7 +25,7 @@ import (
 	"time"
 
 	systemd "github.com/coreos/go-systemd/daemon"
-	"github.com/emicklei/go-restful-swagger12"
+	swagger "github.com/emicklei/go-restful-swagger12"
 	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -137,9 +137,9 @@ type GenericAPIServer struct {
 	preShutdownHooksCalled bool
 
 	// healthz checks
-	healthzLock    sync.Mutex
-	healthzChecks  []healthz.HealthzChecker
-	healthzCreated bool
+	healthzLock        sync.Mutex
+	healthzChecks      []healthz.HealthzChecker
+	healthChecksLocked bool
 
 	// auditing. The backend is started after the server starts listening.
 	AuditBackend audit.Backend
@@ -158,6 +158,13 @@ type GenericAPIServer struct {
 
 	// HandlerChainWaitGroup allows you to wait for all chain handlers finish after the server shutdown.
 	HandlerChainWaitGroup *utilwaitgroup.SafeWaitGroup
+
+	// The limit on the request body size that would be accepted and decoded in a write request.
+	// 0 means no limit.
+	maxRequestBodyBytes int64
+	// MinimalShutdownDuration allows to block shutdown for some time, e.g. until endpoints pointing to this API server
+	// have converged on all node. During this time, the API server keeps serving.
+	MinimalShutdownDuration time.Duration
 }
 
 // DelegationTarget is an interface which allows for composition of API servers with top level handling that works
@@ -261,17 +268,33 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 // Run spawns the secure http server. It only returns if stopCh is closed
 // or the secure port cannot be listened on initially.
 func (s preparedGenericAPIServer) Run(stopCh <-chan struct{}) error {
-	err := s.NonBlockingRun(stopCh)
+	delayedStopCh := make(chan struct{})
+
+	go func() {
+		defer close(delayedStopCh)
+		<-stopCh
+
+		time.Sleep(s.MinimalShutdownDuration)
+	}()
+
+	s.installReadyz(stopCh)
+
+	// close socket after delayed stopCh
+	err := s.NonBlockingRun(delayedStopCh)
 	if err != nil {
 		return err
 	}
 
 	<-stopCh
 
+	// run shutdown hooks directly. This includes deregistering from the kubernetes endpoint in case of kube-apiserver.
 	err = s.RunPreShutdownHooks()
 	if err != nil {
 		return err
 	}
+
+	// wait for the delayed stopCh before closing the handler chain (it rejects everything after Wait has been called).
+	<-delayedStopCh
 
 	// Wait for all requests to finish, which are bounded by the RequestTimeout variable.
 	s.HandlerChainWaitGroup.Wait()
@@ -309,6 +332,7 @@ func (s preparedGenericAPIServer) NonBlockingRun(stopCh <-chan struct{}) error {
 	// ensure cleanup.
 	go func() {
 		<-stopCh
+
 		close(internalStopCh)
 		s.HandlerChainWaitGroup.Wait()
 		close(auditStopCh)
@@ -340,6 +364,7 @@ func (s *GenericAPIServer) installAPIResources(apiPrefix string, apiGroupInfo *A
 			apiGroupVersion.OptionsExternalVersion = apiGroupInfo.OptionsExternalVersion
 		}
 		apiGroupVersion.OpenAPIModels = openAPIGroupModels
+		apiGroupVersion.MaxRequestBodyBytes = s.maxRequestBodyBytes
 
 		if err := apiGroupVersion.InstallREST(s.Handler.GoRestfulContainer); err != nil {
 			return fmt.Errorf("unable to setup API %v: %v", apiGroupInfo, err)
@@ -362,6 +387,11 @@ func (s *GenericAPIServer) InstallLegacyAPIGroup(apiPrefix string, apiGroupInfo 
 	s.Handler.GoRestfulContainer.Add(discovery.NewLegacyRootAPIHandler(s.discoveryAddresses, s.Serializer, apiPrefix).WebService())
 
 	return nil
+}
+
+func (s *GenericAPIServer) RemoveOpenAPIData() {
+	s.openAPIConfig = nil
+	s.swaggerConfig = nil
 }
 
 // Exposes the given api group in the API.

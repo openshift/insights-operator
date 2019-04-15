@@ -15,6 +15,7 @@
 package jsonschema
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -25,10 +26,10 @@ import (
 // The following methods perform operations on Schemas.
 //
 
-// IsEmpty returns true if no members of the Schema are specified.
+// Returns true if no members of the Schema are specified.
 func (schema *Schema) IsEmpty() bool {
 	return (schema.Schema == nil) &&
-		(schema.ID == nil) &&
+		(schema.Id == nil) &&
 		(schema.MultipleOf == nil) &&
 		(schema.Maximum == nil) &&
 		(schema.ExclusiveMaximum == nil) &&
@@ -63,12 +64,11 @@ func (schema *Schema) IsEmpty() bool {
 		(schema.Ref == nil)
 }
 
-// IsEqual returns true if two schemas are equal.
 func (schema *Schema) IsEqual(schema2 *Schema) bool {
 	return schema.String() == schema2.String()
 }
 
-// SchemaOperation represents a function that can be applied to a Schema.
+// A type that represents a function that can be applied to a Schema.
 type SchemaOperation func(schema *Schema, context string)
 
 // Applies a specified function to a Schema and all of the Schemas that it contains.
@@ -150,113 +150,113 @@ func (schema *Schema) applyToSchemas(operation SchemaOperation, context string) 
 	operation(schema, context)
 }
 
-// CopyProperties copies all non-nil properties from the source Schema to the schema Schema.
-func (schema *Schema) CopyProperties(source *Schema) {
+// Copies all non-nil properties from the source Schema to the destination Schema.
+func (destination *Schema) CopyProperties(source *Schema) {
 	if source.Schema != nil {
-		schema.Schema = source.Schema
+		destination.Schema = source.Schema
 	}
-	if source.ID != nil {
-		schema.ID = source.ID
+	if source.Id != nil {
+		destination.Id = source.Id
 	}
 	if source.MultipleOf != nil {
-		schema.MultipleOf = source.MultipleOf
+		destination.MultipleOf = source.MultipleOf
 	}
 	if source.Maximum != nil {
-		schema.Maximum = source.Maximum
+		destination.Maximum = source.Maximum
 	}
 	if source.ExclusiveMaximum != nil {
-		schema.ExclusiveMaximum = source.ExclusiveMaximum
+		destination.ExclusiveMaximum = source.ExclusiveMaximum
 	}
 	if source.Minimum != nil {
-		schema.Minimum = source.Minimum
+		destination.Minimum = source.Minimum
 	}
 	if source.ExclusiveMinimum != nil {
-		schema.ExclusiveMinimum = source.ExclusiveMinimum
+		destination.ExclusiveMinimum = source.ExclusiveMinimum
 	}
 	if source.MaxLength != nil {
-		schema.MaxLength = source.MaxLength
+		destination.MaxLength = source.MaxLength
 	}
 	if source.MinLength != nil {
-		schema.MinLength = source.MinLength
+		destination.MinLength = source.MinLength
 	}
 	if source.Pattern != nil {
-		schema.Pattern = source.Pattern
+		destination.Pattern = source.Pattern
 	}
 	if source.AdditionalItems != nil {
-		schema.AdditionalItems = source.AdditionalItems
+		destination.AdditionalItems = source.AdditionalItems
 	}
 	if source.Items != nil {
-		schema.Items = source.Items
+		destination.Items = source.Items
 	}
 	if source.MaxItems != nil {
-		schema.MaxItems = source.MaxItems
+		destination.MaxItems = source.MaxItems
 	}
 	if source.MinItems != nil {
-		schema.MinItems = source.MinItems
+		destination.MinItems = source.MinItems
 	}
 	if source.UniqueItems != nil {
-		schema.UniqueItems = source.UniqueItems
+		destination.UniqueItems = source.UniqueItems
 	}
 	if source.MaxProperties != nil {
-		schema.MaxProperties = source.MaxProperties
+		destination.MaxProperties = source.MaxProperties
 	}
 	if source.MinProperties != nil {
-		schema.MinProperties = source.MinProperties
+		destination.MinProperties = source.MinProperties
 	}
 	if source.Required != nil {
-		schema.Required = source.Required
+		destination.Required = source.Required
 	}
 	if source.AdditionalProperties != nil {
-		schema.AdditionalProperties = source.AdditionalProperties
+		destination.AdditionalProperties = source.AdditionalProperties
 	}
 	if source.Properties != nil {
-		schema.Properties = source.Properties
+		destination.Properties = source.Properties
 	}
 	if source.PatternProperties != nil {
-		schema.PatternProperties = source.PatternProperties
+		destination.PatternProperties = source.PatternProperties
 	}
 	if source.Dependencies != nil {
-		schema.Dependencies = source.Dependencies
+		destination.Dependencies = source.Dependencies
 	}
 	if source.Enumeration != nil {
-		schema.Enumeration = source.Enumeration
+		destination.Enumeration = source.Enumeration
 	}
 	if source.Type != nil {
-		schema.Type = source.Type
+		destination.Type = source.Type
 	}
 	if source.AllOf != nil {
-		schema.AllOf = source.AllOf
+		destination.AllOf = source.AllOf
 	}
 	if source.AnyOf != nil {
-		schema.AnyOf = source.AnyOf
+		destination.AnyOf = source.AnyOf
 	}
 	if source.OneOf != nil {
-		schema.OneOf = source.OneOf
+		destination.OneOf = source.OneOf
 	}
 	if source.Not != nil {
-		schema.Not = source.Not
+		destination.Not = source.Not
 	}
 	if source.Definitions != nil {
-		schema.Definitions = source.Definitions
+		destination.Definitions = source.Definitions
 	}
 	if source.Title != nil {
-		schema.Title = source.Title
+		destination.Title = source.Title
 	}
 	if source.Description != nil {
-		schema.Description = source.Description
+		destination.Description = source.Description
 	}
 	if source.Default != nil {
-		schema.Default = source.Default
+		destination.Default = source.Default
 	}
 	if source.Format != nil {
-		schema.Format = source.Format
+		destination.Format = source.Format
 	}
 	if source.Ref != nil {
-		schema.Ref = source.Ref
+		destination.Ref = source.Ref
 	}
 }
 
-// TypeIs returns true if the Type of a Schema includes the specified type
+// Returns true if the Type of a Schema includes the specified type
 func (schema *Schema) TypeIs(typeName string) bool {
 	if schema.Type != nil {
 		// the schema Type is either a string or an array of strings
@@ -273,7 +273,7 @@ func (schema *Schema) TypeIs(typeName string) bool {
 	return false
 }
 
-// ResolveRefs resolves "$ref" elements in a Schema and its children.
+// Resolves "$ref" elements in a Schema and its children.
 // But if a reference refers to an object type, is inside a oneOf, or contains a oneOf,
 // the reference is kept and we expect downstream tools to separately model these
 // referenced schemas.
@@ -294,27 +294,27 @@ func (schema *Schema) ResolveRefs() {
 						// don't substitute for references inside oneOf declarations
 					} else if resolvedRef.OneOf != nil {
 						// don't substitute for references that contain oneOf declarations
-					} else if resolvedRef.AdditionalProperties != nil {
-						// don't substitute for references that look like objects
 					} else {
 						schema.Ref = nil
 						schema.CopyProperties(resolvedRef)
-						count++
+						count += 1
 					}
 				}
 			}, "")
 	}
 }
 
-// resolveJSONPointer resolves JSON pointers.
+// Resolves JSON pointers.
 // This current implementation is very crude and custom for OpenAPI 2.0 schemas.
 // It panics for any pointer that it is unable to resolve.
-func (schema *Schema) resolveJSONPointer(ref string) (result *Schema, err error) {
+func (root *Schema) resolveJSONPointer(ref string) (schema *Schema, err error) {
+	var result *Schema
+
 	parts := strings.Split(ref, "#")
 	if len(parts) == 2 {
 		documentName := parts[0] + "#"
-		if documentName == "#" && schema.ID != nil {
-			documentName = *(schema.ID)
+		if documentName == "#" && root.Id != nil {
+			documentName = *(root.Id)
 		}
 		path := parts[1]
 		document := schemas[documentName]
@@ -345,12 +345,12 @@ func (schema *Schema) resolveJSONPointer(ref string) (result *Schema, err error)
 		}
 	}
 	if result == nil {
-		return nil, fmt.Errorf("unresolved pointer: %+v", ref)
+		return nil, errors.New(fmt.Sprintf("UNRESOLVED POINTER: %+v", ref))
 	}
 	return result, nil
 }
 
-// ResolveAllOfs replaces "allOf" elements by merging their properties into the parent Schema.
+// Replaces "allOf" elements by merging their properties into the parent Schema.
 func (schema *Schema) ResolveAllOfs() {
 	schema.applyToSchemas(
 		func(schema *Schema, context string) {
@@ -363,7 +363,7 @@ func (schema *Schema) ResolveAllOfs() {
 		}, "resolveAllOfs")
 }
 
-// ResolveAnyOfs replaces all "anyOf" elements with "oneOf".
+// Replaces all "anyOf" elements with "oneOf".
 func (schema *Schema) ResolveAnyOfs() {
 	schema.applyToSchemas(
 		func(schema *Schema, context string) {
@@ -379,14 +379,14 @@ func stringptr(input string) (output *string) {
 	return &input
 }
 
-// CopyOfficialSchemaProperty copies a named property from the official JSON Schema definition
+// Copy a named property from the official JSON Schema definition
 func (schema *Schema) CopyOfficialSchemaProperty(name string) {
 	*schema.Properties = append(*schema.Properties,
 		NewNamedSchema(name,
 			&Schema{Ref: stringptr("http://json-schema.org/draft-04/schema#/properties/" + name)}))
 }
 
-// CopyOfficialSchemaProperties copies named properties from the official JSON Schema definition
+// Copy named properties from the official JSON Schema definition
 func (schema *Schema) CopyOfficialSchemaProperties(names []string) {
 	for _, name := range names {
 		schema.CopyOfficialSchemaProperty(name)

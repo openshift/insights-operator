@@ -70,6 +70,11 @@ type Config struct {
 	// TODO: demonstrate an OAuth2 compatible client.
 	BearerToken string
 
+	// Path to a file containing a BearerToken.
+	// If set, the contents are periodically read.
+	// The last successfully read value takes precedence over BearerToken.
+	BearerTokenFile string
+
 	// Impersonate is the configuration that RESTClient will use for impersonation.
 	Impersonate ImpersonationConfig
 
@@ -282,12 +287,18 @@ func adjustVersion(v string) string {
 	return seg[0]
 }
 
+// CommandNameOverride allows to override the command reported in user-agent.
+var CommandNameOverride = ""
+
 // adjustCommand returns the last component of the
 // OS-specific command path for use in User-Agent.
 func adjustCommand(p string) string {
 	// Unlikely, but better than returning "".
 	if len(p) == 0 {
 		return "unknown"
+	}
+	if len(CommandNameOverride) > 0 {
+		return CommandNameOverride
 	}
 	return filepath.Base(p)
 }
@@ -322,9 +333,8 @@ func InClusterConfig() (*Config, error) {
 		return nil, ErrNotInCluster
 	}
 
-	ts := NewCachedFileTokenSource(tokenFile)
-
-	if _, err := ts.Token(); err != nil {
+	token, err := ioutil.ReadFile(tokenFile)
+	if err != nil {
 		return nil, err
 	}
 
@@ -340,7 +350,8 @@ func InClusterConfig() (*Config, error) {
 		// TODO: switch to using cluster DNS.
 		Host:            "https://" + net.JoinHostPort(host, port),
 		TLSClientConfig: tlsClientConfig,
-		WrapTransport:   TokenSourceWrapTransport(ts),
+		BearerToken:     string(token),
+		BearerTokenFile: tokenFile,
 	}, nil
 }
 
@@ -430,12 +441,13 @@ func AnonymousClientConfig(config *Config) *Config {
 // CopyConfig returns a copy of the given config
 func CopyConfig(config *Config) *Config {
 	return &Config{
-		Host:          config.Host,
-		APIPath:       config.APIPath,
-		ContentConfig: config.ContentConfig,
-		Username:      config.Username,
-		Password:      config.Password,
-		BearerToken:   config.BearerToken,
+		Host:            config.Host,
+		APIPath:         config.APIPath,
+		ContentConfig:   config.ContentConfig,
+		Username:        config.Username,
+		Password:        config.Password,
+		BearerToken:     config.BearerToken,
+		BearerTokenFile: config.BearerTokenFile,
 		Impersonate: ImpersonationConfig{
 			Groups:   config.Impersonate.Groups,
 			Extra:    config.Impersonate.Extra,

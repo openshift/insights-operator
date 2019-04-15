@@ -1,18 +1,32 @@
 package: github.com/openshift/support-operator
 import:
 - package: k8s.io/apimachinery
-  version: kubernetes-1.13.0
+  repo: https://github.com/openshift/kubernetes-apimachinery.git
+  version: origin-4.1-kubernetes-1.13.4
 - package: k8s.io/api
-  version: kubernetes-1.13.0
+  repo: https://github.com/openshift/kubernetes-api.git
+  version: origin-4.1-kubernetes-1.13.4
 - package: k8s.io/apiserver
-  version: kubernetes-1.13.0
+  repo: https://github.com/openshift/kubernetes-apiserver.git
+  version: origin-4.1-kubernetes-1.13.4
 - package: k8s.io/client-go
-  version: kubernetes-1.13.0
+  repo: https://github.com/openshift/kubernetes-client-go.git
+  version: origin-4.1-kubernetes-1.13.4
 - package: github.com/openshift/api
   version: master
 - package: github.com/openshift/client-go
   version: master
 - package: github.com/openshift/library-go
   version: master
-- package: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+- package: github.com/ghodss/yaml
+  version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
+- package: google.golang.org/grpc
+  version: 5b3c4e850e90a4cf6a20ebd46c8b32a0a3afcb9e
+- package: gopkg.in/yaml.v2
+  version: 670d4cfef0544295bc27a114dbac37980d83185a
+- package: golang.org/x/net
+  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+- package: golang.org/x/text
+  version: b19bf474d317b857955b12035d2c5acb57ce8b01
+- package: github.com/evanphx/json-patch
+  version: master

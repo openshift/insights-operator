@@ -31,8 +31,8 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/internal/leakcheck"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/test/leakcheck"
 	"google.golang.org/grpc/transport"
 )
 
@@ -105,13 +105,12 @@ func (h *testStreamHandler) handleStream(t *testing.T, s *transport.Stream) {
 		}
 	}
 	// send a response back to end the stream.
-	data, err := encode(testCodec{}, &expectedResponse)
+	hdr, data, err := encode(testCodec{}, &expectedResponse, nil, nil, nil)
 	if err != nil {
 		t.Errorf("Failed to encode the response: %v", err)
 		return
 	}
-	hdr, payload := msgHeader(data, nil)
-	h.t.Write(s, hdr, payload, &transport.Options{})
+	h.t.Write(s, hdr, data, &transport.Options{})
 	h.t.WriteStatus(s, status.New(codes.OK, ""))
 }
 
@@ -218,7 +217,7 @@ func TestInvoke(t *testing.T) {
 	defer leakcheck.Check(t)
 	server, cc := setUp(t, 0, math.MaxUint32)
 	var reply string
-	if err := cc.Invoke(context.Background(), "/foo/bar", &expectedRequest, &reply); err != nil || reply != expectedResponse {
+	if err := Invoke(context.Background(), "/foo/bar", &expectedRequest, &reply, cc); err != nil || reply != expectedResponse {
 		t.Fatalf("grpc.Invoke(_, _, _, _, _) = %v, want <nil>", err)
 	}
 	cc.Close()
@@ -230,11 +229,11 @@ func TestInvokeLargeErr(t *testing.T) {
 	server, cc := setUp(t, 0, math.MaxUint32)
 	var reply string
 	req := "hello"
-	err := cc.Invoke(context.Background(), "/foo/bar", &req, &reply)
+	err := Invoke(context.Background(), "/foo/bar", &req, &reply, cc)
 	if _, ok := status.FromError(err); !ok {
 		t.Fatalf("grpc.Invoke(_, _, _, _, _) receives non rpc error.")
 	}
-	if status.Code(err) != codes.Internal || len(errorDesc(err)) != sizeLargeErr {
+	if Code(err) != codes.Internal || len(ErrorDesc(err)) != sizeLargeErr {
 		t.Fatalf("grpc.Invoke(_, _, _, _, _) = %v, want an error of code %d and desc size %d", err, codes.Internal, sizeLargeErr)
 	}
 	cc.Close()
@@ -247,11 +246,11 @@ func TestInvokeErrorSpecialChars(t *testing.T) {
 	server, cc := setUp(t, 0, math.MaxUint32)
 	var reply string
 	req := "weird error"
-	err := cc.Invoke(context.Background(), "/foo/bar", &req, &reply)
+	err := Invoke(context.Background(), "/foo/bar", &req, &reply, cc)
 	if _, ok := status.FromError(err); !ok {
 		t.Fatalf("grpc.Invoke(_, _, _, _, _) receives non rpc error.")
 	}
-	if got, want := errorDesc(err), weirdError; got != want {
+	if got, want := ErrorDesc(err), weirdError; got != want {
 		t.Fatalf("grpc.Invoke(_, _, _, _, _) error = %q, want %q", got, want)
 	}
 	cc.Close()
@@ -267,7 +266,7 @@ func TestInvokeCancel(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		cc.Invoke(ctx, "/foo/bar", &req, &reply)
+		Invoke(ctx, "/foo/bar", &req, &reply, cc)
 	}
 	if canceled != 0 {
 		t.Fatalf("received %d of 100 canceled requests", canceled)
@@ -286,7 +285,7 @@ func TestInvokeCancelClosedNonFailFast(t *testing.T) {
 	req := "hello"
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if err := cc.Invoke(ctx, "/foo/bar", &req, &reply, FailFast(false)); err == nil {
+	if err := Invoke(ctx, "/foo/bar", &req, &reply, cc, FailFast(false)); err == nil {
 		t.Fatalf("canceled invoke on closed connection should fail")
 	}
 	server.stop()
