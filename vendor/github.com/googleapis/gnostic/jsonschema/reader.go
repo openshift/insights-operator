@@ -25,7 +25,7 @@ import (
 // It is initialized when the first Schema is created and inserted.
 var schemas map[string]*Schema
 
-// NewSchemaFromFile reads a schema from a file.
+// Reads a schema from a file.
 // Currently this assumes that schemas are stored in the source distribution of this project.
 func NewSchemaFromFile(filename string) (schema *Schema, err error) {
 	file, err := ioutil.ReadFile(filename)
@@ -40,7 +40,7 @@ func NewSchemaFromFile(filename string) (schema *Schema, err error) {
 	return NewSchemaFromObject(info), nil
 }
 
-// NewSchemaFromObject constructs a schema from a parsed JSON object.
+// Constructs a schema from a parsed JSON object.
 // Due to the complexity of the schema representation, this is a
 // custom reader and not the standard Go JSON reader (encoding/json).
 func NewSchemaFromObject(jsonData interface{}) *Schema {
@@ -58,7 +58,7 @@ func NewSchemaFromObject(jsonData interface{}) *Schema {
 			case "$schema":
 				schema.Schema = schema.stringValue(v)
 			case "id":
-				schema.ID = schema.stringValue(v)
+				schema.Id = schema.stringValue(v)
 
 			case "multipleOf":
 				schema.MultipleOf = schema.numberValue(v)
@@ -138,11 +138,11 @@ func NewSchemaFromObject(jsonData interface{}) *Schema {
 		}
 
 		// insert schema in global map
-		if schema.ID != nil {
+		if schema.Id != nil {
 			if schemas == nil {
 				schemas = make(map[string]*Schema, 0)
 			}
-			schemas[*(schema.ID)] = schema
+			schemas[*(schema.Id)] = schema
 		}
 		return schema
 	}
