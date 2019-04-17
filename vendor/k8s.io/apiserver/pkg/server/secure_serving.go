@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -38,12 +39,12 @@ const (
 	defaultKeepAlivePeriod = 3 * time.Minute
 )
 
-// serveSecurely runs the secure http server. It fails only if certificates cannot
-// be loaded or the initial listen call fails. The actual server loop (stoppable by closing
-// stopCh) runs in a go routine, i.e. serveSecurely does not block.
-func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Duration, stopCh <-chan struct{}) error {
+// Serve runs the secure http server. It fails only if certificates cannot be loaded or the initial listen call fails.
+// The actual server loop (stoppable by closing stopCh) runs in a go routine, i.e. Serve does not block.
+// It returns a stoppedCh that is closed when all non-hijacked active requests have been processed.
+func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Duration, stopCh <-chan struct{}) (<-chan struct{}, error) {
 	if s.Listener == nil {
-		return fmt.Errorf("listener must not be nil")
+		return nil, fmt.Errorf("listener must not be nil")
 	}
 
 	secureServer := &http.Server{
@@ -59,6 +60,14 @@ func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Dur
 		MinVersion: tls.VersionTLS12,
 		// enable HTTP2 for go's 1.7 HTTP Server
 		NextProtos: []string{"h2", "http/1.1"},
+	}
+
+	if s.HTTP1Only {
+		klog.Info("Forcing use of http/1.1 only")
+		if err := os.Setenv("GODEBUG", "http2server=0"); err != nil {
+			return nil, err
+		}
+		baseTLSConfig.NextProtos = []string{"http/1.1"}
 	}
 
 	if s.MinTLSVersion > 0 {
@@ -86,7 +95,7 @@ func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Dur
 
 		// need to load the certs at least once
 		if err := loader.CheckCerts(); err != nil {
-			return err
+			return nil, err
 		}
 		go loader.Run(stopCh)
 
@@ -117,9 +126,11 @@ func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Dur
 	// increase the connection buffer size from the 1MB default to handle the specified number of concurrent streams
 	http2Options.MaxUploadBufferPerConnection = http2Options.MaxUploadBufferPerStream * int32(http2Options.MaxConcurrentStreams)
 
-	// apply settings to the server
-	if err := http2.ConfigureServer(secureServer, http2Options); err != nil {
-		return fmt.Errorf("error configuring http2: %v", err)
+	if !s.HTTP1Only {
+		// apply settings to the server
+		if err := http2.ConfigureServer(secureServer, http2Options); err != nil {
+			return nil, fmt.Errorf("error configuring http2: %v", err)
+		}
 	}
 
 	klog.Infof("Serving securely on %s", secureServer.Addr)
@@ -127,21 +138,25 @@ func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Dur
 }
 
 // RunServer listens on the given port if listener is not given,
-// then spawns a go-routine continuously serving
-// until the stopCh is closed. This function does not block.
+// then spawns a go-routine continuously serving until the stopCh is closed.
+// It returns a stoppedCh that is closed when all non-hijacked active requests
+// have been processed.
+// This function does not block
 // TODO: make private when insecure serving is gone from the kube-apiserver
 func RunServer(
 	server *http.Server,
 	ln net.Listener,
 	shutDownTimeout time.Duration,
 	stopCh <-chan struct{},
-) error {
+) (<-chan struct{}, error) {
 	if ln == nil {
-		return fmt.Errorf("listener must not be nil")
+		return nil, fmt.Errorf("listener must not be nil")
 	}
 
 	// Shutdown server gracefully.
+	stoppedCh := make(chan struct{})
 	go func() {
+		defer close(stoppedCh)
 		<-stopCh
 		ctx, cancel := context.WithTimeout(context.Background(), shutDownTimeout)
 		server.Shutdown(ctx)
@@ -168,7 +183,7 @@ func RunServer(
 		}
 	}()
 
-	return nil
+	return stoppedCh, nil
 }
 
 type NamedTLSCert struct {
