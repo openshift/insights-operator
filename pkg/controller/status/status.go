@@ -171,9 +171,9 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		}
 
-		if findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorFailing) == nil {
+		if findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorDegraded) == nil {
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
-				Type:   configv1.OperatorFailing,
+				Type:   configv1.OperatorDegraded,
 				Status: configv1.ConditionFalse,
 			})
 		}
@@ -196,7 +196,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 
 		if len(errorMessage) > 0 {
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
-				Type:               configv1.OperatorFailing,
+				Type:               configv1.OperatorDegraded,
 				Status:             configv1.ConditionTrue,
 				LastTransitionTime: metav1.Time{Time: last},
 				Reason:             reason,
@@ -204,7 +204,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		} else {
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
-				Type:   configv1.OperatorFailing,
+				Type:   configv1.OperatorDegraded,
 				Status: configv1.ConditionFalse,
 			})
 		}

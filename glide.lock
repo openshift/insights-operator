@@ -1,5 +1,5 @@
 hash: 56809e9ba78e906d4cfc542e101578c3e1006c96368e87d76d1b5585ec64227b
-updated: 2019-04-10T19:13:04.413853237-04:00
+updated: 2019-04-17T14:53:01.838966534-04:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -121,17 +121,17 @@ imports:
 - name: github.com/NYTimes/gziphandler
   version: 56545f4a5d46df9a6648819d1664c3a03a13ffdb
 - name: github.com/openshift/api
-  version: 87f97e6c35f4e067e1c744b3013fd902c5baa4ad
+  version: 354408edb7ab81b1c87145fad2b70aab225dab0a
   subpackages:
   - config/v1
   - operator/v1alpha1
 - name: github.com/openshift/client-go
-  version: 53641229593ccc560f837da082350e91f51a76a5
+  version: 0255926f53935175fe90b8e7672c4c06c17d79e6
   subpackages:
   - config/clientset/versioned/scheme
   - config/clientset/versioned/typed/config/v1
 - name: github.com/openshift/library-go
-  version: 2def66eaefc4307e78c8660c6b409c38f7eb92aa
+  version: 50831e8fd2ea359a3e987ba5d9f4d48d4e78407b
   subpackages:
   - pkg/config/client
   - pkg/config/configdefaults
@@ -352,7 +352,7 @@ imports:
   - third_party/forked/golang/json
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 1cc2d2c4d2d5a46c02f609d5320f817dd23d643c
+  version: cb9b61fc7114911daa9bacfc24b5db044ac05ec2
   repo: https://github.com/openshift/kubernetes-apiserver.git
   subpackages:
   - pkg/admission
