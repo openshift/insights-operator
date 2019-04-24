@@ -104,7 +104,7 @@ func (c *Controller) Run(ctx context.Context) {
 			start := time.Now()
 			if err := c.client.Send(ctx, insightsclient.Source{
 				ID:       id,
-				Type:     "application/vnd.redhat.advisor.test+tgz",
+				Type:     "application/vnd.redhat.openshift.periodic",
 				Contents: source,
 			}); err != nil {
 				if err == insightsclient.ErrWaitingForVersion {
