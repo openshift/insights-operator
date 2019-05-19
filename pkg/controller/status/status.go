@@ -354,6 +354,10 @@ func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCond
 
 	existingCondition.Reason = newCondition.Reason
 	existingCondition.Message = newCondition.Message
+
+	if existingCondition.LastTransitionTime.IsZero() {
+		existingCondition.LastTransitionTime = metav1.NewTime(time.Now())
+	}
 }
 
 func findOperatorStatusCondition(conditions []configv1.ClusterOperatorStatusCondition, conditionType configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
