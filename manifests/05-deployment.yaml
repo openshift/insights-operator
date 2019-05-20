@@ -15,18 +15,30 @@ spec:
         app: support-operator
     spec:
       serviceAccountName: operator
+      priorityClassName: system-cluster-critical
       nodeSelector:
+        beta.kubernetes.io/os: linux
         node-role.kubernetes.io/master: ""
       tolerations:
-      - operator: Exists 
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoExecute
+        key: node.kubernetes.io/unreachable
+        operator: Exists
+        tolerationSeconds: 900
+      - effect: NoExecute
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+        tolerationSeconds: 900
       volumes:
       - name: snapshots
         emptyDir:
           sizeLimit: 1Gi
-      priorityClassName: system-cluster-critical
       containers:
       - name: operator
-        image: openshift/origin-support-operator:latest
+        image: quay.io/openshift/origin-support-operator:latest
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - name: snapshots
           mountPath: /var/lib/support-operator
