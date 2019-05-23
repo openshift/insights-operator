@@ -33,8 +33,8 @@ spec:
         tolerationSeconds: 900
       volumes:
       - name: snapshots
-        emptyDir:
-          sizeLimit: 1Gi
+        emptyDir: {}
+          #sizeLimit: 1Gi # bug https://bugzilla.redhat.com/show_bug.cgi?id=1713207
       containers:
       - name: operator
         image: quay.io/openshift/origin-support-operator:latest
