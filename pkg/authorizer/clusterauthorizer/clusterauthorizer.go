@@ -27,6 +27,7 @@ type authorizerResult struct {
 	token    string
 	username string
 	password string
+	interval time.Duration
 }
 
 type Authorizer struct {
@@ -69,15 +70,16 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 	return nil
 }
 
-func (a *Authorizer) Enabled() (bool, string) {
+// TODO: return a configuration struct, not boolean and string
+func (a *Authorizer) Enabled() (bool, time.Duration, string) {
 	result := a.latestResult()
 	if result.enabled {
-		return true, ""
+		return true, result.interval, ""
 	}
 	if len(result.message) == 0 {
-		return false, "Reports will not be uploaded, no credentials specified."
+		return false, result.interval, "Reports will not be uploaded, no credentials specified."
 	}
-	return false, result.message
+	return false, result.interval, result.message
 }
 
 func (a *Authorizer) latestResult() authorizerResult {
@@ -90,7 +92,7 @@ func (a *Authorizer) Run(ctx context.Context, baseInterval time.Duration) {
 	wait.Until(func() {
 		for {
 			var interval time.Duration
-			if err := a.refresh(); err != nil {
+			if err := a.Refresh(); err != nil {
 				klog.Errorf("Unable to refresh authorization secret: %v", err)
 				interval = baseInterval / 2
 			} else {
@@ -101,7 +103,7 @@ func (a *Authorizer) Run(ctx context.Context, baseInterval time.Duration) {
 	}, 1*time.Minute, ctx.Done())
 }
 
-func (a *Authorizer) refresh() error {
+func (a *Authorizer) Refresh() error {
 	var err error
 	var result authorizerResult
 
@@ -124,7 +126,6 @@ func (a *Authorizer) refresh() error {
 		if password, ok := secret.Data["password"]; ok {
 			result.password = string(password)
 		}
-
 		if endpoint, ok := secret.Data["endpoint"]; ok {
 			result.endpoint = string(endpoint)
 			result.enabled = len(result.endpoint) > 0
@@ -133,6 +134,19 @@ func (a *Authorizer) refresh() error {
 			}
 		} else {
 			result.enabled = true
+		}
+
+		if intervalString, ok := secret.Data["interval"]; ok {
+			duration, err := time.ParseDuration(string(intervalString))
+			if err == nil && duration < time.Minute {
+				err = fmt.Errorf("too short")
+			}
+			if err == nil {
+				result.interval = duration
+			} else {
+				err = fmt.Errorf("support secret interval must be a duration (1h, 10m) greater than or equal to one minute: %v", err)
+				result.enabled = false
+			}
 		}
 	}
 

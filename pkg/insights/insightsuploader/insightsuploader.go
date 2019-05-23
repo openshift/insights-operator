@@ -53,15 +53,16 @@ func New(summarizer Summarizer, client *insightsclient.Client, statusReporter St
 
 func (c *Controller) Run(ctx context.Context) {
 	// the controller periodically uploads results to the remote support endpoint
-	initialDelay := wait.Jitter(c.interval/8, 2)
+	interval := c.interval
+	initialDelay := wait.Jitter(interval/8, 2)
 	lastReported := c.reporter.LastReportedTime()
 	if !lastReported.IsZero() {
-		next := lastReported.Add(c.interval)
+		next := lastReported.Add(interval)
 		if now := time.Now(); next.After(now) {
 			initialDelay = wait.Jitter(now.Sub(next), 1.2)
 		}
 	}
-	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", c.client.Endpoint(), c.interval, initialDelay.Truncate(time.Second))
+	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", c.client.Endpoint(), interval, initialDelay.Truncate(time.Second))
 
 	wait.Until(func() {
 		if initialDelay > 0 {
@@ -91,7 +92,13 @@ func (c *Controller) Run(ctx context.Context) {
 		var disabledReason string
 		var disabledMessage string
 		if c.client != nil {
-			enabled, disabledMessage = c.client.Enabled()
+			var nextInterval time.Duration
+			enabled, nextInterval, disabledMessage = c.client.Enabled()
+			if nextInterval > 0 {
+				interval = nextInterval
+			} else {
+				interval = c.interval
+			}
 		} else {
 			disabledReason = "NotConfigured"
 			disabledMessage = "Reporting has been disabled"
@@ -99,31 +106,31 @@ func (c *Controller) Run(ctx context.Context) {
 
 		if enabled {
 			// send the results
-			id := lastReported.Format(time.RFC3339)
-			klog.V(4).Infof("Uploading latest report since %s", id)
 			start := time.Now()
+			id := start.Format(time.RFC3339)
+			klog.V(4).Infof("Uploading latest report since %s", lastReported.Format(time.RFC3339))
 			if err := c.client.Send(ctx, insightsclient.Source{
 				ID:       id,
 				Type:     "application/vnd.redhat.openshift.periodic",
 				Contents: source,
 			}); err != nil {
 				if err == insightsclient.ErrWaitingForVersion {
-					initialDelay = wait.Jitter(c.interval/8, 1) - c.interval/8
+					initialDelay = wait.Jitter(interval/8, 1) - interval/8
 					return
 				}
 				if authorizer.IsAuthorizationError(err) {
 					c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "NotAuthorized", Message: fmt.Sprintf("Uploading support data was not allowed: %v", err)})
-					initialDelay = wait.Jitter(c.interval, 3)
+					initialDelay = wait.Jitter(interval, 3)
 					return
 				}
 
-				initialDelay = wait.Jitter(c.interval/8, 1.2)
+				initialDelay = wait.Jitter(interval/8, 1.2)
 				c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "UploadFailed", Message: fmt.Sprintf("Unable to upload support data: %v", err)})
 				return
 			}
 
 			klog.V(4).Infof("Uploaded report successfully in %s", time.Now().Sub(start))
-			lastReported = time.Now().UTC()
+			lastReported = start.UTC()
 			c.reporter.SetLastReportedTime(lastReported)
 			c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 
@@ -133,6 +140,8 @@ func (c *Controller) Run(ctx context.Context) {
 			if err := reportToLogs(source, klog.V(4)); err != nil {
 				klog.Errorf("Unable to log upload: %v", err)
 			}
+			// we didn't actually report logs, so don't advance the report date
+			c.reporter.SetLastReportedTime(lastReported)
 
 			if len(disabledReason) == 0 {
 				disabledReason = "Disabled"
@@ -140,14 +149,38 @@ func (c *Controller) Run(ctx context.Context) {
 			if len(disabledMessage) == 0 {
 				disabledMessage = "Uploading reports has been disabled"
 			}
-
-			// we didn't actually report logs, so don't advance the report date
-			c.reporter.SetLastReportedTime(lastReported)
 			c.Simple.UpdateStatus(controllerstatus.Summary{Disabled: true, Reason: disabledReason, Message: disabledMessage})
 		}
 
-		initialDelay = wait.Jitter(c.interval, 1.2)
+		initialDelay = wait.Jitter(interval, 1.2)
 	}, 15*time.Second, ctx.Done())
+}
+
+// Init reports the initial state of the controller.
+func (c *Controller) Init() {
+	var enabled bool
+	var disabledReason string
+	var disabledMessage string
+	if c.client != nil {
+		enabled, _, disabledMessage = c.client.Enabled()
+	} else {
+		disabledReason = "NotConfigured"
+		disabledMessage = "Reporting has been disabled"
+	}
+
+	if enabled {
+		c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
+		return
+	}
+
+	if len(disabledReason) == 0 {
+		disabledReason = "Disabled"
+	}
+	if len(disabledMessage) == 0 {
+		disabledMessage = "Uploading reports has been disabled"
+	}
+
+	c.Simple.UpdateStatus(controllerstatus.Summary{Disabled: true, Reason: disabledReason, Message: disabledMessage})
 }
 
 func reportToLogs(source io.Reader, klog klog.Verbose) error {

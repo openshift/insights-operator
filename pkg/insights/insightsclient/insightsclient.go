@@ -37,7 +37,7 @@ type Client struct {
 
 type Authorizer interface {
 	Authorize(req *http.Request) error
-	Enabled() (bool, string)
+	Enabled() (bool, time.Duration, string)
 }
 
 type ClusterVersionInfo interface {
@@ -54,8 +54,8 @@ var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loa
 
 type nopAuthorizer struct{}
 
-func (nopAuthorizer) Authorize(_ *http.Request) error { return nil }
-func (nopAuthorizer) Enabled() (bool, string)         { return true, "" }
+func (nopAuthorizer) Authorize(_ *http.Request) error        { return nil }
+func (nopAuthorizer) Enabled() (bool, time.Duration, string) { return true, 0, "" }
 
 func New(client *http.Client, defaultEndpoint string, maxBytes int64, metricsName string, authorizer Authorizer, clusterInfo ClusterVersionInfo) *Client {
 	if client == nil {
@@ -79,7 +79,7 @@ func New(client *http.Client, defaultEndpoint string, maxBytes int64, metricsNam
 
 func (c *Client) Endpoint() string { return c.endpoint }
 
-func (c *Client) Enabled() (bool, string) {
+func (c *Client) Enabled() (bool, time.Duration, string) {
 	return c.authorizer.Enabled()
 }
 
