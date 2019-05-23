@@ -136,6 +136,9 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	var insightsClient *insightsclient.Client
 	if len(s.Endpoint) > 0 {
 		authorizer := clusterauthorizer.New(client)
+		if err := authorizer.Refresh(); err != nil {
+			klog.Warningf("Unable to retrieve initial config: %v", err)
+		}
 		insightsClient = insightsclient.New(nil, s.Endpoint, 0, "default", authorizer, configPeriodic)
 		go authorizer.Run(ctx, s.Interval)
 	}
@@ -144,6 +147,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	// is permanently disabled, but if a client does exist the server may still disable reporting
 	uploader := insightsuploader.New(recorder, insightsClient, statusReporter, s.Interval*6)
 	statusReporter.AddSources(uploader)
+	uploader.Init()
 
 	// TODO: future ideas
 	//
