@@ -54,6 +54,32 @@ func New(summarizer Summarizer, client *insightsclient.Client, statusReporter St
 func (c *Controller) Run(ctx context.Context) {
 	// the controller periodically uploads results to the remote support endpoint
 	interval := c.interval
+
+	// TODO: when config is driven by an informer, we need to refactor this to be provided by the
+	// config source (an edge triggered change that resets the loop)
+	enabledCh := make(chan struct{}, 2)
+	if c.client != nil {
+		// load the initial interval
+		initialEnabled, nextInterval, _ := c.client.Enabled()
+		if nextInterval > 0 {
+			interval = nextInterval
+		}
+		// every time the enabled state changes, attempt to wake the reporting loop
+		go func() {
+			for {
+				enabled, _, _ := c.client.Enabled()
+				if initialEnabled != enabled {
+					select {
+					case enabledCh <- struct{}{}:
+					default:
+					}
+					initialEnabled = enabled
+				}
+				time.Sleep(2 * time.Minute)
+			}
+		}()
+	}
+
 	initialDelay := wait.Jitter(interval/8, 2)
 	lastReported := c.reporter.LastReportedTime()
 	if !lastReported.IsZero() {
@@ -69,23 +95,11 @@ func (c *Controller) Run(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 			case <-time.After(initialDelay):
+			case <-enabledCh:
+				klog.V(2).Infof("Reporting was enabled")
 			}
 			initialDelay = 0
 		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
-
-		source, ok, err := c.summarizer.Summary(ctx, lastReported)
-		if err != nil {
-			c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "SummaryFailed", Message: fmt.Sprintf("Unable to retrieve local support data: %v", err)})
-			return
-		}
-		if !ok {
-			klog.V(4).Infof("Nothing to report since %s", lastReported.Format(time.RFC3339))
-			return
-		}
-		defer source.Close()
 
 		// allow the support operator reporting to be enabled and disabled dynamically
 		var enabled bool
@@ -103,6 +117,21 @@ func (c *Controller) Run(ctx context.Context) {
 			disabledReason = "NotConfigured"
 			disabledMessage = "Reporting has been disabled"
 		}
+
+		// attempt to get a summary to send to the server
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		source, ok, err := c.summarizer.Summary(ctx, lastReported)
+		if err != nil {
+			c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "SummaryFailed", Message: fmt.Sprintf("Unable to retrieve local support data: %v", err)})
+			return
+		}
+		if !ok {
+			klog.V(4).Infof("Nothing to report since %s", lastReported.Format(time.RFC3339))
+			return
+		}
+		defer source.Close()
 
 		if enabled {
 			// send the results

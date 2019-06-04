@@ -178,6 +178,15 @@ func (a *Authorizer) Refresh() error {
 
 	a.lock.Lock()
 	defer a.lock.Unlock()
+
+	// log config transitions
+	if a.result.enabled != result.enabled {
+		if result.enabled {
+			klog.V(2).Infof("Operator is now enabled at interval=%s against endpoint=%s", result.interval, result.endpoint)
+		} else {
+			klog.V(2).Infof("Operator is now disabled")
+		}
+	}
 	a.result = result
 
 	return err
