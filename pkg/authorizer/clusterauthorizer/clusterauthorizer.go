@@ -96,7 +96,7 @@ func (a *Authorizer) Run(ctx context.Context, baseInterval time.Duration) {
 				klog.Errorf("Unable to refresh authorization secret: %v", err)
 				interval = baseInterval / 2
 			} else {
-				interval = baseInterval * 5
+				interval = baseInterval
 			}
 			time.Sleep(interval)
 		}

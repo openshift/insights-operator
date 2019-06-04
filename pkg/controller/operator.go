@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 
@@ -140,7 +141,9 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 			klog.Warningf("Unable to retrieve initial config: %v", err)
 		}
 		insightsClient = insightsclient.New(nil, s.Endpoint, 0, "default", authorizer, configPeriodic)
-		go authorizer.Run(ctx, s.Interval)
+		// TODO: convert the authorizer refresh to a watch on the support config object once that
+		// lands
+		go authorizer.Run(ctx, wait.Jitter(2*time.Minute, 0.5))
 	}
 
 	// upload results to the provided client - if no client is configured reporting
