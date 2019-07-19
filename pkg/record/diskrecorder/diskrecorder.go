@@ -117,7 +117,7 @@ func (r *Recorder) clearRecords(records memoryRecords) {
 	size := int64(0)
 	for _, record := range records {
 		existing, ok := r.records[record.name]
-		if !ok || existing.data == nil || existing.at != record.at || existing.fingerprint != record.fingerprint {
+		if !ok || existing.data == nil || existing.at != record.at || len(existing.fingerprint) == 0 || existing.fingerprint != record.fingerprint {
 			continue
 		}
 		size += int64(len(existing.data))

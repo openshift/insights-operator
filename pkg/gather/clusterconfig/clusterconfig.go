@@ -44,7 +44,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			}
 			records := make([]record.Record, 0, len(config.Items))
 			for i := range config.Items {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Fingerprint: config.Items[i].ResourceVersion, Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
 			}
 			return records, nil
 		},
@@ -54,49 +54,56 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 				return record.Record{}, err
 			}
 			i.setClusterVersion(config)
-			return record.Record{Name: "config/version", Fingerprint: config.ResourceVersion, Item: ClusterVersionAnonymizer{config}}, nil
+			return record.Record{Name: "config/version", Item: ClusterVersionAnonymizer{config}}, nil
 		},
 		func() (record.Record, error) {
 			version := i.ClusterVersion()
 			if version == nil {
 				return record.Record{}, errSkipRecord
 			}
-			return record.Record{Name: "config/id", Fingerprint: version.ResourceVersion, Item: Raw{string(version.Spec.ClusterID)}}, nil
+			return record.Record{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}, nil
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Infrastructures().Get("cluster", metav1.GetOptions{})
 			if err != nil {
 				return record.Record{}, err
 			}
-			return record.Record{Name: "config/infrastructure", Fingerprint: config.ResourceVersion, Item: InfrastructureAnonymizer{config}}, nil
+			return record.Record{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}, nil
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Networks().Get("cluster", metav1.GetOptions{})
 			if err != nil {
 				return record.Record{}, err
 			}
-			return record.Record{Name: "config/network", Fingerprint: config.ResourceVersion, Item: Anonymizer{config}}, nil
+			return record.Record{Name: "config/network", Item: Anonymizer{config}}, nil
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Authentications().Get("cluster", metav1.GetOptions{})
 			if err != nil {
 				return record.Record{}, err
 			}
-			return record.Record{Name: "config/authentication", Fingerprint: config.ResourceVersion, Item: Anonymizer{config}}, nil
+			return record.Record{Name: "config/authentication", Item: Anonymizer{config}}, nil
+		},
+		func() (record.Record, error) {
+			config, err := i.client.FeatureGates().Get("cluster", metav1.GetOptions{})
+			if err != nil {
+				return record.Record{}, err
+			}
+			return record.Record{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}, nil
 		},
 		func() (record.Record, error) {
 			config, err := i.client.OAuths().Get("cluster", metav1.GetOptions{})
 			if err != nil {
 				return record.Record{}, err
 			}
-			return record.Record{Name: "config/oauth", Fingerprint: config.ResourceVersion, Item: Anonymizer{config}}, nil
+			return record.Record{Name: "config/oauth", Item: Anonymizer{config}}, nil
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Ingresses().Get("cluster", metav1.GetOptions{})
 			if err != nil {
 				return record.Record{}, err
 			}
-			return record.Record{Name: "config/ingress", Fingerprint: config.ResourceVersion, Item: IngressAnonymizer{config}}, nil
+			return record.Record{Name: "config/ingress", Item: IngressAnonymizer{config}}, nil
 		},
 	)
 }
@@ -185,6 +192,12 @@ type ClusterVersionAnonymizer struct{ *configv1.ClusterVersion }
 func (a ClusterVersionAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	a.ClusterVersion.Spec.Upstream = configv1.URL(anonymizeURL(string(a.ClusterVersion.Spec.Upstream)))
 	return runtime.Encode(serializer, a.ClusterVersion)
+}
+
+type FeatureGateAnonymizer struct{ *configv1.FeatureGate }
+
+func (a FeatureGateAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return runtime.Encode(serializer, a.FeatureGate)
 }
 
 type IngressAnonymizer struct{ *configv1.Ingress }
