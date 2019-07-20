@@ -8,15 +8,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	utilflag "k8s.io/apiserver/pkg/util/flag"
-	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/client-go/pkg/version"
+	"k8s.io/component-base/logs"
 
 	"github.com/openshift/support-operator/pkg/cmd/start"
 )
 
 func main() {
-	pflag.CommandLine.SetNormalizeFunc(utilflag.WordSepNormalizeFunc)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	pflag.CommandLine.Lookup("alsologtostderr").Value.Set("true")
 

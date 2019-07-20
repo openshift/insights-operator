@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/serviceability"
 	"github.com/spf13/cobra"
-	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/klog"
 
@@ -29,11 +28,13 @@ func NewOperator() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			// boiler plate for the "normal" command
 			rand.Seed(time.Now().UTC().UnixNano())
-			logs.InitLogs()
-			defer logs.FlushLogs()
 			defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
 			defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
 			serviceability.StartProfiler()
+
+			if config := cmd.Flags().Lookup("config").Value.String(); len(config) == 0 {
+				klog.Fatalf("error: --config is required")
+			}
 
 			unstructured, config, configBytes, err := cfg.Config()
 			if err != nil {
