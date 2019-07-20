@@ -27,7 +27,6 @@ import (
 
 type Client struct {
 	client      *http.Client
-	endpoint    string
 	maxBytes    int64
 	metricsName string
 
@@ -37,7 +36,6 @@ type Client struct {
 
 type Authorizer interface {
 	Authorize(req *http.Request) error
-	Enabled() (bool, time.Duration, string)
 }
 
 type ClusterVersionInfo interface {
@@ -52,24 +50,15 @@ type Source struct {
 
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
-type nopAuthorizer struct{}
-
-func (nopAuthorizer) Authorize(_ *http.Request) error        { return nil }
-func (nopAuthorizer) Enabled() (bool, time.Duration, string) { return true, 0, "" }
-
-func New(client *http.Client, defaultEndpoint string, maxBytes int64, metricsName string, authorizer Authorizer, clusterInfo ClusterVersionInfo) *Client {
+func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, clusterInfo ClusterVersionInfo) *Client {
 	if client == nil {
 		client = &http.Client{Transport: DefaultTransport()}
 	}
 	if maxBytes == 0 {
 		maxBytes = 10 * 1024 * 1024
 	}
-	if authorizer == nil {
-		authorizer = nopAuthorizer{}
-	}
 	return &Client{
 		client:      client,
-		endpoint:    defaultEndpoint,
 		maxBytes:    maxBytes,
 		metricsName: metricsName,
 		authorizer:  authorizer,
@@ -77,19 +66,13 @@ func New(client *http.Client, defaultEndpoint string, maxBytes int64, metricsNam
 	}
 }
 
-func (c *Client) Endpoint() string { return c.endpoint }
-
-func (c *Client) Enabled() (bool, time.Duration, string) {
-	return c.authorizer.Enabled()
-}
-
-func (c *Client) Send(ctx context.Context, source Source) error {
+func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
 	cv := c.clusterInfo.ClusterVersion()
 	if cv == nil {
 		return ErrWaitingForVersion
 	}
 
-	req, err := http.NewRequest("POST", c.endpoint, nil)
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return err
 	}
@@ -131,6 +114,8 @@ func (c *Client) Send(ctx context.Context, source Source) error {
 		return err
 	}
 
+	requestID := resp.Header.Get("x-rh-insights-request-id")
+
 	defer func() {
 		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
 			log.Printf("error copying body: %v", err)
@@ -145,28 +130,30 @@ func (c *Client) Send(ctx context.Context, source Source) error {
 		gaugeRequestSend.WithLabelValues(c.metricsName, "202").Inc()
 	case http.StatusUnauthorized:
 		gaugeRequestSend.WithLabelValues(c.metricsName, "401").Inc()
-		return authorizer.Error{Err: fmt.Errorf("gateway server requires authentication: %s", resp.Request.URL)}
+		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
 	case http.StatusForbidden:
 		gaugeRequestSend.WithLabelValues(c.metricsName, "403").Inc()
-		return authorizer.Error{Err: fmt.Errorf("gateway server forbidden: %s", resp.Request.URL)}
+		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	case http.StatusBadRequest:
 		gaugeRequestSend.WithLabelValues(c.metricsName, "400").Inc()
 		body, _ := ioutil.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
-		return fmt.Errorf("gateway server bad request: %s: %s", resp.Request.URL, string(body))
+		return fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
 	default:
 		gaugeRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
 		body, _ := ioutil.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
-		return fmt.Errorf("gateway server reported unexpected error code: %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, string(body))
 	}
 
-	if value := resp.Header.Get("x-rh-insights-request-id"); len(value) > 0 {
-		klog.Infof("Successfully reported id=%s x-rh-insights-request-id=%s", source.ID, value)
+	if len(requestID) > 0 {
+		klog.V(2).Infof("Successfully reported id=%s x-rh-insights-request-id=%s", source.ID, requestID)
 	}
 
 	return nil

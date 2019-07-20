@@ -12,7 +12,6 @@ type Interface interface {
 }
 
 type Summary struct {
-	Disabled           bool
 	Healthy            bool
 	Reason             string
 	Message            string
@@ -31,8 +30,8 @@ func (s *Simple) UpdateStatus(summary Summary) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if s.summary.Healthy != summary.Healthy || s.summary.Disabled != summary.Disabled {
-		klog.V(2).Infof("name=%s healthy=%t disabled=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Disabled, summary.Reason, summary.Message)
+	if s.summary.Healthy != summary.Healthy {
+		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
 		if summary.LastTransitionTime.IsZero() {
 			summary.LastTransitionTime = time.Now()
 		}
@@ -47,7 +46,7 @@ func (s *Simple) UpdateStatus(summary Summary) {
 		return
 	}
 	if s.summary.Message != summary.Message || s.summary.Reason != summary.Reason {
-		klog.V(2).Infof("name=%s healthy=%t disabled=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Disabled, summary.Reason, summary.Message)
+		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
 		s.summary.Reason = summary.Reason
 		s.summary.Message = summary.Message
 		return

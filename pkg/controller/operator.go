@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	"k8s.io/client-go/rest"
 
 	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 
@@ -20,6 +18,8 @@ import (
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
 	"github.com/openshift/support-operator/pkg/authorizer/clusterauthorizer"
+	"github.com/openshift/support-operator/pkg/config"
+	"github.com/openshift/support-operator/pkg/config/configobserver"
 	"github.com/openshift/support-operator/pkg/controller/periodic"
 	"github.com/openshift/support-operator/pkg/controller/status"
 	"github.com/openshift/support-operator/pkg/gather"
@@ -30,50 +30,22 @@ import (
 )
 
 type Support struct {
-	StoragePath string
-	Interval    time.Duration
-	Endpoint    string
-	Impersonate string
+	config.Controller
 }
 
 func (s *Support) LoadConfig(obj map[string]interface{}) error {
-	var cfg struct {
-		StoragePath *string `json:"storagePath"`
-		Interval    *string `json:"interval"`
-		Endpoint    *string `json:"endpoint"`
-		Impersonate *string `json:"impersonate"`
-	}
-
+	var cfg config.Serialized
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
+	controller, err := cfg.ToController()
+	if err != nil {
+		return err
+	}
+	s.Controller = *controller
 
-	if cfg.Endpoint != nil {
-		s.Endpoint = *cfg.Endpoint
-	}
-	if cfg.StoragePath != nil {
-		s.StoragePath = *cfg.StoragePath
-	}
-	if cfg.Impersonate != nil {
-		s.Impersonate = *cfg.Impersonate
-	}
-	if cfg.Interval != nil {
-		d, err := time.ParseDuration(*cfg.Interval)
-		if err != nil {
-			return fmt.Errorf("interval must be a valid duration: %v", err)
-		}
-		s.Interval = d
-	}
-
-	if s.Interval <= 0 {
-		return fmt.Errorf("interval must be a non-negative duration")
-	}
-	if len(s.StoragePath) == 0 {
-		return fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
-	}
-
-	data, _ := json.Marshal(s)
-	klog.V(2).Infof("Current config:\n%s", string(data))
+	data, _ := json.Marshal(cfg)
+	klog.V(2).Infof("Current config: %s", string(data))
 
 	return nil
 }
@@ -114,9 +86,13 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 		}
 	}
 
+	// configobserver synthesizes all config into the status reporter controller
+	configObserver := configobserver.New(s.Controller, client)
+	go configObserver.Start(ctx)
+
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient)
+	statusReporter := status.NewController(configClient, configObserver)
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
@@ -133,24 +109,13 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	statusReporter.AddSources(periodic.Sources()...)
 	go periodic.Run(4, ctx.Done())
 
-	// endpoint is configured on the cluster but we can specify a default
-	var insightsClient *insightsclient.Client
-	if len(s.Endpoint) > 0 {
-		authorizer := clusterauthorizer.New(client)
-		if err := authorizer.Refresh(); err != nil {
-			klog.Warningf("Unable to retrieve initial config: %v", err)
-		}
-		insightsClient = insightsclient.New(nil, s.Endpoint, 0, "default", authorizer, configPeriodic)
-		// TODO: convert the authorizer refresh to a watch on the support config object once that
-		// lands
-		go authorizer.Run(ctx, wait.Jitter(2*time.Minute, 0.5))
-	}
+	authorizer := clusterauthorizer.New(configObserver)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configPeriodic)
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recorder, insightsClient, statusReporter, s.Interval*6)
+	uploader := insightsuploader.New(recorder, insightsClient, configObserver, statusReporter)
 	statusReporter.AddSources(uploader)
-	uploader.Init()
 
 	// TODO: future ideas
 	//

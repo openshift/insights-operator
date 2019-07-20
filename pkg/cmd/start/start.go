@@ -13,13 +13,16 @@ import (
 	"k8s.io/klog"
 
 	"github.com/openshift/support-operator/pkg/controller"
+	"github.com/openshift/support-operator/pkg/config"
 )
 
 func NewOperator() *cobra.Command {
 	operator := &controller.Support{
+		Controller: config.Controller {
 		StoragePath: "/var/lib/support-operator",
 		Interval:    10 * time.Minute,
 		Endpoint:    "https://cloud.redhat.com/api/ingress/v1/upload",
+		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-support-operator", version.Get(), operator.Run)
 	cmd := &cobra.Command{
