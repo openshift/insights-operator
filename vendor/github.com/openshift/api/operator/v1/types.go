@@ -10,6 +10,7 @@ type MyOperatorResource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
+	// +kubebuilder:validation:Required
 	// +required
 	Spec   MyOperatorResourceSpec   `json:"spec"`
 	Status MyOperatorResourceStatus `json:"status"`
@@ -23,6 +24,7 @@ type MyOperatorResourceStatus struct {
 	OperatorStatus `json:",inline"`
 }
 
+// +kubebuilder:validation:Pattern=^(Managed|Unmanaged|Force|Removed)$
 type ManagementState string
 
 var (
@@ -45,7 +47,6 @@ var (
 // inside of the Spec struct for your particular operator.
 type OperatorSpec struct {
 	// managementState indicates whether and how the operator should manage the component
-	// +kubebuilder:validation:Pattern=^(Managed|Unmanaged|Force|Removed)$
 	ManagementState ManagementState `json:"managementState"`
 
 	// logLevel is an intent based logging for an overall component.  It does not give fine grained control, but it is a
@@ -133,8 +134,6 @@ var (
 	OperatorStatusTypeAvailable = "Available"
 	// Progressing indicates that the operator is trying to transition the operand to a different state
 	OperatorStatusTypeProgressing = "Progressing"
-	// Failing indicates that the operator (not the operand) is unable to fulfill the user intent
-	OperatorStatusTypeFailing = "Failing"
 	// Degraded indicates that the operator (not the operand) is unable to fulfill the user intent
 	OperatorStatusTypeDegraded = "Degraded"
 	// PrereqsSatisfied indicates that the things this operator depends on are present and at levels compatible with the
@@ -186,6 +185,10 @@ type StaticPodOperatorStatus struct {
 	// latestAvailableRevision is the deploymentID of the most recent deployment
 	// +optional
 	LatestAvailableRevision int32 `json:"latestAvailableRevision,omitEmpty"`
+
+	// latestAvailableRevisionReason describe the detailed reason for the most recent deployment
+	// +optional
+	LatestAvailableRevisionReason string `json:"latestAvailableRevisionReason,omitEmpty"`
 
 	// nodeStatuses track the deployment values and errors across individual nodes
 	// +optional

@@ -18,6 +18,7 @@ package server
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
@@ -28,10 +29,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	swagger "github.com/emicklei/go-restful-swagger12"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/go-openapi/spec"
 	"github.com/pborman/uuid"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -54,16 +55,15 @@ import (
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/features"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic"
-	"k8s.io/apiserver/pkg/server/certs"
 	genericfilters "k8s.io/apiserver/pkg/server/filters"
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/apiserver/pkg/server/routes"
 	serverstore "k8s.io/apiserver/pkg/server/storage"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	"k8s.io/apiserver/pkg/util/logs"
 	"k8s.io/client-go/informers"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/klog"
+	certutil "k8s.io/client-go/util/cert"
+	"k8s.io/component-base/logs"
 	openapicommon "k8s.io/kube-openapi/pkg/common"
 
 	// install apis
@@ -102,7 +102,6 @@ type Config struct {
 	AdmissionControl      admission.Interface
 	CorsAllowedOriginList []string
 
-	EnableSwaggerUI bool
 	EnableIndex     bool
 	EnableProfiling bool
 	EnableDiscovery bool
@@ -146,8 +145,6 @@ type Config struct {
 	Serializer runtime.NegotiatedSerializer
 	// OpenAPIConfig will be used in generating OpenAPI spec. This is nil by default. Use DefaultOpenAPIConfig for "working" defaults.
 	OpenAPIConfig *openapicommon.Config
-	// SwaggerConfig will be used in generating Swagger spec. This is nil by default. Use DefaultSwaggerConfig for "working" defaults.
-	SwaggerConfig *swagger.Config
 
 	// RESTOptionsGetter is used to construct RESTStorage types via the generic registry.
 	RESTOptionsGetter genericregistry.RESTOptionsGetter
@@ -165,9 +162,6 @@ type Config struct {
 	// The limit on the request body size that would be accepted and decoded in a write request.
 	// 0 means no limit.
 	MaxRequestBodyBytes int64
-	// MinimalShutdownDuration allows to block shutdown for some time, e.g. until endpoints pointing to this API server
-	// have converged on all node. During this time, the API server keeps serving.
-	MinimalShutdownDuration time.Duration
 	// MaxRequestsInFlight is the maximum number of parallel non-long-running requests. Every further
 	// request has to wait. Applies only to non-mutating requests.
 	MaxRequestsInFlight int
@@ -214,14 +208,15 @@ type SecureServingInfo struct {
 	// Listener is the secure server network listener.
 	Listener net.Listener
 
+	// Cert is the main server cert which is used if SNI does not match. Cert must be non-nil and is
+	// allowed to be in SNICerts.
+	Cert *tls.Certificate
+
+	// SNICerts are the TLS certificates by name used for SNI.
+	SNICerts map[string]*tls.Certificate
+
 	// ClientCA is the certificate bundle for all the signers that you'll recognize for incoming client certificates
-	ClientCA certs.CABundleFileReferences
-
-	DefaultCertificate certs.CertKeyFileReference
-	NameToCertificate  map[string]*certs.CertKeyFileReference
-
-	// LoopbackCert holds the special certificate that we create for loopback connections
-	LoopbackCert *tls.Certificate
+	ClientCA *x509.CertPool
 
 	// MinTLSVersion optionally overrides the minimum TLS version supported.
 	// Values are from tls package constants (https://golang.org/pkg/crypto/tls/#pkg-constants).
@@ -234,9 +229,6 @@ type SecureServingInfo struct {
 	// HTTP2MaxStreamsPerConnection is the limit that the api server imposes on each client.
 	// A value of zero means to use the default provided by golang's HTTP/2 support.
 	HTTP2MaxStreamsPerConnection int
-
-	// HTTP1Only indicates that http2 should not be enabled.
-	HTTP1Only bool
 }
 
 type AuthenticationInfo struct {
@@ -249,10 +241,6 @@ type AuthenticationInfo struct {
 	// If this is true, a basic auth challenge is returned on authentication failure
 	// TODO(roberthbailey): Remove once the server no longer supports http basic auth.
 	SupportsBasicAuth bool
-
-	// DynamicReloadFns are post-start hooks used to dynamically refresh authentication information.
-	// Only the authencation builder knows how to wire them and only this level of code knows how apply them.
-	DynamicReloadFns map[string]PostStartHookFunc
 }
 
 type AuthorizationInfo struct {
@@ -278,7 +266,6 @@ func NewConfig(codecs serializer.CodecFactory) *Config {
 		MaxMutatingRequestsInFlight: 200,
 		RequestTimeout:              time.Duration(60) * time.Second,
 		MinRequestTimeout:           1800,
-		MinimalShutdownDuration:     0,
 		// 10MB is the recommended maximum client request size in bytes
 		// the etcd server should accept. See
 		// https://github.com/etcd-io/etcd/blob/release-3.3/etcdserver/server.go#L90.
@@ -313,7 +300,7 @@ func NewRecommendedConfig(codecs serializer.CodecFactory) *RecommendedConfig {
 func DefaultOpenAPIConfig(getDefinitions openapicommon.GetOpenAPIDefinitions, defNamer *apiopenapi.DefinitionNamer) *openapicommon.Config {
 	return &openapicommon.Config{
 		ProtocolList:   []string{"https"},
-		IgnorePrefixes: []string{"/swaggerapi"},
+		IgnorePrefixes: []string{},
 		Info: &spec.Info{
 			InfoProps: spec.InfoProps{
 				Title: "Generic API Server",
@@ -330,27 +317,19 @@ func DefaultOpenAPIConfig(getDefinitions openapicommon.GetOpenAPIDefinitions, de
 	}
 }
 
-// DefaultSwaggerConfig returns a default configuration without WebServiceURL and
-// WebServices set.
-func DefaultSwaggerConfig() *swagger.Config {
-	return &swagger.Config{
-		ApiPath:         "/swaggerapi",
-		SwaggerPath:     "/swaggerui/",
-		SwaggerFilePath: "/swagger-ui/",
-		SchemaFormatHandler: func(typeName string) string {
-			switch typeName {
-			case "metav1.Time", "*metav1.Time":
-				return "date-time"
-			}
-			return ""
-		},
-	}
-}
-
 func (c *AuthenticationInfo) ApplyClientCert(clientCAFile string, servingInfo *SecureServingInfo) error {
 	if servingInfo != nil {
 		if len(clientCAFile) > 0 {
-			servingInfo.ClientCA.CABundles = append(servingInfo.ClientCA.CABundles, clientCAFile)
+			clientCAs, err := certutil.CertsFromFile(clientCAFile)
+			if err != nil {
+				return fmt.Errorf("unable to load client CA file: %v", err)
+			}
+			if servingInfo.ClientCA == nil {
+				servingInfo.ClientCA = x509.NewCertPool()
+			}
+			for _, cert := range clientCAs {
+				servingInfo.ClientCA.AddCert(cert)
+			}
 		}
 	}
 
@@ -428,13 +407,6 @@ func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedCo
 			}
 		}
 	}
-	if c.SwaggerConfig != nil && len(c.SwaggerConfig.WebServicesUrl) == 0 {
-		if c.SecureServing != nil {
-			c.SwaggerConfig.WebServicesUrl = "https://" + c.ExternalAddress
-		} else {
-			c.SwaggerConfig.WebServicesUrl = "http://" + c.ExternalAddress
-		}
-	}
 	if c.DiscoveryAddresses == nil {
 		c.DiscoveryAddresses = discovery.DefaultAddresses{DefaultAddress: c.ExternalAddress}
 	}
@@ -481,9 +453,8 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		delegationTarget:       delegationTarget,
 		HandlerChainWaitGroup:  c.HandlerChainWaitGroup,
 
-		minRequestTimeout:       time.Duration(c.MinRequestTimeout) * time.Second,
-		MinimalShutdownDuration: c.MinimalShutdownDuration,
-		ShutdownTimeout:         c.RequestTimeout,
+		minRequestTimeout: time.Duration(c.MinRequestTimeout) * time.Second,
+		ShutdownTimeout:   c.RequestTimeout,
 
 		SecureServingInfo: c.SecureServing,
 		ExternalAddress:   c.ExternalAddress,
@@ -492,7 +463,6 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 
 		listedPathProvider: apiServerHandler,
 
-		swaggerConfig: c.SwaggerConfig,
 		openAPIConfig: c.OpenAPIConfig,
 
 		postStartHooks:         map[string]postStartHookEntry{},
@@ -536,16 +506,6 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		})
 		if err != nil {
 			return nil, err
-		}
-	}
-
-	// often, authentication config is passed through multiple delegated apiservers.  If the authentication
-	// dynamic reloads themselves conflict, we only need to register the first one because there is only one authentication
-	// chain.  In any case where you may need more than one, you should always deconflict the names as we have
-	// in kube-apiserver's authentication chain versus the generic delegated one
-	for name, dynamicReloadFn := range c.Authentication.DynamicReloadFns {
-		if !s.isPostStartHookRegistered(name) {
-			s.AddPostStartHookOrDie(name, dynamicReloadFn)
 		}
 	}
 
@@ -599,9 +559,6 @@ func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) http.Handler {
 func installAPI(s *GenericAPIServer, c *Config) {
 	if c.EnableIndex {
 		routes.Index{}.Install(s.listedPathProvider, s.Handler.NonGoRestfulMux)
-	}
-	if c.SwaggerConfig != nil && c.EnableSwaggerUI {
-		routes.SwaggerUI{}.Install(s.Handler.NonGoRestfulMux)
 	}
 	if c.EnableProfiling {
 		routes.Profiling{}.Install(s.Handler.NonGoRestfulMux)
