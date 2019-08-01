@@ -148,7 +148,12 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	}
 	var disabledMessage string
 	if !c.configurator.Config().Report {
-		disabledMessage = fmt.Sprintf("Health reporting is disabled")
+		disabledMessage = "Health reporting is disabled"
+	}
+	// NotAuthorized is a special case where we want to disable the operator
+	if reason == "NotAuthorized" {
+		disabledMessage = errorMessage
+		errorMessage = ""
 	}
 
 	existing = existing.DeepCopy()
