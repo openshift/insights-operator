@@ -13,12 +13,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift/support-operator/pkg/authorizer"
+	"github.com/openshift/support-operator/pkg/config"
 	"github.com/openshift/support-operator/pkg/controllerstatus"
 	"github.com/openshift/support-operator/pkg/insights/insightsclient"
 )
 
+type Configurator interface {
+	Config() *config.Controller
+	ConfigChanged() (<-chan struct{}, func())
+}
+
 type Authorizer interface {
-	Enabled() bool
 	IsAuthorizationError(error) bool
 }
 
@@ -34,52 +39,39 @@ type StatusReporter interface {
 type Controller struct {
 	controllerstatus.Simple
 
-	summarizer Summarizer
-	client     *insightsclient.Client
-	reporter   StatusReporter
-	interval   time.Duration
+	summarizer   Summarizer
+	client       *insightsclient.Client
+	configurator Configurator
+	reporter     StatusReporter
 }
 
-func New(summarizer Summarizer, client *insightsclient.Client, statusReporter StatusReporter, interval time.Duration) *Controller {
+func New(summarizer Summarizer, client *insightsclient.Client, configurator Configurator, statusReporter StatusReporter) *Controller {
 	return &Controller{
 		Simple: controllerstatus.Simple{Name: "insightsuploader"},
 
-		summarizer: summarizer,
-		client:     client,
-		reporter:   statusReporter,
-		interval:   interval,
+		summarizer:   summarizer,
+		configurator: configurator,
+		client:       client,
+		reporter:     statusReporter,
 	}
 }
 
 func (c *Controller) Run(ctx context.Context) {
-	// the controller periodically uploads results to the remote support endpoint
-	interval := c.interval
+	c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 
-	// TODO: when config is driven by an informer, we need to refactor this to be provided by the
-	// config source (an edge triggered change that resets the loop)
-	enabledCh := make(chan struct{}, 2)
-	if c.client != nil {
-		// load the initial interval
-		initialEnabled, nextInterval, _ := c.client.Enabled()
-		if nextInterval > 0 {
-			interval = nextInterval
-		}
-		// every time the enabled state changes, attempt to wake the reporting loop
-		go func() {
-			for {
-				enabled, _, _ := c.client.Enabled()
-				if initialEnabled != enabled {
-					select {
-					case enabledCh <- struct{}{}:
-					default:
-					}
-					initialEnabled = enabled
-				}
-				time.Sleep(2 * time.Minute)
-			}
-		}()
+	if c.client == nil {
+		klog.Infof("No reporting possible without a configured client")
+		return
 	}
 
+	// the controller periodically uploads results to the remote support endpoint
+	cfg := c.configurator.Config()
+	configCh, cancelFn := c.configurator.ConfigChanged()
+	defer cancelFn()
+
+	enabled := cfg.Report
+	endpoint := cfg.Endpoint
+	interval := cfg.Interval
 	initialDelay := wait.Jitter(interval/8, 2)
 	lastReported := c.reporter.LastReportedTime()
 	if !lastReported.IsZero() {
@@ -88,34 +80,28 @@ func (c *Controller) Run(ctx context.Context) {
 			initialDelay = wait.Jitter(now.Sub(next), 1.2)
 		}
 	}
-	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", c.client.Endpoint(), interval, initialDelay.Truncate(time.Second))
+	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", cfg.Endpoint, interval, initialDelay.Truncate(time.Second))
 
 	wait.Until(func() {
 		if initialDelay > 0 {
 			select {
 			case <-ctx.Done():
 			case <-time.After(initialDelay):
-			case <-enabledCh:
-				klog.V(2).Infof("Reporting was enabled")
+			case <-configCh:
+				newCfg := c.configurator.Config()
+				interval = newCfg.Interval
+				endpoint = newCfg.Endpoint
+				if newCfg.Report != enabled {
+					enabled = newCfg.Report
+					if !newCfg.Report {
+						klog.V(2).Infof("Reporting was disabled")
+						initialDelay = newCfg.Interval
+						return
+					}
+					klog.V(2).Infof("Reporting was enabled")
+				}
 			}
 			initialDelay = 0
-		}
-
-		// allow the support operator reporting to be enabled and disabled dynamically
-		var enabled bool
-		var disabledReason string
-		var disabledMessage string
-		if c.client != nil {
-			var nextInterval time.Duration
-			enabled, nextInterval, disabledMessage = c.client.Enabled()
-			if nextInterval > 0 {
-				interval = nextInterval
-			} else {
-				interval = c.interval
-			}
-		} else {
-			disabledReason = "NotConfigured"
-			disabledMessage = "Reporting has been disabled"
 		}
 
 		// attempt to get a summary to send to the server
@@ -133,36 +119,35 @@ func (c *Controller) Run(ctx context.Context) {
 		}
 		defer source.Close()
 
-		if enabled {
+		if enabled && len(endpoint) > 0 {
 			// send the results
 			start := time.Now()
 			id := start.Format(time.RFC3339)
 			klog.V(4).Infof("Uploading latest report since %s", lastReported.Format(time.RFC3339))
-			if err := c.client.Send(ctx, insightsclient.Source{
+			if err := c.client.Send(ctx, endpoint, insightsclient.Source{
 				ID:       id,
 				Type:     "application/vnd.redhat.openshift.periodic",
 				Contents: source,
 			}); err != nil {
+				klog.V(2).Infof("Unable to upload report after %s: %v", time.Now().Sub(start).Truncate(time.Second/100), err)
 				if err == insightsclient.ErrWaitingForVersion {
 					initialDelay = wait.Jitter(interval/8, 1) - interval/8
 					return
 				}
 				if authorizer.IsAuthorizationError(err) {
-					c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "NotAuthorized", Message: fmt.Sprintf("Uploading support data was not allowed: %v", err)})
+					c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "NotAuthorized", Message: fmt.Sprintf("Reporting was not allowed: %v", err)})
 					initialDelay = wait.Jitter(interval, 3)
 					return
 				}
 
 				initialDelay = wait.Jitter(interval/8, 1.2)
-				c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "UploadFailed", Message: fmt.Sprintf("Unable to upload support data: %v", err)})
+				c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err)})
 				return
 			}
 
 			klog.V(4).Infof("Uploaded report successfully in %s", time.Now().Sub(start))
 			lastReported = start.UTC()
-			c.reporter.SetLastReportedTime(lastReported)
 			c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
-
 		} else {
 			klog.V(4).Info("Display report that would be sent")
 			// display what would have been sent (to ensure we always exercise source processing)
@@ -170,46 +155,12 @@ func (c *Controller) Run(ctx context.Context) {
 				klog.Errorf("Unable to log upload: %v", err)
 			}
 			// we didn't actually report logs, so don't advance the report date
-			c.reporter.SetLastReportedTime(lastReported)
-
-			if len(disabledReason) == 0 {
-				disabledReason = "Disabled"
-			}
-			if len(disabledMessage) == 0 {
-				disabledMessage = "Uploading reports has been disabled"
-			}
-			c.Simple.UpdateStatus(controllerstatus.Summary{Disabled: true, Reason: disabledReason, Message: disabledMessage})
 		}
+
+		c.reporter.SetLastReportedTime(lastReported)
 
 		initialDelay = wait.Jitter(interval, 1.2)
 	}, 15*time.Second, ctx.Done())
-}
-
-// Init reports the initial state of the controller.
-func (c *Controller) Init() {
-	var enabled bool
-	var disabledReason string
-	var disabledMessage string
-	if c.client != nil {
-		enabled, _, disabledMessage = c.client.Enabled()
-	} else {
-		disabledReason = "NotConfigured"
-		disabledMessage = "Reporting has been disabled"
-	}
-
-	if enabled {
-		c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
-		return
-	}
-
-	if len(disabledReason) == 0 {
-		disabledReason = "Disabled"
-	}
-	if len(disabledMessage) == 0 {
-		disabledMessage = "Uploading reports has been disabled"
-	}
-
-	c.Simple.UpdateStatus(controllerstatus.Summary{Disabled: true, Reason: disabledReason, Message: disabledMessage})
 }
 
 func reportToLogs(source io.Reader, klog klog.Verbose) error {

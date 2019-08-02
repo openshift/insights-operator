@@ -13,15 +13,14 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	"k8s.io/klog"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"github.com/openshift/support-operator/pkg/config"
 	"github.com/openshift/support-operator/pkg/controllerstatus"
 )
 
@@ -29,10 +28,15 @@ type Reported struct {
 	LastReportTime metav1.Time `json:"lastReportTime"`
 }
 
+type Configurator interface {
+	Config() *config.Controller
+}
+
 type Controller struct {
-	name     string
-	client   configv1client.ConfigV1Interface
-	statusCh chan struct{}
+	name         string
+	client       configv1client.ConfigV1Interface
+	statusCh     chan struct{}
+	configurator Configurator
 
 	lock     sync.Mutex
 	sources  []controllerstatus.Interface
@@ -40,12 +44,14 @@ type Controller struct {
 	start    time.Time
 }
 
-func NewController(client configv1client.ConfigV1Interface) *Controller {
-	return &Controller{
-		name:     "support",
-		client:   client,
-		statusCh: make(chan struct{}, 1),
+func NewController(client configv1client.ConfigV1Interface, configurator Configurator) *Controller {
+	c := &Controller{
+		name:         "support",
+		client:       client,
+		statusCh:     make(chan struct{}, 1),
+		configurator: configurator,
 	}
+	return c
 }
 
 func (c *Controller) triggerStatusUpdate() {
@@ -106,7 +112,6 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	var last time.Time
 	var reason string
 	var errors []string
-	var disabled []string
 	allReady := true
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
@@ -123,13 +128,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			continue
 		}
 		reason = summary.Reason
-		if summary.Disabled {
-			klog.V(4).Infof("Source %d %T reports disabled", i, source)
-			disabled = append(disabled, summary.Message)
-		} else {
-			klog.V(4).Infof("Source %d %T reports error", i, source)
-			errors = append(errors, summary.Message)
-		}
+		errors = append(errors, summary.Message)
 		if last.Before(summary.LastTransitionTime) {
 			last = summary.LastTransitionTime
 		}
@@ -148,9 +147,13 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errors, "\n* "))
 	}
 	var disabledMessage string
-	if len(disabled) > 0 {
-		sort.Strings(disabled)
-		disabledMessage = disabled[0]
+	if !c.configurator.Config().Report {
+		disabledMessage = "Health reporting is disabled"
+	}
+	// NotAuthorized is a special case where we want to disable the operator
+	if reason == "NotAuthorized" {
+		disabledMessage = errorMessage
+		errorMessage = ""
 	}
 
 	existing = existing.DeepCopy()
@@ -231,7 +234,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		}
 
 	case len(errorMessage) > 0:
-		klog.V(4).Infof("The operator has some internal errors")
+		klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
 		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
