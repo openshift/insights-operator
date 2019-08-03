@@ -143,6 +143,7 @@ rules:
   resources:
   - secrets
   resourceNames:
+  - pull-secret
   - support
   verbs:
   - get
