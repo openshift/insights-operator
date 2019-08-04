@@ -51,7 +51,7 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 }
 
 func (s *Support) Run(controller *controllercmd.ControllerContext) error {
-	klog.Infof("Starting support-operator %s", version.Get().String())
+	klog.Infof("Starting insights-operator %s", version.Get().String())
 
 	if err := s.LoadConfig(controller.ComponentConfig.Object); err != nil {
 		return err
@@ -79,7 +79,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 		return err
 	}
 
-	// ensure the support directory exists
+	// ensure the insight snapshot directory exists
 	if _, err := os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err := os.MkdirAll(s.StoragePath, 0777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)

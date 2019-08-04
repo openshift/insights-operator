@@ -12,19 +12,19 @@ import (
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/klog"
 
-	"github.com/openshift/support-operator/pkg/controller"
 	"github.com/openshift/support-operator/pkg/config"
+	"github.com/openshift/support-operator/pkg/controller"
 )
 
 func NewOperator() *cobra.Command {
 	operator := &controller.Support{
-		Controller: config.Controller {
-		StoragePath: "/var/lib/support-operator",
-		Interval:    10 * time.Minute,
-		Endpoint:    "https://cloud.redhat.com/api/ingress/v1/upload",
+		Controller: config.Controller{
+			StoragePath: "/var/lib/insights-operator",
+			Interval:    10 * time.Minute,
+			Endpoint:    "https://cloud.redhat.com/api/ingress/v1/upload",
 		},
 	}
-	cfg := controllercmd.NewControllerCommandConfig("openshift-support-operator", version.Get(), operator.Run)
+	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), operator.Run)
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start the operator",
@@ -61,9 +61,9 @@ func NewOperator() *cobra.Command {
 				}
 			}()
 
-			builder := controllercmd.NewController("openshift-support-operator", operator.Run).
+			builder := controllercmd.NewController("openshift-insights-operator", operator.Run).
 				WithKubeConfigFile(cmd.Flags().Lookup("kubeconfig").Value.String(), nil).
-				WithLeaderElection(config.LeaderElection, "", "openshift-support-operator-lock").
+				WithLeaderElection(config.LeaderElection, "", "openshift-insights-operator-lock").
 				WithServer(config.ServingInfo, config.Authentication, config.Authorization).
 				WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
 

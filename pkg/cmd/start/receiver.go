@@ -78,7 +78,7 @@ func NewReceiver() *cobra.Command {
 		},
 	}
 	// var path string
-	// cmd.Flags().StringVar(&path, "path", path, "Location to write support snapshots to. If unset the server will simply print debug output.")
+	// cmd.Flags().StringVar(&path, "path", path, "Location to write insight snapshots to. If unset the server will simply print debug output.")
 	cmd.Flags().StringVar(&listen, "listen", listen, "Address to listen for snapshots on.")
 	return cmd
 }

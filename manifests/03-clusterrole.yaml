@@ -1,33 +1,33 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: support-operator-auth
+  name: insights-operator-auth
 roleRef:
   kind: ClusterRole
   name: system:auth-delegator
 subjects:
 - kind: ServiceAccount
-  namespace: openshift-support
+  namespace: openshift-insights
   name: operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: support-operator-auth
+  name: insights-operator-auth
   namespace: kube-system
 roleRef:
   kind: Role
   name: extension-apiserver-authentication-reader
 subjects:
 - kind: ServiceAccount
-  namespace: openshift-support
+  namespace: openshift-insights
   name: operator
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: support-operator
+  name: insights-operator
 rules:
 # allow the operator to update cluster operator status
 - apiGroups:
@@ -35,7 +35,7 @@ rules:
   resources:
   - clusteroperators
   resourceNames:
-  - support
+  - insights
   verbs:
   - get
   - watch
@@ -50,7 +50,7 @@ rules:
   resources:
   - clusteroperators/status
   resourceNames:
-  - support
+  - insights
   verbs:
   - get
   - update
@@ -59,20 +59,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: support-operator
+  name: insights-operator
 roleRef:
   kind: ClusterRole
-  name: support-operator
+  name: insights-operator
 subjects:
 - kind: ServiceAccount
-  namespace: openshift-support
+  namespace: openshift-insights
   name: operator
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: support-operator-gather
+  name: insights-operator-gather
 rules:
 - apiGroups:
   - ""
@@ -109,33 +109,33 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: support-operator-gather
+  name: insights-operator-gather
 roleRef:
   kind: ClusterRole
-  name: support-operator-gather
+  name: insights-operator-gather
 subjects:
 - kind: ServiceAccount
-  namespace: openshift-support
+  namespace: openshift-insights
   name: gather
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: support-operator-gather-reader
+  name: insights-operator-gather-reader
 roleRef:
   kind: ClusterRole
   name: cluster-reader
 subjects:
 - kind: ServiceAccount
-  namespace: openshift-support
+  namespace: openshift-insights
   name: gather
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: support-operator
+  name: insights-operator
   namespace: openshift-config
 rules:
 - apiGroups:
@@ -151,22 +151,22 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: support-operator
+  name: insights-operator
   namespace: openshift-config
 roleRef:
   kind: Role
-  name: support-operator
+  name: insights-operator
 subjects:
 - kind: ServiceAccount
   name: operator
-  namespace: openshift-support
+  namespace: openshift-insights
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: support-operator
-  namespace: openshift-support
+  name: insights-operator
+  namespace: openshift-insights
 rules:
 - apiGroups:
   - ""
@@ -186,12 +186,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: support-operator
-  namespace: openshift-support
+  name: insights-operator
+  namespace: openshift-insights
 roleRef:
   kind: Role
-  name: support-operator
+  name: insights-operator
 subjects:
 - kind: ServiceAccount
   name: operator
-  namespace: openshift-support
+  namespace: openshift-insights

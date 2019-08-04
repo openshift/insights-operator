@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: support-operator
-  namespace: openshift-support
+  name: insights-operator
+  namespace: openshift-insights
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: support-operator
+      app: insights-operator
   template:
     metadata:
       labels:
-        app: support-operator
+        app: insights-operator
     spec:
       serviceAccountName: operator
       priorityClassName: system-cluster-critical
@@ -41,7 +41,7 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - name: snapshots
-          mountPath: /var/lib/support-operator
+          mountPath: /var/lib/insights-operator
         ports:
         - containerPort: 8443
           name: https
@@ -59,4 +59,4 @@ spec:
         args:
         - start
         - -v=4
-        - --config=/etc/support-operator/server.yaml
+        - --config=/etc/insights-operator/server.yaml

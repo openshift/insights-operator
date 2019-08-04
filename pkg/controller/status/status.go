@@ -46,7 +46,7 @@ type Controller struct {
 
 func NewController(client configv1client.ConfigV1Interface, configurator Configurator) *Controller {
 	c := &Controller{
-		name:         "support",
+		name:         "insights",
 		client:       client,
 		statusCh:     make(chan struct{}, 1),
 		configurator: configurator,
