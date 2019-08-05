@@ -3,7 +3,7 @@ package gather
 import (
 	"context"
 
-	"github.com/openshift/support-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 type Interface interface {

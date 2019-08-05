@@ -12,9 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/openshift/support-operator/pkg/controllerstatus"
-	"github.com/openshift/support-operator/pkg/gather"
-	"github.com/openshift/support-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
+	"github.com/openshift/insights-operator/pkg/gather"
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 type Controller struct {

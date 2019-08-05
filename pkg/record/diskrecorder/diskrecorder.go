@@ -18,7 +18,7 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/openshift/support-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 type memoryRecord struct {

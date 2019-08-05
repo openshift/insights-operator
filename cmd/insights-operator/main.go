@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/component-base/logs"
 
-	"github.com/openshift/support-operator/pkg/cmd/start"
+	"github.com/openshift/insights-operator/pkg/cmd/start"
 )
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 
 func NewOperatorCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "support-operator",
+		Use:   "insights-operator",
 		Short: "OpenShift Support Operator",
 
 		SilenceUsage:  true,

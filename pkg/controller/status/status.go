@@ -20,8 +20,8 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/openshift/support-operator/pkg/config"
-	"github.com/openshift/support-operator/pkg/controllerstatus"
+	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
 )
 
 type Reported struct {

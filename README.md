@@ -1,6 +1,12 @@
 # insights-operator
 
-This cluster operator gathers anonymized system configuration and reports it to Red Hat Insights. It is a part of the standard OpenShift distribution.
+This cluster operator gathers anonymized system configuration and reports it to Red Hat Insights. It is a part of the standard OpenShift distribution. The data collected allows for debugging in the event of cluster failures or unanticipated errors.
+
+## Reported data
+
+* ClusterVersion
+* ClusterOperator objects
+* All non-secret global config (hostnames and URLs anonymized)
 
 ## Building
 
@@ -10,7 +16,7 @@ To build the operator, install Go 1.11 or above and run:
 
 To test the operator against a remote cluster, run:
 
-    bin/support-operator start --config=config/local.yaml --kubeconfig=$KUBECONFIG
+    bin/insights-operator start --config=config/local.yaml --kubeconfig=$KUBECONFIG
 
 where `$KUBECONFIG` has sufficiently high permissions against the target cluster.
 
