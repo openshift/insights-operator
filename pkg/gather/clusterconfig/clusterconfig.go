@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/client-go/config/clientset/versioned/scheme"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
-	"github.com/openshift/support-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 var serializer = scheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)

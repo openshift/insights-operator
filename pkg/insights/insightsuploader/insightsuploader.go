@@ -12,10 +12,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/openshift/support-operator/pkg/authorizer"
-	"github.com/openshift/support-operator/pkg/config"
-	"github.com/openshift/support-operator/pkg/controllerstatus"
-	"github.com/openshift/support-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/authorizer"
+	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
 
 type Configurator interface {

@@ -2,7 +2,7 @@ kind: ImageStream
 apiVersion: image.openshift.io/v1
 spec:
   tags:
-  - name: support-operator
+  - name: insights-operator
     from: 
       kind: "DockerImage"
-      name: "quay.io/openshift/origin-support-operator:latest"
+      name: "quay.io/openshift/origin-insights-operator:latest"

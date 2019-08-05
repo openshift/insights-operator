@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/openshift/support-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/config"
 )
 
 type Configurator interface {

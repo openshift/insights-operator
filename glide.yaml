@@ -1,4 +1,4 @@
-package: github.com/openshift/support-operator
+package: github.com/openshift/insights-operator
 import:
 - package: k8s.io/apimachinery
   version: kubernetes-1.14.0

@@ -12,8 +12,8 @@ import (
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/klog"
 
-	"github.com/openshift/support-operator/pkg/config"
-	"github.com/openshift/support-operator/pkg/controller"
+	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controller"
 )
 
 func NewOperator() *cobra.Command {

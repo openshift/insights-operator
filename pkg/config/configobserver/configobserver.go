@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
-	"github.com/openshift/support-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/config"
 )
 
 type ConfigReporter interface {

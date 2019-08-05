@@ -17,16 +17,16 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
-	"github.com/openshift/support-operator/pkg/authorizer/clusterauthorizer"
-	"github.com/openshift/support-operator/pkg/config"
-	"github.com/openshift/support-operator/pkg/config/configobserver"
-	"github.com/openshift/support-operator/pkg/controller/periodic"
-	"github.com/openshift/support-operator/pkg/controller/status"
-	"github.com/openshift/support-operator/pkg/gather"
-	"github.com/openshift/support-operator/pkg/gather/clusterconfig"
-	"github.com/openshift/support-operator/pkg/insights/insightsclient"
-	"github.com/openshift/support-operator/pkg/insights/insightsuploader"
-	"github.com/openshift/support-operator/pkg/record/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
+	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/controller/periodic"
+	"github.com/openshift/insights-operator/pkg/controller/status"
+	"github.com/openshift/insights-operator/pkg/gather"
+	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
+	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
 )
 
 type Support struct {

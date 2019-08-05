@@ -22,7 +22,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 
-	"github.com/openshift/support-operator/pkg/authorizer"
+	"github.com/openshift/insights-operator/pkg/authorizer"
 )
 
 type Client struct {
