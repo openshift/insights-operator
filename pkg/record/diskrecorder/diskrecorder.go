@@ -178,7 +178,7 @@ func (r *Recorder) Flush(ctx context.Context) error {
 	}
 	age = age.UTC()
 
-	name := fmt.Sprintf("support-%s.tar.gz", age.Format("2006-01-02-150405"))
+	name := fmt.Sprintf("insights-%s.tar.gz", age.Format("2006-01-02-150405"))
 	path := filepath.Join(r.basePath, name)
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0640)
 	if err != nil {
@@ -283,7 +283,7 @@ func (r *Recorder) Prune(ctx context.Context, olderThan time.Time) error {
 		if file.ModTime().After(olderThan) {
 			continue
 		}
-		if file.IsDir() || !strings.HasPrefix(file.Name(), "support-") || !strings.HasSuffix(file.Name(), ".tar.gz") {
+		if file.IsDir() || !strings.HasPrefix(file.Name(), "insights-") || !strings.HasSuffix(file.Name(), ".tar.gz") {
 			continue
 		}
 		if err := os.Remove(filepath.Join(r.basePath, file.Name())); err != nil {
@@ -320,7 +320,7 @@ func (r *Recorder) Summary(ctx context.Context, since time.Time) (io.ReadCloser,
 		}
 		merged = make([]string, 0, len(files)-i)
 		for j := len(files) - 1; j >= i; j-- {
-			if files[j].IsDir() || !strings.HasPrefix(files[j].Name(), "support-") || !strings.HasSuffix(files[j].Name(), ".tar.gz") {
+			if files[j].IsDir() || !strings.HasPrefix(files[j].Name(), "insights-") || !strings.HasSuffix(files[j].Name(), ".tar.gz") {
 				continue
 			}
 			merged = append(merged, filepath.Join(r.basePath, files[j].Name()))

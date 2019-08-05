@@ -64,7 +64,7 @@ func (c *Controller) Run(ctx context.Context) {
 		return
 	}
 
-	// the controller periodically uploads results to the remote support endpoint
+	// the controller periodically uploads results to the remote insights endpoint
 	cfg := c.configurator.Config()
 	configCh, cancelFn := c.configurator.ConfigChanged()
 	defer cancelFn()
@@ -110,7 +110,7 @@ func (c *Controller) Run(ctx context.Context) {
 
 		source, ok, err := c.summarizer.Summary(ctx, lastReported)
 		if err != nil {
-			c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "SummaryFailed", Message: fmt.Sprintf("Unable to retrieve local support data: %v", err)})
+			c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "SummaryFailed", Message: fmt.Sprintf("Unable to retrieve local insights data: %v", err)})
 			return
 		}
 		if !ok {

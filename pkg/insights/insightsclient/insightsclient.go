@@ -80,7 +80,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
-	req.Header.Set("User-Agent", fmt.Sprintf("support-operator/%s cluster/%s", version.Get().GitCommit, cv.Spec.ClusterID))
+	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s cluster/%s", version.Get().GitCommit, cv.Spec.ClusterID))
 	if err := c.authorizer.Authorize(req); err != nil {
 		return err
 	}

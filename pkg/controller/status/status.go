@@ -34,6 +34,7 @@ type Configurator interface {
 
 type Controller struct {
 	name         string
+	namespace    string
 	client       configv1client.ConfigV1Interface
 	statusCh     chan struct{}
 	configurator Configurator
@@ -44,12 +45,13 @@ type Controller struct {
 	start    time.Time
 }
 
-func NewController(client configv1client.ConfigV1Interface, configurator Configurator) *Controller {
+func NewController(client configv1client.ConfigV1Interface, configurator Configurator, namespace string) *Controller {
 	c := &Controller{
-		name:         "support",
+		name:         "insights",
 		client:       client,
 		statusCh:     make(chan struct{}, 1),
 		configurator: configurator,
+		namespace:    namespace,
 	}
 	return c
 }
@@ -158,6 +160,12 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 
 	existing = existing.DeepCopy()
 	now := time.Now()
+	if len(c.namespace) > 0 {
+		existing.Status.RelatedObjects = []configv1.ObjectReference{
+			{Resource: "namespaces", Name: c.namespace},
+			{Group: "apps", Resource: "deployments", Namespace: c.namespace, Name: "insights-operator"},
+		}
+	}
 	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}
 	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
 

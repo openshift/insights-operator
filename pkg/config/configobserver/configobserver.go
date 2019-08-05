@@ -37,7 +37,7 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 		kubeClient:    kubeClient,
 		defaultConfig: defaultConfig,
 	}
-	c.setConfigLocked(&defaultConfig)
+	c.mergeConfigLocked()
 	if err := c.retrieveToken(); err != nil {
 		klog.Warningf("Unable to retrieve initial token config: %v", err)
 	}
@@ -48,7 +48,6 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 }
 
 func (c *Controller) Start(ctx context.Context) {
-	// TODO: remove once pull-secret code is merged and replace with annotations on the support object
 	wait.Until(func() {
 		if err := c.retrieveConfig(); err != nil {
 			klog.Warningf("Unable to retrieve config: %v", err)
@@ -128,7 +127,7 @@ func (c *Controller) retrieveConfig() error {
 			if err == nil {
 				nextConfig.Interval = duration
 			} else {
-				err = fmt.Errorf("support secret interval must be a duration (1h, 10m) greater than or equal to one minute: %v", err)
+				err = fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to one minute: %v", err)
 				nextConfig.Report = false
 			}
 		}

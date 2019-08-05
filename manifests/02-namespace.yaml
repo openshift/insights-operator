@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: openshift-support
+  name: openshift-insights
   labels:
-    name: openshift-support
+    name: openshift-insights
     openshift.io/run-level: "1"

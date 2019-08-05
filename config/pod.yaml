@@ -5,4 +5,4 @@ leaderElection:
 interval: "10m"
 storagePath: /var/lib/support-operator
 endpoint: https://cloud.redhat.com/api/ingress/v1/upload
-impersonate: system:serviceaccount:openshift-support:gather
+impersonate: system:serviceaccount:openshift-insights:gather

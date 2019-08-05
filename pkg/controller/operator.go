@@ -51,7 +51,7 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 }
 
 func (s *Support) Run(controller *controllercmd.ControllerContext) error {
-	klog.Infof("Starting support-operator %s", version.Get().String())
+	klog.Infof("Starting insights-operator %s", version.Get().String())
 
 	if err := s.LoadConfig(controller.ComponentConfig.Object); err != nil {
 		return err
@@ -79,7 +79,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 		return err
 	}
 
-	// ensure the support directory exists
+	// ensure the insight snapshot directory exists
 	if _, err := os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err := os.MkdirAll(s.StoragePath, 0777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)
@@ -92,7 +92,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient, configObserver)
+	statusReporter := status.NewController(configClient, configObserver, os.Getenv("POD_NAMESPACE"))
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
