@@ -111,7 +111,8 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	klog.V(4).Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return err
+		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
+		return fmt.Errorf("unable to build request to connect to Insights server")
 	}
 
 	requestID := resp.Header.Get("x-rh-insights-request-id")
