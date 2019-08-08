@@ -3,6 +3,7 @@ package clusterauthorizer
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/openshift/insights-operator/pkg/config"
 )
@@ -31,7 +32,14 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 		if req.Header == nil {
 			req.Header = make(http.Header)
 		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.Token))
+		token := strings.TrimSpace(cfg.Token)
+		if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
+			return fmt.Errorf("cluster authorization token is not valid: contains newlines")
+		}
+		if len(token) == 0 {
+			return fmt.Errorf("cluster authorization token is empty")
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 		return nil
 	}
 	return nil

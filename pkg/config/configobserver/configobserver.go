@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -77,9 +78,15 @@ func (c *Controller) retrieveToken() error {
 			if err := json.Unmarshal(data, &pullSecret); err != nil {
 				klog.Errorf("Unable to unmarshal cluster pull-secret: %v", err)
 			}
-			if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok && len(auth.Auth) > 0 {
-				klog.V(4).Info("Found cloud.openshift.com token")
-				nextConfig.Token = auth.Auth
+			if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
+				token := strings.TrimSpace(auth.Auth)
+				if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
+					return fmt.Errorf("cluster authorization token is not valid: contains newlines")
+				}
+				if len(token) > 0 {
+					klog.V(4).Info("Found cloud.openshift.com token")
+					nextConfig.Token = token
+				}
 			}
 		}
 		nextConfig.Report = true
