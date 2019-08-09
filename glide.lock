@@ -1,5 +1,5 @@
-hash: 39c3c11bbe6011299372e0717bd79686aad440d16445a7d76bd6d44d46a978f3
-updated: 2019-07-20T16:29:44.718066-04:00
+hash: 975ffecfb4b2f8e86f13763ba3df61f3f03736a847750bbf49e3a75b820f02ee
+updated: 2019-08-09T12:18:02.70606+02:00
 imports:
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
@@ -166,17 +166,17 @@ imports:
 - name: github.com/NYTimes/gziphandler
   version: 56545f4a5d46df9a6648819d1664c3a03a13ffdb
 - name: github.com/openshift/api
-  version: 9525304a0adb725ab4a4a54539a1a6bf6cc343d3
+  version: b76189cc788c46038952dba8fbccd76b3eba866f
   subpackages:
   - config/v1
   - operator/v1alpha1
 - name: github.com/openshift/client-go
-  version: c44a8b61b9f46cd9e802384dfeda0bc9942db68a
+  version: e9678e3b850da36470c5554609c6cd110aace47e
   subpackages:
   - config/clientset/versioned/scheme
   - config/clientset/versioned/typed/config/v1
 - name: github.com/openshift/library-go
-  version: 83581c469d2eeb6dadfe86a4b6d8033b465ffd15
+  version: 211d32684d6cd8b9a50db92e213d4b6ea827bb63
   subpackages:
   - pkg/config/client
   - pkg/config/configdefaults
@@ -197,6 +197,7 @@ imports:
   subpackages:
   - prometheus
   - prometheus/internal
+  - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: fa8ad6fec33561be4280a8f0514318c79d7f6cb6
   subpackages:
@@ -268,7 +269,7 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/appengine
-  version: b2f4a3cf3c67576a2ee09e1fe62656a5086ce880
+  version: fb139bde60fa77cede04f226b4d5a3cf68dcce27
   subpackages:
   - internal
   - internal/base
@@ -356,6 +357,17 @@ imports:
   - storage/v1
   - storage/v1alpha1
   - storage/v1beta1
+- name: k8s.io/apiextensions-apiserver
+  version: 53c4693659ed354d76121458fb819202dd1635fa
+  subpackages:
+  - pkg/apis/apiextensions
+  - pkg/apis/apiextensions/v1beta1
+  - pkg/client/clientset/clientset
+  - pkg/client/clientset/clientset/scheme
+  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1
+  - pkg/client/informers/externalversions/apiextensions/v1beta1
+  - pkg/client/informers/externalversions/internalinterfaces
+  - pkg/client/listers/apiextensions/v1beta1
 - name: k8s.io/apimachinery
   version: d7deff9243b165ee192f5551710ea4285dcfd615
   subpackages:
@@ -509,6 +521,10 @@ imports:
   version: 6ee68ca5fd8355d024d02f9db0b3b667e8357a0f
   subpackages:
   - discovery
+  - discovery/cached/memory
+  - dynamic
+  - dynamic/dynamicinformer
+  - dynamic/dynamiclister
   - informers
   - informers/admissionregistration
   - informers/admissionregistration/v1beta1
@@ -637,6 +653,7 @@ imports:
   - plugin/pkg/client/auth/exec
   - rest
   - rest/watch
+  - restmapper
   - tools/auth
   - tools/cache
   - tools/clientcmd
