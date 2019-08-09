@@ -204,7 +204,8 @@ func (c *Controller) mergeConfigLocked() {
 func (c *Controller) setConfigLocked(config *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, config) {
-			klog.V(2).Infof("Configuration updated: enabled=%t endpoint=%s interval=%s username=%t token=%t", config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0)
+			klog.V(2).Infof("Configuration updated: enabled=%t record=%t endpoint=%s interval=%s username=%t token=%t", config.Report, config.RecordHistory, config.Endpoint, config.Interval, len(config.Username) > 0,
+				len(config.Token) > 0)
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -216,7 +217,8 @@ func (c *Controller) setConfigLocked(config *config.Controller) {
 			}
 		}
 	} else {
-		klog.V(2).Infof("Configuration set: enabled=%t endpoint=%s interval=%s username=%t token=%t", config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0)
+		klog.V(2).Infof("Configuration set: enabled=%t record=%t endpoint=%s interval=%s username=%t token=%t", config.Report, config.RecordHistory, config.Endpoint, config.Interval, len(config.Username) > 0,
+			len(config.Token) > 0)
 	}
 	c.config = config
 }

@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 
 	"k8s.io/klog"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
@@ -20,6 +24,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/controller/history"
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
@@ -108,6 +113,37 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	})
 	statusReporter.AddSources(periodic.Sources()...)
 	go periodic.Run(4, ctx.Done())
+
+	dynamicClient, err := dynamic.NewForConfig(controller.KubeConfig)
+	if err != nil {
+		return err
+	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(controller.KubeConfig)
+	if err != nil {
+		return err
+	}
+	kubeClient, err := apiextensionsclient.NewForConfig(controller.ProtoKubeConfig)
+	if err != nil {
+		return err
+	}
+
+	// NOTE: Recording config resources history is experimental and should never be enabled in production
+	if s.Controller.RecordHistory {
+		// This repository must be retrieved during artifact collection in CI system
+		gitStore, err := history.NewGitStorage("/var/lib/insights-history-repository")
+		if err != nil {
+			return err
+		}
+		historyRecorder, err := history.New(dynamicClient, kubeClient, discoveryClient, gitStore)
+		if err != nil {
+			return err
+		}
+		historyRecorder.AddTrackedCustomResourceDefinition(schema.GroupVersion{
+			Group:   "config.openshift.io", // Track everything under *.config.openshift.io
+			Version: "v1",
+		})
+		go historyRecorder.Run(ctx.Done())
+	}
 
 	authorizer := clusterauthorizer.New(configObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configPeriodic)

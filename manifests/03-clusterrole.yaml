@@ -29,29 +29,30 @@ kind: ClusterRole
 metadata:
   name: insights-operator
 rules:
-# allow the operator to update cluster operator status
+# allow the operator to list/watch all CRD's
 - apiGroups:
-  - config.openshift.io
+  - "apiextensions.k8s.io"
   resources:
-  - clusteroperators
-  resourceNames:
-  - insights
+  - customresourcedefinitions
   verbs:
   - get
+  - list
   - watch
+# allow the operator to update cluster operator status
 - apiGroups:
   - "config.openshift.io"
   resources:
   - clusteroperators
   verbs:
   - create
+# allow the operator to make dynamic informers to list/watch all config.openshift.io resources
 - apiGroups:
   - "config.openshift.io"
   resources:
-  - clusteroperators/status
-  resourceNames:
-  - insights
+  - "*"
   verbs:
+  - list
+  - watch
   - get
   - update
   - patch
@@ -101,6 +102,14 @@ rules:
   - config.openshift.io
   resources:
   - "*"
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
   verbs:
   - get
   - list

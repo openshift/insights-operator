@@ -32,6 +32,8 @@ spec:
         operator: Exists
         tolerationSeconds: 900
       volumes:
+      - name: repository
+        emptyDir: {}
       - name: snapshots
         emptyDir: {}
           #sizeLimit: 1Gi # bug https://bugzilla.redhat.com/show_bug.cgi?id=1713207
@@ -42,6 +44,8 @@ spec:
         volumeMounts:
         - name: snapshots
           mountPath: /var/lib/insights-operator
+        - name: repository
+          mountPath: /var/lib/insights-history-repository
         ports:
         - containerPort: 8443
           name: https
