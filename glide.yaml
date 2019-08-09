@@ -18,3 +18,8 @@ import:
   version: master
 - package: github.com/openshift/library-go
   version: master
+
+- package: gopkg.in/src-d/go-git.v4
+  version: ^4.12.0
+- package: golang.org/x/net
+  version: 7f726cade0ab # proxy.Dial() issue in SSH transport
