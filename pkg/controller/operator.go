@@ -130,7 +130,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	// NOTE: Recording config resources history is experimental and should never be enabled in production
 	if s.Controller.RecordHistory {
 		// This repository must be retrieved during artifact collection in CI system
-		gitStore, err := history.NewGitStorage("/var/lib/insights-history-repository")
+		gitStore, err := history.NewGitStorage(s.Controller.HistoryPath)
 		if err != nil {
 			return err
 		}

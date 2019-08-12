@@ -10,6 +10,7 @@ type Serialized struct {
 	Report        bool   `json:"report"`
 	RecordHistory bool   `json:"recordHistory"`
 	StoragePath   string `json:"storagePath"`
+	HistoryPath   string `json:"historyPath"`
 	Interval      string `json:"interval"`
 	Endpoint      string `json:"endpoint"`
 	Impersonate   string `json:"impersonate"`
@@ -19,6 +20,7 @@ func (s *Serialized) ToController() (*Controller, error) {
 	cfg := Controller{
 		Report:        s.Report,
 		RecordHistory: s.RecordHistory,
+		HistoryPath:   s.HistoryPath,
 		StoragePath:   s.StoragePath,
 		Endpoint:      s.Endpoint,
 		Impersonate:   s.Impersonate,
@@ -37,6 +39,9 @@ func (s *Serialized) ToController() (*Controller, error) {
 	if len(cfg.StoragePath) == 0 {
 		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
 	}
+	if cfg.RecordHistory && len(cfg.HistoryPath) == 0 {
+		return nil, fmt.Errorf("historyPath must point to a directory")
+	}
 	return &cfg, nil
 }
 
@@ -44,6 +49,7 @@ func (s *Serialized) ToController() (*Controller, error) {
 type Controller struct {
 	Report        bool
 	RecordHistory bool
+	HistoryPath   string
 	StoragePath   string
 	Interval      time.Duration
 	Endpoint      string

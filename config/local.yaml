@@ -5,4 +5,6 @@ leaderElection:
 interval: "30s"
 storagePath: /tmp/insights-operator
 endpoint: http://localhost:8081
+recordHistory: true
+historyPath: /tmp/insights-history
 #impersonate: system:serviceaccount:openshift-insights:gather
