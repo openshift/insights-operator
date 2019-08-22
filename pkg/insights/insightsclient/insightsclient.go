@@ -90,7 +90,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 	go func() {
 		h := make(textproto.MIMEHeader)
-		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, "file", "payload.tar.gz"))
+		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, "upload", "payload.tar.gz"))
 		h.Set("Content-Type", source.Type)
 		fw, err := mw.CreatePart(h)
 		if err != nil {
