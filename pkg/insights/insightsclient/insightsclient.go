@@ -102,6 +102,22 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 			pw.CloseWithError(err)
 			return
 		}
+
+		h = make(textproto.MIMEHeader)
+		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, "padding-zeros", "padding-zeros"))
+		h.Set("Content-Type", source.Type)
+		fw, err = mw.CreatePart(h)
+		if err != nil {
+			pw.CloseWithError(err)
+			return
+		}
+		chunk := make([]byte, 2<<11)
+		for i := 0; i < 2<<9; i++ {
+			if _, err := fw.Write(chunk); err != nil {
+				pw.CloseWithError(err)
+				return
+			}
+		}
 		pw.CloseWithError(mw.Close())
 	}()
 
