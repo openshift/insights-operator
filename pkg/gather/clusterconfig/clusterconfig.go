@@ -184,6 +184,7 @@ func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastr
 	config.Status.APIServerURL = anonymizeURL(config.Status.APIServerURL)
 	config.Status.EtcdDiscoveryDomain = anonymizeURL(config.Status.EtcdDiscoveryDomain)
 	config.Status.InfrastructureName = anonymizeURL(config.Status.InfrastructureName)
+	config.Status.APIServerInternalURL = anonymizeURL(config.Status.APIServerInternalURL)
 	return config
 }
 
