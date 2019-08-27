@@ -20,6 +20,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 )
@@ -113,7 +114,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	// calculate the current controller state
 	var last time.Time
 	var reason string
-	var errors []string
+	var observedErrors []string
 	allReady := true
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
@@ -130,23 +131,23 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			continue
 		}
 		reason = summary.Reason
-		errors = append(errors, summary.Message)
+		observedErrors = append(observedErrors, summary.Message)
 		if last.Before(summary.LastTransitionTime) {
 			last = summary.LastTransitionTime
 		}
 	}
 	var errorMessage string
-	switch len(errors) {
+	switch len(observedErrors) {
 	case 0:
 	case 1:
 		if len(reason) == 0 {
 			reason = "UnknownError"
 		}
-		errorMessage = errors[0]
+		errorMessage = observedErrors[0]
 	default:
 		reason = "MultipleFailures"
-		sort.Strings(errors)
-		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errors, "\n* "))
+		sort.Strings(observedErrors)
+		errorMessage = fmt.Sprintf("There are multiple observedErrors blocking progress:\n* %s", strings.Join(observedErrors, "\n* "))
 	}
 	var disabledMessage string
 	if !c.configurator.Config().Report {
@@ -242,7 +243,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		}
 
 	case len(errorMessage) > 0:
-		klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
+		klog.V(4).Infof("The operator has some internal observedErrors: %s", errorMessage)
 		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
@@ -294,9 +295,13 @@ func (c *Controller) Start(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 			case <-timer.C:
-				limiter.Wait(ctx)
+				if err := limiter.Wait(ctx); err != nil {
+					klog.Errorf("Failed to wait for limiter: %v", err)
+				}
 			case <-c.statusCh:
-				limiter.Wait(ctx)
+				if err := limiter.Wait(ctx); err != nil {
+					klog.Errorf("Failed to wait for limiter: %v", err)
+				}
 			}
 			if err := c.updateStatus(false); err != nil {
 				klog.Errorf("Unable to write cluster operator status: %v", err)

@@ -18,7 +18,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-var serializer = scheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+var serializer = scheme.Codecs.LegacyCodec(configv1.GroupVersion)
 
 type Gatherer struct {
 	client configv1client.ConfigV1Interface
@@ -32,8 +32,6 @@ func New(client configv1client.ConfigV1Interface) *Gatherer {
 		client: client,
 	}
 }
-
-var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
 	return records(recorder,
@@ -117,23 +115,23 @@ func records(recorder record.Interface, bulkFn func() ([]record.Record, []error)
 		for _, err := range errs {
 			errors = append(errors, err.Error())
 		}
-		for _, record := range records {
-			if err := recorder.Record(record); err != nil {
-				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err.Error()))
+		for _, r := range records {
+			if err := recorder.Record(r); err != nil {
+				errors = append(errors, fmt.Sprintf("unable to record %s: %v", r.Name, err.Error()))
 				continue
 			}
 		}
 	}
 	for _, fn := range fns {
-		record, err := fn()
+		r, err := fn()
 		if err != nil {
 			if err != errSkipRecord {
 				errors = append(errors, err.Error())
 			}
 			continue
 		}
-		if err := recorder.Record(record); err != nil {
-			errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err.Error()))
+		if err := recorder.Record(r); err != nil {
+			errors = append(errors, fmt.Sprintf("unable to record %s: %v", r.Name, err.Error()))
 			continue
 		}
 	}
@@ -207,7 +205,7 @@ func (a IngressAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(serializer, a.Ingress)
 }
 
-var reURL = regexp.MustCompile(`[^\.\-/\:]`)
+var reURL = regexp.MustCompile(`[^.\-/:]`)
 
 func anonymizeURL(s string) string { return reURL.ReplaceAllString(s, "x") }
 

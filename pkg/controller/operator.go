@@ -103,11 +103,11 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
 	configPeriodic := clusterconfig.New(gatherConfigClient)
-	periodic := periodic.New(s.Interval, recorder, map[string]gather.Interface{
+	periodicGatherer := periodic.New(s.Interval, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})
-	statusReporter.AddSources(periodic.Sources()...)
-	go periodic.Run(4, ctx.Done())
+	statusReporter.AddSources(periodicGatherer.Sources()...)
+	go periodicGatherer.Run(4, ctx.Done())
 
 	authorizer := clusterauthorizer.New(configObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configPeriodic)
