@@ -2,23 +2,27 @@ package insightsclient
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/textproto"
+	"os"
 	"strconv"
 	"time"
 
+	knet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/transport"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/klog"
 
-	"k8s.io/client-go/pkg/version"
+	"github.com/prometheus/client_golang/prometheus"
 
 	configv1 "github.com/openshift/api/config/v1"
 
@@ -52,7 +56,7 @@ var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loa
 
 func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, clusterInfo ClusterVersionInfo) *Client {
 	if client == nil {
-		client = &http.Client{Transport: DefaultTransport()}
+		client = &http.Client{}
 	}
 	if maxBytes == 0 {
 		maxBytes = 10 * 1024 * 1024
@@ -64,6 +68,49 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 		authorizer:  authorizer,
 		clusterInfo: clusterInfo,
 	}
+}
+
+func getTrustedCABundle() (*x509.CertPool, error) {
+	caBytes, err := ioutil.ReadFile("/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if len(caBytes) == 0 {
+		return nil, nil
+	}
+	certs := x509.NewCertPool()
+	if ok := certs.AppendCertsFromPEM(caBytes); !ok {
+		return nil, errors.New("error loading cert pool from ca data")
+	}
+	return certs, nil
+}
+
+func clientTransport() http.RoundTripper {
+	// default transport, proxy from env
+	clientTransport := &http.Transport{
+		Proxy: knet.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment),
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		TLSHandshakeTimeout: 10 * time.Second,
+		DisableKeepAlives:   true,
+	}
+
+	// get the cluster proxy trusted CA bundle in case the proxy need it
+	rootCAs, err := getTrustedCABundle()
+	if err != nil {
+		klog.Errorf("Failed to get proxy trusted CA: %v", err)
+	}
+	if rootCAs != nil {
+		clientTransport.TLSClientConfig = &tls.Config{}
+		clientTransport.TLSClientConfig.RootCAs = rootCAs
+	}
+
+	return transport.DebugWrappers(clientTransport)
 }
 
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
@@ -100,13 +147,15 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		r := &LimitedReader{R: source.Contents, N: c.maxBytes}
 		if _, err := io.Copy(fw, r); err != nil {
 			pw.CloseWithError(err)
-			return
 		}
 		pw.CloseWithError(mw.Close())
 	}()
 
 	req = req.WithContext(ctx)
 	req.Body = pr
+
+	// dynamically set the proxy environment
+	c.client.Transport = clientTransport()
 
 	klog.V(4).Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
@@ -119,9 +168,11 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 
 	defer func() {
 		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
-			log.Printf("error copying body: %v", err)
+			klog.Warningf("error copying body: %v", err)
 		}
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			klog.Warningf("Failed to close response body: %v", err)
+		}
 	}()
 
 	switch resp.StatusCode {
@@ -158,18 +209,6 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	}
 
 	return nil
-}
-
-func DefaultTransport() http.RoundTripper {
-	return transport.DebugWrappers(&http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		Dial: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).Dial,
-		TLSHandshakeTimeout: 10 * time.Second,
-		DisableKeepAlives:   true,
-	})
 }
 
 var (
