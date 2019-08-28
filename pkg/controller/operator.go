@@ -96,7 +96,6 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
 	recorder := diskrecorder.New(s.StoragePath, s.Interval)
-	go recorder.PeriodicallyFlush(ctx)
 	go recorder.PeriodicallyPrune(ctx, statusReporter)
 
 	// the gatherers periodically check the state of the cluster and report any

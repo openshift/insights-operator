@@ -36,7 +36,7 @@ func New(client configv1client.ConfigV1Interface) *Gatherer {
 var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
-	return records(recorder,
+	return collectRecords(ctx, recorder,
 		func() ([]record.Record, []error) {
 			config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
 			if err != nil {
@@ -110,7 +110,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 
 var errSkipRecord = fmt.Errorf("skip recording")
 
-func records(recorder record.Interface, bulkFn func() ([]record.Record, []error), fns ...func() (record.Record, error)) error {
+func collectRecords(ctx context.Context, recorder record.Interface, bulkFn func() ([]record.Record, []error), fns ...func() (record.Record, error)) error {
 	var errors []string
 	if bulkFn != nil {
 		records, errs := bulkFn()
@@ -142,6 +142,7 @@ func records(recorder record.Interface, bulkFn func() ([]record.Record, []error)
 		errors = uniqueStrings(errors)
 		return fmt.Errorf("failed to gather cluster config: %s", strings.Join(errors, ", "))
 	}
+	recorder.Flush(ctx)
 	return nil
 }
 

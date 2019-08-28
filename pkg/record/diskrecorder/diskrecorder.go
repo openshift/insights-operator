@@ -117,42 +117,13 @@ func (r *Recorder) clearRecords(records memoryRecords) {
 	size := int64(0)
 	for _, record := range records {
 		existing, ok := r.records[record.name]
-		if !ok || existing.data == nil || existing.at != record.at || len(existing.fingerprint) == 0 || existing.fingerprint != record.fingerprint {
+		if !ok || existing.data == nil || existing.at != record.at || existing.fingerprint != record.fingerprint {
 			continue
 		}
 		size += int64(len(existing.data))
 		existing.data = nil
 	}
 	r.size -= size
-}
-
-func (r *Recorder) PeriodicallyFlush(ctx context.Context) {
-	wait.Until(func() {
-		timer := time.NewTicker(r.interval)
-		defer timer.Stop()
-		for {
-
-			select {
-			case <-ctx.Done():
-				if err := r.Flush(ctx); err != nil {
-					records := r.copyRecords()
-					klog.Errorf("Unable to write records on shutdown, exiting with %d records not flushed to disk: %v", len(records), err)
-				}
-				return
-			case <-timer.C:
-			case <-r.flushCh:
-			}
-
-			wait.ExponentialBackoff(wait.Backoff{Duration: time.Second, Steps: 4, Factor: 1.5}, func() (bool, error) {
-				if err := r.Flush(ctx); err != nil {
-					klog.Errorf("Failed to flush records to disk: %v", err)
-					return false, nil
-				}
-				return true, nil
-			})
-		}
-
-	}, time.Second, ctx.Done())
 }
 
 func (r *Recorder) Flush(ctx context.Context) error {

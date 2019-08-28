@@ -8,6 +8,7 @@ import (
 
 type Interface interface {
 	Record(Record) error
+	Flush(context.Context) error
 }
 
 type Record struct {
