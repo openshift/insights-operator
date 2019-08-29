@@ -65,7 +65,7 @@ func Collect(ctx context.Context, recorder Interface, bulkFn func() ([]Record, [
 		}
 		for _, record := range records {
 			if err := recorder.Record(record); err != nil {
-				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err.Error()))
+				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
 				continue
 			}
 		}
@@ -82,7 +82,7 @@ func Collect(ctx context.Context, recorder Interface, bulkFn func() ([]Record, [
 			continue
 		}
 		if err := recorder.Record(record); err != nil {
-			errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err.Error()))
+			errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
 			continue
 		}
 		if err := ctx.Err(); err != nil {
