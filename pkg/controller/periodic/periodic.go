@@ -20,13 +20,13 @@ import (
 type Controller struct {
 	interval time.Duration
 
-	recorder  record.Interface
+	recorder  record.FlushInterface
 	gatherers map[string]gather.Interface
 	status    map[string]*controllerstatus.Simple
 	queue     workqueue.RateLimitingInterface
 }
 
-func New(interval time.Duration, recorder record.Interface, gatherers map[string]gather.Interface) *Controller {
+func New(interval time.Duration, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
 	status := make(map[string]*controllerstatus.Simple)
 	for k := range gatherers {
 		status[k] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", k)}
@@ -65,6 +65,11 @@ func (c *Controller) sync(name string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), c.interval/2)
 	defer cancel()
+	defer func() {
+		if err := c.recorder.Flush(ctx); err != nil {
+			klog.Errorf("Unable to flush recorder: %v", err)
+		}
+	}()
 	klog.V(4).Infof("Running %s", name)
 	return gatherer.Gather(ctx, c.recorder)
 }

@@ -1,4 +1,4 @@
-package clusterconfig
+package record
 
 import (
 	"reflect"

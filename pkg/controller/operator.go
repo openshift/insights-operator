@@ -59,7 +59,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	ctx := context.Background()
 
 	// these are operator clients
-	client, err := kubernetes.NewForConfig(controller.ProtoKubeConfig)
+	kubeClient, err := kubernetes.NewForConfig(controller.ProtoKubeConfig)
 	if err != nil {
 		return err
 	}
@@ -69,11 +69,19 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	}
 
 	// these are gathering clients
-	gatherCRKubeConfig := rest.CopyConfig(controller.KubeConfig)
+	gatherProtoKubeConfig := rest.CopyConfig(controller.ProtoKubeConfig)
 	if len(s.Impersonate) > 0 {
-		gatherCRKubeConfig.Impersonate.UserName = s.Impersonate
+		gatherProtoKubeConfig.Impersonate.UserName = s.Impersonate
 	}
-	gatherConfigClient, err := configv1client.NewForConfig(gatherCRKubeConfig)
+	gatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
+	if len(s.Impersonate) > 0 {
+		gatherKubeConfig.Impersonate.UserName = s.Impersonate
+	}
+	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
+	if err != nil {
+		return err
+	}
+	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
 		return err
 	}
@@ -86,7 +94,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	}
 
 	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(s.Controller, client)
+	configObserver := configobserver.New(s.Controller, kubeClient)
 	go configObserver.Start(ctx)
 
 	// the status controller initializes the cluster operator object and retrieves
@@ -100,7 +108,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := clusterconfig.New(gatherConfigClient)
+	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1())
 	periodic := periodic.New(s.Interval, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})
