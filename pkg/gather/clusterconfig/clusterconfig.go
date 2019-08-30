@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"sync"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	kubescheme "k8s.io/client-go/kubernetes/scheme"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/client-go/config/clientset/versioned/scheme"
@@ -18,38 +21,67 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-var serializer = scheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+var (
+	serializer     = scheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+	kubeSerializer = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
+)
 
 type Gatherer struct {
-	client configv1client.ConfigV1Interface
+	client     configv1client.ConfigV1Interface
+	coreClient corev1client.CoreV1Interface
 
 	lock        sync.Mutex
 	lastVersion *configv1.ClusterVersion
 }
 
-func New(client configv1client.ConfigV1Interface) *Gatherer {
+func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) *Gatherer {
 	return &Gatherer{
-		client: client,
+		client:     client,
+		coreClient: coreClient,
 	}
 }
 
 var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
-	return collectRecords(ctx, recorder,
-		func() ([]record.Record, []error) {
-			config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
-			if err != nil {
-				return nil, []error{err}
-			}
-			records := make([]record.Record, 0, len(config.Items))
-			for i := range config.Items {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
-			}
-			return records, nil
-		},
+	return record.Collect(ctx, recorder,
+		record.Aggregate(
+			func() ([]record.Record, []error) {
+				config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
+				if errors.IsNotFound(err) {
+					return nil, nil
+				}
+				if err != nil {
+					return nil, []error{err}
+				}
+				records := make([]record.Record, 0, len(config.Items))
+				for i := range config.Items {
+					records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+				}
+
+				return records, nil
+			},
+			func() ([]record.Record, []error) {
+				nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
+				if err != nil {
+					return nil, []error{err}
+				}
+				records := make([]record.Record, 0, len(nodes.Items))
+				for i := range nodes.Items {
+					if isHealthyNode(&nodes.Items[i]) {
+						continue
+					}
+					records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
+				}
+
+				return records, nil
+			},
+		),
 		func() (record.Record, error) {
 			config, err := i.client.ClusterVersions().Get("version", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return record.Record{}, record.ErrSkipRecord
+			}
 			if err != nil {
 				return record.Record{}, err
 			}
@@ -59,12 +91,15 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		func() (record.Record, error) {
 			version := i.ClusterVersion()
 			if version == nil {
-				return record.Record{}, errSkipRecord
+				return record.Record{}, record.ErrSkipRecord
 			}
 			return record.Record{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}, nil
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Infrastructures().Get("cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return record.Record{}, record.ErrSkipRecord
+			}
 			if err != nil {
 				return record.Record{}, err
 			}
@@ -72,6 +107,9 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Networks().Get("cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return record.Record{}, record.ErrSkipRecord
+			}
 			if err != nil {
 				return record.Record{}, err
 			}
@@ -79,6 +117,9 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Authentications().Get("cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return record.Record{}, record.ErrSkipRecord
+			}
 			if err != nil {
 				return record.Record{}, err
 			}
@@ -86,6 +127,9 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		},
 		func() (record.Record, error) {
 			config, err := i.client.FeatureGates().Get("cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return record.Record{}, record.ErrSkipRecord
+			}
 			if err != nil {
 				return record.Record{}, err
 			}
@@ -93,6 +137,9 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		},
 		func() (record.Record, error) {
 			config, err := i.client.OAuths().Get("cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return record.Record{}, record.ErrSkipRecord
+			}
 			if err != nil {
 				return record.Record{}, err
 			}
@@ -100,67 +147,15 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		},
 		func() (record.Record, error) {
 			config, err := i.client.Ingresses().Get("cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return record.Record{}, record.ErrSkipRecord
+			}
 			if err != nil {
 				return record.Record{}, err
 			}
 			return record.Record{Name: "config/ingress", Item: IngressAnonymizer{config}}, nil
 		},
 	)
-}
-
-var errSkipRecord = fmt.Errorf("skip recording")
-
-func collectRecords(ctx context.Context, recorder record.Interface, bulkFn func() ([]record.Record, []error), fns ...func() (record.Record, error)) error {
-	var errors []string
-	if bulkFn != nil {
-		records, errs := bulkFn()
-		for _, err := range errs {
-			errors = append(errors, err.Error())
-		}
-		for _, record := range records {
-			if err := recorder.Record(record); err != nil {
-				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err.Error()))
-				continue
-			}
-		}
-	}
-	for _, fn := range fns {
-		record, err := fn()
-		if err != nil {
-			if err != errSkipRecord {
-				errors = append(errors, err.Error())
-			}
-			continue
-		}
-		if err := recorder.Record(record); err != nil {
-			errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err.Error()))
-			continue
-		}
-	}
-	if len(errors) > 0 {
-		sort.Strings(errors)
-		errors = uniqueStrings(errors)
-		return fmt.Errorf("failed to gather cluster config: %s", strings.Join(errors, ", "))
-	}
-	recorder.Flush(ctx)
-	return nil
-}
-
-func uniqueStrings(arr []string) []string {
-	var last int
-	for i := 1; i < len(arr); i++ {
-		if arr[i] == arr[last] {
-			continue
-		}
-		last++
-		if last != i {
-			arr[last] = arr[i]
-		}
-	}
-	if last < len(arr) {
-		last++
-	}
-	return arr[:last]
 }
 
 type Raw struct{ string }
@@ -219,20 +214,51 @@ func (a ClusterOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(serializer, a.ClusterOperator)
 }
 
-// type ClusterOperatorListAnonymizer struct{ *configv1.ClusterOperatorList }
+type NodeAnonymizer struct{ *corev1.Node }
 
-// func (a ClusterOperatorListAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-// 	return runtime.Encode(serializer, a.ClusterOperatorList)
-// }
+func (a NodeAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return runtime.Encode(kubeSerializer, anonymizeNode(a.Node))
+}
 
-// func clusterOperatorListResourceVersion(items *configv1.ClusterOperatorList) string {
-// 	rvs := make([]string, 0, len(items.Items))
-// 	for _, item := range items.Items {
-// 		rvs = append(rvs, item.ResourceVersion)
-// 	}
-// 	sort.Strings(rvs)
-// 	return strings.Join(rvs, ",")
-// }
+func anonymizeNode(node *corev1.Node) *corev1.Node {
+	for k := range node.Annotations {
+		if isProductNamespacedKey(k) {
+			continue
+		}
+		node.Annotations[k] = ""
+	}
+	for k, v := range node.Labels {
+		if isProductNamespacedKey(k) {
+			continue
+		}
+		node.Labels[k] = anonymizeString(v)
+	}
+	for i := range node.Status.Addresses {
+		node.Status.Addresses[i].Address = anonymizeURL(node.Status.Addresses[i].Address)
+	}
+	node.Status.NodeInfo.BootID = anonymizeString(node.Status.NodeInfo.BootID)
+	node.Status.NodeInfo.SystemUUID = anonymizeString(node.Status.NodeInfo.SystemUUID)
+	node.Status.NodeInfo.MachineID = anonymizeString(node.Status.NodeInfo.MachineID)
+	node.Status.Images = nil
+	return node
+}
+
+func anonymizeString(s string) string {
+	return strings.Repeat("x", len(s))
+}
+
+func isProductNamespacedKey(key string) bool {
+	return strings.Contains(key, "openshift.io/") || strings.Contains(key, "k8s.io/") || strings.Contains(key, "kubernetes.io/")
+}
+
+func isHealthyNode(node *corev1.Node) bool {
+	for _, condition := range node.Status.Conditions {
+		if condition.Type == corev1.NodeReady && condition.Status != corev1.ConditionTrue {
+			return false
+		}
+	}
+	return true
+}
 
 func (i *Gatherer) setClusterVersion(version *configv1.ClusterVersion) {
 	i.lock.Lock()
