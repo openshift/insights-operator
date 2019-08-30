@@ -38,27 +38,10 @@ func (m JSONMarshaller) Marshal(_ context.Context) ([]byte, error) {
 	return json.Marshal(m.Object)
 }
 
-// ErrSkipRecord instructs Collect to ignore the provided recorder.
-var ErrSkipRecord = fmt.Errorf("skip recording")
-
-// Aggregate allows multiple array record gatherers to be passed to Collect.
-func Aggregate(fns ...func() ([]Record, []error)) func() ([]Record, []error) {
-	return func() ([]Record, []error) {
-		var records []Record
-		var errs []error
-		for _, fn := range fns {
-			r, e := fn()
-			records = append(records, r...)
-			errs = append(errs, e...)
-		}
-		return records, errs
-	}
-}
-
 // Collect is a helper for gathering a large set of records from generic functions.
-func Collect(ctx context.Context, recorder Interface, bulkFn func() ([]Record, []error), fns ...func() (Record, error)) error {
+func Collect(ctx context.Context, recorder Interface, bulkFns ...func() ([]Record, []error)) error {
 	var errors []string
-	if bulkFn != nil {
+	for _, bulkFn := range bulkFns {
 		records, errs := bulkFn()
 		for _, err := range errs {
 			errors = append(errors, err.Error())
@@ -68,22 +51,6 @@ func Collect(ctx context.Context, recorder Interface, bulkFn func() ([]Record, [
 				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
 				continue
 			}
-		}
-	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	for _, fn := range fns {
-		record, err := fn()
-		if err != nil {
-			if err != ErrSkipRecord {
-				errors = append(errors, err.Error())
-			}
-			continue
-		}
-		if err := recorder.Record(record); err != nil {
-			errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
-			continue
 		}
 		if err := ctx.Err(); err != nil {
 			return err

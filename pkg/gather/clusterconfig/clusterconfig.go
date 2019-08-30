@@ -46,133 +46,131 @@ var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
 	return record.Collect(ctx, recorder,
-		record.Aggregate(
-			func() ([]record.Record, []error) {
-				config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
-				if errors.IsNotFound(err) {
-					return nil, nil
-				}
-				if err != nil {
-					return nil, []error{err}
-				}
-				records := make([]record.Record, 0, len(config.Items))
-				for i := range config.Items {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
-				}
+		func() ([]record.Record, []error) {
+			config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			records := make([]record.Record, 0, len(config.Items))
+			for i := range config.Items {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+			}
 
-				for _, item := range config.Items {
-					if isHealthyOperator(&item) {
-						continue
+			for _, item := range config.Items {
+				if isHealthyOperator(&item) {
+					continue
+				}
+				for _, namespace := range namespacesForOperator(&item) {
+					pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
+					if err != nil {
+						klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
 					}
-					for _, namespace := range namespacesForOperator(&item) {
-						pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
-						if err != nil {
-							klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
+					for i := range pods.Items {
+						if isHealthyPod(&pods.Items[i]) {
+							continue
 						}
-						for i := range pods.Items {
-							if isHealthyPod(&pods.Items[i]) {
-								continue
-							}
-							records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
-						}
+						records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
 					}
 				}
+			}
 
-				return records, nil
-			},
-			func() ([]record.Record, []error) {
-				nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
-				if err != nil {
-					return nil, []error{err}
+			return records, nil
+		},
+		func() ([]record.Record, []error) {
+			nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
+			if err != nil {
+				return nil, []error{err}
+			}
+			records := make([]record.Record, 0, len(nodes.Items))
+			for i := range nodes.Items {
+				if isHealthyNode(&nodes.Items[i]) {
+					continue
 				}
-				records := make([]record.Record, 0, len(nodes.Items))
-				for i := range nodes.Items {
-					if isHealthyNode(&nodes.Items[i]) {
-						continue
-					}
-					records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
-				}
+				records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
+			}
 
-				return records, nil
-			},
-		),
-		func() (record.Record, error) {
+			return records, nil
+		},
+		func() ([]record.Record, []error) {
 			config, err := i.client.ClusterVersions().Get("version", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
 			i.setClusterVersion(config)
-			return record.Record{Name: "config/version", Item: ClusterVersionAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			version := i.ClusterVersion()
 			if version == nil {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
-			return record.Record{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}, nil
+			return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Infrastructures().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Networks().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/network", Item: Anonymizer{config}}, nil
+			return []record.Record{{Name: "config/network", Item: Anonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Authentications().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/authentication", Item: Anonymizer{config}}, nil
+			return []record.Record{{Name: "config/authentication", Item: Anonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.FeatureGates().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.OAuths().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/oauth", Item: Anonymizer{config}}, nil
+			return []record.Record{{Name: "config/oauth", Item: Anonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Ingresses().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/ingress", Item: IngressAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/ingress", Item: IngressAnonymizer{config}}}, nil
 		},
 	)
 }
