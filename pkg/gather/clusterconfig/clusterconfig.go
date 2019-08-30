@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/client-go/config/clientset/versioned/scheme"
@@ -45,115 +46,131 @@ var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
 	return record.Collect(ctx, recorder,
-		record.Aggregate(
-			func() ([]record.Record, []error) {
-				config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
-				if errors.IsNotFound(err) {
-					return nil, nil
-				}
-				if err != nil {
-					return nil, []error{err}
-				}
-				records := make([]record.Record, 0, len(config.Items))
-				for i := range config.Items {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
-				}
+		func() ([]record.Record, []error) {
+			config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			records := make([]record.Record, 0, len(config.Items))
+			for i := range config.Items {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+			}
 
-				return records, nil
-			},
-			func() ([]record.Record, []error) {
-				nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
-				if err != nil {
-					return nil, []error{err}
+			for _, item := range config.Items {
+				if isHealthyOperator(&item) {
+					continue
 				}
-				records := make([]record.Record, 0, len(nodes.Items))
-				for i := range nodes.Items {
-					if isHealthyNode(&nodes.Items[i]) {
-						continue
+				for _, namespace := range namespacesForOperator(&item) {
+					pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
+					if err != nil {
+						klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
 					}
-					records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
+					for i := range pods.Items {
+						if isHealthyPod(&pods.Items[i]) {
+							continue
+						}
+						records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
+					}
 				}
+			}
 
-				return records, nil
-			},
-		),
-		func() (record.Record, error) {
+			return records, nil
+		},
+		func() ([]record.Record, []error) {
+			nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
+			if err != nil {
+				return nil, []error{err}
+			}
+			records := make([]record.Record, 0, len(nodes.Items))
+			for i := range nodes.Items {
+				if isHealthyNode(&nodes.Items[i]) {
+					continue
+				}
+				records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
+			}
+
+			return records, nil
+		},
+		func() ([]record.Record, []error) {
 			config, err := i.client.ClusterVersions().Get("version", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
 			i.setClusterVersion(config)
-			return record.Record{Name: "config/version", Item: ClusterVersionAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			version := i.ClusterVersion()
 			if version == nil {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
-			return record.Record{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}, nil
+			return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Infrastructures().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Networks().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/network", Item: Anonymizer{config}}, nil
+			return []record.Record{{Name: "config/network", Item: Anonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Authentications().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/authentication", Item: Anonymizer{config}}, nil
+			return []record.Record{{Name: "config/authentication", Item: Anonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.FeatureGates().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.OAuths().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/oauth", Item: Anonymizer{config}}, nil
+			return []record.Record{{Name: "config/oauth", Item: Anonymizer{config}}}, nil
 		},
-		func() (record.Record, error) {
+		func() ([]record.Record, []error) {
 			config, err := i.client.Ingresses().Get("cluster", metav1.GetOptions{})
 			if errors.IsNotFound(err) {
-				return record.Record{}, record.ErrSkipRecord
+				return nil, nil
 			}
 			if err != nil {
-				return record.Record{}, err
+				return nil, []error{err}
 			}
-			return record.Record{Name: "config/ingress", Item: IngressAnonymizer{config}}, nil
+			return []record.Record{{Name: "config/ingress", Item: IngressAnonymizer{config}}}, nil
 		},
 	)
 }
@@ -214,6 +231,27 @@ func (a ClusterOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(serializer, a.ClusterOperator)
 }
 
+func isHealthyOperator(operator *configv1.ClusterOperator) bool {
+	for _, condition := range operator.Status.Conditions {
+		switch {
+		case condition.Type == configv1.OperatorDegraded && condition.Status == configv1.ConditionTrue,
+			condition.Type == configv1.OperatorAvailable && condition.Status == configv1.ConditionFalse:
+			return false
+		}
+	}
+	return true
+}
+
+func namespacesForOperator(operator *configv1.ClusterOperator) []string {
+	var ns []string
+	for _, ref := range operator.Status.RelatedObjects {
+		if ref.Resource == "namespaces" {
+			ns = append(ns, ref.Name)
+		}
+	}
+	return ns
+}
+
 type NodeAnonymizer struct{ *corev1.Node }
 
 func (a NodeAnonymizer) Marshal(_ context.Context) ([]byte, error) {
@@ -254,6 +292,44 @@ func isProductNamespacedKey(key string) bool {
 func isHealthyNode(node *corev1.Node) bool {
 	for _, condition := range node.Status.Conditions {
 		if condition.Type == corev1.NodeReady && condition.Status != corev1.ConditionTrue {
+			return false
+		}
+	}
+	return true
+}
+
+type PodAnonymizer struct{ *corev1.Pod }
+
+func (a PodAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return runtime.Encode(kubeSerializer, anonymizePod(a.Pod))
+}
+
+func anonymizePod(pod *corev1.Pod) *corev1.Pod {
+	// pods gathered from openshift namespaces and cluster operators are expected to be under our control and contain
+	// no sensitive information
+	return pod
+}
+
+func isHealthyPod(pod *corev1.Pod) bool {
+	// pending pods may be unable to schedule or start due to failures, and the info they provide in status is important
+	// for identifying why scheduling hass not happened
+	if pod.Status.Phase == corev1.PodPending {
+		return false
+	}
+	// pods that have containers that have terminated with non-zero exit codes are considered failure
+	for _, status := range pod.Status.InitContainerStatuses {
+		if status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0 {
+			return false
+		}
+		if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
+			return false
+		}
+	}
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0 {
+			return false
+		}
+		if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
 			return false
 		}
 	}
