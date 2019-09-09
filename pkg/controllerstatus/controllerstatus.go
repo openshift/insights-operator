@@ -11,11 +11,18 @@ type Interface interface {
 	CurrentStatus() (summary Summary, ready bool)
 }
 
+type Operation string
+
+// Specific flag for summary related to uploading process.
+const Uploading Operation = "Uploading"
+
 type Summary struct {
+	Operation          Operation
 	Healthy            bool
 	Reason             string
 	Message            string
 	LastTransitionTime time.Time
+	Count              int
 }
 
 type Simple struct {
@@ -23,7 +30,6 @@ type Simple struct {
 
 	lock    sync.Mutex
 	summary Summary
-	count   int
 }
 
 func (s *Simple) UpdateStatus(summary Summary) {
@@ -37,11 +43,11 @@ func (s *Simple) UpdateStatus(summary Summary) {
 		}
 
 		s.summary = summary
-		s.count = 1
+		s.summary.Count = 1
 		return
 	}
 
-	s.count++
+	s.summary.Count++
 	if summary.Healthy {
 		return
 	}
@@ -56,7 +62,7 @@ func (s *Simple) UpdateStatus(summary Summary) {
 func (s *Simple) CurrentStatus() (Summary, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if s.count == 0 {
+	if s.summary.Count == 0 {
 		return Summary{}, false
 	}
 	return s.summary, true
