@@ -23,3 +23,8 @@ where `$KUBECONFIG` has sufficiently high permissions against the target cluster
 ## Roadmap
 
 The current operator only collects global configuration. Future revisions will expand the set of config that can be gathered as well as add on-demand capture.
+
+## Issue Tracking
+
+Insights Operator is part of Red Hat OpenShift Container Platform. For product-related issues, please
+file a ticket [in Red Hat Bugzilla](https://bugzilla.redhat.com/enter_bug.cgi?product=OpenShift%20Container%20Platform&component=Insights%20Operator) for "Insights Operator" component.
