@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: openshift-insights
+  name: insights-operator-config
+data:
+  operator-config.yaml: |
+    kind: GenericOperatorConfig
+    apiVersion: operator.openshift.io/v1alpha1
+    leaderElection:
+      disable: true
+    interval: "2h"
+    storagePath: /var/lib/insights-operator
+    endpoint: https://cloud.redhat.com/api/ingress/v1/upload
+    impersonate: system:serviceaccount:openshift-insights:gather
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: openshift-insights
+  name: trusted-ca-bundle
+  annotations:
+    release.openshift.io/create-only: "true"
+  labels:
+    config.openshift.io/inject-trusted-cabundle: "true"

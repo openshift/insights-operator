@@ -1,8 +1,0 @@
-kind: GenericOperatorConfig
-apiVersion: operator.openshift.io/v1alpha1
-leaderElection:
-  disable: true
-interval: "10m"
-storagePath: /var/lib/insights-operator
-endpoint: https://cloud.redhat.com/api/ingress/v1/upload
-impersonate: system:serviceaccount:openshift-insights:gather
