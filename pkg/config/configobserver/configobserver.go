@@ -50,6 +50,9 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 
 func (c *Controller) Start(ctx context.Context) {
 	wait.Until(func() {
+		if err := c.retrieveToken(); err != nil {
+			klog.Warningf("Unable to retrieve token config: %v", err)
+		}
 		if err := c.retrieveConfig(); err != nil {
 			klog.Warningf("Unable to retrieve config: %v", err)
 		}
