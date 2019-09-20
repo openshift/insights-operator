@@ -130,14 +130,15 @@ func (c *Controller) retrieveConfig() error {
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
 		if intervalString, ok := secret.Data["interval"]; ok {
-			duration, err := time.ParseDuration(string(intervalString))
-			if err == nil && duration < time.Minute {
-				err = fmt.Errorf("too short")
+			duration, errp := time.ParseDuration(string(intervalString))
+
+			if errp == nil && duration < time.Minute {
+				errp = fmt.Errorf("too short")
 			}
-			if err == nil {
+			if errp == nil {
 				nextConfig.Interval = duration
 			} else {
-				err = fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to one minute: %v", err)
+				err = fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to one minute: %v", errp)
 				nextConfig.Report = false
 			}
 		}

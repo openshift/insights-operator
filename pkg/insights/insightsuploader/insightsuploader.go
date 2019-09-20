@@ -18,11 +18,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
 
-type Configurator interface {
-	Config() *config.Controller
-	ConfigChanged() (<-chan struct{}, func())
-}
-
 type Authorizer interface {
 	IsAuthorizationError(error) bool
 }
@@ -41,11 +36,11 @@ type Controller struct {
 
 	summarizer   Summarizer
 	client       *insightsclient.Client
-	configurator Configurator
+	configurator config.Configurator
 	reporter     StatusReporter
 }
 
-func New(summarizer Summarizer, client *insightsclient.Client, configurator Configurator, statusReporter StatusReporter) *Controller {
+func New(summarizer Summarizer, client *insightsclient.Client, configurator config.Configurator, statusReporter StatusReporter) *Controller {
 	return &Controller{
 		Simple: controllerstatus.Simple{Name: "insightsuploader"},
 

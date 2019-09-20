@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+type Configurator interface {
+	Config() *Controller
+	ConfigChanged() (<-chan struct{}, func())
+}
+
 // Controller defines the standard config for this operator.
 type Serialized struct {
 	Report      bool   `json:"report"`

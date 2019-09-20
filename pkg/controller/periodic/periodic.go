@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -20,22 +21,23 @@ import (
 type Controller struct {
 	interval time.Duration
 
-	recorder  record.FlushInterface
-	gatherers map[string]gather.Interface
-	status    map[string]*controllerstatus.Simple
-	queue     workqueue.RateLimitingInterface
+	configurator config.Configurator
+	recorder     record.FlushInterface
+	gatherers    map[string]gather.Interface
+	status       map[string]*controllerstatus.Simple
+	queue        workqueue.RateLimitingInterface
 }
 
-func New(interval time.Duration, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
+func New(configurator config.Configurator, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
 	status := make(map[string]*controllerstatus.Simple)
 	for k := range gatherers {
 		status[k] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", k)}
 	}
 	c := &Controller{
-		interval:  interval,
-		recorder:  recorder,
-		gatherers: gatherers,
-		status:    status,
+		configurator: configurator,
+		recorder:     recorder,
+		gatherers:    gatherers,
+		status:       status,
 
 		// TODO: tune rate limiter here for non-aggressive action
 		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "gatherer"),
@@ -78,11 +80,14 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
+	c.updateConfig()
+	configCh := c.watchConfig(stopCh)
+
 	klog.Infof("Gathering cluster info every %s", c.interval)
 	defer klog.Info("Shutting down")
 
 	// start watching for version changes
-	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
+	go wait.Until(func() { c.periodicTrigger(configCh, stopCh) }, time.Second, stopCh)
 
 	for i := 0; i < workers; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
@@ -100,9 +105,11 @@ func (c *Controller) Gather() {
 	}
 }
 
-func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
+func (c *Controller) periodicTrigger(configCh, stopCh <-chan struct{}) {
 	for {
 		select {
+		case <-configCh:
+			return
 		case <-stopCh:
 			return
 		case <-time.After(wait.Jitter(c.interval, 0.5)):
@@ -139,4 +146,38 @@ func (c *Controller) processNextWorkItem() bool {
 	c.status[name].UpdateStatus(controllerstatus.Summary{Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
 
 	return true
+}
+
+func (c *Controller) updateConfig() bool {
+	cfg := c.configurator.Config()
+	if c.interval != cfg.Interval {
+		c.interval = cfg.Interval
+		klog.V(4).Infof("Gathering interval set to %s", cfg.Interval)
+		return true
+	} else {
+		return false
+	}
+}
+
+// Runs loop for checking on configuration change to check for periodic-related changes.
+// Returns a channel that it writes to, when the config change influenced the controller.
+func (c *Controller) watchConfig(stopCh <-chan struct{}) chan struct{} {
+	configCh := make(chan struct{}, 1)
+	globalConfigCh, cancelFn := c.configurator.ConfigChanged()
+
+	watchChanges := func() {
+		defer cancelFn()
+		for {
+			select {
+			case <-globalConfigCh:
+				if c.updateConfig() {
+					configCh <- struct{}{}
+				}
+			case <-stopCh:
+				return
+			}
+		}
+	}
+	go watchChanges()
+	return configCh
 }
