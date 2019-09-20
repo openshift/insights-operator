@@ -24,6 +24,10 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 )
 
+// How many upload failures in a row we tolerate before starting reporting
+// as UploadDegraded
+const uploadFailuresCountThreshold = 5
+
 type Reported struct {
 	LastReportTime metav1.Time `json:"lastReportTime"`
 }
@@ -114,6 +118,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	var last time.Time
 	var reason string
 	var errors []string
+	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage string
 	allReady := true
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
@@ -129,8 +134,30 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			klog.Errorf("Programmer error: status source %d %T reported an empty message: %#v", i, source, summary)
 			continue
 		}
-		reason = summary.Reason
-		errors = append(errors, summary.Message)
+
+		degradingFailure := true
+
+		if summary.Operation == controllerstatus.Uploading {
+			if summary.Count < uploadFailuresCountThreshold {
+				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.", summary.Count, uploadFailuresCountThreshold)
+				degradingFailure = false
+			} else {
+				klog.V(4).Infof("Number of last upload failures %d exceeded than threshold %d. Marking as degraded.", summary.Count, uploadFailuresCountThreshold)
+			}
+			uploadErrorReason = summary.Reason
+			uploadErrorMessage = summary.Message
+			// NotAuthorized is a special case where we want to disable the operator
+			if isNotAuthorizedReason(summary.Reason) {
+				degradingFailure = false
+				disabledReason = summary.Reason
+				disabledMessage = summary.Message
+			}
+		}
+		if degradingFailure {
+			reason = summary.Reason
+			errors = append(errors, summary.Message)
+		}
+
 		if last.Before(summary.LastTransitionTime) {
 			last = summary.LastTransitionTime
 		}
@@ -148,14 +175,9 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		sort.Strings(errors)
 		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errors, "\n* "))
 	}
-	var disabledMessage string
 	if !c.configurator.Config().Report {
+		disabledReason = "Disabled"
 		disabledMessage = "Health reporting is disabled"
-	}
-	// NotAuthorized is a special case where we want to disable the operator
-	if reason == "NotAuthorized" {
-		disabledMessage = errorMessage
-		errorMessage = ""
 	}
 
 	existing = existing.DeepCopy()
@@ -173,11 +195,11 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	switch {
 	case isInitializing:
 		// the disabled condition is optional, but set it now if we already know we're disabled
-		if len(disabledMessage) > 0 {
+		if len(disabledReason) > 0 {
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:    OperatorDisabled,
 				Status:  configv1.ConditionTrue,
-				Reason:  reason,
+				Reason:  disabledReason,
 				Message: disabledMessage,
 			})
 		}
@@ -195,7 +217,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:    OperatorDisabled,
 				Status:  configv1.ConditionTrue,
-				Reason:  reason,
+				Reason:  disabledReason,
 				Message: disabledMessage,
 			})
 		} else {
@@ -206,6 +228,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		}
 
 		if len(errorMessage) > 0 {
+			klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:               configv1.OperatorDegraded,
 				Status:             configv1.ConditionTrue,
@@ -218,6 +241,18 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 				Type:   configv1.OperatorDegraded,
 				Status: configv1.ConditionFalse,
 			})
+		}
+
+		if len(uploadErrorReason) > 0 {
+			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+				Type:               UploadDegraded,
+				Status:             configv1.ConditionTrue,
+				LastTransitionTime: metav1.Time{Time: last},
+				Reason:             uploadErrorReason,
+				Message:            uploadErrorMessage,
+			})
+		} else {
+			removeOperatorStatusCondition(&existing.Status.Conditions, UploadDegraded)
 		}
 	}
 
@@ -347,6 +382,13 @@ func (c *Controller) updateStatus(initial bool) error {
 // OperatorDisabled reports when the primary function of the operator has been disabled.
 const OperatorDisabled configv1.ClusterStatusConditionType = "Disabled"
 
+// Uploading reports true when the operator is successfully uploading
+const UploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
+
+func isNotAuthorizedReason(reason string) bool {
+	return reason == "NotAuthorized"
+}
+
 func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition, newCondition configv1.ClusterOperatorStatusCondition) {
 	if conditions == nil {
 		conditions = &[]configv1.ClusterOperatorStatusCondition{}
@@ -369,6 +411,20 @@ func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCond
 	if existingCondition.LastTransitionTime.IsZero() {
 		existingCondition.LastTransitionTime = metav1.NewTime(time.Now())
 	}
+}
+
+func removeOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition, conditionType configv1.ClusterStatusConditionType) {
+	if conditions == nil {
+		return
+	}
+	newConditions := []configv1.ClusterOperatorStatusCondition{}
+	for _, condition := range *conditions {
+		if condition.Type != conditionType {
+			newConditions = append(newConditions, condition)
+		}
+	}
+
+	*conditions = newConditions
 }
 
 func findOperatorStatusCondition(conditions []configv1.ClusterOperatorStatusCondition, conditionType configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
