@@ -109,42 +109,36 @@ func (c *Controller) retrieveConfig() error {
 	if err != nil {
 		if errors.IsNotFound(err) {
 			klog.V(4).Infof("Support secret does not exist")
-			err = nil
+			return nil
 		} else if errors.IsForbidden(err) {
 			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err)
-			err = nil
+			return nil
 		} else {
-			err = fmt.Errorf("could not check support secret: %v", err)
+			return fmt.Errorf("could not check support secret: %v", err)
 		}
 	}
-	if secret != nil {
-		if username, ok := secret.Data["username"]; ok {
-			nextConfig.Username = string(username)
-		}
-		if password, ok := secret.Data["password"]; ok {
-			nextConfig.Password = string(password)
-		}
-		if endpoint, ok := secret.Data["endpoint"]; ok {
-			nextConfig.Endpoint = string(endpoint)
-		}
-		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
-		if intervalString, ok := secret.Data["interval"]; ok {
-			duration, errp := time.ParseDuration(string(intervalString))
-
-			if errp == nil && duration < time.Minute {
-				errp = fmt.Errorf("too short")
-			}
-			if errp == nil {
-				nextConfig.Interval = duration
-			} else {
-				err = fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to one minute: %v", errp)
-				nextConfig.Report = false
-			}
-		}
+	if username, ok := secret.Data["username"]; ok {
+		nextConfig.Username = string(username)
 	}
-	if err != nil {
-		return err
+	if password, ok := secret.Data["password"]; ok {
+		nextConfig.Password = string(password)
+	}
+	if endpoint, ok := secret.Data["endpoint"]; ok {
+		nextConfig.Endpoint = string(endpoint)
+	}
+	nextConfig.Report = len(nextConfig.Endpoint) > 0
+
+	if intervalString, ok := secret.Data["interval"]; ok {
+		duration, err := time.ParseDuration(string(intervalString))
+
+		if err == nil && duration < time.Minute {
+			err = fmt.Errorf("too short")
+		}
+		if err != nil {
+			return fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to one minute: %v", err)
+		}
+		nextConfig.Interval = duration
 	}
 	c.setSecretConfig(&nextConfig)
 	return nil
