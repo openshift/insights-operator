@@ -10,7 +10,17 @@ This cluster operator gathers anonymized system configuration and reports it to 
 
 ## Building
 
-To build the operator, install Go 1.11 or above and run:
+To build the operator, install Go 1.11 or above. Don't forget to set `$GOPATH` environment variable properly.
+
+Then retrieve sources of insights-operator:
+
+    go get -u github.com/openshift/insights-operator
+
+Then `cd` into the source directory:
+
+    cd $GOPATH/src/github.com/openshift/insights-operator/
+
+And start the build:
 
     make build
 
