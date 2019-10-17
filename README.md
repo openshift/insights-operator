@@ -28,3 +28,4 @@ The current operator only collects global configuration. Future revisions will e
 
 Insights Operator is part of Red Hat OpenShift Container Platform. For product-related issues, please
 file a ticket [in Red Hat Bugzilla](https://bugzilla.redhat.com/enter_bug.cgi?product=OpenShift%20Container%20Platform&component=Insights%20Operator) for "Insights Operator" component.
+
