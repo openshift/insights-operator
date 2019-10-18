@@ -191,6 +191,16 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			}
 			return []record.Record{{Name: "config/ingress", Item: IngressAnonymizer{config}}}, nil
 		},
+		func() ([]record.Record, []error) {
+			config, err := i.client.Proxies().Get("cluster", metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
+		},
 	)
 }
 
