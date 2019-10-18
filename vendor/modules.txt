@@ -38,6 +38,8 @@ github.com/davecgh/go-spew/spew
 # github.com/emicklei/go-restful v2.9.5+incompatible
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
+# github.com/eparis/urlhash v0.0.0-20191022152723-5838cc59d83c
+github.com/eparis/urlhash
 # github.com/evanphx/json-patch v4.2.0+incompatible
 github.com/evanphx/json-patch
 # github.com/getsentry/raven-go v0.2.1-0.20190513200303-c977f96e1095

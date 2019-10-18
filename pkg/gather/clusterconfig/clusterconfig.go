@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/eparis/urlhash"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +42,10 @@ type Gatherer struct {
 
 	lock        sync.Mutex
 	lastVersion *configv1.ClusterVersion
+}
+
+func init() {
+	urlhash.SetAllowedWords(urlhash.OpenShiftWords)
 }
 
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) *Gatherer {
@@ -327,9 +332,9 @@ func anonymizeURLSlice(in []string) []string {
 	return outSlice
 }
 
-var reURL = regexp.MustCompile(`[^\.\-/\:]`)
-
-func anonymizeURL(s string) string { return reURL.ReplaceAllString(s, "x") }
+func anonymizeURL(s string) string {
+	return urlhash.HashURL(s)
+}
 
 type ClusterOperatorAnonymizer struct{ *configv1.ClusterOperator }
 

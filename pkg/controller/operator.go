@@ -4,14 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 
-	"k8s.io/klog"
+	"github.com/eparis/urlhash"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -49,6 +53,46 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 	return nil
 }
 
+func getNamespace() (string, error) {
+	nsBytes, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return "", err
+	}
+	return string(nsBytes), nil
+}
+
+func (s *Support) setupURLHash(kubeClient *kubernetes.Clientset) error {
+	namespace, err := getNamespace()
+	if err != nil || namespace == "" {
+		klog.Warning("Unable to determine namespace. IP addresses will not be anonymized")
+		return nil
+	}
+	saltSecret, err := kubeClient.CoreV1().Secrets(namespace).Get("urlsalt", metav1.GetOptions{})
+	if err != nil {
+		//if err != ENOTEXIST Bail
+		saltSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "urlsalt",
+			},
+			Type: corev1.SecretTypeOpaque,
+			StringData: map[string]string{
+				"AnonymizeURLSalt": urlhash.GetNewSalt(10),
+			},
+		}
+		saltSecret, err = kubeClient.CoreV1().Secrets(namespace).Create(saltSecret)
+		if err != nil {
+			return err
+		}
+	}
+
+	saltByte, exist := saltSecret.Data["AnonymizeURLSalt"]
+	if !exist {
+		return fmt.Errorf("unable to find AnonymizeURLSalt in secret: openshift-insights-operator/URLSalt")
+	}
+	urlhash.SetSalt(string(saltByte))
+	return nil
+}
+
 func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 
@@ -65,6 +109,10 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	}
 	configClient, err := configv1client.NewForConfig(controller.KubeConfig)
 	if err != nil {
+		return err
+	}
+
+	if err := s.setupURLHash(kubeClient); err != nil {
 		return err
 	}
 
