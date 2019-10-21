@@ -11,5 +11,7 @@ test-e2e:
 .PHONY: test-e2e
 
 vendor:
-	glide up -v --skip-test
+	go mod tidy
+	go mod vendor
+	go mod verify
 .PHONY: vendor
