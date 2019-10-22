@@ -3,7 +3,7 @@ build:
 .PHONY: build
 
 test:
-	go test ./...
+	go test ./... $(TEST_OPTIONS)
 .PHONY: test
 
 vendor:
