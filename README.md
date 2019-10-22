@@ -24,6 +24,20 @@ where `$KUBECONFIG` has sufficiently high permissions against the target cluster
 
 The current operator only collects global configuration. Future revisions will expand the set of config that can be gathered as well as add on-demand capture.
 
+## Contributing
+
+Please make sure to run `make test` to check all changes made in the source code.
+
+## Testing
+
+Unit tests can be started by the following command:
+
+    make test
+
+It is also possible to specify CLI options for Go test. For example, if you need to disable test results caching, use the following command:
+
+    make test TEST_OPTIONS=-count=1
+
 ## Issue Tracking
 
 Insights Operator is part of Red Hat OpenShift Container Platform. For product-related issues, please
