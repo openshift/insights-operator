@@ -177,26 +177,26 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		gaugeRequestSend.WithLabelValues(c.metricsName, "200").Inc()
+		counterRequestSend.WithLabelValues(c.metricsName, "200").Inc()
 	case http.StatusAccepted:
-		gaugeRequestSend.WithLabelValues(c.metricsName, "202").Inc()
+		counterRequestSend.WithLabelValues(c.metricsName, "202").Inc()
 	case http.StatusUnauthorized:
-		gaugeRequestSend.WithLabelValues(c.metricsName, "401").Inc()
+		counterRequestSend.WithLabelValues(c.metricsName, "401").Inc()
 		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
 	case http.StatusForbidden:
-		gaugeRequestSend.WithLabelValues(c.metricsName, "403").Inc()
+		counterRequestSend.WithLabelValues(c.metricsName, "403").Inc()
 		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	case http.StatusBadRequest:
-		gaugeRequestSend.WithLabelValues(c.metricsName, "400").Inc()
+		counterRequestSend.WithLabelValues(c.metricsName, "400").Inc()
 		body, _ := ioutil.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
 		return fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
 	default:
-		gaugeRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
+		counterRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
 		body, _ := ioutil.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
@@ -212,14 +212,14 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 }
 
 var (
-	gaugeRequestSend = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "insightsclient_request_send",
+	counterRequestSend = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "insightsclient_request_send_total",
 		Help: "Tracks the number of metrics sends",
 	}, []string{"client", "status_code"})
 )
 
 func init() {
 	prometheus.MustRegister(
-		gaugeRequestSend,
+		counterRequestSend,
 	)
 }
