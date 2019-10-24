@@ -19,6 +19,8 @@ func main() {
 	var instrumentationEnabled *bool = goflag.Bool("instrumentation", false, "enable instrumentation")
 	var service *string = goflag.String("service", "", "instrumentation service URL")
 	var interval *int = goflag.Int("check-config-interval", 10, "interval between fetching new configuration")
+	var configfile *string = goflag.String("configfile", "configuration.json", "configuration file")
+	var clustername *string = goflag.String("clustername", "cluster0", "cluster name (temporary)")
 
 	goflag.Parse()
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
@@ -28,7 +30,7 @@ func main() {
 	defer logs.FlushLogs()
 
 	if *instrumentationEnabled {
-		go instrumentation.StartInstrumentation(*service, *interval)
+		go instrumentation.StartInstrumentation(*service, *interval, *clustername, *configfile)
 	}
 
 	command := NewOperatorCommand()
