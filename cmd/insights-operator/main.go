@@ -12,16 +12,27 @@ import (
 	"k8s.io/component-base/logs"
 
 	"github.com/openshift/insights-operator/pkg/cmd/start"
+	"github.com/openshift/insights-operator/pkg/instrumentation"
 )
 
 func main() {
+	var instrumentationEnabled *bool = goflag.Bool("instrumentation", false, "enable instrumentation")
+	var service *string = goflag.String("service", "", "instrumentation service URL")
+	var interval *int = goflag.Int("check-config-interval", 10, "interval between fetching new configuration")
+
+	goflag.Parse()
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	pflag.CommandLine.Lookup("alsologtostderr").Value.Set("true")
 
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
+	if *instrumentationEnabled {
+		go instrumentation.StartInstrumentation(*service, *interval)
+	}
+
 	command := NewOperatorCommand()
+
 	if err := command.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
