@@ -431,12 +431,18 @@ func isHealthyPod(pod *corev1.Pod) bool {
 		if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
 			return false
 		}
+		if status.RestartCount > 0 {
+			return false
+		}
 	}
 	for _, status := range pod.Status.ContainerStatuses {
 		if status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0 {
 			return false
 		}
 		if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
+			return false
+		}
+		if status.RestartCount > 0 {
 			return false
 		}
 	}
