@@ -29,6 +29,7 @@ func main() {
 	logs.InitLogs()
 	defer logs.FlushLogs()
 
+	// start the insights operator instrumentation
 	if *instrumentationEnabled {
 		go instrumentation.StartInstrumentation(*service, *interval, *clustername, *configfile)
 	}
