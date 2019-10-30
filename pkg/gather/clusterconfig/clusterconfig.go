@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -26,6 +29,10 @@ import (
 var (
 	serializer     = scheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
 	kubeSerializer = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
+
+	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
+	// TODO: make this dynamic like the reporting window based on configured interval
+	maxEventTimeInterval = 1 * time.Hour
 )
 
 type Gatherer struct {
@@ -59,12 +66,12 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			for i := range config.Items {
 				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
 			}
+			namespaceEventsCollected := sets.NewString()
 
 			for _, item := range config.Items {
 				if isHealthyOperator(&item) {
 					continue
 				}
-				failingPods := []corev1.Pod{}
 				for _, namespace := range namespacesForOperator(&item) {
 					pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
 					if err != nil {
@@ -75,20 +82,20 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 						if isHealthyPod(&pods.Items[i]) {
 							continue
 						}
-						failingPods = append(failingPods, pods.Items[i])
 						records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
 					}
-				}
-				networkEvents, err := handlePendingPodsNetworkEvents(failingPods, i.coreClient)
-				if err != nil {
-					klog.V(2).Infof("Unable to gather network events: %v", err)
-					continue
-				}
-				for i := range networkEvents {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/events/%s/network", networkEvents[i].Namespace), Item: EventAnonymizer{&networkEvents[i]}})
+					if namespaceEventsCollected.Has(namespace) {
+						continue
+					}
+					namespaceRecords, errs := i.gatherNamespaceEvents(namespace)
+					if len(errs) > 0 {
+						klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, errs)
+						continue
+					}
+					records = append(records, namespaceRecords...)
+					namespaceEventsCollected.Insert(namespace)
 				}
 			}
-
 			return records, nil
 		},
 		func() ([]record.Record, []error) {
@@ -197,34 +204,38 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 	)
 }
 
-func handlePendingPodsNetworkEvents(pods []corev1.Pod, eventsGetter corev1client.EventsGetter) ([]corev1.Event, error) {
-	filteredEvents := []corev1.Event{}
-	if len(pods) == 0 {
-		return filteredEvents, nil
+func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
+	// do not accidentally collect events for non-openshift namespace
+	if !strings.HasPrefix(namespace, "openshift-") {
+		return []record.Record{}, nil
 	}
-	podNamespaces := sets.NewString()
-	for _, pod := range pods {
-		if podNamespaces.Has(pod.Namespace) {
+	events, err := i.coreClient.Events(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, []error{err}
+	}
+	// filter the event list to only recent events
+	oldestEventTime := time.Now().Add(-maxEventTimeInterval)
+	var filteredEventIndex []int
+	for i := range events.Items {
+		if events.Items[i].LastTimestamp.Time.Before(oldestEventTime) {
 			continue
 		}
-		podNamespaces.Insert(pod.Namespace)
+		filteredEventIndex = append(filteredEventIndex, i)
+
 	}
-	for _, namespace := range podNamespaces.List() {
-		namespaceEvents, err := eventsGetter.Events(namespace).List(metav1.ListOptions{})
-		if err != nil {
-			return filteredEvents, nil
-		}
-		for _, event := range namespaceEvents.Items {
-			if event.InvolvedObject.Kind != "Pod" {
-				continue
-			}
-			if !strings.Contains(event.Message, "failed to create pod network") {
-				continue
-			}
-			filteredEvents = append(filteredEvents, event)
+	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
+	for i, index := range filteredEventIndex {
+		compactedEvents.Items[i] = CompactedEvent{
+			Namespace:     events.Items[index].Namespace,
+			LastTimestamp: events.Items[index].LastTimestamp.Time,
+			Reason:        events.Items[index].Reason,
+			Message:       events.Items[index].Message,
 		}
 	}
-	return filteredEvents, nil
+	sort.Slice(compactedEvents.Items, func(i, j int) bool {
+		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
+	})
+	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
 }
 
 type Raw struct{ string }
@@ -273,10 +284,20 @@ func (a IngressAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(serializer, a.Ingress)
 }
 
-type EventAnonymizer struct{ *corev1.Event }
+type CompactedEvent struct {
+	Namespace     string    `json:"namespace"`
+	LastTimestamp time.Time `json:"lastTimestamp"`
+	Reason        string    `json:"reason"`
+	Message       string    `json:"message"`
+}
+
+type CompactedEventList struct {
+	Items []CompactedEvent `json:"items"`
+}
+type EventAnonymizer struct{ *CompactedEventList }
 
 func (a EventAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(serializer, a.Event)
+	return json.Marshal(a.CompactedEventList)
 }
 
 type ProxyAnonymizer struct{ *configv1.Proxy }
