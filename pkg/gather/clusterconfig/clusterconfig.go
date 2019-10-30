@@ -72,6 +72,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 				if isHealthyOperator(&item) {
 					continue
 				}
+				failingPods := []corev1.Pod{}
 				for _, namespace := range namespacesForOperator(&item) {
 					pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
 					if err != nil {
@@ -82,6 +83,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 						if isHealthyPod(&pods.Items[i]) {
 							continue
 						}
+						failingPods = append(failingPods, pods.Items[i])
 						records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
 					}
 					if namespaceEventsCollected.Has(namespace) {
@@ -94,6 +96,14 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 					}
 					records = append(records, namespaceRecords...)
 					namespaceEventsCollected.Insert(namespace)
+				}
+				networkEvents, err := handlePendingPodsNetworkEvents(failingPods, i.coreClient)
+				if err != nil {
+					klog.V(2).Infof("Unable to gather network events: %v", err)
+					continue
+				}
+				for i := range networkEvents {
+					records = append(records, record.Record{Name: fmt.Sprintf("config/events/%s/network", networkEvents[i].Namespace), Item: EventAnonymizer{&networkEvents[i]}})
 				}
 			}
 			return records, nil
@@ -236,6 +246,36 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
+}
+
+func handlePendingPodsNetworkEvents(pods []corev1.Pod, eventsGetter corev1client.EventsGetter) ([]corev1.Event, error) {
+	filteredEvents := []corev1.Event{}
+	if len(pods) == 0 {
+		return filteredEvents, nil
+	}
+	podNamespaces := sets.NewString()
+	for _, pod := range pods {
+		if podNamespaces.Has(pod.Namespace) {
+			continue
+		}
+		podNamespaces.Insert(pod.Namespace)
+	}
+	for _, namespace := range podNamespaces.List() {
+		namespaceEvents, err := eventsGetter.Events(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			return filteredEvents, nil
+		}
+		for _, event := range namespaceEvents.Items {
+			if event.InvolvedObject.Kind != "Pod" {
+				continue
+			}
+			if !strings.Contains(event.Message, "failed to create pod network") {
+				continue
+			}
+			filteredEvents = append(filteredEvents, event)
+		}
+	}
+	return filteredEvents, nil
 }
 
 type Raw struct{ string }
