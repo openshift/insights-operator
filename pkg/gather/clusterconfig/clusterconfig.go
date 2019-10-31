@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/apimachinery/pkg/util/sets"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
@@ -25,6 +29,10 @@ import (
 var (
 	serializer     = scheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
 	kubeSerializer = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
+
+	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
+	// TODO: make this dynamic like the reporting window based on configured interval
+	maxEventTimeInterval = 1 * time.Hour
 )
 
 type Gatherer struct {
@@ -58,6 +66,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			for i := range config.Items {
 				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
 			}
+			namespaceEventsCollected := sets.NewString()
 
 			for _, item := range config.Items {
 				if isHealthyOperator(&item) {
@@ -67,6 +76,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 					pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
 					if err != nil {
 						klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
+						continue
 					}
 					for i := range pods.Items {
 						if isHealthyPod(&pods.Items[i]) {
@@ -74,9 +84,18 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 						}
 						records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
 					}
+					if namespaceEventsCollected.Has(namespace) {
+						continue
+					}
+					namespaceRecords, errs := i.gatherNamespaceEvents(namespace)
+					if len(errs) > 0 {
+						klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, errs)
+						continue
+					}
+					records = append(records, namespaceRecords...)
+					namespaceEventsCollected.Insert(namespace)
 				}
 			}
-
 			return records, nil
 		},
 		func() ([]record.Record, []error) {
@@ -185,6 +204,40 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 	)
 }
 
+func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
+	// do not accidentally collect events for non-openshift namespace
+	if !strings.HasPrefix(namespace, "openshift-") {
+		return []record.Record{}, nil
+	}
+	events, err := i.coreClient.Events(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, []error{err}
+	}
+	// filter the event list to only recent events
+	oldestEventTime := time.Now().Add(-maxEventTimeInterval)
+	var filteredEventIndex []int
+	for i := range events.Items {
+		if events.Items[i].LastTimestamp.Time.Before(oldestEventTime) {
+			continue
+		}
+		filteredEventIndex = append(filteredEventIndex, i)
+
+	}
+	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
+	for i, index := range filteredEventIndex {
+		compactedEvents.Items[i] = CompactedEvent{
+			Namespace:     events.Items[index].Namespace,
+			LastTimestamp: events.Items[index].LastTimestamp.Time,
+			Reason:        events.Items[index].Reason,
+			Message:       events.Items[index].Message,
+		}
+	}
+	sort.Slice(compactedEvents.Items, func(i, j int) bool {
+		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
+	})
+	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
+}
+
 type Raw struct{ string }
 
 func (r Raw) Marshal(_ context.Context) ([]byte, error) {
@@ -229,6 +282,22 @@ type IngressAnonymizer struct{ *configv1.Ingress }
 func (a IngressAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	a.Ingress.Spec.Domain = anonymizeURL(a.Ingress.Spec.Domain)
 	return runtime.Encode(serializer, a.Ingress)
+}
+
+type CompactedEvent struct {
+	Namespace     string    `json:"namespace"`
+	LastTimestamp time.Time `json:"lastTimestamp"`
+	Reason        string    `json:"reason"`
+	Message       string    `json:"message"`
+}
+
+type CompactedEventList struct {
+	Items []CompactedEvent `json:"items"`
+}
+type EventAnonymizer struct{ *CompactedEventList }
+
+func (a EventAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return json.Marshal(a.CompactedEventList)
 }
 
 type ProxyAnonymizer struct{ *configv1.Proxy }
