@@ -222,8 +222,10 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		} else {
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
-				Type:   OperatorDisabled,
-				Status: configv1.ConditionFalse,
+				Type:    OperatorDisabled,
+				Status:  configv1.ConditionFalse,
+				Reason:  "Enabled".
+				Message: "Health reporting is enabled",
 			})
 		}
 
