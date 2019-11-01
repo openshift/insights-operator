@@ -41,6 +41,10 @@ spec:
         configMap:
           name: trusted-ca-bundle
           optional: true
+      - name: serving-cert
+        secret:
+          secretName: openshift-insights-serving-cert
+          optional: true
       containers:
       - name: operator
         image: quay.io/openshift/origin-insights-operator:latest
@@ -51,6 +55,8 @@ spec:
         - mountPath: /var/run/configmaps/trusted-ca-bundle
           name: trusted-ca-bundle
           readOnly: true
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
         ports:
         - containerPort: 8443
           name: https
