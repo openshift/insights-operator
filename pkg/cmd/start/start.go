@@ -2,6 +2,7 @@ package start
 
 import (
 	"context"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
@@ -15,6 +16,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller"
 )
+
+const serviceCACertPath = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 
 func NewOperator() *cobra.Command {
 	operator := &controller.Support{
@@ -48,6 +51,12 @@ func NewOperator() *cobra.Command {
 			if err != nil {
 				klog.Fatal(err)
 			}
+
+			// if the service CA is rotated, we want to restart
+			if data, err := ioutil.ReadFile(serviceCACertPath); err == nil {
+				startingFileContent[serviceCACertPath] = data
+			}
+			observedFiles = append(observedFiles, serviceCACertPath)
 
 			exitOnChangeReactorCh := make(chan struct{})
 			ctx := context.Background()
