@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -36,17 +37,19 @@ var (
 )
 
 type Gatherer struct {
-	client     configv1client.ConfigV1Interface
-	coreClient corev1client.CoreV1Interface
+	client        configv1client.ConfigV1Interface
+	coreClient    corev1client.CoreV1Interface
+	metricsClient rest.Interface
 
 	lock        sync.Mutex
 	lastVersion *configv1.ClusterVersion
 }
 
-func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) *Gatherer {
+func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, metricsClient rest.Interface) *Gatherer {
 	return &Gatherer{
-		client:     client,
-		coreClient: coreClient,
+		client:        client,
+		coreClient:    coreClient,
+		metricsClient: metricsClient,
 	}
 }
 
@@ -54,6 +57,24 @@ var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
 	return record.Collect(ctx, recorder,
+		func() ([]record.Record, []error) {
+			if i.metricsClient == nil {
+				return nil, nil
+			}
+			data, err := i.metricsClient.Get().AbsPath("federate").
+				Param("match[]", "ALERTS").
+				Param("match[]", "etcd_object_counts").
+				Param("match[]", "cluster_installer").
+				DoRaw()
+			if err != nil {
+				// write metrics errors to the file format as a comment
+				klog.Errorf("Unable to retrieve most recent metrics: %v", err)
+				return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
+			}
+			return []record.Record{
+				{Name: "config/metrics", Item: RawByte(data)},
+			}, nil
+		},
 		func() ([]record.Record, []error) {
 			config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
 			if errors.IsNotFound(err) {
@@ -236,6 +257,12 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
+}
+
+type RawByte []byte
+
+func (r RawByte) Marshal(_ context.Context) ([]byte, error) {
+	return r, nil
 }
 
 type Raw struct{ string }
