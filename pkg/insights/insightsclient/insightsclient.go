@@ -162,7 +162,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	if err != nil {
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
 		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
-		gaugeRequestSend.WithLabelValues(c.metricsName, "0").Inc()
+		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()
 		return fmt.Errorf("unable to build request to connect to Insights server")
 	}
 
