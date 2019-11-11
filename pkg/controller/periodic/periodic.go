@@ -12,27 +12,32 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-type Controller struct {
-	interval time.Duration
+type Configurator interface {
+	Config() *config.Controller
+	ConfigChanged() (<-chan struct{}, func())
+}
 
+type Controller struct {
+	config    Configurator
 	recorder  record.FlushInterface
 	gatherers map[string]gather.Interface
 	status    map[string]*controllerstatus.Simple
 	queue     workqueue.RateLimitingInterface
 }
 
-func New(interval time.Duration, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
+func New(config Configurator, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
 	status := make(map[string]*controllerstatus.Simple)
 	for k := range gatherers {
 		status[k] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", k)}
 	}
 	c := &Controller{
-		interval:  interval,
+		config:    config,
 		recorder:  recorder,
 		gatherers: gatherers,
 		status:    status,
@@ -63,7 +68,7 @@ func (c *Controller) sync(name string) error {
 		klog.V(2).Infof("No such gatherer %s", name)
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), c.interval/2)
+	ctx, cancel := context.WithTimeout(context.Background(), c.config.Config().Interval/2)
 	defer cancel()
 	defer func() {
 		if err := c.recorder.Flush(ctx); err != nil {
@@ -78,7 +83,6 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	klog.Infof("Gathering cluster info every %s", c.interval)
 	defer klog.Info("Shutting down")
 
 	// start watching for version changes
@@ -101,15 +105,31 @@ func (c *Controller) Gather() {
 }
 
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
+	configCh, closeFn := c.config.ConfigChanged()
+	defer closeFn()
+
+	interval := c.config.Config().Interval
+	expireCh := time.After(wait.Jitter(interval, 0.5))
+	klog.Infof("Gathering cluster info every %s", interval)
 	for {
 		select {
 		case <-stopCh:
 			return
-		case <-time.After(wait.Jitter(c.interval, 0.5)):
-			for name := range c.gatherers {
-				c.queue.AddAfter(name, wait.Jitter(c.interval/4, 2))
+
+		case <-configCh:
+			newInterval := c.config.Config().Interval
+			if newInterval == interval {
+				continue
 			}
+			interval = newInterval
+			klog.Infof("Gathering cluster info every %s", interval)
+		case <-expireCh:
 		}
+
+		for name := range c.gatherers {
+			c.queue.AddAfter(name, wait.Jitter(interval/4, 2))
+		}
+		expireCh = time.After(wait.Jitter(interval, 0.5))
 	}
 }
 
