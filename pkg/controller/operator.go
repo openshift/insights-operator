@@ -10,6 +10,7 @@ import (
 	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
@@ -127,7 +128,27 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 
 	// Instrumentation goroutine initialization logic
 	if enabled := os.Getenv("IO_ENABLE_INSTRUMENTATION"); enabled == "true" {
-		go func(kubeClient kubernetes.Interface, interval time.Duration) {
+		go func(ctrlCtx *controllercmd.ControllerContext, interval time.Duration) {
+			instrClient, err := configv1client.NewForConfig(ctrlCtx.KubeConfig)
+			if err != nil {
+				klog.Errorln("ConfigV1Client ERROR:", err)
+				return
+			}
+
+			instrClusterVersion, err := instrClient.ClusterVersions().Get("version", metav1.GetOptions{})
+			if err != nil {
+				klog.Errorln("CLUSTER VERSION ERROR:", err)
+				return
+			}
+
+			if instrClusterVersion == nil {
+				klog.Errorln("CLUSTER VERSION NIL")
+				return
+			}
+
+			clusterID := instrClusterVersion.Spec.ClusterID
+			klog.Infoln("Cluster ID:", clusterID)
+
 			for {
 				// Just to mock that sometimes running must-gather is requested and sometimes it's not.
 				mustGatherRequested := time.Now().Unix()%10 == 0
@@ -141,7 +162,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 
 				time.Sleep(interval)
 			}
-		}(kubeClient, 10*time.Second)
+		}(controller, 10*time.Second)
 	} else {
 		klog.Infoln("Insights operator instrumentation is disabled")
 	}
