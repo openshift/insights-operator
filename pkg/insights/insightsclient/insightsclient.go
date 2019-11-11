@@ -212,6 +212,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 }
 
 var (
+	registry           = prometheus.NewRegistry()
 	counterRequestSend = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "insightsclient_request_send_total",
 		Help: "Tracks the number of metrics sends",
@@ -219,7 +220,7 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(
+	registry.MustRegister(
 		counterRequestSend,
 	)
 }
