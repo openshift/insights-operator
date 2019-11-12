@@ -3,18 +3,20 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"k8s.io/klog"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 
+	apiconfigv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
@@ -129,40 +131,45 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	// Instrumentation goroutine initialization logic
 	if enabled := os.Getenv("IO_ENABLE_INSTRUMENTATION"); enabled == "true" {
 		go func(ctrlCtx *controllercmd.ControllerContext, interval time.Duration) {
-			instrClient, err := configv1client.NewForConfig(ctrlCtx.KubeConfig)
-			if err != nil {
-				klog.Errorln("ConfigV1Client ERROR:", err)
-				return
-			}
+			clusterID, err := func(ctrlCtx *controllercmd.ControllerContext) (apiconfigv1.ClusterID, error) {
+				instrClient, err := configv1client.NewForConfig(ctrlCtx.KubeConfig)
+				if err != nil {
+					return "", err
+				}
 
-			instrClusterVersion, err := instrClient.ClusterVersions().Get("version", metav1.GetOptions{})
-			if err != nil {
-				klog.Errorln("CLUSTER VERSION ERROR:", err)
-				return
-			}
+				instrClusterVersion, err := instrClient.ClusterVersions().Get("version", metav1.GetOptions{})
+				if err != nil {
+					return "", err
+				}
 
-			if instrClusterVersion == nil {
-				klog.Errorln("CLUSTER VERSION NIL")
-				return
-			}
+				if instrClusterVersion == nil {
+					return "", errors.New("cluster version is nil")
+				}
 
-			clusterID := instrClusterVersion.Spec.ClusterID
-			klog.Infoln("Cluster ID:", clusterID)
+				return instrClusterVersion.Spec.ClusterID, nil
+			}(ctrlCtx)
+
+			klog.Infoln("Cluster ID:", clusterID, "| Error:", err)
 
 			for {
+				// TODO: Replace with a request to the instrumentation service.
 				// Just to mock that sometimes running must-gather is requested and sometimes it's not.
 				mustGatherRequested := time.Now().Unix()%10 == 0
 
 				klog.Infoln("Insights operator instrumentation is running")
 
 				if mustGatherRequested {
-					// TODO: Run must-gather
 					klog.Infoln("Must-gather requested")
+					// TODO: Run must-gather.
+					// Emulates delay caused by running must-gather.
+					// The real delay will most likely be upwards of 5 minutes.
+					time.Sleep(10 * time.Second)
+					klog.Infoln("Must-gather finished")
 				}
 
 				time.Sleep(interval)
 			}
-		}(controller, 10*time.Second)
+		}(controller, time.Minute)
 	} else {
 		klog.Infoln("Insights operator instrumentation is disabled")
 	}
