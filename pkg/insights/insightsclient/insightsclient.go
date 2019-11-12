@@ -19,10 +19,10 @@ import (
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/transport"
+	"k8s.io/component-base/metrics"
+	"k8s.io/component-base/metrics/legacyregistry"
 
 	"k8s.io/klog"
-
-	"github.com/prometheus/client_golang/prometheus"
 
 	configv1 "github.com/openshift/api/config/v1"
 
@@ -212,14 +212,18 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 }
 
 var (
-	counterRequestSend = prometheus.NewCounterVec(prometheus.CounterOpts{
+	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
 		Name: "insightsclient_request_send_total",
 		Help: "Tracks the number of metrics sends",
 	}, []string{"client", "status_code"})
 )
 
 func init() {
-	prometheus.MustRegister(
+	err := legacyregistry.Register(
 		counterRequestSend,
 	)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 }
