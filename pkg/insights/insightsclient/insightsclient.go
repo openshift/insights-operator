@@ -225,5 +225,6 @@ func init() {
 	if err != nil {
 		fmt.Println(err)
 	}
+	counterRequestSend.WithLabelValues("metric_init", "000").Add(0)
 
 }
