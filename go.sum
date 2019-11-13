@@ -185,6 +185,8 @@ github.com/openshift/api v0.0.0-20191031084152-11eee842dafd h1:mHx0W/0S6BTjVbdNM
 github.com/openshift/api v0.0.0-20191031084152-11eee842dafd/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
 github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298 h1:wg5VfVIEtKI0yaBNeHNM1N01EjwTGg7JW0Gp+jqnYGQ=
 github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
+github.com/openshift/library-go v0.0.0-20191030100914-0597a29991ca50513df1fdb76e7e2a267e3a3e3f h1:olWb+JwKFu8hXsepzqb5R49BdU/LjO6eyYwYSwQDegY=
+github.com/openshift/library-go v0.0.0-20191030100914-0597a29991ca50513df1fdb76e7e2a267e3a3e3f/go.mod h1:NBttNjZpWwup/nthuLbPAPSYC8Qyo+BBK5bCtFoyYjo=
 github.com/openshift/library-go v0.0.0-20191030100914-d6f3b526f033 h1:YNys74hJxqXz3IjbXteFOn12LeME8t/2BkJ/KTdPSro=
 github.com/openshift/library-go v0.0.0-20191030100914-d6f3b526f033/go.mod h1:NBttNjZpWwup/nthuLbPAPSYC8Qyo+BBK5bCtFoyYjo=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
