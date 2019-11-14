@@ -55,6 +55,13 @@ rules:
   - get
   - update
   - patch
+# allow the operator to retrieve prometheus metrics
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

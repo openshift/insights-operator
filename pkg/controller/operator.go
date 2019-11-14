@@ -9,7 +9,9 @@ import (
 	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 
@@ -77,6 +79,27 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	if len(s.Impersonate) > 0 {
 		gatherKubeConfig.Impersonate.UserName = s.Impersonate
 	}
+
+	// the metrics client will connect to prometheus and scrape a small set of metrics
+	// TODO: the oauth-proxy and delegating authorizer do not support Impersonate-User,
+	//   so we do not impersonate gather
+	metricsGatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
+	metricsGatherKubeConfig.CAFile = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
+	metricsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
+	metricsGatherKubeConfig.APIPath = "/"
+	metricsGatherKubeConfig.Host = "https://prometheus-k8s.openshift-monitoring.svc:9091"
+
+	// If we fail, it's likely due to the service CA not existing yet. Warn and continue,
+	// and when the service-ca is loaded we will be restarted.
+	var metricsClient rest.Interface
+	metricsRESTClient, err := rest.RESTClientFor(metricsGatherKubeConfig)
+	if err != nil {
+		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
+	} else {
+		metricsClient = metricsRESTClient
+	}
+
 	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
 	if err != nil {
 		return err
@@ -108,8 +131,8 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1())
-	periodic := periodic.New(s.Interval, recorder, map[string]gather.Interface{
+	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), metricsClient)
+	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})
 	statusReporter.AddSources(periodic.Sources()...)

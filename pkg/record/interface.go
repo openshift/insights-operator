@@ -59,7 +59,7 @@ func Collect(ctx context.Context, recorder Interface, bulkFns ...func() ([]Recor
 	if len(errors) > 0 {
 		sort.Strings(errors)
 		errors = uniqueStrings(errors)
-		return fmt.Errorf("failed to gather cluster infrastructure: %s", strings.Join(errors, ", "))
+		return fmt.Errorf("%s", strings.Join(errors, ", "))
 	}
 	return nil
 }
