@@ -63,8 +63,24 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			}
 			data, err := i.metricsClient.Get().AbsPath("federate").
 				Param("match[]", "ALERTS").
+				// aggregator metrics indicate how apiservers are performing as viewed from the kube-apiserver
+				Param("match[]", "aggregator_unavailable_apiservice_count").
+				Param("match[]", "aggregator_unavailable_apiserver_gauge").
+
+				// let's us know how many of each kind of object we have.  This give information about usage
 				Param("match[]", "etcd_object_counts").
+
 				Param("match[]", "cluster_installer").
+
+				// these work queue metrics can be used to determine how individual control loops are performing
+				Param("match[]", "workqueue_adds_total").
+				Param("match[]", "workqueue_depth").
+				Param("match[]", "workqueue_longest_running_processor_seconds").
+				Param("match[]", "workqueue_queue_duration_seconds").
+				Param("match[]", "workqueue_retries_total").
+				Param("match[]", "workqueue_unfinished_work_seconds").
+				Param("match[]", "workqueue_work_duration_seconds").
+				Param("match[]", "workqueue_retries_total").
 				DoRaw()
 			if err != nil {
 				// write metrics errors to the file format as a comment
