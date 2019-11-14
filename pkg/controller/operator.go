@@ -3,16 +3,21 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"time"
+	"strconv"
 
 	"k8s.io/klog"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 
+	apiconfigv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
@@ -30,6 +35,24 @@ import (
 
 type Support struct {
 	config.Controller
+}
+
+func getCLusterId(ctrlCtx *controllercmd.ControllerContext) (apiconfigv1.ClusterID, error) {
+	instrClient, err := configv1client.NewForConfig(ctrlCtx.KubeConfig)
+	if err != nil {
+		return "", err
+	}
+
+	instrClusterVersion, err := instrClient.ClusterVersions().Get("version", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if instrClusterVersion == nil {
+		return "", errors.New("cluster version is nil")
+	}
+
+	return instrClusterVersion.Spec.ClusterID, nil
 }
 
 func (s *Support) LoadConfig(obj map[string]interface{}) error {
@@ -122,6 +145,48 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 	// is permanently disabled, but if a client does exist the server may still disable reporting
 	uploader := insightsuploader.New(recorder, insightsClient, configObserver, statusReporter)
 	statusReporter.AddSources(uploader)
+
+
+	// Instrumentation goroutine initialization logic
+	if enabled := os.Getenv("IO_ENABLE_INSTRUMENTATION"); enabled == "true" {
+		period := time.Duration(60)
+		p, err := strconv.ParseInt(os.Getenv("IO_READ_TRIGGER_PERIOD"), 10, 64)
+		if err != nil {
+			period = time.Duration(p)
+		}
+		go func(ctrlCtx *controllercmd.ControllerContext, interval time.Duration) {
+			clusterID, err := getCLusterId(ctrlCtx)
+
+			if err != nil {
+				klog.Errorf("Unable to get Cluster ID: %v", err)
+				return
+			}
+
+			klog.Infoln("Cluster ID:", clusterID, "| Error:", err)
+			for {
+				klog.Infoln("Insights operator instrumentation is running")
+				klog.Infoln("Must-gather requested")
+				triggers, err := readListOfTriggers(s.Controller.Endpoint, API_PREFIX, clusterID)
+				if err != nil {
+					klog.Errorf("Unable to fetch trigger list: %v", err)
+				}
+				if len(triggers) > 0 {
+					klog.Infof("There is some triggers")
+					time.Sleep(time.Minute)
+					for _, trigger := range triggers {
+						klog.Infof(strconv.Itoa(trigger.Id))
+						err := ackTrigger(s.Controller.Endpoint, API_PREFIX, clusterID, strconv.Itoa(trigger.Id))
+						if err != nil {
+							klog.Errorf("Unable to ACK trigger: %v", err)
+						}
+					}
+				}
+				time.Sleep(interval * time.Second)
+			}
+		}(controller, period)
+	} else {
+		klog.Infoln("Insights operator instrumentation is disabled")
+	}
 
 	// TODO: future ideas
 	//
