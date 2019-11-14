@@ -132,6 +132,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		return err
 	}
 
+	var bytesRead int64
 	pr, pw := io.Pipe()
 	mw := multipart.NewWriter(pw)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
@@ -145,7 +146,9 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 			return
 		}
 		r := &LimitedReader{R: source.Contents, N: c.maxBytes}
-		if _, err := io.Copy(fw, r); err != nil {
+		n, err := io.Copy(fw, r)
+		bytesRead = n
+		if err != nil {
 			pw.CloseWithError(err)
 		}
 		pw.CloseWithError(mw.Close())
@@ -205,7 +208,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	}
 
 	if len(requestID) > 0 {
-		klog.V(2).Infof("Successfully reported id=%s x-rh-insights-request-id=%s", source.ID, requestID)
+		klog.V(2).Infof("Successfully reported id=%s x-rh-insights-request-id=%s, wrote=%d", source.ID, requestID, bytesRead)
 	}
 
 	return nil
