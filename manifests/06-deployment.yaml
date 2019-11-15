@@ -5,6 +5,7 @@ metadata:
   namespace: openshift-insights
   annotations:
     config.openshift.io/inject-proxy: operator
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 spec:
   strategy:
     type: Recreate
