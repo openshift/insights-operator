@@ -6,10 +6,6 @@ test-unit:
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 .PHONY: test-unit
 
-test:
-	go test $(go list ./... | grep -v /test/) $(TEST_OPTIONS)
-.PHONY: test
-
 test-e2e:
 	go test ./test/integration $(TEST_OPTIONS)
 .PHONY: test-e2e
