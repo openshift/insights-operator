@@ -11,11 +11,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
 )
 
 var (
-	kubeConfig *rest.Config
 	kubeClient = KubeClient()
 )
 
@@ -25,14 +23,14 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	err := kubeClient.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
-	if (err != nil) && (err.Error() != "secrets \"support\" not found") {
-		panic(err.Error())
+	if err != nil && err.Error() != `secrets "support" not found` {
+		t.Fatal(err.Error())
 	}
 
 	// restart insights-operator (delete pods)
 	pods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	for _, pod := range pods.Items {
@@ -52,7 +50,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	// check logs for "Gathering cluster info every 2h0m0s"
 	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	for _, newPod := range newPods.Items {
@@ -62,6 +60,9 @@ func TestDefaultUploadFrequency(t *testing.T) {
 		}
 		req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
 		podLogs, err := req.Stream()
+		if err != nil {
+			panic(err.Error())
+		}
 		defer podLogs.Close()
 
 		buf := new(bytes.Buffer)

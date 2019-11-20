@@ -13,8 +13,12 @@ import (
 )
 
 func KubeClient() (result *kubernetes.Clientset) {
-	kubeconfig := os.Getenv("KUBECONFIG") // variable is a path to the local kubeconfig
-
+	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
+	if !ok {
+		fmt.Printf("kubeconfig variable is not set\n")
+	} else {
+		fmt.Printf("KUBECONFIG=%s\n", kubeconfig)
+	}
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
