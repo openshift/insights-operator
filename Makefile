@@ -3,7 +3,7 @@ build:
 .PHONY: build
 
 test-unit:
-	go test $(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 .PHONY: test-unit
 
 test-e2e:
