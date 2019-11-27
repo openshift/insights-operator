@@ -2,9 +2,13 @@ build:
 	go build -ldflags "-X github.com/openshift/insights-operator/vendor/k8s.io/client-go/pkg/version.gitCommit=$$(git rev-parse HEAD) -X github.com/openshift/insights-operator/vendor/k8s.io/client-go/pkg/version.gitVersion=v1.0.0+$$(git rev-parse --short=7 HEAD)" -o bin/insights-operator ./cmd/insights-operator
 .PHONY: build
 
-test:
-	go test ./...
-.PHONY: test
+test-unit:
+	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+.PHONY: test-unit
+
+test-e2e:
+	echo "Dummy e2e target"
+.PHONY: test-e2e
 
 vendor:
 	glide up -v --skip-test
