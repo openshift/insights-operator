@@ -47,6 +47,29 @@ func TestDefaultUploadFrequency(t *testing.T) {
 		fmt.Print(err)
 	}
 
+	// check new pods are created and running
+	errPod := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+		newPods, _ := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+		if len(newPods.Items) == 0 {
+			fmt.Printf("pods are not yet created")
+			return false, nil
+		}
+
+		for _, newPod := range newPods.Items {
+			pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
+			if err != nil {
+				panic(err.Error())
+			}
+			if pod.Status.Phase != "Running" {
+				return false, nil
+			}
+		}
+
+		fmt.Println("the pods are created")
+		return true, nil
+	})
+	fmt.Print(errPod)
+
 	// check logs for "Gathering cluster info every 2h0m0s"
 	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
