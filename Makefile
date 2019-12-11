@@ -7,7 +7,7 @@ test-unit:
 .PHONY: test-unit
 
 test-e2e:
-	echo "Dummy e2e target"
+	go test ./test/integration $(TEST_OPTIONS)
 .PHONY: test-e2e
 
 vendor:
