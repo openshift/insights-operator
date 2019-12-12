@@ -2,6 +2,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: insights-operator-auth
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 roleRef:
   kind: ClusterRole
   name: system:auth-delegator
@@ -15,6 +17,8 @@ kind: RoleBinding
 metadata:
   name: insights-operator-auth
   namespace: kube-system
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 roleRef:
   kind: Role
   name: extension-apiserver-authentication-reader
@@ -28,6 +32,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: insights-operator
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 rules:
 # allow the operator to update cluster operator status
 - apiGroups:
@@ -67,6 +73,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: insights-operator
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 roleRef:
   kind: ClusterRole
   name: insights-operator
@@ -80,6 +88,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: insights-operator-gather
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 rules:
 - apiGroups:
   - ""
@@ -123,6 +133,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: insights-operator-gather
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 roleRef:
   kind: ClusterRole
   name: insights-operator-gather
@@ -136,6 +148,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: insights-operator-gather-reader
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 roleRef:
   kind: ClusterRole
   name: cluster-reader
@@ -150,6 +164,8 @@ kind: Role
 metadata:
   name: insights-operator
   namespace: openshift-config
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 rules:
 - apiGroups:
   - ""
@@ -166,6 +182,8 @@ kind: RoleBinding
 metadata:
   name: insights-operator
   namespace: openshift-config
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 roleRef:
   kind: Role
   name: insights-operator
@@ -180,6 +198,8 @@ kind: Role
 metadata:
   name: insights-operator
   namespace: openshift-insights
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 rules:
 - apiGroups:
   - ""
@@ -201,6 +221,8 @@ kind: RoleBinding
 metadata:
   name: insights-operator
   namespace: openshift-insights
+  annotations:
+    exclude.release.openshift.io/internal-openshift-hosted: "true"
 roleRef:
   kind: Role
   name: insights-operator
