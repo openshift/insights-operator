@@ -51,20 +51,20 @@ func RestartInsightsOperator(t *testing.T) {
 		err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
 			_, err := kubeClient.CoreV1().Pods("openshift-insights").Get(pod.Name, metav1.GetOptions{})
 			if err == nil {
-				fmt.Printf("the pod is not yet deleted: %v\n", err)
+				t.Logf("the pod is not yet deleted: %v\n", err)
 				return false, nil
 			}
-			fmt.Println("the pod is deleted")
+			t.Log("the pod is deleted")
 			return true, nil
 		})
-		fmt.Print(err)
+		t.Log(err)
 	}
 
 	// check new pods are created and running
 	errPod := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
 		newPods, _ := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 		if len(newPods.Items) == 0 {
-			fmt.Printf("pods are not yet created\n")
+			t.Log("pods are not yet created")
 			return false, nil
 		}
 
@@ -78,7 +78,7 @@ func RestartInsightsOperator(t *testing.T) {
 			}
 		}
 
-		fmt.Println("the pods are created")
+		t.Log("the pods are created")
 		return true, nil
 	})
 	t.Log(errPod)
@@ -113,11 +113,11 @@ func CheckPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 
 			result := strings.Contains(log, message)
 			if result == false {
-				fmt.Printf("No %s in logs\n", message)
+				t.Logf("No %s in logs\n", message)
 				return false, nil
 			}
 
-			fmt.Printf("%s found\n", message)
+			t.Logf("%s found\n", message)
 			return true, nil
 		})
 		if errLog != nil {
