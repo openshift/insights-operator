@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -37,6 +38,33 @@ func KubeClient() (result *kubernetes.Clientset) {
 		panic(err.Error())
 	}
 	return kubeClient
+}
+
+func COInsights(k *kubernetes.Clientset) map[string]interface{} {
+	// get info about insights cluster operator
+	data, err := k.RESTClient().Get().AbsPath("/apis/config.openshift.io/v1/clusteroperators/insights").DoRaw()
+	obj := map[string]interface{}{}
+	err = json.Unmarshal(data, &obj)
+	if err != nil {
+		panic(err.Error())
+	}
+	return obj
+}
+
+func IsOperatorDegraded(t *testing.T, config map[string]interface{}) bool {
+	status := config["status"].(map[string]interface{})
+	statusConditions := status["conditions"].([]interface{})
+
+	for _, condition := range statusConditions {
+		c := condition.(map[string]interface{})
+		if c["type"].(string) == "Degraded" || c["type"].(string) == "UploadDegraded" {
+			if c["status"].(string) != "True" {
+				t.Log("Insights is not degraded")
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func RestartInsightsOperator(t *testing.T) {
