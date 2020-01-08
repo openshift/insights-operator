@@ -12,7 +12,7 @@ import (
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
 func TestDefaultUploadFrequency(t *testing.T) {
 	// delete any existing overriding secret
-	err := kubeClient.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	err := clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {
@@ -20,14 +20,14 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	}
 
 	// restart insights-operator (delete pods)
-	RestartInsightsOperator(t)
+	restartInsightsOperator(t)
 
 	// check logs for "Gathering cluster info every 2h0m0s"
-	CheckPodsLogs(t, kubeClient, "Gathering cluster info every 2h0m0s")
+	checkPodsLogs(t, clientset, "Gathering cluster info every 2h0m0s")
 }
 
+// TestUnreachableHost checks if insights operator reports "degraded" after 5 unsuccessful upload attempts
 // https://bugzilla.redhat.com/show_bug.cgi?id=1745973
-// Check if insights operator reports "degraded" after 5 unsuccessful upload attempts
 func TestUnreachableHost(t *testing.T) {
 	// Replace the endpoint to some not valid url.
 	// oc -n openshift-config create secret generic support --from-literal=endpoint=http://localhost --dry-run -o yaml | oc apply -f - -n openshift-config
@@ -44,33 +44,36 @@ func TestUnreachableHost(t *testing.T) {
 		Type: "Opaque",
 	}
 	// delete any existing overriding secret
-	err := kubeClient.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	err := clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {
 		t.Fatal(err.Error())
 	}
-	_, err = kubeClient.CoreV1().Secrets("openshift-config").Create(&modifiedSecret)
+	_, err = clientset.CoreV1().Secrets("openshift-config").Create(&modifiedSecret)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	// Restart insights-operator
 	// oc delete pods --namespace=openshift-insights --all
-	RestartInsightsOperator(t)
+	restartInsightsOperator(t)
 
 	// Check the logs
-	CheckPodsLogs(t, kubeClient, "exceeded than threshold 5. Marking as degraded.")
+	checkPodsLogs(t, clientset, "exceeded than threshold 5. Marking as degraded.")
 
 	// Check the operator is degraded
-	insightsDegraded := IsOperatorDegraded(t, COInsights(kubeClient))
+	insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights(clientset))
 	if !insightsDegraded {
 		t.Fatal("Insights is not degraded")
 	}
 	// Delete secret
-	kubeClient.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	// Check the operator is not degraded anymore
 	errDegraded := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-		insightsDegraded := IsOperatorDegraded(t, COInsights(kubeClient))
+		insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights(clientset))
 		if insightsDegraded {
 			return false, nil
 		}
