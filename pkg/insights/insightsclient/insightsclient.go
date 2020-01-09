@@ -164,7 +164,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	resp, err := c.client.Do(req)
 	if err != nil {
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
-		return fmt.Errorf("unable to build request to connect to Insights server")
+		return fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
 
 	requestID := resp.Header.Get("x-rh-insights-request-id")
