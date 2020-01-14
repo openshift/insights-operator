@@ -3,8 +3,10 @@ package integration
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Check if opt-in/opt-out works
@@ -54,12 +56,36 @@ func TestOptOutOptIn(t *testing.T) {
 	resourceVersion := latestSecret.GetResourceVersion()
 	pullSecret.SetResourceVersion(resourceVersion) // need to update the version, otherwise operation is not permitted
 
-	_, err = clientset.CoreV1().Secrets("openshift-config").Update(pullSecret)
+	errConfig := wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+		objs := map[string]interface{}{}
+		errUnmarshals := json.Unmarshal([]byte(pullSecret.Data[".dockerconfigjson"]), &objs)
+		if errUnmarshals != nil {
+			t.Fatal(errUnmarshal.Error())
+		}
+		for key := range objs["auths"].(map[string]interface{}) {
+			if key == "cloud.openshift.com" {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	t.Log(errConfig)
+
+	newSecret, err := clientset.CoreV1().Secrets("openshift-config").Update(pullSecret)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	t.Logf("%v\n", newSecret)
 
 	// Check if reports are uploaded - Logs show that insights-operator is enabled and reports are uploaded
 	restartInsightsOperator(t)
+	errDisabled := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+		insightsDisabled := isOperatorDisabled(t, clusterOperatorInsights())
+		if insightsDisabled {
+			return false, nil
+		}
+		return true, nil
+	})
+	t.Log(errDisabled)
 	checkPodsLogs(t, clientset, "Successfully reported")
 }

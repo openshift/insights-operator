@@ -78,11 +78,27 @@ func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
 	for _, condition := range statusConditions {
 		if condition.Type == "Degraded" {
 			if condition.Status != "True" {
-				t.Log("Insights is not degraded")
+				t.Log("Operator is not degraded")
 				return false
 			}
 		}
 	}
+	t.Log("Operator is degraded")
+	return true
+}
+
+func isOperatorDisabled(t *testing.T, operator *configv1.ClusterOperator) bool {
+	statusConditions := operator.Status.Conditions
+
+	for _, condition := range statusConditions {
+		if condition.Type == "Disabled" {
+			if condition.Status != "True" {
+				t.Log("Operator is not Disabled")
+				return false
+			}
+		}
+	}
+	t.Log("Operator is disabled")
 	return true
 }
 
