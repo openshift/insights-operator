@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,6 +19,7 @@ import (
 )
 
 var clientset = kubeClient()
+var configClient = configV1Client()
 
 func kubeClient() (result *kubernetes.Clientset) {
 	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
@@ -40,25 +42,42 @@ func kubeClient() (result *kubernetes.Clientset) {
 	return clientset
 }
 
-func clusterOperatorInsights(k *kubernetes.Clientset) map[string]interface{} {
-	// get info about insights cluster operator
-	data, err := k.RESTClient().Get().AbsPath("/apis/config.openshift.io/v1/clusteroperators/insights").DoRaw()
-	obj := map[string]interface{}{}
-	err = json.Unmarshal(data, &obj)
+func configV1Client() (result *configv1client.ConfigV1Client) {
+	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
+	if !ok {
+		fmt.Printf("kubeconfig variable is not set\n")
+	} else {
+		fmt.Printf("KUBECONFIG=%s\n", kubeconfig)
+	}
+	// use the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		fmt.Printf("%#v", err)
+		os.Exit(1)
+	}
+
+	client, err := configv1client.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
 	}
-	return obj
+	return client
 }
 
-func isOperatorDegraded(t *testing.T, config map[string]interface{}) bool {
-	status := config["status"].(map[string]interface{})
-	statusConditions := status["conditions"].([]interface{})
+func clusterOperatorInsights() *configv1.ClusterOperator {
+	// get info about insights cluster operator
+	operator, err := configClient.ClusterOperators().Get("insights", metav1.GetOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	return operator
+}
+
+func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
+	statusConditions := operator.Status.Conditions
 
 	for _, condition := range statusConditions {
-		c := condition.(map[string]interface{})
-		if c["type"].(string) == "Degraded" || c["type"].(string) == "UploadDegraded" {
-			if c["status"].(string) != "True" {
+		if condition.Type == "Degraded" {
+			if condition.Status != "True" {
 				t.Log("Insights is not degraded")
 				return false
 			}

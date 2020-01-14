@@ -62,7 +62,7 @@ func TestUnreachableHost(t *testing.T) {
 	checkPodsLogs(t, clientset, "exceeded than threshold 5. Marking as degraded.")
 
 	// Check the operator is degraded
-	insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights(clientset))
+	insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
 	if !insightsDegraded {
 		t.Fatal("Insights is not degraded")
 	}
@@ -73,7 +73,7 @@ func TestUnreachableHost(t *testing.T) {
 	}
 	// Check the operator is not degraded anymore
 	errDegraded := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-		insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights(clientset))
+		insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
 		if insightsDegraded {
 			return false, nil
 		}
