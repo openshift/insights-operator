@@ -212,9 +212,8 @@ func (b *ControllerBuilder) Run(config *unstructured.Unstructured, ctx context.C
 
 	go func() {
 		if err := server.PrepareRun().Run(ctx.Done()); err != nil {
-			klog.Error(err)
+			klog.Fatal(err)
 		}
-		klog.Fatal("server exited")
 	}()
 
 	protoConfig := rest.CopyConfig(clientConfig)
