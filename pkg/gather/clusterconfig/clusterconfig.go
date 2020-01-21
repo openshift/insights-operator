@@ -89,6 +89,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			}
 			namespaceEventsCollected := sets.NewString()
 
+			now := time.Now()
 			for _, item := range config.Items {
 				if isHealthyOperator(&item) {
 					continue
@@ -100,7 +101,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 						continue
 					}
 					for i := range pods.Items {
-						if isHealthyPod(&pods.Items[i]) {
+						if isHealthyPod(&pods.Items[i], now) {
 							continue
 						}
 						records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
@@ -443,11 +444,13 @@ func anonymizePod(pod *corev1.Pod) *corev1.Pod {
 	return pod
 }
 
-func isHealthyPod(pod *corev1.Pod) bool {
+func isHealthyPod(pod *corev1.Pod, now time.Time) bool {
 	// pending pods may be unable to schedule or start due to failures, and the info they provide in status is important
-	// for identifying why scheduling hass not happened
+	// for identifying why scheduling has not happened
 	if pod.Status.Phase == corev1.PodPending {
-		return false
+		if now.Sub(pod.CreationTimestamp.Time) > 2*time.Minute {
+			return false
+		}
 	}
 	// pods that have containers that have terminated with non-zero exit codes are considered failure
 	for _, status := range pod.Status.InitContainerStatuses {
