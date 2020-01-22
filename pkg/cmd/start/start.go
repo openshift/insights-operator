@@ -76,7 +76,7 @@ func NewOperator() *cobra.Command {
 				WithServer(config.ServingInfo, config.Authentication, config.Authorization).
 				WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
 
-			if err := builder.Run(unstructured, ctx2); err != nil {
+			if err := builder.Run(ctx2, unstructured); err != nil {
 				klog.Fatal(err)
 			}
 		},
