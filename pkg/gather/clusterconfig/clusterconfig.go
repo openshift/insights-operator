@@ -9,6 +9,12 @@ import (
 	"sync"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/client-go/config/clientset/versioned/scheme"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	_ "k8s.io/client-go/kubernetes"
+	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,10 +25,6 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
-
-	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/client-go/config/clientset/versioned/scheme"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -40,15 +42,16 @@ type Gatherer struct {
 	client        configv1client.ConfigV1Interface
 	coreClient    corev1client.CoreV1Interface
 	metricsClient rest.Interface
-
-	lock        sync.Mutex
-	lastVersion *configv1.ClusterVersion
+	certClient    certificatesv1beta1.CertificatesV1beta1Interface
+	lock          sync.Mutex
+	lastVersion   *configv1.ClusterVersion
 }
 
-func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, metricsClient rest.Interface) *Gatherer {
+func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface) *Gatherer {
 	return &Gatherer{
 		client:        client,
 		coreClient:    coreClient,
+		certClient:    certClient,
 		metricsClient: metricsClient,
 	}
 }
@@ -222,6 +225,20 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 				return nil, []error{err}
 			}
 			return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
+		},
+		func() ([]record.Record, []error) {
+			requests, err := i.certClient.CertificateSigningRequests().List(metav1.ListOptions{})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			records := make([]record.Record, len(requests.Items))
+			for i, sr := range requests.Items {
+				records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.Name), Item: CSRAnonymizer{&sr}}
+			}
+			return records, nil
 		},
 	)
 }
