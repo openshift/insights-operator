@@ -16,10 +16,12 @@ import (
 	"k8s.io/klog"
 )
 
+// CSRAnonymizer holds features of Certificate Signing Request. Some anonymized.
 type CSRAnonymizer struct {
 	*CSRAnonymizedFeatures
 }
 
+// Marshal serializes CSR features with anonymization
 func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	// json.Marshal can handle nil well
 	return json.Marshal(a.CSRAnonymizedFeatures)
@@ -223,6 +225,7 @@ func anonymizeCSR(r *certificatesv1b1api.CertificateSigningRequest) *CSRAnonymiz
 	return c
 }
 
+// CSRAnonymizedFeatures holds interestring fields from CSR. Some are anonymized
 type CSRAnonymizedFeatures struct {
 	TypeMeta   metav1.TypeMeta
 	ObjectMeta metav1.ObjectMeta
@@ -230,6 +233,7 @@ type CSRAnonymizedFeatures struct {
 	Status     *StatusFeatures
 }
 
+// StateFeatures holds some fields from CSR State (request) section
 type StateFeatures struct {
 	UID      string
 	Username string
@@ -239,11 +243,13 @@ type StateFeatures struct {
 	Request *CsrFeatures
 }
 
+// StatusFeatures holds Status section, with fields of approved/provided certificate. Some anonymized
 type StatusFeatures struct {
 	Conditions []v1beta1.CertificateSigningRequestCondition
 	Cert       *CertFeatures
 }
 
+// CsrFeatures holds some request features of CSR. Some anonymized.
 type CsrFeatures struct {
 	ValidSignature     bool
 	SignatureAlgorithm string
@@ -255,6 +261,7 @@ type CsrFeatures struct {
 	Subject            pkix.Name
 }
 
+// CertFeatures holds some anonymized features of approved certificate
 type CertFeatures struct {
 	Verified  bool
 	Issuer    pkix.Name
