@@ -53,12 +53,7 @@ func TestCSRs(t *testing.T) {
 				t.Fatal("test failed to unmarshal anonymized csr data", err)
 			}
 
-			a, err := anonymizeCsr(r)
-			ss, _ := json.Marshal(a)
-			_ = ss
-			if err != nil {
-				t.Fatal("should not fail", err)
-			}
+			a := anonymizeCsr(r)
 			if !reflect.DeepEqual(exp, a) {
 				t.Fatal("Expected", exp, "but got", a)
 			}
