@@ -13,20 +13,16 @@ import (
 	certificatesv1b1api "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/klog"
 )
 
-// CSRAnonymizer holds features of Certificate Signing Request. Some anonymized.
 type CSRAnonymizer struct {
 	*certificatesv1b1api.CertificateSigningRequest
 }
 
-// Marshal serializes CSR features with anonymization
 func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	res, err := anonymizeCsr(a.CertificateSigningRequest)
-	if err != nil {
-		return nil, err
-	}
-
+	res := anonymizeCsr(a.CertificateSigningRequest)
+	// json.Marshal can handle nil well
 	return json.Marshal(res)
 }
 
@@ -44,15 +40,18 @@ func anonymizeCsrRequest(r *certificatesv1b1api.CertificateSigningRequest, c *CS
 	block, _ := pem.Decode(r.Spec.Request)
 	if block == nil {
 		// unable to decode CSR: missing block
+		klog.V(2).Infof("Unable to decode PEM Request block for CSR %s in namespace %s", r.Name, r.Namespace)
 		return
 	}
 	csr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
+		klog.V(2).Infof("Unable to parse certificate request %s in namespace %s with error %s", r.Name, r.Namespace, err)
 		return
 	}
 
 	err = csr.CheckSignature()
 	if err != nil {
+		klog.V(2).Infof("Invalid certificate signature in CSR Request %s in namespace %s. Error %s", r.Name, r.Namespace, err)
 		return
 	}
 	c.Spec.Request = &CsrFeatures{}
@@ -63,14 +62,14 @@ func anonymizeCsrRequest(r *certificatesv1b1api.CertificateSigningRequest, c *CS
 	c.Spec.Request.PublicKeyAlgorithm = csr.PublicKeyAlgorithm.String()
 	c.Spec.Request.DNSNames = utils.Map(csr.DNSNames, anonymizeURL)
 	c.Spec.Request.EmailAddresses = utils.Map(csr.EmailAddresses, anonymizeURL)
-	ipsl := []string{}
-	for _, ip := range csr.IPAddresses {
-		ipsl = append(ipsl, ip.String())
+	ipsl := make([]string, len(csr.IPAddresses))
+	for i, ip := range csr.IPAddresses {
+		ipsl[i] = ip.String()
 	}
 	c.Spec.Request.IPAddresses = utils.Map(ipsl, anonymizeURL)
-	urlsl := []string{}
-	for _, u := range csr.URIs {
-		urlsl = append(urlsl, u.String())
+	urlsl := make([]string, len(csr.URIs))
+	for i, u := range csr.URIs {
+		urlsl[i] = u.String()
 	}
 	c.Spec.Request.URIs = utils.Map(urlsl, anonymizeURL)
 }
@@ -117,10 +116,12 @@ func anonymizeCsrCert(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAn
 	block, _ := pem.Decode(r.Status.Certificate)
 	if block == nil {
 		// unable to decode CSR: missing block
+		klog.V(2).Infof("Unable to decode PEM Certificate block for CSR %s in namespace %s", r.Name, r.Namespace)
 		return
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
+		klog.V(2).Infof("Unable to parse certificate %s in namespace %s with error %s", r.Name, r.Namespace, err)
 		return
 	}
 	c.Status.Cert = &CertFeatures{}
@@ -138,15 +139,14 @@ func addMeta(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedF
 	c.ObjectMeta = r.ObjectMeta
 }
 
-func anonymizeCsr(r *certificatesv1b1api.CertificateSigningRequest) (*CSRAnonymizedFeatures, error) {
+func anonymizeCsr(r *certificatesv1b1api.CertificateSigningRequest) *CSRAnonymizedFeatures {
 	c := &CSRAnonymizedFeatures{}
 	addMeta(r, c)
 	anonymizeCsrRequest(r, c)
 	anonymizeCsrCert(r, c)
-	return c, nil
+	return c
 }
 
-// CSRAnonymizedFeatures holds interestring fields from CSR. Some are anonymized
 type CSRAnonymizedFeatures struct {
 	TypeMeta   metav1.TypeMeta
 	ObjectMeta metav1.ObjectMeta
@@ -154,7 +154,6 @@ type CSRAnonymizedFeatures struct {
 	Status     *StatusFeatures
 }
 
-// StateFeatures holds some fields from CSR State (request) section
 type StateFeatures struct {
 	UID      string
 	Username string
@@ -164,13 +163,11 @@ type StateFeatures struct {
 	Request *CsrFeatures
 }
 
-// StatusFeatures holds Status section, with fields of approved/provided certificate. Some anonymized
 type StatusFeatures struct {
 	Conditions []v1beta1.CertificateSigningRequestCondition
 	Cert       *CertFeatures
 }
 
-// CsrFeatures holds some request features of CSR. Some anonymized.
 type CsrFeatures struct {
 	ValidSignature     bool
 	SignatureAlgorithm string
@@ -182,7 +179,6 @@ type CsrFeatures struct {
 	Subject            pkix.Name
 }
 
-// CertFeatures holds some anonymized features of approved certificate
 type CertFeatures struct {
 	Verified  bool
 	Issuer    pkix.Name
