@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -16,9 +18,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var kubeClient = KubeClient()
+var clientset = kubeClient()
+var configClient = configV1Client()
 
-func KubeClient() (result *kubernetes.Clientset) {
+func kubeClient() (result *kubernetes.Clientset) {
 	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
 	if !ok {
 		fmt.Printf("kubeconfig variable is not set\n")
@@ -32,24 +35,84 @@ func KubeClient() (result *kubernetes.Clientset) {
 		os.Exit(1)
 	}
 
-	kubeClient, err := kubernetes.NewForConfig(config)
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
 	}
-	return kubeClient
+	return clientset
 }
 
-func RestartInsightsOperator(t *testing.T) {
+func configV1Client() (result *configv1client.ConfigV1Client) {
+	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
+	if !ok {
+		fmt.Printf("kubeconfig variable is not set\n")
+	} else {
+		fmt.Printf("KUBECONFIG=%s\n", kubeconfig)
+	}
+	// use the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		fmt.Printf("%#v", err)
+		os.Exit(1)
+	}
+
+	client, err := configv1client.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+	return client
+}
+
+func clusterOperatorInsights() *configv1.ClusterOperator {
+	// get info about insights cluster operator
+	operator, err := configClient.ClusterOperators().Get("insights", metav1.GetOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	return operator
+}
+
+func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
+	statusConditions := operator.Status.Conditions
+
+	for _, condition := range statusConditions {
+		if condition.Type == "Degraded" {
+			if condition.Status != "True" {
+				t.Log("Operator is not degraded")
+				return false
+			}
+		}
+	}
+	t.Log("Operator is degraded")
+	return true
+}
+
+func isOperatorDisabled(t *testing.T, operator *configv1.ClusterOperator) bool {
+	statusConditions := operator.Status.Conditions
+
+	for _, condition := range statusConditions {
+		if condition.Type == "Disabled" {
+			if condition.Status != "True" {
+				t.Log("Operator is not Disabled")
+				return false
+			}
+		}
+	}
+	t.Log("Operator is disabled")
+	return true
+}
+
+func restartInsightsOperator(t *testing.T) {
 	// restart insights-operator (delete pods)
-	pods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	for _, pod := range pods.Items {
-		kubeClient.CoreV1().Pods("openshift-insights").Delete(pod.Name, &metav1.DeleteOptions{})
+		clientset.CoreV1().Pods("openshift-insights").Delete(pod.Name, &metav1.DeleteOptions{})
 		err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-			_, err := kubeClient.CoreV1().Pods("openshift-insights").Get(pod.Name, metav1.GetOptions{})
+			_, err := clientset.CoreV1().Pods("openshift-insights").Get(pod.Name, metav1.GetOptions{})
 			if err == nil {
 				t.Logf("the pod is not yet deleted: %v\n", err)
 				return false, nil
@@ -62,14 +125,14 @@ func RestartInsightsOperator(t *testing.T) {
 
 	// check new pods are created and running
 	errPod := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-		newPods, _ := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+		newPods, _ := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 		if len(newPods.Items) == 0 {
 			t.Log("pods are not yet created")
 			return false, nil
 		}
 
 		for _, newPod := range newPods.Items {
-			pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
+			pod, err := clientset.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
 			if err != nil {
 				panic(err.Error())
 			}
@@ -84,7 +147,7 @@ func RestartInsightsOperator(t *testing.T) {
 	t.Log(errPod)
 }
 
-func CheckPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string) {
+func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string) {
 	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
@@ -128,7 +191,7 @@ func CheckPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 
 func TestMain(m *testing.M) {
 	// check the operator is up
-	err := waitForOperator(kubeClient)
+	err := waitForOperator(clientset)
 	if err != nil {
 		fmt.Println("failed waiting for operator to start")
 		os.Exit(1)
