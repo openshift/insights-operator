@@ -17,16 +17,87 @@ import (
 )
 
 type CSRAnonymizer struct {
-	*certificatesv1b1api.CertificateSigningRequest
+	*CSRAnonymizedFeatures
 }
 
 func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	res := anonymizeCsr(a.CertificateSigningRequest)
 	// json.Marshal can handle nil well
-	return json.Marshal(res)
+	return json.Marshal(a.CSRAnonymizedFeatures)
 }
 
-func anonymizeCsrRequest(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
+type CSRs struct {
+	Requests   []v1beta1.CertificateSigningRequest
+	Anonymized []CSRAnonymizer
+}
+
+func FromCSRs(requests *v1beta1.CertificateSigningRequestList) *CSRs {
+	return &CSRs{Requests: requests.Items}
+}
+
+func (c *CSRs) Anonymize() *CSRs {
+	res := &CSRs{}
+	for _, r := range c.Requests {
+		af := anonymizeCSR(&r)
+		res.Anonymized = append(res.Anonymized, CSRAnonymizer{af})
+	}
+	return res
+}
+
+func (c *CSRs) Filter(f FilterFeatures) *CSRs {
+	res := &CSRs{}
+	for _, r := range c.Anonymized {
+		if f(r.CSRAnonymizedFeatures) {
+			res.Anonymized = append(res.Anonymized, r)
+		}
+	}
+	return res
+}
+
+func (c *CSRs) Select() ([]CSRAnonymizer, error) {
+	return c.Anonymized, nil
+}
+
+type FilterFeatures func(c *CSRAnonymizedFeatures, opt ...FilterOptFunc) bool
+
+type FilterOpt struct {
+	time time.Time
+}
+
+type FilterOptFunc = func(o *FilterOpt)
+
+func WithTime(t time.Time) FilterOptFunc {
+	return func(o *FilterOpt) {
+		o.time = t
+	}
+}
+
+func IncludeCSR(c *CSRAnonymizedFeatures, opts ...FilterOptFunc) bool {
+	opt := &FilterOpt{time: time.Now()}
+	for _, o := range opts {
+		o(opt)
+	}
+	// If we have a Cert for this CSR already issued
+	if c.Status != nil && c.Status.Cert != nil {
+		// CSR was valid and certificate exists
+		if !c.Status.Cert.Verified {
+			return true
+		}
+		if t, e := time.Parse(time.RFC3339, c.Status.Cert.NotBefore); e == nil && opt.time.Before(t) {
+			// Now < Certificate NotBefore, certificate is probably not valid
+			return true
+		}
+		if t, e := time.Parse(time.RFC3339, c.Status.Cert.NotAfter); e == nil && opt.time.After(t) {
+			// Now > Certificate NotAfter, certificate is probably not valid
+			return true
+		}
+		// Otherwise it may be valid valid and we dont collect it
+		return false
+	}
+	// We dont know how CSR is going to be evaluated, collect it
+	return true
+}
+
+func anonymizeCSRRequest(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
 	if r == nil || c == nil {
 		return
 	}
@@ -39,8 +110,7 @@ func anonymizeCsrRequest(r *certificatesv1b1api.CertificateSigningRequest, c *CS
 	// parse only first PEM block
 	block, _ := pem.Decode(r.Spec.Request)
 	if block == nil {
-		// unable to decode CSR: missing block
-		klog.V(2).Infof("Unable to decode PEM Request block for CSR %s in namespace %s", r.Name, r.Namespace)
+		klog.V(2).Infof("Unable to decode PEM Request block for CSR %s in namespace %s. Missing block.", r.Name, r.Namespace)
 		return
 	}
 	csr, err := x509.ParseCertificateRequest(block.Bytes)
@@ -105,7 +175,7 @@ func anonymizePkxName(s pkix.Name) (a pkix.Name) {
 }
 
 // returns true if certificate is valid
-func anonymizeCsrCert(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
+func anonymizeCSRCert(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
 	if r == nil || c == nil {
 		return
 	}
@@ -125,6 +195,7 @@ func anonymizeCsrCert(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAn
 		return
 	}
 	c.Status.Cert = &CertFeatures{}
+	c.Status.Cert.Verified = cert != nil
 	c.Status.Cert.Issuer = anonymizePkxName(cert.Issuer)
 	c.Status.Cert.Subject = anonymizePkxName(cert.Subject)
 	c.Status.Cert.NotBefore = cert.NotBefore.Format(time.RFC3339)
@@ -139,11 +210,16 @@ func addMeta(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedF
 	c.ObjectMeta = r.ObjectMeta
 }
 
-func anonymizeCsr(r *certificatesv1b1api.CertificateSigningRequest) *CSRAnonymizedFeatures {
+func anonymizeCSR(r *certificatesv1b1api.CertificateSigningRequest) *CSRAnonymizedFeatures {
 	c := &CSRAnonymizedFeatures{}
-	addMeta(r, c)
-	anonymizeCsrRequest(r, c)
-	anonymizeCsrCert(r, c)
+	fns := []func(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures){
+		addMeta,
+		anonymizeCSRRequest,
+		anonymizeCSRCert,
+	}
+	for _, f := range fns {
+		f(r, c)
+	}
 	return c
 }
 
