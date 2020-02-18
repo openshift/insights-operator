@@ -222,6 +222,24 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			}
 			return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
 		},
+		func() ([]record.Record, []error) {
+			requests, err := i.certClient.CertificateSigningRequests().List(metav1.ListOptions{})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
+			if err != nil {
+				return nil, []error{err}
+			}
+			records := make([]record.Record, len(csrs))
+			for i, sr := range csrs {
+				records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
+			}
+			return records, nil
+		},
 	)
 }
 
@@ -259,18 +277,21 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
 }
 
+// RawByte is skipping Marshalling from byte slice
 type RawByte []byte
 
 func (r RawByte) Marshal(_ context.Context) ([]byte, error) {
 	return r, nil
 }
 
+// Raw is another simplification of marshalling from string
 type Raw struct{ string }
 
 func (r Raw) Marshal(_ context.Context) ([]byte, error) {
 	return []byte(r.string), nil
 }
 
+// Anonymizer returns serialized runtime.Object without change
 type Anonymizer struct{ runtime.Object }
 
 func (a Anonymizer) Marshal(_ context.Context) ([]byte, error) {
