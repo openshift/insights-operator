@@ -15,13 +15,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 var clientset = kubeClient()
 var configClient = configV1Client()
 
-func kubeClient() (result *kubernetes.Clientset) {
+func kubeconfig() (config *restclient.Config) {
 	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
 	if !ok {
 		fmt.Printf("kubeconfig variable is not set\n")
@@ -34,8 +35,11 @@ func kubeClient() (result *kubernetes.Clientset) {
 		fmt.Printf("%#v", err)
 		os.Exit(1)
 	}
+	return config
+}
 
-	clientset, err := kubernetes.NewForConfig(config)
+func kubeClient() (result *kubernetes.Clientset) {
+	clientset, err := kubernetes.NewForConfig(kubeconfig())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -43,20 +47,7 @@ func kubeClient() (result *kubernetes.Clientset) {
 }
 
 func configV1Client() (result *configv1client.ConfigV1Client) {
-	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
-	if !ok {
-		fmt.Printf("kubeconfig variable is not set\n")
-	} else {
-		fmt.Printf("KUBECONFIG=%s\n", kubeconfig)
-	}
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		fmt.Printf("%#v", err)
-		os.Exit(1)
-	}
-
-	client, err := configv1client.NewForConfig(config)
+	client, err := configv1client.NewForConfig(kubeconfig())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -92,14 +83,14 @@ func isOperatorDisabled(t *testing.T, operator *configv1.ClusterOperator) bool {
 
 	for _, condition := range statusConditions {
 		if condition.Type == "Disabled" {
-			if condition.Status != "True" {
-				t.Log("Operator is not Disabled")
-				return false
+			if condition.Status == "True" {
+				t.Log("Operator is Disabled")
+				return true
 			}
 		}
 	}
-	t.Log("Operator is disabled")
-	return true
+	t.Log("Operator is not disabled")
+	return false
 }
 
 func restartInsightsOperator(t *testing.T) {
