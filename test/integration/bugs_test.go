@@ -101,3 +101,44 @@ func TestDefaultUploadFrequency(t *testing.T) {
 		}
 	}
 }
+
+// https://bugzilla.redhat.com/show_bug.cgi?id=1782151
+func TestClusterDefaultNodeSelector(t *testing.T) {
+	// set default selctor of node-role.kubernetes.io/worker
+	schedulers, err := configClient.Schedulers().List(metav1.ListOptions{})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	for _, scheduler := range schedulers.Items {
+		if scheduler.ObjectMeta.Name == "cluster" {
+			scheduler.Spec.DefaultNodeSelector = "node-role.kubernetes.io/worker="
+			configClient.Schedulers().Update(&scheduler)
+		}
+	}
+
+	// restart insights-operator (delete pods)
+	restartInsightsOperator(t)
+
+	// check the pod is scheduled
+	newPods, err := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	for _, newPod := range newPods.Items {
+		pod, err := clientset.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
+		if err != nil {
+			panic(err.Error())
+		}
+		podConditions := pod.Status.Conditions
+		for _, condition := range podConditions {
+			if condition.Type == "PodScheduled" {
+				if condition.Status != "True" {
+					t.Log("Pod is not scheduled")
+					t.Fatal(err.Error())
+				}
+			}
+		}
+		t.Log("Pod is scheduled")
+	}
+}
