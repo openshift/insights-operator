@@ -10,6 +10,7 @@ import (
 )
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
+// https://bugzilla.redhat.com/show_bug.cgi?id=1753755
 func TestDefaultUploadFrequency(t *testing.T) {
 	// delete any existing overriding secret
 	err := clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
@@ -24,6 +25,29 @@ func TestDefaultUploadFrequency(t *testing.T) {
 
 	// check logs for "Gathering cluster info every 2h0m0s"
 	checkPodsLogs(t, clientset, "Gathering cluster info every 2h0m0s")
+
+	// verify it's possible to override it
+	newSecret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "support",
+			Namespace: "openshift-config",
+		},
+		Data: map[string][]byte{
+			"interval": []byte("3m"),
+		},
+		Type: "Opaque",
+	}
+
+	_, err = clientset.CoreV1().Secrets("openshift-config").Create(&newSecret)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	// restart insights-operator (delete pods)
+	restartInsightsOperator(t)
+
+	// check logs for "Gathering cluster info every 3m0s"
+	checkPodsLogs(t, clientset, "Gathering cluster info every 3m0s")
 }
 
 // TestUnreachableHost checks if insights operator reports "degraded" after 5 unsuccessful upload attempts
