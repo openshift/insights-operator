@@ -18,6 +18,7 @@ var (
 )
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
+// https://bugzilla.redhat.com/show_bug.cgi?id=1753755
 func TestDefaultUploadFrequency(t *testing.T) {
 	// delete any existing overriding secret
 	err := kubeClient.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
@@ -28,7 +29,60 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	}
 
 	// restart insights-operator (delete pods)
-	pods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+	restartInsightsOperator(t)
+
+	// check logs for "Gathering cluster info every 2h0m0s"
+	checkPodsLogs(t, clientset, "Gathering cluster info every 2h0m0s")
+
+	// verify it's possible to override it
+	newSecret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "support",
+			Namespace: "openshift-config",
+		},
+		Data: map[string][]byte{
+			"interval": []byte("3m"),
+		},
+		Type: "Opaque",
+	}
+
+	_, err = clientset.CoreV1().Secrets("openshift-config").Create(&newSecret)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	// restart insights-operator (delete pods)
+	restartInsightsOperator(t)
+
+	// check logs for "Gathering cluster info every 3m0s"
+	checkPodsLogs(t, clientset, "Gathering cluster info every 3m0s")
+}
+
+// TestUnreachableHost checks if insights operator reports "degraded" after 5 unsuccessful upload attempts
+// https://bugzilla.redhat.com/show_bug.cgi?id=1745973
+func TestUnreachableHost(t *testing.T) {
+	// Replace the endpoint to some not valid url.
+	// oc -n openshift-config create secret generic support --from-literal=endpoint=http://localhost --dry-run -o yaml | oc apply -f - -n openshift-config
+	modifiedSecret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "support",
+			Namespace: "openshift-config",
+		},
+		Data: map[string][]byte{
+			"endpoint": []byte("http://localhost"),
+			"interval": []byte("3m"), // for faster testing
+		},
+		Type: "Opaque",
+	}
+	// delete any existing overriding secret
+	err := clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+
+	// if the secret is not found, continue, not a problem
+	if err != nil && err.Error() != `secrets "support" not found` {
+		t.Fatal(err.Error())
+	}
+	_, err = clientset.CoreV1().Secrets("openshift-config").Create(&modifiedSecret)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

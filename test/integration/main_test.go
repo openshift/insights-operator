@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -179,7 +181,6 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 }
 
 func TestMain(m *testing.M) {
-	kubeClient = KubeClient()
 	// check the operator is up
 	err := waitForOperator(kubeClient)
 	if err != nil {
