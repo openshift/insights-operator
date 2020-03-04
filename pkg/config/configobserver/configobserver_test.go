@@ -75,7 +75,6 @@ func TestChangeSupportConfig(t *testing.T) {
 						actionName = getAction.GetName()
 					}
 
-					//log.Printf("namespace %s resource: %s verb %s Name %s", action.GetNamespace(), action.GetResource(), action.GetVerb(), actionName)
 					key := fmt.Sprintf("(%s) %s.%s", action.GetResource(), action.GetNamespace(), actionName)
 					sv, ok := secs[key]
 					if !ok {
