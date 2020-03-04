@@ -139,7 +139,8 @@ func (c *Controller) retrieveConfig() error {
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
 		if intervalString, ok := secret.Data["interval"]; ok {
-			duration, err := time.ParseDuration(string(intervalString))
+			var duration time.Duration
+			duration, err = time.ParseDuration(string(intervalString))
 			if err == nil && duration < time.Minute {
 				err = fmt.Errorf("too short")
 			}
