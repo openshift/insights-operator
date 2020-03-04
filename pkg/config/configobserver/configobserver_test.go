@@ -102,17 +102,17 @@ func TestChangeSupportConfig(t *testing.T) {
 				errS = err.Error()
 			}
 			if expErrS != errS {
-				t.Fatalf("The test expected error doesn't fit actual error.\nExpected: %s Actual: %s", tt.expErr, err)
+				t.Fatalf("The test expected error doesn't match actual error.\nExpected: %s Actual: %s", tt.expErr, err)
 			}
 			if tt.expConfig != nil && !reflect.DeepEqual(tt.expConfig, c.config) {
-				t.Fatalf("The test expected config doesn't fit actual config.\nExpected: %v Actual: %v", tt.expConfig, c.config)
+				t.Fatalf("The test expected config doesn't match actual config.\nExpected: %v Actual: %v", tt.expConfig, c.config)
 			}
 		})
 	}
 
 }
 
-var (
+const (
 	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret"
 	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
 	intervalKey   = "interval"
