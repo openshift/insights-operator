@@ -4,5 +4,5 @@ leaderElection:
   disable: true
 interval: "30s"
 storagePath: /tmp/insights-operator
-endpoint: http://localhost:8081
+endpoint: http://[::1]:8081
 #impersonate: system:serviceaccount:openshift-insights:gather
