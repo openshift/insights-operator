@@ -49,4 +49,13 @@ type Controller struct {
 	Username string
 	Password string
 	Token    string
+
+	HTTPConfig HTTPConfig
+}
+
+// HTTPConfig configures http proxy and exception settings if they come from config
+type HTTPConfig struct {
+	HTTPProxy  string
+	HTTPSProxy string
+	NoProxy    string
 }
