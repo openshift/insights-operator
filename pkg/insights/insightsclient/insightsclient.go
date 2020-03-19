@@ -12,10 +12,12 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
 
+	"golang.org/x/net/http/httpproxy"
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/transport"
@@ -27,6 +29,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
+	"github.com/openshift/insights-operator/pkg/config"
 )
 
 type Client struct {
@@ -40,6 +43,7 @@ type Client struct {
 
 type Authorizer interface {
 	Authorize(req *http.Request) error
+	HTTPConfig() config.HTTPConfig
 }
 
 type ClusterVersionInfo interface {
@@ -88,10 +92,11 @@ func getTrustedCABundle() (*x509.CertPool, error) {
 	return certs, nil
 }
 
-func clientTransport() http.RoundTripper {
-	// default transport, proxy from env
+// clientTransport creates new http.Transport based on httpConfig if used, or Env
+func clientTransport(httpConfig config.HTTPConfig) http.RoundTripper {
+	// default transport, proxy from configmap or env
 	clientTransport := &http.Transport{
-		Proxy: knet.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment),
+		Proxy: NewProxier(knet.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment), FromConfig(httpConfig)),
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -111,6 +116,39 @@ func clientTransport() http.RoundTripper {
 	}
 
 	return transport.DebugWrappers(clientTransport)
+}
+
+// ConfigProxier is creating a Proxier from proxy set in HttpConfig
+func ConfigProxier(c config.HTTPConfig) func(req *http.Request) (*url.URL, error) {
+	proxyConfig := httpproxy.Config{
+		HTTPProxy:  c.HTTPProxy,
+		HTTPSProxy: c.HTTPSProxy,
+		NoProxy:    c.NoProxy,
+	}
+	// The golang ProxyFunc seems to have NoProxy already built in
+	return func(req *http.Request) (*url.URL, error) {
+		return proxyConfig.ProxyFunc()(req.URL)
+	}
+}
+
+// FromConfig is setting HttpProxy from HttpConfig in support secret, if it is used
+func FromConfig(c config.HTTPConfig) func(req *http.Request) (*url.URL, error) {
+	if len(c.HTTPProxy) > 0 || len(c.HTTPSProxy) > 0 || len(c.NoProxy) > 0 {
+		return ConfigProxier(c)
+	}
+	return nil
+}
+
+// NewProxier will create new http.Proxier function.
+// If any of customProxiers is set, it will use it, otherwise will use system
+func NewProxier(system func(req *http.Request) (*url.URL, error), customProxiers ...func(req *http.Request) (*url.URL, error)) func(req *http.Request) (*url.URL, error) {
+	for _, p := range customProxiers {
+		if p != nil {
+			return p
+		}
+	}
+
+	return system
 }
 
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
@@ -158,14 +196,14 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	req.Body = pr
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport()
+	c.client.Transport = clientTransport(c.authorizer.HTTPConfig())
 
 	klog.V(4).Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
 	if err != nil {
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
 		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
-		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()		
+		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()
 		return fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
 

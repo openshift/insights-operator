@@ -44,3 +44,9 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 	}
 	return nil
 }
+
+// HTTPConfig provides the Http Proxy settings from Secret
+func (a *Authorizer) HTTPConfig() config.HTTPConfig {
+	cfg := a.configurator.Config()
+	return cfg.HTTPConfig
+}
