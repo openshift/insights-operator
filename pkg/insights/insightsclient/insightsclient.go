@@ -92,11 +92,15 @@ func getTrustedCABundle() (*x509.CertPool, error) {
 	return certs, nil
 }
 
+func proxyFromEnvironment() func(*http.Request) (*url.URL, error) {
+	return http.ProxyFromEnvironment
+}
+
 // clientTransport creates new http.Transport based on httpConfig if used, or Env
 func clientTransport(httpConfig config.HTTPConfig) http.RoundTripper {
 	// default transport, proxy from configmap or env
 	clientTransport := &http.Transport{
-		Proxy: NewProxier(knet.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment), FromConfig(httpConfig)),
+		Proxy: NewProxier(knet.NewProxierWithNoProxyCIDR(proxyFromEnvironment()), FromConfig(httpConfig)),
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
