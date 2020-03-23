@@ -102,7 +102,7 @@ func restartInsightsOperator(t *testing.T) {
 
 	for _, pod := range pods.Items {
 		clientset.CoreV1().Pods("openshift-insights").Delete(pod.Name, &metav1.DeleteOptions{})
-		err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+		err := wait.PollImmediate(1*time.Second, 20*time.Minute, func() (bool, error) {
 			_, err := clientset.CoreV1().Pods("openshift-insights").Get(pod.Name, metav1.GetOptions{})
 			if err == nil {
 				t.Logf("the pod is not yet deleted: %v\n", err)
@@ -150,7 +150,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 			panic(err.Error())
 		}
 
-		errLog := wait.PollImmediate(5*time.Second, 15*time.Minute, func() (bool, error) {
+		errLog := wait.PollImmediate(5*time.Second, 30*time.Minute, func() (bool, error) {
 			req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
 			podLogs, err := req.Stream()
 			if err != nil {
@@ -194,7 +194,7 @@ func TestMain(m *testing.M) {
 func waitForOperator(kubeClient *kubernetes.Clientset) error {
 	depClient := kubeClient.AppsV1().Deployments("openshift-insights")
 
-	err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+	err := wait.PollImmediate(1*time.Second, 20*time.Minute, func() (bool, error) {
 		_, err := depClient.Get("insights-operator", metav1.GetOptions{})
 		if err != nil {
 			fmt.Printf("error waiting for operator deployment to exist: %v\n", err)
