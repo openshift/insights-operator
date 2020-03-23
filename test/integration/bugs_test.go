@@ -1,10 +1,6 @@
 package integration
 
 import (
-	"bytes"
-	"fmt"
-	"io"
-	"strings"
 	"testing"
 	"time"
 
@@ -86,74 +82,32 @@ func TestUnreachableHost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	// Restart insights-operator
+	// oc delete pods --namespace=openshift-insights --all
+	restartInsightsOperator(t)
 
-	for _, pod := range pods.Items {
-		kubeClient.CoreV1().Pods("openshift-insights").Delete(pod.Name, &metav1.DeleteOptions{})
-		err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-			_, err := kubeClient.CoreV1().Pods("openshift-insights").Get(pod.Name, metav1.GetOptions{})
-			if err == nil {
-				fmt.Printf("the pod is not yet deleted: %v\n", err)
-				return false, nil
-			}
-			fmt.Println("the pod is deleted")
-			return true, nil
-		})
-		fmt.Print(err)
+	// Check the logs
+	checkPodsLogs(t, clientset, "exceeded than threshold 5. Marking as degraded.")
+
+	// Check the operator is degraded
+	insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
+	if !insightsDegraded {
+		t.Fatal("Insights is not degraded")
 	}
-
-	// check new pods are created and running
-	errPod := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-		newPods, _ := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
-		if len(newPods.Items) == 0 {
-			fmt.Printf("pods are not yet created")
-			return false, nil
-		}
-
-		for _, newPod := range newPods.Items {
-			pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
-			if err != nil {
-				panic(err.Error())
-			}
-			if pod.Status.Phase != "Running" {
-				return false, nil
-			}
-		}
-
-		fmt.Println("the pods are created")
-		return true, nil
-	})
-	fmt.Print(errPod)
-
-	// check logs for "Gathering cluster info every 2h0m0s"
-	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+	// Delete secret
+	err = clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
-	for _, newPod := range newPods.Items {
-		pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
-		if err != nil {
-			panic(err.Error())
+	// Check the operator is not degraded anymore
+	errDegraded := wait.PollImmediate(1*time.Second, 20*time.Minute, func() (bool, error) {
+		insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
+		if insightsDegraded {
+			return false, nil
 		}
-		req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
-		podLogs, err := req.Stream()
-		if err != nil {
-			panic(err.Error())
-		}
-		defer podLogs.Close()
-
-		buf := new(bytes.Buffer)
-		_, err = io.Copy(buf, podLogs)
-		if err != nil {
-			panic(err.Error())
-		}
-		log := buf.String()
-
-		result := strings.Contains(log, "Gathering cluster info every 2h0m0s")
-		if result == false {
-			t.Error("Default upload frequency is not 2 hours")
-		}
-	}
+		return true, nil
+	})
+	t.Log(errDegraded)
 }
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
