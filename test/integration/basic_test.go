@@ -56,7 +56,7 @@ func TestOptOutOptIn(t *testing.T) {
 	resourceVersion := latestSecret.GetResourceVersion()
 	pullSecret.SetResourceVersion(resourceVersion) // need to update the version, otherwise operation is not permitted
 
-	errConfig := wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+	errConfig := wait.PollImmediate(5*time.Second, 10*time.Minute, func() (bool, error) {
 		objs := map[string]interface{}{}
 		errUnmarshals := json.Unmarshal([]byte(pullSecret.Data[".dockerconfigjson"]), &objs)
 		if errUnmarshals != nil {
@@ -79,7 +79,7 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Check if reports are uploaded - Logs show that insights-operator is enabled and reports are uploaded
 	restartInsightsOperator(t)
-	errDisabled := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+	errDisabled := wait.PollImmediate(1*time.Second, 20*time.Minute, func() (bool, error) {
 		insightsDisabled := isOperatorDisabled(t, clusterOperatorInsights())
 		if insightsDisabled {
 			return false, nil
