@@ -168,6 +168,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 			result := strings.Contains(log, message)
 			if result == false {
 				t.Logf("No %s in logs\n", message)
+				t.Logf("Logs for verification: ****\n%s", log)
 				return false, nil
 			}
 
