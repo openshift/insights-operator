@@ -96,7 +96,7 @@ func TestUnreachableHost(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	// Check the operator is not degraded anymore
-	errDegraded := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+	errDegraded := wait.PollImmediate(1*time.Second, 20*time.Minute, func() (bool, error) {
 		insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
 		if insightsDegraded {
 			return false, nil
