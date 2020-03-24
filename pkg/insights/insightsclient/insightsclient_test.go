@@ -110,25 +110,6 @@ func TestProxy(tt *testing.T) {
 	}
 }
 
-// func TestEnvNoSpecProxy(t *testing.T) {
-// 	proxy := "HTTP_PROXY"
-// 	defer SafeRestoreEnv(proxy)
-// 	exp := "proxy.to"
-// 	os.Setenv(proxy, exp)
-// 	httpConfig := config.HTTPConfig{}
-// 	p := NewProxier(knet.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment), FromConfig(httpConfig))
-// 	req := httptest.NewRequest("GET", "http://google.com", nil)
-// 	url, err := p(req)
-
-// 	t.Logf("url %s err %s", url, err)
-// 	if err != nil {
-// 		t.Fatalf("unexpected err %s", err)
-// 	}
-// 	if nil != url {
-// 		t.Fatalf("no HTTP_PROXY env should return no proxy url.")
-// 	}
-// }
-
 func SafeRestoreEnv(key string) func() {
 	originalVal, wasSet := os.LookupEnv(key)
 	return func() {
