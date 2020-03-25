@@ -574,7 +574,7 @@ func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 func anonymizeConfigMap(dv []byte) string {
 	anonymizedPemBlock := `-----BEGIN CERTIFICATE-----
-YW5vbnltaXplZA==
+ANONYMIZED
 -----END CERTIFICATE-----
 `
 	var sb strings.Builder
