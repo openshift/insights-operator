@@ -17,7 +17,6 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/net/http/httpproxy"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/transport"
 	"k8s.io/component-base/metrics"
@@ -28,7 +27,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
-	"github.com/openshift/insights-operator/pkg/config"
 )
 
 type Client struct {
@@ -114,39 +112,6 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	}
 
 	return transport.DebugWrappers(clientTransport)
-}
-
-// ConfigProxier is creating a Proxier from proxy set in HttpConfig
-func ConfigProxier(c config.HTTPConfig) func(req *http.Request) (*url.URL, error) {
-	proxyConfig := httpproxy.Config{
-		HTTPProxy:  c.HTTPProxy,
-		HTTPSProxy: c.HTTPSProxy,
-		NoProxy:    c.NoProxy,
-	}
-	// The golang ProxyFunc seems to have NoProxy already built in
-	return func(req *http.Request) (*url.URL, error) {
-		return proxyConfig.ProxyFunc()(req.URL)
-	}
-}
-
-// FromConfig is setting HttpProxy from HttpConfig in support secret, if it is used
-func FromConfig(c config.HTTPConfig) func(req *http.Request) (*url.URL, error) {
-	if len(c.HTTPProxy) > 0 || len(c.HTTPSProxy) > 0 || len(c.NoProxy) > 0 {
-		return ConfigProxier(c)
-	}
-	return nil
-}
-
-// NewProxier will create new http.Proxier function.
-// If any of customProxiers is set, it will use it, otherwise will use system
-func NewProxier(system func(req *http.Request) (*url.URL, error), customProxiers ...func(req *http.Request) (*url.URL, error)) func(req *http.Request) (*url.URL, error) {
-	for _, p := range customProxiers {
-		if p != nil {
-			return p
-		}
-	}
-
-	return system
 }
 
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
