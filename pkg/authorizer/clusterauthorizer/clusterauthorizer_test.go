@@ -1,4 +1,4 @@
-package insightsclient
+package clusterauthorizer
 
 import (
 	"fmt"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"golang.org/x/net/http/httpproxy"
-	knet "k8s.io/apimachinery/pkg/util/net"
 )
 
 // nonCachedProxyFromEnvironment creates Proxier if Proxy is set. It uses always fresh Env
@@ -95,7 +94,10 @@ func TestProxy(tt *testing.T) {
 					os.Unsetenv(k)
 				}
 			}
-			p := NewProxier(knet.NewProxierWithNoProxyCIDR(nonCachedProxyFromEnvironment()), FromConfig(tc.HttpConfig))
+
+			co2 := &testConfig{config: &config.Controller{HTTPConfig: tc.HttpConfig}}
+			a := Authorizer{proxyFromEnvironment: nonCachedProxyFromEnvironment(), configurator: co2}
+			p := a.NewSystemOrConfiguredProxy()
 			req := httptest.NewRequest("GET", tc.RequestURL, nil)
 			url, err := p(req)
 
@@ -108,6 +110,14 @@ func TestProxy(tt *testing.T) {
 			}
 		})
 	}
+}
+
+type testConfig struct {
+	config *config.Controller
+}
+
+func (t *testConfig) Config() *config.Controller {
+	return t.config
 }
 
 func SafeRestoreEnv(key string) func() {
