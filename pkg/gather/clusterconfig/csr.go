@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/utils"
 	"k8s.io/api/certificates/v1beta1"
 	certificatesv1b1api "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -130,18 +129,18 @@ func anonymizeCSRRequest(r *certificatesv1b1api.CertificateSigningRequest, c *CS
 
 	c.Spec.Request.SignatureAlgorithm = csr.SignatureAlgorithm.String()
 	c.Spec.Request.PublicKeyAlgorithm = csr.PublicKeyAlgorithm.String()
-	c.Spec.Request.DNSNames = utils.Map(csr.DNSNames, anonymizeURL)
-	c.Spec.Request.EmailAddresses = utils.Map(csr.EmailAddresses, anonymizeURL)
+	c.Spec.Request.DNSNames = Map(csr.DNSNames, anonymizeURL)
+	c.Spec.Request.EmailAddresses = Map(csr.EmailAddresses, anonymizeURL)
 	ipsl := make([]string, len(csr.IPAddresses))
 	for i, ip := range csr.IPAddresses {
 		ipsl[i] = ip.String()
 	}
-	c.Spec.Request.IPAddresses = utils.Map(ipsl, anonymizeURL)
+	c.Spec.Request.IPAddresses = Map(ipsl, anonymizeURL)
 	urlsl := make([]string, len(csr.URIs))
 	for i, u := range csr.URIs {
 		urlsl[i] = u.String()
 	}
-	c.Spec.Request.URIs = utils.Map(urlsl, anonymizeURL)
+	c.Spec.Request.URIs = Map(urlsl, anonymizeURL)
 }
 
 func anonymizePkxName(s pkix.Name) (a pkix.Name) {
@@ -166,7 +165,7 @@ func anonymizePkxName(s pkix.Name) (a pkix.Name) {
 		case *string:
 			*(dst[i].(*string)) = anonymizeString(*s)
 		case *[]string:
-			*(dst[i].(*[]string)) = utils.Map(*s, anonymizeString)
+			*(dst[i].(*[]string)) = Map(*s, anonymizeString)
 		default:
 			panic(fmt.Sprintf("unknown type %T", s))
 		}
@@ -221,6 +220,15 @@ func anonymizeCSR(r *certificatesv1b1api.CertificateSigningRequest) *CSRAnonymiz
 		f(r, c)
 	}
 	return c
+}
+
+// Map applies each of functions to passed slice
+func Map(it []string, fn func(string) string) []string {
+	outSlice := []string{}
+	for _, str := range it {
+		outSlice = append(outSlice, fn(str))
+	}
+	return outSlice
 }
 
 type CSRAnonymizedFeatures struct {
