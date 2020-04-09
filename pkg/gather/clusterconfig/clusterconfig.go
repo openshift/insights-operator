@@ -14,6 +14,7 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 
+	"encoding/base64"
 	"encoding/pem"
 
 	corev1 "k8s.io/api/core/v1"
@@ -150,10 +151,10 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 			records := make([]record.Record, 0, len(cms.Items))
 			for i := range cms.Items {
 				for dk, dv := range cms.Items[i].Data {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{[]byte(dv)}})
+					records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false}})
 				}
 				for dk, dv := range cms.Items[i].BinaryData {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{dv}})
+					records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: dv, encodeBase64: true}})
 				}
 			}
 
@@ -565,11 +566,20 @@ func (i *Gatherer) ClusterVersion() *configv1.ClusterVersion {
 
 // ConfigMapAnonymizer implements serialization of configmap
 // and potentially anonymizes if it is a certificate
-type ConfigMapAnonymizer struct{ v []byte }
+type ConfigMapAnonymizer struct {
+	v            []byte
+	encodeBase64 bool
+}
 
 // Marshal implements serialization of Node with anonymization
 func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return []byte(anonymizeConfigMap(a.v)), nil
+	c := []byte(anonymizeConfigMap(a.v))
+	if a.encodeBase64 {
+		buff := make([]byte, base64.StdEncoding.EncodedLen(len(c)))
+		base64.StdEncoding.Encode(buff, []byte(c))
+		c = buff
+	}
+	return c, nil
 }
 
 func anonymizeConfigMap(dv []byte) string {
