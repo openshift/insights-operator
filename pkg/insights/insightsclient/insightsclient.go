@@ -12,11 +12,11 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
 
-	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/transport"
 	"k8s.io/component-base/metrics"
@@ -40,6 +40,7 @@ type Client struct {
 
 type Authorizer interface {
 	Authorize(req *http.Request) error
+	NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error)
 }
 
 type ClusterVersionInfo interface {
@@ -88,10 +89,10 @@ func getTrustedCABundle() (*x509.CertPool, error) {
 	return certs, nil
 }
 
-func clientTransport() http.RoundTripper {
-	// default transport, proxy from env
+// clientTransport creates new http.Transport with either system or configured Proxy
+func clientTransport(authorizer Authorizer) http.RoundTripper {
 	clientTransport := &http.Transport{
-		Proxy: knet.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment),
+		Proxy: authorizer.NewSystemOrConfiguredProxy(),
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -158,12 +159,14 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	req.Body = pr
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport()
+	c.client.Transport = clientTransport(c.authorizer)
 
 	klog.V(4).Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
 	if err != nil {
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
+		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
+		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()
 		return fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
 

@@ -3,9 +3,12 @@ package clusterauthorizer
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"golang.org/x/net/http/httpproxy"
+	knet "k8s.io/apimachinery/pkg/util/net"
 )
 
 type Configurator interface {
@@ -14,11 +17,14 @@ type Configurator interface {
 
 type Authorizer struct {
 	configurator Configurator
+	// exposed for tests
+	proxyFromEnvironment func(*http.Request) (*url.URL, error)
 }
 
 func New(configurator Configurator) *Authorizer {
 	return &Authorizer{
-		configurator: configurator,
+		configurator:         configurator,
+		proxyFromEnvironment: http.ProxyFromEnvironment,
 	}
 }
 
@@ -43,4 +49,23 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 		return nil
 	}
 	return nil
+}
+
+func (a *Authorizer) NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error) {
+	// using specific proxy settings
+	if c := a.configurator.Config(); c != nil {
+		if len(c.HTTPConfig.HTTPProxy) > 0 || len(c.HTTPConfig.HTTPSProxy) > 0 || len(c.HTTPConfig.NoProxy) > 0 {
+			proxyConfig := httpproxy.Config{
+				HTTPProxy:  c.HTTPConfig.HTTPProxy,
+				HTTPSProxy: c.HTTPConfig.HTTPSProxy,
+				NoProxy:    c.HTTPConfig.NoProxy,
+			}
+			// The golang ProxyFunc seems to have NoProxy already built in
+			return func(req *http.Request) (*url.URL, error) {
+				return proxyConfig.ProxyFunc()(req.URL)
+			}
+		}
+	}
+	// defautl system proxy
+	return knet.NewProxierWithNoProxyCIDR(a.proxyFromEnvironment)
 }
