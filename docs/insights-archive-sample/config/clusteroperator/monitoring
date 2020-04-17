@@ -1,0 +1,78 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "monitoring",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/monitoring",
+    "uid": "7ea80041-4330-4b48-8c44-76ffc5cbd9df",
+    "resourceVersion": "26261",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:14:49Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:21:08Z",
+        "reason": "RollOutDone",
+        "message": "Successfully rolled out the stack."
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:21:08Z"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:21:08Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:45:40Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-monitoring"
+      },
+      {
+        "group": "",
+        "resource": "all",
+        "name": "openshift-monitoring"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "servicemonitors",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "prometheusrules",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "alertmanagers",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "prometheuses",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

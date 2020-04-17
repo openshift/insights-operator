@@ -3,7 +3,6 @@ module github.com/openshift/insights-operator
 go 1.12
 
 require (
-	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/getsentry/raven-go v0.2.1-0.20190513200303-c977f96e1095 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect

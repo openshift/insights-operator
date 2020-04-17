@@ -1,0 +1,58 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "openshift-samples",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-samples",
+    "uid": "a8626c39-f943-4a2e-bedf-4d43f0df4295",
+    "resourceVersion": "13370",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:15:50Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:16:10Z",
+        "message": "Samples installation successful at 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:16:11Z",
+        "message": "Samples installation successful at 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:16:00Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "samples.operator.openshift.io",
+        "resource": "configs",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-samples-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift"
+      }
+    ],
+    "extension": null
+  }
+}
