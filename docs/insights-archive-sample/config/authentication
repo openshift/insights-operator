@@ -1,0 +1,26 @@
+{
+  "kind": "Authentication",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/authentications/cluster",
+    "uid": "55a244b4-602f-4775-afc4-95bbeaa72052",
+    "resourceVersion": "13803",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:05:29Z",
+    "annotations": {
+      "release.openshift.io/create-only": "true"
+    }
+  },
+  "spec": {
+    "type": "",
+    "oauthMetadata": {
+      "name": ""
+    }
+  },
+  "status": {
+    "integratedOAuthMetadata": {
+      "name": "oauth-openshift"
+    }
+  }
+}

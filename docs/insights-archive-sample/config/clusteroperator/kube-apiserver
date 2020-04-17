@@ -1,0 +1,91 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "kube-apiserver",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-apiserver",
+    "uid": "92505a22-c230-4f8f-8cee-3de907f0dd15",
+    "resourceVersion": "19899",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:35Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:24:17Z",
+        "reason": "AsExpected",
+        "message": "NodeControllerDegraded: All master nodes are ready"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:24:17Z",
+        "reason": "AsExpected",
+        "message": "NodeInstallerProgressing: 3 nodes are at revision 6"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:13:26Z",
+        "reason": "AsExpected",
+        "message": "StaticPodsAvailable: 3 nodes are active; 3 nodes are at revision 6"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:36Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "raw-internal",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "name": "kube-apiserver",
+        "version": "1.17.1"
+      },
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "kubeapiservers",
+        "name": "cluster"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": ""
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-apiserver-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-apiserver"
+      }
+    ],
+    "extension": null
+  }
+}

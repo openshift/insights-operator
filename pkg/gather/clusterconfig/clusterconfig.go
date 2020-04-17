@@ -65,208 +65,376 @@ var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 // Gather is hosting and calling all the recording functions
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
 	return record.Collect(ctx, recorder,
-		func() ([]record.Record, []error) {
-			if i.metricsClient == nil {
-				return nil, nil
-			}
-			data, err := i.metricsClient.Get().AbsPath("federate").
-				Param("match[]", "ALERTS").
-				Param("match[]", "etcd_object_counts").
-				Param("match[]", "cluster_installer").
-				DoRaw()
-			if err != nil {
-				// write metrics errors to the file format as a comment
-				klog.Errorf("Unable to retrieve most recent metrics: %v", err)
-				return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
-			}
-			return []record.Record{
-				{Name: "config/metrics", Item: RawByte(data)},
-			}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			records := make([]record.Record, 0, len(config.Items))
-			for i := range config.Items {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
-			}
-			namespaceEventsCollected := sets.NewString()
-
-			now := time.Now()
-			for _, item := range config.Items {
-				if isHealthyOperator(&item) {
-					continue
-				}
-				for _, namespace := range namespacesForOperator(&item) {
-					pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
-					if err != nil {
-						klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
-						continue
-					}
-					for i := range pods.Items {
-						if isHealthyPod(&pods.Items[i], now) {
-							continue
-						}
-						records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
-					}
-					if namespaceEventsCollected.Has(namespace) {
-						continue
-					}
-					namespaceRecords, errs := i.gatherNamespaceEvents(namespace)
-					if len(errs) > 0 {
-						klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, errs)
-						continue
-					}
-					records = append(records, namespaceRecords...)
-					namespaceEventsCollected.Insert(namespace)
-				}
-			}
-			return records, nil
-		},
-		func() ([]record.Record, []error) {
-			nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
-			if err != nil {
-				return nil, []error{err}
-			}
-			records := make([]record.Record, 0, len(nodes.Items))
-			for i := range nodes.Items {
-				if isHealthyNode(&nodes.Items[i]) {
-					continue
-				}
-				records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
-			}
-
-			return records, nil
-		},
-		func() ([]record.Record, []error) {
-			cms, err := i.coreClient.ConfigMaps("openshift-config").List(metav1.ListOptions{})
-			if err != nil {
-				return nil, []error{err}
-			}
-			records := make([]record.Record, 0, len(cms.Items))
-			for i := range cms.Items {
-				for dk, dv := range cms.Items[i].Data {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false}})
-				}
-				for dk, dv := range cms.Items[i].BinaryData {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: dv, encodeBase64: true}})
-				}
-			}
-
-			return records, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.ClusterVersions().Get("version", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			i.setClusterVersion(config)
-			return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			version := i.ClusterVersion()
-			if version == nil {
-				return nil, nil
-			}
-			return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.Infrastructures().Get("cluster", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			return []record.Record{{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.Networks().Get("cluster", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			return []record.Record{{Name: "config/network", Item: Anonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.Authentications().Get("cluster", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			return []record.Record{{Name: "config/authentication", Item: Anonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.FeatureGates().Get("cluster", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			return []record.Record{{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.OAuths().Get("cluster", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			return []record.Record{{Name: "config/oauth", Item: Anonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.Ingresses().Get("cluster", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			return []record.Record{{Name: "config/ingress", Item: IngressAnonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			config, err := i.client.Proxies().Get("cluster", metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
-		},
-		func() ([]record.Record, []error) {
-			requests, err := i.certClient.CertificateSigningRequests().List(metav1.ListOptions{})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
-			if err != nil {
-				return nil, []error{err}
-			}
-			records := make([]record.Record, len(csrs))
-			for i, sr := range csrs {
-				records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
-			}
-			return records, nil
-		},
+		GatherMostRecentMetrics(i),
+		GatherClusterOperators(i),
+		GatherUnhealthyNodes(i),
+		GatherConfigMaps(i),
+		GatherClusterVersion(i),
+		GatherClusterID(i),
+		GatherClusterInfrastructure(i),
+		GatherClusterNetwork(i),
+		GatherClusterAuthentication(i),
+		GatherClusterFeatureGates(i),
+		GatherClusterOAuth(i),
+		GatherClusterIngress(i),
+		GatherClusterProxy(i),
+		GatherCertificateSigningRequests(i),
 	)
+}
+
+// GatherMostRecentMetrics gathers cluster Federated Monitoring metrics.
+//
+// The GET REST query to URL /federate
+// Gathered metrics:
+//   ALERTS
+//   etcd_object_counts
+//   cluster_installer
+//
+// Location in archive: config/metrics/
+// See: docs/insights-archive-sample/config/metrics
+func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		if i.metricsClient == nil {
+			return nil, nil
+		}
+		data, err := i.metricsClient.Get().AbsPath("federate").
+			Param("match[]", "ALERTS").
+			Param("match[]", "etcd_object_counts").
+			Param("match[]", "cluster_installer").
+			DoRaw()
+		if err != nil {
+			// write metrics errors to the file format as a comment
+			klog.Errorf("Unable to retrieve most recent metrics: %v", err)
+			return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
+		}
+		records := []record.Record{
+			{Name: "config/metrics", Item: RawByte(data)},
+		}
+
+		return records, nil
+	}
+}
+
+// GatherClusterOperators collects all ClusterOperators.
+// It finds unhealthy Pods for unhealthy operators
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
+//
+// Location of operators in archive: config/clusteroperator/
+// See: docs/insights-archive-sample/config/clusteroperator
+// Location of pods in archive: config/pod/
+func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := make([]record.Record, 0, len(config.Items))
+		for i := range config.Items {
+			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+		}
+		namespaceEventsCollected := sets.NewString()
+		now := time.Now()
+		for _, item := range config.Items {
+			if isHealthyOperator(&item) {
+				continue
+			}
+			for _, namespace := range namespacesForOperator(&item) {
+				pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
+				if err != nil {
+					klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
+					continue
+				}
+				for i := range pods.Items {
+					if isHealthyPod(&pods.Items[i], now) {
+						continue
+					}
+					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
+				}
+				if namespaceEventsCollected.Has(namespace) {
+					continue
+				}
+				namespaceRecords, errs := i.gatherNamespaceEvents(namespace)
+				if len(errs) > 0 {
+					klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, errs)
+					continue
+				}
+				records = append(records, namespaceRecords...)
+				namespaceEventsCollected.Insert(namespace)
+			}
+		}
+		return records, nil
+	}
+}
+
+// GatherUnhealthyNodes collects all unhealthy Nodes.
+//
+// The node is unhealthy when:
+// the operator.Status.Conditions.Condition Type
+//   is OperatorDegrated and Status is True or
+//      OperatorAvailable and Status is False
+//
+// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
+//
+// Location in archive: config/node/
+func GatherUnhealthyNodes(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := make([]record.Record, 0, len(nodes.Items))
+		for i := range nodes.Items {
+			if isHealthyNode(&nodes.Items[i]) {
+				continue
+			}
+			records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
+		}
+
+		return records, nil
+	}
+}
+
+// GatherConfigMaps fetches the ConfigMaps from namespace openshift-config.
+//
+// Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
+// For ConfigMap of type BinaryData it is encoded as standard base64.
+// In the archive under configmaps we store name of ConfigMap and then each ConfigMap Key. For example config/configmaps/CONFIGMAPNAME/CONFIGMAPKEY1
+//
+// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
+//
+// Location in archive: config/configmaps/
+// See: docs/insights-archive-sample/config/configmaps
+func GatherConfigMaps(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		cms, err := i.coreClient.ConfigMaps("openshift-config").List(metav1.ListOptions{})
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := make([]record.Record, 0, len(cms.Items))
+		for i := range cms.Items {
+			for dk, dv := range cms.Items[i].Data {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false}})
+			}
+			for dk, dv := range cms.Items[i].BinaryData {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: dv, encodeBase64: true}})
+			}
+		}
+
+		return records, nil
+	}
+}
+
+// GatherClusterVersion fetches the ClusterVersion - the ClusterVersion with name version.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusterversion-v1config-openshift-io
+//
+// Location in archive: config/version/
+// See: docs/insights-archive-sample/config/version
+func GatherClusterVersion(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.ClusterVersions().Get("version", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		i.setClusterVersion(config)
+		return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
+	}
+}
+
+// GatherClusterID stores ClusterID from ClusterVersion version
+// This method uses data already collected by Get ClusterVersion. In particular field .Spec.ClusterID
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
+// Response see https://github.com/openshift/api/blob/master/config/v1/types_cluster_version.go#L38
+//
+// Location in archive: config/id/
+// See: docs/insights-archive-sample/config/id
+func GatherClusterID(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		version := i.ClusterVersion()
+		if version == nil {
+			return nil, nil
+		}
+		return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
+	}
+}
+
+// GatherClusterInfrastructure fetches the cluster Infrastructure - the Infrastructure with name cluster.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
+//
+// Location in archive: config/infrastructure/
+// See: docs/insights-archive-sample/config/infrastructure
+func GatherClusterInfrastructure(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.Infrastructures().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}}, nil
+	}
+}
+
+// GatherClusterNetwork fetches the cluster Network - the Network with name cluster.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/network.go#L50
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#network-v1-config-openshift-io
+//
+// Location in archive: config/network/
+// See: docs/insights-archive-sample/config/network
+func GatherClusterNetwork(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.Networks().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/network", Item: Anonymizer{config}}}, nil
+	}
+}
+
+// GatherClusterAuthentication fetches the cluster Authentication - the Authentication with name cluster.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#authentication-v1operator-openshift-io
+//
+// Location in archive: config/authentication/
+// See: docs/insights-archive-sample/config/authentication
+func GatherClusterAuthentication(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.Authentications().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/authentication", Item: Anonymizer{config}}}, nil
+	}
+}
+
+// GatherClusterFeatureGates fetches the cluster FeatureGate - the FeatureGate with name cluster.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
+//
+// Location in archive: config/featuregate/
+// See: docs/insights-archive-sample/config/featuregate
+func GatherClusterFeatureGates(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.FeatureGates().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}}, nil
+	}
+}
+
+// GatherClusterOAuth fetches the cluster OAuth - the OAuth with name cluster.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#oauth-v1-config-openshift-io
+//
+// Location in archive: config/oauth/
+// See: docs/insights-archive-sample/config/oauth
+func GatherClusterOAuth(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.OAuths().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/oauth", Item: Anonymizer{config}}}, nil
+	}
+}
+
+// GatherClusterIngress fetches the cluster Ingress - the Ingress with name cluster.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
+//
+// Location in archive: config/ingress/
+// See: docs/insights-archive-sample/config/ingress
+func GatherClusterIngress(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.Ingresses().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/ingress", Item: IngressAnonymizer{config}}}, nil
+	}
+}
+
+// GatherClusterProxy fetches the cluster Proxy - the Proxy with name cluster.
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
+//
+// Location in archive: config/proxy/
+// See: docs/insights-archive-sample/config/proxy
+func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.client.Proxies().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
+	}
+}
+
+// GatherCertificateSigningRequests collects anonymized CertificateSigningRequests.
+// Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAfter
+//
+// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+//
+// Location in archive: config/certificatesigningrequests/
+func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		requests, err := i.certClient.CertificateSigningRequests().List(metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := make([]record.Record, len(csrs))
+		for i, sr := range csrs {
+			records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
+		}
+		return records, nil
+	}
 }
 
 func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {

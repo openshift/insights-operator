@@ -1,0 +1,109 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "authentication",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/authentication",
+    "uid": "ad9afd45-ffe7-44dc-a8de-28d9ea456cd2",
+    "resourceVersion": "18393",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:36Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:17:09Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:21:05Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:21:05Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:36Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "name": "oauth-openshift",
+        "version": "4.4.0-0.nightly-2020-03-18-092817_openshift"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "authentications",
+        "name": "cluster"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "authentications",
+        "name": "cluster"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "infrastructures",
+        "name": "cluster"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "oauths",
+        "name": "cluster"
+      },
+      {
+        "group": "route.openshift.io",
+        "resource": "routes",
+        "name": "oauth-openshift"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "name": "oauth-openshift"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-authentication"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-authentication-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-ingress"
+      }
+    ],
+    "extension": null
+  }
+}

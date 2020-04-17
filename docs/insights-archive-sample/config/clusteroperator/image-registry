@@ -1,0 +1,112 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "image-registry",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/image-registry",
+    "uid": "8b236468-5140-41f9-b2cf-1abf11bd53b3",
+    "resourceVersion": "13920",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:14:51Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:16:24Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:16:31Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:14:55Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "imageregistry.operator.openshift.io",
+        "resource": "configs",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-image-registry"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "system:registry"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "registry-registry-role"
+      },
+      {
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "openshift-image-registry",
+        "name": "registry"
+      },
+      {
+        "group": "",
+        "resource": "configmaps",
+        "namespace": "openshift-image-registry",
+        "name": "serviceca"
+      },
+      {
+        "group": "",
+        "resource": "configmaps",
+        "namespace": "openshift-image-registry",
+        "name": "image-registry-certificates"
+      },
+      {
+        "group": "",
+        "resource": "secrets",
+        "namespace": "openshift-image-registry",
+        "name": "image-registry-private-configuration"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "images",
+        "name": "cluster"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-image-registry",
+        "name": "node-ca"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "namespace": "openshift-image-registry",
+        "name": "image-registry"
+      },
+      {
+        "group": "apps",
+        "resource": "deployments",
+        "namespace": "openshift-image-registry",
+        "name": "image-registry"
+      }
+    ],
+    "extension": null
+  }
+}
