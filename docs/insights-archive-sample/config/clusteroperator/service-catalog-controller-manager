@@ -1,0 +1,67 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "service-catalog-controller-manager",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/service-catalog-controller-manager",
+    "uid": "ae4e9052-97df-484b-8470-a32f1d2f161c",
+    "resourceVersion": "3374",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:35Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:35Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:35Z",
+        "reason": "AsExpected",
+        "message": "Progressing: the controller manager is in a removed state, therefore no changes are being applied."
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:35Z",
+        "reason": "AsExpected",
+        "message": "Available: the controller manager is not initially installed, operator is available, switch to Managed to enable."
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:35Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "servicecatalogcontrollermanagers",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-catalog-controller-manager-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-catalog-controller-manager"
+      }
+    ],
+    "extension": null
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "service-catalog-apiserver",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/service-catalog-apiserver",
+    "uid": "b19ab0bd-d3c2-4a49-9dda-6eeabfd148a5",
+    "resourceVersion": "3631",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:37Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:38Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:38Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:38Z",
+        "reason": "AsExpected",
+        "message": "Available: the apiserver is in the desired state (Removed)."
+      },
+      {
+        "type": "Upgradeable",
+        "status": "Unknown",
+        "lastTransitionTime": "2020-03-18T12:09:37Z",
+        "reason": "NoData"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-catalog-apiserver-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-catalog-apiserver"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1beta1.servicecatalog.k8s.io"
+      }
+    ],
+    "extension": null
+  }
+}
