@@ -1,0 +1,77 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "marketplace",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/marketplace",
+    "uid": "b90184c5-25b2-44cb-8a98-c884a625fc66",
+    "resourceVersion": "11480",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:14:42Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:15:02Z",
+        "reason": "OperatorAvailable",
+        "message": "Successfully progressed to release version: 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:15:02Z",
+        "reason": "OperatorAvailable",
+        "message": "Available release version: 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:15:02Z",
+        "reason": "OperatorAvailable",
+        "message": "Marketplace is upgradeable"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:14:42Z",
+        "reason": "OperandTransitionsSucceeding",
+        "message": "Current CR sync ratio (1) meets the expected success ratio (0.3)"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-marketplace"
+      },
+      {
+        "group": "operators.coreos.com",
+        "resource": "OperatorSource",
+        "namespace": "openshift-marketplace",
+        "name": ""
+      },
+      {
+        "group": "operators.coreos.com",
+        "resource": "CatalogSourceConfig",
+        "namespace": "openshift-marketplace",
+        "name": ""
+      },
+      {
+        "group": "operators.coreos.com",
+        "resource": "CatalogSource",
+        "namespace": "openshift-marketplace",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

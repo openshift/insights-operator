@@ -1,0 +1,64 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "node-tuning",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/node-tuning",
+    "uid": "c71d6888-edb9-4663-be61-0d31208a5535",
+    "resourceVersion": "11881",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:29Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:33Z",
+        "reason": "AsExpected",
+        "message": "Cluster has deployed \"4.4.0-0.nightly-2020-03-18-092817\""
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:15:29Z",
+        "reason": "AsExpected",
+        "message": "Cluster version is \"4.4.0-0.nightly-2020-03-18-092817\""
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:29Z",
+        "reason": "AsExpected",
+        "message": "DaemonSet \"tuned\" available"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-node-tuning-operator"
+      },
+      {
+        "group": "tuned.openshift.io",
+        "resource": "Tuned",
+        "namespace": "openshift-cluster-node-tuning-operator",
+        "name": "default"
+      },
+      {
+        "group": "apps",
+        "resource": "DaemonSet",
+        "namespace": "openshift-cluster-node-tuning-operator",
+        "name": "tuned"
+      }
+    ],
+    "extension": null
+  }
+}

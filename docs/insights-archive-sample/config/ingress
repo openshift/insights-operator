@@ -1,0 +1,16 @@
+{
+  "kind": "Ingress",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/ingresses/cluster",
+    "uid": "2aa20f58-0ccd-4d3e-8bd5-bc0612099433",
+    "resourceVersion": "1376",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:05:39Z"
+  },
+  "spec": {
+    "domain": "xxxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx"
+  },
+  "status": {}
+}

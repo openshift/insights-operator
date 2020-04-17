@@ -1,0 +1,62 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "operator-lifecycle-manager",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/operator-lifecycle-manager",
+    "uid": "1638376b-da24-4421-9876-0cb0edf63e8c",
+    "resourceVersion": "12051",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:10:26Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:10:26Z"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:15:31Z",
+        "message": "Deployed 0.14.2"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:10:26Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:10:26Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "name": "operator-lifecycle-manager",
+        "version": "0.14.2"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operators.coreos.com",
+        "resource": "ClusterServiceVersion",
+        "namespace": "openshift-operator-lifecycle-manager",
+        "name": "packageserver"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-operator-lifecycle-manager"
+      }
+    ],
+    "extension": null
+  }
+}

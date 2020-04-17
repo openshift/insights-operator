@@ -1,0 +1,30 @@
+{
+  "kind": "Infrastructure",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/infrastructures/cluster",
+    "uid": "46fbc6af-d2d2-484e-b517-2f69d461f72d",
+    "resourceVersion": "1274",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:05:35Z"
+  },
+  "spec": {
+    "cloudConfig": {
+      "name": ""
+    }
+  },
+  "status": {
+    "infrastructureName": "xx-xx-xxxxxxx-xxxxx-xxxxx",
+    "platform": "AWS",
+    "platformStatus": {
+      "type": "AWS",
+      "aws": {
+        "region": "us-west-1"
+      }
+    },
+    "etcdDiscoveryDomain": "xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx",
+    "apiServerURL": "xxxxx://xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx:xxxx",
+    "apiServerInternalURI": "xxxxx://xxx-xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx:xxxx"
+  }
+}

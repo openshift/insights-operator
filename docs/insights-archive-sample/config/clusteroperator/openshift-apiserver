@@ -1,0 +1,140 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "openshift-apiserver",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-apiserver",
+    "uid": "8eee93ce-3a73-4055-8a01-86997a2d4f41",
+    "resourceVersion": "15531",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:34Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:17:45Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:15:18Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:14:34Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:34Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "name": "openshift-apiserver",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "openshiftapiservers",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-apiserver-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-apiserver"
+      },
+      {
+        "group": "",
+        "resource": "endpoints",
+        "namespace": "openshift-etcd",
+        "name": "host-etcd-2"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.apps.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.authorization.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.build.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.image.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.oauth.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.project.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.quota.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.route.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.security.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.template.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.user.openshift.io"
+      }
+    ],
+    "extension": null
+  }
+}
