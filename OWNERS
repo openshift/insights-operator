@@ -5,6 +5,7 @@ approvers:
 - inecas
 - tisnik
 - alexandrevicenzi
+- martinkunc
 reviewers:
 - smarterclayton
 - derekwaynecarr
@@ -12,5 +13,6 @@ reviewers:
 - inecas
 - tisnik
 - alexandrevicenzi
+- martinkunc
 
 component: "Insights operator"
