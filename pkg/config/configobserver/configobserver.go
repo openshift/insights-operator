@@ -127,6 +127,15 @@ func (c *Controller) retrieveConfig() error {
 		if endpoint, ok := secret.Data["endpoint"]; ok {
 			nextConfig.Endpoint = string(endpoint)
 		}
+		if httpproxy, ok := secret.Data["httpProxy"]; ok {
+			nextConfig.HTTPConfig.HTTPProxy = string(httpproxy)
+		}
+		if httpsproxy, ok := secret.Data["httpsProxy"]; ok {
+			nextConfig.HTTPConfig.HTTPSProxy = string(httpsproxy)
+		}
+		if noproxy, ok := secret.Data["noProxy"]; ok {
+			nextConfig.HTTPConfig.NoProxy = string(noproxy)
+		}
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
 		if intervalString, ok := secret.Data["interval"]; ok {
@@ -203,6 +212,7 @@ func (c *Controller) mergeConfigLocked() {
 		if len(c.secretConfig.Endpoint) > 0 {
 			cfg.Endpoint = c.secretConfig.Endpoint
 		}
+		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {
 		cfg.Token = c.tokenConfig.Token
