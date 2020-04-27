@@ -1,0 +1,70 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "dns",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/dns",
+    "uid": "1ae4b314-5cb9-47e1-ba97-46ee9951e5f2",
+    "resourceVersion": "14683",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:10:30Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:17:00Z",
+        "reason": "AsExpected",
+        "message": "All desired DNS DaemonSets available and operand Namespace exists"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:17:01Z",
+        "reason": "AsExpected",
+        "message": "Desired and available number of DNS DaemonSets are equal"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:10:59Z",
+        "reason": "AsExpected",
+        "message": "At least 1 DNS DaemonSet available"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "name": "coredns",
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:cebcefdcc938d3e7473016dc334500ad9b854baaaa20b06d7c889f5529fe4d45"
+      },
+      {
+        "name": "openshift-cli",
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:d5c70cfbf97d100b4ce4222ecabd912e227acb08d7de76237befbe7d03f64691"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-dns-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-dns"
+      },
+      {
+        "group": "operator.openshift.io",
+        "resource": "DNS",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

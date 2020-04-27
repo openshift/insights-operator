@@ -1,0 +1,32 @@
+{
+  "kind": "OAuth",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/oauths/cluster",
+    "uid": "55fc1b53-c3d3-4a96-b8fa-774b469f3e03",
+    "resourceVersion": "1678",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:06:09Z",
+    "annotations": {
+      "release.openshift.io/create-only": "true"
+    }
+  },
+  "spec": {
+    "tokenConfig": {
+      "accessTokenMaxAgeSeconds": 0
+    },
+    "templates": {
+      "login": {
+        "name": ""
+      },
+      "providerSelection": {
+        "name": ""
+      },
+      "error": {
+        "name": ""
+      }
+    }
+  },
+  "status": {}
+}

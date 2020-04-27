@@ -1,0 +1,17 @@
+{
+  "kind": "FeatureGate",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/featuregates/cluster",
+    "uid": "f10e0060-b0f1-4d31-b5c5-a072d1e11118",
+    "resourceVersion": "1567",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:05:49Z",
+    "annotations": {
+      "release.openshift.io/create-only": "true"
+    }
+  },
+  "spec": {},
+  "status": {}
+}

@@ -1,0 +1,18 @@
+{
+  "kind": "Proxy",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/proxies/cluster",
+    "uid": "6ef7884e-94bc-4936-bad5-74cfc1379bcb",
+    "resourceVersion": "712",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:05:20Z"
+  },
+  "spec": {
+    "trustedCA": {
+      "name": ""
+    }
+  },
+  "status": {}
+}
