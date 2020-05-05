@@ -96,6 +96,14 @@ rules:
   verbs:
     - list
 - apiGroups:
+    - imageregistry.operator.openshift.io
+  resources:
+    - configs
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
   - ""
   resources:
   - nodes
