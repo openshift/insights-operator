@@ -44,6 +44,13 @@ Location in archive: config/id/
 See: docs/insights-archive-sample/config/id
 
 
+## ClusterImageRegistry
+
+fetches the cluster Image Registry configuration
+
+Location in archive: config/imageregistry/
+
+
 ## ClusterInfrastructure
 
 fetches the cluster Infrastructure - the Infrastructure with name cluster.
