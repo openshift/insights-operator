@@ -84,7 +84,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// TODO: the oauth-proxy and delegating authorizer do not support Impersonate-User,
 	//   so we do not impersonate gather
 	metricsGatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
-	metricsGatherKubeConfig.CAFile = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+	metricsGatherKubeConfig.CAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
 	metricsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
 	metricsGatherKubeConfig.APIPath = "/"

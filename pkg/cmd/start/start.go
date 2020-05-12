@@ -17,7 +17,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller"
 )
 
-const serviceCACertPath = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 
 func NewOperator() *cobra.Command {
 	operator := &controller.Support{
@@ -55,6 +55,8 @@ func NewOperator() *cobra.Command {
 			// if the service CA is rotated, we want to restart
 			if data, err := ioutil.ReadFile(serviceCACertPath); err == nil {
 				startingFileContent[serviceCACertPath] = data
+			} else {
+				klog.V(4).Infof("Unable to read service ca bundle: %v", err)
 			}
 			observedFiles = append(observedFiles, serviceCACertPath)
 
