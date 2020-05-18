@@ -9,15 +9,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-var (
-	kubeClient = KubeClient()
-)
-
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
 // https://bugzilla.redhat.com/show_bug.cgi?id=1753755
 func TestDefaultUploadFrequency(t *testing.T) {
 	// delete any existing overriding secret
-	err := kubeClient.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	err := clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {

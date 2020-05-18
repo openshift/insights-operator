@@ -183,7 +183,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 
 func TestMain(m *testing.M) {
 	// check the operator is up
-	err := waitForOperator(kubeClient)
+	err := waitForOperator(clientset)
 	if err != nil {
 		fmt.Println("failed waiting for operator to start")
 		os.Exit(1)
