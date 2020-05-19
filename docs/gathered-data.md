@@ -46,7 +46,7 @@ See: docs/insights-archive-sample/config/id
 
 ## ClusterImageRegistry
 
-fetches the cluster Image Registry configuration
+fetches the cluster Image Registry and Pruner configuration
 
 Location in archive: config/imageregistry/
 
