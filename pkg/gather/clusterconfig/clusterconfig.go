@@ -89,6 +89,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherClusterNetwork(i),
 		GatherClusterAuthentication(i),
 		GatherClusterImageRegistry(i),
+		GatherClusterImagePruner(i),
 		GatherClusterFeatureGates(i),
 		GatherClusterOAuth(i),
 		GatherClusterIngress(i),
@@ -344,6 +345,22 @@ func GatherClusterAuthentication(i *Gatherer) func() ([]record.Record, []error) 
 	}
 }
 
+// GatherClusterImagePruner fetches the image pruner configuration
+//
+// Location in archive: config/imagepruner/
+func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		pruner, err := i.registryClient.ImagePruners().Get("cluster", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		return []record.Record{{Name: "config/imagepruner", Item: ImagePrunerAnonymizer{pruner}}}, nil
+	}
+}
+
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
 // Location in archive: config/imageregistry/
@@ -559,7 +576,17 @@ func (a FeatureGateAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(openshiftSerializer, a.FeatureGate)
 }
 
-// IngressAnonymizer implements serialization with marshalling
+// ImagePrunerAnonymizer implements serialization with marshalling
+type ImagePrunerAnonymizer struct {
+	*registryv1.ImagePruner
+}
+
+// Marshal serializes ImagePruner with anonymization
+func (a ImagePrunerAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return runtime.Encode(registrySerializer.LegacyCodec(registryv1.SchemeGroupVersion), a.ImagePruner)
+}
+
+// ImageRegistryAnonymizer implements serialization with marshalling
 type ImageRegistryAnonymizer struct {
 	*registryv1.Config
 }

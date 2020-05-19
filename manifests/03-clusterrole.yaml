@@ -99,6 +99,7 @@ rules:
     - imageregistry.operator.openshift.io
   resources:
     - configs
+    - imagepruners
   verbs:
     - get
     - list
