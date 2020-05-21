@@ -527,12 +527,22 @@ func (r RawByte) Marshal(_ context.Context) ([]byte, error) {
 	return r, nil
 }
 
+// GetExtension returns extension for "id" file - none
+func (r RawByte) GetExtension() string {
+	return ""
+}
+
 // Raw is another simplification of marshalling from string
 type Raw struct{ string }
 
 // Marshal returns raw bytes
 func (r Raw) Marshal(_ context.Context) ([]byte, error) {
 	return []byte(r.string), nil
+}
+
+// GetExtension returns extension for raw marshaller
+func (r Raw) GetExtension() string {
+	return ""
 }
 
 // Anonymizer returns serialized runtime.Object without change
@@ -543,12 +553,22 @@ func (a Anonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(openshiftSerializer, a.Object)
 }
 
+// GetExtension returns extension for anonymized openshift objects
+func (a Anonymizer) GetExtension() string {
+	return "json"
+}
+
 // InfrastructureAnonymizer anonymizes infrastructure
 type InfrastructureAnonymizer struct{ *configv1.Infrastructure }
 
 // Marshal serializes Infrastructure with anonymization
 func (a InfrastructureAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(openshiftSerializer, anonymizeInfrastructure(a.Infrastructure))
+}
+
+// GetExtension returns extension for anonymized infra objects
+func (a InfrastructureAnonymizer) GetExtension() string {
+	return "json"
 }
 
 func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastructure {
@@ -568,12 +588,22 @@ func (a ClusterVersionAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(openshiftSerializer, a.ClusterVersion)
 }
 
+// GetExtension returns extension for anonymized cluster version objects
+func (a ClusterVersionAnonymizer) GetExtension() string {
+	return "json"
+}
+
 // FeatureGateAnonymizer implements serializaton of FeatureGate with anonymization
 type FeatureGateAnonymizer struct{ *configv1.FeatureGate }
 
 // Marshal serializes FeatureGate with anonymization
 func (a FeatureGateAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(openshiftSerializer, a.FeatureGate)
+}
+
+// GetExtension returns extension for anonymized feature gate objects
+func (a FeatureGateAnonymizer) GetExtension() string {
+	return "json"
 }
 
 // ImagePrunerAnonymizer implements serialization with marshalling
@@ -584,6 +614,11 @@ type ImagePrunerAnonymizer struct {
 // Marshal serializes ImagePruner with anonymization
 func (a ImagePrunerAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(registrySerializer.LegacyCodec(registryv1.SchemeGroupVersion), a.ImagePruner)
+}
+
+// GetExtension returns extension for anonymized image pruner objects
+func (a ImagePrunerAnonymizer) GetExtension() string {
+	return "json"
 }
 
 // ImageRegistryAnonymizer implements serialization with marshalling
@@ -621,6 +656,11 @@ func (a ImageRegistryAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(registrySerializer.LegacyCodec(registryv1.SchemeGroupVersion), a.Config)
 }
 
+// GetExtension returns extension for anonymized image registry objects
+func (a ImageRegistryAnonymizer) GetExtension() string {
+	return "json"
+}
+
 // IngressAnonymizer implements serialization with marshalling
 type IngressAnonymizer struct{ *configv1.Ingress }
 
@@ -628,6 +668,11 @@ type IngressAnonymizer struct{ *configv1.Ingress }
 func (a IngressAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	a.Ingress.Spec.Domain = anonymizeURL(a.Ingress.Spec.Domain)
 	return runtime.Encode(openshiftSerializer, a.Ingress)
+}
+
+// GetExtension returns extension for anonymized ingress objects
+func (a IngressAnonymizer) GetExtension() string {
+	return "json"
 }
 
 // CompactedEvent holds one Namespace Event
@@ -651,6 +696,11 @@ func (a EventAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return json.Marshal(a.CompactedEventList)
 }
 
+// GetExtension returns extension for anonymized event objects
+func (a EventAnonymizer) GetExtension() string {
+	return "json"
+}
+
 // ProxyAnonymizer implements serialization of HttpProxy/NoProxy with anonymization
 type ProxyAnonymizer struct{ *configv1.Proxy }
 
@@ -664,6 +714,11 @@ func (a ProxyAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	a.Proxy.Status.HTTPSProxy = anonymizeURLCSV(a.Proxy.Status.HTTPSProxy)
 	a.Proxy.Status.NoProxy = anonymizeURLCSV(a.Proxy.Status.NoProxy)
 	return runtime.Encode(openshiftSerializer, a.Proxy)
+}
+
+// GetExtension returns extension for anonymized proxy objects
+func (a ProxyAnonymizer) GetExtension() string {
+	return "json"
 }
 
 func anonymizeURLCSV(s string) string {
@@ -690,6 +745,11 @@ type ClusterOperatorAnonymizer struct{ *configv1.ClusterOperator }
 // Marshal serializes ClusterOperator
 func (a ClusterOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(openshiftSerializer, a.ClusterOperator)
+}
+
+// GetExtension returns extension for anonymized cluster operator objects
+func (a ClusterOperatorAnonymizer) GetExtension() string {
+	return "json"
 }
 
 func isHealthyOperator(operator *configv1.ClusterOperator) bool {
@@ -719,6 +779,11 @@ type NodeAnonymizer struct{ *corev1.Node }
 // Marshal implements serialization of Node with anonymization
 func (a NodeAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(kubeSerializer, anonymizeNode(a.Node))
+}
+
+// GetExtension returns extension for anonymized node objects
+func (a NodeAnonymizer) GetExtension() string {
+	return "json"
 }
 
 func anonymizeNode(node *corev1.Node) *corev1.Node {
@@ -767,6 +832,11 @@ type PodAnonymizer struct{ *corev1.Pod }
 // Marshal implements serialization of a Pod with anonymization
 func (a PodAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(kubeSerializer, anonymizePod(a.Pod))
+}
+
+// GetExtension returns extension for anonymized pod objects
+func (a PodAnonymizer) GetExtension() string {
+	return "json"
 }
 
 func anonymizePod(pod *corev1.Pod) *corev1.Pod {
@@ -841,6 +911,11 @@ func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 		c = buff
 	}
 	return c, nil
+}
+
+// GetExtension returns extension for anonymized openshift objects
+func (a ConfigMapAnonymizer) GetExtension() string {
+	return ""
 }
 
 func anonymizeConfigMap(dv []byte) string {

@@ -28,6 +28,7 @@ type Record struct {
 
 type Marshalable interface {
 	Marshal(context.Context) ([]byte, error)
+	GetExtension() string
 }
 
 type JSONMarshaller struct {
@@ -36,6 +37,11 @@ type JSONMarshaller struct {
 
 func (m JSONMarshaller) Marshal(_ context.Context) ([]byte, error) {
 	return json.Marshal(m.Object)
+}
+
+// GetExtension return extension for json marshaller
+func (m JSONMarshaller) GetExtension() string {
+	return "json"
 }
 
 // Collect is a helper for gathering a large set of records from generic functions.
