@@ -1,10 +1,12 @@
 package clusterconfig
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -44,6 +46,9 @@ var (
 
 	registrySerializer serializer.CodecFactory
 	registryScheme     = runtime.NewScheme()
+
+	// logTailLines defines a number lines to keep when fetching pod logs
+	logTailLines = int64(100)
 )
 
 func init() {
@@ -164,11 +169,40 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 					klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
 					continue
 				}
-				for i := range pods.Items {
-					if isHealthyPod(&pods.Items[i], now) {
+				for j := range pods.Items {
+					pod := &pods.Items[j]
+					if isHealthyPod(pod, now) {
 						continue
 					}
-					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
+					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{pod}})
+
+					// Fetch previous and current pod logs
+					for _, previous := range []bool{true, false} {
+						for _, container := range pod.Spec.Containers {
+							currentOrPrevious := fmt.Sprintf("%s_current.log", container.Name)
+							if previous {
+								currentOrPrevious = fmt.Sprintf("%s_previous.log", container.Name)
+							}
+
+							req := i.coreClient.Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Previous: previous, TailLines: &logTailLines, Container: container.Name})
+							readCloser, err := req.Stream()
+							if err != nil {
+								klog.V(2).Infof("Failed to fetch %s for %s pod in namespace %s for failing operator %s: %q", currentOrPrevious, pod.Name, namespace, item.Name, err)
+								continue
+							}
+
+							defer readCloser.Close()
+
+							buf := bytes.NewBufferString("")
+							_, err = io.Copy(buf, readCloser)
+							if err != nil {
+								klog.V(2).Infof("Failed to write %s for %s pod in namespace %s for failing operator %s: %q", currentOrPrevious, pod.Name, namespace, item.Name, err)
+								continue
+							}
+
+							records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, currentOrPrevious), Item: Raw{buf.String()}})
+						}
+					}
 				}
 				if namespaceEventsCollected.Has(namespace) {
 					continue
