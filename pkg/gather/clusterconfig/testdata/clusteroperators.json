@@ -837,22 +837,26 @@
                     {
                         "type": "Degraded",
                         "status": "False",
+                        "reason": "AsExpected",
                         "lastTransitionTime": "2020-04-17T12:12:48Z"
                     },
                     {
                         "type": "Available",
                         "status": "True",
+                        "reason": "AsExpected",
                         "lastTransitionTime": "2020-04-17T12:12:48Z"
                     },
                     {
                         "type": "Progressing",
                         "status": "False",
+                        "reason": "AsExpected",
                         "lastTransitionTime": "2020-04-17T12:14:48Z",
                         "message": "Monitoring the cluster"
                     },
                     {
                         "type": "Disabled",
                         "status": "False",
+                        "reason": "AsExpected",
                         "lastTransitionTime": "2020-04-17T12:14:48Z"
                     }
                 ],
