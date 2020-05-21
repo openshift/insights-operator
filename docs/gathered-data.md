@@ -44,6 +44,13 @@ Location in archive: config/id/
 See: docs/insights-archive-sample/config/id
 
 
+## ClusterImagePruner
+
+fetches the image pruner configuration
+
+Location in archive: config/imagepruner/
+
+
 ## ClusterImageRegistry
 
 fetches the cluster Image Registry configuration
