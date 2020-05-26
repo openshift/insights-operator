@@ -79,8 +79,14 @@ func (r *Recorder) Record(record record.Record) error {
 		return err
 	}
 
+	recordName := record.Name
+	extension := record.Item.GetExtension()
+	if len(extension) > 0 {
+		recordName = fmt.Sprintf("%s.%s", record.Name, extension)
+	}
+
 	r.records[record.Name] = &memoryRecord{
-		name:        record.Name,
+		name:        recordName,
 		fingerprint: record.Fingerprint,
 		at:          at,
 		data:        data,
