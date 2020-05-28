@@ -43,10 +43,11 @@ type Controller struct {
 	statusCh     chan struct{}
 	configurator Configurator
 
-	lock     sync.Mutex
-	sources  []controllerstatus.Interface
-	reported Reported
-	start    time.Time
+	lock             sync.Mutex
+	sources          []controllerstatus.Interface
+	reported         Reported
+	start            time.Time
+	safeInitialStart bool
 }
 
 func NewController(client configv1client.ConfigV1Interface, configurator Configurator, namespace string) *Controller {
@@ -90,6 +91,18 @@ func (c *Controller) SetLastReportedTime(at time.Time) {
 	}
 	c.reported.LastReportTime.Time = at
 	c.triggerStatusUpdate()
+}
+
+func (c *Controller) SafeInitialStart() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.safeInitialStart
+}
+
+func (c *Controller) SetSafeInitialStart(safe bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.safeInitialStart = safe
 }
 
 func (c *Controller) AddSources(sources ...controllerstatus.Interface) {
@@ -350,15 +363,25 @@ func (c *Controller) updateStatus(initial bool) error {
 		}
 		existing = nil
 	}
-	if initial && existing != nil {
-		var reported Reported
-		if len(existing.Status.Extension.Raw) > 0 {
-			if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil {
-				klog.Errorf("The initial operator extension status is invalid: %v", err)
+	safeInitialStart := false
+	if initial {
+		if existing != nil {
+			var reported Reported
+			if len(existing.Status.Extension.Raw) > 0 {
+				if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil {
+					klog.Errorf("The initial operator extension status is invalid: %v", err)
+				}
 			}
+			c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
+			if c := findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorDegraded); c == nil ||
+				c != nil && c.Status == configv1.ConditionFalse {
+				safeInitialStart = true
+			}
+		} else {
+			safeInitialStart = true
 		}
-		c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
 	}
+	c.SetSafeInitialStart(safeInitialStart)
 
 	updated := c.merge(existing)
 	if existing == nil {

@@ -34,6 +34,7 @@ type Summarizer interface {
 type StatusReporter interface {
 	LastReportedTime() time.Time
 	SetLastReportedTime(time.Time)
+	SafeInitialStart() bool
 }
 
 type Controller struct {
@@ -79,6 +80,9 @@ func (c *Controller) Run(ctx context.Context) {
 		if now := time.Now(); next.After(now) {
 			initialDelay = wait.Jitter(now.Sub(next), 1.2)
 		}
+	}
+	if c.reporter.SafeInitialStart() {
+		initialDelay = 0
 	}
 	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", cfg.Endpoint, interval, initialDelay.Truncate(time.Second))
 
