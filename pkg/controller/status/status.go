@@ -221,6 +221,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:   configv1.OperatorDegraded,
 				Status: configv1.ConditionFalse,
+				Reason: "AsExpected",
 			})
 		}
 
@@ -237,6 +238,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:   OperatorDisabled,
 				Status: configv1.ConditionFalse,
+				Reason: "AsExpected",
 			})
 		}
 
@@ -253,6 +255,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:   configv1.OperatorDegraded,
 				Status: configv1.ConditionFalse,
+				Reason: "AsExpected",
 			})
 		}
 
@@ -273,6 +276,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorAvailable,
 		Status: configv1.ConditionTrue,
+		Reason: "AsExpected",
 	})
 
 	// update the Progressing condition with a summary of the current state
@@ -285,6 +289,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:    configv1.OperatorProgressing,
 				Status:  configv1.ConditionTrue,
+				Reason:  "Initializing",
 				Message: "Initializing the operator",
 			})
 		}
@@ -294,6 +299,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
+			Reason:  "Degraded",
 			Message: "An error has occurred",
 		})
 
@@ -312,6 +318,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
+			Reason:  "AsExpected",
 			Message: "Monitoring the cluster",
 		})
 	}
