@@ -10,6 +10,12 @@ test-e2e:
 	echo "Dummy e2e target"
 .PHONY: test-e2e
 
+vet:
+	go vet $$(go list ./... | grep -v /vendor/)
+
+lint:
+	golint $$(go list ./... | grep -v /vendor/)
+
 vendor:
 	go mod tidy
 	go mod vendor

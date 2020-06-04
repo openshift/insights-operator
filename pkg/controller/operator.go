@@ -51,14 +51,12 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 	return nil
 }
 
-func (s *Support) Run(controller *controllercmd.ControllerContext) error {
+func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 
 	if err := s.LoadConfig(controller.ComponentConfig.Object); err != nil {
 		return err
 	}
-
-	ctx := context.Background()
 
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(controller.ProtoKubeConfig)
@@ -131,7 +129,7 @@ func (s *Support) Run(controller *controllercmd.ControllerContext) error {
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), metricsClient)
+	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})
