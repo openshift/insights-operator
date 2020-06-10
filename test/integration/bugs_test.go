@@ -12,8 +12,23 @@ import (
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
 // https://bugzilla.redhat.com/show_bug.cgi?id=1753755
 func TestDefaultUploadFrequency(t *testing.T) {
+	// Backup support secret from openshift-config namespace.
+	// oc extract secret/support -n openshift-config --to=.
+	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("The support secret read failed: %s", err)
+	}
+	resetSecrets := func() {
+		err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+	defer func() {
+		resetSecrets()
+	}()
 	// delete any existing overriding secret
-	err := clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(Support, &metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {
@@ -30,8 +45,8 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	newSecret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "support",
-			Namespace: "openshift-config",
+			Name:      Support,
+			Namespace: OpenShiftConfig,
 		},
 		Data: map[string][]byte{
 			"interval": []byte("3m"),
@@ -39,7 +54,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 		Type: "Opaque",
 	}
 
-	_, err = clientset.CoreV1().Secrets("openshift-config").Create(&newSecret)
+	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(&newSecret)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -51,30 +66,44 @@ func TestDefaultUploadFrequency(t *testing.T) {
 }
 
 // TestUnreachableHost checks if insights operator reports "degraded" after 5 unsuccessful upload attempts
+// This tests takes about 317 s
 // https://bugzilla.redhat.com/show_bug.cgi?id=1745973
 func TestUnreachableHost(t *testing.T) {
+	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("The support secret read failed: %s", err)
+	}
+	resetSecrets := func() {
+		err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+	defer func() {
+		resetSecrets()
+	}()
 	// Replace the endpoint to some not valid url.
 	// oc -n openshift-config create secret generic support --from-literal=endpoint=http://localhost --dry-run -o yaml | oc apply -f - -n openshift-config
 	modifiedSecret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "support",
-			Namespace: "openshift-config",
+			Name:      Support,
+			Namespace: OpenShiftConfig,
 		},
 		Data: map[string][]byte{
 			"endpoint": []byte("http://localhost"),
-			"interval": []byte("3m"), // for faster testing
+			"interval": []byte("1m"), // for faster testing
 		},
 		Type: "Opaque",
 	}
 	// delete any existing overriding secret
-	err := clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(Support, &metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {
 		t.Fatal(err.Error())
 	}
-	_, err = clientset.CoreV1().Secrets("openshift-config").Create(&modifiedSecret)
+	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(&modifiedSecret)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -91,12 +120,12 @@ func TestUnreachableHost(t *testing.T) {
 		t.Fatal("Insights is not degraded")
 	}
 	// Delete secret
-	err = clientset.CoreV1().Secrets("openshift-config").Delete("support", &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(Support, &metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	// Check the operator is not degraded anymore
-	errDegraded := wait.PollImmediate(1*time.Second, 20*time.Minute, func() (bool, error) {
+	errDegraded := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
 		insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
 		if insightsDegraded {
 			return false, nil
@@ -108,7 +137,7 @@ func TestUnreachableHost(t *testing.T) {
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
 func TestClusterDefaultNodeSelector(t *testing.T) {
-	// set default selctor of node-role.kubernetes.io/worker
+	// set default selector of node-role.kubernetes.io/worker
 	schedulers, err := configClient.Schedulers().List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
