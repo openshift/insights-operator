@@ -110,6 +110,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 //   ALERTS
 //   etcd_object_counts
 //   cluster_installer
+//   namespace CPU and memory usage
 //
 // Location in archive: config/metrics/
 // See: docs/insights-archive-sample/config/metrics
@@ -122,6 +123,8 @@ func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
 			Param("match[]", "ALERTS").
 			Param("match[]", "etcd_object_counts").
 			Param("match[]", "cluster_installer").
+			Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
+			Param("match[]", "namespace:container_memory_usage_bytes:sum").
 			DoRaw()
 		if err != nil {
 			// write metrics errors to the file format as a comment
