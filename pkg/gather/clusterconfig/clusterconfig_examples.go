@@ -64,7 +64,7 @@ func ExampleClusterOperators() (string, error) {
 	return string(b), err
 }
 
-func ExampleUnhealthyNodes() (string, error) {
+func ExampleNodes() (string, error) {
 	kube := kubeClientResponder{}
 
 	kube.Fake.AddReactor("list", "nodes",
@@ -79,7 +79,7 @@ func ExampleUnhealthyNodes() (string, error) {
 		})
 
 	g := &Gatherer{coreClient: kube.CoreV1()}
-	d, errs := GatherUnhealthyNodes(g)()
+	d, errs := GatherNodes(g)()
 	if len(errs) > 0 {
 		return "", errs[0]
 	}

@@ -86,7 +86,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 	return record.Collect(ctx, recorder,
 		GatherMostRecentMetrics(i),
 		GatherClusterOperators(i),
-		GatherUnhealthyNodes(i),
+		GatherNodes(i),
 		GatherConfigMaps(i),
 		GatherClusterVersion(i),
 		GatherClusterID(i),
@@ -224,18 +224,13 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
-// GatherUnhealthyNodes collects all unhealthy Nodes.
-//
-// The node is unhealthy when:
-// the operator.Status.Conditions.Condition Type
-//   is OperatorDegrated and Status is True or
-//      OperatorAvailable and Status is False
+// GatherNodes collects all Nodes.
 //
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 //
 // Location in archive: config/node/
-func GatherUnhealthyNodes(i *Gatherer) func() ([]record.Record, []error) {
+func GatherNodes(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
 		if err != nil {
@@ -243,9 +238,6 @@ func GatherUnhealthyNodes(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := make([]record.Record, 0, len(nodes.Items))
 		for i := range nodes.Items {
-			if isHealthyNode(&nodes.Items[i]) {
-				continue
-			}
 			records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
 		}
 
@@ -852,15 +844,6 @@ func anonymizeString(s string) string {
 
 func isProductNamespacedKey(key string) bool {
 	return strings.Contains(key, "openshift.io/") || strings.Contains(key, "k8s.io/") || strings.Contains(key, "kubernetes.io/")
-}
-
-func isHealthyNode(node *corev1.Node) bool {
-	for _, condition := range node.Status.Conditions {
-		if condition.Type == corev1.NodeReady && condition.Status != corev1.ConditionTrue {
-			return false
-		}
-	}
-	return true
 }
 
 // PodAnonymizer implements serialization with anonymization for a Pod
