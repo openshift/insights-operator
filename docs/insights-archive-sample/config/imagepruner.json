@@ -1,0 +1,45 @@
+{
+    "kind": "ImagePruner",
+    "apiVersion": "imageregistry.operator.openshift.io/v1",
+    "metadata": {
+        "name": "cluster",
+        "selfLink": "/apis/imageregistry.operator.openshift.io/v1/imagepruners/cluster",
+        "uid": "ce526231-c01f-4f40-8c71-32a9ffa6082d",
+        "resourceVersion": "12722",
+        "generation": 1,
+        "creationTimestamp": "2020-06-24T09:27:17Z"
+    },
+    "spec": {
+        "schedule": "",
+        "suspend": true,
+        "keepTagRevisions": 3,
+        "successfulJobsHistoryLimit": 3,
+        "failedJobsHistoryLimit": 3
+    },
+    "status": {
+        "observedGeneration": 1,
+        "conditions": [
+            {
+                "type": "Available",
+                "status": "True",
+                "lastTransitionTime": "2020-06-24T09:27:17Z",
+                "reason": "Ready",
+                "message": "Pruner CronJob has been created"
+            },
+            {
+                "type": "Failed",
+                "status": "False",
+                "lastTransitionTime": "2020-06-24T09:27:17Z",
+                "reason": "Complete",
+                "message": "Pruner completed successfully"
+            },
+            {
+                "type": "Scheduled",
+                "status": "False",
+                "lastTransitionTime": "2020-06-24T09:27:17Z",
+                "reason": "Suspended",
+                "message": "The pruner job has been suspended."
+            }
+        ]
+    }
+}

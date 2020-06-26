@@ -168,6 +168,7 @@ Gathered metrics:
   ALERTS
   etcd_object_counts
   cluster_installer
+  namespace CPU and memory usage
 
 Location in archive: config/metrics/
 See: docs/insights-archive-sample/config/metrics
@@ -180,9 +181,9 @@ Output raw size: 108
 #### MostRecentMetrics
 [{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAo="}]
 
-## UnhealthyNodes
+## Nodes
 
-collects all unhealthy Nodes.
+collects all Nodes.
 
 The node is unhealthy when:
 the operator.Status.Conditions.Condition Type
@@ -199,6 +200,6 @@ Output raw size: 491
 
 ### Examples
 
-#### UnhealthyNodes
+#### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
