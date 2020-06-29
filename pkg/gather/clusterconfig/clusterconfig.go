@@ -14,9 +14,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
-	"encoding/base64"
-	"encoding/pem"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,10 +28,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
-	configv1 "github.com/openshift/api/config/v1"
 	registryv1 "github.com/openshift/api/imageregistry/v1"
 	openshiftscheme "github.com/openshift/client-go/config/clientset/versioned/scheme"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
