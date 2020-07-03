@@ -13,15 +13,16 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog"
-
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog"
 )
 
 // How many upload failures in a row we tolerate before starting reporting
@@ -40,6 +41,7 @@ type Controller struct {
 	name         string
 	namespace    string
 	client       configv1client.ConfigV1Interface
+	coreClient   corev1client.CoreV1Interface
 	statusCh     chan struct{}
 	configurator Configurator
 
@@ -50,10 +52,11 @@ type Controller struct {
 	safeInitialStart bool
 }
 
-func NewController(client configv1client.ConfigV1Interface, configurator Configurator, namespace string) *Controller {
+func NewController(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, configurator Configurator, namespace string) *Controller {
 	c := &Controller{
 		name:         "insights",
 		client:       client,
+		coreClient:   coreClient,
 		statusCh:     make(chan struct{}, 1),
 		configurator: configurator,
 		namespace:    namespace,
@@ -370,8 +373,8 @@ func (c *Controller) updateStatus(initial bool) error {
 		}
 		existing = nil
 	}
-	safeInitialStart := false
 	if initial {
+		ophealthy := false
 		if existing != nil {
 			var reported Reported
 			if len(existing.Status.Extension.Raw) > 0 {
@@ -380,15 +383,39 @@ func (c *Controller) updateStatus(initial bool) error {
 				}
 			}
 			c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
-			if c := findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorDegraded); c == nil ||
-				c != nil && c.Status == configv1.ConditionFalse {
-				safeInitialStart = true
+			if con := findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorDegraded); con == nil ||
+				con != nil && con.Status == configv1.ConditionFalse {
+				klog.Info("The initial operator extension status is healthy")
+				ophealthy = true
 			}
+		}
+		if os.Getenv("POD_NAME") != "" && ophealthy {
+			var pod *v1.Pod
+			pod, err = c.coreClient.Pods(os.Getenv("POD_NAMESPACE")).Get(os.Getenv("POD_NAME"), metav1.GetOptions{})
+			if err == nil {
+				for _, c := range pod.Status.ContainerStatuses {
+					// all containers has to be in running state to consider them healthy
+					if c.LastTerminationState.Terminated != nil || c.LastTerminationState.Waiting != nil {
+						klog.Info("The last pod state is unhealthy")
+						ophealthy = false
+						break
+					}
+				}
+			} else {
+				if !errors.IsNotFound(err) {
+					klog.Errorf("Couldn't get Insights Operator Pod to detect its status. Error: %v", err)
+					ophealthy = false
+				}
+			}
+		}
+
+		if existing == nil || ophealthy {
+			klog.Info("It is safe to use fast upload")
+			c.SetSafeInitialStart(true)
 		} else {
-			safeInitialStart = true
+			klog.Info("Not safe for fast upload")
 		}
 	}
-	c.SetSafeInitialStart(safeInitialStart)
 
 	updated := c.merge(existing)
 	if existing == nil {
