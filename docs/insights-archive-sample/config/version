@@ -1,0 +1,63 @@
+{
+  "kind": "ClusterVersion",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "version",
+    "selfLink": "/apis/config.openshift.io/v1/clusterversions/version",
+    "uid": "6bc25f25-dbbb-40a0-b0a9-b6ae99012620",
+    "resourceVersion": "18523",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:05:13Z"
+  },
+  "spec": {
+    "clusterID": "e30268b4-aa51-4fc4-86b5-e2693ba02b79",
+    "upstream": "xxxxx://xxx.xxxxxxxxx.xxx/xxx/xxxxxxxxxxxxx/xx/xxxxx",
+    "channel": "stable-4.4"
+  },
+  "status": {
+    "desired": {
+      "version": "4.4.0-0.nightly-2020-03-18-092817",
+      "image": "registry.svc.ci.openshift.org/ocp/release@sha256:aaa047fc14f16b7c9518e672e6bf23a3f87c0b195a88b787df6c7fa4c6018173",
+      "force": false
+    },
+    "history": [
+      {
+        "state": "Completed",
+        "startedTime": "2020-03-18T12:05:14Z",
+        "completionTime": "2020-03-18T12:21:22Z",
+        "version": "4.4.0-0.nightly-2020-03-18-092817",
+        "image": "registry.svc.ci.openshift.org/ocp/release@sha256:aaa047fc14f16b7c9518e672e6bf23a3f87c0b195a88b787df6c7fa4c6018173",
+        "verified": false
+      }
+    ],
+    "observedGeneration": 1,
+    "versionHash": "0vZFUTpqvZY=",
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:21:22Z",
+        "message": "Done applying 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Failing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:12:59Z"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:21:22Z",
+        "message": "Cluster version is 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "RetrievedUpdates",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:05:14Z",
+        "reason": "VersionNotFound",
+        "message": "Unable to retrieve available updates: currently installed version 4.4.0-0.nightly-2020-03-18-092817 not found in the \"stable-4.4\" channel"
+      }
+    ],
+    "availableUpdates": null
+  }
+}

@@ -30,6 +30,7 @@ type Controller struct {
 	tokenConfig   *config.Controller
 	secretConfig  *config.Controller
 	config        *config.Controller
+	checkPeriod   time.Duration
 	listeners     []chan struct{}
 }
 
@@ -37,6 +38,7 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 	c := &Controller{
 		kubeClient:    kubeClient,
 		defaultConfig: defaultConfig,
+		checkPeriod:   5 * time.Minute,
 	}
 	c.mergeConfigLocked()
 	if err := c.retrieveToken(); err != nil {
@@ -48,6 +50,7 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 	return c
 }
 
+// Start is periodically invoking check and set of config and token
 func (c *Controller) Start(ctx context.Context) {
 	wait.Until(func() {
 		if err := c.retrieveToken(); err != nil {
@@ -56,7 +59,7 @@ func (c *Controller) Start(ctx context.Context) {
 		if err := c.retrieveConfig(); err != nil {
 			klog.Warningf("Unable to retrieve config: %v", err)
 		}
-	}, 5*time.Minute, ctx.Done())
+	}, c.checkPeriod, ctx.Done())
 }
 
 func (c *Controller) retrieveToken() error {
@@ -139,7 +142,8 @@ func (c *Controller) retrieveConfig() error {
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
 		if intervalString, ok := secret.Data["interval"]; ok {
-			duration, err := time.ParseDuration(string(intervalString))
+			var duration time.Duration
+			duration, err = time.ParseDuration(string(intervalString))
 			if err == nil && duration < time.Minute {
 				err = fmt.Errorf("too short")
 			}

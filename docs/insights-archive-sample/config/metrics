@@ -1,0 +1,1 @@
+# error: Get "https://prometheus-k8s.openshift-monitoring.svc:9091/federate?match%5B%5D=ALERTS&match%5B%5D=etcd_object_counts&match%5B%5D=cluster_installer": dial tcp: lookup prometheus-k8s.openshift-monitoring.svc: no such host

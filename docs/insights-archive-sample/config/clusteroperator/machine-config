@@ -1,0 +1,69 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "machine-config",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/machine-config",
+    "uid": "f5f69695-0404-4015-affd-a5344c56bf85",
+    "resourceVersion": "6347",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:29Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:12:31Z",
+        "message": "Cluster has deployed 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:12:31Z",
+        "message": "Cluster version is 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:29Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:12:31Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-machine-config-operator"
+      },
+      {
+        "group": "machineconfiguration.openshift.io",
+        "resource": "machineconfigpools",
+        "name": "master"
+      },
+      {
+        "group": "machineconfiguration.openshift.io",
+        "resource": "machineconfigpools",
+        "name": "worker"
+      },
+      {
+        "group": "machineconfiguration.openshift.io",
+        "resource": "controllerconfigs",
+        "name": "machine-config-controller"
+      }
+    ],
+    "extension": {}
+  }
+}

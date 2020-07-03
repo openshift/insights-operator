@@ -7,8 +7,17 @@ test-unit:
 .PHONY: test-unit
 
 test-e2e:
-	go test ./test/integration -timeout 1h $(TEST_OPTIONS)
+	go test ./test/integration -timeout 2h $(TEST_OPTIONS)
 .PHONY: test-e2e
+
+vet:
+	go vet $$(go list ./... | grep -v /vendor/)
+
+lint:
+	golint $$(go list ./... | grep -v /vendor/)
+
+gen-doc:
+	go run cmd/gendoc/main.go --out=docs/gathered-data.md
 
 vendor:
 	go mod tidy

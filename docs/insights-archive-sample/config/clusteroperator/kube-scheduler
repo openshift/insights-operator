@@ -1,0 +1,81 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "kube-scheduler",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-scheduler",
+    "uid": "0ae70126-d242-4a11-9b05-dcf4b5c615ea",
+    "resourceVersion": "19126",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:37Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:16:27Z",
+        "reason": "AsExpected",
+        "message": "NodeControllerDegraded: All master nodes are ready"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:22:21Z",
+        "reason": "AsExpected",
+        "message": "NodeInstallerProgressing: 3 nodes are at revision 7"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:13:48Z",
+        "reason": "AsExpected",
+        "message": "StaticPodsAvailable: 3 nodes are active; 3 nodes are at revision 7"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:09:37Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "raw-internal",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "name": "kube-scheduler",
+        "version": "1.17.1"
+      },
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "kubeschedulers",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-scheduler"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-scheduler-operator"
+      }
+    ],
+    "extension": null
+  }
+}

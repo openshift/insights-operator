@@ -1,0 +1,304 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "network",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/network",
+    "uid": "4aca72de-c8e1-4009-a6c1-86e6dabf0048",
+    "resourceVersion": "14624",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:07:14Z",
+    "annotations": {
+      "network.operator.openshift.io/last-seen-state": "{\"DaemonsetStates\":[],\"DeploymentStates\":[]}"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:07:14Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:07:14Z"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:16:18Z"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:11:37Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "configmaps",
+        "namespace": "openshift-network-operator",
+        "name": "applied-cluster"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": "network-attachment-definitions.k8s.cni.cncf.io"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": "ippools.whereabouts.cni.cncf.io"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-multus"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "multus"
+      },
+      {
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "openshift-multus",
+        "name": "multus"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "multus"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "multus-whereabouts"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "whereabouts-cni"
+      },
+      {
+        "group": "",
+        "resource": "configmaps",
+        "namespace": "openshift-multus",
+        "name": "cni-binary-copy-script"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-multus",
+        "name": "multus"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "namespace": "openshift-multus",
+        "name": "multus-admission-controller"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "multus-admission-controller-webhook"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "multus-admission-controller-webhook"
+      },
+      {
+        "group": "admissionregistration.k8s.io",
+        "resource": "validatingwebhookconfigurations",
+        "name": "multus.openshift.io"
+      },
+      {
+        "group": "",
+        "resource": "configmaps",
+        "namespace": "openshift-network-operator",
+        "name": "openshift-service-ca"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-multus",
+        "name": "multus-admission-controller"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "servicemonitors",
+        "namespace": "openshift-multus",
+        "name": "monitor-multus-admission-controller"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "namespace": "openshift-multus",
+        "name": "multus-admission-controller-monitor-service"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "roles",
+        "namespace": "openshift-multus",
+        "name": "prometheus-k8s"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "rolebindings",
+        "namespace": "openshift-multus",
+        "name": "prometheus-k8s"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "prometheusrules",
+        "namespace": "openshift-multus",
+        "name": "prometheus-k8s-rules"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-sdn"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": "clusternetworks.network.openshift.io"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": "hostsubnets.network.openshift.io"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": "netnamespaces.network.openshift.io"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": "egressnetworkpolicies.network.openshift.io"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "openshift-sdn"
+      },
+      {
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "openshift-sdn",
+        "name": "sdn"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "openshift-sdn"
+      },
+      {
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "openshift-sdn",
+        "name": "sdn-controller"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "openshift-sdn-controller"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "openshift-sdn-controller"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "roles",
+        "namespace": "openshift-sdn",
+        "name": "openshift-sdn-controller-leaderelection"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "rolebindings",
+        "namespace": "openshift-sdn",
+        "name": "openshift-sdn-controller-leaderelection"
+      },
+      {
+        "group": "network.openshift.io",
+        "resource": "clusternetworks",
+        "name": "default"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "prometheusrules",
+        "namespace": "openshift-sdn",
+        "name": "networking-rules"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-sdn",
+        "name": "sdn-controller"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "servicemonitors",
+        "namespace": "openshift-sdn",
+        "name": "monitor-sdn"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "namespace": "openshift-sdn",
+        "name": "sdn"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "roles",
+        "namespace": "openshift-sdn",
+        "name": "prometheus-k8s"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "rolebindings",
+        "namespace": "openshift-sdn",
+        "name": "prometheus-k8s"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-sdn",
+        "name": "ovs"
+      },
+      {
+        "group": "",
+        "resource": "configmaps",
+        "namespace": "openshift-sdn",
+        "name": "sdn-config"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-sdn",
+        "name": "sdn"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-network-operator"
+      }
+    ],
+    "extension": null
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "openshift-controller-manager",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-controller-manager",
+    "uid": "1853aa3f-17a7-4985-99db-1b684f5fbc6c",
+    "resourceVersion": "13839",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:33Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:34Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:16:30Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:14:50Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "Unknown",
+        "lastTransitionTime": "2020-03-18T12:09:33Z",
+        "reason": "NoData"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "openshiftcontrollermanagers",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-controller-manager-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-controller-manager"
+      }
+    ],
+    "extension": null
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "kube-storage-version-migrator",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-storage-version-migrator",
+    "uid": "9b12ba11-66ee-4395-bdf4-cec805df6ee3",
+    "resourceVersion": "14248",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:09:34Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:35Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:09:35Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:16:42Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "Unknown",
+        "lastTransitionTime": "2020-03-18T12:09:34Z",
+        "reason": "NoData"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "name": "kube-storage-version-migrator",
+        "version": ""
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "kubestorageversionmigrators",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-storage-version-migrator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-storage-version-migrator-operator"
+      }
+    ],
+    "extension": null
+  }
+}

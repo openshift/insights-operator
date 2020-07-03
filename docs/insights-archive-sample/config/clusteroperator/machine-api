@@ -1,0 +1,86 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "machine-api",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/machine-api",
+    "uid": "b61360db-8f15-495e-9f81-91c6864ad503",
+    "resourceVersion": "25523",
+    "generation": 1,
+    "creationTimestamp": "2020-03-18T12:10:42Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:11:05Z"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:10:42Z",
+        "message": "Cluster Machine API Operator is available at operator: 4.4.0-0.nightly-2020-03-18-092817"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-03-18T12:10:42Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-03-18T12:10:42Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.0-0.nightly-2020-03-18-092817"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-machine-api"
+      },
+      {
+        "group": "machine.openshift.io",
+        "resource": "machines",
+        "namespace": "openshift-machine-api",
+        "name": ""
+      },
+      {
+        "group": "machine.openshift.io",
+        "resource": "machinesets",
+        "namespace": "openshift-machine-api",
+        "name": ""
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "roles",
+        "namespace": "openshift-machine-api",
+        "name": ""
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "machine-api-operator"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "machine-api-controllers"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "roles",
+        "namespace": "openshift-config",
+        "name": "cloud-provider-config-reader"
+      }
+    ],
+    "extension": null
+  }
+}
