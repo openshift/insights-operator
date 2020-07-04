@@ -1,0 +1,140 @@
+{
+    "kind": "Node",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "ci-ln-3z9y7mt-f76d1-69jcr-master-1",
+        "selfLink": "/api/v1/nodes/ci-ln-3z9y7mt-f76d1-69jcr-master-1",
+        "uid": "ee29584e-3388-43d0-8e0b-48e043a9f653",
+        "resourceVersion": "50067",
+        "creationTimestamp": "2020-06-24T09:12:33Z",
+        "labels": {
+            "beta.kubernetes.io/arch": "amd64",
+            "beta.kubernetes.io/instance-type": "n1-standard-4",
+            "beta.kubernetes.io/os": "linux",
+            "failure-domain.beta.kubernetes.io/region": "us-east1",
+            "failure-domain.beta.kubernetes.io/zone": "us-east1-c",
+            "kubernetes.io/arch": "amd64",
+            "kubernetes.io/hostname": "ci-ln-3z9y7mt-f76d1-69jcr-master-1",
+            "kubernetes.io/os": "linux",
+            "node-role.kubernetes.io/master": "",
+            "node.kubernetes.io/instance-type": "n1-standard-4",
+            "node.openshift.io/os_id": "rhcos",
+            "topology.kubernetes.io/region": "us-east1",
+            "topology.kubernetes.io/zone": "us-east1-c"
+        },
+        "annotations": {
+            "machine.openshift.io/machine": "openshift-machine-api/ci-ln-3z9y7mt-f76d1-69jcr-master-1",
+            "machineconfiguration.openshift.io/currentConfig": "rendered-master-560da6f9af9862da5ddaebea17d12bbb",
+            "machineconfiguration.openshift.io/desiredConfig": "rendered-master-560da6f9af9862da5ddaebea17d12bbb",
+            "machineconfiguration.openshift.io/reason": "",
+            "machineconfiguration.openshift.io/state": "Done",
+            "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+        }
+    },
+    "spec": {
+        "providerID": "gce://openshift-gce-devel-ci/us-east1-c/ci-ln-3z9y7mt-f76d1-69jcr-master-1",
+        "taints": [
+            {
+                "key": "node-role.kubernetes.io/master",
+                "effect": "NoSchedule"
+            }
+        ]
+    },
+    "status": {
+        "capacity": {
+            "attachable-volumes-gce-pd": "127",
+            "cpu": "4",
+            "ephemeral-storage": "133665772Ki",
+            "hugepages-1Gi": "0",
+            "hugepages-2Mi": "0",
+            "memory": "15389256Ki",
+            "pods": "250"
+        },
+        "allocatable": {
+            "attachable-volumes-gce-pd": "127",
+            "cpu": "3500m",
+            "ephemeral-storage": "122112633448",
+            "hugepages-1Gi": "0",
+            "hugepages-2Mi": "0",
+            "memory": "14238280Ki",
+            "pods": "250"
+        },
+        "conditions": [
+            {
+                "type": "NetworkUnavailable",
+                "status": "False",
+                "lastHeartbeatTime": null,
+                "lastTransitionTime": "2020-06-24T09:13:12Z",
+                "reason": "RouteCreated",
+                "message": "openshift-sdn cleared kubelet-set NoRouteCreated"
+            },
+            {
+                "type": "MemoryPressure",
+                "status": "False",
+                "lastHeartbeatTime": "2020-06-24T11:11:12Z",
+                "lastTransitionTime": "2020-06-24T09:12:33Z",
+                "reason": "KubeletHasSufficientMemory",
+                "message": "kubelet has sufficient memory available"
+            },
+            {
+                "type": "DiskPressure",
+                "status": "False",
+                "lastHeartbeatTime": "2020-06-24T11:11:12Z",
+                "lastTransitionTime": "2020-06-24T09:12:33Z",
+                "reason": "KubeletHasNoDiskPressure",
+                "message": "kubelet has no disk pressure"
+            },
+            {
+                "type": "PIDPressure",
+                "status": "False",
+                "lastHeartbeatTime": "2020-06-24T11:11:12Z",
+                "lastTransitionTime": "2020-06-24T09:12:33Z",
+                "reason": "KubeletHasSufficientPID",
+                "message": "kubelet has sufficient PID available"
+            },
+            {
+                "type": "Ready",
+                "status": "True",
+                "lastHeartbeatTime": "2020-06-24T11:11:12Z",
+                "lastTransitionTime": "2020-06-24T09:13:23Z",
+                "reason": "KubeletReady",
+                "message": "kubelet is posting ready status"
+            }
+        ],
+        "addresses": [
+            {
+                "type": "InternalIP",
+                "address": "xx.x.x.x"
+            },
+            {
+                "type": "ExternalIP",
+                "address": ""
+            },
+            {
+                "type": "InternalDNS",
+                "address": "xx-xx-xxxxxxx-xxxxx-xxxxx-xxxxxx-x.x.xxxxxxxxx-xxx-xxxxx-xx.xxxxxxxx"
+            },
+            {
+                "type": "Hostname",
+                "address": "xx-xx-xxxxxxx-xxxxx-xxxxx-xxxxxx-x.x.xxxxxxxxx-xxx-xxxxx-xx.xxxxxxxx"
+            }
+        ],
+        "daemonEndpoints": {
+            "kubeletEndpoint": {
+                "Port": 10250
+            }
+        },
+        "nodeInfo": {
+            "machineID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "systemUUID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "bootID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "kernelVersion": "4.18.0-147.20.1.el8_1.x86_64",
+            "osImage": "Red Hat Enterprise Linux CoreOS 44.81.202006231330-0 (Ootpa)",
+            "containerRuntimeVersion": "cri-o://1.17.4-18.dev.rhaos4.4.gitfb8131a.el8",
+            "kubeletVersion": "v1.17.1+9d33dd3",
+            "kubeProxyVersion": "v1.17.1+9d33dd3",
+            "operatingSystem": "linux",
+            "architecture": "amd64"
+        }
+    }
+}
