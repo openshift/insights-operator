@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -70,13 +74,20 @@ func configV1Client() (result *configv1client.ConfigV1Client) {
 	return client
 }
 
-func clusterOperatorInsights() *configv1.ClusterOperator {
-	// get info about insights cluster operator
-	operator, err := configClient.ClusterOperators().Get("insights", metav1.GetOptions{})
+
+func clusterOperator(clusterName string) *configv1.ClusterOperator {
+	// get info about given cluster operator
+	operator, err := configClient.ClusterOperators().Get(clusterName, metav1.GetOptions{})
 	if err != nil {
+		// TODO -> change to t.Fatal in follow-up PR
 		panic(err.Error())
 	}
 	return operator
+}
+
+func clusterOperatorInsights() *configv1.ClusterOperator {
+	// TODO -> delete this function in follow-up PR
+	return clusterOperator("insights")
 }
 
 func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
@@ -169,19 +180,25 @@ func restartInsightsOperator(t *testing.T) {
 	t.Log(errPod)
 }
 
-func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string) {
+func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string, newLogsOnly ...bool) {
+	// TODO -> change this function to to PascalCase in follow-up PR
+	r, _ := regexp.Compile(message)
 	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
+	timeNow := metav1.NewTime(time.Now())
+	logOptions := &corev1.PodLogOptions{}
+	if len(newLogsOnly)==1 && newLogsOnly[0] {
+		logOptions = &corev1.PodLogOptions{SinceTime:&timeNow}
+	}
 	for _, newPod := range newPods.Items {
 		pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
 		errLog := wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-			req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
+			req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOptions)
 			podLogs, err := req.Stream()
 			if err != nil {
 				return false, nil
@@ -195,14 +212,14 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 			}
 			log := buf.String()
 
-			result := strings.Contains(log, message)
-			if result == false {
+			result := r.FindString(log) //strings.Contains(log, message)
+			if result == "" {
 				t.Logf("No %s in logs\n", message)
 				t.Logf("Logs for verification: ****\n%s", log)
 				return false, nil
 			}
 
-			t.Logf("%s found\n", message)
+			t.Logf("%s found\n", result)
 			return true, nil
 		})
 		if errLog != nil {
@@ -234,6 +251,116 @@ func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
 		return fmt.Errorf("Unable to update original secret: %s", err)
 	}
 	return nil
+}
+
+func ExecCmd(t *testing.T, client kubernetes.Interface, podName string, namespace string,
+	command string, stdin io.Reader) (string, string, error) {
+	cmd := []string{
+		"/bin/bash",
+		"-c",
+		command,
+	}
+	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(podName).
+		Namespace(namespace).SubResource("exec")
+	option := &corev1.PodExecOptions{
+		Command: cmd,
+		Stdin:   true,
+		Stdout:  true,
+		Stderr:  true,
+		TTY:     false,
+	}
+	if stdin == nil {
+		option.Stdin = false
+	}
+	req.VersionedParams(
+		option,
+		scheme.ParameterCodec,
+	)
+	exec, err := remotecommand.NewSPDYExecutor(kubeconfig(), "POST", req.URL())
+	if err != nil {
+		return "","", err
+	}
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  stdin,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return "","",err
+	}
+
+	return stdout.String(), stderr.String(), nil
+}
+
+func e(t *testing.T, err error, message string) {
+	if err != nil {
+		t.Fatal(message, err.Error())
+	}
+}
+
+func findPod(t *testing.T, kubeClient *kubernetes.Clientset, namespace string, prefix string) *corev1.Pod {
+	newPods, err := kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	for _, newPod := range newPods.Items {
+		if strings.HasPrefix(newPod.Name, prefix) {
+			return &newPod
+		}
+	}
+	return nil
+}
+
+func degradeOperator(t *testing.T, kubeClient *kubernetes.Clientset, pod *corev1.Pod) func(){
+	// degrades monitoring operator
+	// delete just in case it was already there, so we don't care about error
+	kubeClient.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+	isOperatorDegraded(t, clusterOperator("monitoring"))
+	_, err:=kubeClient.CoreV1().ConfigMaps(pod.Namespace).Create(
+		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml" :  "telemeterClient: enabled: NOT_BOOELAN"}},
+		)
+	e(t, err, "Failed to create ConfigMap")
+	err = kubeClient.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+	e(t, err, "Failed to delete Pod")
+	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
+		return isOperatorDegraded(t, clusterOperator("monitoring")), nil
+	})
+	return func(){
+		kubeClient.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
+			insightsDegraded := isOperatorDegraded(t, clusterOperator("monitoring"))
+			return !insightsDegraded, nil
+		})
+	}
+}
+
+func changeReportTimeInterval(t *testing.T, newInterval []byte) []byte {
+	supportSecret, _ := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	previousInterval := supportSecret.Data["interval"]
+	supportSecret.Data["interval"] = newInterval
+	err :=forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+	e(t, err, "changing report time interval failed")
+	restartInsightsOperator(t)
+	t.Log("forcing update secret")
+	return previousInterval
+}
+
+func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) func(){
+	previousInterval := changeReportTimeInterval(t, []byte(fmt.Sprintf("%s", time.Minute*minutes)))
+	return func(){ changeReportTimeInterval(t, previousInterval) }
+}
+
+func LatestArchiveContainsPodLogs(t *testing.T, kubeClient *kubernetes.Clientset, pod *corev1.Pod) bool {
+	insightsPod := findPod(t, kubeClient, "openshift-insights", "insights-operator")
+	hasLatestArchiveLogs := `tar tf $(ls -dtr /var/lib/insights-operator/* | tail -1)|grep -c "^config/pod/openshift-monitoring/logs/.*\.log$"`
+	stdout, _, _ := ExecCmd(t, kubeClient, insightsPod.Name, "openshift-insights", hasLatestArchiveLogs, nil)
+	logCount, err := strconv.Atoi(strings.TrimSpace(stdout))
+	if err != nil && logCount !=0{
+		t.Error("command returned non-integer:", stdout)
+	}
+	t.Log(logCount, "log files found")
+	return logCount != 0
 }
 
 func TestMain(m *testing.M) {
