@@ -24,6 +24,11 @@ func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return json.Marshal(a.CSRAnonymizedFeatures)
 }
 
+// GetExtension returns extension for anonymized cluster version objects
+func (a CSRAnonymizer) GetExtension() string {
+	return "json"
+}
+
 type CSRs struct {
 	Requests   []v1beta1.CertificateSigningRequest
 	Anonymized []CSRAnonymizer
