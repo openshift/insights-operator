@@ -222,6 +222,12 @@ var (
 		Name: "insightsclient_request_send_total",
 		Help: "Tracks the number of metrics sends",
 	}, []string{"client", "status_code"})
+	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{
+		Namespace: "health",
+		Subsystem: "statuses",
+		Name:      "insights",
+		Help:      "Foobar.",
+	}, []string{"metric"})
 )
 
 func init() {
@@ -231,5 +237,16 @@ func init() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	err = legacyregistry.Register(
+		insightsStatus,
+	)
+	if err != nil {
+		fmt.Println(err)
+	}
+	insightsStatus.WithLabelValues("critical").Set(1)
+	insightsStatus.WithLabelValues("important").Set(5)
+	insightsStatus.WithLabelValues("moderate").Set(3)
+	insightsStatus.WithLabelValues("low").Set(3)
+	insightsStatus.WithLabelValues("total").Set(12)
+	insightsStatus.WithLabelValues("connected").Set(1)
 }
