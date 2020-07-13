@@ -226,7 +226,7 @@ var (
 		Namespace: "health",
 		Subsystem: "statuses",
 		Name:      "insights",
-		Help:      "Foobar.",
+		Help:      "Information about the cluster health status as detected by Insights tooling.",
 	}, []string{"metric"})
 )
 
