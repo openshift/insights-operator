@@ -140,7 +140,7 @@ func TestPodLogsCollected(t *testing.T) {
 	defer ChangeReportTimeInterval(t, 1)()
 	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
 	defer degradeOperator(t, clientset, pod)()
-	checkPodsLogs(t, clientset, "Writing \\d+ records to", true)
+	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
 	if !LatestArchiveContainsPodLogs(t, clientset, pod) {
 		t.Fatal("There are no logs!")
 	}
