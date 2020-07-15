@@ -8,6 +8,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"testing"
@@ -40,7 +41,6 @@ const (
 )
 
 var clientset = kubeClient()
-var configClient = configV1Client()
 
 func kubeconfig() (config *restclient.Config) {
 	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
@@ -66,28 +66,18 @@ func kubeClient() (result *kubernetes.Clientset) {
 	return clientset
 }
 
-func configV1Client() (result *configv1client.ConfigV1Client) {
+func configV1Client(t *testing.T) ( result *configv1client.ConfigV1Client) {
 	client, err := configv1client.NewForConfig(kubeconfig())
-	if err != nil {
-		panic(err.Error())
-	}
+	e(t, err, "Failed to get configV1Client")
 	return client
 }
 
 
-func clusterOperator(clusterName string) *configv1.ClusterOperator {
+func clusterOperator(t *testing.T, clusterName string) *configv1.ClusterOperator {
 	// get info about given cluster operator
-	operator, err := configClient.ClusterOperators().Get(clusterName, metav1.GetOptions{})
-	if err != nil {
-		// TODO -> change to t.Fatal in follow-up PR
-		panic(err.Error())
-	}
+	operator, err := configV1Client(t).ClusterOperators().Get(clusterName, metav1.GetOptions{})
+	e(t, err, "Failed to get cluster operator")
 	return operator
-}
-
-func clusterOperatorInsights() *configv1.ClusterOperator {
-	// TODO -> delete this function in follow-up PR
-	return clusterOperator("insights")
 }
 
 func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
@@ -138,9 +128,7 @@ func operatorStatus(t *testing.T, operator *configv1.ClusterOperator, conditionT
 func restartInsightsOperator(t *testing.T) {
 	// restart insights-operator (delete pods)
 	pods, err := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	e(t, err)
 
 	for _, pod := range pods.Items {
 		clientset.CoreV1().Pods("openshift-insights").Delete(pod.Name, &metav1.DeleteOptions{})
@@ -166,9 +154,7 @@ func restartInsightsOperator(t *testing.T) {
 
 		for _, newPod := range newPods.Items {
 			pod, err := clientset.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
-			if err != nil {
-				panic(err.Error())
-			}
+			e(t, err)
 			if pod.Status.Phase != "Running" {
 				return false, nil
 			}
@@ -184,9 +170,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 	// TODO -> change this function to to PascalCase in follow-up PR
 	r, _ := regexp.Compile(message)
 	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	e(t, err)
 	timeNow := metav1.NewTime(time.Now())
 	logOptions := &corev1.PodLogOptions{}
 	if len(newLogsOnly)==1 && newLogsOnly[0] {
@@ -194,9 +178,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 	}
 	for _, newPod := range newPods.Items {
 		pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
+		e(t, err)
 		errLog := wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
 			req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOptions)
 			podLogs, err := req.Stream()
@@ -222,9 +204,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 			t.Logf("%s found\n", result)
 			return true, nil
 		})
-		if errLog != nil {
-			t.Error(errLog)
-		}
+		e(t, errLog)
 	}
 }
 
@@ -293,9 +273,13 @@ func ExecCmd(t *testing.T, client kubernetes.Interface, podName string, namespac
 	return stdout.String(), stderr.String(), nil
 }
 
-func e(t *testing.T, err error, message string) {
+func e(t *testing.T, err error, args ...interface{}) {
 	if err != nil {
-		t.Fatal(message, err.Error())
+		stack := string(debug.Stack())
+		ok := strings.Split(stack, "\n")
+		// print only lines from interation tests
+		stack = strings.Join(ok[4:len(ok)-5], "\n")
+		t.Fatal(args, err.Error(), stack)
 	}
 }
 
@@ -316,7 +300,7 @@ func degradeOperator(t *testing.T, kubeClient *kubernetes.Clientset, pod *corev1
 	// degrades monitoring operator
 	// delete just in case it was already there, so we don't care about error
 	kubeClient.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
-	isOperatorDegraded(t, clusterOperator("monitoring"))
+	isOperatorDegraded(t, clusterOperator(t, "monitoring"))
 	_, err:=kubeClient.CoreV1().ConfigMaps(pod.Namespace).Create(
 		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml" :  "telemeterClient: enabled: NOT_BOOELAN"}},
 		)
@@ -324,12 +308,12 @@ func degradeOperator(t *testing.T, kubeClient *kubernetes.Clientset, pod *corev1
 	err = kubeClient.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 	e(t, err, "Failed to delete Pod")
 	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-		return isOperatorDegraded(t, clusterOperator("monitoring")), nil
+		return isOperatorDegraded(t, clusterOperator(t, "monitoring")), nil
 	})
 	return func(){
 		kubeClient.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
 		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
-			insightsDegraded := isOperatorDegraded(t, clusterOperator("monitoring"))
+			insightsDegraded := isOperatorDegraded(t, clusterOperator(t, "monitoring"))
 			return !insightsDegraded, nil
 		})
 	}
@@ -357,7 +341,7 @@ func LatestArchiveContainsPodLogs(t *testing.T, kubeClient *kubernetes.Clientset
 	stdout, _, _ := ExecCmd(t, kubeClient, insightsPod.Name, "openshift-insights", hasLatestArchiveLogs, nil)
 	logCount, err := strconv.Atoi(strings.TrimSpace(stdout))
 	if err != nil && logCount !=0{
-		t.Error("command returned non-integer:", stdout)
+		e(t, err, "command returned non-integer:", stdout)
 	}
 	t.Log(logCount, "log files found")
 	return logCount != 0

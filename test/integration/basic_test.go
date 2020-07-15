@@ -44,7 +44,7 @@ func TestPullSecretExists(t *testing.T) {
 func TestOptOutOptIn(t *testing.T) {
 	// initially IO should be running
 	errDisabled := wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
-		insightsNotDisabled := !operatorStatus(t, clusterOperatorInsights(), status.OperatorDisabled, configv1.ConditionTrue)
+		insightsNotDisabled := !operatorStatus(t, clusterOperator(t, "insights"), status.OperatorDisabled, configv1.ConditionTrue)
 		if insightsNotDisabled {
 			return true, nil
 		}
@@ -127,7 +127,7 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Wait for operator to become disabled because of removed pull-secret
 	errDisabled = wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
-		insightsDisabled := isOperatorDisabled(t, clusterOperatorInsights())
+		insightsDisabled := isOperatorDisabled(t, clusterOperator(t, "insights"))
 		if insightsDisabled {
 			return true, nil
 		}
@@ -145,7 +145,7 @@ func TestOptOutOptIn(t *testing.T) {
 	// Check if reports are uploaded - Logs show that insights-operator is enabled and reports are uploaded
 	restartInsightsOperator(t)
 	errDisabled = wait.PollImmediate(1*time.Second, 3*time.Minute, func() (bool, error) {
-		insightsNotDisabled := !operatorStatus(t, clusterOperatorInsights(), status.OperatorDisabled, configv1.ConditionTrue)
+		insightsNotDisabled := !operatorStatus(t, clusterOperator(t, "insights"), status.OperatorDisabled, configv1.ConditionTrue)
 		if insightsNotDisabled {
 			return true, nil
 		}

@@ -70,9 +70,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 // https://bugzilla.redhat.com/show_bug.cgi?id=1745973
 func TestUnreachableHost(t *testing.T) {
 	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("The support secret read failed: %s", err)
-	}
+	e(t, err, "The support secret read failed:")
 	resetSecrets := func() {
 		err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
 		if err != nil {
@@ -100,13 +98,11 @@ func TestUnreachableHost(t *testing.T) {
 	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(Support, &metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
-	if err != nil && err.Error() != `secrets "support" not found` {
-		t.Fatal(err.Error())
+	if err!=nil && err.Error() != `secrets "support" not found` {
+		e(t, err)
 	}
 	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(&modifiedSecret)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	e(t, err)
 	// Restart insights-operator
 	// oc delete pods --namespace=openshift-insights --all
 	restartInsightsOperator(t)
@@ -115,7 +111,7 @@ func TestUnreachableHost(t *testing.T) {
 	checkPodsLogs(t, clientset, "exceeded than threshold 5. Marking as degraded.")
 
 	// Check the operator is degraded
-	insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
+	insightsDegraded := isOperatorDegraded(t, clusterOperator(t, "insights"))
 	if !insightsDegraded {
 		t.Fatal("Insights is not degraded")
 	}
@@ -126,7 +122,7 @@ func TestUnreachableHost(t *testing.T) {
 	}
 	// Check the operator is not degraded anymore
 	errDegraded := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
-		insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
+		insightsDegraded := isOperatorDegraded(t, clusterOperator(t, "insights"))
 		if insightsDegraded {
 			return false, nil
 		}
@@ -149,14 +145,12 @@ func TestPodLogsCollected(t *testing.T) {
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
 func TestClusterDefaultNodeSelector(t *testing.T) {
 	// set default selector of node-role.kubernetes.io/worker
-	schedulers, err := configClient.Schedulers().List(metav1.ListOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	schedulers, err := configV1Client(t).Schedulers().List(metav1.ListOptions{})
+	e(t, err)
 	for _, scheduler := range schedulers.Items {
 		if scheduler.ObjectMeta.Name == "cluster" {
 			scheduler.Spec.DefaultNodeSelector = "node-role.kubernetes.io/worker="
-			configClient.Schedulers().Update(&scheduler)
+			configV1Client(t).Schedulers().Update(&scheduler)
 		}
 	}
 
@@ -165,15 +159,11 @@ func TestClusterDefaultNodeSelector(t *testing.T) {
 
 	// check the pod is scheduled
 	newPods, err := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	e(t, err)
 
 	for _, newPod := range newPods.Items {
 		pod, err := clientset.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
+		e(t, err)
 		podConditions := pod.Status.Conditions
 		for _, condition := range podConditions {
 			if condition.Type == "PodScheduled" {
