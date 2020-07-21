@@ -25,6 +25,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
+	"github.com/openshift/insights-operator/pkg/externalpipeline"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
@@ -41,6 +42,7 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
+
 	controller, err := cfg.ToController()
 	if err != nil {
 		return err
@@ -166,6 +168,9 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// start uploading status, so that we
 	// know any previous last reported time
 	go uploader.Run(ctx)
+
+	reportUpdater := externalpipeline.New(s.Controller.SmartProxy, authorizer, configPeriodic)
+	go reportUpdater.Run()
 
 	<-ctx.Done()
 	return fmt.Errorf("stopped")
