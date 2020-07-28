@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -42,6 +43,10 @@ const (
 	// diskrecorder would refuse to write files larger than MaxLogSize, so GatherClusterOperators
 	// has to limit the expected size of the buffer for logs
 	logCompressionRatio = 2
+
+	// imageGatherPodLimit is the maximum number of pods that
+	// will be listed in a single request to reduce memory usage.
+	imageGatherPodLimit = 200
 )
 
 var (
@@ -57,6 +62,8 @@ var (
 
 	// logTailLines sets maximum number of lines to fetch from pod logs
 	logTailLines = int64(100)
+
+	imageHostRegex = regexp.MustCompile(`(^|\.)(openshift\.org|registry\.redhat\.io|registry\.access\.redhat\.com)$`)
 )
 
 func init() {
@@ -94,6 +101,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 	return record.Collect(ctx, recorder,
 		GatherMostRecentMetrics(i),
 		GatherClusterOperators(i),
+		GatherContainerImages(i),
 		GatherNodes(i),
 		GatherConfigMaps(i),
 		GatherClusterVersion(i),
@@ -144,6 +152,72 @@ func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
 		}
 
 		return records, nil
+	}
+}
+
+// GatherContainerImages collects essential information about running containers.
+// Specifically, the age of pods, the set of running images and the container names are collected.
+//
+// Location in archive: config/running_containers.json
+func GatherContainerImages(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		records := []record.Record{}
+
+		contInfo := ContainerInfo{
+			Images:     ContainerImageSet{},
+			Containers: PodsWithAge{},
+		}
+		// Cache for image indices in the collected set of container image.
+		image2idx := map[string]int{}
+
+		// Use the Limit and Continue fields to request the pod information in chunks.
+		continueValue := ""
+		for {
+			pods, err := i.coreClient.Pods("").List(metav1.ListOptions{
+				Limit:    imageGatherPodLimit,
+				Continue: continueValue,
+				// FieldSelector: "status.phase=Running",
+			})
+			if err != nil {
+				return nil, []error{err}
+			}
+
+			for podIndex, pod := range pods.Items {
+				podPtr := &pods.Items[podIndex]
+				if strings.HasPrefix(pod.Namespace, "openshift") && hasContainerInCrashloop(podPtr) {
+					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{podPtr}})
+				} else if pod.Status.Phase == corev1.PodRunning {
+					for _, container := range pod.Spec.Containers {
+						imageURL := container.Image
+						urlHost, err := forceParseURLHost(imageURL)
+						if err != nil {
+							klog.Errorf("unable to parse container image URL: %v", err)
+							continue
+						}
+						if imageHostRegex.MatchString(urlHost) {
+							imgIndex, ok := image2idx[imageURL]
+							if !ok {
+								imgIndex = contInfo.Images.Add(imageURL)
+								image2idx[imageURL] = imgIndex
+							}
+							contInfo.Containers.Add(pod.CreationTimestamp.Time, imgIndex)
+						}
+					}
+				}
+			}
+
+			// If the Continue field is not set, this should be the end of available data.
+			// Otherwise, update the Continue value and perform another request iteration.
+			if pods.Continue == "" {
+				break
+			}
+			continueValue = pods.Continue
+		}
+
+		return append(records, record.Record{
+			Name: "config/running_containers",
+			Item: record.JSONMarshaller{Object: contInfo},
+		}), nil
 	}
 }
 
@@ -278,10 +352,9 @@ func GatherNodes(i *Gatherer) func() ([]record.Record, []error) {
 			return nil, []error{err}
 		}
 		records := make([]record.Record, 0, len(nodes.Items))
-		for i := range nodes.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name), Item: NodeAnonymizer{&nodes.Items[i]}})
+		for i, node := range nodes.Items {
+			records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", node.Name), Item: NodeAnonymizer{&nodes.Items[i]}})
 		}
-
 		return records, nil
 	}
 }
@@ -999,4 +1072,82 @@ ANONYMIZED
 		}
 	}
 	return sb.String()
+}
+
+// MinimalNodeInfo contains the most essential information about a node
+type MinimalNodeInfo struct {
+	ProviderID string `json:"providerID"`
+	Image      string `json:"image"`
+}
+
+// RunningImages assigns information about running containers to a specific image index.
+// The index is a reference to an item in the related `ContainerImageSet` instance.
+type RunningImages map[int]int
+
+// PodsWithAge maps the YYYY-MM string representation of start time to list of pods running since that month.
+type PodsWithAge map[string]RunningImages
+
+// Add inserts the specified container information into the data structure.
+func (p PodsWithAge) Add(startTime time.Time, image int) {
+	const YyyyMmFormat = "2006-01"
+	month := startTime.UTC().Format(YyyyMmFormat)
+	if imageMap, exists := p[month]; exists {
+		if _, exists := imageMap[image]; exists {
+			imageMap[image]++
+		} else {
+			imageMap[image] = 1
+		}
+	} else {
+		p[month] = RunningImages{image: 1}
+	}
+}
+
+// ContainerImageSet is used to store unique container image URLs.
+// The key is a continuous index starting from 0.
+// The value is the image URL itself.
+type ContainerImageSet map[int]string
+
+// Add puts the image at the end of the set.
+// It will be assigned the highest index and this index will be returned.
+func (is ContainerImageSet) Add(image string) int {
+	nextIndex := len(is)
+	is[nextIndex] = image
+	return nextIndex
+}
+
+// ContainerInfo encapsulates the essential information about running containers in a minimalized data structure.
+type ContainerInfo struct {
+	Images     ContainerImageSet `json:"images"`
+	Containers PodsWithAge       `json:"containers"`
+}
+
+func forceParseURLHost(rawurl string) (string, error) {
+	// If the scheme isn't specified, the URL will not be parsed nicely and everything will end up in the "path"
+	if !strings.Contains(rawurl, "://") {
+		return forceParseURLHost("https://" + rawurl)
+	}
+
+	parsedURL, err := url.Parse(rawurl)
+	if err != nil {
+		return "", err
+	}
+	return parsedURL.Host, nil
+}
+
+func isContainerInCrashloop(status *corev1.ContainerStatus) bool {
+	return status.RestartCount > 0 && ((status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0) || status.LastTerminationState.Waiting != nil)
+}
+
+func hasContainerInCrashloop(pod *corev1.Pod) bool {
+	for _, status := range pod.Status.InitContainerStatuses {
+		if isContainerInCrashloop(&status) {
+			return true
+		}
+	}
+	for _, status := range pod.Status.ContainerStatuses {
+		if isContainerInCrashloop(&status) {
+			return true
+		}
+	}
+	return false
 }
