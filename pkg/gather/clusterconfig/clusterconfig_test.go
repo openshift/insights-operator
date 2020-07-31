@@ -442,7 +442,7 @@ func ExampleGatherMostRecentMetrics_Test() {
 	}
 	fmt.Print(string(b))
 	// Output:
-	// [{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAo="}]
+	// [{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFsZXJ0cyAK"}]
 }
 
 func ExampleGatherClusterOperators_Test() {

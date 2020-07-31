@@ -76,3 +76,24 @@ There's a tool named `gen_cert_key.py` that can be used to automatically generat
 ```
 gen_cert_file.py kubeconfig.yaml
 ```
+
+### Fetching metrics from Prometheus endpoint
+
+```
+sudo kubefwd svc -n openshift-monitoring -d openshift-monitoring.svc -l prometheus=k8s
+curl --cert k8s.crt --key k8s.key  -k 'https://prometheus-k8s.openshift-monitoring.svc:9091/metrics'
+```
+
+### Debugging prometheus metrics without valid CA
+
+Get a bearer token
+```
+oc sa get-token prometheus-k8s -n openshift-monitoring
+```
+Change in pkg/controller/operator.go after creating metricsGatherKubeConfig (about line 86)
+```
+metricsGatherKubeConfig.Insecure = true
+metricsGatherKubeConfig.BearerToken = "paste your token here"
+metricsGatherKubeConfig.CAFile = "" // by default it is "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+metricsGatherKubeConfig.CAData = []byte{}
+```

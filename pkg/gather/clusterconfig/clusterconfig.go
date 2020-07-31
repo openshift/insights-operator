@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"regexp"
 	"sort"
@@ -47,6 +48,10 @@ const (
 	// imageGatherPodLimit is the maximum number of pods that
 	// will be listed in a single request to reduce memory usage.
 	imageGatherPodLimit = 200
+
+	// metricsLinesLimit is the maximal number of lines read from monitoring Prometheus
+	// 500kb of alerts is limit, one alert line has typically 450 bytes = 1137
+	metricsAlertsLinesLimit = 500 * 1024 / 450
 )
 
 var (
@@ -123,11 +128,10 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 //
 // The GET REST query to URL /federate
 // Gathered metrics:
-//   ALERTS
 //   etcd_object_counts
 //   cluster_installer
 //   namespace CPU and memory usage
-//
+// then followed by at max 1137 lines from ALERTS metric
 // Location in archive: config/metrics/
 // See: docs/insights-archive-sample/config/metrics
 func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
@@ -136,7 +140,6 @@ func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
 			return nil, nil
 		}
 		data, err := i.metricsClient.Get().AbsPath("federate").
-			Param("match[]", "ALERTS").
 			Param("match[]", "etcd_object_counts").
 			Param("match[]", "cluster_installer").
 			Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
@@ -147,6 +150,24 @@ func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
 			klog.Errorf("Unable to retrieve most recent metrics: %v", err)
 			return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
 		}
+
+		rsp, err := i.metricsClient.Get().AbsPath("federate").
+			Param("match[]", "ALERTS").
+			Stream()
+		if err != nil {
+			// write metrics errors to the file format as a comment
+			klog.Errorf("Unable to retrieve most recent alerts from metrics: %v", err)
+			return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
+		}
+		r := LineLimitReader(rsp, metricsAlertsLinesLimit)
+		alerts, err := ioutil.ReadAll(r)
+		if err != nil {
+			klog.Errorf("Unable to read most recent alerts from metrics: %v", err)
+			return nil, []error{err}
+		}
+
+		data = append(data, []byte("# Alerts \n")...)
+		data = append(data, alerts...)
 		records := []record.Record{
 			{Name: "config/metrics", Item: RawByte(data)},
 		}
@@ -1150,4 +1171,41 @@ func hasContainerInCrashloop(pod *corev1.Pod) bool {
 		}
 	}
 	return false
+}
+
+// LineLimitReader returns a Reader that reads from r
+// but stops with EOF after n lines.
+// The underlying implementation is a *LineLimitedReader.
+func LineLimitReader(r io.Reader, n int64) io.Reader { return &LineLimitedReader{r, n} }
+
+// A LineLimitedReader reads from R but limits the amount of
+// data returned to just N lines. Each call to Read
+// updates N to reflect the new amount remaining.
+// Read returns EOF when N <= 0 or when the underlying R returns EOF.
+type LineLimitedReader struct {
+	R io.Reader // underlying reader
+	N int64     // max lines remaining
+}
+
+func (l *LineLimitedReader) Read(p []byte) (int, error) {
+	lineSep := []byte{'\n'}
+	rc, err := l.R.Read(p)
+	if err != nil {
+		return 0, err
+	}
+
+	idx := 0
+	lc := 0
+	for {
+		idx = bytes.Index(p[lc:rc], lineSep)
+		if idx == -1 {
+			return rc, nil
+		}
+		l.N--
+		if l.N < 0 {
+			return lc, io.EOF
+		}
+		idx++ // move after EOL
+		lc += idx
+	}
 }
