@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -11,6 +10,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+const knownFileSuffixesInsideArchiveRegex string = `(`+
+	// known file extensions
+	`\.(crt|json|log)` +
+	`|` +
+	// exceptions - file names without extension #
+	`(\/|^)(config|id|invoker|metrics|version)` +
+`)$`
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
 // https://bugzilla.redhat.com/show_bug.cgi?id=1753755
@@ -160,20 +167,7 @@ func latestArchiveContainsEvent(t *testing.T) {
 
 //https://bugzilla.redhat.com/show_bug.cgi?id=1840012
 func latestArchiveFilesContainExtensions(t *testing.T) {
-	suffixes := []string{
-		// known file extensions
-		`\.crt`,
-		`\.json`,
-		`\.log`,
-		// exceptions - files without extension
-		`/config`,
-		`/id`,
-		`/invoker`,
-		`/metrics`,
-		`/version`,
-	}
-	pattern := fmt.Sprintf(`(%s)$`, strings.Join(suffixes, "|"))
-	regex, err := regexp.Compile(pattern)
+	regex, err := regexp.Compile(knownFileSuffixesInsideArchiveRegex)
 	e(t, err, "failed to compile pattern")
 	archiveFiles := latestArchiveFiles(t)
 	t.Log(strings.Join(archiveFiles, "\n"))
@@ -182,7 +176,7 @@ func latestArchiveFilesContainExtensions(t *testing.T) {
 	}
 	for _, fileName := range archiveFiles {
 		if !regex.MatchString(fileName) {
-			t.Errorf(`file "%s" does not match pattern "%s"`, fileName, pattern)
+			t.Errorf(`file "%s" does not match pattern "%s"`, fileName, knownFileSuffixesInsideArchiveRegex)
 		}
 	}
 }
