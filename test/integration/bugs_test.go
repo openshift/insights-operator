@@ -1,6 +1,9 @@
 package integration
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -155,12 +158,42 @@ func latestArchiveContainsEvent(t *testing.T) {
 	}
 }
 
+//https://bugzilla.redhat.com/show_bug.cgi?id=1840012
+func latestArchiveFilesContainExtensions(t *testing.T) {
+	suffixes := []string{
+		// known file extensions
+		`\.crt`,
+		`\.json`,
+		`\.log`,
+		// exceptions - files without extension
+		`/config`,
+		`/id`,
+		`/invoker`,
+		`/metrics`,
+		`/version`,
+	}
+	pattern := fmt.Sprintf(`(%s)$`, strings.Join(suffixes, "|"))
+	regex, err := regexp.Compile(pattern)
+	e(t, err, "failed to compile pattern")
+	archiveFiles := latestArchiveFiles(t)
+	t.Log(strings.Join(archiveFiles, "\n"))
+	if len(archiveFiles) == 0 {
+		t.Fatal("No files in archive to check")
+	}
+	for _, fileName := range archiveFiles {
+		if !regex.MatchString(fileName) {
+			t.Errorf(`file "%s" does not match pattern "%s"`, fileName, pattern)
+		}
+	}
+}
+
 func TestCollectingAfterDegradingOperator(t *testing.T) {
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
 	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
 	t.Run("Logs", latestArchiveContainsPodLogs)
 	t.Run("Event", latestArchiveContainsEvent)
+	t.Run("FileExtensions", latestArchiveFilesContainExtensions)
 }
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151

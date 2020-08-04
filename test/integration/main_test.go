@@ -354,6 +354,14 @@ func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) func(){
 	return func(){ changeReportTimeInterval(t, previousInterval) }
 }
 
+func latestArchiveFiles(t *testing.T) []string {
+	insightsPod := findPod(t, clientset, "openshift-insights", "insights-operator")
+	archiveLogFiles := `tar tf $(ls -dtr /var/lib/insights-operator/* | tail -1)`
+	stdout, _, _ := ExecCmd(t, clientset, insightsPod.Name, "openshift-insights", archiveLogFiles, nil)
+	stdout = strings.TrimSpace(stdout)
+	return strings.Split(stdout, "\n")
+}
+
 func latestArchiveContainsFiles(t *testing.T, pattern string) (int, error) {
 	insightsPod := findPod(t, clientset, "openshift-insights", "insights-operator")
 	hasLatestArchiveLogs := fmt.Sprintf(`tar tf $(ls -dtr /var/lib/insights-operator/* | tail -1)|grep -c "%s"`, pattern)
