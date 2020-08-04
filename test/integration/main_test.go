@@ -136,16 +136,20 @@ func operatorStatus(t *testing.T, operator *configv1.ClusterOperator, conditionT
 }
 
 func restartInsightsOperator(t *testing.T) {
+	deleteAllPods(t, "openshift-insights")
+}
+
+func deleteAllPods(t *testing.T, namespace string) {
 	// restart insights-operator (delete pods)
-	pods, err := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	for _, pod := range pods.Items {
-		clientset.CoreV1().Pods("openshift-insights").Delete(pod.Name, &metav1.DeleteOptions{})
+		clientset.CoreV1().Pods(namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 		err := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-			_, err := clientset.CoreV1().Pods("openshift-insights").Get(pod.Name, metav1.GetOptions{})
+			_, err := clientset.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
 			if err == nil {
 				t.Logf("the pod is not yet deleted: %v\n", err)
 				return false, nil
@@ -158,14 +162,14 @@ func restartInsightsOperator(t *testing.T) {
 
 	// check new pods are created and running
 	errPod := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-		newPods, _ := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+		newPods, _ := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if len(newPods.Items) == 0 {
 			t.Log("pods are not yet created")
 			return false, nil
 		}
 
 		for _, newPod := range newPods.Items {
-			pod, err := clientset.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
+			pod, err := clientset.CoreV1().Pods(namespace).Get(newPod.Name, metav1.GetOptions{})
 			if err != nil {
 				panic(err.Error())
 			}
@@ -181,7 +185,6 @@ func restartInsightsOperator(t *testing.T) {
 }
 
 func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string, newLogsOnly ...bool) {
-	// TODO -> change this function to to PascalCase in follow-up PR
 	r, _ := regexp.Compile(message)
 	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
@@ -312,22 +315,22 @@ func findPod(t *testing.T, kubeClient *kubernetes.Clientset, namespace string, p
 	return nil
 }
 
-func degradeOperator(t *testing.T, kubeClient *kubernetes.Clientset, pod *corev1.Pod) func(){
-	// degrades monitoring operator
+func degradeOperatorMonitoring(t *testing.T) func(){
 	// delete just in case it was already there, so we don't care about error
-	kubeClient.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
+	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
 	isOperatorDegraded(t, clusterOperator("monitoring"))
-	_, err:=kubeClient.CoreV1().ConfigMaps(pod.Namespace).Create(
+	_, err:=clientset.CoreV1().ConfigMaps(pod.Namespace).Create(
 		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml" :  "telemeterClient: enabled: NOT_BOOELAN"}},
 		)
 	e(t, err, "Failed to create ConfigMap")
-	err = kubeClient.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 	e(t, err, "Failed to delete Pod")
 	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
 		return isOperatorDegraded(t, clusterOperator("monitoring")), nil
 	})
 	return func(){
-		kubeClient.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
 		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
 			insightsDegraded := isOperatorDegraded(t, clusterOperator("monitoring"))
 			return !insightsDegraded, nil
@@ -351,16 +354,16 @@ func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) func(){
 	return func(){ changeReportTimeInterval(t, previousInterval) }
 }
 
-func LatestArchiveContainsPodLogs(t *testing.T, kubeClient *kubernetes.Clientset, pod *corev1.Pod) bool {
-	insightsPod := findPod(t, kubeClient, "openshift-insights", "insights-operator")
-	hasLatestArchiveLogs := `tar tf $(ls -dtr /var/lib/insights-operator/* | tail -1)|grep -c "^config/pod/openshift-monitoring/logs/.*\.log$"`
-	stdout, _, _ := ExecCmd(t, kubeClient, insightsPod.Name, "openshift-insights", hasLatestArchiveLogs, nil)
+func latestArchiveContainsFiles(t *testing.T, pattern string) (int, error) {
+	insightsPod := findPod(t, clientset, "openshift-insights", "insights-operator")
+	hasLatestArchiveLogs := fmt.Sprintf(`tar tf $(ls -dtr /var/lib/insights-operator/* | tail -1)|grep -c "%s"`, pattern)
+	stdout, _, _ := ExecCmd(t, clientset, insightsPod.Name, "openshift-insights", hasLatestArchiveLogs, nil)
+	t.Log(stdout)
 	logCount, err := strconv.Atoi(strings.TrimSpace(stdout))
 	if err != nil && logCount !=0{
-		t.Error("command returned non-integer:", stdout)
+		return -1, fmt.Errorf("command returned non-integer: %s", stdout)
 	}
-	t.Log(logCount, "log files found")
-	return logCount != 0
+	return logCount, nil
 }
 
 func TestMain(m *testing.M) {

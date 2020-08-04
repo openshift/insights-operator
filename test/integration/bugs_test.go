@@ -136,14 +136,31 @@ func TestUnreachableHost(t *testing.T) {
 }
 
 //https://bugzilla.redhat.com/show_bug.cgi?id=1838973
-func TestPodLogsCollected(t *testing.T) {
-	defer ChangeReportTimeInterval(t, 1)()
-	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
-	defer degradeOperator(t, clientset, pod)()
-	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
-	if !LatestArchiveContainsPodLogs(t, clientset, pod) {
-		t.Fatal("There are no logs!")
+func latestArchiveContainsPodLogs(t *testing.T) {
+	logCount, err :=  latestArchiveContainsFiles(t, `^config/pod/openshift-monitoring/logs/.*\.log$`)
+	e(t, err, "Checking for log files failed")
+	t.Log(logCount, "log files found")
+	if logCount == 0 {
+		t.Error("no log files in archive")
 	}
+}
+
+//https://bugzilla.redhat.com/show_bug.cgi?id=1767719
+func latestArchiveContainsEvent(t *testing.T) {
+	logCount, err :=  latestArchiveContainsFiles(t, `^events/openshift-monitoring.json$`)
+	e(t, err, "Checking for event failed")
+	t.Log(logCount, "event files found")
+	if logCount == 0 {
+		t.Error("no event file in archive")
+	}
+}
+
+func TestCollectingAfterDegradingOperator(t *testing.T) {
+	defer ChangeReportTimeInterval(t, 1)()
+	defer degradeOperatorMonitoring(t)()
+	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
+	t.Run("Logs", latestArchiveContainsPodLogs)
+	t.Run("Event", latestArchiveContainsEvent)
 }
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
