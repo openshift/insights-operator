@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -8,6 +10,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+const knownFileSuffixesInsideArchiveRegex string = `(`+
+	// known file extensions
+	`\.(crt|json|log)` +
+	`|` +
+	// exceptions - file names without extension #
+	`(\/|^)(config|id|invoker|metrics|version)` +
+`)$`
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
 // https://bugzilla.redhat.com/show_bug.cgi?id=1753755
@@ -155,12 +165,29 @@ func latestArchiveContainsEvent(t *testing.T) {
 	}
 }
 
+//https://bugzilla.redhat.com/show_bug.cgi?id=1840012
+func latestArchiveFilesContainExtensions(t *testing.T) {
+	regex, err := regexp.Compile(knownFileSuffixesInsideArchiveRegex)
+	e(t, err, "failed to compile pattern")
+	archiveFiles := latestArchiveFiles(t)
+	t.Log(strings.Join(archiveFiles, "\n"))
+	if len(archiveFiles) == 0 {
+		t.Fatal("No files in archive to check")
+	}
+	for _, fileName := range archiveFiles {
+		if !regex.MatchString(fileName) {
+			t.Errorf(`file "%s" does not match pattern "%s"`, fileName, knownFileSuffixesInsideArchiveRegex)
+		}
+	}
+}
+
 func TestCollectingAfterDegradingOperator(t *testing.T) {
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
 	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
 	t.Run("Logs", latestArchiveContainsPodLogs)
 	t.Run("Event", latestArchiveContainsEvent)
+	t.Run("FileExtensions", latestArchiveFilesContainExtensions)
 }
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
