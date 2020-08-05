@@ -19,10 +19,10 @@ import (
 
 type ReportsCache struct {
 	Configuration config.SmartProxy
-	// Report        types.ClusterReport
-	client      *http.Client
-	authorizer  Authorizer
-	clusterInfo ClusterVersionInfo
+	Report        types.SmartProxyReport
+	client        *http.Client
+	authorizer    Authorizer
+	clusterInfo   ClusterVersionInfo
 }
 
 type ClusterVersionInfo interface {
@@ -97,12 +97,9 @@ func (r *ReportsCache) PullSmartProxy() error {
 		report := ReportResponse{}
 		err = json.Unmarshal(body, &report)
 
-		// r.Report = types.ClusterReport(report.Report)
+		r.Report = report.Report
 		klog.Info("Insights report retrieved")
-		// klog.Info(r.Report)
-		klog.Info(report.Report.Data)
-		klog.Info(report.Report.Meta)
-		fmt.Println(string(body))
+		klog.Info(r.Report)
 	}
 
 	return nil
