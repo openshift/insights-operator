@@ -159,36 +159,39 @@ Location in archive: config/configmaps/
 See: docs/insights-archive-sample/config/configmaps
 
 
+## ContainerImages
+
+collects essential information about running containers.
+Specifically, the age of pods, the set of running images and the container names are collected.
+
+Location in archive: config/running_containers.json
+
+
 ## MostRecentMetrics
 
 gathers cluster Federated Monitoring metrics.
 
 The GET REST query to URL /federate
 Gathered metrics:
-  ALERTS
   etcd_object_counts
   cluster_installer
   namespace CPU and memory usage
+  followed by at most 1000 lines of ALERTS metric
 
 Location in archive: config/metrics/
 See: docs/insights-archive-sample/config/metrics
 
 
-Output raw size: 108
+Output raw size: 120
 
 ### Examples
 
 #### MostRecentMetrics
-[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAo="}]
+[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFsZXJ0cyAK"}]
 
 ## Nodes
 
 collects all Nodes.
-
-The node is unhealthy when:
-the operator.Status.Conditions.Condition Type
-  is OperatorDegrated and Status is True or
-     OperatorAvailable and Status is False
 
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
