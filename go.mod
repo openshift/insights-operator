@@ -3,7 +3,7 @@ module github.com/openshift/insights-operator
 go 1.12
 
 require (
-	github.com/RedHatInsights/insights-results-aggregator v1.0.0
+	github.com/RedHatInsights/insights-results-smart-proxy v0.0.0-20200805144259-5a11474c9a1c
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/getsentry/raven-go v0.2.1-0.20190513200303-c977f96e1095 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
@@ -15,7 +15,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
-	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	google.golang.org/appengine v1.6.1 // indirect
 	k8s.io/api v0.17.1

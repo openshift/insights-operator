@@ -1,13 +1,14 @@
 package externalpipeline
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/RedHatInsights/insights-results-aggregator/types"
+	"github.com/RedHatInsights/insights-results-smart-proxy/types"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/klog"
 
@@ -18,10 +19,10 @@ import (
 
 type ReportsCache struct {
 	Configuration config.SmartProxy
-	Report        types.ClusterReport
-	client        *http.Client
-	authorizer    Authorizer
-	clusterInfo   ClusterVersionInfo
+	// Report        types.ClusterReport
+	client      *http.Client
+	authorizer  Authorizer
+	clusterInfo ClusterVersionInfo
 }
 
 type ClusterVersionInfo interface {
@@ -45,6 +46,11 @@ func New(c config.SmartProxy, authorizer Authorizer, clusterInfo ClusterVersionI
 }
 
 func (r *ReportsCache) PullSmartProxy() error {
+	type ReportResponse struct {
+		Report types.SmartProxyReport `json:"report"`
+		Status string                 `json:"status"`
+	}
+
 	klog.Info("Pulling report from smart-proxy")
 	cv := r.clusterInfo.ClusterVersion()
 	if cv == nil {
@@ -88,9 +94,15 @@ func (r *ReportsCache) PullSmartProxy() error {
 			return err
 		}
 
-		r.Report = types.ClusterReport(body)
+		report := ReportResponse{}
+		err = json.Unmarshal(body, &report)
+
+		// r.Report = types.ClusterReport(report.Report)
 		klog.Info("Insights report retrieved")
-		klog.Info(r.Report)
+		// klog.Info(r.Report)
+		klog.Info(report.Report.Data)
+		klog.Info(report.Report.Meta)
+		fmt.Println(string(body))
 	}
 
 	return nil
