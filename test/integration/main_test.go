@@ -8,7 +8,6 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -362,16 +361,45 @@ func latestArchiveFiles(t *testing.T) []string {
 	return strings.Split(stdout, "\n")
 }
 
-func latestArchiveContainsFiles(t *testing.T, pattern string) (int, error) {
-	insightsPod := findPod(t, clientset, "openshift-insights", "insights-operator")
-	hasLatestArchiveLogs := fmt.Sprintf(`tar tf $(ls -dtr /var/lib/insights-operator/* | tail -1)|grep -c "%s"`, pattern)
-	stdout, _, _ := ExecCmd(t, clientset, insightsPod.Name, "openshift-insights", hasLatestArchiveLogs, nil)
-	t.Log(stdout)
-	logCount, err := strconv.Atoi(strings.TrimSpace(stdout))
-	if err != nil && logCount !=0{
-		return -1, fmt.Errorf("command returned non-integer: %s", stdout)
+func allFilesMatch(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+	for _, file := range files {
+		if !regex.MatchString(file) {
+			t.Errorf(`%s file "%s" does not match pattern "%s"`, prettyName, file, regex.String())
+		}
 	}
-	return logCount, nil
+	return nil
+}
+
+func matchingFileExists(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+	count := 0
+	for _, file := range files {
+		if regex.MatchString(file){
+			count++
+		}
+	}
+
+	word := "files"
+	suffix := ""
+	if count == 1 {
+		word = "file"
+		suffix = "es"
+	}
+	t.Logf("%d %s %s match%s pattern `%s`", count, prettyName, word, suffix, regex.String())
+
+	if count != 0 {
+		return nil
+	}
+	return fmt.Errorf("did not find any (%s)file matching %s",prettyName, regex.String())
+}
+
+func latestArchiveCheckFiles(t *testing.T, prettyName string, check func(*testing.T, string, []string, *regexp.Regexp) error, pattern string) error {
+	latestFiles := latestArchiveFiles(t)
+	if len(latestFiles) == 0 {
+		t.Fatal("No files in archive to check")
+	}
+	regex, err := regexp.Compile(pattern)
+	e(t, err, "failed to compile pattern")
+	return check(t, prettyName,latestFiles, regex)
 }
 
 func TestMain(m *testing.M) {
