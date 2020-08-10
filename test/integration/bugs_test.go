@@ -1,8 +1,8 @@
 package integration
 
 import (
+	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -145,49 +145,60 @@ func TestUnreachableHost(t *testing.T) {
 	t.Log(errDegraded)
 }
 
-//https://bugzilla.redhat.com/show_bug.cgi?id=1838973
-func latestArchiveContainsPodLogs(t *testing.T) {
-	logCount, err :=  latestArchiveContainsFiles(t, `^config/pod/openshift-monitoring/logs/.*\.log$`)
-	e(t, err, "Checking for log files failed")
-	t.Log(logCount, "log files found")
-	if logCount == 0 {
-		t.Error("no log files in archive")
-	}
-}
-
-//https://bugzilla.redhat.com/show_bug.cgi?id=1767719
-func latestArchiveContainsEvent(t *testing.T) {
-	logCount, err :=  latestArchiveContainsFiles(t, `^events/openshift-monitoring.json$`)
-	e(t, err, "Checking for event failed")
-	t.Log(logCount, "event files found")
-	if logCount == 0 {
-		t.Error("no event file in archive")
-	}
-}
-
-//https://bugzilla.redhat.com/show_bug.cgi?id=1840012
-func latestArchiveFilesContainExtensions(t *testing.T) {
-	regex, err := regexp.Compile(knownFileSuffixesInsideArchiveRegex)
-	e(t, err, "failed to compile pattern")
-	archiveFiles := latestArchiveFiles(t)
-	t.Log(strings.Join(archiveFiles, "\n"))
-	if len(archiveFiles) == 0 {
-		t.Fatal("No files in archive to check")
-	}
-	for _, fileName := range archiveFiles {
-		if !regex.MatchString(fileName) {
-			t.Errorf(`file "%s" does not match pattern "%s"`, fileName, knownFileSuffixesInsideArchiveRegex)
+func genLatestArchiveCheckPattern(prettyName string,  check func(*testing.T, string, []string, *regexp.Regexp) error, pattern string) func(t *testing.T) {
+	return func(t * testing.T){
+		err := latestArchiveCheckFiles(t, prettyName, check, pattern)
+		if err!=nil{
+			t.Fatal(err)
 		}
 	}
 }
 
-func TestCollectingAfterDegradingOperator(t *testing.T) {
+func latestArchiveContainsConfigMaps(t *testing.T) {
+	configMaps, _ := clientset.CoreV1().ConfigMaps("openshift-config").List(metav1.ListOptions{})
+	if len(configMaps.Items) == 0 {
+		t.Fatal("Nothing to test: no config maps in openshift-config namespace")
+	}
+	for _, configMap := range configMaps.Items {
+		configMapPath := fmt.Sprintf("^config/configmaps/%s/.*$", configMap.Name)
+		err := latestArchiveCheckFiles(t, "config map", matchingFileExists, configMapPath)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func TestArchiveContains(t *testing.T) {
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1825756
+	t.Run("ConfigMaps", latestArchiveContainsConfigMaps)
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1834677
+	t.Run("ImageRegistry",
+		genLatestArchiveCheckPattern(
+			"image registry", matchingFileExists,
+			`^config/imageregistry.json$`))
+
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
 	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
-	t.Run("Logs", latestArchiveContainsPodLogs)
-	t.Run("Event", latestArchiveContainsEvent)
-	t.Run("FileExtensions", latestArchiveFilesContainExtensions)
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1838973
+	t.Run("Logs",
+		genLatestArchiveCheckPattern(
+			"log", matchingFileExists,
+			`^config/pod/openshift-monitoring/logs/.*\.log$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1767719
+	t.Run("Event",
+		genLatestArchiveCheckPattern(
+			"event", matchingFileExists,
+			`^events/openshift-monitoring.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1840012
+	t.Run("FileExtensions",
+		genLatestArchiveCheckPattern(
+			"extension of", allFilesMatch,
+			knownFileSuffixesInsideArchiveRegex))
 }
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
