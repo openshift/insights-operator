@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"k8s.io/api/certificates/v1beta1"
 	"regexp"
 	"testing"
 	"time"
@@ -199,6 +200,37 @@ func TestArchiveContains(t *testing.T) {
 		genLatestArchiveCheckPattern(
 			"extension of", allFilesMatch,
 			knownFileSuffixesInsideArchiveRegex))
+}
+
+//https://bugzilla.redhat.com/show_bug.cgi?id=1835090
+func TestCSRCollected(t *testing.T) {
+	certificateRequest :=[]byte(`-----BEGIN CERTIFICATE REQUEST-----
+MIIBYzCCAQgCAQAwMDEuMCwGA1UEAxMlbXktcG9kLm15LW5hbWVzcGFjZS5wb2Qu
+Y2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKhgwkNZ1uTb
+DKKwJAh9TmmpSXKlbogxqV8e0yjIa2tKHZScAiZwTw920d6PLIU984ivWYfez/gq
+ATGDLWuX+Y2gdjB0BgkqhkiG9w0BCQ4xZzBlMGMGA1UdEQRcMFqCJW15LXN2Yy5t
+eS1uYW1lc3BhY2Uuc3ZjLmNsdXN0ZXIubG9jYWyCJW15LXBvZC5teS1uYW1lc3Bh
+Y2UucG9kLmNsdXN0ZXIubG9jYWyHBMAAAhiHBAoAIgIwCgYIKoZIzj0EAwIDSQAw
+RgIhAIPCUx9FdzX1iDGxH9UgYJE07gfG+J3ObR31IHhmi+WwAiEAtzN35zYkXEaC
+YLluQUO+Jy/PjOnMPw5+DeSX6asUgXE=
+-----END CERTIFICATE REQUEST-----`)
+	name := "my-svc.my-namespace"
+	_, err := clientset.CertificatesV1beta1().CertificateSigningRequests().Create(&v1beta1.CertificateSigningRequest{
+		TypeMeta:   metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec:       v1beta1.CertificateSigningRequestSpec{Request: certificateRequest},
+		Status:     v1beta1.CertificateSigningRequestStatus{},
+	})
+	e(t, err, "Failed creating certificate signing request")
+	defer func() {
+		clientset.CertificatesV1beta1().CertificateSigningRequests().Delete(name, &metav1.DeleteOptions{})
+		restartInsightsOperator(t)
+	}()
+	defer ChangeReportTimeInterval(t, 1)()
+	checkPodsLogs(t, clientset, `Uploaded report successfully in`, true)
+	certificatePath := `^config/certificatesigningrequests/my-svc.my-namespace.json$`
+	err = latestArchiveCheckFiles(t, "certificate request", matchingFileExists, certificatePath)
+	e(t, err, "")
 }
 
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
