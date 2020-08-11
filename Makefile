@@ -8,7 +8,7 @@ test-unit:
 
 test-e2e:
 	go test ./test/integration -run ^\(TestPullSecretExists\)$$ -timeout 1m
-	go test ./test/integration -timeout 10m $(TEST_OPTIONS)
+	go test ./test/integration -timeout 13m $(TEST_OPTIONS)
 .PHONY: test-e2e
 
 vet:
