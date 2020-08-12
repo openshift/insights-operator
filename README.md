@@ -97,3 +97,10 @@ metricsGatherKubeConfig.BearerToken = "paste your token here"
 metricsGatherKubeConfig.CAFile = "" // by default it is "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 metricsGatherKubeConfig.CAData = []byte{}
 ```
+
+
+### Formatting archive json files
+This formats .json files from folder with extracted archive.
+```
+find . -type f -name '*.json' -print | while read line; do cat "$line" | jq > "$line.tmp" && mv "$line.tmp" "$line"; done
+```

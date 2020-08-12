@@ -1,0 +1,86 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "kube-controller-manager",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-controller-manager",
+    "uid": "0d734da7-e69c-4310-9fe2-9d113bc6d709",
+    "resourceVersion": "24378",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:29:21Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:32Z",
+        "reason": "AsExpected",
+        "message": "NodeControllerDegraded: All master nodes are ready"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:54:29Z",
+        "reason": "AsExpected",
+        "message": "NodeInstallerProgressing: 3 nodes are at revision 9"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:34:52Z",
+        "reason": "AsExpected",
+        "message": "StaticPodsAvailable: 3 nodes are active; 3 nodes are at revision 9"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:29:22Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "raw-internal",
+        "version": "4.4.16"
+      },
+      {
+        "name": "kube-controller-manager",
+        "version": "1.17.1"
+      },
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "kubecontrollermanagers",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-controller-manager"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-controller-manager-operator"
+      }
+    ],
+    "extension": null
+  }
+}

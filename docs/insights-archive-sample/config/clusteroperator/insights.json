@@ -1,0 +1,59 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "insights",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/insights",
+    "uid": "b3d2a6a8-be36-427e-a094-8389f9e0c2f4",
+    "resourceVersion": "26259",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:49:37Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:37Z"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:49:37Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:51:37Z",
+        "message": "Monitoring the cluster"
+      },
+      {
+        "type": "Disabled",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:51:37Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-insights"
+      },
+      {
+        "group": "apps",
+        "resource": "deployments",
+        "namespace": "openshift-insights",
+        "name": "insights-operator"
+      }
+    ],
+    "extension": {}
+  }
+}

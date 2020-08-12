@@ -1,0 +1,70 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "dns",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/dns",
+    "uid": "9e12ef60-797c-4b15-894d-9ed69376b28d",
+    "resourceVersion": "20760",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:29:53Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:53:43Z",
+        "reason": "AsExpected",
+        "message": "All desired DNS DaemonSets available and operand Namespace exists"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:53:55Z",
+        "reason": "AsExpected",
+        "message": "Desired and available number of DNS DaemonSets are equal"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:30:13Z",
+        "reason": "AsExpected",
+        "message": "At least 1 DNS DaemonSet available"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      },
+      {
+        "name": "coredns",
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47287ccd6a1c1f2054bb9275d66c2800fbf96057750dc5fd83c076acc1ce108b"
+      },
+      {
+        "name": "openshift-cli",
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1390e9392cdd38fc3d1d557088fba68855f4dacd3a9b4b2ccac730f28c86f134"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-dns-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-dns"
+      },
+      {
+        "group": "operator.openshift.io",
+        "resource": "DNS",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

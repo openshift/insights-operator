@@ -4,10 +4,10 @@
   "metadata": {
     "name": "cluster",
     "selfLink": "/apis/config.openshift.io/v1/proxies/cluster",
-    "uid": "6ef7884e-94bc-4936-bad5-74cfc1379bcb",
-    "resourceVersion": "712",
+    "uid": "e55a0e2b-7ecc-4e94-8723-771d23631729",
+    "resourceVersion": "440",
     "generation": 1,
-    "creationTimestamp": "2020-03-18T12:05:20Z"
+    "creationTimestamp": "2020-08-12T08:27:17Z"
   },
   "spec": {
     "trustedCA": {

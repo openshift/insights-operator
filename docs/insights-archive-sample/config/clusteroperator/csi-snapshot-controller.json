@@ -1,0 +1,69 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "csi-snapshot-controller",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/csi-snapshot-controller",
+    "uid": "d5fbeac0-a4f7-4caa-85a3-5bbbbe61b2e6",
+    "resourceVersion": "20696",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:53:35Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:53:35Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:53:51Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:53:51Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:53:38Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "csi-snapshot-controller",
+        "version": "4.4.16"
+      },
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-storage-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-storage-operator"
+      },
+      {
+        "group": "operator.openshift.io",
+        "resource": "csisnapshotcontrollers",
+        "name": "cluster"
+      }
+    ],
+    "extension": null
+  }
+}

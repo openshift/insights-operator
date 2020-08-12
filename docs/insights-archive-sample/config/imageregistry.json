@@ -1,103 +1,103 @@
 {
-    "kind": "Config",
-    "apiVersion": "imageregistry.operator.openshift.io/v1",
-    "metadata": {
-        "name": "cluster",
-        "selfLink": "/apis/imageregistry.operator.openshift.io/v1/configs/cluster",
-        "uid": "a2104ce4-63be-44ed-9d9b-6b5b236285fd",
-        "resourceVersion": "16909",
-        "generation": 2,
-        "creationTimestamp": "2020-06-24T09:27:17Z",
-        "finalizers": [
-            "imageregistry.operator.openshift.io/finalizer"
-        ]
+  "kind": "Config",
+  "apiVersion": "imageregistry.operator.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/imageregistry.operator.openshift.io/v1/configs/cluster",
+    "uid": "c9bbc963-b7ea-41f5-89bc-acd887260343",
+    "resourceVersion": "20479",
+    "generation": 2,
+    "creationTimestamp": "2020-08-12T08:49:33Z",
+    "finalizers": [
+      "imageregistry.operator.openshift.io/finalizer"
+    ]
+  },
+  "spec": {
+    "managementState": "Managed",
+    "httpSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "proxy": {
+      "http": "",
+      "https": "",
+      "noProxy": ""
     },
-    "spec": {
-        "managementState": "Managed",
-        "httpSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-        "proxy": {
-            "http": "",
-            "https": "",
-            "noProxy": ""
-        },
-        "storage": {
-            "gcs": {
-                "bucket": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                "region": "us-east1",
-                "projectID": "xxxxxxxxxxxxxxxxxxxxxx"
-            }
-        },
-        "readOnly": false,
-        "disableRedirect": false,
-        "requests": {
-            "read": {
-                "maxRunning": 0,
-                "maxInQueue": 0,
-                "maxWaitInQueue": "0s"
-            },
-            "write": {
-                "maxRunning": 0,
-                "maxInQueue": 0,
-                "maxWaitInQueue": "0s"
-            }
-        },
-        "defaultRoute": false,
-        "replicas": 2,
-        "logging": 2,
-        "rolloutStrategy": "RollingUpdate"
+    "storage": {
+      "gcs": {
+        "bucket": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "region": "us-east1",
+        "projectID": "xxxxxxxxxxxxxxxxxxxxxx"
+      }
     },
-    "status": {
-        "observedGeneration": 2,
-        "conditions": [
-            {
-                "type": "StorageExists",
-                "status": "True",
-                "lastTransitionTime": "2020-06-24T09:27:18Z",
-                "reason": "GCS Bucket Exists"
-            },
-            {
-                "type": "Available",
-                "status": "True",
-                "lastTransitionTime": "2020-06-24T09:30:26Z",
-                "reason": "Ready",
-                "message": "The registry is ready"
-            },
-            {
-                "type": "Progressing",
-                "status": "False",
-                "lastTransitionTime": "2020-06-24T09:30:49Z",
-                "reason": "Ready",
-                "message": "The registry is ready"
-            },
-            {
-                "type": "Degraded",
-                "status": "False",
-                "lastTransitionTime": "2020-06-24T09:27:18Z"
-            },
-            {
-                "type": "Removed",
-                "status": "False",
-                "lastTransitionTime": "2020-06-24T09:27:18Z"
-            }
-        ],
-        "readyReplicas": 0,
-        "generations": [
-            {
-                "group": "apps",
-                "resource": "deployments",
-                "namespace": "openshift-image-registry",
-                "name": "image-registry",
-                "lastGeneration": 3,
-                "hash": ""
-            }
-        ],
-        "storageManaged": true,
-        "storage": {
-            "gcs": {
-                "bucket": "ci-ln-3z9y7mt-f76d1-69jcr-image-registry-us-east1-sxgmthwimrmc",
-                "region": "us-east1",
-                "projectID": "openshift-gce-devel-ci"
-            }
-        }
+    "readOnly": false,
+    "disableRedirect": false,
+    "requests": {
+      "read": {
+        "maxRunning": 0,
+        "maxInQueue": 0,
+        "maxWaitInQueue": "0s"
+      },
+      "write": {
+        "maxRunning": 0,
+        "maxInQueue": 0,
+        "maxWaitInQueue": "0s"
+      }
+    },
+    "defaultRoute": false,
+    "replicas": 2,
+    "logging": 2,
+    "rolloutStrategy": "RollingUpdate"
+  },
+  "status": {
+    "observedGeneration": 2,
+    "conditions": [
+      {
+        "type": "StorageExists",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:49:35Z",
+        "reason": "GCS Bucket Exists"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:53:43Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:53:43Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:38Z"
+      },
+      {
+        "type": "Removed",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:38Z"
+      }
+    ],
+    "readyReplicas": 0,
+    "generations": [
+      {
+        "group": "apps",
+        "resource": "deployments",
+        "namespace": "openshift-image-registry",
+        "name": "image-registry",
+        "lastGeneration": 2,
+        "hash": ""
+      }
+    ],
+    "storageManaged": true,
+    "storage": {
+      "gcs": {
+        "bucket": "ci-ln-d53y532-f76d1-2btqq-image-registry-us-east1-wksrjdglkntl",
+        "region": "us-east1",
+        "projectID": "openshift-gce-devel-ci"
+      }
     }
+  }
 }

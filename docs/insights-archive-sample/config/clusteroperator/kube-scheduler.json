@@ -1,0 +1,81 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "kube-scheduler",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-scheduler",
+    "uid": "04b7821e-5e3e-429c-8fe0-12f5cf88cd57",
+    "resourceVersion": "22396",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:29:28Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:33Z",
+        "reason": "AsExpected",
+        "message": "NodeControllerDegraded: All master nodes are ready"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:55:57Z",
+        "reason": "AsExpected",
+        "message": "NodeInstallerProgressing: 3 nodes are at revision 9"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:31:55Z",
+        "reason": "AsExpected",
+        "message": "StaticPodsAvailable: 3 nodes are active; 3 nodes are at revision 9"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:29:28Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "raw-internal",
+        "version": "4.4.16"
+      },
+      {
+        "name": "kube-scheduler",
+        "version": "1.17.1"
+      },
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "kubeschedulers",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-scheduler"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-scheduler-operator"
+      }
+    ],
+    "extension": null
+  }
+}

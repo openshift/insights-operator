@@ -1,0 +1,64 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster-autoscaler",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/cluster-autoscaler",
+    "uid": "072d2af6-a513-4468-8a11-9d3b82196bc4",
+    "resourceVersion": "17011",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:51:11Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:51:12Z",
+        "message": "at version 4.4.16"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:51:12Z"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:51:12Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:51:12Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "machine.openshift.io",
+        "resource": "machineautoscalers",
+        "namespace": "openshift-machine-api",
+        "name": ""
+      },
+      {
+        "group": "machine.openshift.io",
+        "resource": "clusterautoscalers",
+        "namespace": "openshift-machine-api",
+        "name": ""
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-machine-api"
+      }
+    ],
+    "extension": null
+  }
+}
