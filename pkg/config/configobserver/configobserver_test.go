@@ -40,7 +40,7 @@ func TestChangeSupportConfig(t *testing.T) {
 					"interval": []byte("1s"),
 				}},
 			},
-			expErr: fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to one minute: too short"),
+			expErr: fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to ten seconds: too short"),
 		},
 		{name: "correct interval",
 			config: map[string]*corev1.Secret{
