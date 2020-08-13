@@ -22,6 +22,7 @@ const knownFileSuffixesInsideArchiveRegex string = `(`+
 
 //https://bugzilla.redhat.com/show_bug.cgi?id=1841057
 func TestUploadNotDelayedAfterStart(t *testing.T) {
+	checkPodsLogs(t, clientset, `It is safe to use fast upload`)
 	time1:=logLineTime(t, `Reporting status periodically to .* every`)
 	time2:=logLineTime(t, `Successfully reported id=`)
 	delay := time2.Sub(time1)
