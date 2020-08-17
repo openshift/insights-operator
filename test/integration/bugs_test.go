@@ -194,6 +194,7 @@ func TestArchiveContains(t *testing.T) {
 
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
+	checkPodsLogs(t, clientset, `Recording events/openshift-monitoring`, true)
 	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1838973
