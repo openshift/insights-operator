@@ -40,6 +40,10 @@ func TestPullSecretExists(t *testing.T) {
 	}
 }
 
+func TestIsIOHealthy(t *testing.T) {
+	checkPodsLogs(t, clientset, `The operator is healthy`)
+}
+
 // Check if opt-in/opt-out works
 func TestOptOutOptIn(t *testing.T) {
 	// initially IO should be running

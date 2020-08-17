@@ -183,8 +183,19 @@ func deleteAllPods(t *testing.T, namespace string) {
 	t.Log(errPod)
 }
 
-func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string, newLogsOnly ...bool) {
-	r, _ := regexp.Compile(message)
+func logLineTime(t *testing.T, pattern string) time.Time {
+	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
+	str := checkPodsLogs(t, clientset, startOfLine+pattern)
+	str = strings.Split(strings.Split(str, ".")[0], " ")[1]
+	time1, err := time.Parse("15:04:05", str)
+	e(t, err, "time parsing fail")
+	return time1
+	
+}
+
+func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string, newLogsOnly ...bool) string {
+	r, err := regexp.Compile(`(?m)`+message)
+	e(t, err,"Regex compilation failed")
 	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
@@ -194,6 +205,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 	if len(newLogsOnly)==1 && newLogsOnly[0] {
 		logOptions = &corev1.PodLogOptions{SinceTime:&timeNow}
 	}
+	result := ""
 	for _, newPod := range newPods.Items {
 		pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
 		if err != nil {
@@ -214,7 +226,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 			}
 			log := buf.String()
 
-			result := r.FindString(log) //strings.Contains(log, message)
+			result = r.FindString(log) //strings.Contains(log, message)
 			if result == "" {
 				t.Logf("No %s in logs\n", message)
 				t.Logf("Logs for verification: ****\n%s", log)
@@ -228,6 +240,7 @@ func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message strin
 			t.Error(errLog)
 		}
 	}
+	return result
 }
 
 func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
