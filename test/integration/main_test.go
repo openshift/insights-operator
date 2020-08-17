@@ -186,7 +186,7 @@ func deleteAllPods(t *testing.T, namespace string) {
 
 func logLineTime(t *testing.T, pattern string) time.Time {
 	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
-	str := checkPodsLogs(t, clientset, startOfLine+pattern)
+	str := checkPodsLogs(t, startOfLine+pattern).Result
 	str = strings.Split(strings.Split(str, ".")[0], " ")[1]
 	time1, err := time.Parse("15:04:05", str)
 	e(t, err, "time parsing fail")
@@ -194,54 +194,20 @@ func logLineTime(t *testing.T, pattern string) time.Time {
 
 }
 
-func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string, newLogsOnly ...bool) string {
-	r, err := regexp.Compile(`(?m)` + message)
-	e(t, err, "Regex compilation failed")
-	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	timeNow := metav1.NewTime(time.Now())
-	logOptions := &corev1.PodLogOptions{}
-	if len(newLogsOnly) == 1 && newLogsOnly[0] {
-		logOptions = &corev1.PodLogOptions{SinceTime: &timeNow}
-	}
-	result := ""
-	for _, newPod := range newPods.Items {
-		pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(context.Background(), newPod.Name, metav1.GetOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		errLog := wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-			req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOptions)
-			podLogs, err := req.Stream(context.Background())
-			if err != nil {
-				return false, nil
-			}
-			defer podLogs.Close()
+func LogChecker(t *testing.T) *LogCheck {
+    defaults := &LogCheck{
+        interval:   time.Second,
+        logOptions: corev1.PodLogOptions{},
+        timeout:    5*time.Minute,
+        failFast:   true,
+        test:       t,
+        clientset:  clientset,
+    }
+    return defaults
+}
 
-			buf := new(bytes.Buffer)
-			_, err = io.Copy(buf, podLogs)
-			if err != nil {
-				panic(err.Error())
-			}
-			log := buf.String()
-
-			result = r.FindString(log) //strings.Contains(log, message)
-			if result == "" {
-				t.Logf("No %s in logs\n", message)
-				t.Logf("Logs for verification: ****\n%s", log)
-				return false, nil
-			}
-
-			t.Logf("%s found\n", result)
-			return true, nil
-		})
-		if errLog != nil {
-			t.Error(errLog)
-		}
-	}
-	return result
+func checkPodsLogs(t *testing.T, message string) *LogCheck{
+	return LogChecker(t).Search(message)
 }
 
 func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {

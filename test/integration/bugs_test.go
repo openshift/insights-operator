@@ -18,13 +18,13 @@ const knownFileSuffixesInsideArchiveRegex string = `(` +
 	// known file extensions
 	`\.(crt|json|log)` +
 	`|` +
-	// exceptions - file names without extension #
+	// exceptions - file names without extension
 	`(\/|^)(config|id|invoker|metrics|version)` +
 	`)$`
 
 //https://bugzilla.redhat.com/show_bug.cgi?id=1841057
 func TestUploadNotDelayedAfterStart(t *testing.T) {
-	checkPodsLogs(t, clientset, `It is safe to use fast upload`)
+	checkPodsLogs(t, `It is safe to use fast upload`)
 	time1 := logLineTime(t, `Reporting status periodically to .* every`)
 	time2 := logLineTime(t, `Successfully reported id=`)
 	delay := time2.Sub(time1)
@@ -65,7 +65,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// check logs for "Gathering cluster info every 2h0m0s"
-	checkPodsLogs(t, clientset, "Gathering cluster info every 2h0m0s")
+	checkPodsLogs(t, "Gathering cluster info every 2h0m0s")
 
 	// verify it's possible to override it
 	newSecret := corev1.Secret{
@@ -88,7 +88,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// check logs for "Gathering cluster info every 3m0s"
-	checkPodsLogs(t, clientset, "Gathering cluster info every 3m0s")
+	checkPodsLogs(t,"Gathering cluster info every 3m0s")
 }
 
 // TestUnreachableHost checks if insights operator reports "degraded" after 5 unsuccessful upload attempts
@@ -138,7 +138,7 @@ func TestUnreachableHost(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// Check the logs
-	checkPodsLogs(t, clientset, "exceeded than threshold 5. Marking as degraded.")
+	checkPodsLogs(t, "exceeded than threshold 5. Marking as degraded.")
 
 	// Check the operator is degraded
 	insightsDegraded := isOperatorDegraded(t, clusterOperatorInsights())
@@ -196,8 +196,10 @@ func TestArchiveContains(t *testing.T) {
 
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
-	checkPodsLogs(t, clientset, `Recording events/openshift-monitoring`, true)
-	checkPodsLogs(t, clientset, `Wrote \d+ records to disk in \d+`, true)
+
+	checker := LogChecker(t).Timeout(2*time.Minute)
+	checker.SinceNow().Search(`Recording events/openshift-monitoring`)
+	checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1838973
 	t.Run("Logs",
@@ -243,7 +245,7 @@ YLluQUO+Jy/PjOnMPw5+DeSX6asUgXE=
 		restartInsightsOperator(t)
 	}()
 	defer ChangeReportTimeInterval(t, 1)()
-	checkPodsLogs(t, clientset, `Uploaded report successfully in`, true)
+	LogChecker(t).SinceNow().Search(`Uploaded report successfully in`)
 	certificatePath := `^config/certificatesigningrequests/my-svc.my-namespace.json$`
 	err = latestArchiveCheckFiles(t, "certificate request", matchingFileExists, certificatePath)
 	e(t, err, "")

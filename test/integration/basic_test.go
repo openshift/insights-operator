@@ -42,7 +42,7 @@ func TestPullSecretExists(t *testing.T) {
 }
 
 func TestIsIOHealthy(t *testing.T) {
-	checkPodsLogs(t, clientset, `The operator is healthy`)
+	checkPodsLogs(t,  `The operator is healthy`)
 }
 
 // Check if opt-in/opt-out works
@@ -159,5 +159,5 @@ func TestOptOutOptIn(t *testing.T) {
 	if errDisabled != nil {
 		t.Fatalf("The Cluster Operator wasn't enabled after setting original pull-secret")
 	}
-	checkPodsLogs(t, clientset, "Successfully reported")
+	checkPodsLogs(t, "Successfully reported")
 }
