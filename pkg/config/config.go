@@ -7,15 +7,17 @@ import (
 
 // Controller defines the standard config for this operator.
 type Serialized struct {
-	Report           bool   `json:"report"`
-	StoragePath      string `json:"storagePath"`
-	Interval         string `json:"interval"`
-	Endpoint         string `json:"endpoint"`
-	Impersonate      string `json:"impersonate"`
-	SmartProxyConfig struct {
-		Endpoint string
-		PollTime string
-	} `json:"smartProxy"`
+	Report           bool                    `json:"report"`
+	StoragePath      string                  `json:"storagePath"`
+	Interval         string                  `json:"interval"`
+	Endpoint         string                  `json:"endpoint"`
+	Impersonate      string                  `json:"impersonate"`
+	SmartProxyConfig SmartProxyConfiguration `json:"smartProxy"`
+}
+
+type SmartProxyConfiguration struct {
+	Endpoint string `json:"endpoint"`
+	PollTime string `json:"pollTime"`
 }
 
 func (s *Serialized) ToController() (*Controller, error) {
@@ -40,7 +42,7 @@ func (s *Serialized) ToController() (*Controller, error) {
 		return nil, fmt.Errorf("interval must be a non-negative duration")
 	}
 
-	if len(s.SmartProxyConfig.PollTime) > 0 {
+	if s.SmartProxyConfig.PollTime != "" {
 		d, err := time.ParseDuration(s.SmartProxyConfig.PollTime)
 		if err != nil {
 			return nil, fmt.Errorf("smart proxy polling time must be a valid duration: %v", err)
@@ -77,8 +79,8 @@ type Controller struct {
 
 // SmartProxy defines the configuration related to pulling information from insights-results-smart-proxy
 type SmartProxy struct {
-	Endpoint string        `json:"endpoint"`
-	PollTime time.Duration `json:"pollTime"`
+	Endpoint string
+	PollTime time.Duration
 }
 
 // HTTPConfig configures http proxy and exception settings if they come from config
