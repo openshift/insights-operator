@@ -181,28 +181,27 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		}
 	}()
 
-	switch resp.StatusCode {
-	case http.StatusOK:
-		counterRequestSend.WithLabelValues(c.metricsName, "200").Inc()
-	case http.StatusAccepted:
-		counterRequestSend.WithLabelValues(c.metricsName, "202").Inc()
-	case http.StatusUnauthorized:
-		counterRequestSend.WithLabelValues(c.metricsName, "401").Inc()
+	counterRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
+
+	if resp.StatusCode == http.StatusUnauthorized {
 		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
-	case http.StatusForbidden:
-		counterRequestSend.WithLabelValues(c.metricsName, "403").Inc()
+	}
+
+	if resp.StatusCode == http.StatusForbidden {
 		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
-	case http.StatusBadRequest:
-		counterRequestSend.WithLabelValues(c.metricsName, "400").Inc()
+	}
+
+	if resp.StatusCode == http.StatusBadRequest {
 		body, _ := ioutil.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
 		return fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
-	default:
-		counterRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
+	}
+
+	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
