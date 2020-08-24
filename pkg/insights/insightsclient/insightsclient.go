@@ -216,6 +216,50 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	return nil
 }
 
+func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser, error) {
+	cv := c.clusterInfo.ClusterVersion()
+	if cv == nil {
+		return nil, ErrWaitingForVersion
+	}
+
+	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID)
+	klog.Infof("Retrieving report for cluster: %s", cv.Spec.ClusterID)
+	klog.Infof("Endpoint: %s", endpoint)
+
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Header == nil {
+		req.Header = make(http.Header)
+	}
+	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s cluster/%s", version.Get().GitCommit, cv.Spec.ClusterID))
+	if err := c.authorizer.Authorize(req); err != nil {
+		klog.Error(err)
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+
+	// dynamically set the proxy environment
+	c.client.Transport = clientTransport(c.authorizer)
+
+	klog.V(4).Infof("Retrieving report from %s", req.URL.String())
+	resp, err := c.client.Do(req)
+
+	if err != nil {
+		klog.Errorf("Unable to retrieve latest report for %s: %v", cv.Spec.ClusterID, err)
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		return &resp.Body, nil
+	} else {
+		klog.Warningf("Report response status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("Report response status code: %d", resp.StatusCode)
+	}
+}
+
 var (
 	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
 		Name: "insightsclient_request_send_total",

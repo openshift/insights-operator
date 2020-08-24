@@ -25,10 +25,10 @@ import (
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
-	"github.com/openshift/insights-operator/pkg/externalpipeline"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
 )
@@ -169,8 +169,8 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// know any previous last reported time
 	go uploader.Run(ctx)
 
-	reportUpdater := externalpipeline.New(s.Controller.SmartProxy, authorizer, configPeriodic)
-	go reportUpdater.Run()
+	reportUpdater := insightsreport.New(s.Controller.SmartProxy, insightsClient)
+	go reportUpdater.Run(ctx)
 
 	<-ctx.Done()
 	return fmt.Errorf("stopped")
