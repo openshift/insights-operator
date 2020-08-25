@@ -4,10 +4,10 @@
   "metadata": {
     "name": "cluster",
     "selfLink": "/apis/config.openshift.io/v1/featuregates/cluster",
-    "uid": "f10e0060-b0f1-4d31-b5c5-a072d1e11118",
-    "resourceVersion": "1567",
+    "uid": "2df48dd1-cf67-4046-8a8e-90a314095b0e",
+    "resourceVersion": "1632",
     "generation": 1,
-    "creationTimestamp": "2020-03-18T12:05:49Z",
+    "creationTimestamp": "2020-08-12T08:28:00Z",
     "annotations": {
       "release.openshift.io/create-only": "true"
     }

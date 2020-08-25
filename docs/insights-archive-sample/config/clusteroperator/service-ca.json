@@ -1,0 +1,76 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "service-ca",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/service-ca",
+    "uid": "792db30b-c109-4fb9-b301-f62fc226f2c1",
+    "resourceVersion": "3810",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:29:29Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:29:30Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:29:40Z",
+        "reason": "AsExpected",
+        "message": "Progressing: All service-ca-operator deployments updated"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:29:35Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "Unknown",
+        "lastTransitionTime": "2020-08-12T08:29:29Z",
+        "reason": "NoData"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "servicecas",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-ca-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-ca"
+      }
+    ],
+    "extension": null
+  }
+}

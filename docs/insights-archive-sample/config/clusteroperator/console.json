@@ -1,0 +1,91 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "console",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/console",
+    "uid": "18b434f0-86fd-4df0-ba86-14b952acd9cd",
+    "resourceVersion": "22857",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:49:38Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:39Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:56:41Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:56:41Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:49:39Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "consoles",
+        "name": "cluster"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "consoles",
+        "name": "cluster"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "infrastructures",
+        "name": "cluster"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "proxies",
+        "name": "cluster"
+      },
+      {
+        "group": "oauth.openshift.io",
+        "resource": "oauthclients",
+        "name": "console"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-console-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-console"
+      },
+      {
+        "group": "",
+        "resource": "configmaps",
+        "namespace": "openshift-config-managed",
+        "name": "console-public"
+      }
+    ],
+    "extension": null
+  }
+}

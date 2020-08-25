@@ -1,0 +1,65 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "storage",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/storage",
+    "uid": "1763b45e-b455-4b0d-b2b4-9566956c43b1",
+    "resourceVersion": "14392",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:49:33Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:49:33Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:33Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:49:33Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:49:33Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-storage-operator"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "infrastructures",
+        "name": "cluster"
+      },
+      {
+        "group": "storage.k8s.io",
+        "resource": "storageclasses",
+        "name": "standard"
+      }
+    ],
+    "extension": null
+  }
+}

@@ -4,10 +4,10 @@
   "metadata": {
     "name": "cluster",
     "selfLink": "/apis/config.openshift.io/v1/oauths/cluster",
-    "uid": "55fc1b53-c3d3-4a96-b8fa-774b469f3e03",
-    "resourceVersion": "1678",
+    "uid": "94d329bd-ed15-4225-9dd4-5ebeeabdd0b5",
+    "resourceVersion": "1816",
     "generation": 1,
-    "creationTimestamp": "2020-03-18T12:06:09Z",
+    "creationTimestamp": "2020-08-12T08:28:23Z",
     "annotations": {
       "release.openshift.io/create-only": "true"
     }

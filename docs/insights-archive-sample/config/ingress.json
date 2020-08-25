@@ -4,13 +4,13 @@
   "metadata": {
     "name": "cluster",
     "selfLink": "/apis/config.openshift.io/v1/ingresses/cluster",
-    "uid": "2aa20f58-0ccd-4d3e-8bd5-bc0612099433",
-    "resourceVersion": "1376",
+    "uid": "b8f916ef-897b-4383-9b9b-0cc68048842d",
+    "resourceVersion": "437",
     "generation": 1,
-    "creationTimestamp": "2020-03-18T12:05:39Z"
+    "creationTimestamp": "2020-08-12T08:27:16Z"
   },
   "spec": {
-    "domain": "xxxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx"
+    "domain": "xxxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxxxx.xxx"
   },
   "status": {}
 }

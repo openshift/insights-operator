@@ -1,0 +1,70 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "ingress",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/ingress",
+    "uid": "cfca2e51-35ee-445c-87e3-a91b639843ca",
+    "resourceVersion": "24056",
+    "generation": 1,
+    "creationTimestamp": "2020-08-12T08:49:57Z"
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:53:50Z",
+        "reason": "NoIngressControllersDegraded"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T09:00:20Z",
+        "message": "desired and current number of IngressControllers are equal"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2020-08-12T08:53:50Z",
+        "message": "desired and current number of IngressControllers are equal"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.4.16"
+      },
+      {
+        "name": "ingress-controller",
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:92e7ce01fe2db3c45cc57f8fdf302790754be3ac125bb7368ad5638d63d4dbd5"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-ingress-operator"
+      },
+      {
+        "group": "operator.openshift.io",
+        "resource": "IngressController",
+        "namespace": "openshift-ingress-operator",
+        "name": ""
+      },
+      {
+        "group": "ingress.operator.openshift.io",
+        "resource": "DNSRecord",
+        "namespace": "openshift-ingress-operator",
+        "name": ""
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-ingress"
+      }
+    ],
+    "extension": null
+  }
+}

@@ -4,58 +4,57 @@
   "metadata": {
     "name": "version",
     "selfLink": "/apis/config.openshift.io/v1/clusterversions/version",
-    "uid": "6bc25f25-dbbb-40a0-b0a9-b6ae99012620",
-    "resourceVersion": "18523",
+    "uid": "95a8c9ca-b2d2-40ce-a13f-42d76dbffd7b",
+    "resourceVersion": "24552",
     "generation": 1,
-    "creationTimestamp": "2020-03-18T12:05:13Z"
+    "creationTimestamp": "2020-08-12T08:27:18Z"
   },
   "spec": {
-    "clusterID": "e30268b4-aa51-4fc4-86b5-e2693ba02b79",
-    "upstream": "xxxxx://xxx.xxxxxxxxx.xxx/xxx/xxxxxxxxxxxxx/xx/xxxxx",
-    "channel": "stable-4.4"
+    "clusterID": "d669cb71-8256-4e8b-a8df-333a5e2dd753",
+    "upstream": "xxxxx://xxx.xxxxxxxxx.xxx/xxx/xxxxxxxxxxxxx/xx/xxxxx"
   },
   "status": {
     "desired": {
-      "version": "4.4.0-0.nightly-2020-03-18-092817",
-      "image": "registry.svc.ci.openshift.org/ocp/release@sha256:aaa047fc14f16b7c9518e672e6bf23a3f87c0b195a88b787df6c7fa4c6018173",
+      "version": "4.4.16",
+      "image": "registry.svc.ci.openshift.org/ocp/release@sha256:74b5cefea8c8bac158468458dbcb0fdb213aafdcf5b11c9aaefc75e2f7b9fe96",
       "force": false
     },
     "history": [
       {
         "state": "Completed",
-        "startedTime": "2020-03-18T12:05:14Z",
-        "completionTime": "2020-03-18T12:21:22Z",
-        "version": "4.4.0-0.nightly-2020-03-18-092817",
-        "image": "registry.svc.ci.openshift.org/ocp/release@sha256:aaa047fc14f16b7c9518e672e6bf23a3f87c0b195a88b787df6c7fa4c6018173",
+        "startedTime": "2020-08-12T08:27:28Z",
+        "completionTime": "2020-08-12T09:01:35Z",
+        "version": "4.4.16",
+        "image": "registry.svc.ci.openshift.org/ocp/release@sha256:74b5cefea8c8bac158468458dbcb0fdb213aafdcf5b11c9aaefc75e2f7b9fe96",
         "verified": false
       }
     ],
     "observedGeneration": 1,
-    "versionHash": "0vZFUTpqvZY=",
+    "versionHash": "y5Y3uXH22Ww=",
     "conditions": [
+      {
+        "type": "RetrievedUpdates",
+        "status": "False",
+        "lastTransitionTime": "2020-08-12T08:27:28Z",
+        "reason": "NoChannel",
+        "message": "The update channel has not been configured."
+      },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-03-18T12:21:22Z",
-        "message": "Done applying 4.4.0-0.nightly-2020-03-18-092817"
+        "lastTransitionTime": "2020-08-12T09:01:35Z",
+        "message": "Done applying 4.4.16"
       },
       {
         "type": "Failing",
         "status": "False",
-        "lastTransitionTime": "2020-03-18T12:12:59Z"
+        "lastTransitionTime": "2020-08-12T08:50:46Z"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-03-18T12:21:22Z",
-        "message": "Cluster version is 4.4.0-0.nightly-2020-03-18-092817"
-      },
-      {
-        "type": "RetrievedUpdates",
-        "status": "False",
-        "lastTransitionTime": "2020-03-18T12:05:14Z",
-        "reason": "VersionNotFound",
-        "message": "Unable to retrieve available updates: currently installed version 4.4.0-0.nightly-2020-03-18-092817 not found in the \"stable-4.4\" channel"
+        "lastTransitionTime": "2020-08-12T09:01:35Z",
+        "message": "Cluster version is 4.4.16"
       }
     ],
     "availableUpdates": null

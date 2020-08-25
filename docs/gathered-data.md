@@ -182,12 +182,12 @@ Location in archive: config/metrics/
 See: docs/insights-archive-sample/config/metrics
 
 
-Output raw size: 120
+Output raw size: 148
 
 ### Examples
 
 #### MostRecentMetrics
-[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFsZXJ0cyAK"}]
+[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
 
 ## Nodes
 

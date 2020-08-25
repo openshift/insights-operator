@@ -4,27 +4,29 @@
   "metadata": {
     "name": "cluster",
     "selfLink": "/apis/config.openshift.io/v1/infrastructures/cluster",
-    "uid": "46fbc6af-d2d2-484e-b517-2f69d461f72d",
-    "resourceVersion": "1274",
+    "uid": "8ed61cc3-b4d2-4e5c-9618-df0167fa24af",
+    "resourceVersion": "435",
     "generation": 1,
-    "creationTimestamp": "2020-03-18T12:05:35Z"
+    "creationTimestamp": "2020-08-12T08:27:16Z"
   },
   "spec": {
     "cloudConfig": {
-      "name": ""
+      "name": "cloud-provider-config",
+      "key": "config"
     }
   },
   "status": {
     "infrastructureName": "xx-xx-xxxxxxx-xxxxx-xxxxx",
-    "platform": "AWS",
+    "platform": "GCP",
     "platformStatus": {
-      "type": "AWS",
-      "aws": {
-        "region": "us-west-1"
+      "type": "GCP",
+      "gcp": {
+        "projectID": "openshift-gce-devel-ci",
+        "region": "us-east1"
       }
     },
-    "etcdDiscoveryDomain": "xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx",
-    "apiServerURL": "xxxxx://xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx:xxxx",
-    "apiServerInternalURI": "xxxxx://xxx-xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxx.xxx:xxxx"
+    "etcdDiscoveryDomain": "xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxxxx.xxx",
+    "apiServerURL": "xxxxx://xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxxxx.xxx:xxxx",
+    "apiServerInternalURI": "xxxxx://xxx-xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxxxx.xxx:xxxx"
   }
 }
