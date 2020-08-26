@@ -114,22 +114,32 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	return transport.DebugWrappers(clientTransport)
 }
 
-func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
+func (c Client) prepareRequest(method string, endpoint string, ctx context.Context) (*http.Request, error) {
 	cv := c.clusterInfo.ClusterVersion()
 	if cv == nil {
-		return ErrWaitingForVersion
+		return nil, ErrWaitingForVersion
 	}
 
-	req, err := http.NewRequest("POST", endpoint, nil)
+	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
 	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s cluster/%s", version.Get().GitCommit, cv.Spec.ClusterID))
+
 	if err := c.authorizer.Authorize(req); err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	return req, nil
+}
+
+func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
+	req, err := c.prepareRequest(http.MethodGet, endpoint, ctx)
+	if err != nil {
 		return err
 	}
 
@@ -155,7 +165,6 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		pw.CloseWithError(mw.Close())
 	}()
 
-	req = req.WithContext(ctx)
 	req.Body = pr
 
 	// dynamically set the proxy environment
@@ -226,20 +235,10 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 	klog.Infof("Retrieving report for cluster: %s", cv.Spec.ClusterID)
 	klog.Infof("Endpoint: %s", endpoint)
 
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := c.prepareRequest(http.MethodGet, endpoint, ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	if req.Header == nil {
-		req.Header = make(http.Header)
-	}
-	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s cluster/%s", version.Get().GitCommit, cv.Spec.ClusterID))
-	if err := c.authorizer.Authorize(req); err != nil {
-		klog.Error(err)
-		return nil, err
-	}
-	req = req.WithContext(ctx)
 
 	// dynamically set the proxy environment
 	c.client.Transport = clientTransport(c.authorizer)

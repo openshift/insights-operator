@@ -45,7 +45,7 @@ var (
 
 func New(c config.SmartProxy, client *insightsclient.Client) *ReportsCache {
 	return &ReportsCache{
-		Simple: controllerstatus.Simple{Name: "insightsreport"},
+		Simple:        controllerstatus.Simple{Name: "insightsreport"},
 		Configuration: c,
 		client:        client,
 	}
@@ -62,26 +62,26 @@ func (r *ReportsCache) PullSmartProxy() {
 	if authorizer.IsAuthorizationError(err) {
 		r.Simple.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
-			Reason: "NotAuthorized",
-			Message: fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
+			Reason:    "NotAuthorized",
+			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
 		})
 		return
-	} else if err != nil{
+	} else if err != nil {
 		klog.Error(err)
 		return
 	}
 
 	klog.Info("Parsing report")
 	reportResponse := InsightsReportResponse{}
-	
+
 	if err = json.NewDecoder(*reportBody).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
 		return
-	} else {
-		updateInsightsMetrics(reportResponse.Report)
-		r.LastReport = reportResponse.Report
-		return
 	}
+
+	updateInsightsMetrics(reportResponse.Report)
+	r.LastReport = reportResponse.Report
+	return
 }
 
 func (r ReportsCache) Run(ctx context.Context) {
@@ -116,9 +116,8 @@ func updateInsightsMetrics(report types.SmartProxyReport) {
 }
 
 func init() {
-	if err := legacyregistry.Register(
-		insightsStatus,
-	); err != nil {
+	err := legacyregistry.Register(insightsStatus)
+	if err != nil {
 		fmt.Println(err)
 	}
 }
