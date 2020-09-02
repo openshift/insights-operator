@@ -78,7 +78,6 @@ func (c *Controller) Run(ctx context.Context) {
 	interval := cfg.Interval
 	initialDelay := wait.Jitter(interval/8, 2)
 	lastReported := c.reporter.LastReportedTime()
-	klog.Info(cfg)
 	if !lastReported.IsZero() {
 		next := lastReported.Add(interval)
 		if now := time.Now(); next.After(now) {

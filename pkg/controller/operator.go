@@ -51,7 +51,6 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 
 	data, _ := json.Marshal(cfg)
 	klog.V(2).Infof("Current config: %s", string(data))
-	klog.Info(string(data))
 	return nil
 }
 

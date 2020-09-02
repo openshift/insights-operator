@@ -111,8 +111,11 @@ func (r Gatherer) Run(ctx context.Context) {
 	klog.Info("Starting report retriever")
 
 	for {
+		// always wait for new uploaded archive or insights-operator ends
 		select {
 		case <-r.archiveUploadReporter:
+			// When a new archive is uploaded, try to get the report and repeat every 30s
+			// until the report is retrieved
 			wait.Until(r.PullSmartProxy, time.Duration(30*1000000000), r.insightsReport)
 		case <-ctx.Done():
 			return
