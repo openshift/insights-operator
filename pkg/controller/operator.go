@@ -51,7 +51,7 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 
 	data, _ := json.Marshal(cfg)
 	klog.V(2).Infof("Current config: %s", string(data))
-
+	klog.Info(string(data))
 	return nil
 }
 
@@ -169,8 +169,8 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// know any previous last reported time
 	go uploader.Run(ctx)
 
-	reportUpdater := insightsreport.New(s.Controller.SmartProxy, insightsClient)
-	go reportUpdater.Run(ctx)
+	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader)
+	go reportGatherer.Run(ctx)
 
 	<-ctx.Done()
 	return fmt.Errorf("stopped")

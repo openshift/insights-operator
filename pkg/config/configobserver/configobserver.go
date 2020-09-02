@@ -53,6 +53,7 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 // Start is periodically invoking check and set of config and token
 func (c *Controller) Start(ctx context.Context) {
 	wait.Until(func() {
+		klog.Info("Starting config observer YUHUUUUU")
 		if err := c.retrieveToken(); err != nil {
 			klog.Warningf("Unable to retrieve token config: %v", err)
 		}
@@ -107,20 +108,21 @@ func (c *Controller) retrieveToken() error {
 func (c *Controller) retrieveConfig() error {
 	var nextConfig config.Controller
 
-	klog.V(2).Infof("Refreshing configuration from cluster secret")
+	klog.Info("Refreshing configuration from cluster secret")
 	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get("support", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("Support secret does not exist")
+			klog.Infof("Support secret does not exist")
 			err = nil
 		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err)
+			klog.Infof("Operator does not have permission to check support secret: %v", err)
 			err = nil
 		} else {
 			err = fmt.Errorf("could not check support secret: %v", err)
 		}
 	}
 	if secret != nil {
+		klog.Info(secret.Data)
 		if username, ok := secret.Data["username"]; ok {
 			nextConfig.Username = string(username)
 		}
@@ -139,6 +141,9 @@ func (c *Controller) retrieveConfig() error {
 		if noproxy, ok := secret.Data["noProxy"]; ok {
 			nextConfig.HTTPConfig.NoProxy = string(noproxy)
 		}
+		if reportEndpoint, ok := secret.Data["reportEndpoint"]; ok {
+			nextConfig.ReportEndpoint = string(reportEndpoint)
+		}
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
 		if intervalString, ok := secret.Data["interval"]; ok {
@@ -154,6 +159,8 @@ func (c *Controller) retrieveConfig() error {
 				nextConfig.Report = false
 			}
 		}
+	} else {
+		klog.Info("Secret is nil")
 	}
 	if err != nil {
 		return err

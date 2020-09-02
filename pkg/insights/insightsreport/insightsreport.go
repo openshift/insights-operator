@@ -18,16 +18,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
 
-type ReportsCache struct {
+// Gatherer gathers the report from Smart Proxy
+type Gatherer struct {
 	controllerstatus.Simple
-	Configuration config.SmartProxy
-	client        *insightsclient.Client
-	LastReport    types.SmartProxyReport
+
+	configurator          Configurator
+	client                *insightsclient.Client
+	LastReport            types.SmartProxyReport
+	archiveUploadReporter <-chan struct{}
+	insightsReport        chan struct{}
 }
 
-type InsightsReportResponse struct {
+// Response represents the Smart Proxy report response structure
+type Response struct {
 	Report types.SmartProxyReport `json:"report"`
 	Status string                 `json:"status"`
+}
+
+// Configurator represents the interface to retrieve the configuration for the gatherer
+type Configurator interface {
+	Config() *config.Controller
+	ConfigChanged() (<-chan struct{}, func())
+}
+
+// InsightsReporter represents an object that can notify about archive uploading
+type InsightsReporter interface {
+	ArchiveUploaded() <-chan struct{}
 }
 
 var (
@@ -43,21 +59,26 @@ var (
 	}, []string{"metric"})
 )
 
-func New(c config.SmartProxy, client *insightsclient.Client) *ReportsCache {
-	return &ReportsCache{
-		Simple:        controllerstatus.Simple{Name: "insightsreport"},
-		Configuration: c,
-		client:        client,
+// New initializes and returns a Gatherer
+func New(client *insightsclient.Client, configurator Configurator, reporter InsightsReporter) *Gatherer {
+	return &Gatherer{
+		Simple:                controllerstatus.Simple{Name: "insightsreport"},
+		configurator:          configurator,
+		client:                client,
+		archiveUploadReporter: reporter.ArchiveUploaded(),
 	}
 }
 
-func (r *ReportsCache) PullSmartProxy() {
+// PullSmartProxy performs a request to the Smart Proxy and unmarshal the response
+func (r *Gatherer) PullSmartProxy() {
 	klog.Info("Pulling report from smart-proxy")
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelFunc()
+	defer close(r.insightsReport)
 
 	klog.Info("Retrieving report")
-	reportBody, err := r.client.RecvReport(ctx, r.Configuration.Endpoint)
+	reportEndpoint := r.configurator.Config().ReportEndpoint
+	reportBody, err := r.client.RecvReport(ctx, reportEndpoint)
 	klog.Info("Report retrieved")
 	if authorizer.IsAuthorizationError(err) {
 		r.Simple.UpdateStatus(controllerstatus.Summary{
@@ -72,7 +93,7 @@ func (r *ReportsCache) PullSmartProxy() {
 	}
 
 	klog.Info("Parsing report")
-	reportResponse := InsightsReportResponse{}
+	reportResponse := Response{}
 
 	if err = json.NewDecoder(*reportBody).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
@@ -84,10 +105,22 @@ func (r *ReportsCache) PullSmartProxy() {
 	return
 }
 
-func (r ReportsCache) Run(ctx context.Context) {
+// Run goroutine code for gathering the reports from Smart Proxy
+func (r Gatherer) Run(ctx context.Context) {
 	r.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.Info("Starting report retriever")
-	wait.Until(r.PullSmartProxy, r.Configuration.PollTime, ctx.Done())
+
+	for {
+		select {
+		case <-r.archiveUploadReporter:
+			wait.Until(r.PullSmartProxy, time.Duration(30*1000000000), r.insightsReport)
+		case <-ctx.Done():
+			return
+		}
+	}
+
+	r.PullSmartProxy()
+	// wait.Until(r.PullSmartProxy, time.NewDuration("10s"), ctx.Done())
 }
 
 func updateInsightsMetrics(report types.SmartProxyReport) {
