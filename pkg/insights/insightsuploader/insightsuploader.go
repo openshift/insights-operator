@@ -157,9 +157,9 @@ func (c *Controller) Run(ctx context.Context) {
 					Reason: "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err)})
 				return
 			}
-			<-c.archiveUploaded
 			c.reporter.SetSafeInitialStart(false)
 			klog.V(4).Infof("Uploaded report successfully in %s", time.Now().Sub(start))
+			c.archiveUploaded <- struct{}{}
 			lastReported = start.UTC()
 			c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 		} else {

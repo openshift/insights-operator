@@ -138,7 +138,7 @@ func (c Client) prepareRequest(method string, endpoint string, ctx context.Conte
 }
 
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
-	req, err := c.prepareRequest(http.MethodGet, endpoint, ctx)
+	req, err := c.prepareRequest(http.MethodPost, endpoint, ctx)
 	if err != nil {
 		return err
 	}

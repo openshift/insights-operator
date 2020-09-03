@@ -74,12 +74,11 @@ func (r *Gatherer) PullSmartProxy() {
 	klog.Info("Pulling report from smart-proxy")
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelFunc()
-	defer close(r.insightsReport)
 
-	klog.Info("Retrieving report")
-	reportEndpoint := r.configurator.Config().ReportEndpoint
+	klog.V(4).Info("Retrieving report")
+	config := r.configurator.Config()
+	reportEndpoint := config.ReportEndpoint
 	reportBody, err := r.client.RecvReport(ctx, reportEndpoint)
-	klog.Info("Report retrieved")
 	if authorizer.IsAuthorizationError(err) {
 		r.Simple.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
@@ -88,11 +87,11 @@ func (r *Gatherer) PullSmartProxy() {
 		})
 		return
 	} else if err != nil {
-		klog.Error(err)
+		klog.Errorf("Error retrieving the report: %s", err)
 		return
 	}
 
-	klog.Info("Parsing report")
+	klog.V(4).Info("Report retrieved")
 	reportResponse := Response{}
 
 	if err = json.NewDecoder(*reportBody).Decode(&reportResponse); err != nil {
@@ -100,15 +99,23 @@ func (r *Gatherer) PullSmartProxy() {
 		return
 	}
 
+	klog.V(4).Info("Smart Proxy report correctly parsed")
+
+	if r.LastReport.Meta.LastCheckedAt == reportResponse.Report.Meta.LastCheckedAt {
+		klog.V(2).Info("Retrieved report is equal to previus one. Retrying...")
+		return
+	}
+
+	defer close(r.insightsReport)
 	updateInsightsMetrics(reportResponse.Report)
 	r.LastReport = reportResponse.Report
 	return
 }
 
 // Run goroutine code for gathering the reports from Smart Proxy
-func (r Gatherer) Run(ctx context.Context) {
+func (r *Gatherer) Run(ctx context.Context) {
 	r.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
-	klog.Info("Starting report retriever")
+	klog.V(2).Info("Starting report retriever")
 
 	for {
 		// always wait for new uploaded archive or insights-operator ends
@@ -116,14 +123,12 @@ func (r Gatherer) Run(ctx context.Context) {
 		case <-r.archiveUploadReporter:
 			// When a new archive is uploaded, try to get the report and repeat every 30s
 			// until the report is retrieved
-			wait.Until(r.PullSmartProxy, time.Duration(30*1000000000), r.insightsReport)
+			r.insightsReport = make(chan struct{})
+			wait.Until(r.PullSmartProxy, time.Duration(30e9), r.insightsReport)
 		case <-ctx.Done():
 			return
 		}
 	}
-
-	r.PullSmartProxy()
-	// wait.Until(r.PullSmartProxy, time.NewDuration("10s"), ctx.Done())
 }
 
 func updateInsightsMetrics(report types.SmartProxyReport) {

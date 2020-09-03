@@ -219,6 +219,9 @@ func (c *Controller) mergeConfigLocked() {
 		if len(c.secretConfig.Endpoint) > 0 {
 			cfg.Endpoint = c.secretConfig.Endpoint
 		}
+		if len(c.secretConfig.ReportEndpoint) > 0 {
+			cfg.ReportEndpoint = c.secretConfig.ReportEndpoint
+		}
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {
