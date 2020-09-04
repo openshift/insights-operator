@@ -1,0 +1,9 @@
+apiVersion: "external-pipeline.redhat.com/v1"
+kind: ReportOverview
+metadata:
+  name: my-new-report-overview-object
+spec:
+  low: 0
+  moderate: 0
+  important: 1
+  critical: 1

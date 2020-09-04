@@ -57,6 +57,14 @@ To start generating the document run:
 make gen-doc
 ```
 
+## Custom Resource Definitions
+
+Insights Operator manages the following custom resource:
+
+* **ReportOverview:**: resource which store the overview of a report for this cluster from Insights Smart Proxy service. The overview contains the number of
+  rule hits grouped by severity: low, moderate, important and critical. This custom resource will be written by the Insights Operator and can be consumed by
+  any service in the cluster.
+
 ## Accessing Prometheus metrics provided by Insights Operator
 
 It is possible to read Prometheus metrics provided by Insights Operator. For example if the IO runs locally, the following command migth be used:
