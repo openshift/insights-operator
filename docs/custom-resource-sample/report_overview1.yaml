@@ -1,7 +1,7 @@
 apiVersion: "external-pipeline.redhat.com/v1"
 kind: ReportOverview
 metadata:
-  name: my-new-report-overview-object
+  name: report-overview-object
 spec:
   low: 0
   moderate: 0
