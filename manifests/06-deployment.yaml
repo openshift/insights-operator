@@ -4,7 +4,7 @@ metadata:
   name: insights-operator
   namespace: openshift-insights
   annotations:
-    config.openshift.io/inject-proxy: operator
+    config.openshift.io/inject-proxy: insights-operator
     exclude.release.openshift.io/internal-openshift-hosted: "true"
 spec:
   strategy:
@@ -51,7 +51,7 @@ spec:
           secretName: openshift-insights-serving-cert
           optional: true
       containers:
-      - name: operator
+      - name: insights-operator
         image: quay.io/openshift/origin-insights-operator:latest
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
