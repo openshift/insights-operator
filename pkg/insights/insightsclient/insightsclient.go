@@ -45,6 +45,7 @@ type Authorizer interface {
 
 type ClusterVersionInfo interface {
 	ClusterVersion() *configv1.ClusterVersion
+	InsightsVersion() string
 }
 
 type Source struct {
@@ -114,14 +115,6 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	return transport.DebugWrappers(clientTransport)
 }
 
-func getCurrentVersion(cv* configv1.ClusterVersion) string {
-	for _, history := range cv.Status.History {
-		if history.State == "Completed" {
-			return history.Version
-		}
-	}
-	return "?"
-}
 
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
 	cv := c.clusterInfo.ClusterVersion()
@@ -137,7 +130,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
-	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s cluster/%s version/%s", version.Get().GitCommit, cv.Spec.ClusterID, getCurrentVersion(cv)))
+	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s:%s cluster/%s", c.clusterInfo.InsightsVersion(), version.Get().GitCommit, cv.Spec.ClusterID))
 	if err := c.authorizer.Authorize(req); err != nil {
 		return err
 	}

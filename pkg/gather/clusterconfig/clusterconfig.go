@@ -90,6 +90,7 @@ type Gatherer struct {
 	registryClient imageregistryv1.ImageregistryV1Interface
 	lock           sync.Mutex
 	lastVersion    *configv1.ClusterVersion
+	insightsVersion string
 }
 
 // New creates new Gatherer
@@ -277,8 +278,11 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 			return nil, []error{err}
 		}
 		records := make([]record.Record, 0, len(config.Items))
-		for i := range config.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+		for index := range config.Items {
+			if config.Items[index].Name == "insights" {
+				i.setInsightsVersion(&config.Items[index])
+			}
+			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name), Item: ClusterOperatorAnonymizer{&config.Items[index]}})
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
@@ -1059,11 +1063,35 @@ func (i *Gatherer) setClusterVersion(version *configv1.ClusterVersion) {
 	i.lastVersion = version.DeepCopy()
 }
 
+func (i *Gatherer) setInsightsVersion(operator *configv1.ClusterOperator) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	if i.insightsVersion != "" {
+		return
+	}
+	var version string
+	for _, v := range operator.Status.Versions {
+		if v.Name == "operator"{
+			version = v.Version
+			break
+		}
+	}
+	i.insightsVersion = version
+}
+
 // ClusterVersion returns Version for this cluster, which is set by running version during Gathering
 func (i *Gatherer) ClusterVersion() *configv1.ClusterVersion {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.lastVersion
+}
+
+
+// InsightsVersion returns the version string for the 'insights' clusteroperator, which is set by running clusteroperator during Gathering
+func (i *Gatherer) InsightsVersion() string {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.insightsVersion
 }
 
 // ConfigMapAnonymizer implements serialization of configmap
