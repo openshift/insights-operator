@@ -8,6 +8,7 @@ import (
 
 	"k8s.io/klog"
 
+	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -114,6 +115,11 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 		return err
 	}
 
+	crdClient, err := apixv1beta1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
 	// ensure the insight snapshot directory exists
 	if _, err := os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err := os.MkdirAll(s.StoragePath, 0777); err != nil {
@@ -136,7 +142,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1())
+	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})

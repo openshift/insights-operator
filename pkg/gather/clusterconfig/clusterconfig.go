@@ -16,6 +16,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -88,19 +89,21 @@ type Gatherer struct {
 	metricsClient  rest.Interface
 	certClient     certificatesv1beta1.CertificatesV1beta1Interface
 	registryClient imageregistryv1.ImageregistryV1Interface
+	crdClient      apixv1beta1client.ApiextensionsV1beta1Interface
 	lock           sync.Mutex
 	lastVersion    *configv1.ClusterVersion
 }
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface) *Gatherer {
 	return &Gatherer{
 		client:         client,
 		coreClient:     coreClient,
 		certClient:     certClient,
 		metricsClient:  metricsClient,
 		registryClient: registryClient,
+		crdClient:      crdClient,
 	}
 }
 
@@ -126,6 +129,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherClusterIngress(i),
 		GatherClusterProxy(i),
 		GatherCertificateSigningRequests(i),
+		GatherCRD(i),
 	)
 }
 
@@ -662,6 +666,36 @@ func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []er
 			records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
 		}
 		return records, nil
+	}
+}
+
+// GatherCRD collects the specified Custom Resource Definitions.
+//
+// The following CRDs are gathered:
+// - volumesnapshots.snapshot.storage.k8s.io (10745 bytes)
+// - volumesnapshotcontents.snapshot.storage.k8s.io (13149 bytes)
+//
+// The CRD sizes above are in the raw (uncompressed) state.
+//
+// Location in archive: config/crd/
+func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		toBeCollected := []string{
+			"volumesnapshots.snapshot.storage.k8s.io",
+			"volumesnapshotcontents.snapshot.storage.k8s.io",
+		}
+		records := []record.Record{}
+		for _, crdName := range toBeCollected {
+			crd, err := i.crdClient.CustomResourceDefinitions().Get(crdName, metav1.GetOptions{})
+			if err != nil {
+				return []record.Record{}, []error{err}
+			}
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/crd/%s", crd.Name),
+				Item: record.JSONMarshaller{Object: crd},
+			})
+		}
+		return records, []error{}
 	}
 }
 

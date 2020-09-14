@@ -20,6 +20,7 @@ require (
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 	google.golang.org/appengine v1.6.1 // indirect
 	k8s.io/api v0.17.1
+	k8s.io/apiextensions-apiserver v0.17.1
 	k8s.io/apimachinery v0.17.1
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/component-base v0.17.1
