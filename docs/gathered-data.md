@@ -159,6 +159,16 @@ Location in archive: config/configmaps/
 See: docs/insights-archive-sample/config/configmaps
 
 
+## HostSubnet
+
+collects HostSubnet information
+
+The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
+Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
+
+Location in archive: config/hostsubnet/
+
+
 ## MostRecentMetrics
 
 gathers cluster Federated Monitoring metrics.
