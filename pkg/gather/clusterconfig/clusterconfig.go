@@ -34,8 +34,10 @@ import (
 	"k8s.io/klog"
 
 	registryv1 "github.com/openshift/api/imageregistry/v1"
+	networkv1 "github.com/openshift/api/network/v1"
 	openshiftscheme "github.com/openshift/client-go/config/clientset/versioned/scheme"
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
+	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -57,7 +59,9 @@ var (
 	maxEventTimeInterval = 1 * time.Hour
 
 	registrySerializer serializer.CodecFactory
+	networkSerializer  serializer.CodecFactory
 	registryScheme     = runtime.NewScheme()
+	networkScheme      = runtime.NewScheme()
 
 	// lineSep is the line separator used by the alerts metric
 	lineSep = []byte{'\n'}
@@ -65,6 +69,8 @@ var (
 
 func init() {
 	utilruntime.Must(registryv1.AddToScheme(registryScheme))
+	utilruntime.Must(networkv1.AddToScheme(networkScheme))
+	networkSerializer = serializer.NewCodecFactory(networkScheme)
 	registrySerializer = serializer.NewCodecFactory(registryScheme)
 }
 
@@ -73,6 +79,7 @@ type Gatherer struct {
 	client         configv1client.ConfigV1Interface
 	coreClient     corev1client.CoreV1Interface
 	dynamicClient  dynamic.Interface
+	networkClient  networkv1client.NetworkV1Interface
 	metricsClient  rest.Interface
 	certClient     certificatesv1beta1.CertificatesV1beta1Interface
 	registryClient imageregistryv1.ImageregistryV1Interface
@@ -82,13 +89,14 @@ type Gatherer struct {
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface, dynamicClient dynamic.Interface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface) *Gatherer {
 	return &Gatherer{
 		client:         client,
 		coreClient:     coreClient,
 		certClient:     certClient,
 		metricsClient:  metricsClient,
 		registryClient: registryClient,
+		networkClient:  networkClient,
 		dynamicClient:  dynamicClient,
 	}
 }
@@ -113,6 +121,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherClusterIngress(i),
 		GatherClusterProxy(i),
 		GatherCertificateSigningRequests(i),
+		GatherHostSubnet(i),
 		GatherMachineSet(i),
 	)
 }
@@ -361,6 +370,29 @@ func GatherClusterNetwork(i *Gatherer) func() ([]record.Record, []error) {
 			return nil, []error{err}
 		}
 		return []record.Record{{Name: "config/network", Item: Anonymizer{config}}}, nil
+	}
+}
+
+// GatherHostSubnet collects HostSubnet information
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
+//
+// Location in archive: config/hostsubnet/
+func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		hostSubnetList, err := i.networkClient.HostSubnets().List(metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := make([]record.Record, 0, len(hostSubnetList.Items))
+		for _, h := range hostSubnetList.Items {
+			records = append(records, record.Record{Name: fmt.Sprintf("config/hostsubnet/%s", h.Host), Item: HostSubnetAnonymizer{&h}})
+		}
+		return records, nil
 	}
 }
 
@@ -848,6 +880,14 @@ func anonymizeString(s string) string {
 	return strings.Repeat("x", len(s))
 }
 
+func anonymizeSliceOfStrings(slice []string) []string {
+	anonymizedSlice := make([]string, len(slice), len(slice))
+	for i, s := range slice {
+		anonymizedSlice[i] = anonymizeString(s)
+	}
+	return anonymizedSlice
+}
+
 func isProductNamespacedKey(key string) bool {
 	return strings.Contains(key, "openshift.io/") || strings.Contains(key, "k8s.io/") || strings.Contains(key, "kubernetes.io/")
 }
@@ -942,6 +982,23 @@ func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 // GetExtension returns extension for anonymized configmap objects
 func (a ConfigMapAnonymizer) GetExtension() string {
 	return ""
+}
+
+// HostSubnetAnonymizer implements HostSubnet serialization wiht anonymization
+type HostSubnetAnonymizer struct{ *networkv1.HostSubnet }
+
+// Marshal implements HostSubnet serialization
+func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	a.HostSubnet.HostIP = anonymizeString(a.HostSubnet.HostIP)
+	a.HostSubnet.Subnet = anonymizeString(a.HostSubnet.Subnet)
+	a.HostSubnet.EgressIPs = anonymizeSliceOfStrings(a.HostSubnet.EgressIPs)
+	a.HostSubnet.EgressCIDRs = anonymizeSliceOfStrings(a.HostSubnet.EgressCIDRs)
+	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), a.HostSubnet)
+}
+
+// GetExtension returns extension for HostSubnet object
+func (a HostSubnetAnonymizer) GetExtension() string {
+	return "json"
 }
 
 func anonymizeConfigMap(dv []byte) string {
