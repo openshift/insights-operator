@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: report-overviews.external-pipeline.redhat.com
+  name: reportoverviews.insights.redhat.com
 spec:
-  group: external-pipeline.redhat.com
+  group: insights.redhat.com
   versions:
     - name: v1alpha1
       served: true
@@ -17,16 +17,20 @@ spec:
               properties:
                 low:
                   type: integer
+                  description: "Number of rules hit with low total risk"
                 moderate:
                   type: integer
+                  description: "Number of rules hit with moderate total risk"
                 important:
                   type: integer
+                  description: "Number of rules hit with important total risk"
                 critical:
                   type: integer
+                  description: "Number of rules hit with critical total risk"
   scope: Cluster
   names:
-    plural: report-overviews
-    singular: report-overview
+    plural: reportoverviews
+    singular: reportoverview
     kind: ReportOverview
     shortNames:
       - ro

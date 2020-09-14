@@ -1,4 +1,4 @@
-apiVersion: "external-pipeline.redhat.com/v1"
+apiVersion: "insights.redhat.com/v1alpha"
 kind: ReportOverview
 metadata:
   name: report-overview-object
