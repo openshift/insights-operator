@@ -190,7 +190,25 @@ func TestArchiveContains(t *testing.T) {
 	t.Run("ImageRegistry",
 		genLatestArchiveCheckPattern(
 			"image registry", matchingFileExists,
-			`^config/imageregistry.json$`))
+			`^config/imageregistry\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1879068
+	t.Run("HostsSubnet",
+		genLatestArchiveCheckPattern(
+			"hosts subnet", matchingFileExists,
+			`^config/hostsubnet/ip-.*\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1881816
+	t.Run("MachineSet",
+		genLatestArchiveCheckPattern(
+			"machine set", matchingFileExists,
+			`^machinesets/.*\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1873101
+	t.Run("SnapshotsCRD",
+		genLatestArchiveCheckPattern(
+			"snapshots CRD", matchingFileExists,
+			`^config/crd/volumesnapshots\.snapshot\.storage\.k8s\.io\.json$`))
 
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
@@ -207,7 +225,7 @@ func TestArchiveContains(t *testing.T) {
 	t.Run("Event",
 		genLatestArchiveCheckPattern(
 			"event", matchingFileExists,
-			`^events/openshift-monitoring.json$`))
+			`^events/openshift-monitoring\.json$`))
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1840012
 	t.Run("FileExtensions",
