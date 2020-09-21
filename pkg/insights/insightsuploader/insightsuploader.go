@@ -159,7 +159,10 @@ func (c *Controller) Run(ctx context.Context) {
 			}
 			c.reporter.SetSafeInitialStart(false)
 			klog.V(4).Infof("Uploaded report successfully in %s", time.Now().Sub(start))
-			c.archiveUploaded <- struct{}{}
+			select {
+			case c.archiveUploaded <- struct{}{}:
+			default:
+			}
 			lastReported = start.UTC()
 			c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 		} else {

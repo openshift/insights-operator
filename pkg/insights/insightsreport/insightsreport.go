@@ -78,6 +78,12 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 	config := r.configurator.Config()
 	initialWait := config.ReportPullingDelay
 	minimalRetryTime := config.ReportMinRetryTime
+	reportEndpoint := config.ReportEndpoint
+
+	if len(reportEndpoint) == 0 {
+		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing report endpoint")
+		return true, nil
+	}
 
 	delay := initialWait - time.Duration(r.retries*minimalRetryTime.Nanoseconds())
 
@@ -89,7 +95,6 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 	r.retries++
 
 	klog.V(4).Info("Retrieving report")
-	reportEndpoint := config.ReportEndpoint
 	reportBody, err := r.client.RecvReport(ctx, reportEndpoint)
 	if authorizer.IsAuthorizationError(err) {
 		r.Simple.UpdateStatus(controllerstatus.Summary{
@@ -135,9 +140,13 @@ func (r *Gatherer) Run(ctx context.Context) {
 		case <-r.archiveUploadReporter:
 			// When a new archive is uploaded, try to get the report after waiting
 			// Repeat until the report is retrieved or maxIterations is reached
-			// FIX: get from configuration
-			maxWaitingForReportTime := time.Duration(30 * time.Minute)
-			wait.Poll(time.Duration(1), maxWaitingForReportTime, r.PullSmartProxy)
+			config := r.configurator.Config()
+			if config.ReportPullingTimeout != 0 {
+				wait.Poll(time.Duration(1), config.ReportPullingTimeout, r.PullSmartProxy)
+				r.retries = 0
+			} else {
+				klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing polling timeout")
+			}
 
 		case <-ctx.Done():
 			return
