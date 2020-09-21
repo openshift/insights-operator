@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/RedHatInsights/insights-results-smart-proxy/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/component-base/metrics"
 	"k8s.io/component-base/metrics/legacyregistry"
@@ -24,15 +23,15 @@ type Gatherer struct {
 
 	configurator          Configurator
 	client                *insightsclient.Client
-	LastReport            types.SmartProxyReport
+	LastReport            SmartProxyReport
 	archiveUploadReporter <-chan struct{}
-	insightsReport        chan struct{}
+	retries               int64
 }
 
 // Response represents the Smart Proxy report response structure
 type Response struct {
-	Report types.SmartProxyReport `json:"report"`
-	Status string                 `json:"status"`
+	Report SmartProxyReport `json:"report"`
+	Status string           `json:"status"`
 }
 
 // Configurator represents the interface to retrieve the configuration for the gatherer
@@ -66,17 +65,30 @@ func New(client *insightsclient.Client, configurator Configurator, reporter Insi
 		configurator:          configurator,
 		client:                client,
 		archiveUploadReporter: reporter.ArchiveUploaded(),
+		retries:               0,
 	}
 }
 
 // PullSmartProxy performs a request to the Smart Proxy and unmarshal the response
-func (r *Gatherer) PullSmartProxy() {
+func (r *Gatherer) PullSmartProxy() (bool, error) {
 	klog.Info("Pulling report from smart-proxy")
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelFunc()
 
-	klog.V(4).Info("Retrieving report")
 	config := r.configurator.Config()
+	initialWait := config.ReportPullingDelay
+	minimalRetryTime := config.ReportMinRetryTime
+
+	delay := initialWait - time.Duration(r.retries*minimalRetryTime.Nanoseconds())
+
+	if delay > minimalRetryTime {
+		time.Sleep(delay)
+	} else {
+		time.Sleep(minimalRetryTime)
+	}
+	r.retries++
+
+	klog.V(4).Info("Retrieving report")
 	reportEndpoint := config.ReportEndpoint
 	reportBody, err := r.client.RecvReport(ctx, reportEndpoint)
 	if authorizer.IsAuthorizationError(err) {
@@ -85,10 +97,10 @@ func (r *Gatherer) PullSmartProxy() {
 			Reason:    "NotAuthorized",
 			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
 		})
-		return
+		return false, err
 	} else if err != nil {
 		klog.Errorf("Error retrieving the report: %s", err)
-		return
+		return false, err
 	}
 
 	klog.V(4).Info("Report retrieved")
@@ -96,20 +108,20 @@ func (r *Gatherer) PullSmartProxy() {
 
 	if err = json.NewDecoder(*reportBody).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
-		return
+		return false, err
 	}
 
 	klog.V(4).Info("Smart Proxy report correctly parsed")
 
 	if r.LastReport.Meta.LastCheckedAt == reportResponse.Report.Meta.LastCheckedAt {
 		klog.V(2).Info("Retrieved report is equal to previus one. Retrying...")
-		return
+		return false, fmt.Errorf("Report not updated")
 	}
 
-	defer close(r.insightsReport)
 	updateInsightsMetrics(reportResponse.Report)
 	r.LastReport = reportResponse.Report
-	return
+	// close(r.insightsReport)
+	return true, nil
 }
 
 // Run goroutine code for gathering the reports from Smart Proxy
@@ -121,17 +133,20 @@ func (r *Gatherer) Run(ctx context.Context) {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
 		case <-r.archiveUploadReporter:
-			// When a new archive is uploaded, try to get the report and repeat every 30s
-			// until the report is retrieved
-			r.insightsReport = make(chan struct{})
-			wait.Until(r.PullSmartProxy, time.Duration(30e9), r.insightsReport)
+			// When a new archive is uploaded, try to get the report after waiting
+			// Repeat until the report is retrieved or maxIterations is reached
+			// FIX: get from configuration
+			maxWaitingForReportTime := time.Duration(30 * time.Minute)
+			wait.Poll(time.Duration(1), maxWaitingForReportTime, r.PullSmartProxy)
+
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func updateInsightsMetrics(report types.SmartProxyReport) {
+// updateInsightsMetrics update the Prometheus metrics from a report
+func updateInsightsMetrics(report SmartProxyReport) {
 	var critical, important, moderate, low, total int
 
 	total = report.Meta.Count
