@@ -725,23 +725,37 @@ func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
 // Location in archive: config/certificatesigningrequests/
 func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{
-			Limit: csrGatherLimit,
-		})
-		if errors.IsNotFound(err) {
-			return nil, nil
+		records := []record.Record{}
+
+		// Use the Limit and Continue fields to request the pod information in chunks.
+		continueValue := ""
+		for {
+			requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{
+				Limit:    csrGatherLimit,
+				Continue: continueValue,
+			})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
+			if err != nil {
+				return nil, []error{err}
+			}
+			for _, sr := range csrs {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr})
+			}
+
+			// If the Continue field is not set, this should be the end of available data.
+			// Otherwise, update the Continue value and perform another request iteration.
+			if requests.Continue == "" {
+				break
+			}
+			continueValue = requests.Continue
 		}
-		if err != nil {
-			return nil, []error{err}
-		}
-		csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
-		if err != nil {
-			return nil, []error{err}
-		}
-		records := make([]record.Record, len(csrs))
-		for i, sr := range csrs {
-			records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
-		}
+
 		return records, nil
 	}
 }
