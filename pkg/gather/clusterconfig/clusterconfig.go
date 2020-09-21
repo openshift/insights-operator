@@ -57,6 +57,10 @@ const (
 	// This number has been rounded to 1000 for simplicity.
 	// Formerly, the `500 * 1024 / 450` expression was used instead.
 	metricsAlertsLinesLimit = 1000
+
+	// csrGatherLimit is the maximum number of crs that
+	// will be listed in a single request to reduce memory usage.
+	csrGatherLimit = 5000
 )
 
 var (
@@ -683,21 +687,37 @@ func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
 // Location in archive: config/certificatesigningrequests/
 func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		requests, err := i.certClient.CertificateSigningRequests().List(metav1.ListOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
+		records := []record.Record{}
+
+		// Use the Limit and Continue fields to request the pod information in chunks.
+		continueValue := ""
+		for {
+			requests, err := i.certClient.CertificateSigningRequests().List(metav1.ListOptions{
+				Limit:    csrGatherLimit,
+				Continue: continueValue,
+			})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
+			if err != nil {
+				return nil, []error{err}
+			}
+			for _, sr := range csrs {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr})
+			}
+
+			// If the Continue field is not set, this should be the end of available data.
+			// Otherwise, update the Continue value and perform another request iteration.
+			if requests.Continue == "" {
+				break
+			}
+			continueValue = requests.Continue
 		}
-		if err != nil {
-			return nil, []error{err}
-		}
-		csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
-		if err != nil {
-			return nil, []error{err}
-		}
-		records := make([]record.Record, len(csrs))
-		for i, sr := range csrs {
-			records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
-		}
+
 		return records, nil
 	}
 }
