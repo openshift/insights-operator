@@ -25,6 +25,7 @@ import (
 	"k8s.io/klog"
 
 	configv1 "github.com/openshift/api/config/v1"
+	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
 )
@@ -45,7 +46,6 @@ type Authorizer interface {
 
 type ClusterVersionInfo interface {
 	ClusterVersion() *configv1.ClusterVersion
-	InsightsVersion() string
 }
 
 type Source struct {
@@ -115,6 +115,15 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	return transport.DebugWrappers(clientTransport)
 }
 
+func UserAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv1.ClusterVersion) string {
+	gitVersion := v.GitVersion
+	// If the RELEASE_VERSION is set in pod, use it
+	if releaseVersionEnv != "" {
+		gitVersion = releaseVersionEnv
+	}
+	gitVersion = fmt.Sprintf("%s-%s", gitVersion, v.GitCommit)
+	return fmt.Sprintf("insights-operator/%s cluster/%s", gitVersion, cv.Spec.ClusterID)
+}
 
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
 	cv := c.clusterInfo.ClusterVersion()
@@ -130,7 +139,8 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
-	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s:%s cluster/%s", c.clusterInfo.InsightsVersion(), version.Get().GitCommit, cv.Spec.ClusterID))
+	releaseVersionEnv := os.Getenv("RELEASE_VERSION")
+	req.Header.Set("User-Agent", UserAgent(releaseVersionEnv, version.Get(), cv))
 	if err := c.authorizer.Authorize(req); err != nil {
 		return err
 	}
