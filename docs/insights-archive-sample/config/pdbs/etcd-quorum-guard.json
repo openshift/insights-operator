@@ -1,0 +1,87 @@
+{
+    "kind": "PodDisruptionBudget",
+    "apiVersion": "policy/v1beta1",
+    "metadata": {
+        "name": "router-default",
+        "namespace": "openshift-ingress",
+        "selfLink": "/apis/policy/v1beta1/namespaces/openshift-ingress/poddisruptionbudgets/router-default",
+        "uid": "61502e51-5081-4e4b-ba9c-758e83428dc7",
+        "resourceVersion": "21873",
+        "generation": 1,
+        "creationTimestamp": "2020-09-23T09:53:52Z",
+        "ownerReferences": [
+            {
+                "apiVersion": "apps/v1",
+                "kind": "Deployment",
+                "name": "router-default",
+                "uid": "d3712e20-a67a-457f-8b92-46846c6dc1bc",
+                "controller": true
+            }
+        ],
+        "managedFields": [
+            {
+                "manager": "ingress-operator",
+                "operation": "Update",
+                "apiVersion": "policy/v1beta1",
+                "time": "2020-09-23T09:53:52Z",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:ownerReferences": {
+                            ".": {},
+                            "k:{\"uid\":\"d3712e20-a67a-457f-8b92-46846c6dc1bc\"}": {
+                                ".": {},
+                                "f:apiVersion": {},
+                                "f:controller": {},
+                                "f:kind": {},
+                                "f:name": {},
+                                "f:uid": {}
+                            }
+                        }
+                    },
+                    "f:spec": {
+                        "f:maxUnavailable": {},
+                        "f:selector": {
+                            ".": {},
+                            "f:matchLabels": {
+                                ".": {},
+                                "f:ingresscontroller.operator.openshift.io/deployment-ingresscontroller": {}
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "manager": "kube-controller-manager",
+                "operation": "Update",
+                "apiVersion": "policy/v1beta1",
+                "time": "2020-09-23T09:57:45Z",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        "f:currentHealthy": {},
+                        "f:desiredHealthy": {},
+                        "f:disruptionsAllowed": {},
+                        "f:expectedPods": {},
+                        "f:observedGeneration": {}
+                    }
+                }
+            }
+        ]
+    },
+    "spec": {
+        "selector": {
+            "matchLabels": {
+                "ingresscontroller.operator.openshift.io/deployment-ingresscontroller": "default"
+            }
+        },
+        "maxUnavailable": "50%"
+    },
+    "status": {
+        "observedGeneration": 1,
+        "disruptionsAllowed": 1,
+        "currentHealthy": 2,
+        "desiredHealthy": 1,
+        "expectedPods": 2
+    }
+}
