@@ -8,6 +8,7 @@ import (
 
 	"k8s.io/klog"
 
+	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
 	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
@@ -110,7 +112,17 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 		return err
 	}
 
+	gatherNetworkClient, err := networkv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
 	registryClient, err := imageregistryv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
+	crdClient, err := apixv1beta1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
 		return err
 	}
@@ -137,7 +149,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1())
+	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient, gatherNetworkClient)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})
