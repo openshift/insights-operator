@@ -755,7 +755,6 @@ func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []er
 			}
 			continueValue = requests.Continue
 		}
-
 		return records, nil
 	}
 }
