@@ -20,10 +20,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/dynamic"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -93,6 +95,7 @@ type Gatherer struct {
 	client         configv1client.ConfigV1Interface
 	coreClient     corev1client.CoreV1Interface
 	networkClient  networkv1client.NetworkV1Interface
+	dynamicClient  dynamic.Interface
 	metricsClient  rest.Interface
 	certClient     certificatesv1beta1.CertificatesV1beta1Interface
 	registryClient imageregistryv1.ImageregistryV1Interface
@@ -103,7 +106,7 @@ type Gatherer struct {
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface) *Gatherer {
 	return &Gatherer{
 		client:         client,
 		coreClient:     coreClient,
@@ -112,6 +115,7 @@ func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1
 		registryClient: registryClient,
 		crdClient:      crdClient,
 		networkClient:  networkClient,
+		dynamicClient:  dynamicClient,
 	}
 }
 
@@ -139,6 +143,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherCertificateSigningRequests(i),
 		GatherCRD(i),
 		GatherHostSubnet(i),
+		GatherMachineSet(i),
 	)
 }
 
@@ -729,6 +734,33 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 			})
 		}
 		return records, []error{}
+	}
+}
+
+//GatherMachineSet collects MachineSet information
+//
+// The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+//
+// Location in archive: machinesets/
+func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
+		machineSets, err := i.dynamicClient.Resource(gvr).List(metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := []record.Record{}
+		for _, i := range machineSets.Items {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("machinesets/%s", i.GetName()),
+				Item: record.JSONMarshaller{Object: i.Object},
+			})
+		}
+		return records, nil
 	}
 }
 
