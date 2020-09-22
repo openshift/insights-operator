@@ -341,7 +341,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 }
 
 func (c *Controller) Start(ctx context.Context) error {
-	if err := c.updateStatus(true); err != nil {
+	if err := c.updateStatus(ctx, true); err != nil {
 		return err
 	}
 	limiter := rate.NewLimiter(rate.Every(30*time.Second), 2)
@@ -356,7 +356,7 @@ func (c *Controller) Start(ctx context.Context) error {
 			case <-c.statusCh:
 				limiter.Wait(ctx)
 			}
-			if err := c.updateStatus(false); err != nil {
+			if err := c.updateStatus(ctx, false); err != nil {
 				klog.Errorf("Unable to write cluster operator status: %v", err)
 			}
 		}
@@ -365,8 +365,8 @@ func (c *Controller) Start(ctx context.Context) error {
 	return nil
 }
 
-func (c *Controller) updateStatus(initial bool) error {
-	existing, err := c.client.ClusterOperators().Get(c.name, metav1.GetOptions{})
+func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
+	existing, err := c.client.ClusterOperators().Get(ctx, c.name, metav1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -391,7 +391,7 @@ func (c *Controller) updateStatus(initial bool) error {
 		}
 		if os.Getenv("POD_NAME") != "" && ophealthy {
 			var pod *v1.Pod
-			pod, err = c.coreClient.Pods(os.Getenv("POD_NAMESPACE")).Get(os.Getenv("POD_NAME"), metav1.GetOptions{})
+			pod, err = c.coreClient.Pods(os.Getenv("POD_NAMESPACE")).Get(ctx, os.Getenv("POD_NAME"), metav1.GetOptions{})
 			if err == nil {
 				for _, c := range pod.Status.ContainerStatuses {
 					// all containers has to be in running state to consider them healthy
@@ -419,7 +419,7 @@ func (c *Controller) updateStatus(initial bool) error {
 
 	updated := c.merge(existing)
 	if existing == nil {
-		created, err := c.client.ClusterOperators().Create(updated)
+		created, err := c.client.ClusterOperators().Create(ctx, updated, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -432,7 +432,7 @@ func (c *Controller) updateStatus(initial bool) error {
 		}
 	}
 
-	_, err = c.client.ClusterOperators().UpdateStatus(updated)
+	_, err = c.client.ClusterOperators().UpdateStatus(ctx, updated, metav1.UpdateOptions{})
 	return err
 }
 
