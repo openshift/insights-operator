@@ -341,7 +341,7 @@ func TestGatherContainerImages(t *testing.T) {
 	for index, containerImage := range mockContainers {
 		_, err := coreClient.CoreV1().
 			Pods(fakeNamespace).
-			Create(&corev1.Pod{
+			Create(context.Background(), &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: fakeNamespace,
 					Name:      fmt.Sprintf("pod%d", index),
@@ -357,7 +357,7 @@ func TestGatherContainerImages(t *testing.T) {
 				Status: corev1.PodStatus{
 					Phase: corev1.PodRunning,
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatal("unable to create fake pod")
 		}
@@ -369,7 +369,7 @@ func TestGatherContainerImages(t *testing.T) {
 		podName := fmt.Sprintf("crashlooping%d", i)
 		_, err := coreClient.CoreV1().
 			Pods(fakeOpenshiftNamespace).
-			Create(&corev1.Pod{
+			Create(context.Background(), &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podName,
 				},
@@ -385,7 +385,7 @@ func TestGatherContainerImages(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatal("unable to create fake pod")
 		}
@@ -456,9 +456,9 @@ func TestCollectVolumeSnapshotCRD(t *testing.T) {
 	crdClientset := apixv1beta1clientfake.NewSimpleClientset()
 
 	for _, name := range crdNames {
-		crdClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&v1beta1.CustomResourceDefinition{
+		crdClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.Background(), &v1beta1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
-		})
+		}, metav1.CreateOptions{})
 	}
 
 	gatherer := &Gatherer{crdClient: crdClientset.ApiextensionsV1beta1()}
@@ -485,11 +485,11 @@ func TestGatherHostSubnet(t *testing.T) {
 		Host:        "test.host",
 		HostIP:      "10.0.0.0",
 		Subnet:      "10.0.0.0/23",
-		EgressIPs:   []string{"10.0.0.0", "10.0.0.1"},
-		EgressCIDRs: []string{"10.0.0.0/24", "10.0.0.0/24"},
+		EgressIPs:   []networkv1.HostSubnetEgressIP{"10.0.0.0", "10.0.0.1"},
+		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{"10.0.0.0/24", "10.0.0.0/24"},
 	}
 	client := networkfake.NewSimpleClientset()
-	_, err := client.NetworkV1().HostSubnets().Create(&testHostSubnet)
+	_, err := client.NetworkV1().HostSubnets().Create(context.Background(), &testHostSubnet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake hostsubnet")
 	}
