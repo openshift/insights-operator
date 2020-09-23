@@ -72,9 +72,6 @@ func New(client *insightsclient.Client, configurator Configurator, reporter Insi
 // PullSmartProxy performs a request to the Smart Proxy and unmarshal the response
 func (r *Gatherer) PullSmartProxy() (bool, error) {
 	klog.Info("Pulling report from smart-proxy")
-	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
-	defer cancelFunc()
-
 	config := r.configurator.Config()
 	initialWait := config.ReportPullingDelay
 	minimalRetryTime := config.ReportMinRetryTime
@@ -86,13 +83,15 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 	}
 
 	delay := initialWait - time.Duration(r.retries*minimalRetryTime.Nanoseconds())
-
 	if delay > minimalRetryTime {
 		time.Sleep(delay)
 	} else {
 		time.Sleep(minimalRetryTime)
 	}
 	r.retries++
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
+	defer cancelFunc()
 
 	klog.V(4).Info("Retrieving report")
 	reportBody, err := r.client.RecvReport(ctx, reportEndpoint)
