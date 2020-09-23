@@ -722,6 +722,12 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 		records := []record.Record{}
 		for _, crdName := range toBeCollected {
 			crd, err := i.crdClient.CustomResourceDefinitions().Get(i.ctx, crdName, metav1.GetOptions{})
+			// Log missing CRDs, but do not return the error.
+			if errors.IsNotFound(err) {
+				klog.V(2).Infof("Cannot find CRD: %q", crdName)
+				continue
+			}
+			// Other errors will be returned.
 			if err != nil {
 				return []record.Record{}, []error{err}
 			}
