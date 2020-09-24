@@ -167,6 +167,26 @@ Specifically, the age of pods, the set of running images and the container names
 Location in archive: config/running_containers.json
 
 
+## HostSubnet
+
+collects HostSubnet information
+
+The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
+Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
+
+Location in archive: config/hostsubnet/
+
+
+## MachineSet
+
+collects MachineSet information
+
+The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
+Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+
+Location in archive: machinesets/
+
+
 ## MostRecentMetrics
 
 gathers cluster Federated Monitoring metrics.
