@@ -42,6 +42,7 @@ import (
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	"github.com/openshift/library-go/pkg/image/reference"
+	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
@@ -70,6 +71,16 @@ const (
 	// Formerly, the `500 * 1024 / 450` expression was used instead.
 	metricsAlertsLinesLimit        = 1000
 	gatherPodDisruptionBudgetLimit = 5000
+
+	// csrGatherLimit is the maximum number of crs that
+	// will be listed in a single request to reduce memory usage.
+	csrGatherLimit = 5000
+	// InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
+	InstallPlansTopX = 100
+
+	// Maximal total number of service accounts
+	maxServiceAccountsLimit = 1000
+	maxNamespacesLimit      = 1000
 )
 
 var (
@@ -166,6 +177,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherHostSubnet(i),
 		GatherMachineSet(i),
 		GatherMachineConfigPool(i),
+		GatherInstallPlans(i),
 	)
 }
 
@@ -448,7 +460,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 						logName = fmt.Sprintf("%s_previous.log", c.Name)
 					}
 					buf.Reset()
-					klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v): %q", c.Name, pod.Name, pod.Namespace, isPrevious, err)
+					klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v): %v", c.Name, pod.Name, pod.Namespace, isPrevious, err)
 					// Collect container logs and continue on error
 					err = collectContainerLogs(i, pod, buf, c.Name, isPrevious, &bufferSize)
 					if err != nil {
@@ -936,6 +948,7 @@ func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
 		if err != nil {
 			return nil, []error{err}
 		}
+
 		records := []record.Record{}
 		for _, i := range machineCPs.Items {
 			records = append(records, record.Record{
@@ -945,6 +958,113 @@ func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		return records, nil
 	}
+}
+// GatherInstallPlans collects Top x InstallPlans from all openshift namespaces.
+// Because InstallPlans have unique generated names, it groups them by namespace and the "template"
+// for name generation from field generateName.
+// It also collects Total number of all installplans and all non-unique installplans.
+//
+// The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
+//
+// Location in archive: config/installplans/
+func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		var plansBatchLimit int64 = 500
+		cont := ""
+		recs := map[string]*collectedPlan{}
+		total := 0
+		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
+
+		config, err := getAllNamespaces(i)
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		// collect from all openshift* namespaces
+		for _, ns := range config.Items {
+			if !strings.HasPrefix(ns.Name, "openshift") {
+				continue
+			}
+
+			resInterface := i.dynamicClient.Resource(opResource).Namespace(ns.Name)
+			for {
+				u, err := resInterface.List(i.ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
+				if errors.IsNotFound(err) {
+					return nil, nil
+				}
+				if err != nil {
+					return nil, []error{err}
+				}
+				jsonMap := u.UnstructuredContent()
+				var items []interface{}
+				err = failEarly(
+					func() error { return parseJSONQuery(jsonMap, "metadata.continue?", &cont) },
+					func() error { return parseJSONQuery(jsonMap, "items", &items) },
+				)
+				if err != nil {
+					return nil, []error{err}
+				}
+				total += len(items)
+				for _, item := range items {
+					if errs := collectInstallPlan(recs, item); errs != nil {
+						return nil, errs
+					}
+				}
+
+				if cont == "" {
+					break
+				}
+			}
+		}
+
+		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{v: recs, total: total}}}, nil
+	}
+}
+
+func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []error {
+	// Get common prefix
+	csv := "[NONE]"
+	var clusterServiceVersionNames []interface{}
+	var ns, genName string
+	var itemMap map[string]interface{}
+	var ok bool
+	if itemMap, ok = item.(map[string]interface{}); !ok {
+		return []error{fmt.Errorf("cannot cast item to map %v", item)}
+	}
+
+	err := failEarly(
+		func() error {
+			return parseJSONQuery(itemMap, "spec.clusterServiceVersionNames", &clusterServiceVersionNames)
+		},
+		func() error { return parseJSONQuery(itemMap, "metadata.namespace", &ns) },
+		func() error { return parseJSONQuery(itemMap, "metadata.generateName", &genName) },
+	)
+	if err != nil {
+		return []error{err}
+	}
+	if len(clusterServiceVersionNames) > 0 {
+		// ignoring non string
+		csv, _ = clusterServiceVersionNames[0].(string)
+	}
+
+	key := fmt.Sprintf("%s.%s.%s", ns, genName, csv)
+	m, ok := recs[key]
+	if !ok {
+		recs[key] = &collectedPlan{Namespace: ns, Name: genName, CSV: csv, Count: 1}
+	} else {
+		m.Count++
+	}
+	return nil
+}
+
+type collectedPlan struct {
+	Namespace string
+	Name      string
+	CSV       string
+	Count     int
 }
 
 func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
@@ -1027,6 +1147,25 @@ func parseJSONQuery(j map[string]interface{}, jq string, o interface{}) error {
 	}
 	return fmt.Errorf("query didn't match the structure")
 }
+
+func getAllNamespaces(i *Gatherer) (*corev1.NamespaceList, error) {
+	ns, ok := i.ctx.Value(contextKeyAllNamespaces).(*corev1.NamespaceList)
+	if ok {
+		return ns, nil
+	}
+	ns, err := i.coreClient.Namespaces().List(i.ctx, metav1.ListOptions{Limit: maxNamespacesLimit})
+	if err != nil {
+		return nil, err
+	}
+
+	i.ctx = context.WithValue(i.ctx, contextKeyAllNamespaces, ns)
+
+	return ns, nil
+}
+
+type contextKey string
+
+const contextKeyAllNamespaces contextKey = "allnamespaces"
 
 // RawByte is skipping Marshalling from byte slice
 type RawByte []byte
@@ -1662,5 +1801,60 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 
 // GetExtension returns extension for anonymized cluster operator objects
 func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
+	return "json"
+}
+// InstallPlanAnonymizer implements serialization of top x installplans
+type InstallPlanAnonymizer struct {
+	v     map[string]*collectedPlan
+	total int
+	limit int
+}
+
+// Marshal implements serialization of InstallPlan
+func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	if a.limit == 0 {
+		a.limit = InstallPlansTopX
+	}
+	cnts := []int{}
+	for _, v := range a.v {
+		cnts = append(cnts, v.Count)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(cnts)))
+	countLimit := -1
+	if len(cnts) > a.limit && a.limit > 0 {
+		// nth plan is on n-1th position
+		countLimit = cnts[a.limit-1]
+	}
+	// Creates map for marshal
+	sr := map[string]interface{}{}
+	st := map[string]int{}
+	st["TOTAL_COUNT"] = a.total
+	st["TOTAL_NONUNIQ_COUNT"] = len(a.v)
+	sr["stats"] = st
+	uls := 0
+	it := []interface{}{}
+	for _, v := range a.v {
+		if v.Count >= countLimit {
+			kvp := map[string]interface{}{}
+			kvp["ns"] = v.Namespace
+			kvp["name"] = v.Name
+			kvp["csv"] = v.CSV
+			kvp["count"] = v.Count
+			it = append(it, kvp)
+			uls++
+		}
+		if uls >= a.limit {
+			break
+		}
+	}
+	sort.SliceStable(it, func(i, j int) bool {
+		return it[i].(map[string]interface{})["count"].(int) > it[j].(map[string]interface{})["count"].(int)
+	})
+	sr["items"] = it
+	return json.Marshal(sr)
+}
+
+// GetExtension returns extension for anonymized openshift objects
+func (a InstallPlanAnonymizer) GetExtension() string {
 	return "json"
 }
