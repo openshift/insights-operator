@@ -15,7 +15,11 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apixv1beta1clientfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/klog"
 
@@ -534,6 +538,83 @@ func TestGatherHostSubnet(t *testing.T) {
 		if cidr != "xxxxxxxxxxx" {
 			t.Fatalf("Egress CIDR is not anonymized %s", cidr)
 		}
+	}
+}
+
+func TestGatherMachineSet(t *testing.T) {
+	var machineSetYAML = `
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+    name: test-worker
+`
+	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
+	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+
+	testMachineSet := &unstructured.Unstructured{}
+
+	_, _, err := decUnstructured.Decode([]byte(machineSetYAML), nil, testMachineSet)
+	if err != nil {
+		t.Fatal("unable to decode machineset ", err)
+	}
+	_, err = client.Resource(gvr).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake machineset ", err)
+	}
+
+	gatherer := &Gatherer{dynamicClient: client}
+	records, errs := GatherMachineSet(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != 1 {
+		t.Fatalf("unexpected number or records %d", len(records))
+	}
+	if records[0].Name != "machinesets/test-worker" {
+		t.Fatalf("unexpected machineset name %s", records[0].Name)
+	}
+}
+
+func TestGatherInstallPlans(t *testing.T) {
+	f, err := os.Open("testdata/installplan.yaml")
+	if err != nil {
+		t.Fatal("test failed to unmarshal csr data", err)
+	}
+	defer f.Close()
+	installplancontent, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Fatal("error reading test data file", err)
+	}
+
+	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	installplan := &unstructured.Unstructured{}
+
+	_, _, err = decUnstructured.Decode(installplancontent, nil, installplan)
+	if err != nil {
+		t.Fatal("unable to decode", err)
+	}
+	gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
+	gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
+	_, err = client.Resource(gvr).Namespace("openshift-operators").Create(context.Background(), installplan, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake ", err)
+	}
+
+	gatherer := &Gatherer{dynamicClient: client}
+	records, errs := GatherInstallPlans(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != 1 {
+		t.Fatalf("unexpected number or records %d", len(records))
+	}
+	b, _ := records[0].Item.Marshal(context.Background())
+	if string(b) != `{"items":[{"count":1,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],"stats":{"TOTAL_COUNT":1,"TOTAL_NONUNIQ_COUNT":1}}` {
+		t.Fatalf("unexpected machineset name %s", records[0].Name)
 	}
 }
 

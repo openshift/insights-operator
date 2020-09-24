@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -20,10 +21,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/dynamic"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -37,6 +40,7 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
+	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
@@ -57,6 +61,9 @@ const (
 	// This number has been rounded to 1000 for simplicity.
 	// Formerly, the `500 * 1024 / 450` expression was used instead.
 	metricsAlertsLinesLimit = 1000
+
+	// InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
+	InstallPlansTopX = 100
 )
 
 var (
@@ -94,6 +101,7 @@ type Gatherer struct {
 	client         configv1client.ConfigV1Interface
 	coreClient     corev1client.CoreV1Interface
 	networkClient  networkv1client.NetworkV1Interface
+	dynamicClient  dynamic.Interface
 	metricsClient  rest.Interface
 	certClient     certificatesv1beta1.CertificatesV1beta1Interface
 	registryClient imageregistryv1.ImageregistryV1Interface
@@ -104,7 +112,8 @@ type Gatherer struct {
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface,
+	dynamicClient dynamic.Interface) *Gatherer {
 	return &Gatherer{
 		client:         client,
 		coreClient:     coreClient,
@@ -113,6 +122,7 @@ func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1
 		registryClient: registryClient,
 		crdClient:      crdClient,
 		networkClient:  networkClient,
+		dynamicClient:  dynamicClient,
 	}
 }
 
@@ -141,6 +151,8 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherCertificateSigningRequests(i),
 		GatherCRD(i),
 		GatherHostSubnet(i),
+		GatherMachineSet(i),
+		GatherInstallPlans(i),
 	)
 }
 
@@ -738,6 +750,173 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		return records, []error{}
 	}
+}
+
+//GatherMachineSet collects MachineSet information
+//
+// The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+//
+// Location in archive: machinesets/
+func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
+		machineSets, err := i.dynamicClient.Resource(gvr).List(i.ctx, metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := []record.Record{}
+		for _, i := range machineSets.Items {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("machinesets/%s", i.GetName()),
+				Item: record.JSONMarshaller{Object: i.Object},
+			})
+		}
+		return records, nil
+	}
+}
+
+// GatherInstallPlans collects Top x InstallPlans.
+// Because InstallPlans have unique generated names, it groups them by namespace and the "template"
+// for name generation from field generateName.
+// It also collects Total number of all installplans and all non-unique installplans.
+//
+// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+//
+// Location in archive: config/certificatesigningrequests/
+func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		var plansBatchLimit int64 = 500
+
+		cont := ""
+		recs := map[string]collectedPlan{}
+		tc := 0
+
+		// oc get installplans -n=openshift-operators -v=6
+		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
+		resInterface := i.dynamicClient.Resource(opResource).Namespace("openshift-operators")
+		for {
+			u, err := resInterface.List(i.ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+
+			jsonMap := u.UnstructuredContent()
+			var items []interface{}
+			err = failEarly(
+				func() error { return parseJSONQuery(jsonMap, "metadata.continue?", &cont) },
+				func() error { return parseJSONQuery(jsonMap, "items", &items) },
+			)
+			if err != nil {
+				return nil, []error{err}
+			}
+
+			tc += len(items)
+			for _, item := range items {
+				// Get common prefix
+				csv := "[NONE]"
+				var clusterServiceVersionNames []interface{}
+				var ns, genName string
+				var itemMap map[string]interface{}
+				var ok bool
+				if itemMap, ok = item.(map[string]interface{}); !ok {
+					if err != nil {
+						return nil, []error{fmt.Errorf("cannot cast item to map %v", item)}
+					}
+				}
+
+				err = failEarly(
+					func() error {
+						return parseJSONQuery(itemMap, "spec.clusterServiceVersionNames", &clusterServiceVersionNames)
+					},
+					func() error { return parseJSONQuery(itemMap, "metadata.namespace", &ns) },
+					func() error { return parseJSONQuery(itemMap, "metadata.generateName", &genName) },
+				)
+				if err != nil {
+					return nil, []error{err}
+				}
+				if len(clusterServiceVersionNames) > 0 {
+					// ignoring non string
+					csv, _ = clusterServiceVersionNames[0].(string)
+				}
+
+				key := fmt.Sprintf("%s.%s.%s", ns, genName, csv)
+				m, ok := recs[key]
+				if !ok {
+					recs[key] = collectedPlan{Namespace: ns, Name: genName, CSV: csv, Count: 1}
+				} else {
+					m.Count++
+				}
+			}
+
+			if cont == "" {
+				break
+			}
+		}
+
+		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{recs}}}, nil
+	}
+}
+
+func failEarly(fns ...func() error) error {
+	for _, f := range fns {
+		err := f()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func parseJSONQuery(j map[string]interface{}, jq string, o interface{}) error {
+	for _, k := range strings.Split(jq, ".") {
+		// optional field
+		opt := false
+		sz := len(k)
+		if sz > 0 && k[sz-1] == '?' {
+			opt = true
+			k = k[:sz-1]
+		}
+
+		if uv, ok := j[k]; ok {
+			if v, ok := uv.(map[string]interface{}); ok {
+				j = v
+				continue
+			}
+			// ValueOf to enter reflect-land
+			dstPtrValue := reflect.ValueOf(o)
+			dstValue := reflect.Indirect(dstPtrValue)
+			dstValue.Set(reflect.ValueOf(uv))
+
+			return nil
+		}
+		if opt {
+			return nil
+		}
+		// otherwise key was not found
+		// keys are case sensitive, because maps are
+		for ki := range j {
+			if strings.ToLower(k) == strings.ToLower(ki) {
+				return fmt.Errorf("key %s wasn't found, but %s was ", k, ki)
+			}
+		}
+		return fmt.Errorf("key %s wasn't found in %v ", k, j)
+	}
+	return fmt.Errorf("query didn't match the structure")
+}
+
+type collectedPlan struct {
+	Namespace string
+	Name      string
+	CSV       string
+	Count     int
 }
 
 func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
@@ -1349,4 +1528,52 @@ func countLines(r io.Reader) (int, error) {
 			return lineCount, err
 		}
 	}
+}
+
+// InstallPlanAnonymizer implements serialization of top x installplans
+type InstallPlanAnonymizer struct {
+	v map[string]collectedPlan
+}
+
+// Marshal implements serialization of InstallPlan
+func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	cnts := []int{}
+	for _, v := range a.v {
+		cnts = append(cnts, v.Count)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(cnts)))
+	countLimit := -1
+	if len(cnts) > InstallPlansTopX && InstallPlansTopX > 0 {
+		// nth plan is on n-1th position
+		countLimit = cnts[InstallPlansTopX-1]
+	}
+	// Creates map for marshal
+	sr := map[string]interface{}{}
+	st := map[string]int{}
+	st["TOTAL_COUNT"] = len(cnts)
+	st["TOTAL_NONUNIQ_COUNT"] = len(a.v)
+	sr["stats"] = st
+	uls := 0
+	it := []interface{}{}
+	for _, v := range a.v {
+		if v.Count > countLimit {
+			kvp := map[string]interface{}{}
+			kvp["ns"] = v.Namespace
+			kvp["name"] = v.Name
+			kvp["csv"] = v.CSV
+			kvp["count"] = v.Count
+			it = append(it, kvp)
+			uls++
+		}
+		if uls > InstallPlansTopX {
+			break
+		}
+	}
+	sr["items"] = it
+	return json.Marshal(sr)
+}
+
+// GetExtension returns extension for anonymized openshift objects
+func (a InstallPlanAnonymizer) GetExtension() string {
+	return "json"
 }
