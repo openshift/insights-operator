@@ -4,9 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/build"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -81,7 +82,7 @@ func main() {
 			}
 		}
 	}
-	fmt.Printf("Done")
+	fmt.Println("Done")
 }
 
 func walkDir(cleanRoot string, md map[string]*DocBlock) error {
@@ -145,7 +146,7 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 						// Do not execute same method twice
 						_, ok := md[exampleMethodWithSuff].Examples[exampleMethodWithSuff]
 						if !ok {
-							methodFullpackage := getPackageName(cleanRoot, astPackage)
+							methodFullpackage := mustGetPackageName(cleanRoot, astPackage)
 
 							output, err := execExampleMethod(methodFullpackage, astPackageName, fn.Name.Name)
 							if err != nil {
@@ -169,32 +170,94 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 	})
 }
 
-// getPackageName generates full package name from asp.Package
+// findGoMod browses the directory tree starting at the given path
+// and then going up the tree, looking for the first occurrence go.mod file.
+func findGoMod(pkgFilePath string) (goModPath, relPkgPath string, err error) {
+	absPkgFilePath, err := filepath.Abs(pkgFilePath)
+	if err != nil {
+		return "", "", err
+	}
+
+	dirPath := absPkgFilePath
+	for {
+		goModPath = filepath.Join(dirPath, "go.mod")
+		if _, err := os.Stat(goModPath); os.IsNotExist(err) {
+			// This directory does not contain a go.mod file. Go to the parent directory.
+			parentDir := filepath.Dir(dirPath)
+			if parentDir == dirPath {
+				return "", "", fmt.Errorf("There is no go.mod file in the directory tree of %q", pkgFilePath)
+			}
+			dirPath = parentDir
+			continue
+		} else if err != nil {
+			return "", "", err
+		}
+
+		relPkgPath, err = filepath.Rel(dirPath, absPkgFilePath)
+		if err != nil {
+			return "", "", err
+		}
+
+		// If the go.mod file was found, both paths will be set and the error will be nil.
+		return
+	}
+}
+
+// getModuleNameFromGoMod parses the go.mod file and returns the name (URL) of the module.
+func getModuleNameFromGoMod(goModPath string) (string, error) {
+	goModBytes, err := ioutil.ReadFile(goModPath)
+	if err != nil {
+		return "", err
+	}
+
+	re, err := regexp.Compile(`module (\S+)`)
+	if err != nil {
+		return "", err
+	}
+
+	matches := re.FindAllSubmatch(goModBytes, -1)
+	if len(matches) != 1 {
+		return "", fmt.Errorf("Invalid go.mod format; contains %d module names instead of 1", len(matches))
+	}
+
+	firstMatch := matches[0]
+	if len(firstMatch) != 2 {
+		return "", fmt.Errorf("Unexpected number of groups captured by regular expression: %d (expected 2)", len(firstMatch))
+	}
+
+	return string(firstMatch[1]), nil
+}
+
+// mustGetPackageName generates full package name from asp.Package
 //   astRoot the relative path where ast.Package was parsed from, because ast.Package is relative to astRoot path
 //   f ast.Package with containing files
-// The returned full package is inferred from files in ast.Package and GOPATH
-func getPackageName(astRoot string, f *ast.Package) string {
+// The import path is based on the path of source files in the package and the module name in the nearest go.mod file.
+// Exits the program with an error return code in case of an error.
+func mustGetPackageName(astRoot string, f *ast.Package) string {
 	firstKey := ""
-	var mypkg string
 	for key := range f.Files {
 		firstKey = key
 		break
 	}
-	if firstKey != "" {
-		abspath, _ := filepath.Abs(filepath.Join(astRoot, filepath.Dir(firstKey)))
-
-		mypkg = strings.TrimPrefix(abspath, filepath.Join(goPath(), "src"))
-		mypkg = strings.TrimLeft(mypkg, string(filepath.Separator))
+	if firstKey == "" {
+		log.Fatalf("Package %q is composed of %d source files", f.Name, len(f.Files))
+	} else {
+		pkgAbs, err := filepath.Abs(filepath.Join(astRoot, filepath.Dir(firstKey)))
+		if err != nil {
+			log.Fatal(err)
+		}
+		goModPath, relPkgPath, err := findGoMod(pkgAbs)
+		if err != nil {
+			log.Fatal(err)
+		}
+		moduleName, err := getModuleNameFromGoMod(goModPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		importPath := filepath.Join(moduleName, relPkgPath)
+		return importPath
 	}
-	return mypkg
-}
-
-func goPath() string {
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		gopath = build.Default.GOPATH
-	}
-	return gopath
+	return ""
 }
 
 // execExampleMethod executes the method by starting go run and capturing the produced standard output
