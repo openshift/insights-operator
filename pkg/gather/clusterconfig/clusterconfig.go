@@ -754,7 +754,7 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
-		machineSets, err := i.dynamicClient.Resource(gvr).List(metav1.ListOptions{})
+		machineSets, err := i.dynamicClient.Resource(gvr).List(i.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

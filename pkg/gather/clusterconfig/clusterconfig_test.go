@@ -558,7 +558,7 @@ metadata:
 	if err != nil {
 		t.Fatal("unable to decode machineset ", err)
 	}
-	_, err = client.Resource(gvr).Create(testMachineSet, metav1.CreateOptions{})
+	_, err = client.Resource(gvr).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake machineset ", err)
 	}
