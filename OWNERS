@@ -6,7 +6,12 @@ approvers:
 - tisnik
 - alexandrevicenzi
 - martinkunc
-- natiiix 
+- natiiix
+- 0sewa0
+- tremes
+- rluders
+- psimovec
+- Sergey1011010
 reviewers:
 - smarterclayton
 - derekwaynecarr
@@ -16,5 +21,10 @@ reviewers:
 - alexandrevicenzi
 - martinkunc
 - natiiix
+- 0sewa0
+- tremes
+- rluders
+- psimovec
+- Sergey1011010
 
 component: "Insights operator"
