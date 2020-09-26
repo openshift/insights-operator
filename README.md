@@ -30,17 +30,17 @@ The current operator only collects global configuration. Future revisions will e
 
 ## Contributing
 
-Please make sure to run `make test` to check all changes made in the source code.
+Please make sure to run `make test-unit` and `make test-e2e` to check all changes made in the source code.
 
 ## Testing
 
 Unit tests can be started by the following command:
 
-    make test
+    make test-unit
 
 It is also possible to specify CLI options for Go test. For example, if you need to disable test results caching, use the following command:
 
-    make test TEST_OPTIONS=-count=1
+    make test-unit TEST_OPTIONS=-count=1
 
 ## Issue Tracking
 
