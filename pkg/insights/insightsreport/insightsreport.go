@@ -31,7 +31,6 @@ type Gatherer struct {
 // Response represents the Smart Proxy report response structure
 type Response struct {
 	Report SmartProxyReport `json:"report"`
-	Status string           `json:"status"`
 }
 
 // Configurator represents the interface to retrieve the configuration for the gatherer

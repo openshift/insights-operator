@@ -145,19 +145,28 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 		if reportPullingDelay, ok := secret.Data["reportPullingDelay"]; ok {
 			nextConfig.ReportPullingDelay, err = time.ParseDuration(string(reportPullingDelay))
 			if err != nil {
-				nextConfig.ReportPullingDelay = time.Duration(0.0)
+				klog.Warningf(
+					"reportPullingDelay secret contains an invalid value (%s). Using previous value",
+					reportPullingDelay,
+				)
 			}
 		}
 		if reportPullingTimeout, ok := secret.Data["reportPullingTimeout"]; ok {
 			nextConfig.ReportPullingTimeout, err = time.ParseDuration(string(reportPullingTimeout))
 			if err != nil {
-				nextConfig.ReportPullingTimeout = time.Duration(0.0)
+				klog.Warningf(
+					"reportPullingTimeout secret contains an invalid value (%s). Using previous value",
+					reportPullingTimeout,
+				)
 			}
 		}
 		if reportMinRetryTime, ok := secret.Data["reportMinRetryTime"]; ok {
 			nextConfig.ReportPullingDelay, err = time.ParseDuration(string(reportMinRetryTime))
 			if err != nil {
-				nextConfig.ReportMinRetryTime = time.Duration(0.0)
+				klog.Warningf(
+					"reportMinRetryTime secret contains an invalid value (%s). Using previous value",
+					reportMinRetryTime,
+				)
 			}
 		}
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
@@ -240,7 +249,7 @@ func (c *Controller) mergeConfigLocked() {
 		if len(c.secretConfig.ReportEndpoint) > 0 {
 			cfg.ReportEndpoint = c.secretConfig.ReportEndpoint
 		}
-		if c.secretConfig.ReportPullingDelay > 0 {
+		if c.secretConfig.ReportPullingDelay >= 0 {
 			cfg.ReportPullingDelay = c.secretConfig.ReportPullingDelay
 		}
 		if c.secretConfig.ReportPullingTimeout > 0 {
