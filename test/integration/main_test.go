@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -76,7 +77,7 @@ func configV1Client() (result *configv1client.ConfigV1Client) {
 
 func clusterOperator(clusterName string) *configv1.ClusterOperator {
 	// get info about given cluster operator
-	operator, err := configClient.ClusterOperators().Get(clusterName, metav1.GetOptions{})
+	operator, err := configClient.ClusterOperators().Get(context.Background(), clusterName, metav1.GetOptions{})
 	if err != nil {
 		// TODO -> change to t.Fatal in follow-up PR
 		panic(err.Error())
@@ -140,15 +141,15 @@ func restartInsightsOperator(t *testing.T) {
 
 func deleteAllPods(t *testing.T, namespace string) {
 	// restart insights-operator (delete pods)
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	for _, pod := range pods.Items {
-		clientset.CoreV1().Pods(namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+		clientset.CoreV1().Pods(namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 		err := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-			_, err := clientset.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
+			_, err := clientset.CoreV1().Pods(namespace).Get(context.Background(), pod.Name, metav1.GetOptions{})
 			if err == nil {
 				t.Logf("the pod is not yet deleted: %v\n", err)
 				return false, nil
@@ -161,14 +162,14 @@ func deleteAllPods(t *testing.T, namespace string) {
 
 	// check new pods are created and running
 	errPod := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-		newPods, _ := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		newPods, _ := clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 		if len(newPods.Items) == 0 {
 			t.Log("pods are not yet created")
 			return false, nil
 		}
 
 		for _, newPod := range newPods.Items {
-			pod, err := clientset.CoreV1().Pods(namespace).Get(newPod.Name, metav1.GetOptions{})
+			pod, err := clientset.CoreV1().Pods(namespace).Get(context.Background(), newPod.Name, metav1.GetOptions{})
 			if err != nil {
 				panic(err.Error())
 			}
@@ -210,14 +211,14 @@ func checkPodsLogs(t *testing.T, message string) *LogCheck {
 }
 
 func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
-	latestSecret, err := clientset.CoreV1().Secrets(ns).Get(secretName, metav1.GetOptions{})
+	latestSecret, err := clientset.CoreV1().Secrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("cannot read the original secret: %s", err)
 	}
 	if errors.IsNotFound(err) {
 		// new objects shouldn't have resourceVersion set
 		secret.SetResourceVersion("")
-		_, err = clientset.CoreV1().Secrets(ns).Create(secret)
+		_, err = clientset.CoreV1().Secrets(ns).Create(context.Background(), secret, metav1.CreateOptions{})
 		if err != nil {
 			return fmt.Errorf("cannot create the original secret: %s", err)
 		}
@@ -227,7 +228,7 @@ func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
 	secret.SetUID(latestSecret.GetUID())
 	secret.SetResourceVersion(resourceVersion) // need to update the version, otherwise operation is not permitted
 
-	_, err = clientset.CoreV1().Secrets("openshift-config").Update(secret)
+	_, err = clientset.CoreV1().Secrets("openshift-config").Update(context.Background(), secret, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to update original secret: %s", err)
 	}
@@ -281,7 +282,7 @@ func e(t *testing.T, err error, message string) {
 }
 
 func findPod(t *testing.T, kubeClient *kubernetes.Clientset, namespace string, prefix string) *corev1.Pod {
-	newPods, err := kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	newPods, err := kubeClient.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -296,19 +297,20 @@ func findPod(t *testing.T, kubeClient *kubernetes.Clientset, namespace string, p
 func degradeOperatorMonitoring(t *testing.T) func() {
 	// delete just in case it was already there, so we don't care about error
 	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
-	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
 	isOperatorDegraded(t, clusterOperator("monitoring"))
-	_, err := clientset.CoreV1().ConfigMaps(pod.Namespace).Create(
+	_, err := clientset.CoreV1().ConfigMaps(pod.Namespace).Create(context.Background(),
 		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml": "telemeterClient: enabled: NOT_BOOELAN"}},
+		metav1.CreateOptions{},
 	)
 	e(t, err, "Failed to create ConfigMap")
-	err = clientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 	e(t, err, "Failed to delete Pod")
 	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
 		return isOperatorDegraded(t, clusterOperator("monitoring")), nil
 	})
 	return func() {
-		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
 		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
 			insightsDegraded := isOperatorDegraded(t, clusterOperator("monitoring"))
 			return !insightsDegraded, nil
@@ -317,7 +319,7 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 }
 
 func changeReportTimeInterval(t *testing.T, newInterval []byte) []byte {
-	supportSecret, _ := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	supportSecret, _ := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
 	previousInterval := supportSecret.Data["interval"]
 	supportSecret.Data["interval"] = newInterval
 	err := forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
@@ -395,7 +397,7 @@ func waitForOperator(kubeClient *kubernetes.Clientset) error {
 	depClient := kubeClient.AppsV1().Deployments("openshift-insights")
 
 	err := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-		_, err := depClient.Get("insights-operator", metav1.GetOptions{})
+		_, err := depClient.Get(context.Background(), "insights-operator", metav1.GetOptions{})
 		if err != nil {
 			fmt.Printf("error waiting for operator deployment to exist: %v\n", err)
 			return false, nil

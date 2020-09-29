@@ -304,8 +304,8 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 			return nil, []error{err}
 		}
 		records := make([]record.Record, 0, len(config.Items))
-		for i := range config.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+		for index := range config.Items {
+			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name), Item: ClusterOperatorAnonymizer{&config.Items[index]}})
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
