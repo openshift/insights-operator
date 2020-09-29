@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
@@ -72,7 +73,6 @@ func configV1Client() (result *configv1client.ConfigV1Client) {
 	}
 	return client
 }
-
 
 func clusterOperator(clusterName string) *configv1.ClusterOperator {
 	// get info about given cluster operator
@@ -185,62 +185,28 @@ func deleteAllPods(t *testing.T, namespace string) {
 
 func logLineTime(t *testing.T, pattern string) time.Time {
 	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
-	str := checkPodsLogs(t, clientset, startOfLine+pattern)
+	str := checkPodsLogs(t, startOfLine+pattern).Result
 	str = strings.Split(strings.Split(str, ".")[0], " ")[1]
 	time1, err := time.Parse("15:04:05", str)
 	e(t, err, "time parsing fail")
 	return time1
-	
+
 }
 
-func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string, newLogsOnly ...bool) string {
-	r, err := regexp.Compile(`(?m)`+message)
-	e(t, err,"Regex compilation failed")
-	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
+func LogChecker(t *testing.T) *LogCheck {
+	defaults := &LogCheck{
+		interval:   time.Second,
+		logOptions: corev1.PodLogOptions{},
+		timeout:    5 * time.Minute,
+		failFast:   true,
+		test:       t,
+		clientset:  clientset,
 	}
-	timeNow := metav1.NewTime(time.Now())
-	logOptions := &corev1.PodLogOptions{}
-	if len(newLogsOnly)==1 && newLogsOnly[0] {
-		logOptions = &corev1.PodLogOptions{SinceTime:&timeNow}
-	}
-	result := ""
-	for _, newPod := range newPods.Items {
-		pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		errLog := wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-			req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOptions)
-			podLogs, err := req.Stream()
-			if err != nil {
-				return false, nil
-			}
-			defer podLogs.Close()
+	return defaults
+}
 
-			buf := new(bytes.Buffer)
-			_, err = io.Copy(buf, podLogs)
-			if err != nil {
-				panic(err.Error())
-			}
-			log := buf.String()
-
-			result = r.FindString(log) //strings.Contains(log, message)
-			if result == "" {
-				t.Logf("No %s in logs\n", message)
-				t.Logf("Logs for verification: ****\n%s", log)
-				return false, nil
-			}
-
-			t.Logf("%s found\n", result)
-			return true, nil
-		})
-		if errLog != nil {
-			t.Error(errLog)
-		}
-	}
-	return result
+func checkPodsLogs(t *testing.T, message string) *LogCheck {
+	return LogChecker(t).Search(message)
 }
 
 func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
@@ -293,7 +259,7 @@ func ExecCmd(t *testing.T, client kubernetes.Interface, podName string, namespac
 	)
 	exec, err := remotecommand.NewSPDYExecutor(kubeconfig(), "POST", req.URL())
 	if err != nil {
-		return "","", err
+		return "", "", err
 	}
 	var stdout, stderr bytes.Buffer
 	err = exec.Stream(remotecommand.StreamOptions{
@@ -302,7 +268,7 @@ func ExecCmd(t *testing.T, client kubernetes.Interface, podName string, namespac
 		Stderr: &stderr,
 	})
 	if err != nil {
-		return "","",err
+		return "", "", err
 	}
 
 	return stdout.String(), stderr.String(), nil
@@ -327,21 +293,21 @@ func findPod(t *testing.T, kubeClient *kubernetes.Clientset, namespace string, p
 	return nil
 }
 
-func degradeOperatorMonitoring(t *testing.T) func(){
+func degradeOperatorMonitoring(t *testing.T) func() {
 	// delete just in case it was already there, so we don't care about error
 	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
 	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
 	isOperatorDegraded(t, clusterOperator("monitoring"))
-	_, err:=clientset.CoreV1().ConfigMaps(pod.Namespace).Create(
-		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml" :  "telemeterClient: enabled: NOT_BOOELAN"}},
-		)
+	_, err := clientset.CoreV1().ConfigMaps(pod.Namespace).Create(
+		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml": "telemeterClient: enabled: NOT_BOOELAN"}},
+	)
 	e(t, err, "Failed to create ConfigMap")
 	err = clientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 	e(t, err, "Failed to delete Pod")
 	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
 		return isOperatorDegraded(t, clusterOperator("monitoring")), nil
 	})
-	return func(){
+	return func() {
 		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
 		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
 			insightsDegraded := isOperatorDegraded(t, clusterOperator("monitoring"))
@@ -354,16 +320,16 @@ func changeReportTimeInterval(t *testing.T, newInterval []byte) []byte {
 	supportSecret, _ := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
 	previousInterval := supportSecret.Data["interval"]
 	supportSecret.Data["interval"] = newInterval
-	err :=forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+	err := forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
 	e(t, err, "changing report time interval failed")
 	restartInsightsOperator(t)
 	t.Log("forcing update secret")
 	return previousInterval
 }
 
-func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) func(){
+func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) func() {
 	previousInterval := changeReportTimeInterval(t, []byte(fmt.Sprintf("%s", time.Minute*minutes)))
-	return func(){ changeReportTimeInterval(t, previousInterval) }
+	return func() { changeReportTimeInterval(t, previousInterval) }
 }
 
 func latestArchiveFiles(t *testing.T) []string {
@@ -386,7 +352,7 @@ func allFilesMatch(t *testing.T, prettyName string, files []string, regex *regex
 func matchingFileExists(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
 	count := 0
 	for _, file := range files {
-		if regex.MatchString(file){
+		if regex.MatchString(file) {
 			count++
 		}
 	}
@@ -402,7 +368,7 @@ func matchingFileExists(t *testing.T, prettyName string, files []string, regex *
 	if count != 0 {
 		return nil
 	}
-	return fmt.Errorf("did not find any (%s)file matching %s",prettyName, regex.String())
+	return fmt.Errorf("did not find any (%s)file matching %s", prettyName, regex.String())
 }
 
 func latestArchiveCheckFiles(t *testing.T, prettyName string, check func(*testing.T, string, []string, *regexp.Regexp) error, pattern string) error {
@@ -412,7 +378,7 @@ func latestArchiveCheckFiles(t *testing.T, prettyName string, check func(*testin
 	}
 	regex, err := regexp.Compile(pattern)
 	e(t, err, "failed to compile pattern")
-	return check(t, prettyName,latestFiles, regex)
+	return check(t, prettyName, latestFiles, regex)
 }
 
 func TestMain(m *testing.M) {
