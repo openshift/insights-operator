@@ -791,11 +791,8 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		var plansBatchLimit int64 = 500
-
 		cont := ""
 		recs := map[string]collectedPlan{}
-		tc := 0
-
 		// oc get installplans -n=openshift-operators -v=6
 		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
 		resInterface := i.dynamicClient.Resource(opResource).Namespace("openshift-operators")
@@ -807,7 +804,6 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 			if err != nil {
 				return nil, []error{err}
 			}
-
 			jsonMap := u.UnstructuredContent()
 			var items []interface{}
 			err = failEarly(
@@ -818,41 +814,9 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 				return nil, []error{err}
 			}
 
-			tc += len(items)
 			for _, item := range items {
-				// Get common prefix
-				csv := "[NONE]"
-				var clusterServiceVersionNames []interface{}
-				var ns, genName string
-				var itemMap map[string]interface{}
-				var ok bool
-				if itemMap, ok = item.(map[string]interface{}); !ok {
-					if err != nil {
-						return nil, []error{fmt.Errorf("cannot cast item to map %v", item)}
-					}
-				}
-
-				err = failEarly(
-					func() error {
-						return parseJSONQuery(itemMap, "spec.clusterServiceVersionNames", &clusterServiceVersionNames)
-					},
-					func() error { return parseJSONQuery(itemMap, "metadata.namespace", &ns) },
-					func() error { return parseJSONQuery(itemMap, "metadata.generateName", &genName) },
-				)
-				if err != nil {
-					return nil, []error{err}
-				}
-				if len(clusterServiceVersionNames) > 0 {
-					// ignoring non string
-					csv, _ = clusterServiceVersionNames[0].(string)
-				}
-
-				key := fmt.Sprintf("%s.%s.%s", ns, genName, csv)
-				m, ok := recs[key]
-				if !ok {
-					recs[key] = collectedPlan{Namespace: ns, Name: genName, CSV: csv, Count: 1}
-				} else {
-					m.Count++
+				if errs := collectInstallPlan(recs, item); errs != nil {
+					return nil, errs
 				}
 			}
 
@@ -863,6 +827,42 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 
 		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{recs}}}, nil
 	}
+}
+
+func collectInstallPlan(recs map[string]collectedPlan, item interface{}) []error {
+	// Get common prefix
+	csv := "[NONE]"
+	var clusterServiceVersionNames []interface{}
+	var ns, genName string
+	var itemMap map[string]interface{}
+	var ok bool
+	if itemMap, ok = item.(map[string]interface{}); !ok {
+		return []error{fmt.Errorf("cannot cast item to map %v", item)}
+	}
+
+	err := failEarly(
+		func() error {
+			return parseJSONQuery(itemMap, "spec.clusterServiceVersionNames", &clusterServiceVersionNames)
+		},
+		func() error { return parseJSONQuery(itemMap, "metadata.namespace", &ns) },
+		func() error { return parseJSONQuery(itemMap, "metadata.generateName", &genName) },
+	)
+	if err != nil {
+		return []error{err}
+	}
+	if len(clusterServiceVersionNames) > 0 {
+		// ignoring non string
+		csv, _ = clusterServiceVersionNames[0].(string)
+	}
+
+	key := fmt.Sprintf("%s.%s.%s", ns, genName, csv)
+	m, ok := recs[key]
+	if !ok {
+		recs[key] = collectedPlan{Namespace: ns, Name: genName, CSV: csv, Count: 1}
+	} else {
+		m.Count++
+	}
+	return nil
 }
 
 func failEarly(fns ...func() error) error {
