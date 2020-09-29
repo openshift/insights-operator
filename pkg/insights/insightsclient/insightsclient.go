@@ -115,7 +115,7 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	return transport.DebugWrappers(clientTransport)
 }
 
-func UserAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv1.ClusterVersion) string {
+func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv1.ClusterVersion) string {
 	gitVersion := v.GitVersion
 	// If the RELEASE_VERSION is set in pod, use it
 	if releaseVersionEnv != "" {
@@ -140,7 +140,8 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		req.Header = make(http.Header)
 	}
 	releaseVersionEnv := os.Getenv("RELEASE_VERSION")
-	req.Header.Set("User-Agent", UserAgent(releaseVersionEnv, version.Get(), cv))
+	ua := userAgent(releaseVersionEnv, version.Get(), cv)
+	req.Header.Set("User-Agent", ua)
 	if err := c.authorizer.Authorize(req); err != nil {
 		return err
 	}
