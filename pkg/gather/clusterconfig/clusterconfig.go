@@ -59,6 +59,10 @@ const (
 	// This number has been rounded to 1000 for simplicity.
 	// Formerly, the `500 * 1024 / 450` expression was used instead.
 	metricsAlertsLinesLimit = 1000
+
+	// csrGatherLimit is the maximum number of crs that
+	// will be listed in a single request to reduce memory usage.
+	csrGatherLimit = 5000
 )
 
 var (
@@ -690,7 +694,9 @@ func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
 // Location in archive: config/certificatesigningrequests/
 func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{})
+		requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{
+			Limit: csrGatherLimit,
+		})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
