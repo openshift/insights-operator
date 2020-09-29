@@ -1,6 +1,7 @@
 package clusterconfig
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -32,7 +33,7 @@ func ExampleMostRecentMetrics() (string, error) {
 	re := rest.NewRequestWithClient(u, "", rest.ClientContentConfig{}, c).Verb("get")
 
 	r := mockRest{GetMock: re}
-	g := &Gatherer{metricsClient: r}
+	g := &Gatherer{ctx: context.Background(), metricsClient: r}
 	d, errs := GatherMostRecentMetrics(g)()
 	if len(errs) > 0 {
 		return "", errs[0]

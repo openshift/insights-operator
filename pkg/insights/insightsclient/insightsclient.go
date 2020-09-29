@@ -25,6 +25,7 @@ import (
 	"k8s.io/klog"
 
 	configv1 "github.com/openshift/api/config/v1"
+	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
 )
@@ -114,6 +115,16 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	return transport.DebugWrappers(clientTransport)
 }
 
+func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv1.ClusterVersion) string {
+	gitVersion := v.GitVersion
+	// If the RELEASE_VERSION is set in pod, use it
+	if releaseVersionEnv != "" {
+		gitVersion = releaseVersionEnv
+	}
+	gitVersion = fmt.Sprintf("%s-%s", gitVersion, v.GitCommit)
+	return fmt.Sprintf("insights-operator/%s cluster/%s", gitVersion, cv.Spec.ClusterID)
+}
+
 func (c Client) prepareRequest(method string, endpoint string, ctx context.Context) (*http.Request, error) {
 	cv := c.clusterInfo.ClusterVersion()
 	if cv == nil {
@@ -128,8 +139,10 @@ func (c Client) prepareRequest(method string, endpoint string, ctx context.Conte
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
-	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s cluster/%s", version.Get().GitCommit, cv.Spec.ClusterID))
 
+	releaseVersionEnv := os.Getenv("RELEASE_VERSION")
+	ua := userAgent(releaseVersionEnv, version.Get(), cv)
+	req.Header.Set("User-Agent", ua)
 	if err := c.authorizer.Authorize(req); err != nil {
 		return nil, err
 	}

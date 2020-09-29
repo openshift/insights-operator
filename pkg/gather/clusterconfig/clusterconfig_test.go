@@ -15,7 +15,11 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apixv1beta1clientfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/klog"
 
@@ -341,7 +345,7 @@ func TestGatherContainerImages(t *testing.T) {
 	for index, containerImage := range mockContainers {
 		_, err := coreClient.CoreV1().
 			Pods(fakeNamespace).
-			Create(&corev1.Pod{
+			Create(context.Background(), &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: fakeNamespace,
 					Name:      fmt.Sprintf("pod%d", index),
@@ -357,7 +361,7 @@ func TestGatherContainerImages(t *testing.T) {
 				Status: corev1.PodStatus{
 					Phase: corev1.PodRunning,
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatal("unable to create fake pod")
 		}
@@ -369,7 +373,7 @@ func TestGatherContainerImages(t *testing.T) {
 		podName := fmt.Sprintf("crashlooping%d", i)
 		_, err := coreClient.CoreV1().
 			Pods(fakeOpenshiftNamespace).
-			Create(&corev1.Pod{
+			Create(context.Background(), &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podName,
 				},
@@ -385,7 +389,7 @@ func TestGatherContainerImages(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatal("unable to create fake pod")
 		}
@@ -456,9 +460,9 @@ func TestCollectVolumeSnapshotCRD(t *testing.T) {
 	crdClientset := apixv1beta1clientfake.NewSimpleClientset()
 
 	for _, name := range crdNames {
-		crdClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&v1beta1.CustomResourceDefinition{
+		crdClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.Background(), &v1beta1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
-		})
+		}, metav1.CreateOptions{})
 	}
 
 	gatherer := &Gatherer{crdClient: crdClientset.ApiextensionsV1beta1()}
@@ -485,11 +489,11 @@ func TestGatherHostSubnet(t *testing.T) {
 		Host:        "test.host",
 		HostIP:      "10.0.0.0",
 		Subnet:      "10.0.0.0/23",
-		EgressIPs:   []string{"10.0.0.0", "10.0.0.1"},
-		EgressCIDRs: []string{"10.0.0.0/24", "10.0.0.0/24"},
+		EgressIPs:   []networkv1.HostSubnetEgressIP{"10.0.0.0", "10.0.0.1"},
+		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{"10.0.0.0/24", "10.0.0.0/24"},
 	}
 	client := networkfake.NewSimpleClientset()
-	_, err := client.NetworkV1().HostSubnets().Create(&testHostSubnet)
+	_, err := client.NetworkV1().HostSubnets().Create(context.Background(), &testHostSubnet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake hostsubnet")
 	}
@@ -534,6 +538,42 @@ func TestGatherHostSubnet(t *testing.T) {
 		if cidr != "xxxxxxxxxxx" {
 			t.Fatalf("Egress CIDR is not anonymized %s", cidr)
 		}
+	}
+}
+
+func TestGatherMachineSet(t *testing.T) {
+	var machineSetYAML = `
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+    name: test-worker
+`
+	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
+	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+
+	testMachineSet := &unstructured.Unstructured{}
+
+	_, _, err := decUnstructured.Decode([]byte(machineSetYAML), nil, testMachineSet)
+	if err != nil {
+		t.Fatal("unable to decode machineset ", err)
+	}
+	_, err = client.Resource(gvr).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake machineset ", err)
+	}
+
+	gatherer := &Gatherer{dynamicClient: client}
+	records, errs := GatherMachineSet(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != 1 {
+		t.Fatalf("unexpected number or records %d", len(records))
+	}
+	if records[0].Name != "machinesets/test-worker" {
+		t.Fatalf("unexpected machineset name %s", records[0].Name)
 	}
 }
 

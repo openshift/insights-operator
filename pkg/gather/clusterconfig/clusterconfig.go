@@ -20,10 +20,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/dynamic"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -90,9 +92,11 @@ func init() {
 
 // Gatherer is a driving instance invoking collection of data
 type Gatherer struct {
+	ctx            context.Context
 	client         configv1client.ConfigV1Interface
 	coreClient     corev1client.CoreV1Interface
 	networkClient  networkv1client.NetworkV1Interface
+	dynamicClient  dynamic.Interface
 	metricsClient  rest.Interface
 	certClient     certificatesv1beta1.CertificatesV1beta1Interface
 	registryClient imageregistryv1.ImageregistryV1Interface
@@ -103,7 +107,7 @@ type Gatherer struct {
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface) *Gatherer {
 	return &Gatherer{
 		client:         client,
 		coreClient:     coreClient,
@@ -112,6 +116,7 @@ func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1
 		registryClient: registryClient,
 		crdClient:      crdClient,
 		networkClient:  networkClient,
+		dynamicClient:  dynamicClient,
 	}
 }
 
@@ -119,6 +124,7 @@ var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 // Gather is hosting and calling all the recording functions
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
+	i.ctx = ctx
 	return record.Collect(ctx, recorder,
 		GatherMostRecentMetrics(i),
 		GatherClusterOperators(i),
@@ -139,6 +145,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherCertificateSigningRequests(i),
 		GatherCRD(i),
 		GatherHostSubnet(i),
+		GatherMachineSet(i),
 	)
 }
 
@@ -163,7 +170,7 @@ func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
 			Param("match[]", "cluster_installer").
 			Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
 			Param("match[]", "namespace:container_memory_usage_bytes:sum").
-			DoRaw()
+			DoRaw(i.ctx)
 		if err != nil {
 			// write metrics errors to the file format as a comment
 			klog.Errorf("Unable to retrieve most recent metrics: %v", err)
@@ -172,7 +179,7 @@ func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
 
 		rsp, err := i.metricsClient.Get().AbsPath("federate").
 			Param("match[]", "ALERTS").
-			Stream()
+			Stream(i.ctx)
 		if err != nil {
 			// write metrics errors to the file format as a comment
 			klog.Errorf("Unable to retrieve most recent alerts from metrics: %v", err)
@@ -223,7 +230,7 @@ func GatherContainerImages(i *Gatherer) func() ([]record.Record, []error) {
 		// Use the Limit and Continue fields to request the pod information in chunks.
 		continueValue := ""
 		for {
-			pods, err := i.coreClient.Pods("").List(metav1.ListOptions{
+			pods, err := i.coreClient.Pods("").List(i.ctx, metav1.ListOptions{
 				Limit:    imageGatherPodLimit,
 				Continue: continueValue,
 				// FieldSelector: "status.phase=Running",
@@ -282,7 +289,7 @@ func GatherContainerImages(i *Gatherer) func() ([]record.Record, []error) {
 // Location of pods in archive: config/pod/
 func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.ClusterOperators().List(metav1.ListOptions{})
+		config, err := i.client.ClusterOperators().List(i.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -290,8 +297,8 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 			return nil, []error{err}
 		}
 		records := make([]record.Record, 0, len(config.Items))
-		for i := range config.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+		for index := range config.Items {
+			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name), Item: ClusterOperatorAnonymizer{&config.Items[index]}})
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
@@ -301,7 +308,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 				continue
 			}
 			for _, namespace := range namespacesForOperator(&item) {
-				pods, err := i.coreClient.Pods(namespace).List(metav1.ListOptions{})
+				pods, err := i.coreClient.Pods(namespace).List(i.ctx, metav1.ListOptions{})
 				if err != nil {
 					klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
 					continue
@@ -373,7 +380,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 // collectContainerLogs fetches log lines from the pod
 func collectContainerLogs(i *Gatherer, pod *corev1.Pod, buf *bytes.Buffer, containerName string, isPrevious bool, maxBytes *int64) error {
 	req := i.coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Previous: isPrevious, Container: containerName, LimitBytes: maxBytes, TailLines: &logTailLines})
-	readCloser, err := req.Stream()
+	readCloser, err := req.Stream(i.ctx)
 	if err != nil {
 		klog.V(2).Infof("Failed to fetch log for %s pod in namespace %s for failing operator %s (previous: %v): %q", pod.Name, pod.Namespace, containerName, isPrevious, err)
 		return err
@@ -397,7 +404,7 @@ func collectContainerLogs(i *Gatherer, pod *corev1.Pod, buf *bytes.Buffer, conta
 // Location in archive: config/node/
 func GatherNodes(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		nodes, err := i.coreClient.Nodes().List(metav1.ListOptions{})
+		nodes, err := i.coreClient.Nodes().List(i.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -422,7 +429,7 @@ func GatherNodes(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/configmaps
 func GatherConfigMaps(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		cms, err := i.coreClient.ConfigMaps("openshift-config").List(metav1.ListOptions{})
+		cms, err := i.coreClient.ConfigMaps("openshift-config").List(i.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -449,7 +456,7 @@ func GatherConfigMaps(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/version
 func GatherClusterVersion(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.ClusterVersions().Get("version", metav1.GetOptions{})
+		config, err := i.client.ClusterVersions().Get(i.ctx, "version", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -487,7 +494,7 @@ func GatherClusterID(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/infrastructure
 func GatherClusterInfrastructure(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Infrastructures().Get("cluster", metav1.GetOptions{})
+		config, err := i.client.Infrastructures().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -507,7 +514,7 @@ func GatherClusterInfrastructure(i *Gatherer) func() ([]record.Record, []error) 
 // See: docs/insights-archive-sample/config/network
 func GatherClusterNetwork(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Networks().Get("cluster", metav1.GetOptions{})
+		config, err := i.client.Networks().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -527,7 +534,7 @@ func GatherClusterNetwork(i *Gatherer) func() ([]record.Record, []error) {
 func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 
-		hostSubnetList, err := i.networkClient.HostSubnets().List(metav1.ListOptions{})
+		hostSubnetList, err := i.networkClient.HostSubnets().List(i.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -551,7 +558,7 @@ func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/authentication
 func GatherClusterAuthentication(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Authentications().Get("cluster", metav1.GetOptions{})
+		config, err := i.client.Authentications().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -567,7 +574,7 @@ func GatherClusterAuthentication(i *Gatherer) func() ([]record.Record, []error) 
 // Location in archive: config/imagepruner/
 func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		pruner, err := i.registryClient.ImagePruners().Get("cluster", metav1.GetOptions{})
+		pruner, err := i.registryClient.ImagePruners().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -583,7 +590,7 @@ func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
 // Location in archive: config/imageregistry/
 func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.registryClient.Configs().Get("cluster", metav1.GetOptions{})
+		config, err := i.registryClient.Configs().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -603,7 +610,7 @@ func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/featuregate
 func GatherClusterFeatureGates(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.FeatureGates().Get("cluster", metav1.GetOptions{})
+		config, err := i.client.FeatureGates().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -623,7 +630,7 @@ func GatherClusterFeatureGates(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/oauth
 func GatherClusterOAuth(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.OAuths().Get("cluster", metav1.GetOptions{})
+		config, err := i.client.OAuths().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -643,7 +650,7 @@ func GatherClusterOAuth(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/ingress
 func GatherClusterIngress(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Ingresses().Get("cluster", metav1.GetOptions{})
+		config, err := i.client.Ingresses().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -663,7 +670,7 @@ func GatherClusterIngress(i *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/proxy
 func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Proxies().Get("cluster", metav1.GetOptions{})
+		config, err := i.client.Proxies().Get(i.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -683,7 +690,7 @@ func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
 // Location in archive: config/certificatesigningrequests/
 func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		requests, err := i.certClient.CertificateSigningRequests().List(metav1.ListOptions{})
+		requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -719,7 +726,7 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, crdName := range toBeCollected {
-			crd, err := i.crdClient.CustomResourceDefinitions().Get(crdName, metav1.GetOptions{})
+			crd, err := i.crdClient.CustomResourceDefinitions().Get(i.ctx, crdName, metav1.GetOptions{})
 			// Log missing CRDs, but do not return the error.
 			if errors.IsNotFound(err) {
 				klog.V(2).Infof("Cannot find CRD: %q", crdName)
@@ -738,12 +745,39 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
+//GatherMachineSet collects MachineSet information
+//
+// The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+//
+// Location in archive: machinesets/
+func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
+		machineSets, err := i.dynamicClient.Resource(gvr).List(i.ctx, metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := []record.Record{}
+		for _, i := range machineSets.Items {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("machinesets/%s", i.GetName()),
+				Item: record.JSONMarshaller{Object: i.Object},
+			})
+		}
+		return records, nil
+	}
+}
+
 func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
 	// do not accidentally collect events for non-openshift namespace
 	if !strings.HasPrefix(namespace, "openshift-") {
 		return []record.Record{}, nil
 	}
-	events, err := i.coreClient.Events(namespace).List(metav1.ListOptions{})
+	events, err := i.coreClient.Events(namespace).List(i.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -1177,8 +1211,13 @@ type HostSubnetAnonymizer struct{ *networkv1.HostSubnet }
 func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	a.HostSubnet.HostIP = anonymizeString(a.HostSubnet.HostIP)
 	a.HostSubnet.Subnet = anonymizeString(a.HostSubnet.Subnet)
-	a.HostSubnet.EgressIPs = anonymizeSliceOfStrings(a.HostSubnet.EgressIPs)
-	a.HostSubnet.EgressCIDRs = anonymizeSliceOfStrings(a.HostSubnet.EgressCIDRs)
+
+	for i, s := range a.HostSubnet.EgressIPs {
+		a.HostSubnet.EgressIPs[i] = networkv1.HostSubnetEgressIP(anonymizeString(string(s)))
+	}
+	for i, s := range a.HostSubnet.EgressCIDRs {
+		a.HostSubnet.EgressCIDRs[i] = networkv1.HostSubnetEgressCIDR(anonymizeString(string(s)))
+	}
 	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), a.HostSubnet)
 }
 
