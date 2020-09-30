@@ -14,12 +14,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apixv1beta1clientfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/klog"
 
@@ -172,6 +174,57 @@ func TestGatherClusterPruner(t *testing.T) {
 			}
 			test.evalOutput(t, obj.(*imageregistryv1.ImagePruner))
 		})
+	}
+}
+
+func TestGatherPodDisruptionBudgets(t *testing.T){
+	coreClient := kubefake.NewSimpleClientset()
+
+	fakeNamespace := "fake-namespace"
+
+	// name -> MinAvailabel
+	fakePDBs := map[string]string {
+		"pdb-four": "4",
+		"pdb-eight": "8",
+		"pdb-ten": "10",
+	}
+	for name, minAvailable := range fakePDBs{
+		_, err := coreClient.PolicyV1beta1().
+			PodDisruptionBudgets(fakeNamespace).
+			Create(context.Background(), &policyv1beta1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: fakeNamespace,
+					Name:      name,
+				},
+				Spec: policyv1beta1.PodDisruptionBudgetSpec{
+					MinAvailable: &intstr.IntOrString{StrVal: minAvailable},
+				},
+			}, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("unable to create fake pdbs: %v", err)
+		}
+	}
+
+	gatherer := &Gatherer{policyClient: coreClient.PolicyV1beta1()}
+
+	records, errs := GatherPodDisruptionBudgets(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != len(fakePDBs) {
+		t.Fatalf("unexpected number of records gathered: %d (expected %d)", len(records), len(fakePDBs))
+	}
+	for _, rec := range records {
+		pdba, ok := rec.Item.(PodDisruptionBudgetsAnonymizer)
+		if !ok {
+			t.Fatal("pdb item has invalid type")
+		}
+		name := pdba.PodDisruptionBudget.ObjectMeta.Name
+		minAvailable := pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal
+		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal !=  fakePDBs[name] {
+			t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
+		}
 	}
 }
 
@@ -341,7 +394,6 @@ func TestGatherContainerImages(t *testing.T) {
 	}
 
 	coreClient := kubefake.NewSimpleClientset()
-
 	for index, containerImage := range mockContainers {
 		_, err := coreClient.CoreV1().
 			Pods(fakeNamespace).
