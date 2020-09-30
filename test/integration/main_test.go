@@ -195,18 +195,18 @@ func logLineTime(t *testing.T, pattern string) time.Time {
 }
 
 func LogChecker(t *testing.T) *LogCheck {
-    defaults := &LogCheck{
-        interval:   time.Second,
-        logOptions: corev1.PodLogOptions{},
-        timeout:    5*time.Minute,
-        failFast:   true,
-        test:       t,
-        clientset:  clientset,
-    }
-    return defaults
+	defaults := &LogCheck{
+		interval:   time.Second,
+		logOptions: corev1.PodLogOptions{},
+		timeout:    5 * time.Minute,
+		failFast:   true,
+		test:       t,
+		clientset:  clientset,
+	}
+	return defaults
 }
 
-func checkPodsLogs(t *testing.T, message string) *LogCheck{
+func checkPodsLogs(t *testing.T, message string) *LogCheck {
 	return LogChecker(t).Search(message)
 }
 

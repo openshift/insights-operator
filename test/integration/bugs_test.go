@@ -88,7 +88,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// check logs for "Gathering cluster info every 3m0s"
-	checkPodsLogs(t,"Gathering cluster info every 3m0s")
+	checkPodsLogs(t, "Gathering cluster info every 3m0s")
 }
 
 // TestUnreachableHost checks if insights operator reports "degraded" after 5 unsuccessful upload attempts
@@ -215,7 +215,7 @@ func TestArchiveContains(t *testing.T) {
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
 
-	checker := LogChecker(t).Timeout(2*time.Minute)
+	checker := LogChecker(t).Timeout(2 * time.Minute)
 	checker.SinceNow().Search(`Recording events/openshift-monitoring`)
 	checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
 
