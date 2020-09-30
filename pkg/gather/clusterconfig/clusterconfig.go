@@ -17,6 +17,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,7 @@ import (
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 
@@ -56,6 +58,8 @@ const (
 	// will be listed in a single request to reduce memory usage.
 	imageGatherPodLimit = 200
 
+	gatherPodDisruptionBudgetLimit = 5000
+
 	// metricsAlertsLinesLimit is the maximal number of lines read from monitoring Prometheus
 	// 500 KiB of alerts is limit, one alert line has typically 450 bytes => 1137 lines.
 	// This number has been rounded to 1000 for simplicity.
@@ -64,12 +68,15 @@ const (
 
 	// InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
 	InstallPlansTopX = 100
+	// csrGatherLimit is the maximum number of crs that
+	// will be listed in a single request to reduce memory usage.
+	csrGatherLimit = 5000
 )
 
 var (
-	openshiftSerializer = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
-	kubeSerializer      = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
-
+	openshiftSerializer     = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+	kubeSerializer          = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
+	policyV1Beta1Serializer = kubescheme.Codecs.LegacyCodec(policyv1beta1.SchemeGroupVersion)
 	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
 	// TODO: make this dynamic like the reporting window based on configured interval
 	maxEventTimeInterval = 1 * time.Hour
@@ -106,6 +113,7 @@ type Gatherer struct {
 	certClient     certificatesv1beta1.CertificatesV1beta1Interface
 	registryClient imageregistryv1.ImageregistryV1Interface
 	crdClient      apixv1beta1client.ApiextensionsV1beta1Interface
+	policyClient   policyclient.PolicyV1beta1Interface
 	lock           sync.Mutex
 	lastVersion    *configv1.ClusterVersion
 }
@@ -113,7 +121,7 @@ type Gatherer struct {
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
 	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface,
-	dynamicClient dynamic.Interface) *Gatherer {
+	dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface) *Gatherer {
 	return &Gatherer{
 		client:         client,
 		coreClient:     coreClient,
@@ -123,6 +131,7 @@ func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1
 		crdClient:      crdClient,
 		networkClient:  networkClient,
 		dynamicClient:  dynamicClient,
+		policyClient:   policyClient,
 	}
 }
 
@@ -132,6 +141,7 @@ var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
 	i.ctx = ctx
 	return record.Collect(ctx, recorder,
+		GatherPodDisruptionBudgets(i),
 		GatherMostRecentMetrics(i),
 		GatherClusterOperators(i),
 		GatherContainerImages(i),
@@ -154,6 +164,30 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherMachineSet(i),
 		GatherInstallPlans(i),
 	)
+}
+
+// GatherPodDisruptionBudgets gathers the cluster's PodDisruptionBudgets.
+//
+// The Kubernetes api https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
+// Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
+//
+// Location in archive: config/pdbs/
+// See: docs/insights-archive-sample/config/pdbs
+func GatherPodDisruptionBudgets(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		pdbs, err := i.policyClient.PodDisruptionBudgets("").List(i.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := []record.Record{}
+		for _, pdb := range pdbs.Items {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/pdbs/%s", pdb.GetName()),
+				Item: PodDisruptionBudgetsAnonymizer{&pdb},
+			})
+		}
+		return records, nil
+	}
 }
 
 // GatherMostRecentMetrics gathers cluster Federated Monitoring metrics.
@@ -304,8 +338,8 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 			return nil, []error{err}
 		}
 		records := make([]record.Record, 0, len(config.Items))
-		for i := range config.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[i].Name), Item: ClusterOperatorAnonymizer{&config.Items[i]}})
+		for index := range config.Items {
+			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name), Item: ClusterOperatorAnonymizer{&config.Items[index]}})
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
@@ -697,7 +731,9 @@ func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
 // Location in archive: config/certificatesigningrequests/
 func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{})
+		requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{
+			Limit: csrGatherLimit,
+		})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -1276,6 +1312,20 @@ func anonymizePod(pod *corev1.Pod) *corev1.Pod {
 	// pods gathered from openshift namespaces and cluster operators are expected to be under our control and contain
 	// no sensitive information
 	return pod
+}
+
+type PodDisruptionBudgetsAnonymizer struct {
+	*policyv1beta1.PodDisruptionBudget
+}
+
+// Marshal implements serialization of a PodDisruptionBudget with anonymization
+func (a PodDisruptionBudgetsAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return runtime.Encode(policyV1Beta1Serializer, a.PodDisruptionBudget)
+}
+
+// GetExtension returns extension for anonymized PodDisruptionBudget objects
+func (a PodDisruptionBudgetsAnonymizer) GetExtension() string {
+	return "json"
 }
 
 func isHealthyPod(pod *corev1.Pod, now time.Time) bool {
