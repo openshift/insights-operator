@@ -1,3 +1,7 @@
+# Added to overcome missing bitbucket.org/ww/goautoneg, remove after upgrade to openshift/library-go without it
+GOFLAGS ?= -mod=vendor
+export GOFLAGS
+
 build:
 	go build -ldflags "-X github.com/openshift/insights-operator/vendor/k8s.io/client-go/pkg/version.gitCommit=$$(git rev-parse HEAD) -X github.com/openshift/insights-operator/vendor/k8s.io/client-go/pkg/version.gitVersion=v1.0.0+$$(git rev-parse --short=7 HEAD)" -o bin/insights-operator ./cmd/insights-operator
 .PHONY: build
