@@ -194,6 +194,12 @@ func TestArchiveContains(t *testing.T) {
 			"image registry", matchingFileExists,
 			`^config/imageregistry\.json$`))
 
+    //https://bugzilla.redhat.com/show_bug.cgi?id=1881905
+    t.Run("PodDistributionBucket",
+        genLatestArchiveCheckPattern(
+            "pod distribution bucket", matchingFileExists,
+            `^config/pdbs/.*\.json$`))
+
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1879068
 	t.Run("HostsSubnet",
 		genLatestArchiveCheckPattern(
