@@ -16,8 +16,8 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,8 +70,8 @@ const (
 )
 
 var (
-	openshiftSerializer = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
-	kubeSerializer      = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
+	openshiftSerializer     = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+	kubeSerializer          = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
 	policyV1Beta1Serializer = kubescheme.Codecs.LegacyCodec(policyv1beta1.SchemeGroupVersion)
 	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
 	// TODO: make this dynamic like the reporting window based on configured interval
@@ -169,7 +169,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 // See: docs/insights-archive-sample/config/pdbs
 func GatherPodDisruptionBudgets(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		pdbs, err := i.policyClient.PodDisruptionBudgets("").List(i.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit,})
+		pdbs, err := i.policyClient.PodDisruptionBudgets("").List(i.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
 		if err != nil {
 			return nil, []error{err}
 		}
