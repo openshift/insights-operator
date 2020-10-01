@@ -192,5 +192,5 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	go uploader.Run(ctx)
 
 	<-ctx.Done()
-	return fmt.Errorf("stopped")
+	return nil
 }
