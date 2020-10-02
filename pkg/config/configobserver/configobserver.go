@@ -149,6 +149,7 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 					"reportPullingDelay secret contains an invalid value (%s). Using previous value",
 					reportPullingDelay,
 				)
+				nextConfig.ReportPullingDelay = time.Duration(0)
 			}
 		}
 		if reportPullingTimeout, ok := secret.Data["reportPullingTimeout"]; ok {
@@ -158,15 +159,17 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 					"reportPullingTimeout secret contains an invalid value (%s). Using previous value",
 					reportPullingTimeout,
 				)
+				nextConfig.ReportPullingTimeout = time.Duration(0)
 			}
 		}
 		if reportMinRetryTime, ok := secret.Data["reportMinRetryTime"]; ok {
-			nextConfig.ReportPullingDelay, err = time.ParseDuration(string(reportMinRetryTime))
+			nextConfig.ReportMinRetryTime, err = time.ParseDuration(string(reportMinRetryTime))
 			if err != nil {
 				klog.Warningf(
 					"reportMinRetryTime secret contains an invalid value (%s). Using previous value",
 					reportMinRetryTime,
 				)
+				nextConfig.ReportMinRetryTime = time.Duration(0)
 			}
 		}
 		nextConfig.Report = len(nextConfig.Endpoint) > 0

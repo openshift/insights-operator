@@ -81,11 +81,9 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 		return true, nil
 	}
 
-	delay := initialWait - time.Duration(r.retries*minimalRetryTime.Nanoseconds())
-	if delay > minimalRetryTime {
+	delay := initialWait - time.Duration(r.retries*minimalRetryTime.Nanoseconds()) - minimalRetryTime
+	if delay > 0 {
 		time.Sleep(delay)
-	} else {
-		time.Sleep(minimalRetryTime)
 	}
 	r.retries++
 
@@ -140,7 +138,7 @@ func (r *Gatherer) Run(ctx context.Context) {
 			// Repeat until the report is retrieved or maxIterations is reached
 			config := r.configurator.Config()
 			if config.ReportPullingTimeout != 0 {
-				wait.Poll(time.Duration(1), config.ReportPullingTimeout, r.PullSmartProxy)
+				wait.Poll(config.ReportMinRetryTime, config.ReportPullingTimeout, r.PullSmartProxy)
 				r.retries = 0
 			} else {
 				klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing polling timeout")
