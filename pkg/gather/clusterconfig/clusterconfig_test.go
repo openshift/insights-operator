@@ -13,11 +13,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/klog"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -170,6 +173,57 @@ func TestGatherClusterPruner(t *testing.T) {
 		})
 	}
 
+}
+
+func TestGatherPodDisruptionBudgets(t *testing.T){
+	coreClient := kubefake.NewSimpleClientset()
+
+	fakeNamespace := "fake-namespace"
+
+	// name -> MinAvailabel
+	fakePDBs := map[string]string {
+		"pdb-four": "4",
+		"pdb-eight": "8",
+		"pdb-ten": "10",
+	}
+	for name, minAvailable := range fakePDBs{
+		_, err := coreClient.PolicyV1beta1().
+			PodDisruptionBudgets(fakeNamespace).
+			Create(&policyv1beta1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: fakeNamespace,
+					Name:      name,
+				},
+				Spec: policyv1beta1.PodDisruptionBudgetSpec{
+					MinAvailable: &intstr.IntOrString{StrVal: minAvailable},
+				},
+			})
+		if err != nil {
+			t.Fatalf("unable to create fake pdbs: %v", err)
+		}
+	}
+
+	gatherer := &Gatherer{policyClient: coreClient.PolicyV1beta1()}
+
+	records, errs := GatherPodDisruptionBudgets(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != len(fakePDBs) {
+		t.Fatalf("unexpected number of records gathered: %d (expected %d)", len(records), len(fakePDBs))
+	}
+	for _, rec := range records {
+		pdba, ok := rec.Item.(PodDisruptionBudgetsAnonymizer)
+		if !ok {
+			t.Fatal("pdb item has invalid type")
+		}
+		name := pdba.PodDisruptionBudget.ObjectMeta.Name
+		minAvailable := pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal
+		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal !=  fakePDBs[name] {
+			t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
+		}
+	}
 }
 
 func TestGatherClusterImageRegistry(t *testing.T) {
