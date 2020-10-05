@@ -191,6 +191,8 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// know any previous last reported time
 	go uploader.Run(ctx)
 
+	klog.Warning("stopped")
+
 	<-ctx.Done()
 	return nil
 }
