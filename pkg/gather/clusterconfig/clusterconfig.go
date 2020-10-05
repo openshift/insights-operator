@@ -792,8 +792,9 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		var plansBatchLimit int64 = 500
 		cont := ""
-		recs := map[string]collectedPlan{}
+		recs := map[string]*collectedPlan{}
 		// oc get installplans -n=openshift-operators -v=6
+		total := 0
 		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
 		resInterface := i.dynamicClient.Resource(opResource).Namespace("openshift-operators")
 		for {
@@ -813,7 +814,7 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 			if err != nil {
 				return nil, []error{err}
 			}
-
+			total += len(items)
 			for _, item := range items {
 				if errs := collectInstallPlan(recs, item); errs != nil {
 					return nil, errs
@@ -825,11 +826,11 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 			}
 		}
 
-		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{recs}}}, nil
+		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{recs, total}}}, nil
 	}
 }
 
-func collectInstallPlan(recs map[string]collectedPlan, item interface{}) []error {
+func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []error {
 	// Get common prefix
 	csv := "[NONE]"
 	var clusterServiceVersionNames []interface{}
@@ -858,7 +859,7 @@ func collectInstallPlan(recs map[string]collectedPlan, item interface{}) []error
 	key := fmt.Sprintf("%s.%s.%s", ns, genName, csv)
 	m, ok := recs[key]
 	if !ok {
-		recs[key] = collectedPlan{Namespace: ns, Name: genName, CSV: csv, Count: 1}
+		recs[key] = &collectedPlan{Namespace: ns, Name: genName, CSV: csv, Count: 1}
 	} else {
 		m.Count++
 	}
@@ -1532,7 +1533,8 @@ func countLines(r io.Reader) (int, error) {
 
 // InstallPlanAnonymizer implements serialization of top x installplans
 type InstallPlanAnonymizer struct {
-	v map[string]collectedPlan
+	v     map[string]*collectedPlan
+	total int
 }
 
 // Marshal implements serialization of InstallPlan
@@ -1550,7 +1552,7 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	// Creates map for marshal
 	sr := map[string]interface{}{}
 	st := map[string]int{}
-	st["TOTAL_COUNT"] = len(cnts)
+	st["TOTAL_COUNT"] = a.total
 	st["TOTAL_NONUNIQ_COUNT"] = len(a.v)
 	sr["stats"] = st
 	uls := 0

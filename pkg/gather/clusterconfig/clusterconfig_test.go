@@ -578,44 +578,80 @@ metadata:
 }
 
 func TestGatherInstallPlans(t *testing.T) {
-	f, err := os.Open("testdata/installplan.yaml")
-	if err != nil {
-		t.Fatal("test failed to unmarshal csr data", err)
-	}
-	defer f.Close()
-	installplancontent, err := ioutil.ReadAll(f)
-	if err != nil {
-		t.Fatal("error reading test data file", err)
+	tests := []struct {
+		name      string
+		testfiles []string
+		exp       string
+	}{
+		{
+			name:      "one installplan",
+			testfiles: []string{"testdata/installplan.yaml"},
+			exp: `{"items":[{"count":1,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],` +
+				`"stats":{"TOTAL_COUNT":1,"TOTAL_NONUNIQ_COUNT":1}}`,
+		},
+		{
+			name:      "two different installplans",
+			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan_psql.yaml"},
+			exp: `{"items":[{"count":1,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"},` +
+				`{"count":1,"csv":"cloud-native-postgresql.v0.3.0","name":"install-","ns":"openshift-operators"}],` +
+				`"stats":{"TOTAL_COUNT":2,"TOTAL_NONUNIQ_COUNT":2}}`,
+		},
+		{
+			name:      "two similar installplans",
+			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml"},
+			exp: `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],` +
+				`"stats":{"TOTAL_COUNT":2,"TOTAL_NONUNIQ_COUNT":1}}`,
+		},
 	}
 
-	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
-	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-	installplan := &unstructured.Unstructured{}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 
-	_, _, err = decUnstructured.Decode(installplancontent, nil, installplan)
-	if err != nil {
-		t.Fatal("unable to decode", err)
-	}
-	gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
-	gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
-	_, err = client.Resource(gvr).Namespace("openshift-operators").Create(context.Background(), installplan, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal("unable to create fake ", err)
+			client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+			for _, file := range test.testfiles {
+				f, err := os.Open(file)
+				if err != nil {
+					t.Fatal("test failed to read installplan data", err)
+				}
+				defer f.Close()
+				installplancontent, err := ioutil.ReadAll(f)
+				if err != nil {
+					t.Fatal("error reading test data file", err)
+				}
+
+				decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+				installplan := &unstructured.Unstructured{}
+
+				_, _, err = decUnstructured.Decode(installplancontent, nil, installplan)
+				if err != nil {
+					t.Fatal("unable to decode", err)
+				}
+				gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
+				gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
+				_, err = client.Resource(gvr).Namespace("openshift-operators").Create(context.Background(), installplan, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal("unable to create fake ", err)
+				}
+			}
+
+			gatherer := &Gatherer{dynamicClient: client}
+			records, errs := GatherInstallPlans(gatherer)()
+			if len(errs) > 0 {
+				t.Errorf("unexpected errors: %#v", errs)
+				return
+			}
+			if len(records) != 1 {
+				t.Fatalf("unexpected number or records %d", len(records))
+			}
+			b, _ := records[0].Item.Marshal(context.Background())
+			sb := string(b)
+			if sb != test.exp {
+				t.Fatalf("unexpected installplan exp: %s got: %s", test.exp, sb)
+			}
+		})
+
 	}
 
-	gatherer := &Gatherer{dynamicClient: client}
-	records, errs := GatherInstallPlans(gatherer)()
-	if len(errs) > 0 {
-		t.Errorf("unexpected errors: %#v", errs)
-		return
-	}
-	if len(records) != 1 {
-		t.Fatalf("unexpected number or records %d", len(records))
-	}
-	b, _ := records[0].Item.Marshal(context.Background())
-	if string(b) != `{"items":[{"count":1,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],"stats":{"TOTAL_COUNT":1,"TOTAL_NONUNIQ_COUNT":1}}` {
-		t.Fatalf("unexpected machineset name %s", records[0].Name)
-	}
 }
 
 func ExampleGatherMostRecentMetrics_Test() {
