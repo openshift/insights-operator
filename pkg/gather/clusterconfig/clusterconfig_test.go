@@ -253,8 +253,8 @@ func ExampleGatherClusterOperators_Test() {
 	// [{"Name":"config/clusteroperator/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Degraded","status":"","lastTransitionTime":null}],"extension":null}}}]
 }
 
-func ExampleGatherUnhealthyNodes_Test() {
-	b, err := ExampleUnhealthyNodes()
+func ExampleGatherNodes_Test() {
+	b, err := ExampleNodes()
 	if err != nil {
 		fmt.Print(err)
 	}
