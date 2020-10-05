@@ -190,6 +190,19 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location in archive: config/hostsubnet/
 
 
+## InstallPlans
+
+collects Top x InstallPlans.
+Because InstallPlans have unique generated names, it groups them by namespace and the "template"
+for name generation from field generateName.
+It also collects Total number of all installplans and all non-unique installplans.
+
+The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+
+Location in archive: config/certificatesigningrequests/
+
+
 ## MachineSet
 
 collects MachineSet information
@@ -238,4 +251,15 @@ Output raw size: 491
 
 #### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
+
+## PodDisruptionBudgets
+
+gathers the cluster's PodDisruptionBudgets.
+
+The Kubernetes api https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
+Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
+
+Location in archive: config/pdbs/
+See: docs/insights-archive-sample/config/pdbs
+
 
