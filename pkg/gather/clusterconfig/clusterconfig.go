@@ -829,7 +829,6 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 		var plansBatchLimit int64 = 500
 		cont := ""
 		recs := map[string]*collectedPlan{}
-		// oc get installplans -n=openshift-operators -v=6
 		total := 0
 		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
 		resInterface := i.dynamicClient.Resource(opResource).Namespace("openshift-operators")
