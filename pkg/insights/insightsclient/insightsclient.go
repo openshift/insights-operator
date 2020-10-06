@@ -264,10 +264,13 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 
 	if err != nil {
 		klog.Errorf("Unable to retrieve latest report for %s: %v", cv.Spec.ClusterID, err)
+		counterRequestRecvReport.WithLabelValues(c.metricsName, "0").Inc()
 		return nil, err
 	}
 
+	counterRequestRecvReport.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
 	requestID := resp.Header.Get("x-rh-insights-request-id")
+
 	if resp.StatusCode == http.StatusUnauthorized {
 		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
 		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
