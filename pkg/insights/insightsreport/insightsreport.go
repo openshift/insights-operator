@@ -81,10 +81,14 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 		return true, nil
 	}
 
-	delay := initialWait - time.Duration(r.retries*minimalRetryTime.Nanoseconds()) - minimalRetryTime
-	if delay > 0 {
-		time.Sleep(delay)
+	var delay time.Duration
+	if r.retries == 0 {
+		delay = wait.Jitter(initialWait, 0.1)
+	} else {
+		delay = wait.Jitter(minimalRetryTime, 0.3)
 	}
+
+	time.Sleep(delay)
 	r.retries++
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
@@ -98,7 +102,7 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 			Reason:    "NotAuthorized",
 			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
 		})
-		return false, err
+		return true, err
 	} else if err != nil {
 		klog.Errorf("Error retrieving the report: %s", err)
 		return false, err
@@ -116,7 +120,7 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 
 	if r.LastReport.Meta.LastCheckedAt == reportResponse.Report.Meta.LastCheckedAt {
 		klog.V(2).Info("Retrieved report is equal to previus one. Retrying...")
-		return false, fmt.Errorf("Report not updated")
+		return true, fmt.Errorf("Report not updated")
 	}
 
 	updateInsightsMetrics(reportResponse.Report)
@@ -138,8 +142,8 @@ func (r *Gatherer) Run(ctx context.Context) {
 			// Repeat until the report is retrieved or maxIterations is reached
 			config := r.configurator.Config()
 			if config.ReportPullingTimeout != 0 {
-				wait.Poll(config.ReportMinRetryTime, config.ReportPullingTimeout, r.PullSmartProxy)
 				r.retries = 0
+				wait.Poll(config.ReportMinRetryTime, config.ReportPullingTimeout, r.PullSmartProxy)
 			} else {
 				klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing polling timeout")
 			}
