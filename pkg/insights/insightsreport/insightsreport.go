@@ -113,7 +113,7 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 
 	if err = json.NewDecoder(*reportBody).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
-		return false, err
+		return true, err
 	}
 
 	klog.V(4).Info("Smart Proxy report correctly parsed")
