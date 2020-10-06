@@ -16,8 +16,8 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -67,11 +67,15 @@ const (
 	// csrGatherLimit is the maximum number of crs that
 	// will be listed in a single request to reduce memory usage.
 	csrGatherLimit = 5000
+
+	// Maximal total number of service accounts
+	maxServiceAccountsLimit          = 1000
+	maxServiceAccountNamespacesLimit = 1000
 )
 
 var (
-	openshiftSerializer = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
-	kubeSerializer      = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
+	openshiftSerializer     = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+	kubeSerializer          = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
 	policyV1Beta1Serializer = kubescheme.Codecs.LegacyCodec(policyv1beta1.SchemeGroupVersion)
 	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
 	// TODO: make this dynamic like the reporting window based on configured interval
@@ -89,6 +93,8 @@ var (
 
 	// lineSep is the line separator used by the alerts metric
 	lineSep = []byte{'\n'}
+
+	defaultNamespaces = []string{"default", "kube-system", "kube-public"}
 )
 
 func init() {
@@ -157,6 +163,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherCRD(i),
 		GatherHostSubnet(i),
 		GatherMachineSet(i),
+		GatherServiceAccounts(i),
 	)
 }
 
@@ -169,7 +176,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 // See: docs/insights-archive-sample/config/pdbs
 func GatherPodDisruptionBudgets(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		pdbs, err := i.policyClient.PodDisruptionBudgets("").List(i.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit,})
+		pdbs, err := i.policyClient.PodDisruptionBudgets("").List(i.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -843,6 +850,60 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
 }
 
+// GatherServiceAccounts collects ServiceAccount stats
+// from kubernetes default and namespaces starting with openshift.
+//
+// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
+//
+// Location of serviceaccounts in archive: config/serviceaccounts
+// See: docs/insights-archive-sample/config/serviceaccounts
+func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		config, err := i.coreClient.Namespaces().List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountNamespacesLimit})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		totalServiceAccounts := 0
+		serviceAccounts := []corev1.ServiceAccount{}
+		records := []record.Record{}
+		namespaces := defaultNamespaces
+		namespaceCollected := sets.NewString()
+		// collect from all openshift* namespaces + kubernetes defaults
+		for _, item := range config.Items {
+			if strings.HasPrefix(item.Name, "openshift") {
+				namespaces = append(namespaces, item.Name)
+			}
+		}
+		for _, namespace := range namespaces {
+			// fetching service accounts from namespace
+			if namespaceCollected.Has(namespace) {
+				continue
+			}
+			svca, err := i.coreClient.ServiceAccounts(namespace).List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
+			if err != nil {
+				klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
+				continue
+			}
+
+			totalServiceAccounts += len(svca.Items)
+			for _, j := range svca.Items {
+				if len(serviceAccounts) > maxServiceAccountsLimit {
+					break
+				}
+				serviceAccounts = append(serviceAccounts, j)
+			}
+			namespaceCollected.Insert(namespace)
+		}
+
+		records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
+		return records, nil
+	}
+}
+
 // RawByte is skipping Marshalling from byte slice
 type RawByte []byte
 
@@ -1432,4 +1493,39 @@ func countLines(r io.Reader) (int, error) {
 			return lineCount, err
 		}
 	}
+}
+
+// ServiceAccountsMarshaller implements serialization of Service Accounts
+type ServiceAccountsMarshaller struct {
+	sa                   []corev1.ServiceAccount
+	totalServiceAccounts int
+}
+
+// Marshal implements serialization of ServiceAccount
+func (a ServiceAccountsMarshaller) Marshal(_ context.Context) ([]byte, error) {
+	// Creates map for marshal
+	sr := map[string]interface{}{}
+	st := map[string]interface{}{}
+	st["TOTAL_COUNT"] = a.totalServiceAccounts
+	sr["serviceAccounts"] = st
+	nss := map[string]interface{}{}
+	st["namespaces"] = nss
+	for _, sa := range a.sa {
+		var ns map[string]interface{}
+		var ok bool
+		if _, ok = nss[sa.Namespace]; !ok {
+			ns = map[string]interface{}{}
+			nss[sa.Namespace] = ns
+		} else {
+			ns = nss[sa.Namespace].(map[string]interface{})
+		}
+		ns["name"] = sa.Name
+		ns["secrets"] = len(sa.Secrets)
+	}
+	return json.Marshal(sr)
+}
+
+// GetExtension returns extension for anonymized openshift objects
+func (a ServiceAccountsMarshaller) GetExtension() string {
+	return "json"
 }

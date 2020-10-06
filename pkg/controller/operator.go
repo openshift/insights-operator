@@ -14,9 +14,9 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
-	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
@@ -41,6 +41,7 @@ type Support struct {
 	config.Controller
 }
 
+// LoadConfig unmarshalls config from obj and loads it to this Support struct
 func (s *Support) LoadConfig(obj map[string]interface{}) error {
 	var cfg config.Serialized
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
@@ -194,6 +195,8 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader)
 	go reportGatherer.Run(ctx)
 
+	klog.Warning("stopped")
+
 	<-ctx.Done()
-	return fmt.Errorf("stopped")
+	return nil
 }
