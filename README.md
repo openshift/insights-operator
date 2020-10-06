@@ -32,6 +32,24 @@ The current operator only collects global configuration. Future revisions will e
 
 Please make sure to run `make test-unit` and `make test-e2e` to check all changes made in the source code.
 
+### Sample IO archive
+There is a sample IO archive maintained in this repo to use as a quick reference. (can be found at [docs/insights-archive-sample](https://github.com/openshift/insights-operator/tree/master/docs/insights-archive-sample))
+
+To keep it up-to-date it is **required** to update this manually when developing a new data enhancement.
+
+Make sure the `.json` files are in a humanly readable format in the sample archive.
+By doing this its easier to review a data enhancement PR, and rule developers can easily check what data it collects. 
+
+#### Generating a sample archive
+Run the insights-operator on a test cluster.  (from `cluster-bot` or `Quicklab` or etc.) 
+
+#### Formatting archive json files
+This formats .json files from folder with extracted archive.
+```
+find . -type f -name '*.json' -print | while read line; do cat "$line" | jq > "$line.tmp" && mv "$line.tmp" "$line"; done
+```
+
+
 ## Testing
 
 Unit tests can be started by the following command:
@@ -96,11 +114,4 @@ metricsGatherKubeConfig.Insecure = true
 metricsGatherKubeConfig.BearerToken = "paste your token here"
 metricsGatherKubeConfig.CAFile = "" // by default it is "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 metricsGatherKubeConfig.CAData = []byte{}
-```
-
-
-### Formatting archive json files
-This formats .json files from folder with extracted archive.
-```
-find . -type f -name '*.json' -print | while read line; do cat "$line" | jq > "$line.tmp" && mv "$line.tmp" "$line"; done
 ```

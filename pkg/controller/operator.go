@@ -40,6 +40,7 @@ type Support struct {
 	config.Controller
 }
 
+// LoadConfig unmarshalls config from obj and loads it to this Support struct
 func (s *Support) LoadConfig(obj map[string]interface{}) error {
 	var cfg config.Serialized
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
