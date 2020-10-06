@@ -248,3 +248,17 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
+
+
+## ServiceAccounts
+
+collects ServiceAccount stats
+from kubernetes default and namespaces starting with openshift.
+
+The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
+Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
+
+Location of serviceaccounts in archive: config/serviceaccounts
+See: docs/insights-archive-sample/config/serviceaccounts
+
+
