@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 
@@ -39,6 +40,7 @@ type Support struct {
 	config.Controller
 }
 
+// LoadConfig unmarshalls config from obj and loads it to this Support struct
 func (s *Support) LoadConfig(obj map[string]interface{}) error {
 	var cfg config.Serialized
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
