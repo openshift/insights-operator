@@ -20,6 +20,7 @@ import (
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
+	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
 	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
@@ -31,6 +32,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
+	"github.com/openshift/insights-operator/pkg/gather/operatorconfig"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
@@ -138,6 +140,11 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 		return err
 	}
 
+	operatorClient, err := operatorv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
 	// ensure the insight snapshot directory exists
 	if _, err := os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err := os.MkdirAll(s.StoragePath, 0777); err != nil {
@@ -161,8 +168,10 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
 	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient, gatherNetworkClient, dynamicClient, policyClient)
+	operatorGather := operatorconfig.New(operatorClient)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
-		"config": configPeriodic,
+		"config":         configPeriodic,
+		"operatorconfig": operatorGather,
 	})
 	statusReporter.AddSources(periodic.Sources()...)
 	go periodic.Run(4, ctx.Done())
