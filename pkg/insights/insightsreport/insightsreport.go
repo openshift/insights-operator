@@ -103,9 +103,12 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
 		})
 		return true, err
-	} else if err != nil {
-		klog.Errorf("Error retrieving the report: %s", err)
+	} else if err == insightsclient.ErrWaitingForVersion {
+		klog.Error(err)
 		return false, err
+	} else if err != nil {
+		klog.Errorf("Unexpected error retrieving the report: %s", err)
+		return true, err
 	}
 
 	klog.V(4).Info("Report retrieved")
