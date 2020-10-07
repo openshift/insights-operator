@@ -25,8 +25,13 @@ import (
 	"k8s.io/klog"
 
 	configv1 "github.com/openshift/api/config/v1"
+	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
+)
+
+const (
+	responseBodyLogLen = 1024
 )
 
 type Client struct {
@@ -114,6 +119,16 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	return transport.DebugWrappers(clientTransport)
 }
 
+func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv1.ClusterVersion) string {
+	gitVersion := v.GitVersion
+	// If the RELEASE_VERSION is set in pod, use it
+	if releaseVersionEnv != "" {
+		gitVersion = releaseVersionEnv
+	}
+	gitVersion = fmt.Sprintf("%s-%s", gitVersion, v.GitCommit)
+	return fmt.Sprintf("insights-operator/%s cluster/%s", gitVersion, cv.Spec.ClusterID)
+}
+
 func (c Client) prepareRequest(method string, endpoint string, ctx context.Context) (*http.Request, error) {
 	cv := c.clusterInfo.ClusterVersion()
 	if cv == nil {
@@ -130,6 +145,9 @@ func (c Client) prepareRequest(method string, endpoint string, ctx context.Conte
 	}
 	req.Header.Set("User-Agent", fmt.Sprintf("insights-operator/%s cluster/%s", version.Get().GitCommit, cv.Spec.ClusterID))
 
+	releaseVersionEnv := os.Getenv("RELEASE_VERSION")
+	ua := userAgent(releaseVersionEnv, version.Get(), cv)
+	req.Header.Set("User-Agent", ua)
 	if err := c.authorizer.Authorize(req); err != nil {
 		return nil, err
 	}
@@ -194,7 +212,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
-		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
+		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
@@ -203,19 +221,11 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
-		body, _ := ioutil.ReadAll(resp.Body)
-		if len(body) > 1024 {
-			body = body[:1024]
-		}
-		return fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
+		return fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, responseBody(resp))
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
-		if len(body) > 1024 {
-			body = body[:1024]
-		}
-		return fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, string(body))
+		return fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, responseBody(resp))
 	}
 
 	if len(requestID) > 0 {
@@ -257,6 +267,18 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 		klog.Warningf("Report response status code: %d", resp.StatusCode)
 		return nil, fmt.Errorf("Report response status code: %d", resp.StatusCode)
 	}
+}
+
+func responseBody(r *http.Response) string {
+	if r == nil {
+		return ""
+	}
+	body, _ := ioutil.ReadAll(r.Body)
+	if len(body) > responseBodyLogLen {
+		body = body[:responseBodyLogLen]
+	}
+	return string(body)
+
 }
 
 var (

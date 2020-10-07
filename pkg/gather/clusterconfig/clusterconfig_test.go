@@ -12,10 +12,16 @@ import (
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apixv1beta1clientfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/klog"
 
@@ -168,6 +174,57 @@ func TestGatherClusterPruner(t *testing.T) {
 			}
 			test.evalOutput(t, obj.(*imageregistryv1.ImagePruner))
 		})
+	}
+}
+
+func TestGatherPodDisruptionBudgets(t *testing.T) {
+	coreClient := kubefake.NewSimpleClientset()
+
+	fakeNamespace := "fake-namespace"
+
+	// name -> MinAvailabel
+	fakePDBs := map[string]string{
+		"pdb-four":  "4",
+		"pdb-eight": "8",
+		"pdb-ten":   "10",
+	}
+	for name, minAvailable := range fakePDBs {
+		_, err := coreClient.PolicyV1beta1().
+			PodDisruptionBudgets(fakeNamespace).
+			Create(context.Background(), &policyv1beta1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: fakeNamespace,
+					Name:      name,
+				},
+				Spec: policyv1beta1.PodDisruptionBudgetSpec{
+					MinAvailable: &intstr.IntOrString{StrVal: minAvailable},
+				},
+			}, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("unable to create fake pdbs: %v", err)
+		}
+	}
+
+	gatherer := &Gatherer{policyClient: coreClient.PolicyV1beta1()}
+
+	records, errs := GatherPodDisruptionBudgets(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != len(fakePDBs) {
+		t.Fatalf("unexpected number of records gathered: %d (expected %d)", len(records), len(fakePDBs))
+	}
+	for _, rec := range records {
+		pdba, ok := rec.Item.(PodDisruptionBudgetsAnonymizer)
+		if !ok {
+			t.Fatal("pdb item has invalid type")
+		}
+		name := pdba.PodDisruptionBudget.ObjectMeta.Name
+		minAvailable := pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal
+		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal != fakePDBs[name] {
+			t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
+		}
 	}
 }
 
@@ -337,11 +394,10 @@ func TestGatherContainerImages(t *testing.T) {
 	}
 
 	coreClient := kubefake.NewSimpleClientset()
-
 	for index, containerImage := range mockContainers {
 		_, err := coreClient.CoreV1().
 			Pods(fakeNamespace).
-			Create(&corev1.Pod{
+			Create(context.Background(), &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: fakeNamespace,
 					Name:      fmt.Sprintf("pod%d", index),
@@ -357,7 +413,7 @@ func TestGatherContainerImages(t *testing.T) {
 				Status: corev1.PodStatus{
 					Phase: corev1.PodRunning,
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatal("unable to create fake pod")
 		}
@@ -369,7 +425,7 @@ func TestGatherContainerImages(t *testing.T) {
 		podName := fmt.Sprintf("crashlooping%d", i)
 		_, err := coreClient.CoreV1().
 			Pods(fakeOpenshiftNamespace).
-			Create(&corev1.Pod{
+			Create(context.Background(), &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: podName,
 				},
@@ -385,7 +441,7 @@ func TestGatherContainerImages(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatal("unable to create fake pod")
 		}
@@ -456,9 +512,9 @@ func TestCollectVolumeSnapshotCRD(t *testing.T) {
 	crdClientset := apixv1beta1clientfake.NewSimpleClientset()
 
 	for _, name := range crdNames {
-		crdClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&v1beta1.CustomResourceDefinition{
+		crdClientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(context.Background(), &v1beta1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
-		})
+		}, metav1.CreateOptions{})
 	}
 
 	gatherer := &Gatherer{crdClient: crdClientset.ApiextensionsV1beta1()}
@@ -485,11 +541,11 @@ func TestGatherHostSubnet(t *testing.T) {
 		Host:        "test.host",
 		HostIP:      "10.0.0.0",
 		Subnet:      "10.0.0.0/23",
-		EgressIPs:   []string{"10.0.0.0", "10.0.0.1"},
-		EgressCIDRs: []string{"10.0.0.0/24", "10.0.0.0/24"},
+		EgressIPs:   []networkv1.HostSubnetEgressIP{"10.0.0.0", "10.0.0.1"},
+		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{"10.0.0.0/24", "10.0.0.0/24"},
 	}
 	client := networkfake.NewSimpleClientset()
-	_, err := client.NetworkV1().HostSubnets().Create(&testHostSubnet)
+	_, err := client.NetworkV1().HostSubnets().Create(context.Background(), &testHostSubnet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake hostsubnet")
 	}
@@ -534,6 +590,111 @@ func TestGatherHostSubnet(t *testing.T) {
 		if cidr != "xxxxxxxxxxx" {
 			t.Fatalf("Egress CIDR is not anonymized %s", cidr)
 		}
+	}
+}
+
+func TestGatherMachineSet(t *testing.T) {
+	var machineSetYAML = `
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+    name: test-worker
+`
+	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
+	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+
+	testMachineSet := &unstructured.Unstructured{}
+
+	_, _, err := decUnstructured.Decode([]byte(machineSetYAML), nil, testMachineSet)
+	if err != nil {
+		t.Fatal("unable to decode machineset ", err)
+	}
+	_, err = client.Resource(gvr).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake machineset ", err)
+	}
+
+	gatherer := &Gatherer{dynamicClient: client}
+	records, errs := GatherMachineSet(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != 1 {
+		t.Fatalf("unexpected number or records %d", len(records))
+	}
+	if records[0].Name != "machinesets/test-worker" {
+		t.Fatalf("unexpected machineset name %s", records[0].Name)
+	}
+}
+
+func TestGatherServiceAccounts(t *testing.T) {
+	tests := []struct {
+		name string
+		data []*corev1.ServiceAccount
+		exp  string
+	}{
+		{
+			name: "one account",
+			data: []*corev1.ServiceAccount{&corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "local-storage-operator",
+					Namespace: "default",
+				},
+				Secrets: []corev1.ObjectReference{corev1.ObjectReference{}},
+			}},
+			exp: `{"serviceAccounts":{"TOTAL_COUNT":1,"namespaces":{"default":{"name":"local-storage-operator","secrets":1}}}}`,
+		},
+		{
+			name: "multiple accounts",
+			data: []*corev1.ServiceAccount{&corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deployer",
+					Namespace: "openshift",
+				},
+				Secrets: []corev1.ObjectReference{corev1.ObjectReference{}},
+			},
+				&corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "openshift-apiserver-sa",
+						Namespace: "openshift-apiserver",
+					},
+					Secrets: []corev1.ObjectReference{corev1.ObjectReference{}},
+				}},
+			exp: `{"serviceAccounts":{"TOTAL_COUNT":2,"namespaces":{"openshift":{"name":"deployer","secrets":1},"openshift-apiserver":{"name":"openshift-apiserver-sa","secrets":1}}}}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			coreClient := kubefake.NewSimpleClientset()
+			for _, d := range test.data {
+				_, err := coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: d.Namespace}}, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("unable to create fake ns %s", err)
+				}
+				_, err = coreClient.CoreV1().ServiceAccounts(d.Namespace).
+					Create(context.Background(), d, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("unable to create fake service account %s", err)
+				}
+			}
+			gatherer := &Gatherer{coreClient: coreClient.CoreV1()}
+			sa, errs := GatherServiceAccounts(gatherer)()
+			if len(errs) > 0 {
+				t.Fatalf("unexpected errors: %#v", errs)
+				return
+			}
+			bts, err := sa[0].Item.Marshal(context.Background())
+			if err != nil {
+				t.Fatalf("error marshalling %s", err)
+			}
+			s := string(bts)
+			if test.exp != s {
+				t.Fatalf("serviceaccount test failed. expected: %s got: %s", test.exp, s)
+			}
+		})
 	}
 }
 

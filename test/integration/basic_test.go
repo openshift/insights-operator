@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -15,7 +16,7 @@ import (
 
 // TestPullSecretExists makes sure that required pull-secret exists when tests are started
 func TestPullSecretExists(t *testing.T) {
-	pullSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(PullSecret, metav1.GetOptions{})
+	pullSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), PullSecret, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		t.Fatalf("The pull-secret should exist when cluster boots up: %s", err)
 	}
@@ -41,7 +42,7 @@ func TestPullSecretExists(t *testing.T) {
 }
 
 func TestIsIOHealthy(t *testing.T) {
-	checkPodsLogs(t, clientset, `The operator is healthy`)
+	checkPodsLogs(t,  `The operator is healthy`)
 }
 
 // Check if opt-in/opt-out works
@@ -60,13 +61,13 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Backup pull secret from openshift-config namespace.
 	// oc extract secret/pull-secret -n openshift-config --to=.
-	pullSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(PullSecret, metav1.GetOptions{})
+	pullSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), PullSecret, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("The pull-secret read failed: %s", err)
 	}
 	// Backup support secret from openshift-config namespace.
 	// oc extract secret/support -n openshift-config --to=.
-	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("The pull-secret read failed: %s", err)
 	}
@@ -107,7 +108,7 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Update the global cluster pull secret.
 	// oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=<pull-secret-location>
-	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Update(newPullSecret)
+	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Update(context.Background(), newPullSecret, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("Cannot update pull-secret with secret without cloud.redhat.com secret. Error: %s ", err)
 	}
@@ -117,7 +118,7 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Update the global cluster pull secret.
 	// oc set data secret/support -n openshift-config --from-file=interval=<pull-secret-location>
-	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Update(newSupportSecret)
+	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Update(context.Background(), newSupportSecret, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("Cannot update support secret with secret with short interval. Error: %s ", err)
 	}
@@ -158,5 +159,5 @@ func TestOptOutOptIn(t *testing.T) {
 	if errDisabled != nil {
 		t.Fatalf("The Cluster Operator wasn't enabled after setting original pull-secret")
 	}
-	checkPodsLogs(t, clientset, "Successfully reported")
+	checkPodsLogs(t, "Successfully reported")
 }
