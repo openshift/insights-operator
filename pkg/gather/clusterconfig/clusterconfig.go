@@ -333,8 +333,12 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := make([]record.Record, 0, len(config.Items))
 		for index := range config.Items {
+			recordName := fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name)
+			if config.Items[index].Namespace != "" {
+				recordName = fmt.Sprintf("config/clusteroperator/%s/%s", config.Items[index].Namespace, config.Items[index].Name)
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/clusteroperator/%s/%s", config.Items[index].Namespace, config.Items[index].Name),
+				Name: recordName,
 				Item: ClusterOperatorAnonymizer{&config.Items[index]},
 			})
 		}
@@ -788,8 +792,12 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 			if err != nil {
 				return []record.Record{}, []error{err}
 			}
+			recordName := fmt.Sprintf("config/crd/%s", crd.Name)
+			if crd.Namespace != "" {
+				recordName = fmt.Sprintf("config/crd/%s/%s", crd.Namespace, crd.Name)
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/crd/%s/%s", crd.Namespace, crd.Name),
+				Name: recordName,
 				Item: record.JSONMarshaller{Object: crd},
 			})
 		}
@@ -815,8 +823,12 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, i := range machineSets.Items {
+			recordName := fmt.Sprintf("machinesets/%s", i.GetName())
+			if i.GetNamespace() != "" {
+				recordName = fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName())
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName()),
+				Name: recordName,
 				Item: record.JSONMarshaller{Object: i.Object},
 			})
 		}
