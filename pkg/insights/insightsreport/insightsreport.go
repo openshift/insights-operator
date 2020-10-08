@@ -25,7 +25,6 @@ type Gatherer struct {
 	client                *insightsclient.Client
 	LastReport            SmartProxyReport
 	archiveUploadReporter <-chan struct{}
-	retries               int64
 }
 
 // Response represents the Smart Proxy report response structure
@@ -64,7 +63,6 @@ func New(client *insightsclient.Client, configurator Configurator, reporter Insi
 		configurator:          configurator,
 		client:                client,
 		archiveUploadReporter: reporter.ArchiveUploaded(),
-		retries:               0,
 	}
 }
 
@@ -72,24 +70,12 @@ func New(client *insightsclient.Client, configurator Configurator, reporter Insi
 func (r *Gatherer) PullSmartProxy() (bool, error) {
 	klog.Info("Pulling report from smart-proxy")
 	config := r.configurator.Config()
-	initialWait := config.ReportPullingDelay
-	minimalRetryTime := config.ReportMinRetryTime
 	reportEndpoint := config.ReportEndpoint
 
 	if len(reportEndpoint) == 0 {
 		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing report endpoint")
 		return true, nil
 	}
-
-	var delay time.Duration
-	if r.retries == 0 {
-		delay = wait.Jitter(initialWait, 0.1)
-	} else {
-		delay = wait.Jitter(minimalRetryTime, 0.3)
-	}
-
-	time.Sleep(delay)
-	r.retries++
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelFunc()
@@ -132,24 +118,95 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 	return true, nil
 }
 
+// RetrieveReport gets the report from Smart Proxy, if possible, handling the delays and timeouts
+func (r *Gatherer) RetrieveReport() {
+	klog.V(4).Info("Starting retrieving report from Smart Proxy")
+	config := r.configurator.Config()
+	configCh, cancelFn := r.configurator.ConfigChanged()
+	defer cancelFn()
+
+	if config.ReportPullingTimeout == 0 {
+		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing polling timeout")
+		return
+	}
+
+	delay := config.ReportPullingDelay
+	klog.V(4).Infof("Initial delay for pulling: %v", delay)
+	startTime := time.Now()
+	delayTimer := time.NewTimer(wait.Jitter(delay, 0.1))
+	timeoutTimer := time.NewTimer(config.ReportPullingTimeout)
+	firstPullDone := false
+
+	// select for initial delay
+	for {
+		iterationStart := time.Now()
+		select {
+		case <-delayTimer.C:
+			// Get report and set new timer
+			done, err := r.PullSmartProxy()
+			if done {
+				if err != nil {
+					klog.Errorf("Unrecoverable problem retrieving the report: %v", err)
+				} else {
+					klog.V(4).Info("Report retrieved correctly")
+				}
+				return
+			}
+
+			firstPullDone = true
+			if !delayTimer.Stop() {
+				<-delayTimer.C
+			}
+			delayTimer.Reset(wait.Jitter(config.ReportMinRetryTime, 0.3))
+
+		case <-timeoutTimer.C:
+			// timeout, ends
+			if !delayTimer.Stop() {
+				<-delayTimer.C
+			}
+			return
+
+		case <-configCh:
+			// Config change, update initial counter
+			config = r.configurator.Config()
+
+			// Update next deadline
+			var nextTick time.Duration
+			if firstPullDone {
+				newDeadline := iterationStart.Add(config.ReportMinRetryTime)
+				nextTick = wait.Jitter(time.Until(newDeadline), 0.3)
+			} else {
+				newDeadline := iterationStart.Add(config.ReportPullingDelay)
+				nextTick = wait.Jitter(time.Until(newDeadline), 0.1)
+			}
+
+			if !delayTimer.Stop() {
+				<-delayTimer.C
+			}
+			delayTimer.Reset(nextTick)
+
+			// Update pulling timeout
+			newTimeoutEnd := startTime.Add(config.ReportPullingTimeout)
+			if !timeoutTimer.Stop() {
+				<-timeoutTimer.C
+			}
+			timeoutTimer.Reset(time.Until(newTimeoutEnd))
+		}
+	}
+}
+
 // Run goroutine code for gathering the reports from Smart Proxy
 func (r *Gatherer) Run(ctx context.Context) {
 	r.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
+	klog.V(2).Infof("Initial config: %v", r.configurator.Config())
 
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
 		case <-r.archiveUploadReporter:
-			// When a new archive is uploaded, try to get the report after waiting
-			// Repeat until the report is retrieved or maxIterations is reached
-			config := r.configurator.Config()
-			if config.ReportPullingTimeout != 0 {
-				r.retries = 0
-				wait.Poll(config.ReportMinRetryTime, config.ReportPullingTimeout, r.PullSmartProxy)
-			} else {
-				klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing polling timeout")
-			}
+			klog.V(4).Info("Archive uploaded, starting pulling report...")
+			r.RetrieveReport()
 
 		case <-ctx.Done():
 			return

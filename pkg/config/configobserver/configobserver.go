@@ -151,6 +151,8 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 					reportPullingDelay,
 				)
 			}
+		} else {
+			nextConfig.ReportPullingDelay = time.Duration(-1)
 		}
 		if reportPullingTimeout, ok := secret.Data["reportPullingTimeout"]; ok {
 			if v, err := time.ParseDuration(string(reportPullingTimeout)); err == nil {
@@ -274,9 +276,9 @@ func (c *Controller) setConfigLocked(config *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, config) {
 			klog.V(2).Infof(
-				"Configuration updated: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s",
+				"Configuration updated: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s minRetryTime=%s pollingTimeout=%s",
 				config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0, config.ReportEndpoint,
-				config.ReportPullingDelay)
+				config.ReportPullingDelay, config.ReportMinRetryTime, config.ReportPullingTimeout)
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -289,9 +291,9 @@ func (c *Controller) setConfigLocked(config *config.Controller) {
 		}
 	} else {
 		klog.V(2).Infof(
-			"Configuration set: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s",
+			"Configuration set: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s minRetryTime=%s pollingTimeout=%s",
 			config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0, config.ReportEndpoint,
-			config.ReportPullingDelay)
+			config.ReportPullingDelay, config.ReportMinRetryTime, config.ReportPullingTimeout)
 	}
 	c.config = config
 }
