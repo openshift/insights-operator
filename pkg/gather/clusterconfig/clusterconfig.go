@@ -333,7 +333,10 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := make([]record.Record, 0, len(config.Items))
 		for index := range config.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name), Item: ClusterOperatorAnonymizer{&config.Items[index]}})
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/clusteroperator/%s/%s", config.Items[index].Namespace, config.Items[index].Name),
+				Item: ClusterOperatorAnonymizer{&config.Items[index]},
+			})
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
@@ -471,10 +474,16 @@ func GatherConfigMaps(i *Gatherer) func() ([]record.Record, []error) {
 		records := make([]record.Record, 0, len(cms.Items))
 		for i := range cms.Items {
 			for dk, dv := range cms.Items[i].Data {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false}})
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/configmaps/%s/%s/%s", cms.Items[i].Namespace, cms.Items[i].Name, dk),
+					Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false},
+				})
 			}
 			for dk, dv := range cms.Items[i].BinaryData {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: dv, encodeBase64: true}})
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/configmaps/%s/%s/%s", cms.Items[i].Namespace, cms.Items[i].Name, dk),
+					Item: ConfigMapAnonymizer{v: dv, encodeBase64: true},
+				})
 			}
 		}
 
@@ -578,7 +587,10 @@ func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := make([]record.Record, 0, len(hostSubnetList.Items))
 		for _, h := range hostSubnetList.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/hostsubnet/%s", h.Host), Item: HostSubnetAnonymizer{&h}})
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/hostsubnet/%s/%s", h.Namespace, h.Host),
+				Item: HostSubnetAnonymizer{&h},
+			})
 		}
 		return records, nil
 	}
@@ -740,7 +752,10 @@ func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []er
 		}
 		records := make([]record.Record, len(csrs))
 		for i, sr := range csrs {
-			records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
+			records[i] = record.Record{
+				Name: fmt.Sprintf("config/certificatesigningrequests/%s/%s", sr.ObjectMeta.Namespace, sr.ObjectMeta.Name),
+				Item: sr,
+			}
 		}
 		return records, nil
 	}
@@ -774,7 +789,7 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 				return []record.Record{}, []error{err}
 			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/crd/%s", crd.Name),
+				Name: fmt.Sprintf("config/crd/%s/%s", crd.Namespace, crd.Name),
 				Item: record.JSONMarshaller{Object: crd},
 			})
 		}
@@ -801,7 +816,7 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 		records := []record.Record{}
 		for _, i := range machineSets.Items {
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("machinesets/%s", i.GetName()),
+				Name: fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName()),
 				Item: record.JSONMarshaller{Object: i.Object},
 			})
 		}
