@@ -73,8 +73,8 @@ const (
 	csrGatherLimit = 5000
 
 	// Maximal total number of service accounts
-	maxServiceAccountsLimit          = 1000
-	maxServiceAccountNamespacesLimit = 1000
+	maxServiceAccountsLimit = 1000
+	maxNamespacesLimit      = 1000
 )
 
 var (
@@ -409,7 +409,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 						logName = fmt.Sprintf("%s_previous.log", c.Name)
 					}
 					buf.Reset()
-					klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v): %q", c.Name, pod.Name, pod.Namespace, isPrevious, err)
+					klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v): %v", c.Name, pod.Name, pod.Namespace, isPrevious, err)
 					// Collect container logs and continue on error
 					err = collectContainerLogs(i, pod, buf, c.Name, isPrevious, &bufferSize)
 					if err != nil {
@@ -822,15 +822,14 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
-// GatherInstallPlans collects Top x InstallPlans.
+// GatherInstallPlans collects Top x InstallPlans from all openshift namespaces.
 // Because InstallPlans have unique generated names, it groups them by namespace and the "template"
 // for name generation from field generateName.
 // It also collects Total number of all installplans and all non-unique installplans.
 //
-// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+// The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 //
-// Location in archive: config/certificatesigningrequests/
+// Location in archive: config/installplans/
 func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		var plansBatchLimit int64 = 500
@@ -838,33 +837,49 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 		recs := map[string]*collectedPlan{}
 		total := 0
 		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
-		resInterface := i.dynamicClient.Resource(opResource).Namespace("openshift-operators")
-		for {
-			u, err := resInterface.List(i.ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
-			if errors.IsNotFound(err) {
-				return nil, nil
-			}
-			if err != nil {
-				return nil, []error{err}
-			}
-			jsonMap := u.UnstructuredContent()
-			var items []interface{}
-			err = failEarly(
-				func() error { return parseJSONQuery(jsonMap, "metadata.continue?", &cont) },
-				func() error { return parseJSONQuery(jsonMap, "items", &items) },
-			)
-			if err != nil {
-				return nil, []error{err}
-			}
-			total += len(items)
-			for _, item := range items {
-				if errs := collectInstallPlan(recs, item); errs != nil {
-					return nil, errs
-				}
+
+		config, err := getAllNamespaces(i)
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		// collect from all openshift* namespaces
+		for _, ns := range config.Items {
+			if !strings.HasPrefix(ns.Name, "openshift") {
+				continue
 			}
 
-			if cont == "" {
-				break
+			resInterface := i.dynamicClient.Resource(opResource).Namespace(ns.Name)
+			for {
+				u, err := resInterface.List(i.ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
+				if errors.IsNotFound(err) {
+					return nil, nil
+				}
+				if err != nil {
+					return nil, []error{err}
+				}
+				jsonMap := u.UnstructuredContent()
+				var items []interface{}
+				err = failEarly(
+					func() error { return parseJSONQuery(jsonMap, "metadata.continue?", &cont) },
+					func() error { return parseJSONQuery(jsonMap, "items", &items) },
+				)
+				if err != nil {
+					return nil, []error{err}
+				}
+				total += len(items)
+				for _, item := range items {
+					if errs := collectInstallPlan(recs, item); errs != nil {
+						return nil, errs
+					}
+				}
+
+				if cont == "" {
+					break
+				}
 			}
 		}
 
@@ -1006,7 +1021,7 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 // See: docs/insights-archive-sample/config/serviceaccounts
 func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.coreClient.Namespaces().List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountNamespacesLimit})
+		config, err := getAllNamespaces(i)
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -1049,6 +1064,25 @@ func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 		return records, nil
 	}
 }
+
+func getAllNamespaces(i *Gatherer) (*corev1.NamespaceList, error) {
+	ns, ok := i.ctx.Value(contextKeyAllNamespaces).(*corev1.NamespaceList)
+	if ok {
+		return ns, nil
+	}
+	ns, err := i.coreClient.Namespaces().List(i.ctx, metav1.ListOptions{Limit: maxNamespacesLimit})
+	if err != nil {
+		return nil, err
+	}
+
+	i.ctx = context.WithValue(i.ctx, contextKeyAllNamespaces, ns)
+
+	return ns, nil
+}
+
+type contextKey string
+
+const contextKeyAllNamespaces contextKey = "allnamespaces"
 
 // RawByte is skipping Marshalling from byte slice
 type RawByte []byte

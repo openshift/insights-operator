@@ -15,6 +15,7 @@ import (
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apixv1beta1clientfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -642,11 +643,9 @@ func TestGatherInstallPlans(t *testing.T) {
 				`"stats":{"TOTAL_COUNT":1,"TOTAL_NONUNIQ_COUNT":1}}`,
 		},
 		{
-			name:      "two different installplans",
-			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan_psql.yaml"},
-			exp: `{"items":[{"count":1,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"},` +
-				`{"count":1,"csv":"cloud-native-postgresql.v0.3.0","name":"install-","ns":"openshift-operators"}],` +
-				`"stats":{"TOTAL_COUNT":2,"TOTAL_NONUNIQ_COUNT":2}}`,
+			name:      "two are same to keep ordering and one is different",
+			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml", "testdata/installplan_openshift.yaml"},
+			exp:       `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"},{"count":1,"csv":"3scale-community-operator.v0.5.1","name":"install-","ns":"openshift"}],"stats":{"TOTAL_COUNT":3,"TOTAL_NONUNIQ_COUNT":2}}`,
 		},
 		{
 			name:      "two similar installplans",
@@ -660,6 +659,7 @@ func TestGatherInstallPlans(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 
 			client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+			coreClient := kubefake.NewSimpleClientset()
 			for _, file := range test.testfiles {
 				f, err := os.Open(file)
 				if err != nil {
@@ -680,13 +680,25 @@ func TestGatherInstallPlans(t *testing.T) {
 				}
 				gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
 				gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
-				_, err = client.Resource(gvr).Namespace("openshift-operators").Create(context.Background(), installplan, metav1.CreateOptions{})
+				var ns string
+				err = parseJSONQuery(installplan.Object, "metadata.namespace", &ns)
 				if err != nil {
-					t.Fatal("unable to create fake ", err)
+					t.Fatal("unable to read ns ", err)
+				}
+				_, err = coreClient.CoreV1().Namespaces().Get(context.Background(), ns, metav1.GetOptions{})
+				if errors.IsNotFound(err) {
+					_, err = coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
+				}
+				if err != nil {
+					t.Fatal("unable to create ns fake ", err)
+				}
+				_, err = client.Resource(gvr).Namespace(ns).Create(context.Background(), installplan, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal("unable to create installplan fake ", err)
 				}
 			}
 
-			gatherer := &Gatherer{dynamicClient: client}
+			gatherer := &Gatherer{ctx: context.Background(), dynamicClient: client, coreClient: coreClient.CoreV1()}
 			records, errs := GatherInstallPlans(gatherer)()
 			if len(errs) > 0 {
 				t.Errorf("unexpected errors: %#v", errs)
@@ -697,6 +709,9 @@ func TestGatherInstallPlans(t *testing.T) {
 			}
 			b, _ := records[0].Item.Marshal(context.Background())
 			sb := string(b)
+			// var ri map[string]interface{}
+			// _ = json.Unmarshal(sb, ri)
+
 			if sb != test.exp {
 				t.Fatalf("unexpected installplan exp: %s got: %s", test.exp, sb)
 			}
@@ -756,7 +771,7 @@ func TestGatherServiceAccounts(t *testing.T) {
 					t.Fatalf("unable to create fake service account %s", err)
 				}
 			}
-			gatherer := &Gatherer{coreClient: coreClient.CoreV1()}
+			gatherer := &Gatherer{ctx: context.Background(), coreClient: coreClient.CoreV1()}
 			sa, errs := GatherServiceAccounts(gatherer)()
 			if len(errs) > 0 {
 				t.Fatalf("unexpected errors: %#v", errs)
