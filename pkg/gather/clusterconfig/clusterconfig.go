@@ -175,8 +175,12 @@ func GatherPodDisruptionBudgets(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, pdb := range pdbs.Items {
+			recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
+			if pdb.GetNamespace() != "" {
+				recordName = fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName())
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName()),
+				Name: recordName,
 				Item: PodDisruptionBudgetsAnonymizer{&pdb},
 			})
 		}
@@ -333,12 +337,8 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := make([]record.Record, 0, len(config.Items))
 		for index := range config.Items {
-			recordName := fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name)
-			if config.Items[index].Namespace != "" {
-				recordName = fmt.Sprintf("config/clusteroperator/%s/%s", config.Items[index].Namespace, config.Items[index].Name)
-			}
 			records = append(records, record.Record{
-				Name: recordName,
+				Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name),
 				Item: ClusterOperatorAnonymizer{&config.Items[index]},
 			})
 		}
@@ -479,13 +479,13 @@ func GatherConfigMaps(i *Gatherer) func() ([]record.Record, []error) {
 		for i := range cms.Items {
 			for dk, dv := range cms.Items[i].Data {
 				records = append(records, record.Record{
-					Name: fmt.Sprintf("config/configmaps/%s/%s/%s", cms.Items[i].Namespace, cms.Items[i].Name, dk),
+					Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
 					Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false},
 				})
 			}
 			for dk, dv := range cms.Items[i].BinaryData {
 				records = append(records, record.Record{
-					Name: fmt.Sprintf("config/configmaps/%s/%s/%s", cms.Items[i].Namespace, cms.Items[i].Name, dk),
+					Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
 					Item: ConfigMapAnonymizer{v: dv, encodeBase64: true},
 				})
 			}
@@ -592,7 +592,7 @@ func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
 		records := make([]record.Record, 0, len(hostSubnetList.Items))
 		for _, h := range hostSubnetList.Items {
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/hostsubnet/%s/%s", h.Namespace, h.Host),
+				Name: fmt.Sprintf("config/hostsubnet/%s", h.Host),
 				Item: HostSubnetAnonymizer{&h},
 			})
 		}
@@ -757,7 +757,7 @@ func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []er
 		records := make([]record.Record, len(csrs))
 		for i, sr := range csrs {
 			records[i] = record.Record{
-				Name: fmt.Sprintf("config/certificatesigningrequests/%s/%s", sr.ObjectMeta.Namespace, sr.ObjectMeta.Name),
+				Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name),
 				Item: sr,
 			}
 		}
@@ -792,12 +792,8 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 			if err != nil {
 				return []record.Record{}, []error{err}
 			}
-			recordName := fmt.Sprintf("config/crd/%s", crd.Name)
-			if crd.Namespace != "" {
-				recordName = fmt.Sprintf("config/crd/%s/%s", crd.Namespace, crd.Name)
-			}
 			records = append(records, record.Record{
-				Name: recordName,
+				Name: fmt.Sprintf("config/crd/%s", crd.Name),
 				Item: record.JSONMarshaller{Object: crd},
 			})
 		}
