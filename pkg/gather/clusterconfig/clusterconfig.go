@@ -164,6 +164,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherHostSubnet(i),
 		GatherMachineSet(i),
 		GatherServiceAccounts(i),
+		GatherMachineConfigPool(i),
 	)
 }
 
@@ -809,6 +810,34 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 		for _, i := range machineSets.Items {
 			records = append(records, record.Record{
 				Name: fmt.Sprintf("machinesets/%s", i.GetName()),
+				Item: record.JSONMarshaller{Object: i.Object},
+			})
+		}
+		return records, nil
+	}
+}
+
+
+//GatherMachineConfigPool collects MachineConfigPool information
+//
+// The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+// Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+//
+// Location in archive: config/machineconfigpools/
+func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		mcp := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigpools"}
+		machineCPs, err := i.dynamicClient.Resource(mcp).List(i.ctx, metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := []record.Record{}
+		for _, i := range machineCPs.Items {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/machineconfigpools/%s", i.GetName()),
 				Item: record.JSONMarshaller{Object: i.Object},
 			})
 		}
