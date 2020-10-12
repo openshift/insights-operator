@@ -10,17 +10,19 @@ import (
 
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	dynamicfake "k8s.io/client-go/dynamic/fake"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
-	"k8s.io/klog"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/klog"
 
 	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -102,18 +104,18 @@ func TestConfigMapAnonymizer(t *testing.T) {
 
 }
 
-func TestGatherPodDisruptionBudgets(t *testing.T){
+func TestGatherPodDisruptionBudgets(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset()
 
 	fakeNamespace := "fake-namespace"
 
 	// name -> MinAvailabel
-	fakePDBs := map[string]string {
-		"pdb-four": "4",
+	fakePDBs := map[string]string{
+		"pdb-four":  "4",
 		"pdb-eight": "8",
-		"pdb-ten": "10",
+		"pdb-ten":   "10",
 	}
-	for name, minAvailable := range fakePDBs{
+	for name, minAvailable := range fakePDBs {
 		_, err := coreClient.PolicyV1beta1().
 			PodDisruptionBudgets(fakeNamespace).
 			Create(&policyv1beta1.PodDisruptionBudget{
@@ -147,7 +149,7 @@ func TestGatherPodDisruptionBudgets(t *testing.T){
 		}
 		name := pdba.PodDisruptionBudget.ObjectMeta.Name
 		minAvailable := pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal
-		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal !=  fakePDBs[name] {
+		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal != fakePDBs[name] {
 			t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
 		}
 	}
@@ -384,6 +386,43 @@ func TestGatherHostSubnet(t *testing.T) {
 			t.Fatalf("Egress CIDR is not anonymized %s", cidr)
 		}
 	}
+}
+
+func TestGatherStatefulSet(t *testing.T) {
+	testSet := appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-statefulset",
+			Namespace: "openshift-test",
+		},
+	}
+	client := kubefake.NewSimpleClientset()
+	_, err := client.CoreV1().Namespaces().Create(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "openshift-test"}})
+	if err != nil {
+		t.Fatal("unable to create fake namespace", err)
+	}
+	_, err = client.AppsV1().StatefulSets("openshift-test").Create(&testSet)
+	if err != nil {
+		t.Fatal("unable to create fake statefulset", err)
+	}
+
+	gatherer := &Gatherer{ctx: context.Background(), coreClient: client.CoreV1(), appsClient: client.AppsV1()}
+
+	records, errs := GatherStatefulSets(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+
+	item, err := records[0].Item.Marshal(context.TODO())
+	var gatheredStatefulSet appsv1.StatefulSet
+	_, _, err = appsV1Serializer.Decode(item, nil, &gatheredStatefulSet)
+	if err != nil {
+		t.Fatalf("failed to decode object: %v", err)
+	}
+	if gatheredStatefulSet.Name != "test-statefulset" {
+		t.Fatalf("unexpected statefulset name %s", gatheredStatefulSet.Name)
+	}
+
 }
 
 func ExampleGatherMostRecentMetrics_Test() {

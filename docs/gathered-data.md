@@ -214,3 +214,15 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
+
+
+## StatefulSets
+
+collects StatefulSet configs from default namespaces
+
+The Kubernetes API https://github.com/kubernetes/api/blob/master/apps/v1/types.go
+Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
+
+Location in archive: config/statefulsets/
+
+
