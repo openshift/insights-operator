@@ -28,7 +28,7 @@ func TestUploadNotDelayedAfterStart(t *testing.T) {
 	time1 := logLineTime(t, `Reporting status periodically to .* every`)
 	time2 := logLineTime(t, `Successfully reported id=`)
 	delay := time2.Sub(time1)
-	allowedDelay := 3*time.Minute
+	allowedDelay := 3 * time.Minute
 	t.Logf("Archive upload delay was %d seconds", delay/time.Second)
 	if delay > allowedDelay && delay < time.Hour*24-allowedDelay {
 		t.Fatal("Upload after start took too much time")

@@ -42,7 +42,7 @@ func TestPullSecretExists(t *testing.T) {
 }
 
 func TestIsIOHealthy(t *testing.T) {
-	checkPodsLogs(t,  `The operator is healthy`)
+	checkPodsLogs(t, `The operator is healthy`)
 }
 
 // Check if opt-in/opt-out works
