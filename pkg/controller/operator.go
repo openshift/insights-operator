@@ -32,6 +32,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
 )
@@ -46,6 +47,7 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
+
 	controller, err := cfg.ToController()
 	if err != nil {
 		return err
@@ -54,7 +56,6 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 
 	data, _ := json.Marshal(cfg)
 	klog.V(2).Infof("Current config: %s", string(data))
-
 	return nil
 }
 
@@ -190,6 +191,9 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// start uploading status, so that we
 	// know any previous last reported time
 	go uploader.Run(ctx)
+
+	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader)
+	go reportGatherer.Run(ctx)
 
 	klog.Warning("stopped")
 

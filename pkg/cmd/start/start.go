@@ -22,9 +22,13 @@ const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 func NewOperator() *cobra.Command {
 	operator := &controller.Support{
 		Controller: config.Controller{
-			StoragePath: "/var/lib/insights-operator",
-			Interval:    10 * time.Minute,
-			Endpoint:    "https://cloud.redhat.com/api/ingress/v1/upload",
+			StoragePath:          "/var/lib/insights-operator",
+			Interval:             10 * time.Minute,
+			Endpoint:             "https://cloud.redhat.com/api/ingress/v1/upload",
+			ReportEndpoint:       "https://cloud.redhat.com/api/insights-results-aggregator/v1/cluster/%s/report",
+			ReportPullingDelay:   60 * time.Second,
+			ReportMinRetryTime:   10 * time.Second,
+			ReportPullingTimeout: 30 * time.Minute,
 		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), operator.Run)

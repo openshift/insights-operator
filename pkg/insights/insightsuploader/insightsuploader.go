@@ -41,20 +41,22 @@ type StatusReporter interface {
 type Controller struct {
 	controllerstatus.Simple
 
-	summarizer   Summarizer
-	client       *insightsclient.Client
-	configurator Configurator
-	reporter     StatusReporter
+	summarizer      Summarizer
+	client          *insightsclient.Client
+	configurator    Configurator
+	reporter        StatusReporter
+	archiveUploaded chan struct{}
 }
 
 func New(summarizer Summarizer, client *insightsclient.Client, configurator Configurator, statusReporter StatusReporter) *Controller {
 	return &Controller{
 		Simple: controllerstatus.Simple{Name: "insightsuploader"},
 
-		summarizer:   summarizer,
-		configurator: configurator,
-		client:       client,
-		reporter:     statusReporter,
+		summarizer:      summarizer,
+		configurator:    configurator,
+		client:          client,
+		reporter:        statusReporter,
+		archiveUploaded: make(chan struct{}),
 	}
 }
 
@@ -157,6 +159,10 @@ func (c *Controller) Run(ctx context.Context) {
 			}
 			c.reporter.SetSafeInitialStart(false)
 			klog.V(4).Infof("Uploaded report successfully in %s", time.Now().Sub(start))
+			select {
+			case c.archiveUploaded <- struct{}{}:
+			default:
+			}
 			lastReported = start.UTC()
 			c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 		} else {
@@ -172,6 +178,11 @@ func (c *Controller) Run(ctx context.Context) {
 
 		initialDelay = wait.Jitter(interval, 1.2)
 	}, 15*time.Second, ctx.Done())
+}
+
+// ArchiveUploaded returns a channel that indicates when an archive is uploaded
+func (c *Controller) ArchiveUploaded() <-chan struct{} {
+	return c.archiveUploaded
 }
 
 func reportToLogs(source io.Reader, klog klog.Verbose) error {

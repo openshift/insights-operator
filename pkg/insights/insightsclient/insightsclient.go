@@ -60,6 +60,7 @@ type Source struct {
 
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
+// New creates a Client
 func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, clusterInfo ClusterVersionInfo) *Client {
 	if client == nil {
 		client = &http.Client{}
@@ -129,24 +130,35 @@ func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv
 	return fmt.Sprintf("insights-operator/%s cluster/%s", gitVersion, cv.Spec.ClusterID)
 }
 
+func (c Client) prepareRequest(ctx context.Context, method string, endpoint string, cv *configv1.ClusterVersion) (*http.Request, error) {
+	req, err := http.NewRequest(method, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Header == nil {
+		req.Header = make(http.Header)
+	}
+
+	releaseVersionEnv := os.Getenv("RELEASE_VERSION")
+	ua := userAgent(releaseVersionEnv, version.Get(), cv)
+	req.Header.Set("User-Agent", ua)
+	if err := c.authorizer.Authorize(req); err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	return req, nil
+}
+
+// Send uploads archives to Ingress service
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
 	cv := c.clusterInfo.ClusterVersion()
 	if cv == nil {
 		return ErrWaitingForVersion
 	}
 
-	req, err := http.NewRequest("POST", endpoint, nil)
+	req, err := c.prepareRequest(ctx, http.MethodPost, endpoint, cv)
 	if err != nil {
-		return err
-	}
-
-	if req.Header == nil {
-		req.Header = make(http.Header)
-	}
-	releaseVersionEnv := os.Getenv("RELEASE_VERSION")
-	ua := userAgent(releaseVersionEnv, version.Get(), cv)
-	req.Header.Set("User-Agent", ua)
-	if err := c.authorizer.Authorize(req); err != nil {
 		return err
 	}
 
@@ -172,7 +184,6 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		pw.CloseWithError(mw.Close())
 	}()
 
-	req = req.WithContext(ctx)
 	req.Body = pr
 
 	// dynamically set the proxy environment
@@ -225,6 +236,71 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	return nil
 }
 
+// RecvReport perform a request to Insights Results Smart Proxy endpoint
+func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser, error) {
+	cv := c.clusterInfo.ClusterVersion()
+	if cv == nil {
+		return nil, ErrWaitingForVersion
+	}
+
+	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID)
+	klog.Infof("Retrieving report for cluster: %s", cv.Spec.ClusterID)
+	klog.Infof("Endpoint: %s", endpoint)
+
+	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
+	if err != nil {
+		return nil, err
+	}
+
+	// dynamically set the proxy environment
+	c.client.Transport = clientTransport(c.authorizer)
+
+	klog.V(4).Infof("Retrieving report from %s", req.URL.String())
+	resp, err := c.client.Do(req)
+
+	if err != nil {
+		klog.Errorf("Unable to retrieve latest report for %s: %v", cv.Spec.ClusterID, err)
+		counterRequestRecvReport.WithLabelValues(c.metricsName, "0").Inc()
+		return nil, err
+	}
+
+	counterRequestRecvReport.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
+	requestID := resp.Header.Get("x-rh-insights-request-id")
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
+	}
+
+	if resp.StatusCode == http.StatusForbidden {
+		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
+	}
+
+	if resp.StatusCode == http.StatusBadRequest {
+		body, _ := ioutil.ReadAll(resp.Body)
+		if len(body) > 1024 {
+			body = body[:1024]
+		}
+		return nil, fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
+	}
+
+	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		if len(body) > 1024 {
+			body = body[:1024]
+		}
+		return nil, fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, string(body))
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		return &resp.Body, nil
+	}
+
+	klog.Warningf("Report response status code: %d", resp.StatusCode)
+	return nil, fmt.Errorf("Report response status code: %d", resp.StatusCode)
+}
+
 func responseBody(r *http.Response) string {
 	if r == nil {
 		return ""
@@ -241,11 +317,22 @@ var (
 		Name: "insightsclient_request_send_total",
 		Help: "Tracks the number of metrics sends",
 	}, []string{"client", "status_code"})
+	counterRequestRecvReport = metrics.NewCounterVec(&metrics.CounterOpts{
+		Name: "insightsclient_request_recvreport_total",
+		Help: "Tracks the number of reports requested",
+	}, []string{"client", "status_code"})
 )
 
 func init() {
 	err := legacyregistry.Register(
 		counterRequestSend,
+	)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = legacyregistry.Register(
+		counterRequestRecvReport,
 	)
 	if err != nil {
 		fmt.Println(err)
