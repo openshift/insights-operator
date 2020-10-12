@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
+	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
@@ -39,6 +40,7 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
+	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
@@ -56,15 +58,20 @@ const (
 	// 500 KiB of alerts is limit, one alert line has typically 450 bytes => 1137 lines.
 	// This number has been rounded to 1000 for simplicity.
 	// Formerly, the `500 * 1024 / 450` expression was used instead.
-	metricsAlertsLinesLimit = 1000
+	metricsAlertsLinesLimit        = 1000
 	gatherPodDisruptionBudgetLimit = 5000
+
+	// csrGatherLimit is the maximum number of crs that
+	// will be listed in a single request to reduce memory usage.
+	csrGatherLimit     = 5000
+	maxNamespacesLimit = 1000
 )
 
 var (
-	openshiftSerializer = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
-	kubeSerializer      = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
+	openshiftSerializer     = openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+	kubeSerializer          = kubescheme.Codecs.LegacyCodec(corev1.SchemeGroupVersion)
 	policyV1Beta1Serializer = kubescheme.Codecs.LegacyCodec(policyv1beta1.SchemeGroupVersion)
-
+	appsV1Serializer        = kubescheme.Codecs.LegacyCodec(appsv1.SchemeGroupVersion)
 	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
 	// TODO: make this dynamic like the reporting window based on configured interval
 	maxEventTimeInterval = 1 * time.Hour
@@ -79,6 +86,8 @@ var (
 
 	// lineSep is the line separator used by the alerts metric
 	lineSep = []byte{'\n'}
+
+	defaultNamespaces = []string{"default", "kube-system", "kube-public"}
 )
 
 func init() {
@@ -90,6 +99,7 @@ func init() {
 
 // Gatherer is a driving instance invoking collection of data
 type Gatherer struct {
+	ctx            context.Context
 	client         configv1client.ConfigV1Interface
 	coreClient     corev1client.CoreV1Interface
 	networkClient  networkv1client.NetworkV1Interface
@@ -98,13 +108,14 @@ type Gatherer struct {
 	certClient     certificatesv1beta1.CertificatesV1beta1Interface
 	registryClient imageregistryv1.ImageregistryV1Interface
 	policyClient   policyclient.PolicyV1beta1Interface
+	appsClient     appsclient.AppsV1Interface
 	lock           sync.Mutex
 	lastVersion    *configv1.ClusterVersion
 }
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface, appsclient appsclient.AppsV1Interface) *Gatherer {
 	return &Gatherer{
 		client:         client,
 		coreClient:     coreClient,
@@ -114,6 +125,7 @@ func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1
 		policyClient:   policyClient,
 		networkClient:  networkClient,
 		dynamicClient:  dynamicClient,
+		appsClient:     appsclient,
 	}
 }
 
@@ -121,6 +133,7 @@ var reInvalidUIDCharacter = regexp.MustCompile(`[^a-z0-9\-]`)
 
 // Gather is hosting and calling all the recording functions
 func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
+	i.ctx = ctx
 	return record.Collect(ctx, recorder,
 		GatherPodDisruptionBudgets(i),
 		GatherMostRecentMetrics(i),
@@ -141,6 +154,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherCertificateSigningRequests(i),
 		GatherHostSubnet(i),
 		GatherMachineSet(i),
+		GatherStatefulSets(i),
 	)
 }
 
@@ -692,6 +706,47 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
+//GatherStatefulSets collects StatefulSet configs from default namespaces
+//
+// The Kubernetes API https://github.com/kubernetes/api/blob/master/apps/v1/types.go
+// Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
+//
+// Location in archive: config/statefulsets/
+func GatherStatefulSets(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		namespaces, err := getAllNamespaces(i)
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		osNamespaces := defaultNamespaces
+		for _, item := range namespaces.Items {
+			if strings.HasPrefix(item.Name, "openshift") {
+				osNamespaces = append(osNamespaces, item.Name)
+			}
+		}
+		records := []record.Record{}
+		for _, namespace := range osNamespaces {
+			sets, err := i.appsClient.StatefulSets(namespace).List(metav1.ListOptions{})
+			if err != nil {
+				klog.V(2).Infof("Unable to read StatefulSets in namespace %s error %s", namespace, err)
+				continue
+			}
+
+			for i := range sets.Items {
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/statefulsets/%s/%s", namespace, sets.Items[i].Name),
+					Item: StatefulSetAnonymizer{&sets.Items[i]},
+				})
+			}
+		}
+		return records, nil
+	}
+}
+
 func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
 	// do not accidentally collect events for non-openshift namespace
 	if !strings.HasPrefix(namespace, "openshift-") {
@@ -867,6 +922,25 @@ func (a ImageRegistryAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 func (a ImageRegistryAnonymizer) GetExtension() string {
 	return "json"
 }
+
+func getAllNamespaces(i *Gatherer) (*corev1.NamespaceList, error) {
+	ns, ok := i.ctx.Value(contextKeyAllNamespaces).(*corev1.NamespaceList)
+	if ok {
+		return ns, nil
+	}
+	ns, err := i.coreClient.Namespaces().List(metav1.ListOptions{Limit: maxNamespacesLimit})
+	if err != nil {
+		return nil, err
+	}
+
+	i.ctx = context.WithValue(i.ctx, contextKeyAllNamespaces, ns)
+
+	return ns, nil
+}
+
+type contextKey string
+
+const contextKeyAllNamespaces contextKey = "allnamespaces"
 
 // IngressAnonymizer implements serialization with marshalling
 type IngressAnonymizer struct{ *configv1.Ingress }
@@ -1065,7 +1139,6 @@ func (a PodDisruptionBudgetsAnonymizer) GetExtension() string {
 	return "json"
 }
 
-
 func isHealthyPod(pod *corev1.Pod, now time.Time) bool {
 	// pending pods may be unable to schedule or start due to failures, and the info they provide in status is important
 	// for identifying why scheduling has not happened
@@ -1233,4 +1306,17 @@ func countLines(r io.Reader) (int, error) {
 			return lineCount, err
 		}
 	}
+}
+
+// StatefulSetAnonymizer implements StatefulSet serialization without anonymization
+type StatefulSetAnonymizer struct{ *appsv1.StatefulSet }
+
+// Marshal implements StatefulSet serialization
+func (a StatefulSetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return runtime.Encode(appsV1Serializer, a.StatefulSet)
+}
+
+// GetExtension returns extension for StatefulSet object
+func (a StatefulSetAnonymizer) GetExtension() string {
+	return "json"
 }
