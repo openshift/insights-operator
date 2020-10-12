@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
@@ -137,6 +138,10 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 		return err
 	}
 
+	appsClient, err := appsclient.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
 	// ensure the insight snapshot directory exists
 	if _, err := os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err := os.MkdirAll(s.StoragePath, 0777); err != nil {
@@ -159,7 +164,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient, gatherNetworkClient, dynamicClient, gatherPolicyClient)
+	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient, gatherNetworkClient, dynamicClient, gatherPolicyClient, appsClient)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})
