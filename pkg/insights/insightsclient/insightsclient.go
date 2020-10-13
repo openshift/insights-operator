@@ -312,17 +312,6 @@ func responseBody(r *http.Response) string {
 	return string(body)
 }
 
-func responseBody(r *http.Response) string {
-	if r == nil {
-		return ""
-	}
-	body, _ := ioutil.ReadAll(r.Body)
-	if len(body) > responseBodyLogLen {
-		body = body[:responseBodyLogLen]
-	}
-	return string(body)
-}
-
 var (
 	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
 		Name: "insightsclient_request_send_total",
