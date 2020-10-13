@@ -139,6 +139,41 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 		if noproxy, ok := secret.Data["noProxy"]; ok {
 			nextConfig.HTTPConfig.NoProxy = string(noproxy)
 		}
+		if reportEndpoint, ok := secret.Data["reportEndpoint"]; ok {
+			nextConfig.ReportEndpoint = string(reportEndpoint)
+		}
+		if reportPullingDelay, ok := secret.Data["reportPullingDelay"]; ok {
+			if v, err := time.ParseDuration(string(reportPullingDelay)); err == nil {
+				nextConfig.ReportPullingDelay = v
+			} else {
+				klog.Warningf(
+					"reportPullingDelay secret contains an invalid value (%s). Using previous value",
+					reportPullingDelay,
+				)
+			}
+		} else {
+			nextConfig.ReportPullingDelay = time.Duration(-1)
+		}
+		if reportPullingTimeout, ok := secret.Data["reportPullingTimeout"]; ok {
+			if v, err := time.ParseDuration(string(reportPullingTimeout)); err == nil {
+				nextConfig.ReportPullingTimeout = v
+			} else {
+				klog.Warningf(
+					"reportPullingTimeout secret contains an invalid value (%s). Using previous value",
+					reportPullingTimeout,
+				)
+			}
+		}
+		if reportMinRetryTime, ok := secret.Data["reportMinRetryTime"]; ok {
+			if v, err := time.ParseDuration(string(reportMinRetryTime)); err == nil {
+				nextConfig.ReportMinRetryTime = v
+			} else {
+				klog.Warningf(
+					"reportMinRetryTime secret contains an invalid value (%s). Using previous value",
+					reportMinRetryTime,
+				)
+			}
+		}
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
 		if intervalString, ok := secret.Data["interval"]; ok {
@@ -216,6 +251,18 @@ func (c *Controller) mergeConfigLocked() {
 		if len(c.secretConfig.Endpoint) > 0 {
 			cfg.Endpoint = c.secretConfig.Endpoint
 		}
+		if len(c.secretConfig.ReportEndpoint) > 0 {
+			cfg.ReportEndpoint = c.secretConfig.ReportEndpoint
+		}
+		if c.secretConfig.ReportPullingDelay >= 0 {
+			cfg.ReportPullingDelay = c.secretConfig.ReportPullingDelay
+		}
+		if c.secretConfig.ReportPullingTimeout > 0 {
+			cfg.ReportPullingTimeout = c.secretConfig.ReportPullingTimeout
+		}
+		if c.secretConfig.ReportMinRetryTime > 0 {
+			cfg.ReportMinRetryTime = c.secretConfig.ReportMinRetryTime
+		}
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {
@@ -228,7 +275,10 @@ func (c *Controller) mergeConfigLocked() {
 func (c *Controller) setConfigLocked(config *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, config) {
-			klog.V(2).Infof("Configuration updated: enabled=%t endpoint=%s interval=%s username=%t token=%t", config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0)
+			klog.V(2).Infof(
+				"Configuration updated: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s minRetryTime=%s pollingTimeout=%s",
+				config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0, config.ReportEndpoint,
+				config.ReportPullingDelay, config.ReportMinRetryTime, config.ReportPullingTimeout)
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -240,7 +290,10 @@ func (c *Controller) setConfigLocked(config *config.Controller) {
 			}
 		}
 	} else {
-		klog.V(2).Infof("Configuration set: enabled=%t endpoint=%s interval=%s username=%t token=%t", config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0)
+		klog.V(2).Infof(
+			"Configuration set: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s minRetryTime=%s pollingTimeout=%s",
+			config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0, config.ReportEndpoint,
+			config.ReportPullingDelay, config.ReportMinRetryTime, config.ReportPullingTimeout)
 	}
 	c.config = config
 }

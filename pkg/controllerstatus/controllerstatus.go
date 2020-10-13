@@ -13,8 +13,13 @@ type Interface interface {
 
 type Operation string
 
-// Specific flag for summary related to uploading process.
-const Uploading Operation = "Uploading"
+
+const (
+	// DownloadingReport specific flag for Smart Proxy report downloading process.
+	DownloadingReport Operation = "DownloadingReport"
+	// Uploading specific flag for summary related to uploading process.
+	Uploading Operation = "Uploading"
+)
 
 type Summary struct {
 	Operation          Operation

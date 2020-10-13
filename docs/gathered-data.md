@@ -261,6 +261,16 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
 
+## MachineConfigPool
+
+gathers the cluster's MachineConfigPools.
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/machineconfigpools/
+See: docs/insights-archive-sample/config/machineconfigpools/
+
 
 ## ServiceAccounts
 

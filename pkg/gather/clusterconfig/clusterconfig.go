@@ -170,6 +170,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherMachineSet(i),
 		GatherInstallPlans(i),
 		GatherServiceAccounts(i),
+		GatherMachineConfigPool(i),
 	)
 }
 
@@ -188,8 +189,12 @@ func GatherPodDisruptionBudgets(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, pdb := range pdbs.Items {
+			recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
+			if pdb.GetNamespace() != "" {
+				recordName = fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName())
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/pdbs/%s", pdb.GetName()),
+				Name: recordName,
 				Item: PodDisruptionBudgetsAnonymizer{&pdb},
 			})
 		}
@@ -346,7 +351,10 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := make([]record.Record, 0, len(config.Items))
 		for index := range config.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name), Item: ClusterOperatorAnonymizer{&config.Items[index]}})
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name),
+				Item: ClusterOperatorAnonymizer{&config.Items[index]},
+			})
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
@@ -484,10 +492,16 @@ func GatherConfigMaps(i *Gatherer) func() ([]record.Record, []error) {
 		records := make([]record.Record, 0, len(cms.Items))
 		for i := range cms.Items {
 			for dk, dv := range cms.Items[i].Data {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false}})
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
+					Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false},
+				})
 			}
 			for dk, dv := range cms.Items[i].BinaryData {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk), Item: ConfigMapAnonymizer{v: dv, encodeBase64: true}})
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
+					Item: ConfigMapAnonymizer{v: dv, encodeBase64: true},
+				})
 			}
 		}
 
@@ -591,7 +605,10 @@ func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := make([]record.Record, 0, len(hostSubnetList.Items))
 		for _, h := range hostSubnetList.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/hostsubnet/%s", h.Host), Item: HostSubnetAnonymizer{&h}})
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/hostsubnet/%s", h.Host),
+				Item: HostSubnetAnonymizer{&h},
+			})
 		}
 		return records, nil
 	}
@@ -753,7 +770,10 @@ func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []er
 		}
 		records := make([]record.Record, len(csrs))
 		for i, sr := range csrs {
-			records[i] = record.Record{Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name), Item: sr}
+			records[i] = record.Record{
+				Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name),
+				Item: sr,
+			}
 		}
 		return records, nil
 	}
@@ -813,8 +833,40 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, i := range machineSets.Items {
+			recordName := fmt.Sprintf("machinesets/%s", i.GetName())
+			if i.GetNamespace() != "" {
+				recordName = fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName())
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("machinesets/%s", i.GetName()),
+				Name: recordName,
+				Item: record.JSONMarshaller{Object: i.Object},
+			})
+		}
+		return records, nil
+	}
+}
+
+
+//GatherMachineConfigPool collects MachineConfigPool information
+//
+// The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+// Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+//
+// Location in archive: config/machineconfigpools/
+func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		mcp := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigpools"}
+		machineCPs, err := i.dynamicClient.Resource(mcp).List(i.ctx, metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		records := []record.Record{}
+		for _, i := range machineCPs.Items {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/machineconfigpools/%s", i.GetName()),
 				Item: record.JSONMarshaller{Object: i.Object},
 			})
 		}
