@@ -846,7 +846,6 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
-
 //GatherMachineConfigPool collects MachineConfigPool information
 //
 // The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
@@ -1084,7 +1083,6 @@ func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 		serviceAccounts := []corev1.ServiceAccount{}
 		records := []record.Record{}
 		namespaces := defaultNamespaces
-		namespaceCollected := sets.NewString()
 		// collect from all openshift* namespaces + kubernetes defaults
 		for _, item := range config.Items {
 			if strings.HasPrefix(item.Name, "openshift") {
@@ -1093,9 +1091,6 @@ func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		for _, namespace := range namespaces {
 			// fetching service accounts from namespace
-			if namespaceCollected.Has(namespace) {
-				continue
-			}
 			svca, err := i.coreClient.ServiceAccounts(namespace).List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
 			if err != nil {
 				klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
@@ -1109,7 +1104,6 @@ func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 				}
 				serviceAccounts = append(serviceAccounts, j)
 			}
-			namespaceCollected.Insert(namespace)
 		}
 
 		records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
