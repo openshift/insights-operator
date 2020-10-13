@@ -20,14 +20,15 @@ type Serialized struct {
 	Impersonate string `json:"impersonate"`
 }
 
-func (s *Serialized) ToController() (*Controller, error) {
-	cfg := Controller{
-		Report:         s.Report,
-		StoragePath:    s.StoragePath,
-		Endpoint:       s.Endpoint,
-		ReportEndpoint: s.PullReport.Endpoint,
-		Impersonate:    s.Impersonate,
+func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
+	if cfg == nil {
+		cfg = &Controller{}
 	}
+	cfg.Report = s.Report
+	cfg.StoragePath = s.StoragePath
+	cfg.Endpoint = s.Endpoint
+	cfg.Impersonate = s.Impersonate
+
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
 		if err != nil {
@@ -38,6 +39,10 @@ func (s *Serialized) ToController() (*Controller, error) {
 
 	if cfg.Interval <= 0 {
 		return nil, fmt.Errorf("interval must be a non-negative duration")
+	}
+
+	if len(s.PullReport.Endpoint) > 0 {
+		cfg.ReportEndpoint = s.PullReport.Endpoint
 	}
 
 	if len(s.PullReport.Delay) > 0 {
@@ -79,7 +84,7 @@ func (s *Serialized) ToController() (*Controller, error) {
 	if len(cfg.StoragePath) == 0 {
 		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
 	}
-	return &cfg, nil
+	return cfg, nil
 }
 
 // Controller defines the standard config for this operator.
