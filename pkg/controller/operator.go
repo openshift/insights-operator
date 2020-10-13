@@ -48,7 +48,7 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	controller, err := cfg.ToController()
+	controller, err := cfg.ToController(&s.Controller)
 	if err != nil {
 		return err
 	}
