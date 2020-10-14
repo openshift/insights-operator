@@ -10,6 +10,10 @@ import (
 
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
+	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
+	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
@@ -23,11 +27,6 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/klog"
-
-	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
-	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
-	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 func TestConfigMapAnonymizer(t *testing.T) {
