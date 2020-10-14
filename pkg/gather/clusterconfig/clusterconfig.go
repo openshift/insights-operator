@@ -934,7 +934,7 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 			}
 		}
 
-		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{recs, total}}}, nil
+		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{v: recs, total: total}}}, nil
 	}
 }
 
@@ -1725,19 +1725,23 @@ func countLines(r io.Reader) (int, error) {
 type InstallPlanAnonymizer struct {
 	v     map[string]*collectedPlan
 	total int
+	limit int
 }
 
 // Marshal implements serialization of InstallPlan
 func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	if a.limit == 0 {
+		a.limit = InstallPlansTopX
+	}
 	cnts := []int{}
 	for _, v := range a.v {
 		cnts = append(cnts, v.Count)
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(cnts)))
 	countLimit := -1
-	if len(cnts) > InstallPlansTopX && InstallPlansTopX > 0 {
+	if len(cnts) > a.limit && a.limit > 0 {
 		// nth plan is on n-1th position
-		countLimit = cnts[InstallPlansTopX-1]
+		countLimit = cnts[a.limit-1]
 	}
 	// Creates map for marshal
 	sr := map[string]interface{}{}
@@ -1748,7 +1752,7 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	uls := 0
 	it := []interface{}{}
 	for _, v := range a.v {
-		if v.Count > countLimit {
+		if v.Count >= countLimit {
 			kvp := map[string]interface{}{}
 			kvp["ns"] = v.Namespace
 			kvp["name"] = v.Name
@@ -1757,7 +1761,7 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 			it = append(it, kvp)
 			uls++
 		}
-		if uls > InstallPlansTopX {
+		if uls >= a.limit {
 			break
 		}
 	}

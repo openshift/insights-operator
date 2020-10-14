@@ -634,6 +634,7 @@ func TestGatherInstallPlans(t *testing.T) {
 	tests := []struct {
 		name      string
 		testfiles []string
+		limit     int
 		exp       string
 	}{
 		{
@@ -647,11 +648,18 @@ func TestGatherInstallPlans(t *testing.T) {
 			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml", "testdata/installplan_openshift.yaml"},
 			exp:       `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"},{"count":1,"csv":"3scale-community-operator.v0.5.1","name":"install-","ns":"openshift"}],"stats":{"TOTAL_COUNT":3,"TOTAL_NONUNIQ_COUNT":2}}`,
 		},
+
 		{
 			name:      "two similar installplans",
 			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml"},
 			exp: `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],` +
 				`"stats":{"TOTAL_COUNT":2,"TOTAL_NONUNIQ_COUNT":1}}`,
+		},
+		{
+			name:      "test marshaller with limit to 1 item",
+			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml", "testdata/installplan_openshift.yaml"},
+			limit:     1,
+			exp:       `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],"stats":{"TOTAL_COUNT":3,"TOTAL_NONUNIQ_COUNT":2}}`,
 		},
 	}
 
@@ -707,11 +715,16 @@ func TestGatherInstallPlans(t *testing.T) {
 			if len(records) != 1 {
 				t.Fatalf("unexpected number or records %d", len(records))
 			}
-			b, _ := records[0].Item.Marshal(context.Background())
+			m, ok := records[0].Item.(InstallPlanAnonymizer)
+			if !ok {
+				t.Fatalf("returned item is not of type InstallPlanAnonymizer")
+			}
+			if test.limit != 0 {
+				// copy to new anonymizer with limited max
+				m = InstallPlanAnonymizer{limit: 1, total: m.total, v: m.v}
+			}
+			b, _ := m.Marshal(context.Background())
 			sb := string(b)
-			// var ri map[string]interface{}
-			// _ = json.Unmarshal(sb, ri)
-
 			if sb != test.exp {
 				t.Fatalf("unexpected installplan exp: %s got: %s", test.exp, sb)
 			}
