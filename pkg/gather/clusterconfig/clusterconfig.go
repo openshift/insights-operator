@@ -1765,6 +1765,9 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 			break
 		}
 	}
+	sort.SliceStable(it, func(i, j int) bool {
+		return it[i].(map[string]interface{})["count"].(int) > it[j].(map[string]interface{})["count"].(int)
+	})
 	sr["items"] = it
 	return json.Marshal(sr)
 }

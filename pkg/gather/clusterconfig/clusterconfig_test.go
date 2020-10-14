@@ -648,7 +648,6 @@ func TestGatherInstallPlans(t *testing.T) {
 			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml", "testdata/installplan_openshift.yaml"},
 			exp:       `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"},{"count":1,"csv":"3scale-community-operator.v0.5.1","name":"install-","ns":"openshift"}],"stats":{"TOTAL_COUNT":3,"TOTAL_NONUNIQ_COUNT":2}}`,
 		},
-
 		{
 			name:      "two similar installplans",
 			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml"},
