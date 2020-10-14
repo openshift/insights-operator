@@ -54,6 +54,48 @@ var (
 		Name:      "insights",
 		Help:      "Information about the cluster health status as detected by Insights tooling.",
 	}, []string{"metric"})
+	reports = []SmartProxyReport{
+		SmartProxyReport{
+			Meta: ReportResponseMeta{
+				Count: 1,
+			},
+			Data: []RuleWithContentResponse{
+				RuleWithContentResponse{
+					TotalRisk: 1,
+				},
+			},
+		},
+		SmartProxyReport{
+			Meta: ReportResponseMeta{
+				Count: 1,
+			},
+			Data: []RuleWithContentResponse{
+				RuleWithContentResponse{
+					TotalRisk: 2,
+				},
+			},
+		},
+		SmartProxyReport{
+			Meta: ReportResponseMeta{
+				Count: 1,
+			},
+			Data: []RuleWithContentResponse{
+				RuleWithContentResponse{
+					TotalRisk: 3,
+				},
+			},
+		},
+		SmartProxyReport{
+			Meta: ReportResponseMeta{
+				Count: 1,
+			},
+			Data: []RuleWithContentResponse{
+				RuleWithContentResponse{
+					TotalRisk: 4,
+				},
+			},
+		},
+	}
 )
 
 // New initializes and returns a Gatherer
@@ -200,13 +242,30 @@ func (r *Gatherer) Run(ctx context.Context) {
 	r.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
 	klog.V(2).Infof("Initial config: %v", r.configurator.Config())
+	ticker := time.NewTicker(time.Duration(2 * time.Minute))
 
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
 		case <-r.archiveUploadReporter:
 			klog.V(4).Info("Archive uploaded, starting pulling report...")
-			r.RetrieveReport()
+			klog.V(4).Info("Ignoring new report as we are faking it")
+			// r.RetrieveReport()
+
+		case <-ticker.C:
+			klog.V(4).Info("Faking results")
+			if len(reports) > 0 {
+				var report SmartProxyReport
+				report = reports[0]
+				if len(reports) == 1 {
+					reports = []SmartProxyReport{}
+				} else {
+					reports = reports[1:]
+				}
+				updateInsightsMetrics(report)
+			} else {
+				klog.V(4).Info("Not updating fake results anymore")
+			}
 
 		case <-ctx.Done():
 			return
