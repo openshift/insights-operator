@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -113,36 +114,38 @@ func init() {
 
 // Gatherer is a driving instance invoking collection of data
 type Gatherer struct {
-	ctx            context.Context
-	client         configv1client.ConfigV1Interface
-	coreClient     corev1client.CoreV1Interface
-	networkClient  networkv1client.NetworkV1Interface
-	dynamicClient  dynamic.Interface
-	metricsClient  rest.Interface
-	certClient     certificatesv1beta1.CertificatesV1beta1Interface
-	registryClient imageregistryv1.ImageregistryV1Interface
-	crdClient      apixv1beta1client.ApiextensionsV1beta1Interface
-	policyClient   policyclient.PolicyV1beta1Interface
-	appsClient     appsclient.AppsV1Interface
-	lock           sync.Mutex
-	lastVersion    *configv1.ClusterVersion
+	ctx             context.Context
+	client          configv1client.ConfigV1Interface
+	coreClient      corev1client.CoreV1Interface
+	networkClient   networkv1client.NetworkV1Interface
+	dynamicClient   dynamic.Interface
+	metricsClient   rest.Interface
+	certClient      certificatesv1beta1.CertificatesV1beta1Interface
+	registryClient  imageregistryv1.ImageregistryV1Interface
+	crdClient       apixv1beta1client.ApiextensionsV1beta1Interface
+	policyClient    policyclient.PolicyV1beta1Interface
+	appsClient      appsclient.AppsV1Interface
+	lock            sync.Mutex
+	lastVersion     *configv1.ClusterVersion
+	discoveryClient discovery.DiscoveryInterface
 }
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
 	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface,
-	dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface, appsclient appsclient.AppsV1Interface) *Gatherer {
+	dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface, appsclient appsclient.AppsV1Interface, discoveryClient *discovery.DiscoveryClient) *Gatherer {
 	return &Gatherer{
-		client:         client,
-		coreClient:     coreClient,
-		certClient:     certClient,
-		metricsClient:  metricsClient,
-		registryClient: registryClient,
-		crdClient:      crdClient,
-		networkClient:  networkClient,
-		dynamicClient:  dynamicClient,
-		policyClient:   policyClient,
-		appsClient:     appsclient,
+		client:          client,
+		coreClient:      coreClient,
+		certClient:      certClient,
+		metricsClient:   metricsClient,
+		registryClient:  registryClient,
+		crdClient:       crdClient,
+		networkClient:   networkClient,
+		dynamicClient:   dynamicClient,
+		policyClient:    policyClient,
+		appsClient:      appsclient,
+		discoveryClient: discoveryClient,
 	}
 }
 
@@ -356,12 +359,23 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 		if err != nil {
 			return nil, []error{err}
 		}
+		resVer, _ := getOperatorResourcesVersions(i)
 		records := make([]record.Record, 0, len(config.Items))
-		for index := range config.Items {
+		for _, co := range config.Items {
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name),
-				Item: ClusterOperatorAnonymizer{&config.Items[index]},
+				Name: fmt.Sprintf("config/clusteroperator/%s", co.Name),
+				Item: ClusterOperatorAnonymizer{&co},
 			})
+			if resVer == nil {
+				continue
+			}
+			relRes := collectClusterOperatorResources(i, co, resVer)
+			for _, rr := range relRes {
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/clusteroperator/%s-%s", co.Name, rr.Name),
+					Item: record.JSONMarshaller{Object: rr},
+				})
+			}
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
@@ -438,6 +452,71 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 
 		return records, nil
 	}
+}
+
+func collectClusterOperatorResources(i *Gatherer, co configv1.ClusterOperator, resVer map[string][]string) []clusterOperatorResource {
+	var relObj []configv1.ObjectReference
+	for _, ro := range co.Status.RelatedObjects {
+		if strings.Contains(ro.Group, "operator.openshift.io") {
+			relObj = append(relObj, ro)
+		}
+	}
+	if len(relObj) == 0 {
+		return nil
+	}
+	var res []clusterOperatorResource
+	for _, ro := range relObj {
+		key := fmt.Sprintf("%s-%s", ro.Group, strings.ToLower(ro.Resource))
+		versions, _ := resVer[key]
+		for _, v := range versions {
+			gvr := schema.GroupVersionResource{Group: ro.Group, Version: v, Resource: strings.ToLower(ro.Resource)}
+			clusterResource, err := i.dynamicClient.Resource(gvr).Get(i.ctx, ro.Name, metav1.GetOptions{})
+			if err != nil {
+				klog.V(2).Infof("Unable to list %s resource due to: %s", gvr, err)
+			}
+			if clusterResource == nil {
+				return nil
+			}
+			var ms, kind, name, apiVersion string
+			err = failEarly(
+				func() error { return parseJSONQuery(clusterResource.Object, "spec.managementState?", &ms) },
+				func() error { return parseJSONQuery(clusterResource.Object, "kind", &kind) },
+				func() error { return parseJSONQuery(clusterResource.Object, "apiVersion", &apiVersion) },
+				func() error { return parseJSONQuery(clusterResource.Object, "metadata.name", &name) },
+			)
+			if err != nil {
+				return nil
+			}
+			res = append(res, clusterOperatorResource{ManagementState: ms, Kind: kind, Name: name, APIVersion: apiVersion})
+		}
+	}
+	return res
+}
+
+func getOperatorResourcesVersions(i *Gatherer) (map[string][]string, error) {
+	resources, err := i.discoveryClient.ServerPreferredResources()
+	if err != nil {
+		return nil, err
+	}
+	resourceVersionMap := make(map[string][]string)
+	for _, v := range resources {
+		if strings.Contains(v.GroupVersion, "operator.openshift.io") {
+			gv, err := schema.ParseGroupVersion(v.GroupVersion)
+			if err != nil {
+				continue
+			}
+			for _, ar := range v.APIResources {
+				key := fmt.Sprintf("%s-%s", gv.Group, ar.Name)
+				r, ok := resourceVersionMap[key]
+				if !ok {
+					resourceVersionMap[key] = []string{gv.Version}
+				} else {
+					r = append(r, gv.Version)
+				}
+			}
+		}
+	}
+	return resourceVersionMap, nil
 }
 
 // collectContainerLogs fetches log lines from the pod
@@ -1896,4 +1975,11 @@ func (a StatefulSetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 // GetExtension returns extension for StatefulSet object
 func (a StatefulSetAnonymizer) GetExtension() string {
 	return "json"
+}
+
+type clusterOperatorResource struct {
+	APIVersion      string
+	Kind            string
+	Name            string
+	ManagementState string `json:"managementState,omitempty"`
 }
