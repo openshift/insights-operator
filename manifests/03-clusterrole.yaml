@@ -62,14 +62,6 @@ rules:
   - namespaces
   verbs:
   - get
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - list
-  - get
-  - watch
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -141,7 +133,15 @@ rules:
   - "machinesets"
   verbs:
   - list
-  
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - list
+  - get
+  - watch
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
