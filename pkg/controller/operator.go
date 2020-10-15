@@ -72,12 +72,6 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	if err != nil {
 		return err
 	}
-
-	policyClient, err := policyclient.NewForConfig(controller.KubeConfig)
-	if err != nil {
-		return err
-	}
-
 	// these are gathering clients
 	gatherProtoKubeConfig := rest.CopyConfig(controller.ProtoKubeConfig)
 	if len(s.Impersonate) > 0 {
@@ -122,6 +116,11 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 		return err
 	}
 
+	gatherPolicyClient, err := policyclient.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
 	registryClient, err := imageregistryv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
 		return err
@@ -154,7 +153,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), gatherNetworkClient, dynamicClient, policyClient)
+	configPeriodic := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), gatherNetworkClient, dynamicClient, gatherPolicyClient)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"config": configPeriodic,
 	})
