@@ -190,6 +190,18 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location in archive: config/hostsubnet/
 
 
+## InstallPlans
+
+collects Top x InstallPlans from all openshift namespaces.
+Because InstallPlans have unique generated names, it groups them by namespace and the "template"
+for name generation from field generateName.
+It also collects Total number of all installplans and all non-unique installplans.
+
+The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
+
+Location in archive: config/installplans/
+
+
 ## MachineSet
 
 collects MachineSet information
