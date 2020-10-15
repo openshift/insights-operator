@@ -136,6 +136,14 @@ rules:
   - list
   - get
   - watch
+- apiGroups:
+    - machine.openshift.io
+  resources:
+    - machinesets
+  verbs:
+    - get
+    - list
+    - watch
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1

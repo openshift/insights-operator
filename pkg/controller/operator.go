@@ -106,6 +106,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	if err != nil {
 		return err
 	}
+
 	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
 		return err
