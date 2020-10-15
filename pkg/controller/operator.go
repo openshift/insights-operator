@@ -19,7 +19,6 @@ import (
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
-	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
 	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
