@@ -141,6 +141,15 @@ rules:
   - list
   - get
   - watch
+- apiGroups:
+    - imageregistry.operator.openshift.io
+  resources:
+    - configs
+    - imagepruners
+  verbs:
+    - get
+    - list
+    - watch
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
