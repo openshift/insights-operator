@@ -157,8 +157,12 @@ func GatherPodDisruptionBudgets(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, pdb := range pdbs.Items {
+			recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
+			if pdb.GetNamespace() != "" {
+				recordName = fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName())
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/pdbs/%s", pdb.GetName()),
+				Name: recordName,
 				Item: PodDisruptionBudgetsAnonymizer{&pdb},
 			})
 		}
@@ -660,8 +664,12 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, i := range machineSets.Items {
+			recordName := fmt.Sprintf("machinesets/%s", i.GetName())
+			if i.GetNamespace() != "" {
+				recordName = fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName())
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("machinesets/%s", i.GetName()),
+				Name: recordName,
 				Item: record.JSONMarshaller{Object: i.Object},
 			})
 		}
