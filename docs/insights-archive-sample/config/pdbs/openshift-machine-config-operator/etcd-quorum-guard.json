@@ -1,0 +1,31 @@
+{
+  "kind": "PodDisruptionBudget",
+  "apiVersion": "policy/v1beta1",
+  "metadata": {
+    "name": "etcd-quorum-guard",
+    "namespace": "openshift-machine-config-operator",
+    "selfLink": "/apis/policy/v1beta1/namespaces/openshift-machine-config-operator/poddisruptionbudgets/etcd-quorum-guard",
+    "uid": "f7f51516-48f5-4893-867e-c786e2e95a4b",
+    "resourceVersion": "7328",
+    "generation": 1,
+    "creationTimestamp": "2020-10-14T06:53:45Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true"
+    }
+  },
+  "spec": {
+    "selector": {
+      "matchLabels": {
+        "k8s-app": "etcd-quorum-guard"
+      }
+    },
+    "maxUnavailable": 1
+  },
+  "status": {
+    "observedGeneration": 1,
+    "disruptionsAllowed": 1,
+    "currentHealthy": 3,
+    "desiredHealthy": 2,
+    "expectedPods": 3
+  }
+}

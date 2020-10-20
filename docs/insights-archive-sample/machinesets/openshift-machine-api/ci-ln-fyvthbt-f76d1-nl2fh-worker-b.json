@@ -1,0 +1,96 @@
+{
+  "apiVersion": "machine.openshift.io/v1beta1",
+  "kind": "MachineSet",
+  "metadata": {
+    "creationTimestamp": "2020-10-14T06:51:29Z",
+    "generation": 1,
+    "labels": {
+      "machine.openshift.io/cluster-api-cluster": "ci-ln-fyvthbt-f76d1-nl2fh"
+    },
+    "name": "ci-ln-fyvthbt-f76d1-nl2fh-worker-b",
+    "namespace": "openshift-machine-api",
+    "resourceVersion": "15794",
+    "selfLink": "/apis/machine.openshift.io/v1beta1/namespaces/openshift-machine-api/machinesets/ci-ln-fyvthbt-f76d1-nl2fh-worker-b",
+    "uid": "c01e9178-6a18-41e8-8eab-143d4d4b5f9d"
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "machine.openshift.io/cluster-api-cluster": "ci-ln-fyvthbt-f76d1-nl2fh",
+        "machine.openshift.io/cluster-api-machineset": "ci-ln-fyvthbt-f76d1-nl2fh-worker-b"
+      }
+    },
+    "template": {
+      "metadata": {
+        "creationTimestamp": null,
+        "labels": {
+          "machine.openshift.io/cluster-api-cluster": "ci-ln-fyvthbt-f76d1-nl2fh",
+          "machine.openshift.io/cluster-api-machine-role": "worker",
+          "machine.openshift.io/cluster-api-machine-type": "worker",
+          "machine.openshift.io/cluster-api-machineset": "ci-ln-fyvthbt-f76d1-nl2fh-worker-b"
+        }
+      },
+      "spec": {
+        "metadata": {
+          "creationTimestamp": null
+        },
+        "providerSpec": {
+          "value": {
+            "apiVersion": "gcpprovider.openshift.io/v1beta1",
+            "canIPForward": false,
+            "credentialsSecret": {
+              "name": "gcp-cloud-credentials"
+            },
+            "deletionProtection": false,
+            "disks": [
+              {
+                "autoDelete": true,
+                "boot": true,
+                "image": "ci-ln-fyvthbt-f76d1-nl2fh-rhcos-image",
+                "labels": null,
+                "sizeGb": 128,
+                "type": "pd-ssd"
+              }
+            ],
+            "kind": "GCPMachineProviderSpec",
+            "machineType": "n1-standard-4",
+            "metadata": {
+              "creationTimestamp": null
+            },
+            "networkInterfaces": [
+              {
+                "network": "ci-ln-fyvthbt-f76d1-nl2fh-network",
+                "subnetwork": "ci-ln-fyvthbt-f76d1-nl2fh-worker-subnet"
+              }
+            ],
+            "projectID": "openshift-gce-devel-ci",
+            "region": "us-east1",
+            "serviceAccounts": [
+              {
+                "email": "ci-ln-fyvthbt-f76d1-nl2fh-w@openshift-gce-devel-ci.iam.gserviceaccount.com",
+                "scopes": [
+                  "https://www.googleapis.com/auth/cloud-platform"
+                ]
+              }
+            ],
+            "tags": [
+              "ci-ln-fyvthbt-f76d1-nl2fh-worker"
+            ],
+            "userDataSecret": {
+              "name": "worker-user-data"
+            },
+            "zone": "us-east1-b"
+          }
+        }
+      }
+    }
+  },
+  "status": {
+    "availableReplicas": 1,
+    "fullyLabeledReplicas": 1,
+    "observedGeneration": 1,
+    "readyReplicas": 1,
+    "replicas": 1
+  }
+}
