@@ -13,7 +13,6 @@ type Interface interface {
 
 type Operation string
 
-
 const (
 	// DownloadingReport specific flag for Smart Proxy report downloading process.
 	DownloadingReport Operation = "DownloadingReport"
