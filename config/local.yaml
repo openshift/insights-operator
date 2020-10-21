@@ -2,7 +2,7 @@ kind: GenericOperatorConfig
 apiVersion: operator.openshift.io/v1alpha1
 leaderElection:
   disable: true
-interval: "30s"
+interval: "5m"
 storagePath: /tmp/insights-operator
-endpoint: http://localhost:8081
-#impersonate: system:serviceaccount:openshift-insights:gather
+endpoint: http://[::1]:8081
+impersonate: system:serviceaccount:openshift-insights:gather
