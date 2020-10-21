@@ -34,6 +34,9 @@ func (r memoryRecords) Less(i, j int) bool { return r[i].name < r[j].name }
 func (r memoryRecords) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 func (r memoryRecords) Len() int           { return len(r) }
 
+// MaxLogSize defines maximum allowed tarball size
+const MaxLogSize = 8 * 1024 * 1024
+
 type Recorder struct {
 	basePath  string
 	flushCh   chan struct{}
@@ -53,7 +56,7 @@ func New(basePath string, interval time.Duration) *Recorder {
 		maxAge:    interval * 6 * 24,
 		records:   make(map[string]*memoryRecord),
 		flushCh:   make(chan struct{}, 1),
-		flushSize: 8 * 1024 * 1024,
+		flushSize: MaxLogSize,
 	}
 }
 

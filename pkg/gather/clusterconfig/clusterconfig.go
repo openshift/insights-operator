@@ -42,6 +42,7 @@ import (
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
 )
 
 const (
@@ -59,6 +60,10 @@ const (
 	// Maximal total number of service accounts
 	maxServiceAccountsLimit          = 1000
 	maxServiceAccountNamespacesLimit = 1000
+	// Log compression ratio is defining a multiplier for uncompressed logs
+	// diskrecorder would refuse to write files larger than MaxLogSize, so GatherClusterOperators
+	// has to limit the expected size of the buffer for logs
+	logCompressionRatio = 2
 )
 
 var (
@@ -69,6 +74,9 @@ var (
 	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
 	// TODO: make this dynamic like the reporting window based on configured interval
 	maxEventTimeInterval = 1 * time.Hour
+
+	// logTailLines defines a number lines to keep when fetching pod logs
+	logTailLines = int64(100)
 
 	registrySerializer serializer.CodecFactory
 	networkSerializer  serializer.CodecFactory
@@ -253,6 +261,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
+		unhealthyPods := []*corev1.Pod{}
 		for _, item := range config.Items {
 			if isHealthyOperator(&item) {
 				continue
@@ -263,11 +272,13 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 					klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
 					continue
 				}
-				for i := range pods.Items {
-					if isHealthyPod(&pods.Items[i], now) {
+				for j := range pods.Items {
+					pod := &pods.Items[j]
+					if isHealthyPod(pod, now) {
 						continue
 					}
-					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name), Item: PodAnonymizer{&pods.Items[i]}})
+					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{pod}})
+					unhealthyPods = append(unhealthyPods, pod)
 				}
 				if namespaceEventsCollected.Has(namespace) {
 					continue
@@ -281,8 +292,67 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 				namespaceEventsCollected.Insert(namespace)
 			}
 		}
+
+		// Exit early if no unhealthy pods found
+		if len(unhealthyPods) == 0 {
+			return records, nil
+		}
+
+		// Fetch a list of containers in unhealthy pods and calculate a log size quota
+		// Total log size must not exceed maxLogsSize multiplied by logCompressionRatio
+		klog.V(2).Infof("Found %d unhealthy pods", len(unhealthyPods))
+		totalUnhealthyContainers := 0
+		for _, pod := range unhealthyPods {
+			totalUnhealthyContainers += len(pod.Spec.InitContainers) + len(pod.Spec.Containers)
+		}
+		bufferSize := int64(diskrecorder.MaxLogSize * logCompressionRatio / totalUnhealthyContainers / 2)
+		klog.V(2).Infof("Maximum buffer size: %v bytes", bufferSize)
+		buf := bytes.NewBuffer(make([]byte, 0, bufferSize))
+
+		// Fetch previous and current container logs
+		for _, isPrevious := range []bool{true, false} {
+			for _, pod := range unhealthyPods {
+				allContainers := pod.Spec.InitContainers
+				allContainers = append(allContainers, pod.Spec.Containers...)
+				for _, c := range allContainers {
+					logName := fmt.Sprintf("%s_current.log", c.Name)
+					if isPrevious {
+						logName = fmt.Sprintf("%s_previous.log", c.Name)
+					}
+					buf.Reset()
+					klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v): %q", c.Name, pod.Name, pod.Namespace, isPrevious, err)
+					// Collect container logs and continue on error
+					err = collectContainerLogs(i, pod, buf, c.Name, isPrevious, &bufferSize)
+					if err != nil {
+						klog.V(2).Infof("Error: %q", err)
+						continue
+					}
+					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName), Item: Raw{buf.String()}})
+				}
+			}
+		}
+
 		return records, nil
 	}
+}
+
+// collectContainerLogs fetches log lines from the pod
+func collectContainerLogs(i *Gatherer, pod *corev1.Pod, buf *bytes.Buffer, containerName string, isPrevious bool, maxBytes *int64) error {
+	req := i.coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Previous: isPrevious, Container: containerName, LimitBytes: maxBytes, TailLines: &logTailLines})
+	readCloser, err := req.Stream()
+	if err != nil {
+		klog.V(2).Infof("Failed to fetch log for %s pod in namespace %s for failing operator %s (previous: %v): %q", pod.Name, pod.Namespace, containerName, isPrevious, err)
+		return err
+	}
+
+	defer readCloser.Close()
+
+	_, err = io.Copy(buf, readCloser)
+	if err != nil && err != io.ErrShortBuffer {
+		klog.V(2).Infof("Failed to write log for %s pod in namespace %s for failing operator %s (previous: %v): %q", pod.Name, pod.Namespace, containerName, isPrevious, err)
+		return err
+	}
+	return nil
 }
 
 // GatherNodes collects all Nodes.
