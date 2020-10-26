@@ -632,6 +632,7 @@ metadata:
 	}
 }
 
+
 func TestGatherClusterOperator(t *testing.T) {
 	testOperator := &configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
@@ -649,7 +650,6 @@ func TestGatherClusterOperator(t *testing.T) {
 		t.Errorf("unexpected errors: %#v", errs)
 		return
 	}
-
 	item, _ := records[0].Item.Marshal(context.TODO())
 	var gatheredCO configv1.ClusterOperator
 	_, _, err = openshiftSerializer.Decode(item, nil, &gatheredCO)
@@ -794,6 +794,41 @@ func TestGatherInstallPlans(t *testing.T) {
 				t.Fatalf("unexpected installplan exp: %s got: %s", test.exp, sb)
 			}
 		})
+	}
+}
+func TestContainerRuntimeConfig(t *testing.T) {
+	var machineconfigpoolYAML = `
+apiVersion: machineconfiguration.openshift.io/v1
+kind: ContainerRuntimeConfig
+metadata:
+    name: test-ContainerRC
+`
+	gvr := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "containerruntimeconfigs"}
+	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+
+	testContainerRuntimeConfigs := &unstructured.Unstructured{}
+
+	_, _, err := decUnstructured.Decode([]byte(machineconfigpoolYAML), nil, testContainerRuntimeConfigs)
+	if err != nil {
+		t.Fatal("unable to decode machineconfigpool ", err)
+	}
+	_, err = client.Resource(gvr).Create(context.Background(), testContainerRuntimeConfigs, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake machineconfigpool ", err)
+	}
+
+	gatherer := &Gatherer{dynamicClient: client}
+	records, errs := GatherContainerRuntimeConfig(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != 1 {
+		t.Fatalf("unexpected number or records %d", len(records))
+	}
+	if records[0].Name != "config/containerruntimeconfigs/test-ContainerRC" {
+		t.Fatalf("unexpected containerruntimeconfig name %s", records[0].Name)
 	}
 }
 
