@@ -8,8 +8,8 @@ test-unit:
 .PHONY: test-unit
 
 test-e2e:
-	go test ./test/integration -run ^\(TestIsIOHealthy\)$$ ^\(TestPullSecretExists\)$$ -timeout 1m
-	go test ./test/integration -timeout 13m $(TEST_OPTIONS)
+	go test ./test/integration -v -run ^\(TestIsIOHealthy\)$$ ^\(TestPullSecretExists\)$$ -timeout 1m
+	go test ./test/integration -v -timeout 13m $(TEST_OPTIONS)
 .PHONY: test-e2e
 
 vet:
