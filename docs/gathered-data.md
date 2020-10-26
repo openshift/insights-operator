@@ -214,3 +214,14 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
+
+## ContainerRuntimeConfig
+
+collects ContainerRuntimeConfig information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/containerruntimeconfigs/
+See: docs/insights-archive-sample/config/containerruntimeconfigs
+
