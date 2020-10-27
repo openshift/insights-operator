@@ -198,7 +198,7 @@ func TestArchiveContains(t *testing.T) {
 	t.Run("HostsSubnet",
 		genLatestArchiveCheckPattern(
 			"hosts subnet", matchingFileExists,
-			`^config/hostsubnet/ip-.*\.json$`))
+			`^config/hostsubnet/.*\.json$`))
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1881816
 	t.Run("MachineSet",
