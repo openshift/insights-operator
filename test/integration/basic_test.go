@@ -45,6 +45,19 @@ func TestIsIOHealthy(t *testing.T) {
 	checkPodsLogs(t, `The operator is healthy`)
 }
 
+// Check if an archive is uploaded and insights results retrieved in a reasonable amount of time
+// This test can be performed on OCP 4.7 and newer
+func TestArchiveUploadedAndResultReceived(t *testing.T) {
+	time1 := logLineTime(t, `Reporting status periodically to .* every`)
+	time2 := logLineTime(t, `Successfully reported id=`)
+	uploadingTime := time2.Sub(time1)
+	t.Logf("Archive upload time is %d seconds", uploadingTime/time.Second)
+	time1 = logLineTime(t, `Successfully reported id=`)
+	time2 = logLineTime(t, `Report retrieved correctly`)
+	retrievingTime := time2.Sub(time1)
+	t.Logf("Insights results retrieving time is %d seconds", retrievingTime/time.Second)
+}
+
 // Check if opt-in/opt-out works
 func TestOptOutOptIn(t *testing.T) {
 	// initially IO should be running

@@ -186,12 +186,14 @@ func deleteAllPods(t *testing.T, namespace string) {
 
 func logLineTime(t *testing.T, pattern string) time.Time {
 	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
-	str := checkPodsLogs(t, startOfLine+pattern).Result
-	str = strings.Split(strings.Split(str, ".")[0], " ")[1]
+	lc := checkPodsLogs(t, startOfLine+pattern)
+	if lc.Err != nil {
+		t.Fatalf("Couldn't find \"%s\"", pattern)
+	}
+	str := strings.Split(strings.Split(lc.Result, ".")[0], " ")[1]
 	time1, err := time.Parse("15:04:05", str)
 	e(t, err, "time parsing fail")
 	return time1
-
 }
 
 func LogChecker(t *testing.T) *LogCheck {
