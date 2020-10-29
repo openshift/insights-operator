@@ -196,6 +196,14 @@ func logLineTime(t *testing.T, pattern string) time.Time {
 	return time1
 }
 
+func duration(t *testing.T, start time.Time, end time.Time) float64 {
+	difference := end.Sub(start).Seconds()
+	if difference < 0 {
+		difference = 24*time.Hour.Seconds() + difference
+	}
+	return difference
+}
+
 func LogChecker(t *testing.T) *LogCheck {
 	defaults := &LogCheck{
 		interval:   time.Second,
