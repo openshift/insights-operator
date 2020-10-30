@@ -3,14 +3,16 @@ package integration
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"regexp"
+	"testing"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"regexp"
-	"testing"
-	"time"
 )
 
 type (
@@ -85,13 +87,13 @@ func (lc *LogCheck) Search(s string) *LogCheck {
 	return lc.Searching(s).Execute()
 }
 
-func (lc *LogCheck) CheckPodLogs(podName string, logOptions *corev1.PodLogOptions, r *regexp.Regexp) {
+func (lc *LogCheck) CheckPodLogs(podName string, logOptions *corev1.PodLogOptions, r *regexp.Regexp) error {
 	t := lc.test
 	pod, err := lc.clientset.CoreV1().Pods(lc.namespace).Get(context.Background(), podName, metav1.GetOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
-	wait.PollImmediate(lc.interval, lc.timeout, func() (bool, error) {
+	return wait.PollImmediate(lc.interval, lc.timeout, func() (bool, error) {
 		req := lc.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOptions)
 		podLogs, err := req.Stream(context.Background())
 		if err != nil {
@@ -112,8 +114,6 @@ func (lc *LogCheck) CheckPodLogs(podName string, logOptions *corev1.PodLogOption
 
 		lc.Result = r.FindString(log) //strings.Contains(log, message)
 		if lc.Result == "" {
-			t.Logf("No %s in logs\n", lc.searching)
-			t.Logf("Logs for verification: ****\n%s", log)
 			return false, nil
 		}
 
@@ -146,15 +146,20 @@ func (lc *LogCheck) Execute() *LogCheck {
 		logOptions = &corev1.PodLogOptions{SinceTime: &since}
 	}
 	if lc.podName != ALLPODS {
-		lc.CheckPodLogs(lc.podName, logOptions, r)
+		lc.Err = lc.CheckPodLogs(lc.podName, logOptions, r)
 		return lc
 	}
 	newPods, err := kubeClient.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	resultError := fmt.Errorf("Couldn't find %s", lc.searching)
 	for _, newPod := range newPods.Items {
-		lc.CheckPodLogs(newPod.Name, logOptions, r)
+		err = lc.CheckPodLogs(newPod.Name, logOptions, r)
+		if err == nil {
+			resultError = nil
+		}
 	}
+	lc.Err = resultError
 	return lc
 }
