@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
+
+	"k8s.io/klog"
 )
 
 type Interface interface {
@@ -48,6 +52,7 @@ func (m JSONMarshaller) GetExtension() string {
 func Collect(ctx context.Context, recorder Interface, bulkFns ...func() ([]Record, []error)) error {
 	var errors []string
 	for _, bulkFn := range bulkFns {
+		klog.V(5).Infof("Gathering %s", runtime.FuncForPC(reflect.ValueOf(bulkFn).Pointer()).Name())
 		records, errs := bulkFn()
 		for _, err := range errs {
 			errors = append(errors, err.Error())
