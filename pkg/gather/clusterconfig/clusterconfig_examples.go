@@ -55,8 +55,7 @@ func ExampleClusterOperators() (string, error) {
 				}}}
 			return true, sv, nil
 		})
-
-	g := &Gatherer{client: kube.ConfigV1()}
+	g := &Gatherer{client: kube.ConfigV1(), discoveryClient: kube.Discovery()}
 	d, errs := GatherClusterOperators(g)()
 	if len(errs) > 0 {
 		return "", errs[0]
@@ -78,7 +77,6 @@ func ExampleNodes() (string, error) {
 				}}}
 			return true, sv, nil
 		})
-
 	g := &Gatherer{coreClient: kube.CoreV1()}
 	d, errs := GatherNodes(g)()
 	if len(errs) > 0 {
