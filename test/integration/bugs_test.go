@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"k8s.io/api/certificates/v1beta1"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,7 +23,7 @@ const knownFileSuffixesInsideArchiveRegex string = `(` +
 
 //https://bugzilla.redhat.com/show_bug.cgi?id=1841057
 func TestUploadNotDelayedAfterStart(t *testing.T) {
-	checkPodsLogs(t, `It is safe to use fast upload`)
+	LogChecker(t).Timeout(30 * time.Second).Search(`It is safe to use fast upload`)
 	time1 := logLineTime(t, `Reporting status periodically to .* every`)
 	time2 := logLineTime(t, `Successfully reported id=`)
 	delay := time2.Sub(time1)
@@ -184,27 +183,35 @@ func latestArchiveContainsConfigMaps(t *testing.T) {
 	}
 }
 
+func latestArchiveContainsNodes(t *testing.T) {
+	Nodes, _ := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if len(Nodes.Items) == 0 {
+		t.Fatal("Nothing to test: api doesn't return any nodes")
+	}
+	for _, node := range Nodes.Items {
+		configMapPath := fmt.Sprintf("^config/node/%s\\.json$", node.Name)
+		err := latestArchiveCheckFiles(t, "node", matchingFileExists, configMapPath)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+}
+
 func TestArchiveContains(t *testing.T) {
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1825756
 	t.Run("ConfigMaps", latestArchiveContainsConfigMaps)
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1885930
+	t.Run("ServiceAccounts",
+		genLatestArchiveCheckPattern(
+			"service accounts", matchingFileExists,
+			`^config/serviceaccounts\.json$`))
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1834677
 	t.Run("ImageRegistry",
 		genLatestArchiveCheckPattern(
 			"image registry", matchingFileExists,
 			`^config/imageregistry\.json$`))
-
-	//https://bugzilla.redhat.com/show_bug.cgi?id=1879068
-	t.Run("HostsSubnet",
-		genLatestArchiveCheckPattern(
-			"hosts subnet", matchingFileExists,
-			`^config/hostsubnet/.*\.json$`))
-
-	//https://bugzilla.redhat.com/show_bug.cgi?id=1881816
-	t.Run("MachineSet",
-		genLatestArchiveCheckPattern(
-			"machine set", matchingFileExists,
-			`^machinesets/.*\.json$`))
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1873101
 	t.Run("SnapshotsCRD",
@@ -218,6 +225,32 @@ func TestArchiveContains(t *testing.T) {
 	checker := LogChecker(t).Timeout(2 * time.Minute)
 	checker.SinceNow().Search(`Recording events/openshift-monitoring`)
 	checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1868165
+	t.Run("Nodes", latestArchiveContainsNodes)
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1881816
+	t.Run("MachineSet",
+		genLatestArchiveCheckPattern(
+			"machine set", matchingFileExists,
+			`^machinesets/.*\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1881905
+	t.Run("PodDisruptionBudgets",
+		genLatestArchiveCheckPattern(
+			"pod disruption budgets", matchingFileExists,
+			`^config/pdbs/.*\.json$`))
+
+	t.Run("csr",
+		genLatestArchiveCheckPattern(
+			"csr", matchingFileExists,
+			`^config/certificatesigningrequests/.*\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1879068
+	t.Run("HostsSubnet",
+		genLatestArchiveCheckPattern(
+			"hosts subnet", matchingFileExists,
+			`^config/hostsubnet/.*\.json$`))
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1838973
 	t.Run("Logs",
