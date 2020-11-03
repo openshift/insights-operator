@@ -145,7 +145,7 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Wait for operator to become disabled because of removed pull-secret
 	errDisabled = wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
-		insightsDisabled := isOperatorDisabled(t, clusterOperatorInsights())
+		insightsDisabled := operatorConditionCheck(t, clusterOperatorInsights(), "Disabled")
 		if insightsDisabled {
 			return true, nil
 		}

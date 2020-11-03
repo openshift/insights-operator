@@ -90,33 +90,16 @@ func clusterOperatorInsights() *configv1.ClusterOperator {
 	return clusterOperator("insights")
 }
 
-func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
+func operatorConditionCheck(t *testing.T, operator *configv1.ClusterOperator, conditionType configv1.ClusterStatusConditionType) bool {
 	statusConditions := operator.Status.Conditions
 
 	for _, condition := range statusConditions {
-		if condition.Type == "Degraded" {
-			if condition.Status == "True" {
-				t.Logf("%s Operator is degraded ", time.Now())
-				return true
-			}
+		if (conditionType == condition.Type) && (condition.Status == "True") {
+			t.Logf("%s Operator is %v", time.Now(), conditionType)
+			return true
 		}
 	}
-	t.Logf("%s Operator is not degraded", time.Now())
-	return false
-}
-
-func isOperatorDisabled(t *testing.T, operator *configv1.ClusterOperator) bool {
-	statusConditions := operator.Status.Conditions
-
-	for _, condition := range statusConditions {
-		if condition.Type == "Disabled" {
-			if condition.Status == "True" {
-				t.Log("Operator is Disabled")
-				return true
-			}
-		}
-	}
-	t.Log("Operator is not disabled")
+	t.Logf("%s Operator is not %v", time.Now(), conditionType)
 	return false
 }
 
@@ -308,7 +291,7 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 	// delete just in case it was already there, so we don't care about error
 	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
 	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
-	isOperatorDegraded(t, clusterOperator("monitoring"))
+	operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
 	_, err := clientset.CoreV1().ConfigMaps(pod.Namespace).Create(context.Background(),
 		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml": "telemeterClient: enabled: NOT_BOOELAN"}},
 		metav1.CreateOptions{},
@@ -317,12 +300,12 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 	err = clientset.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 	e(t, err, "Failed to delete Pod")
 	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-		return isOperatorDegraded(t, clusterOperator("monitoring")), nil
+		return operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded"), nil
 	})
 	return func() {
 		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
 		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
-			insightsDegraded := isOperatorDegraded(t, clusterOperator("monitoring"))
+			insightsDegraded := operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
 			return !insightsDegraded, nil
 		})
 	}
