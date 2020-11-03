@@ -42,7 +42,16 @@ func TestPullSecretExists(t *testing.T) {
 }
 
 func TestIsIOHealthy(t *testing.T) {
-	checkPodsLogs(t,  `The operator is healthy`)
+	checkPodsLogs(t, `The operator is healthy`)
+}
+
+// Check if an archive is uploaded and insights results retrieved in a reasonable amount of time
+// This test can be performed on OCP 4.7 and newer
+func TestArchiveUploadedAndResultReceived(t *testing.T) {
+	start := logLineTime(t, `Reporting status periodically to .* every`)
+	end := logLineTime(t, `Successfully reported id=`)
+	uploadingTime := duration(t, start, end)
+	t.Logf("Archive upload time is %v seconds", uploadingTime)
 }
 
 // Check if opt-in/opt-out works
@@ -132,7 +141,7 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Wait for operator to become disabled because of removed pull-secret
 	errDisabled = wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
-		insightsDisabled := isOperatorDisabled(t, clusterOperatorInsights())
+		insightsDisabled := operatorConditionCheck(t, clusterOperatorInsights(), "Disabled")
 		if insightsDisabled {
 			return true, nil
 		}
