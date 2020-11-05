@@ -90,33 +90,16 @@ func clusterOperatorInsights() *configv1.ClusterOperator {
 	return clusterOperator("insights")
 }
 
-func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
+func operatorConditionCheck(t *testing.T, operator *configv1.ClusterOperator, conditionType configv1.ClusterStatusConditionType) bool {
 	statusConditions := operator.Status.Conditions
 
 	for _, condition := range statusConditions {
-		if condition.Type == "Degraded" {
-			if condition.Status == "True" {
-				t.Logf("%s Operator is degraded ", time.Now())
-				return true
-			}
+		if (conditionType == condition.Type) && (condition.Status == "True") {
+			t.Logf("%s Operator is %v", time.Now(), conditionType)
+			return true
 		}
 	}
-	t.Logf("%s Operator is not degraded", time.Now())
-	return false
-}
-
-func isOperatorDisabled(t *testing.T, operator *configv1.ClusterOperator) bool {
-	statusConditions := operator.Status.Conditions
-
-	for _, condition := range statusConditions {
-		if condition.Type == "Disabled" {
-			if condition.Status == "True" {
-				t.Log("Operator is Disabled")
-				return true
-			}
-		}
-	}
-	t.Log("Operator is not disabled")
+	t.Logf("%s Operator is not %v", time.Now(), conditionType)
 	return false
 }
 
@@ -186,27 +169,37 @@ func deleteAllPods(t *testing.T, namespace string) {
 
 func logLineTime(t *testing.T, pattern string) time.Time {
 	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
-	str := checkPodsLogs(t, startOfLine+pattern).Result
-	str = strings.Split(strings.Split(str, ".")[0], " ")[1]
+	lc := LogChecker(t).Timeout(10).Search(startOfLine + pattern)
+	if lc.Err != nil {
+		t.Fatalf("Couldn't find \"%s\"", pattern)
+	}
+	str := strings.Split(strings.Split(lc.Result, ".")[0], " ")[1]
 	time1, err := time.Parse("15:04:05", str)
 	e(t, err, "time parsing fail")
 	return time1
+}
 
+func duration(t *testing.T, start time.Time, end time.Time) float64 {
+	difference := end.Sub(start).Seconds()
+	if difference < 0 {
+		difference = 24*time.Hour.Seconds() + difference
+	}
+	return difference
 }
 
 func LogChecker(t *testing.T) *LogCheck {
-    defaults := &LogCheck{
-        interval:   time.Second,
-        logOptions: corev1.PodLogOptions{},
-        timeout:    5*time.Minute,
-        failFast:   true,
-        test:       t,
-        clientset:  clientset,
-    }
-    return defaults
+	defaults := &LogCheck{
+		interval:   time.Second,
+		logOptions: corev1.PodLogOptions{},
+		timeout:    5 * time.Minute,
+		failFast:   true,
+		test:       t,
+		clientset:  clientset,
+	}
+	return defaults
 }
 
-func checkPodsLogs(t *testing.T, message string) *LogCheck{
+func checkPodsLogs(t *testing.T, message string) *LogCheck {
 	return LogChecker(t).Search(message)
 }
 
@@ -298,7 +291,7 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 	// delete just in case it was already there, so we don't care about error
 	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
 	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
-	isOperatorDegraded(t, clusterOperator("monitoring"))
+	operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
 	_, err := clientset.CoreV1().ConfigMaps(pod.Namespace).Create(context.Background(),
 		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml": "telemeterClient: enabled: NOT_BOOELAN"}},
 		metav1.CreateOptions{},
@@ -307,12 +300,12 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 	err = clientset.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 	e(t, err, "Failed to delete Pod")
 	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-		return isOperatorDegraded(t, clusterOperator("monitoring")), nil
+		return operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded"), nil
 	})
 	return func() {
 		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
 		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
-			insightsDegraded := isOperatorDegraded(t, clusterOperator("monitoring"))
+			insightsDegraded := operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
 			return !insightsDegraded, nil
 		})
 	}
