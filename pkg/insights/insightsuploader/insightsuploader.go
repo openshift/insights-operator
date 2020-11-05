@@ -76,7 +76,7 @@ func (c *Controller) Run(ctx context.Context) {
 	enabled := cfg.Report
 	endpoint := cfg.Endpoint
 	interval := cfg.Interval
-	initialDelay := wait.Jitter(interval/8, 2)
+	initialDelay := wait.Jitter(interval/12, 1)
 	lastReported := c.reporter.LastReportedTime()
 	if !lastReported.IsZero() {
 		next := lastReported.Add(interval)
