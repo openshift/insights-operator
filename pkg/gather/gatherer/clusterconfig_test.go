@@ -1,4 +1,4 @@
-package clusterconfig
+package gatherer
 
 import (
 	"context"
