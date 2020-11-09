@@ -20,19 +20,6 @@ const knownFileSuffixesInsideArchiveRegex string = `(` +
 	`(\/|^)(config|id|invoker|metrics|version)` +
 	`)$`
 
-//https://bugzilla.redhat.com/show_bug.cgi?id=1841057
-func TestUploadNotDelayedAfterStart(t *testing.T) {
-	LogChecker(t).Timeout(30 * time.Second).Search(`It is safe to use fast upload`)
-	time1 := logLineTime(t, `Reporting status periodically to .* every`)
-	time2 := logLineTime(t, `Successfully reported id=`)
-	delay := time2.Sub(time1)
-	allowedDelay := 3 * time.Minute
-	t.Logf("Archive upload delay was %d seconds", delay/time.Second)
-	if delay > allowedDelay && delay < time.Hour*24-allowedDelay {
-		t.Fatal("Upload after start took too much time")
-	}
-}
-
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
 // https://bugzilla.redhat.com/show_bug.cgi?id=1753755
 func TestDefaultUploadFrequency(t *testing.T) {
