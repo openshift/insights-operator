@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -98,12 +98,12 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 	)
 }
 
-func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
+func (g *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
 	// do not accidentally collect events for non-openshift namespace
 	if !strings.HasPrefix(namespace, "openshift-") {
 		return []record.Record{}, nil
 	}
-	events, err := i.coreClient.Events(namespace).List(i.ctx, metav1.ListOptions{})
+	events, err := g.coreClient.Events(namespace).List(g.ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -132,18 +132,18 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
 }
 
-func (i *Gatherer) setClusterVersion(version *configv1.ClusterVersion) {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	if i.lastVersion != nil && i.lastVersion.ResourceVersion == version.ResourceVersion {
+func (g *Gatherer) setClusterVersion(version *configv1.ClusterVersion) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+	if g.lastVersion != nil && g.lastVersion.ResourceVersion == version.ResourceVersion {
 		return
 	}
-	i.lastVersion = version.DeepCopy()
+	g.lastVersion = version.DeepCopy()
 }
 
 // ClusterVersion returns Version for this cluster, which is set by running version during Gathering
-func (i *Gatherer) ClusterVersion() *configv1.ClusterVersion {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	return i.lastVersion
+func (g *Gatherer) ClusterVersion() *configv1.ClusterVersion {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+	return g.lastVersion
 }

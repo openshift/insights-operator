@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"fmt"
@@ -18,10 +18,10 @@ import (
 // Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 //
 // Location in archive: config/machineconfigpools/
-func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
+func GatherMachineConfigPool(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		mcp := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigpools"}
-		machineCPs, err := i.dynamicClient.Resource(mcp).List(i.ctx, metav1.ListOptions{})
+		machineCPs, err := g.dynamicClient.Resource(mcp).List(g.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

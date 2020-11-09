@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -20,16 +20,16 @@ import (
 //
 // Location in archive: config/version/
 // See: docs/insights-archive-sample/config/version
-func GatherClusterVersion(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterVersion(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.ClusterVersions().Get(i.ctx, "version", metav1.GetOptions{})
+		config, err := g.client.ClusterVersions().Get(g.ctx, "version", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
 		if err != nil {
 			return nil, []error{err}
 		}
-		i.setClusterVersion(config)
+		g.setClusterVersion(config)
 		return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
 	}
 }
@@ -41,9 +41,9 @@ func GatherClusterVersion(i *Gatherer) func() ([]record.Record, []error) {
 //
 // Location in archive: config/id/
 // See: docs/insights-archive-sample/config/id
-func GatherClusterID(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterID(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		version := i.ClusterVersion()
+		version := g.ClusterVersion()
 		if version == nil {
 			return nil, nil
 		}

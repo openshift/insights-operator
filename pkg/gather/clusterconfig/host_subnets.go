@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -20,10 +20,10 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 //
 // Location in archive: config/hostsubnet/
-func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
+func GatherHostSubnet(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 
-		hostSubnetList, err := i.networkClient.HostSubnets().List(i.ctx, metav1.ListOptions{})
+		hostSubnetList, err := g.networkClient.HostSubnets().List(g.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

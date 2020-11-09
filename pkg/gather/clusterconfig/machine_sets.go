@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"fmt"
@@ -18,10 +18,10 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 //
 // Location in archive: machinesets/
-func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
+func GatherMachineSet(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
-		machineSets, err := i.dynamicClient.Resource(gvr).List(i.ctx, metav1.ListOptions{})
+		machineSets, err := g.dynamicClient.Resource(gvr).List(g.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

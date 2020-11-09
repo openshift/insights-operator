@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"bytes"
@@ -60,17 +60,17 @@ func init() {
 	registrySerializer = serializer.NewCodecFactory(registryScheme)
 }
 
-func getAllNamespaces(i *Gatherer) (*corev1.NamespaceList, error) {
-	ns, ok := i.ctx.Value(contextKeyAllNamespaces).(*corev1.NamespaceList)
+func getAllNamespaces(g *Gatherer) (*corev1.NamespaceList, error) {
+	ns, ok := g.ctx.Value(contextKeyAllNamespaces).(*corev1.NamespaceList)
 	if ok {
 		return ns, nil
 	}
-	ns, err := i.coreClient.Namespaces().List(i.ctx, metav1.ListOptions{Limit: maxNamespacesLimit})
+	ns, err := g.coreClient.Namespaces().List(g.ctx, metav1.ListOptions{Limit: maxNamespacesLimit})
 	if err != nil {
 		return nil, err
 	}
 
-	i.ctx = context.WithValue(i.ctx, contextKeyAllNamespaces, ns)
+	g.ctx = context.WithValue(g.ctx, contextKeyAllNamespaces, ns)
 
 	return ns, nil
 }
@@ -164,14 +164,6 @@ func anonymizeURL(s string) string { return reURL.ReplaceAllString(s, "x") }
 
 func anonymizeString(s string) string {
 	return strings.Repeat("x", len(s))
-}
-
-func anonymizeSliceOfStrings(slice []string) []string {
-	anonymizedSlice := make([]string, len(slice), len(slice))
-	for i, s := range slice {
-		anonymizedSlice[i] = anonymizeString(s)
-	}
-	return anonymizedSlice
 }
 
 // PodAnonymizer implements serialization with anonymization for a Pod

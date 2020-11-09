@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"bytes"
@@ -39,16 +39,16 @@ const (
 // Location of operators in archive: config/clusteroperator/
 // See: docs/insights-archive-sample/config/clusteroperator
 // Location of pods in archive: config/pod/
-func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterOperators(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.ClusterOperators().List(i.ctx, metav1.ListOptions{})
+		config, err := g.client.ClusterOperators().List(g.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
 		if err != nil {
 			return nil, []error{err}
 		}
-		resVer, _ := getOperatorResourcesVersions(i)
+		resVer, _ := getOperatorResourcesVersions(g)
 		records := make([]record.Record, 0, len(config.Items))
 		for _, co := range config.Items {
 			records = append(records, record.Record{
@@ -58,7 +58,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 			if resVer == nil {
 				continue
 			}
-			relRes := collectClusterOperatorResources(i, co, resVer)
+			relRes := collectClusterOperatorResources(g, co, resVer)
 			for _, rr := range relRes {
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/clusteroperator/%s-%s", co.Name, rr.Name),
@@ -74,7 +74,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 				continue
 			}
 			for _, namespace := range namespacesForOperator(&item) {
-				pods, err := i.coreClient.Pods(namespace).List(i.ctx, metav1.ListOptions{})
+				pods, err := g.coreClient.Pods(namespace).List(g.ctx, metav1.ListOptions{})
 				if err != nil {
 					klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
 					continue
@@ -90,7 +90,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 				if namespaceEventsCollected.Has(namespace) {
 					continue
 				}
-				namespaceRecords, errs := i.gatherNamespaceEvents(namespace)
+				namespaceRecords, errs := g.gatherNamespaceEvents(namespace)
 				if len(errs) > 0 {
 					klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, errs)
 					continue
@@ -129,7 +129,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 					buf.Reset()
 					klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v): %v", c.Name, pod.Name, pod.Namespace, isPrevious, err)
 					// Collect container logs and continue on error
-					err = collectContainerLogs(i, pod, buf, c.Name, isPrevious, &bufferSize)
+					err = collectContainerLogs(g, pod, buf, c.Name, isPrevious, &bufferSize)
 					if err != nil {
 						klog.V(2).Infof("Error: %q", err)
 						continue
@@ -143,7 +143,7 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
-func collectClusterOperatorResources(i *Gatherer, co configv1.ClusterOperator, resVer map[string][]string) []clusterOperatorResource {
+func collectClusterOperatorResources(g *Gatherer, co configv1.ClusterOperator, resVer map[string][]string) []clusterOperatorResource {
 	var relObj []configv1.ObjectReference
 	for _, ro := range co.Status.RelatedObjects {
 		if strings.Contains(ro.Group, "operator.openshift.io") {
@@ -159,7 +159,7 @@ func collectClusterOperatorResources(i *Gatherer, co configv1.ClusterOperator, r
 		versions, _ := resVer[key]
 		for _, v := range versions {
 			gvr := schema.GroupVersionResource{Group: ro.Group, Version: v, Resource: strings.ToLower(ro.Resource)}
-			clusterResource, err := i.dynamicClient.Resource(gvr).Get(i.ctx, ro.Name, metav1.GetOptions{})
+			clusterResource, err := g.dynamicClient.Resource(gvr).Get(g.ctx, ro.Name, metav1.GetOptions{})
 			if err != nil {
 				klog.V(2).Infof("Unable to list %s resource due to: %s", gvr, err)
 			}
@@ -182,8 +182,8 @@ func collectClusterOperatorResources(i *Gatherer, co configv1.ClusterOperator, r
 	return res
 }
 
-func getOperatorResourcesVersions(i *Gatherer) (map[string][]string, error) {
-	resources, err := i.discoveryClient.ServerPreferredResources()
+func getOperatorResourcesVersions(g *Gatherer) (map[string][]string, error) {
+	resources, err := g.discoveryClient.ServerPreferredResources()
 	if err != nil {
 		return nil, err
 	}
@@ -209,9 +209,9 @@ func getOperatorResourcesVersions(i *Gatherer) (map[string][]string, error) {
 }
 
 // collectContainerLogs fetches log lines from the pod
-func collectContainerLogs(i *Gatherer, pod *corev1.Pod, buf *bytes.Buffer, containerName string, isPrevious bool, maxBytes *int64) error {
-	req := i.coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Previous: isPrevious, Container: containerName, LimitBytes: maxBytes, TailLines: &logTailLines})
-	readCloser, err := req.Stream(i.ctx)
+func collectContainerLogs(g *Gatherer, pod *corev1.Pod, buf *bytes.Buffer, containerName string, isPrevious bool, maxBytes *int64) error {
+	req := g.coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Previous: isPrevious, Container: containerName, LimitBytes: maxBytes, TailLines: &logTailLines})
+	readCloser, err := req.Stream(g.ctx)
 	if err != nil {
 		klog.V(2).Infof("Failed to fetch log for %s pod in namespace %s for failing operator %s (previous: %v): %q", pod.Name, pod.Namespace, containerName, isPrevious, err)
 		return err

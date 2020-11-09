@@ -32,7 +32,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
-	"github.com/openshift/insights-operator/pkg/gather/gatherer"
+	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
@@ -172,15 +172,15 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	configPeriodic := gatherer.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient, gatherNetworkClient, dynamicClient, gatherPolicyClient, appsClient, discoveryClient)
+	clusterConfigGatherer := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient, gatherNetworkClient, dynamicClient, gatherPolicyClient, appsClient, discoveryClient)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
-		"config": configPeriodic,
+		"clusterconfig": clusterConfigGatherer,
 	})
 	statusReporter.AddSources(periodic.Sources()...)
 	go periodic.Run(4, ctx.Done())
 
 	authorizer := clusterauthorizer.New(configObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configPeriodic)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, clusterConfigGatherer)
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting

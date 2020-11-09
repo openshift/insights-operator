@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -16,9 +16,9 @@ import (
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
 // Location in archive: config/imageregistry/
-func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterImageRegistry(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.registryClient.Configs().Get(i.ctx, "cluster", metav1.GetOptions{})
+		config, err := g.registryClient.Configs().Get(g.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

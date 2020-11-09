@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -27,9 +27,9 @@ const maxServiceAccountsLimit = 1000
 //
 // Location of serviceaccounts in archive: config/serviceaccounts
 // See: docs/insights-archive-sample/config/serviceaccounts
-func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
+func GatherServiceAccounts(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := getAllNamespaces(i)
+		config, err := getAllNamespaces(g)
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -48,7 +48,7 @@ func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		for _, namespace := range namespaces {
 			// fetching service accounts from namespace
-			svca, err := i.coreClient.ServiceAccounts(namespace).List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
+			svca, err := g.coreClient.ServiceAccounts(namespace).List(g.ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
 			if err != nil {
 				klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
 				continue

@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 //
 // Location in archive: config/featuregate/
 // See: docs/insights-archive-sample/config/featuregate
-func GatherClusterFeatureGates(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterFeatureGates(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.FeatureGates().Get(i.ctx, "cluster", metav1.GetOptions{})
+		config, err := g.client.FeatureGates().Get(g.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

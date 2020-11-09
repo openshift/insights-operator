@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 // The CRD sizes above are in the raw (uncompressed) state.
 //
 // Location in archive: config/crd/
-func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
+func GatherCRD(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		toBeCollected := []string{
 			"volumesnapshots.snapshot.storage.k8s.io",
@@ -29,7 +29,7 @@ func GatherCRD(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, crdName := range toBeCollected {
-			crd, err := i.crdClient.CustomResourceDefinitions().Get(i.ctx, crdName, metav1.GetOptions{})
+			crd, err := g.crdClient.CustomResourceDefinitions().Get(g.ctx, crdName, metav1.GetOptions{})
 			// Log missing CRDs, but do not return the error.
 			if errors.IsNotFound(err) {
 				klog.V(2).Infof("Cannot find CRD: %q", crdName)

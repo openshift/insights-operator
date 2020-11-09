@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"fmt"
@@ -18,10 +18,10 @@ import (
 // Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 //
 // Location in archive: config/containerruntimeconfigs/
-func GatherContainerRuntimeConfig(i *Gatherer) func() ([]record.Record, []error) {
+func GatherContainerRuntimeConfig(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		crc := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "containerruntimeconfigs"}
-		containerRCs, err := i.dynamicClient.Resource(crc).List(i.ctx, metav1.ListOptions{})
+		containerRCs, err := g.dynamicClient.Resource(crc).List(g.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

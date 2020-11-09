@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -16,9 +16,9 @@ import (
 // GatherClusterImagePruner fetches the image pruner configuration
 //
 // Location in archive: config/imagepruner/
-func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterImagePruner(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		pruner, err := i.registryClient.ImagePruners().Get(i.ctx, "cluster", metav1.GetOptions{})
+		pruner, err := g.registryClient.ImagePruners().Get(g.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

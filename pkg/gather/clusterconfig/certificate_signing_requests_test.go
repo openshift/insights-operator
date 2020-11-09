@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"encoding/json"

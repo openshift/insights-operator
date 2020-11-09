@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -32,9 +32,9 @@ const csrGatherLimit = 5000
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
 // Location in archive: config/certificatesigningrequests/
-func GatherCertificateSigningRequests(i *Gatherer) func() ([]record.Record, []error) {
+func GatherCertificateSigningRequests(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		requests, err := i.certClient.CertificateSigningRequests().List(i.ctx, metav1.ListOptions{
+		requests, err := g.certClient.CertificateSigningRequests().List(g.ctx, metav1.ListOptions{
 			Limit: csrGatherLimit,
 		})
 		if errors.IsNotFound(err) {

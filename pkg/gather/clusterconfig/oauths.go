@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,9 +16,9 @@ import (
 //
 // Location in archive: config/oauth/
 // See: docs/insights-archive-sample/config/oauth
-func GatherClusterOAuth(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterOAuth(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.OAuths().Get(i.ctx, "cluster", metav1.GetOptions{})
+		config, err := g.client.OAuths().Get(g.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

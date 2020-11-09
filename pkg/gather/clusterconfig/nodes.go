@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 //
 // Location in archive: config/node/
-func GatherNodes(i *Gatherer) func() ([]record.Record, []error) {
+func GatherNodes(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		nodes, err := i.coreClient.Nodes().List(i.ctx, metav1.ListOptions{})
+		nodes, err := g.coreClient.Nodes().List(g.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, []error{err}
 		}

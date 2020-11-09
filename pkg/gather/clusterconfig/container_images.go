@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ const (
 // Specifically, the age of pods, the set of running images and the container names are collected.
 //
 // Location in archive: config/running_containers.json
-func GatherContainerImages(i *Gatherer) func() ([]record.Record, []error) {
+func GatherContainerImages(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		records := []record.Record{}
 
@@ -38,7 +38,7 @@ func GatherContainerImages(i *Gatherer) func() ([]record.Record, []error) {
 		// Use the Limit and Continue fields to request the pod information in chunks.
 		continueValue := ""
 		for {
-			pods, err := i.coreClient.Pods("").List(i.ctx, metav1.ListOptions{
+			pods, err := g.coreClient.Pods("").List(g.ctx, metav1.ListOptions{
 				Limit:    imageGatherPodLimit,
 				Continue: continueValue,
 				// FieldSelector: "status.phase=Running",

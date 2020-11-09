@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,9 +16,9 @@ import (
 //
 // Location in archive: config/network/
 // See: docs/insights-archive-sample/config/network
-func GatherClusterNetwork(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterNetwork(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Networks().Get(i.ctx, "cluster", metav1.GetOptions{})
+		config, err := g.client.Networks().Get(g.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

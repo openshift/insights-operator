@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -29,9 +29,9 @@ var (
 //
 // Location in archive: config/pdbs/
 // See: docs/insights-archive-sample/config/pdbs
-func GatherPodDisruptionBudgets(i *Gatherer) func() ([]record.Record, []error) {
+func GatherPodDisruptionBudgets(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		pdbs, err := i.policyClient.PodDisruptionBudgets("").List(i.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
+		pdbs, err := g.policyClient.PodDisruptionBudgets("").List(g.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
 		if err != nil {
 			return nil, []error{err}
 		}

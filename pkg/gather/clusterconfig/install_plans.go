@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -28,14 +28,14 @@ const InstallPlansTopX = 100
 // The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 //
 // Location in archive: config/installplans/
-func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
+func GatherInstallPlans(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		var plansBatchLimit int64 = 500
 		cont := ""
 		recs := map[string]*collectedPlan{}
 		total := 0
 		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
-		config, err := getAllNamespaces(i)
+		config, err := getAllNamespaces(g)
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -47,9 +47,9 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 			if !strings.HasPrefix(ns.Name, "openshift") {
 				continue
 			}
-			resInterface := i.dynamicClient.Resource(opResource).Namespace(ns.Name)
+			resInterface := g.dynamicClient.Resource(opResource).Namespace(ns.Name)
 			for {
-				u, err := resInterface.List(i.ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
+				u, err := resInterface.List(g.ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
 				if errors.IsNotFound(err) {
 					return nil, nil
 				}

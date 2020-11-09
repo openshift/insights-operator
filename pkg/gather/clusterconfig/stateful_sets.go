@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -22,9 +22,9 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
 //
 // Location in archive: config/statefulsets/
-func GatherStatefulSets(i *Gatherer) func() ([]record.Record, []error) {
+func GatherStatefulSets(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		namespaces, err := getAllNamespaces(i)
+		namespaces, err := getAllNamespaces(g)
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -40,7 +40,7 @@ func GatherStatefulSets(i *Gatherer) func() ([]record.Record, []error) {
 		}
 		records := []record.Record{}
 		for _, namespace := range osNamespaces {
-			sets, err := i.appsClient.StatefulSets(namespace).List(i.ctx, metav1.ListOptions{})
+			sets, err := g.appsClient.StatefulSets(namespace).List(g.ctx, metav1.ListOptions{})
 			if err != nil {
 				klog.V(2).Infof("Unable to read StatefulSets in namespace %s error %s", namespace, err)
 				continue

@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -25,9 +25,9 @@ import (
 //
 // Location in archive: config/configmaps/
 // See: docs/insights-archive-sample/config/configmaps
-func GatherConfigMaps(i *Gatherer) func() ([]record.Record, []error) {
+func GatherConfigMaps(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		cms, err := i.coreClient.ConfigMaps("openshift-config").List(i.ctx, metav1.ListOptions{})
+		cms, err := g.coreClient.ConfigMaps("openshift-config").List(g.ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, []error{err}
 		}

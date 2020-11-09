@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 //
 // Location in archive: config/ingress/
 // See: docs/insights-archive-sample/config/ingress
-func GatherClusterIngress(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterIngress(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Ingresses().Get(i.ctx, "cluster", metav1.GetOptions{})
+		config, err := g.client.Ingresses().Get(g.ctx, "cluster", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

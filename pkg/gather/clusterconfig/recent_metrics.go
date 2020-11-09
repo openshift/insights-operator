@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"fmt"
@@ -29,26 +29,26 @@ const (
 //
 // Location in archive: config/metrics/
 // See: docs/insights-archive-sample/config/metrics
-func GatherMostRecentMetrics(i *Gatherer) func() ([]record.Record, []error) {
+func GatherMostRecentMetrics(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		if i.metricsClient == nil {
+		if g.metricsClient == nil {
 			return nil, nil
 		}
-		data, err := i.metricsClient.Get().AbsPath("federate").
+		data, err := g.metricsClient.Get().AbsPath("federate").
 			Param("match[]", "etcd_object_counts").
 			Param("match[]", "cluster_installer").
 			Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
 			Param("match[]", "namespace:container_memory_usage_bytes:sum").
-			DoRaw(i.ctx)
+			DoRaw(g.ctx)
 		if err != nil {
 			// write metrics errors to the file format as a comment
 			klog.Errorf("Unable to retrieve most recent metrics: %v", err)
 			return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
 		}
 
-		rsp, err := i.metricsClient.Get().AbsPath("federate").
+		rsp, err := g.metricsClient.Get().AbsPath("federate").
 			Param("match[]", "ALERTS").
-			Stream(i.ctx)
+			Stream(g.ctx)
 		if err != nil {
 			// write metrics errors to the file format as a comment
 			klog.Errorf("Unable to retrieve most recent alerts from metrics: %v", err)

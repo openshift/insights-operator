@@ -1,4 +1,4 @@
-package gatherer
+package clusterconfig
 
 import (
 	"context"
@@ -815,30 +815,30 @@ func TestGatherServiceAccounts(t *testing.T) {
 	}{
 		{
 			name: "one account",
-			data: []*corev1.ServiceAccount{&corev1.ServiceAccount{
+			data: []*corev1.ServiceAccount{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "local-storage-operator",
 					Namespace: "default",
 				},
-				Secrets: []corev1.ObjectReference{corev1.ObjectReference{}},
+				Secrets: []corev1.ObjectReference{{}},
 			}},
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":1,"namespaces":{"default":{"name":"local-storage-operator","secrets":1}}}}`,
 		},
 		{
 			name: "multiple accounts",
-			data: []*corev1.ServiceAccount{&corev1.ServiceAccount{
+			data: []*corev1.ServiceAccount{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "deployer",
 					Namespace: "openshift",
 				},
-				Secrets: []corev1.ObjectReference{corev1.ObjectReference{}},
+				Secrets: []corev1.ObjectReference{{}},
 			},
-				&corev1.ServiceAccount{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "openshift-apiserver-sa",
 						Namespace: "openshift-apiserver",
 					},
-					Secrets: []corev1.ObjectReference{corev1.ObjectReference{}},
+					Secrets: []corev1.ObjectReference{{}},
 				}},
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":2,"namespaces":{"openshift":{"name":"deployer","secrets":1},"openshift-apiserver":{"name":"openshift-apiserver-sa","secrets":1}}}}`,
 		},
@@ -901,7 +901,7 @@ func TestGatherStatefulSet(t *testing.T) {
 		return
 	}
 
-	item, err := records[0].Item.Marshal(context.TODO())
+	item, _ := records[0].Item.Marshal(context.TODO())
 	var gatheredStatefulSet appsv1.StatefulSet
 	_, _, err = appsV1Serializer.Decode(item, nil, &gatheredStatefulSet)
 	if err != nil {
@@ -931,7 +931,7 @@ func TestGatherClusterOperator(t *testing.T) {
 		return
 	}
 
-	item, err := records[0].Item.Marshal(context.TODO())
+	item, _ := records[0].Item.Marshal(context.TODO())
 	var gatheredCO configv1.ClusterOperator
 	_, _, err = openshiftSerializer.Decode(item, nil, &gatheredCO)
 	if err != nil {
