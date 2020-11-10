@@ -1,11 +1,13 @@
 package clusterconfig
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
@@ -20,25 +22,34 @@ import (
 // Location in archive: machinesets/
 func GatherMachineSet(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
-		machineSets, err := g.dynamicClient.Resource(gvr).List(g.ctx, metav1.ListOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		records := []record.Record{}
-		for _, i := range machineSets.Items {
-			recordName := fmt.Sprintf("machinesets/%s", i.GetName())
-			if i.GetNamespace() != "" {
-				recordName = fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName())
-			}
-			records = append(records, record.Record{
-				Name: recordName,
-				Item: record.JSONMarshaller{Object: i.Object},
-			})
-		}
-		return records, nil
+		return gatherMachineSet(g.ctx, dynamicClient)
 	}
+}
+
+func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
+	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
+	machineSets, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	records := []record.Record{}
+	for _, i := range machineSets.Items {
+		recordName := fmt.Sprintf("machinesets/%s", i.GetName())
+		if i.GetNamespace() != "" {
+			recordName = fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName())
+		}
+		records = append(records, record.Record{
+			Name: recordName,
+			Item: record.JSONMarshaller{Object: i.Object},
+		})
+	}
+	return records, nil
+
 }

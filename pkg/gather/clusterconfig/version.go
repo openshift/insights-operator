@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -22,7 +23,11 @@ import (
 // See: docs/insights-archive-sample/config/version
 func GatherClusterVersion(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := g.client.ClusterVersions().Get(g.ctx, "version", metav1.GetOptions{})
+		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+		if err != nil {
+			return nil, []error{err}
+		}
+		config, err := gatherConfigClient.ClusterVersions().Get(g.ctx, "version", metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}

@@ -9,6 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 
+	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
+
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -31,23 +33,31 @@ var (
 // See: docs/insights-archive-sample/config/pdbs
 func GatherPodDisruptionBudgets(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		pdbs, err := g.policyClient.PodDisruptionBudgets("").List(g.ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
+		gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		records := []record.Record{}
-		for _, pdb := range pdbs.Items {
-			recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
-			if pdb.GetNamespace() != "" {
-				recordName = fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName())
-			}
-			records = append(records, record.Record{
-				Name: recordName,
-				Item: PodDisruptionBudgetsAnonymizer{&pdb},
-			})
-		}
-		return records, nil
+		return gatherPodDisruptionBudgets(g.ctx, gatherPolicyClient)
 	}
+}
+
+func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1beta1Interface) ([]record.Record, []error) {
+	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
+	if err != nil {
+		return nil, []error{err}
+	}
+	records := []record.Record{}
+	for _, pdb := range pdbs.Items {
+		recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
+		if pdb.GetNamespace() != "" {
+			recordName = fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName())
+		}
+		records = append(records, record.Record{
+			Name: recordName,
+			Item: PodDisruptionBudgetsAnonymizer{&pdb},
+		})
+	}
+	return records, nil
 }
 
 type PodDisruptionBudgetsAnonymizer struct {

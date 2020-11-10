@@ -93,9 +93,8 @@ func TestGatherContainerImages(t *testing.T) {
 		expectedRecords[i] = fmt.Sprintf("config/pod/%s/%s", fakeOpenshiftNamespace, podName)
 	}
 
-	gatherer := &Gatherer{coreClient: coreClient.CoreV1()}
-
-	records, errs := GatherContainerImages(gatherer)()
+	ctx := context.Background()
+	records, errs := gatherContainerImages(coreClient.CoreV1(), ctx)
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return

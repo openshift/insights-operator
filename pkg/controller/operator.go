@@ -8,23 +8,16 @@ import (
 
 	"k8s.io/klog"
 
-	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
-	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 
-	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
 
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
@@ -99,54 +92,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// If we fail, it's likely due to the service CA not existing yet. Warn and continue,
 	// and when the service-ca is loaded we will be restarted.
-	var metricsClient rest.Interface
-	metricsRESTClient, err := rest.RESTClientFor(metricsGatherKubeConfig)
-	if err != nil {
-		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
-	} else {
-		metricsClient = metricsRESTClient
-	}
-
 	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
-	if err != nil {
-		return err
-	}
-	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-
-	gatherNetworkClient, err := networkv1client.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-
-	gatherPolicyClient, err := policyclient.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-
-	registryClient, err := imageregistryv1client.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-
-	crdClient, err := apixv1beta1client.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-
-	appsClient, err := appsclient.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(gatherKubeConfig)
 	if err != nil {
 		return err
 	}
@@ -172,7 +118,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	clusterConfigGatherer := clusterconfig.New(gatherConfigClient, gatherKubeClient.CoreV1(), gatherKubeClient.CertificatesV1beta1(), metricsClient, registryClient.ImageregistryV1(), crdClient, gatherNetworkClient, dynamicClient, gatherPolicyClient, appsClient, discoveryClient)
+	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"clusterconfig": clusterConfigGatherer,
 	})

@@ -34,8 +34,8 @@ metadata:
 		t.Fatal("unable to create fake machineconfigpool ", err)
 	}
 
-	gatherer := &Gatherer{dynamicClient: client}
-	records, errs := GatherContainerRuntimeConfig(gatherer)()
+	ctx := context.Background()
+	records, errs := gatherContainerRuntimeConfig(ctx, client)
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return

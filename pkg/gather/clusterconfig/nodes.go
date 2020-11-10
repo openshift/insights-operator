@@ -10,6 +10,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -22,16 +24,24 @@ import (
 // Location in archive: config/node/
 func GatherNodes(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		nodes, err := g.coreClient.Nodes().List(g.ctx, metav1.ListOptions{})
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		records := make([]record.Record, 0, len(nodes.Items))
-		for i, node := range nodes.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", node.Name), Item: NodeAnonymizer{&nodes.Items[i]}})
-		}
-		return records, nil
+		return gatherNodes(g.ctx, gatherKubeClient.CoreV1())
 	}
+}
+
+func gatherNodes(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	nodes, err := coreClient.Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []error{err}
+	}
+	records := make([]record.Record, 0, len(nodes.Items))
+	for i, node := range nodes.Items {
+		records = append(records, record.Record{Name: fmt.Sprintf("config/node/%s", node.Name), Item: NodeAnonymizer{&nodes.Items[i]}})
+	}
+	return records, nil
 }
 
 // NodeAnonymizer implements serialization of Node with anonymization

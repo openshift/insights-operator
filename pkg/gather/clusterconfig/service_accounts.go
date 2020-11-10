@@ -9,6 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
@@ -29,43 +31,51 @@ const maxServiceAccountsLimit = 1000
 // See: docs/insights-archive-sample/config/serviceaccounts
 func GatherServiceAccounts(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := getAllNamespaces(g)
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		totalServiceAccounts := 0
-		serviceAccounts := []corev1.ServiceAccount{}
-		records := []record.Record{}
-		namespaces := defaultNamespaces
-		// collect from all openshift* namespaces + kubernetes defaults
-		for _, item := range config.Items {
-			if strings.HasPrefix(item.Name, "openshift") {
-				namespaces = append(namespaces, item.Name)
-			}
-		}
-		for _, namespace := range namespaces {
-			// fetching service accounts from namespace
-			svca, err := g.coreClient.ServiceAccounts(namespace).List(g.ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
-			if err != nil {
-				klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
-				continue
-			}
-
-			totalServiceAccounts += len(svca.Items)
-			for _, j := range svca.Items {
-				if len(serviceAccounts) > maxServiceAccountsLimit {
-					break
-				}
-				serviceAccounts = append(serviceAccounts, j)
-			}
-		}
-
-		records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
-		return records, nil
+		return gatherServiceAccounts(g.ctx, gatherKubeClient.CoreV1())
 	}
+}
+
+func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	config, ctx, err := getAllNamespaces(ctx, coreClient)
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	totalServiceAccounts := 0
+	serviceAccounts := []corev1.ServiceAccount{}
+	records := []record.Record{}
+	namespaces := defaultNamespaces
+	// collect from all openshift* namespaces + kubernetes defaults
+	for _, item := range config.Items {
+		if strings.HasPrefix(item.Name, "openshift") {
+			namespaces = append(namespaces, item.Name)
+		}
+	}
+	for _, namespace := range namespaces {
+		// fetching service accounts from namespace
+		svca, err := coreClient.ServiceAccounts(namespace).List(ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
+		if err != nil {
+			klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
+			continue
+		}
+
+		totalServiceAccounts += len(svca.Items)
+		for _, j := range svca.Items {
+			if len(serviceAccounts) > maxServiceAccountsLimit {
+				break
+			}
+			serviceAccounts = append(serviceAccounts, j)
+		}
+	}
+
+	records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
+	return records, nil
 }
 
 // ServiceAccountsMarshaller implements serialization of Service Accounts

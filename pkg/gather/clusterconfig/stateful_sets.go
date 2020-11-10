@@ -8,6 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,37 +27,49 @@ import (
 // Location in archive: config/statefulsets/
 func GatherStatefulSets(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		namespaces, err := getAllNamespaces(g)
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-
-		osNamespaces := defaultNamespaces
-		for _, item := range namespaces.Items {
-			if strings.HasPrefix(item.Name, "openshift") {
-				osNamespaces = append(osNamespaces, item.Name)
-			}
+		appsClient, err := appsclient.NewForConfig(g.gatherKubeConfig)
+		if err != nil {
+			return nil, []error{err}
 		}
-		records := []record.Record{}
-		for _, namespace := range osNamespaces {
-			sets, err := g.appsClient.StatefulSets(namespace).List(g.ctx, metav1.ListOptions{})
-			if err != nil {
-				klog.V(2).Infof("Unable to read StatefulSets in namespace %s error %s", namespace, err)
-				continue
-			}
-
-			for _, i := range sets.Items {
-				records = append(records, record.Record{
-					Name: fmt.Sprintf("config/statefulsets/%s/%s", namespace, i.GetName()),
-					Item: StatefulSetAnonymizer{&i},
-				})
-			}
-		}
-		return records, nil
+		return gatherStatefulSets(g.ctx, gatherKubeClient.CoreV1(), appsClient)
 	}
+}
+
+func gatherStatefulSets(ctx context.Context, coreClient corev1client.CoreV1Interface, appsClient appsclient.AppsV1Interface) ([]record.Record, []error) {
+	namespaces, ctx, err := getAllNamespaces(ctx, coreClient)
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	osNamespaces := defaultNamespaces
+	for _, item := range namespaces.Items {
+		if strings.HasPrefix(item.Name, "openshift") {
+			osNamespaces = append(osNamespaces, item.Name)
+		}
+	}
+	records := []record.Record{}
+	for _, namespace := range osNamespaces {
+		sets, err := appsClient.StatefulSets(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			klog.V(2).Infof("Unable to read StatefulSets in namespace %s error %s", namespace, err)
+			continue
+		}
+
+		for _, i := range sets.Items {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/statefulsets/%s/%s", namespace, i.GetName()),
+				Item: StatefulSetAnonymizer{&i},
+			})
+		}
+	}
+	return records, nil
 }
 
 // StatefulSetAnonymizer implements StatefulSet serialization without anonymization

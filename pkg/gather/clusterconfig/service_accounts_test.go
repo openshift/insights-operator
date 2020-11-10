@@ -60,8 +60,7 @@ func TestGatherServiceAccounts(t *testing.T) {
 					t.Fatalf("unable to create fake service account %s", err)
 				}
 			}
-			gatherer := &Gatherer{ctx: context.Background(), coreClient: coreClient.CoreV1()}
-			sa, errs := GatherServiceAccounts(gatherer)()
+			sa, errs := gatherServiceAccounts(context.Background(), coreClient.CoreV1())
 			if len(errs) > 0 {
 				t.Fatalf("unexpected errors: %#v", errs)
 				return

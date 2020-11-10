@@ -11,6 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
@@ -30,56 +33,69 @@ const InstallPlansTopX = 100
 // Location in archive: config/installplans/
 func GatherInstallPlans(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		var plansBatchLimit int64 = 500
-		cont := ""
-		recs := map[string]*collectedPlan{}
-		total := 0
-		opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
-		config, err := getAllNamespaces(g)
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		// collect from all openshift* namespaces
-		for _, ns := range config.Items {
-			if !strings.HasPrefix(ns.Name, "openshift") {
-				continue
-			}
-			resInterface := g.dynamicClient.Resource(opResource).Namespace(ns.Name)
-			for {
-				u, err := resInterface.List(g.ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
-				if errors.IsNotFound(err) {
-					return nil, nil
-				}
-				if err != nil {
-					return nil, []error{err}
-				}
-				jsonMap := u.UnstructuredContent()
-				var items []interface{}
-				err = failEarly(
-					func() error { return parseJSONQuery(jsonMap, "metadata.continue?", &cont) },
-					func() error { return parseJSONQuery(jsonMap, "items", &items) },
-				)
-				if err != nil {
-					return nil, []error{err}
-				}
-				total += len(items)
-				for _, item := range items {
-					if errs := collectInstallPlan(recs, item); errs != nil {
-						return nil, errs
-					}
-				}
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+		if err != nil {
+			return nil, []error{err}
+		}
+		return gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
+	}
+}
 
-				if cont == "" {
-					break
+func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	var plansBatchLimit int64 = 500
+	cont := ""
+	recs := map[string]*collectedPlan{}
+	total := 0
+	opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
+	config, ctx, err := getAllNamespaces(ctx, coreClient)
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	// collect from all openshift* namespaces
+	for _, ns := range config.Items {
+		if !strings.HasPrefix(ns.Name, "openshift") {
+			continue
+		}
+		resInterface := dynamicClient.Resource(opResource).Namespace(ns.Name)
+		for {
+			u, err := resInterface.List(ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
+			if errors.IsNotFound(err) {
+				return nil, nil
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			jsonMap := u.UnstructuredContent()
+			var items []interface{}
+			err = failEarly(
+				func() error { return parseJSONQuery(jsonMap, "metadata.continue?", &cont) },
+				func() error { return parseJSONQuery(jsonMap, "items", &items) },
+			)
+			if err != nil {
+				return nil, []error{err}
+			}
+			total += len(items)
+			for _, item := range items {
+				if errs := collectInstallPlan(recs, item); errs != nil {
+					return nil, errs
 				}
+			}
+
+			if cont == "" {
+				break
 			}
 		}
-
-		return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{v: recs, total: total}}}, nil
 	}
+
+	return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{v: recs, total: total}}}, nil
+
 }
 
 func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []error {

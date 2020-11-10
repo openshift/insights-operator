@@ -23,6 +23,7 @@ import (
 	openshiftscheme "github.com/openshift/client-go/config/clientset/versioned/scheme"
 	appsv1 "k8s.io/api/apps/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 const (
@@ -60,19 +61,19 @@ func init() {
 	registrySerializer = serializer.NewCodecFactory(registryScheme)
 }
 
-func getAllNamespaces(g *Gatherer) (*corev1.NamespaceList, error) {
-	ns, ok := g.ctx.Value(contextKeyAllNamespaces).(*corev1.NamespaceList)
+func getAllNamespaces(ctx context.Context, coreClient corev1client.CoreV1Interface) (*corev1.NamespaceList, context.Context, error) {
+	ns, ok := ctx.Value(contextKeyAllNamespaces).(*corev1.NamespaceList)
 	if ok {
-		return ns, nil
+		return ns, ctx, nil
 	}
-	ns, err := g.coreClient.Namespaces().List(g.ctx, metav1.ListOptions{Limit: maxNamespacesLimit})
+	ns, err := coreClient.Namespaces().List(ctx, metav1.ListOptions{Limit: maxNamespacesLimit})
 	if err != nil {
-		return nil, err
+		return nil, ctx, err
 	}
 
-	g.ctx = context.WithValue(g.ctx, contextKeyAllNamespaces, ns)
+	ctx = context.WithValue(ctx, contextKeyAllNamespaces, ns)
 
-	return ns, nil
+	return ns, ctx, nil
 }
 
 type contextKey string

@@ -26,10 +26,7 @@ func TestGatherStatefulSet(t *testing.T) {
 	if err != nil {
 		t.Fatal("unable to create fake statefulset", err)
 	}
-
-	gatherer := &Gatherer{ctx: context.Background(), coreClient: client.CoreV1(), appsClient: client.AppsV1()}
-
-	records, errs := GatherStatefulSets(gatherer)()
+	records, errs := gatherStatefulSets(context.Background(), client.CoreV1(), client.AppsV1())
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return

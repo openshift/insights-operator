@@ -8,6 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	registryv1 "github.com/openshift/api/imageregistry/v1"
+	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
+	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -18,15 +20,23 @@ import (
 // Location in archive: config/imageregistry/
 func GatherClusterImageRegistry(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := g.registryClient.Configs().Get(g.ctx, "cluster", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		return []record.Record{{Name: "config/imageregistry", Item: ImageRegistryAnonymizer{config}}}, nil
+		return gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1())
 	}
+}
+
+func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface) ([]record.Record, []error) {
+	config, err := registryClient.Configs().Get(ctx, "cluster", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	return []record.Record{{Name: "config/imageregistry", Item: ImageRegistryAnonymizer{config}}}, nil
 }
 
 // ImageRegistryAnonymizer implements serialization with marshalling

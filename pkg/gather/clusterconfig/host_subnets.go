@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	networkv1 "github.com/openshift/api/network/v1"
+	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -22,23 +23,29 @@ import (
 // Location in archive: config/hostsubnet/
 func GatherHostSubnet(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-
-		hostSubnetList, err := g.networkClient.HostSubnets().List(g.ctx, metav1.ListOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		records := make([]record.Record, 0, len(hostSubnetList.Items))
-		for _, h := range hostSubnetList.Items {
-			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/hostsubnet/%s", h.Host),
-				Item: HostSubnetAnonymizer{&h},
-			})
-		}
-		return records, nil
+		return gatherHostSubnet(g.ctx, gatherNetworkClient)
 	}
+}
+func gatherHostSubnet(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {
+	hostSubnetList, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	records := make([]record.Record, 0, len(hostSubnetList.Items))
+	for _, h := range hostSubnetList.Items {
+		records = append(records, record.Record{
+			Name: fmt.Sprintf("config/hostsubnet/%s", h.Host),
+			Item: HostSubnetAnonymizer{&h},
+		})
+	}
+	return records, nil
 }
 
 // HostSubnetAnonymizer implements HostSubnet serialization wiht anonymization

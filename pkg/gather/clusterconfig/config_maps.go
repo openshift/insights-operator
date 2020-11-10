@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
@@ -27,28 +29,36 @@ import (
 // See: docs/insights-archive-sample/config/configmaps
 func GatherConfigMaps(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		cms, err := g.coreClient.ConfigMaps("openshift-config").List(g.ctx, metav1.ListOptions{})
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		records := make([]record.Record, 0, len(cms.Items))
-		for i := range cms.Items {
-			for dk, dv := range cms.Items[i].Data {
-				records = append(records, record.Record{
-					Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
-					Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false},
-				})
-			}
-			for dk, dv := range cms.Items[i].BinaryData {
-				records = append(records, record.Record{
-					Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
-					Item: ConfigMapAnonymizer{v: dv, encodeBase64: true},
-				})
-			}
-		}
-
-		return records, nil
+		return gatherConfigMaps(g.ctx, gatherKubeClient.CoreV1())
 	}
+}
+
+func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	cms, err := coreClient.ConfigMaps("openshift-config").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []error{err}
+	}
+	records := make([]record.Record, 0, len(cms.Items))
+	for i := range cms.Items {
+		for dk, dv := range cms.Items[i].Data {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
+				Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false},
+			})
+		}
+		for dk, dv := range cms.Items[i].BinaryData {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
+				Item: ConfigMapAnonymizer{v: dv, encodeBase64: true},
+			})
+		}
+	}
+
+	return records, nil
 }
 
 // ConfigMapAnonymizer implements serialization of configmap

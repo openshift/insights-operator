@@ -12,11 +12,13 @@ import (
 	certificatesv1b1api "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -34,28 +36,36 @@ const csrGatherLimit = 5000
 // Location in archive: config/certificatesigningrequests/
 func GatherCertificateSigningRequests(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		requests, err := g.certClient.CertificateSigningRequests().List(g.ctx, metav1.ListOptions{
-			Limit: csrGatherLimit,
-		})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
-		if err != nil {
-			return nil, []error{err}
-		}
-		records := make([]record.Record, len(csrs))
-		for i, sr := range csrs {
-			records[i] = record.Record{
-				Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name),
-				Item: sr,
-			}
-		}
-		return records, nil
+		return gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1beta1())
 	}
+}
+
+func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1beta1.CertificatesV1beta1Interface) ([]record.Record, []error) {
+	requests, err := certClient.CertificateSigningRequests().List(ctx, metav1.ListOptions{
+		Limit: csrGatherLimit,
+	})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
+	if err != nil {
+		return nil, []error{err}
+	}
+	records := make([]record.Record, len(csrs))
+	for i, sr := range csrs {
+		records[i] = record.Record{
+			Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name),
+			Item: sr,
+		}
+	}
+	return records, nil
 }
 
 type CSRAnonymizer struct {
