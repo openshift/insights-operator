@@ -4,6 +4,7 @@ metadata:
   name: insights-operator-auth
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 roleRef:
   kind: ClusterRole
   name: system:auth-delegator
@@ -19,6 +20,7 @@ metadata:
   namespace: kube-system
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 roleRef:
   kind: Role
   name: extension-apiserver-authentication-reader
@@ -34,6 +36,7 @@ metadata:
   name: insights-operator
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 rules:
 # allow the operator to update cluster operator status
 - apiGroups:
@@ -76,6 +79,7 @@ metadata:
   name: insights-operator
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 roleRef:
   kind: ClusterRole
   name: insights-operator
@@ -91,6 +95,7 @@ metadata:
   name: insights-operator-gather
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 rules:
 - apiGroups:
   - ""
@@ -170,6 +175,7 @@ metadata:
   name: insights-operator-gather
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 roleRef:
   kind: ClusterRole
   name: insights-operator-gather
@@ -185,6 +191,7 @@ metadata:
   name: insights-operator-gather-reader
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 roleRef:
   kind: ClusterRole
   name: cluster-reader
@@ -201,6 +208,7 @@ metadata:
   namespace: openshift-config
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 rules:
 - apiGroups:
   - ""
@@ -219,6 +227,7 @@ metadata:
   namespace: openshift-config
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 roleRef:
   kind: Role
   name: insights-operator
@@ -235,6 +244,7 @@ metadata:
   namespace: openshift-insights
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 rules:
 - apiGroups:
   - ""
@@ -258,6 +268,7 @@ metadata:
   namespace: openshift-insights
   annotations:
     include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
 roleRef:
   kind: Role
   name: insights-operator
