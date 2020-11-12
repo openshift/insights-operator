@@ -1,0 +1,35 @@
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: v1
+data:
+  endpoint: aHR0cHM6Ly9jbG91ZC5yZWRoYXQuY29tL2FwaS9pbmdyZXNzL3YxL3VwbG9hZA==
+  interval: MTBt
+kind: Secret
+metadata:
+  creationTimestamp: "2020-11-12T10:28:43Z"
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data: {}
+      f:type: {}
+    manager: kubectl-create
+    operation: Update
+    time: "2020-11-12T09:59:15Z"
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data:
+        f:endpoint: {}
+        f:interval: {}
+    manager: ___TestDefaultUploadFrequency_in_github_com_openshift_insights_operator_test_integration
+    operation: Update
+    time: "2020-11-12T10:28:49Z"
+  name: support
+  namespace: openshift-config
+  resourceVersion: "36440"
+  selfLink: /api/v1/namespaces/openshift-config/secrets/support
+  uid: 6333a125-43ed-4b38-ac87-dcc58f15553c
+type: Opaque
