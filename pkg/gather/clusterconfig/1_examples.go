@@ -15,8 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	clsetfake "k8s.io/client-go/kubernetes/fake"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/testing"
 	"k8s.io/client-go/util/flowcontrol"
@@ -33,8 +35,7 @@ func ExampleMostRecentMetrics() (string, error) {
 	re := rest.NewRequestWithClient(u, "", rest.ClientContentConfig{}, c).Verb("get")
 
 	r := mockRest{GetMock: re}
-	g := &Gatherer{ctx: context.Background(), metricsClient: r}
-	d, errs := GatherMostRecentMetrics(g)()
+	d, errs := gatherMostRecentMetrics(context.Background(), r)
 	if len(errs) > 0 {
 		return "", errs[0]
 	}
@@ -48,15 +49,14 @@ func ExampleClusterOperators() (string, error) {
 	kube.Fake.AddReactor("list", "clusteroperators",
 		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 			sv := &configv1.ClusterOperatorList{Items: []configv1.ClusterOperator{
-				configv1.ClusterOperator{Status: configv1.ClusterOperatorStatus{
+				{Status: configv1.ClusterOperatorStatus{
 					Conditions: []configv1.ClusterOperatorStatusCondition{
-						configv1.ClusterOperatorStatusCondition{Type: configv1.OperatorDegraded},
+						{Type: configv1.OperatorDegraded},
 					}},
 				}}}
 			return true, sv, nil
 		})
-	g := &Gatherer{client: kube.ConfigV1(), discoveryClient: kube.Discovery()}
-	d, errs := GatherClusterOperators(g)()
+	d, errs := gatherClusterOperators(context.Background(), kube.ConfigV1(), kubefake.NewSimpleClientset().CoreV1(), kube.Discovery(), dynamicfake.NewSimpleDynamicClient(runtime.NewScheme()))
 	if len(errs) > 0 {
 		return "", errs[0]
 	}
@@ -70,15 +70,14 @@ func ExampleNodes() (string, error) {
 	kube.Fake.AddReactor("list", "nodes",
 		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 			sv := &corev1.NodeList{Items: []corev1.Node{
-				corev1.Node{Status: corev1.NodeStatus{
+				{Status: corev1.NodeStatus{
 					Conditions: []corev1.NodeCondition{
-						corev1.NodeCondition{Type: corev1.NodeReady, Status: corev1.ConditionFalse},
+						{Type: corev1.NodeReady, Status: corev1.ConditionFalse},
 					}},
 				}}}
 			return true, sv, nil
 		})
-	g := &Gatherer{coreClient: kube.CoreV1()}
-	d, errs := GatherNodes(g)()
+	d, errs := gatherNodes(context.Background(), kube.CoreV1())
 	if len(errs) > 0 {
 		return "", errs[0]
 	}
