@@ -83,6 +83,15 @@ It is possible to read Prometheus metrics provided by Insights Operator. For exa
 curl --cert k8s.crt --key k8s.key -k https://localhost:8443/metrics
 ``
 
+## Accessing prometheus metrics with K8s Token
+```
+# Get token
+oc whoami -t
+# Read metrics from Pod
+oc exec -it deployment/insights-operator -n openshift-insights -- curl -k -H "Authorization: Bearer 8NCUZTV3mvigpHxhdIKer6AyBLce14uehzg9b2R4dPY" 'https://localhost:8443/metrics'
+```
+Example of metrics exposed by Insights Operator can be found at [metrics.txt](docs/metrics.txt)
+
 ### Certificate and key needed to access Prometheus metrics
 
 Certificate and key are required to access Prometheus metrics (instead 404 Forbidden is returned). It is possible to generate these two files from Kubernetes config file. Certificate is stored in `users/admin/client-cerfificate-data` and key in `users/admin/client-key-data`. Please note that these values are encoded by using Base64 encoding, so it is needed to decode them, for example by `base64 -d`.
