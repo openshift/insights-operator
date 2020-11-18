@@ -36,7 +36,14 @@ const (
 	logCompressionRatio = 2
 )
 
-// GatherClusterOperators collects all ClusterOperators.
+type clusterOperatorResource struct {
+	APIVersion string
+	Kind       string
+	Name       string
+	Spec       interface{}
+}
+
+// GatherClusterOperators collects all ClusterOperators and their resources.
 // It finds unhealthy Pods for unhealthy operators
 //
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -87,8 +94,16 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 		}
 		relRes := collectClusterOperatorResources(ctx, dynamicClient, co, resVer)
 		for _, rr := range relRes {
+			// imageregistry resources (config, pruner) are gathered in image_registries.go, image_pruners.go
+			if strings.Contains(rr.APIVersion, "imageregistry") {
+				continue
+			}
+			gv, err := schema.ParseGroupVersion(rr.APIVersion)
+			if err != nil {
+				klog.Warningf("Unable to parse group version %s: %s", rr.APIVersion, err)
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/clusteroperator/%s-%s", co.Name, rr.Name),
+				Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name),
 				Item: record.JSONMarshaller{Object: rr},
 			})
 		}
@@ -224,19 +239,23 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 				klog.V(2).Infof("Unable to list %s resource due to: %s", gvr, err)
 			}
 			if clusterResource == nil {
-				return nil
+				continue
 			}
-			var ms, kind, name, apiVersion string
+			var kind, name, apiVersion string
 			err = failEarly(
-				func() error { return parseJSONQuery(clusterResource.Object, "spec.managementState?", &ms) },
 				func() error { return parseJSONQuery(clusterResource.Object, "kind", &kind) },
 				func() error { return parseJSONQuery(clusterResource.Object, "apiVersion", &apiVersion) },
 				func() error { return parseJSONQuery(clusterResource.Object, "metadata.name", &name) },
 			)
 			if err != nil {
-				return nil
+				continue
 			}
-			res = append(res, clusterOperatorResource{ManagementState: ms, Kind: kind, Name: name, APIVersion: apiVersion})
+			spec, ok := clusterResource.Object["spec"]
+			if !ok {
+				klog.Warningf("Can't find spec for cluster operator resource %s", name)
+			}
+
+			res = append(res, clusterOperatorResource{Spec: spec, Kind: kind, Name: name, APIVersion: apiVersion})
 		}
 	}
 	return res

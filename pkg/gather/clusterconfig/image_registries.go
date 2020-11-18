@@ -2,10 +2,13 @@ package clusterconfig
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 
 	registryv1 "github.com/openshift/api/imageregistry/v1"
 	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
@@ -36,7 +39,19 @@ func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistr
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/imageregistry", Item: ImageRegistryAnonymizer{config}}}, nil
+	// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
+	kinds, _, err := registryScheme.ObjectKinds(config)
+	if err != nil {
+		return nil, []error{err}
+	}
+	if len(kinds) > 1 {
+		klog.Warningf("More kinds for image registry config operator resource %s", kinds)
+	}
+	objKind := kinds[0]
+	return []record.Record{{
+		Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), config.Name),
+		Item: ImageRegistryAnonymizer{config},
+	}}, nil
 }
 
 // ImageRegistryAnonymizer implements serialization with marshalling
