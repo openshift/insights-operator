@@ -162,13 +162,13 @@ func TestUnreachableHost(t *testing.T) {
 	t.Log(errDegraded)
 }
 
-func genLatestArchiveCheckPattern(prettyName string, approach archiveCheckApproach, archive []string, patterns ...string) test {
+func genLatestArchiveCheckPattern(prettyName string, check archiveCheck, archive []string, patterns ...string) test {
 	return func(t *testing.T) {
 		if len(patterns) == 0 {
 			t.Fatal(prettyName, ": No patterns to check")
 		}
 		for _, pattern := range patterns {
-			err := checkArchiveFiles(t, prettyName, approach, pattern, archive)
+			err := checkArchiveFiles(t, prettyName, check, pattern, archive)
 			if err != nil {
 				t.Error(err)
 			}

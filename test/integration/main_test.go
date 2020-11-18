@@ -44,7 +44,7 @@ var clientset = kubeClient()
 var configClient = configV1Client()
 
 type test = func(t *testing.T)
-type archiveCheckApproach = func(*testing.T, string, []string, *regexp.Regexp) error
+type archiveCheck = func(*testing.T, string, []string, *regexp.Regexp) error
 
 func kubeconfig() (config *restclient.Config) {
 	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
@@ -343,7 +343,7 @@ func latestArchiveFiles(t *testing.T) []string {
 }
 
 var (
-	allFilesMatch archiveCheckApproach = func(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+	allFilesMatch archiveCheck = func(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
 		for _, file := range files {
 			if !regex.MatchString(file) {
 				t.Errorf(`%s file "%s" does not match pattern "%s"`, prettyName, file, regex.String())
@@ -352,7 +352,7 @@ var (
 		return nil
 	}
 
-	matchingFileExists archiveCheckApproach = func(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+	matchingFileExists archiveCheck = func(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
 		count := 0
 		for _, file := range files {
 			if regex.MatchString(file) {
@@ -375,7 +375,7 @@ var (
 	}
 )
 
-func checkArchiveFiles(t *testing.T, prettyName string, approach archiveCheckApproach, pattern string, archiveFiles []string) error {
+func checkArchiveFiles(t *testing.T, prettyName string, check archiveCheck, pattern string, archiveFiles []string) error {
 	if archiveFiles == nil {
 		archiveFiles = latestArchiveFiles(t)
 	}
@@ -385,7 +385,7 @@ func checkArchiveFiles(t *testing.T, prettyName string, approach archiveCheckApp
 	}
 	regex, err := regexp.Compile(pattern)
 	e(t, err, "failed to compile pattern")
-	return approach(t, prettyName, archiveFiles, regex)
+	return check(t, prettyName, archiveFiles, regex)
 }
 
 func TestMain(m *testing.M) {
