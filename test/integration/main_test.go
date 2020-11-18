@@ -315,13 +315,14 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 }
 
 func changeReportTimeInterval(t *testing.T, newInterval []byte) []byte {
-	supportSecret, _ := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
+	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
+	e(t, err, "could not get support secret")
 	previousInterval := supportSecret.Data["interval"]
 	if previousInterval == nil {
 		t.Fatal("missing secret with name", Support)
 	}
 	supportSecret.Data["interval"] = newInterval
-	err := forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+	err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
 	e(t, err, "changing report time interval failed")
 	restartInsightsOperator(t)
 	t.Log("forcing update secret")
