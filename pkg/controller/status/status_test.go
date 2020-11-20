@@ -78,12 +78,8 @@ func TestSaveInitialStart(t *testing.T) {
 			ctrl := &Controller{name: "insights", client: client.ConfigV1(), configurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient)}
 
 			err := ctrl.updateStatus(context.Background(), tt.initialRun)
-			isSafe := ctrl.SafeInitialStart()
 			if err != tt.expErr {
 				t.Fatalf("updateStatus returned unexpected error: %s Expected %s", err, tt.expErr)
-			}
-			if isSafe != tt.expectedSafeInitialStart {
-				t.Fatalf("unexpected SafeInitialStart was: %t Expected %t", isSafe, tt.expectedSafeInitialStart)
 			}
 		})
 	}
