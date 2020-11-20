@@ -3,8 +3,8 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,12 +15,20 @@ import (
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/library-go/pkg/image/reference"
 )
 
 const (
 	// imageGatherPodLimit is the maximum number of pods that
 	// will be listed in a single request to reduce memory usage.
 	imageGatherPodLimit = 200
+
+	// containerImageLimit is the maximum number of container images to collect.
+	// On average, information about one image takes up roughly 100 raw bytes.
+	containerImageLimit = 1000
+
+	// yyyyMmDateFormat is the date format used to get a YYYY-MM string.
+	yyyyMmDateFormat = "2006-01"
 )
 
 // GatherContainerImages collects essential information about running containers.
@@ -40,12 +48,8 @@ func GatherContainerImages(g *Gatherer) func() ([]record.Record, []error) {
 func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.Context) ([]record.Record, []error) {
 	records := []record.Record{}
 
-	contInfo := ContainerInfo{
-		Images:     ContainerImageSet{},
-		Containers: PodsWithAge{},
-	}
-	// Cache for image indices in the collected set of container image.
-	image2idx := map[string]int{}
+	// Cache for the temporary image count list.
+	img2month2count := img2Month2CountMap{}
 
 	// Use the Limit and Continue fields to request the pod information in chunks.
 	continueValue := ""
@@ -64,22 +68,11 @@ func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.
 			if strings.HasPrefix(pod.Namespace, "openshift") && hasContainerInCrashloop(podPtr) {
 				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{podPtr}})
 			} else if pod.Status.Phase == corev1.PodRunning {
-				for _, container := range pod.Spec.Containers {
-					imageURL := container.Image
-					urlHost, err := forceParseURLHost(imageURL)
-					if err != nil {
-						klog.Errorf("unable to parse container image URL: %v", err)
-						continue
-					}
-					if imageHostRegex.MatchString(urlHost) {
-						imgIndex, ok := image2idx[imageURL]
-						if !ok {
-							imgIndex = contInfo.Images.Add(imageURL)
-							image2idx[imageURL] = imgIndex
-						}
-						contInfo.Containers.Add(pod.CreationTimestamp.Time, imgIndex)
-					}
-				}
+				startMonth := pod.CreationTimestamp.Time.UTC().Format(yyyyMmDateFormat)
+
+				gatherImages(startMonth, img2month2count, pod.Status.ContainerStatuses)
+				gatherImages(startMonth, img2month2count, pod.Status.InitContainerStatuses)
+				gatherImages(startMonth, img2month2count, pod.Status.EphemeralContainerStatuses)
 			}
 		}
 
@@ -89,6 +82,43 @@ func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.
 			break
 		}
 		continueValue = pods.Continue
+	}
+
+	// Transform map into a list for sorting.
+	imageCounts := []tmpImageCountEntry{}
+	for img, countMap := range img2month2count {
+		totalCount := 0
+		for _, count := range countMap {
+			totalCount += count
+		}
+		imageCounts = append(imageCounts, tmpImageCountEntry{
+			Image:         img,
+			TotalCount:    totalCount,
+			CountPerMonth: countMap,
+		})
+	}
+
+	// Sort images from most common to least common.
+	sort.Slice(imageCounts, func(i, j int) bool {
+		return imageCounts[i].TotalCount > imageCounts[j].TotalCount
+	})
+
+	// Reconstruct the image information into the reported data structure.
+	contInfo := ContainerInfo{
+		Images:     ContainerImageSet{},
+		Containers: PodsWithAge{},
+	}
+	totalEntries := 0
+	for _, img := range imageCounts {
+		if totalEntries >= containerImageLimit {
+			break
+		}
+
+		imgIndex := contInfo.Images.Add(img.Image)
+		for month, count := range img.CountPerMonth {
+			contInfo.Containers.Add(month, imgIndex, count)
+			totalEntries++
+		}
 	}
 
 	return append(records, record.Record{
@@ -105,17 +135,15 @@ type RunningImages map[int]int
 type PodsWithAge map[string]RunningImages
 
 // Add inserts the specified container information into the data structure.
-func (p PodsWithAge) Add(startTime time.Time, image int) {
-	const YyyyMmFormat = "2006-01"
-	month := startTime.UTC().Format(YyyyMmFormat)
-	if imageMap, exists := p[month]; exists {
+func (p PodsWithAge) Add(startMonth string, image int, count int) {
+	if imageMap, exists := p[startMonth]; exists {
 		if _, exists := imageMap[image]; exists {
-			imageMap[image]++
+			imageMap[image] += count
 		} else {
-			imageMap[image] = 1
+			imageMap[image] = count
 		}
 	} else {
-		p[month] = RunningImages{image: 1}
+		p[startMonth] = RunningImages{image: count}
 	}
 }
 
@@ -136,4 +164,40 @@ func (is ContainerImageSet) Add(image string) int {
 type ContainerInfo struct {
 	Images     ContainerImageSet `json:"images"`
 	Containers PodsWithAge       `json:"containers"`
+}
+
+type img2Month2CountMap map[string]map[string]int
+
+type tmpImageCountEntry struct {
+	Image         string
+	CountPerMonth map[string]int
+	TotalCount    int
+}
+
+func gatherImages(startMonth string, img2month2count img2Month2CountMap, containers []corev1.ContainerStatus) {
+	for _, container := range containers {
+		dockerRef, err := reference.Parse(container.Image)
+		if err != nil {
+			klog.Warningf("Unable to parse container image specification: %v", err)
+			continue
+		}
+
+		// Use the sha256 hash ID if available, otherwise use the full image spec.
+		imgMinimal := dockerRef.ID
+		if imgMinimal == "" {
+			imgMinimal = container.Image
+		}
+
+		if countMap, ok := img2month2count[imgMinimal]; ok {
+			var count int
+			if count, ok = countMap[startMonth]; !ok {
+				count = 0
+			}
+			countMap[startMonth] = count + 1
+		} else {
+			img2month2count[imgMinimal] = map[string]int{
+				startMonth: 1,
+			}
+		}
+	}
 }
