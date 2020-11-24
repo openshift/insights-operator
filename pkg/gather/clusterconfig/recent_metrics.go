@@ -27,6 +27,14 @@ const (
 //   etcd_object_counts
 //   cluster_installer
 //   namespace CPU and memory usage
+//   filesystem related metrics:
+//     filesystem size in bytes
+//     filesystem space available to non-root users in bytes
+//     filesystem free space in bytes
+//     filesystem read-only status
+//     whether an error occurred while getting statistics for the given device
+//     filesystem total file nodes
+//     filesystem total free file nodes
 //   followed by at most 1000 lines of ALERTS metric
 //
 // Location in archive: config/metrics/
@@ -53,6 +61,13 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "cluster_installer").
 		Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
 		Param("match[]", "namespace:container_memory_usage_bytes:sum").
+		Param("match[]", "node_filesystem_size_bytes"). // filesystem size in bytes
+		Param("match[]", "node_filesystem_avail_bytes"). // filesystem space available to non-root users in bytes
+		Param("match[]", "node_filesystem_free_bytes"). // filesystem free space in bytes
+		Param("match[]", "node_filesystem_readonly"). // filesystem read-only status
+		Param("match[]", "node_filesystem_device_error"). // whether an error occurred while getting statistics for the given device
+		Param("match[]", "node_filesystem_files"). // filesystem total file nodes
+		Param("match[]", "node_filesystem_files_free"). // filesystem total free file nodes
 		DoRaw(ctx)
 	if err != nil {
 		// write metrics errors to the file format as a comment
