@@ -6,8 +6,6 @@ import (
 )
 
 func Test_uniqueStrings(t *testing.T) {
-	type args struct {
-	}
 	tests := []struct {
 		name string
 		arr  []string
