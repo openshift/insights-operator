@@ -1,0 +1,11 @@
+{
+    "APIVersion": "samples.operator.openshift.io/v1",
+    "Kind": "Config",
+    "Name": "cluster",
+    "Spec": {
+        "architectures": [
+            "x86_64"
+        ],
+        "managementState": "Managed"
+    }
+}

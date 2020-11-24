@@ -3,8 +3,10 @@ package clusterconfig
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -104,7 +106,7 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 			}
 			records = append(records, record.Record{
 				Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name),
-				Item: record.JSONMarshaller{Object: rr},
+				Item: ClusterOperatorResourceAnonymizer{rr},
 			})
 		}
 	}
@@ -254,7 +256,6 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 			if !ok {
 				klog.Warningf("Can't find spec for cluster operator resource %s", name)
 			}
-
 			res = append(res, clusterOperatorResource{Spec: spec, Kind: kind, Name: name, APIVersion: apiVersion})
 		}
 	}
@@ -316,6 +317,37 @@ func (a ClusterOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized cluster operator objects
 func (a ClusterOperatorAnonymizer) GetExtension() string {
+	return "json"
+}
+
+// ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
+type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
+
+// Marshal serializes clusterOperatorResource with IP address anonymization
+func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	bytes, err := json.Marshal(a.resource)
+	if err != nil {
+		return nil, err
+	}
+	resStr := string(bytes)
+	//anonymize URLs
+	re := regexp.MustCompile(`"(https|http)://(.*?)"`)
+	urlMatches := re.FindAllString(resStr, -1)
+	for _, m := range urlMatches {
+		m = strings.ReplaceAll(m, "\"", "")
+		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+	}
+	// anonymize IP addresses
+	re = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}`)
+	ipMatches := re.FindAllString(resStr, -1)
+	for _, m := range ipMatches {
+		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+	}
+	return []byte(resStr), nil
+}
+
+// GetExtension returns extension for anonymized cluster operator objects
+func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
 	return "json"
 }
 

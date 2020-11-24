@@ -1,0 +1,32 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "OpenShiftControllerManager",
+    "Name": "cluster",
+    "Spec": {
+        "logLevel": "Normal",
+        "managementState": "Managed",
+        "observedConfig": {
+            "build": {
+                "buildDefaults": {
+                    "resources": {}
+                },
+                "imageTemplateFormat": {
+                    "format": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2986a09ed686a571312bcb20d648baac46b422efa072f8b68eb41c7996e94610"
+                }
+            },
+            "deployer": {
+                "imageTemplateFormat": {
+                    "format": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:f42509c18cf5e41201d64cf3a9c1994ffa5318f8d7cee5de45fa2da914e68bbc"
+                }
+            },
+            "dockerPullSecret": {
+                "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
+            },
+            "ingress": {
+                "ingressIPNetworkCIDR": ""
+            }
+        },
+        "operatorLogLevel": "Normal",
+        "unsupportedConfigOverrides": null
+    }
+}
