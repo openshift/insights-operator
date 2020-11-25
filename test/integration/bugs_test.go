@@ -216,7 +216,7 @@ func TestArchiveContains(t *testing.T) {
 	t.Run("ImageRegistry",
 		genLatestArchiveCheckPattern(
 			"image registry", matchingFileExists, archive,
-			`^config/imageregistry\.json$`))
+			`^config/clusteroperator/imageregistry.operator.openshift.io/config/cluster\.json$`))
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1873101
 	t.Run("SnapshotsCRD",

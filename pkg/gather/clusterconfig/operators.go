@@ -39,9 +39,9 @@ const (
 )
 
 type clusterOperatorResource struct {
-	APIVersion string
-	Kind       string
-	Name       string
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
 	Spec       interface{}
 }
 
