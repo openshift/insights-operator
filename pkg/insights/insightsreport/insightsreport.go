@@ -245,4 +245,10 @@ func init() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	insightsStatus.WithLabelValues("low").Set(float64(-1))
+	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
+	insightsStatus.WithLabelValues("important").Set(float64(-1))
+	insightsStatus.WithLabelValues("critical").Set(float64(-1))
+	insightsStatus.WithLabelValues("total").Set(float64(-1))
 }
