@@ -43,6 +43,9 @@ const (
 var clientset = kubeClient()
 var configClient = configV1Client()
 
+type test = func(t *testing.T)
+type archiveCheck = func(*testing.T, string, []string, *regexp.Regexp) error
+
 func kubeconfig() (config *restclient.Config) {
 	kubeconfig, ok := os.LookupEnv("KUBECONFIG") // variable is a path to the local kubeconfig
 	if !ok {
@@ -312,10 +315,14 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 }
 
 func changeReportTimeInterval(t *testing.T, newInterval []byte) []byte {
-	supportSecret, _ := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
+	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
+	e(t, err, "could not get support secret")
 	previousInterval := supportSecret.Data["interval"]
+	if previousInterval == nil {
+		t.Fatal("missing secret with name", Support)
+	}
 	supportSecret.Data["interval"] = newInterval
-	err := forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+	err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
 	e(t, err, "changing report time interval failed")
 	restartInsightsOperator(t)
 	t.Log("forcing update secret")
@@ -335,45 +342,50 @@ func latestArchiveFiles(t *testing.T) []string {
 	return strings.Split(stdout, "\n")
 }
 
-func allFilesMatch(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
-	for _, file := range files {
-		if !regex.MatchString(file) {
-			t.Errorf(`%s file "%s" does not match pattern "%s"`, prettyName, file, regex.String())
+var (
+	allFilesMatch archiveCheck = func(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+		for _, file := range files {
+			if !regex.MatchString(file) {
+				t.Errorf(`%s file "%s" does not match pattern "%s"`, prettyName, file, regex.String())
+			}
 		}
-	}
-	return nil
-}
-
-func matchingFileExists(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
-	count := 0
-	for _, file := range files {
-		if regex.MatchString(file) {
-			count++
-		}
-	}
-
-	word := "files"
-	suffix := ""
-	if count == 1 {
-		word = "file"
-		suffix = "es"
-	}
-	t.Logf("%d %s %s match%s pattern `%s`", count, prettyName, word, suffix, regex.String())
-
-	if count != 0 {
 		return nil
 	}
-	return fmt.Errorf("did not find any (%s)file matching %s", prettyName, regex.String())
-}
 
-func latestArchiveCheckFiles(t *testing.T, prettyName string, check func(*testing.T, string, []string, *regexp.Regexp) error, pattern string) error {
-	latestFiles := latestArchiveFiles(t)
-	if len(latestFiles) == 0 {
+	matchingFileExists archiveCheck = func(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+		count := 0
+		for _, file := range files {
+			if regex.MatchString(file) {
+				count++
+			}
+		}
+
+		word := "files"
+		suffix := ""
+		if count == 1 {
+			word = "file"
+			suffix = "es"
+		}
+		t.Logf("%d %s %s match%s pattern `%s`", count, prettyName, word, suffix, regex.String())
+
+		if count != 0 {
+			return nil
+		}
+		return fmt.Errorf("did not find any (%s)file matching %s", prettyName, regex.String())
+	}
+)
+
+func checkArchiveFiles(t *testing.T, prettyName string, check archiveCheck, pattern string, archiveFiles []string) error {
+	if archiveFiles == nil {
+		archiveFiles = latestArchiveFiles(t)
+	}
+
+	if len(archiveFiles) == 0 {
 		t.Fatal("No files in archive to check")
 	}
 	regex, err := regexp.Compile(pattern)
 	e(t, err, "failed to compile pattern")
-	return check(t, prettyName, latestFiles, regex)
+	return check(t, prettyName, archiveFiles, regex)
 }
 
 func TestMain(m *testing.M) {
