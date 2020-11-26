@@ -77,10 +77,10 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 	}
 	resVer, _ := getOperatorResourcesVersions(discoveryClient)
 	records := make([]record.Record, 0, len(config.Items))
-	for _, co := range config.Items {
+	for idx, co := range config.Items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/clusteroperator/%s", co.Name),
-			Item: ClusterOperatorAnonymizer{&co},
+			Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[idx].Name),
+			Item: ClusterOperatorAnonymizer{&config.Items[idx]},
 		})
 		if resVer == nil {
 			continue
