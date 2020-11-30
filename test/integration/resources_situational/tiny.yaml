@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: tinyproxy-
+  labels:
+    name: tiny
+spec:
+  containers:
+    - name: tinyproxy
+      image: docker.io/vimagick/tinyproxy
+      ports:
+        - containerPort: 8888
+          name: https
+          protocol: TCP

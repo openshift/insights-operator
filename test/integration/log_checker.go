@@ -163,3 +163,15 @@ func (lc *LogCheck) Execute() *LogCheck {
 	lc.Err = resultError
 	return lc
 }
+
+func logChecker(t *testing.T, clientset *kubernetes.Clientset) *LogCheck {
+	defaults := &LogCheck{
+		interval:   time.Second,
+		logOptions: corev1.PodLogOptions{},
+		timeout:    5 * time.Minute,
+		failFast:   true,
+		test:       t,
+		clientset:  clientset,
+	}
+	return defaults
+}

@@ -310,3 +310,57 @@ func TestClusterDefaultNodeSelector(t *testing.T) {
 		t.Log("Pod is scheduled")
 	}
 }
+
+//https://bugzilla.redhat.com/show_bug.cgi?id=1820595
+func TestProxyOverride(t *testing.T) {
+	// 2 proxies
+	// set one as clusterwide
+	// check that upload does not work
+	// override io proxy
+	// check that upload works
+	proxy_io := tinyproxy(t)
+	defer proxy_io.delete()
+	proxy_global := tinyproxy(t)
+	defer proxy_global.delete()
+	proxy_global.setClusterWideProxy(t)
+	triggerArchiveUpload(t, false)
+	proxy_io.setIOProxyOverride(t)
+	triggerArchiveUpload(t, true)
+	proxy_io.LogChecker.Search("cloud.redhat.com")
+	// Check that works
+	//type Patch struct {
+	//      HTTPS string `json:"httpsProxy"`
+	//}
+	//xd := make([]Patch, 1)
+	//xd[0].HTTPS= proxy.adress
+	//patch_bytes, err := json.Marshal(xd)
+	//data := fmt.Sprintf("{ \"op\": \"replace\", \"path\": \"/data/httpsProxy\", \"value\": \"%s\" }", proxy.adress)
+
+	//patch_bytes := []byte(fmt.Sprintf("{data:{httpsProxy:\"%s\"}}", proxy.adress))
+	//e(t, err, "failed marshalling")
+	//    modifiedSecret := corev1.Secret{
+	//        TypeMeta: metav1.TypeMeta{},
+	//        ObjectMeta: metav1.ObjectMeta{
+	//            Name:      Support,
+	//            Namespace: OpenShiftConfig,
+	//        },
+	//        Data: map[string][]byte{
+	//            "interval": []byte("1m"), // for faster testing
+	//            "httpsProxy": []byte(proxy_io.adress),
+	//            "httpProxy": []byte(proxy_io.adress),
+	//        },
+	//        Type: "Opaque",
+	//    }
+	//
+	//    clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
+	//    _, err := clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
+	//    e(t,err, "xd")
+	//    t.Log(proxy_io.adress)
+	//    restartInsightsOperator(t)
+	//    defer degradeOperatorMonitoring(t)()
+	//    checker := LogChecker(t).Timeout(2*time.Minute)
+	//    checker.SinceNow().Search(`Recording events/openshift-monitoring`)
+	//    checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
+	//    checker.Search("Uploaded report successfully")
+	//    proxy_io.LogChecker.Search("cloud.redhat.com")
+}

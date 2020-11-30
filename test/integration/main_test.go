@@ -191,19 +191,60 @@ func duration(t *testing.T, start time.Time, end time.Time) float64 {
 }
 
 func LogChecker(t *testing.T) *LogCheck {
-	defaults := &LogCheck{
-		interval:   time.Second,
-		logOptions: corev1.PodLogOptions{},
-		timeout:    5 * time.Minute,
-		failFast:   true,
-		test:       t,
-		clientset:  clientset,
-	}
-	return defaults
+	return logChecker(t, clientset)
 }
 
 func checkPodsLogs(t *testing.T, message string) *LogCheck {
 	return LogChecker(t).Search(message)
+}
+
+func tinyproxy(t *testing.T) *TinyProxy {
+	proxy := &TinyProxy{}
+	err := proxy.create(t, clientset)
+	e(t, err, "failed to create tinyproxy")
+	proxy.waitUntilReady()
+	return proxy
+}
+func (proxy *TinyProxy) setClusterWideProxy(t *testing.T) {
+	// it will not work
+}
+func (proxy *TinyProxy) setIOProxyOverride(t *testing.T) {
+	modifiedSecret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      Support,
+			Namespace: OpenShiftConfig,
+		},
+		Data: map[string][]byte{
+			"interval":   []byte("1m"), // for faster testing
+			"httpsProxy": []byte(proxy.adress),
+			"httpProxy":  []byte(proxy.adress),
+		},
+		Type: "Opaque",
+	}
+
+	clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
+	_, err := clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
+	e(t, err, "xd")
+	t.Log(proxy.adress)
+}
+
+func triggerArchiveCreate(t *testing.T) *LogCheck {
+	defer ChangeReportTimeInterval(t, 1)()
+	defer degradeOperatorMonitoring(t)()
+	checker := LogChecker(t).Timeout(2 * time.Minute)
+	checker.SinceNow().Search(`Recording events/openshift-monitoring`)
+	checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
+	return checker
+}
+
+func triggerArchiveUpload(t *testing.T, expectSuccess ...bool) {
+	checker := triggerArchiveCreate(t)
+	expectedUploadLog := "Uploaded report successfully"
+	if len(expectSuccess) != 0 && !expectSuccess[0] {
+		expectedUploadLog = "Upload unsuccessful"
+	}
+	checker.Search(expectedUploadLog)
 }
 
 func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
