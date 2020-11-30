@@ -20,7 +20,7 @@ import (
 
 // GatherClusterImagePruner fetches the image pruner configuration
 //
-// Location in archive: config/imagepruner/
+// Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/pruner/cluster.json
 func GatherClusterImagePruner(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)

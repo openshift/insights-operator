@@ -20,7 +20,7 @@ import (
 
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
-// Location in archive: config/imageregistry/
+// Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 func GatherClusterImageRegistry(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
