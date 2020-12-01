@@ -141,7 +141,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recorder, insightsClient, configObserver, statusReporter)
+	uploader := insightsuploader.New(recorder, insightsClient, configObserver, statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
 
 	// TODO: future ideas

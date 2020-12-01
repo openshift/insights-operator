@@ -44,9 +44,10 @@ type Controller struct {
 	configurator    Configurator
 	reporter        StatusReporter
 	archiveUploaded chan struct{}
+	initialDelay    time.Duration
 }
 
-func New(summarizer Summarizer, client *insightsclient.Client, configurator Configurator, statusReporter StatusReporter) *Controller {
+func New(summarizer Summarizer, client *insightsclient.Client, configurator Configurator, statusReporter StatusReporter, initialDelay time.Duration) *Controller {
 	return &Controller{
 		Simple: controllerstatus.Simple{Name: "insightsuploader"},
 
@@ -55,6 +56,7 @@ func New(summarizer Summarizer, client *insightsclient.Client, configurator Conf
 		client:          client,
 		reporter:        statusReporter,
 		archiveUploaded: make(chan struct{}),
+		initialDelay:    initialDelay,
 	}
 }
 
@@ -74,21 +76,20 @@ func (c *Controller) Run(ctx context.Context) {
 	enabled := cfg.Report
 	endpoint := cfg.Endpoint
 	interval := cfg.Interval
-	initialDelay := 0 * time.Second
 	lastReported := c.reporter.LastReportedTime()
 	if !lastReported.IsZero() {
 		next := lastReported.Add(interval)
 		if now := time.Now(); next.After(now) {
-			initialDelay = wait.Jitter(now.Sub(next), 1.2)
+			c.initialDelay = wait.Jitter(now.Sub(next), 1.2)
 		}
 	}
-	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", cfg.Endpoint, interval, initialDelay.Truncate(time.Second))
+	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", cfg.Endpoint, interval, c.initialDelay.Truncate(time.Second))
 
 	wait.Until(func() {
-		if initialDelay > 0 {
+		if c.initialDelay > 0 {
 			select {
 			case <-ctx.Done():
-			case <-time.After(initialDelay):
+			case <-time.After(c.initialDelay):
 			case <-configCh:
 				newCfg := c.configurator.Config()
 				interval = newCfg.Interval
@@ -97,13 +98,13 @@ func (c *Controller) Run(ctx context.Context) {
 					enabled = newCfg.Report
 					if !newCfg.Report {
 						klog.V(2).Infof("Reporting was disabled")
-						initialDelay = newCfg.Interval
+						c.initialDelay = newCfg.Interval
 						return
 					}
 					klog.V(2).Infof("Reporting was enabled")
 				}
 			}
-			initialDelay = 0
+			c.initialDelay = 0
 		}
 
 		// attempt to get a summary to send to the server
@@ -133,17 +134,17 @@ func (c *Controller) Run(ctx context.Context) {
 			}); err != nil {
 				klog.V(2).Infof("Unable to upload report after %s: %v", time.Now().Sub(start).Truncate(time.Second/100), err)
 				if err == insightsclient.ErrWaitingForVersion {
-					initialDelay = wait.Jitter(time.Second*15, 1)
+					c.initialDelay = wait.Jitter(time.Second*15, 1)
 					return
 				}
 				if authorizer.IsAuthorizationError(err) {
 					c.Simple.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
 						Reason: "NotAuthorized", Message: fmt.Sprintf("Reporting was not allowed: %v", err)})
-					initialDelay = wait.Jitter(interval, 3)
+					c.initialDelay = wait.Jitter(interval, 3)
 					return
 				}
 
-				initialDelay = wait.Jitter(interval/8, 1.2)
+				c.initialDelay = wait.Jitter(interval/8, 1.2)
 				c.Simple.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
 					Reason: "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err)})
 				return
@@ -166,7 +167,7 @@ func (c *Controller) Run(ctx context.Context) {
 
 		c.reporter.SetLastReportedTime(lastReported)
 
-		initialDelay = wait.Jitter(interval, 1.2)
+		c.initialDelay = wait.Jitter(interval, 1.2)
 	}, 15*time.Second, ctx.Done())
 }
 
