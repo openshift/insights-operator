@@ -23,7 +23,7 @@ type TinyProxy struct {
 	client     v12.PodInterface
 	IP         string
 	PORT       string
-	adress     string
+	address    string
 	status     string
 	ready      bool
 	LogChecker *LogCheck
@@ -67,7 +67,7 @@ func (proxy *TinyProxy) pullInfo() error {
 	}
 	IP := pod.Status.PodIPs[0].IP
 	PORT := pod.Spec.Containers[0].Ports[0].ContainerPort
-	proxy.adress = fmt.Sprintf("%s:%d", IP, PORT)
+	proxy.address = fmt.Sprintf("%s:%d", IP, PORT)
 	return nil
 }
 

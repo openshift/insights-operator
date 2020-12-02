@@ -205,10 +205,34 @@ func tinyproxy(t *testing.T) *TinyProxy {
 	proxy.waitUntilReady()
 	return proxy
 }
-func (proxy *TinyProxy) setClusterWideProxy(t *testing.T) {
+func (proxy *TinyProxy) setClusterWideProxy(t *testing.T) func() {
+	oldProxy, _ := configV1Client().Proxies().Get(context.Background(), "cluster", metav1.GetOptions{})
+	cwproxy := configv1.Proxy{Spec: configv1.ProxySpec{
+		HTTPProxy:          proxy.address,
+		HTTPSProxy:         proxy.address,
+		NoProxy:            "example.com",
+		ReadinessEndpoints: []string{"ohno"},
+		TrustedCA: configv1.ConfigMapNameReference{
+			Name: "service.default",
+		},
+	},
+	}
+	cwproxy.Name = "cluster"
+	//version, _ := strconv.Atoi(oldProxy.ResourceVersion)
+	//version++
+	cwproxy.ObjectMeta.ResourceVersion = oldProxy.ResourceVersion //string(rune(version))
+
+	_, err := configV1Client().Proxies().Update(context.Background(), &cwproxy, metav1.UpdateOptions{})
+	e(t, err, "tak ne XDDDDDDD")
+	return func() {
+		configV1Client().Proxies().Update(context.Background(), oldProxy, metav1.UpdateOptions{})
+	}
 	// it will not work
 }
-func (proxy *TinyProxy) setIOProxyOverride(t *testing.T) {
+func (proxy *TinyProxy) setIOProxyOverride(t *testing.T) func() {
+	secrets := clientset.CoreV1().Secrets(OpenShiftConfig)
+	oldSecret, err := secrets.Get(context.Background(), Support, metav1.GetOptions{})
+	e(t, err, "support secret not found")
 	modifiedSecret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -217,59 +241,91 @@ func (proxy *TinyProxy) setIOProxyOverride(t *testing.T) {
 		},
 		Data: map[string][]byte{
 			"interval":   []byte("1m"), // for faster testing
-			"httpsProxy": []byte(proxy.adress),
-			"httpProxy":  []byte(proxy.adress),
+			"httpsProxy": []byte(proxy.address),
+			"httpProxy":  []byte(proxy.address),
 		},
 		Type: "Opaque",
 	}
 
 	clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
-	_, err := clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
 	e(t, err, "xd")
-	t.Log(proxy.adress)
+	t.Log(proxy.address)
+	return func() {
+		secrets.Create(context.Background(), oldSecret, metav1.CreateOptions{})
+	}
 }
 
-func triggerArchiveCreate(t *testing.T) *LogCheck {
+func triggerArchiveCreate(t *testing.T) (checker *LogCheck) {
 	defer ChangeReportTimeInterval(t, 1)()
 	defer degradeOperatorMonitoring(t)()
-	checker := LogChecker(t).Timeout(2 * time.Minute)
-	checker.SinceNow().Search(`Recording events/openshift-monitoring`)
+	checker = LogChecker(t).Timeout(2 * time.Minute)
+	checker.SinceNow().FailFast(false).Search(`Recording events/openshift-monitoring`)
 	checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
-	return checker
+	return
 }
 
 func triggerArchiveUpload(t *testing.T, expectSuccess ...bool) {
-	checker := triggerArchiveCreate(t)
+	checker := triggerArchiveCreate(t).Timeout(1 * time.Minute)
 	expectedUploadLog := "Uploaded report successfully"
 	if len(expectSuccess) != 0 && !expectSuccess[0] {
 		expectedUploadLog = "Upload unsuccessful"
 	}
+	t.Log("Expecting: ", expectedUploadLog)
 	checker.Search(expectedUploadLog)
 }
-
-func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
-	latestSecret, err := clientset.CoreV1().Secrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+func deleteSecret(ns string, secretName string) (resetSecret func() error, err error) {
+	resetSecret = func() error { return nil }
+	secrets := clientset.CoreV1().Secrets(ns)
+	latestSecret, err := secrets.Get(context.Background(), secretName, metav1.GetOptions{})
+	if err != nil {
+		return
+	}
+	err = secrets.Delete(context.Background(), secretName, metav1.DeleteOptions{})
+	if err != nil {
+		return
+	}
+	resetSecret = func() error {
+		_, err := forceUpdateSecret(ns, secretName, latestSecret)
+		return err
+	}
+	return
+}
+func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) (resetSecret func() error, err error) {
+	resetSecret = func() error { return nil }
+	secrets := clientset.CoreV1().Secrets(ns)
+	latestSecret, err := secrets.Get(context.Background(), secretName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("cannot read the original secret: %s", err)
+		err = fmt.Errorf("cannot read the original secret: %s", err)
+		return
 	}
 	if errors.IsNotFound(err) {
 		// new objects shouldn't have resourceVersion set
 		secret.SetResourceVersion("")
-		_, err = clientset.CoreV1().Secrets(ns).Create(context.Background(), secret, metav1.CreateOptions{})
+		_, err = secrets.Create(context.Background(), secret, metav1.CreateOptions{})
 		if err != nil {
-			return fmt.Errorf("cannot create the original secret: %s", err)
+			err = fmt.Errorf("cannot create the original secret: %s", err)
+			return
 		}
-		return nil
+		resetSecret = func() error {
+			_, err := deleteSecret(ns, secretName)
+			return err
+		}
+		return
 	}
 	resourceVersion := latestSecret.GetResourceVersion()
 	secret.SetUID(latestSecret.GetUID())
 	secret.SetResourceVersion(resourceVersion) // need to update the version, otherwise operation is not permitted
 
-	_, err = clientset.CoreV1().Secrets("openshift-config").Update(context.Background(), secret, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("Unable to update original secret: %s", err)
+	resetSecret = func() error {
+		_, err := secrets.Update(context.Background(), latestSecret, metav1.UpdateOptions{})
+		return err
 	}
-	return nil
+	_, err = secrets.Update(context.Background(), secret, metav1.UpdateOptions{})
+	if err != nil {
+		err = fmt.Errorf("unable to update original secret: %s", err)
+	}
+	return
 }
 
 func ExecCmd(t *testing.T, client kubernetes.Interface, podName string, namespace string,
@@ -355,24 +411,16 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 	}
 }
 
-func changeReportTimeInterval(t *testing.T, newInterval []byte) []byte {
+func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) (resetSecret func() error) {
+	newInterval := []byte(fmt.Sprintf("%s", time.Minute*minutes))
 	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
 	e(t, err, "could not get support secret")
-	previousInterval := supportSecret.Data["interval"]
-	if previousInterval == nil {
-		t.Fatal("missing secret with name", Support)
-	}
 	supportSecret.Data["interval"] = newInterval
-	err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+	resetSecret, err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
 	e(t, err, "changing report time interval failed")
 	restartInsightsOperator(t)
 	t.Log("forcing update secret")
-	return previousInterval
-}
-
-func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) func() {
-	previousInterval := changeReportTimeInterval(t, []byte(fmt.Sprintf("%s", time.Minute*minutes)))
-	return func() { changeReportTimeInterval(t, previousInterval) }
+	return
 }
 
 func latestArchiveFiles(t *testing.T) []string {

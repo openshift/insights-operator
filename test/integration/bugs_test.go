@@ -39,28 +39,15 @@ func TestUploadNotDelayedAfterStart(t *testing.T) {
 // https://bugzilla.redhat.com/show_bug.cgi?id=1750665
 // https://bugzilla.redhat.com/show_bug.cgi?id=1753755
 func TestDefaultUploadFrequency(t *testing.T) {
-	// Backup support secret from openshift-config namespace.
-	// oc extract secret/support -n openshift-config --to=.
-	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("The support secret read failed: %s", err)
-	}
-	resetSecrets := func() {
-		err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
-		if err != nil {
-			t.Error(err)
-		}
-	}
-	defer func() {
-		resetSecrets()
-	}()
-	// delete any existing overriding secret
-	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
+	recoverSecrets, err := deleteSecret(OpenShiftConfig, Support)
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {
 		t.Fatal(err.Error())
 	}
+	defer func() {
+		e(t, recoverSecrets(), "Failed to recreate support secret")
+	}()
 
 	// restart insights-operator (delete pods)
 	restartInsightsOperator(t)
@@ -81,7 +68,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 		Type: "Opaque",
 	}
 
-	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &newSecret, metav1.CreateOptions{})
+	_, err = forceUpdateSecret(OpenShiftConfig, Support, &newSecret)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -96,19 +83,6 @@ func TestDefaultUploadFrequency(t *testing.T) {
 // This tests takes about 317 s
 // https://bugzilla.redhat.com/show_bug.cgi?id=1745973
 func TestUnreachableHost(t *testing.T) {
-	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("The support secret read failed: %s", err)
-	}
-	resetSecrets := func() {
-		err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
-		if err != nil {
-			t.Error(err)
-		}
-	}
-	defer func() {
-		resetSecrets()
-	}()
 	// Replace the endpoint to some not valid url.
 	// oc -n openshift-config create secret generic support --from-literal=endpoint=http://localhost --dry-run -o yaml | oc apply -f - -n openshift-config
 	modifiedSecret := corev1.Secret{
@@ -123,17 +97,11 @@ func TestUnreachableHost(t *testing.T) {
 		},
 		Type: "Opaque",
 	}
-	// delete any existing overriding secret
-	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
 
-	// if the secret is not found, continue, not a problem
-	if err != nil && err.Error() != `secrets "support" not found` {
-		t.Fatal(err.Error())
-	}
-	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	resetSecrets, err := forceUpdateSecret(OpenShiftConfig, Support, &modifiedSecret)
+	defer func() {
+		e(t, resetSecrets(), "Failed to recreate support secret")
+	}()
 	// Restart insights-operator
 	// oc delete pods --namespace=openshift-insights --all
 	restartInsightsOperator(t)
@@ -147,10 +115,8 @@ func TestUnreachableHost(t *testing.T) {
 		t.Fatal("Insights is not degraded")
 	}
 	// Delete secret
-	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	_, err = deleteSecret(OpenShiftConfig, Support)
+	e(t, err, "")
 	// Check the operator is not degraded anymore
 	errDegraded := wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
 		insightsDegraded := operatorConditionCheck(t, clusterOperatorInsights(), "Degraded")
@@ -322,45 +288,9 @@ func TestProxyOverride(t *testing.T) {
 	defer proxy_io.delete()
 	proxy_global := tinyproxy(t)
 	defer proxy_global.delete()
-	proxy_global.setClusterWideProxy(t)
+	defer proxy_global.setClusterWideProxy(t)
 	triggerArchiveUpload(t, false)
-	proxy_io.setIOProxyOverride(t)
+	defer proxy_io.setIOProxyOverride(t)
 	triggerArchiveUpload(t, true)
 	proxy_io.LogChecker.Search("cloud.redhat.com")
-	// Check that works
-	//type Patch struct {
-	//      HTTPS string `json:"httpsProxy"`
-	//}
-	//xd := make([]Patch, 1)
-	//xd[0].HTTPS= proxy.adress
-	//patch_bytes, err := json.Marshal(xd)
-	//data := fmt.Sprintf("{ \"op\": \"replace\", \"path\": \"/data/httpsProxy\", \"value\": \"%s\" }", proxy.adress)
-
-	//patch_bytes := []byte(fmt.Sprintf("{data:{httpsProxy:\"%s\"}}", proxy.adress))
-	//e(t, err, "failed marshalling")
-	//    modifiedSecret := corev1.Secret{
-	//        TypeMeta: metav1.TypeMeta{},
-	//        ObjectMeta: metav1.ObjectMeta{
-	//            Name:      Support,
-	//            Namespace: OpenShiftConfig,
-	//        },
-	//        Data: map[string][]byte{
-	//            "interval": []byte("1m"), // for faster testing
-	//            "httpsProxy": []byte(proxy_io.adress),
-	//            "httpProxy": []byte(proxy_io.adress),
-	//        },
-	//        Type: "Opaque",
-	//    }
-	//
-	//    clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
-	//    _, err := clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
-	//    e(t,err, "xd")
-	//    t.Log(proxy_io.adress)
-	//    restartInsightsOperator(t)
-	//    defer degradeOperatorMonitoring(t)()
-	//    checker := LogChecker(t).Timeout(2*time.Minute)
-	//    checker.SinceNow().Search(`Recording events/openshift-monitoring`)
-	//    checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
-	//    checker.Search("Uploaded report successfully")
-	//    proxy_io.LogChecker.Search("cloud.redhat.com")
 }

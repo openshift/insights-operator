@@ -42,6 +42,14 @@ func (lc *LogCheck) Interval(interval time.Duration) *LogCheck {
 	return lc
 }
 
+func (lc *LogCheck) FailFast(failFast ...bool) *LogCheck {
+	if len(failFast) == 0 {
+		lc.failFast = true
+	}
+	lc.failFast = failFast[0]
+	return lc
+}
+
 func (lc *LogCheck) Timeout(timeout time.Duration) *LogCheck {
 	lc.timeout = timeout
 	return lc
@@ -159,6 +167,9 @@ func (lc *LogCheck) Execute() *LogCheck {
 		if err == nil {
 			resultError = nil
 		}
+	}
+	if lc.failFast && resultError != nil {
+		t.Fatal(resultError)
 	}
 	lc.Err = resultError
 	return lc

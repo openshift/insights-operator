@@ -86,11 +86,11 @@ func TestOptOutOptIn(t *testing.T) {
 		t.Fatalf("The pull-secret read failed: %s", err)
 	}
 	resetSecrets := func() {
-		err := forceUpdateSecret(OpenShiftConfig, PullSecret, pullSecret)
+		_, err := forceUpdateSecret(OpenShiftConfig, PullSecret, pullSecret)
 		if err != nil {
 			t.Error(err)
 		}
-		err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+		_, err = forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
 		if err != nil {
 			t.Error(err)
 		}
@@ -156,7 +156,7 @@ func TestOptOutOptIn(t *testing.T) {
 		t.Fatalf("The Cluster Operator wasn't disabled after removing pull-secret")
 	}
 	// Return to original pull secret, so that IO would be enabled again
-	err = forceUpdateSecret(OpenShiftConfig, PullSecret, pullSecret)
+	_, err = forceUpdateSecret(OpenShiftConfig, PullSecret, pullSecret)
 	if err != nil {
 		t.Errorf("cannot return original pull-secret: %s", err)
 	}
