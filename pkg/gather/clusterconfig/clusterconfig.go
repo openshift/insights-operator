@@ -569,16 +569,16 @@ func GatherClusterNetwork(i *Gatherer) func() ([]record.Record, []error) {
 func GatherHostSubnet(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 
-		hostSubnetList, err := i.networkClient.HostSubnets().List(i.ctx, metav1.ListOptions{})
+		hsList, err := i.networkClient.HostSubnets().List(i.ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
 		if err != nil {
 			return nil, []error{err}
 		}
-		records := make([]record.Record, 0, len(hostSubnetList.Items))
-		for _, h := range hostSubnetList.Items {
-			records = append(records, record.Record{Name: fmt.Sprintf("config/hostsubnet/%s", h.Host), Item: HostSubnetAnonymizer{&h}})
+		records := make([]record.Record, 0, len(hsList.Items))
+		for i, h := range hsList.Items {
+			records = append(records, record.Record{Name: fmt.Sprintf("config/hostsubnet/%s", h.Host), Item: HostSubnetAnonymizer{&hsList.Items[i]}})
 		}
 		return records, nil
 	}
