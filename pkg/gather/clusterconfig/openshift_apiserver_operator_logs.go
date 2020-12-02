@@ -3,13 +3,14 @@ package clusterconfig
 import (
 	"bufio"
 	"context"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/klog"
-	"strings"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -21,9 +22,14 @@ import (
 // The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-// Location in archive: logs/openshift-api-server-operator
+// Location in archive: logs/openshift-apiserver-operator
 func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
+		messagesToSearch := []string{
+			"the server has received too many requests and has asked us",
+			"because serving request timed out and response had been started",
+		}
+
 		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
@@ -31,7 +37,7 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) func() ([]record.Record, 
 
 		client := gatherKubeClient.CoreV1()
 
-		records, err := gatherOpenShiftAPIServerOperatorLogs(g.ctx, client)
+		records, err := gatherOpenShiftAPIServerOperatorLastDayLogs(g.ctx, client, messagesToSearch)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -40,13 +46,11 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) func() ([]record.Record, 
 	}
 }
 
-func gatherOpenShiftAPIServerOperatorLogs(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, error) {
+func gatherOpenShiftAPIServerOperatorLastDayLogs(
+	ctx context.Context, coreClient corev1client.CoreV1Interface, messagesToSearch []string,
+	) ([]record.Record, error) {
 	const namespace = "openshift-apiserver-operator"
 	var (
-		messagesToSearch = []string{
-			"the server has received too many requests and has asked us",
-			"because serving request timed out and response had been started",
-		}
 		sinceSeconds int64 = 86400     // last day
 		limitBytes   int64 = 1024 * 64 // maximum 64 kb of logs
 	)
@@ -70,9 +74,13 @@ func gatherOpenShiftAPIServerOperatorLogs(ctx context.Context, coreClient corev1
 		}
 
 		records = append(records, record.Record{
-			Name:        "logs/openshift-api-server-operator",
-			Item:        Raw{logs},
+			Name: "logs/openshift-apiserver-operator",
+			Item: Raw{logs},
 		})
+	}
+
+	if len(pods.Items) == 0 {
+		klog.Info("openshift-apiserver-operator wasn't found")
 	}
 
 	return records, nil
