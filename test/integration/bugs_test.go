@@ -212,11 +212,35 @@ func TestArchiveContains(t *testing.T) {
 			"service accounts", matchingFileExists, archive,
 			`^config/serviceaccounts\.json$`))
 
-	//https://bugzilla.redhat.com/show_bug.cgi?id=1834677
-	t.Run("ImageRegistry",
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1900496
+	t.Run("ImagePrunerConfiguration",
 		genLatestArchiveCheckPattern(
-			"image registry", matchingFileExists, archive,
-			`^config/clusteroperator/imageregistry.operator.openshift.io/config/cluster\.json$`))
+			"image pruner configuration", matchingFileExists, archive,
+			`^config/clusteroperator/imageregistry\.operator\.openshift\.io/imagepruner/cluster\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1900496
+	t.Run("ClusterImageRegistryConfiguration",
+		genLatestArchiveCheckPattern(
+			"cluster Image Registry configuration", matchingFileExists, archive,
+			`^config/clusteroperator/imageregistry\.operator\.openshift\.io/config/cluster\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1900496
+	t.Run("ClusterOperators",
+		genLatestArchiveCheckPattern(
+			"cluster operators", matchingFileExists, archive,
+			`^config/clusteroperator/.*\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1900496
+	t.Run("UnhealthyPods",
+		genLatestArchiveCheckPattern(
+			"unhealthy pods", matchingFileExists, archive,
+			`^config/pod/.*\.json$`))
+
+	//https://bugzilla.redhat.com/show_bug.cgi?id=1900496
+	t.Run("StatefulSets",
+		genLatestArchiveCheckPattern(
+			"stateful sets", matchingFileExists, archive,
+			`^config/statefulsets/.*\.json$`))
 
 	//https://bugzilla.redhat.com/show_bug.cgi?id=1873101
 	t.Run("SnapshotsCRD",
