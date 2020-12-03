@@ -1,0 +1,6 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "DNS",
+    "Name": "default",
+    "Spec": {}
+}
