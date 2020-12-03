@@ -52,8 +52,11 @@ func (m JSONMarshaller) GetExtension() string {
 func Collect(ctx context.Context, recorder Interface, bulkFns ...func() ([]Record, []error)) error {
 	var errors []string
 	for _, bulkFn := range bulkFns {
-		klog.V(5).Infof("Gathering %s", runtime.FuncForPC(reflect.ValueOf(bulkFn).Pointer()).Name())
+		gatherName := runtime.FuncForPC(reflect.ValueOf(bulkFn).Pointer()).Name()
+		klog.V(5).Infof("Gathering %s", gatherName)
+		start := time.Now()
 		records, errs := bulkFn()
+		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, time.Now().Sub(start).Truncate(time.Millisecond), len(records))
 		for _, err := range errs {
 			errors = append(errors, err.Error())
 		}
