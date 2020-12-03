@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	clsetfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
@@ -55,7 +56,10 @@ func ExampleClusterOperators() (string, error) {
 			return true, sv, nil
 		})
 
-	g := &Gatherer{client: kube.ConfigV1()}
+	g := &Gatherer{
+		client:          kube.ConfigV1(),
+		discoveryClient: kube.Discovery(),
+		dynamicClient:   dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())}
 	d, errs := GatherClusterOperators(g)()
 	if len(errs) > 0 {
 		return "", errs[0]

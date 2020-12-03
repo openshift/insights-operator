@@ -8,19 +8,21 @@ import (
 	"os"
 	"testing"
 
+	configv1 "github.com/openshift/api/config/v1"
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
+	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	dynamicfake "k8s.io/client-go/dynamic/fake"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
-	"k8s.io/klog"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/klog"
 
 	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -102,18 +104,18 @@ func TestConfigMapAnonymizer(t *testing.T) {
 
 }
 
-func TestGatherPodDisruptionBudgets(t *testing.T){
+func TestGatherPodDisruptionBudgets(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset()
 
 	fakeNamespace := "fake-namespace"
 
 	// name -> MinAvailabel
-	fakePDBs := map[string]string {
-		"pdb-four": "4",
+	fakePDBs := map[string]string{
+		"pdb-four":  "4",
 		"pdb-eight": "8",
-		"pdb-ten": "10",
+		"pdb-ten":   "10",
 	}
-	for name, minAvailable := range fakePDBs{
+	for name, minAvailable := range fakePDBs {
 		_, err := coreClient.PolicyV1beta1().
 			PodDisruptionBudgets(fakeNamespace).
 			Create(&policyv1beta1.PodDisruptionBudget{
@@ -147,7 +149,7 @@ func TestGatherPodDisruptionBudgets(t *testing.T){
 		}
 		name := pdba.PodDisruptionBudget.ObjectMeta.Name
 		minAvailable := pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal
-		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal !=  fakePDBs[name] {
+		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal != fakePDBs[name] {
 			t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
 		}
 	}
@@ -274,7 +276,7 @@ func TestGatherClusterImageRegistry(t *testing.T) {
 				t.Errorf("expected one record, got %d", numRecords)
 				return
 			}
-			if expectedRecordName := "config/imageregistry"; records[0].Name != expectedRecordName {
+			if expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/config/cluster"; records[0].Name != expectedRecordName {
 				t.Errorf("expected %q record name, got %q", expectedRecordName, records[0].Name)
 				return
 			}
@@ -384,6 +386,36 @@ func TestGatherHostSubnet(t *testing.T) {
 			t.Fatalf("Egress CIDR is not anonymized %s", cidr)
 		}
 	}
+}
+
+func TestGatherClusterOperator(t *testing.T) {
+	testOperator := &configv1.ClusterOperator{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-clusteroperator",
+		},
+	}
+	configCS := configfake.NewSimpleClientset()
+	_, err := configCS.ConfigV1().ClusterOperators().Create(testOperator)
+	if err != nil {
+		t.Fatal("unable to create fake clusteroperator", err)
+	}
+	gatherer := &Gatherer{client: configCS.ConfigV1(), discoveryClient: configCS.Discovery()}
+	records, errs := GatherClusterOperators(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+
+	item, _ := records[0].Item.Marshal(context.TODO())
+	var gatheredCO configv1.ClusterOperator
+	_, _, err = openshiftSerializer.Decode(item, nil, &gatheredCO)
+	if err != nil {
+		t.Fatalf("failed to decode object: %v", err)
+	}
+	if gatheredCO.Name != "test-clusteroperator" {
+		t.Fatalf("unexpected clusteroperator name %s", gatheredCO.Name)
+	}
+
 }
 
 func ExampleGatherMostRecentMetrics_Test() {
