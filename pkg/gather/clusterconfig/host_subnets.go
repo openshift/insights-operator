@@ -42,14 +42,14 @@ func gatherHostSubnet(ctx context.Context, networkClient networkv1client.Network
 	for _, h := range hostSubnetList.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/hostsubnet/%s", h.Host),
-			Item: HostSubnetAnonymizer{&h},
+			Item: HostSubnetAnonymizer{h},
 		})
 	}
 	return records, nil
 }
 
 // HostSubnetAnonymizer implements HostSubnet serialization wiht anonymization
-type HostSubnetAnonymizer struct{ *networkv1.HostSubnet }
+type HostSubnetAnonymizer struct{ networkv1.HostSubnet }
 
 // Marshal implements HostSubnet serialization
 func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
@@ -62,7 +62,7 @@ func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	for i, s := range a.HostSubnet.EgressCIDRs {
 		a.HostSubnet.EgressCIDRs[i] = networkv1.HostSubnetEgressCIDR(anonymizeString(string(s)))
 	}
-	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), a.HostSubnet)
+	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), &a.HostSubnet)
 }
 
 // GetExtension returns extension for HostSubnet object
