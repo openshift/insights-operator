@@ -51,7 +51,12 @@ func (proxy *TinyProxy) create(t *testing.T, clientset *kubernetes.Clientset) er
 	proxy.name = result.Name
 	proxy.LogChecker = logChecker(t, clientset).Namespace(namespace).PodName(proxy.name)
 	t.Logf("created pod %q.\n", proxy.name)
-	return proxy.pullInfo()
+	err = proxy.pullInfo()
+	if err != nil {
+		return err
+	}
+	proxy.waitUntilReady()
+	return nil
 }
 
 func (proxy *TinyProxy) pullInfo() error {

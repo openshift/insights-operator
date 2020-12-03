@@ -169,7 +169,7 @@ func (lc *LogCheck) Execute() *LogCheck {
 		}
 	}
 	if lc.failFast && resultError != nil {
-		t.Fatal(resultError)
+		t.Error(resultError)
 	}
 	lc.Err = resultError
 	return lc

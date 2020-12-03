@@ -202,10 +202,11 @@ func tinyproxy(t *testing.T) *TinyProxy {
 	proxy := &TinyProxy{}
 	err := proxy.create(t, clientset)
 	e(t, err, "failed to create tinyproxy")
-	proxy.waitUntilReady()
 	return proxy
 }
-func (proxy *TinyProxy) setClusterWideProxy(t *testing.T) func() {
+
+func (proxy *TinyProxy) setAsClusterWideProxy(t *testing.T) func() {
+	// setting this proxy as cluster-wide makes IO uploads stop working
 	oldProxy, _ := configV1Client().Proxies().Get(context.Background(), "cluster", metav1.GetOptions{})
 	cwproxy := configv1.Proxy{Spec: configv1.ProxySpec{
 		HTTPProxy:          proxy.address,
@@ -218,18 +219,16 @@ func (proxy *TinyProxy) setClusterWideProxy(t *testing.T) func() {
 	},
 	}
 	cwproxy.Name = "cluster"
-	//version, _ := strconv.Atoi(oldProxy.ResourceVersion)
-	//version++
-	cwproxy.ObjectMeta.ResourceVersion = oldProxy.ResourceVersion //string(rune(version))
+	cwproxy.ObjectMeta.ResourceVersion = oldProxy.ResourceVersion
 
 	_, err := configV1Client().Proxies().Update(context.Background(), &cwproxy, metav1.UpdateOptions{})
-	e(t, err, "tak ne XDDDDDDD")
+	e(t, err, "failed to update cluster-wide proxy")
 	return func() {
 		configV1Client().Proxies().Update(context.Background(), oldProxy, metav1.UpdateOptions{})
 	}
-	// it will not work
 }
-func (proxy *TinyProxy) setIOProxyOverride(t *testing.T) func() {
+
+func (proxy *TinyProxy) setAsIOProxyOverride(t *testing.T) func() {
 	secrets := clientset.CoreV1().Secrets(OpenShiftConfig)
 	oldSecret, err := secrets.Get(context.Background(), Support, metav1.GetOptions{})
 	e(t, err, "support secret not found")
@@ -249,7 +248,7 @@ func (proxy *TinyProxy) setIOProxyOverride(t *testing.T) func() {
 
 	clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
 	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
-	e(t, err, "xd")
+	e(t, err, "failed to create modified support secret")
 	t.Log(proxy.address)
 	return func() {
 		secrets.Create(context.Background(), oldSecret, metav1.CreateOptions{})

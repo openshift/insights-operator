@@ -279,18 +279,17 @@ func TestClusterDefaultNodeSelector(t *testing.T) {
 
 //https://bugzilla.redhat.com/show_bug.cgi?id=1820595
 func TestProxyOverride(t *testing.T) {
-	// 2 proxies
-	// set one as clusterwide
-	// check that upload does not work
-	// override io proxy
-	// check that upload works
 	proxy_io := tinyproxy(t)
-	defer proxy_io.delete()
 	proxy_global := tinyproxy(t)
+	defer proxy_io.delete()
 	defer proxy_global.delete()
-	defer proxy_global.setClusterWideProxy(t)
+
+	defer proxy_global.setAsClusterWideProxy(t)
+	// check that upload does not work now
 	triggerArchiveUpload(t, false)
-	defer proxy_io.setIOProxyOverride(t)
+	defer proxy_io.setAsIOProxyOverride(t)
+	// check that upload works now
 	triggerArchiveUpload(t, true)
+	// check that upload did go trough the proxy
 	proxy_io.LogChecker.Search("cloud.redhat.com")
 }
