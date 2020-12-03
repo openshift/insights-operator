@@ -1,0 +1,43 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "OpenShiftAPIServer",
+    "Name": "cluster",
+    "Spec": {
+        "logLevel": "Normal",
+        "managementState": "Managed",
+        "observedConfig": {
+            "apiServerArguments": {
+                "audit-policy-file": [
+                    "/var/run/configmaps/audit/secure-oauth-storage-default.yaml"
+                ]
+            },
+            "imagePolicyConfig": {
+                "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
+            },
+            "projectConfig": {
+                "projectRequestMessage": ""
+            },
+            "routingConfig": {
+                "subdomain": "apps.tremes.lab.upshift.rdu2.redhat.com"
+            },
+            "servingInfo": {
+                "cipherSuites": [
+                    "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                    "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                    "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+                    "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+                ],
+                "minTLSVersion": "VersionTLS12"
+            },
+            "storageConfig": {
+                "urls": [
+                    "xxxxxxxxxxxxxxxxxxxxxxx"
+                ]
+            }
+        },
+        "operatorLogLevel": "Normal",
+        "unsupportedConfigOverrides": null
+    }
+}

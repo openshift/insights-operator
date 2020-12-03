@@ -1,0 +1,13 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "Etcd",
+    "Name": "cluster",
+    "Spec": {
+        "logLevel": "Normal",
+        "managementState": "Managed",
+        "operatorLogLevel": "Normal",
+        "unsupportedConfigOverrides": {
+            "useUnsupportedUnsafeNonHANonProductionUnstableEtcd": true
+        }
+    }
+}

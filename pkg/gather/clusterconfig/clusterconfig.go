@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
@@ -100,33 +102,42 @@ func init() {
 
 // Gatherer is a driving instance invoking collection of data
 type Gatherer struct {
-	ctx            context.Context
-	client         configv1client.ConfigV1Interface
-	coreClient     corev1client.CoreV1Interface
-	networkClient  networkv1client.NetworkV1Interface
-	dynamicClient  dynamic.Interface
-	metricsClient  rest.Interface
-	certClient     certificatesv1beta1.CertificatesV1beta1Interface
-	registryClient imageregistryv1.ImageregistryV1Interface
-	crdClient      apixv1beta1client.ApiextensionsV1beta1Interface
-	policyClient   policyclient.PolicyV1beta1Interface
-	lock           sync.Mutex
-	lastVersion    *configv1.ClusterVersion
+	ctx             context.Context
+	client          configv1client.ConfigV1Interface
+	coreClient      corev1client.CoreV1Interface
+	networkClient   networkv1client.NetworkV1Interface
+	dynamicClient   dynamic.Interface
+	metricsClient   rest.Interface
+	certClient      certificatesv1beta1.CertificatesV1beta1Interface
+	registryClient  imageregistryv1.ImageregistryV1Interface
+	crdClient       apixv1beta1client.ApiextensionsV1beta1Interface
+	policyClient    policyclient.PolicyV1beta1Interface
+	lock            sync.Mutex
+	lastVersion     *configv1.ClusterVersion
+	discoveryClient discovery.DiscoveryInterface
+}
+
+type clusterOperatorResource struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
+	Spec       interface{}
 }
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface, discoveryClient discovery.DiscoveryInterface) *Gatherer {
 	return &Gatherer{
-		client:         client,
-		coreClient:     coreClient,
-		certClient:     certClient,
-		metricsClient:  metricsClient,
-		registryClient: registryClient,
-		crdClient:      crdClient,
-		networkClient:  networkClient,
-		dynamicClient:  dynamicClient,
-		policyClient:   policyClient,
+		client:          client,
+		coreClient:      coreClient,
+		certClient:      certClient,
+		metricsClient:   metricsClient,
+		registryClient:  registryClient,
+		crdClient:       crdClient,
+		networkClient:   networkClient,
+		dynamicClient:   dynamicClient,
+		policyClient:    policyClient,
+		discoveryClient: discoveryClient,
 	}
 }
 
@@ -313,7 +324,7 @@ func GatherContainerImages(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
-// GatherClusterOperators collects all ClusterOperators.
+// GatherClusterOperators collects all ClusterOperators and their resource.
 // It finds unhealthy Pods for unhealthy operators
 //
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -331,9 +342,28 @@ func GatherClusterOperators(i *Gatherer) func() ([]record.Record, []error) {
 		if err != nil {
 			return nil, []error{err}
 		}
+		resVer, _ := getOperatorResourcesVersions(i.discoveryClient)
 		records := make([]record.Record, 0, len(config.Items))
-		for index := range config.Items {
+		for index, co := range config.Items {
 			records = append(records, record.Record{Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[index].Name), Item: ClusterOperatorAnonymizer{&config.Items[index]}})
+			if resVer == nil {
+				continue
+			}
+			relRes := collectClusterOperatorResources(i.ctx, i.dynamicClient, co, resVer)
+			for _, rr := range relRes {
+				// imageregistry resources (config, pruner) are gathered in image_registries.go, image_pruners.go
+				if strings.Contains(rr.APIVersion, "imageregistry") {
+					continue
+				}
+				gv, err := schema.ParseGroupVersion(rr.APIVersion)
+				if err != nil {
+					klog.Warningf("Unable to parse group version %s: %s", rr.APIVersion, err)
+				}
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name),
+					Item: ClusterOperatorResourceAnonymizer{rr},
+				})
+			}
 		}
 		namespaceEventsCollected := sets.NewString()
 		now := time.Now()
@@ -429,6 +459,74 @@ func collectContainerLogs(i *Gatherer, pod *corev1.Pod, buf *bytes.Buffer, conta
 		return err
 	}
 	return nil
+}
+
+func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.Interface, co configv1.ClusterOperator, resVer map[string][]string) []clusterOperatorResource {
+	var relObj []configv1.ObjectReference
+	for _, ro := range co.Status.RelatedObjects {
+		if strings.Contains(ro.Group, "operator.openshift.io") {
+			relObj = append(relObj, ro)
+		}
+	}
+	if len(relObj) == 0 {
+		return nil
+	}
+	var res []clusterOperatorResource
+	for _, ro := range relObj {
+		key := fmt.Sprintf("%s-%s", ro.Group, strings.ToLower(ro.Resource))
+		versions, _ := resVer[key]
+		for _, v := range versions {
+			gvr := schema.GroupVersionResource{Group: ro.Group, Version: v, Resource: strings.ToLower(ro.Resource)}
+			clusterResource, err := dynamicClient.Resource(gvr).Get(ctx, ro.Name, metav1.GetOptions{})
+			if err != nil {
+				klog.V(2).Infof("Unable to list %s resource due to: %s", gvr, err)
+			}
+			if clusterResource == nil {
+				continue
+			}
+			var kind, name, apiVersion string
+			err = failEarly(
+				func() error { return parseJSONQuery(clusterResource.Object, "kind", &kind) },
+				func() error { return parseJSONQuery(clusterResource.Object, "apiVersion", &apiVersion) },
+				func() error { return parseJSONQuery(clusterResource.Object, "metadata.name", &name) },
+			)
+			if err != nil {
+				continue
+			}
+			spec, ok := clusterResource.Object["spec"]
+			if !ok {
+				klog.Warningf("Can't find spec for cluster operator resource %s", name)
+			}
+			res = append(res, clusterOperatorResource{Spec: spec, Kind: kind, Name: name, APIVersion: apiVersion})
+		}
+	}
+	return res
+}
+
+func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) (map[string][]string, error) {
+	resources, err := discoveryClient.ServerPreferredResources()
+	if err != nil {
+		return nil, err
+	}
+	resourceVersionMap := make(map[string][]string)
+	for _, v := range resources {
+		if strings.Contains(v.GroupVersion, "operator.openshift.io") {
+			gv, err := schema.ParseGroupVersion(v.GroupVersion)
+			if err != nil {
+				continue
+			}
+			for _, ar := range v.APIResources {
+				key := fmt.Sprintf("%s-%s", gv.Group, ar.Name)
+				r, ok := resourceVersionMap[key]
+				if !ok {
+					resourceVersionMap[key] = []string{gv.Version}
+				} else {
+					r = append(r, gv.Version)
+				}
+			}
+		}
+	}
+	return resourceVersionMap, nil
 }
 
 // GatherNodes collects all Nodes.
@@ -606,7 +704,7 @@ func GatherClusterAuthentication(i *Gatherer) func() ([]record.Record, []error) 
 
 // GatherClusterImagePruner fetches the image pruner configuration
 //
-// Location in archive: config/imagepruner/
+// Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
 func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		pruner, err := i.registryClient.ImagePruners().Get(i.ctx, "cluster", metav1.GetOptions{})
@@ -616,13 +714,25 @@ func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
 		if err != nil {
 			return nil, []error{err}
 		}
-		return []record.Record{{Name: "config/imagepruner", Item: ImagePrunerAnonymizer{pruner}}}, nil
+		// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
+		kinds, _, err := registryScheme.ObjectKinds(pruner)
+		if err != nil {
+			return nil, []error{err}
+		}
+		if len(kinds) > 1 {
+			klog.Warningf("More kinds for image registry pruner operator resource %s", kinds)
+		}
+		objKind := kinds[0]
+		return []record.Record{{
+			Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), pruner.Name),
+			Item: ImagePrunerAnonymizer{pruner},
+		}}, nil
 	}
 }
 
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
-// Location in archive: config/imageregistry/
+// Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		config, err := i.registryClient.Configs().Get(i.ctx, "cluster", metav1.GetOptions{})
@@ -632,7 +742,19 @@ func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
 		if err != nil {
 			return nil, []error{err}
 		}
-		return []record.Record{{Name: "config/imageregistry", Item: ImageRegistryAnonymizer{config}}}, nil
+		// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
+		kinds, _, err := registryScheme.ObjectKinds(config)
+		if err != nil {
+			return nil, []error{err}
+		}
+		if len(kinds) > 1 {
+			klog.Warningf("More kinds for image registry config operator resource %s", kinds)
+		}
+		objKind := kinds[0]
+		return []record.Record{{
+			Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), config.Name),
+			Item: ImageRegistryAnonymizer{config},
+		}}, nil
 	}
 }
 
@@ -841,6 +963,53 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
+}
+
+func failEarly(fns ...func() error) error {
+	for _, f := range fns {
+		err := f()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func parseJSONQuery(j map[string]interface{}, jq string, o interface{}) error {
+	for _, k := range strings.Split(jq, ".") {
+		// optional field
+		opt := false
+		sz := len(k)
+		if sz > 0 && k[sz-1] == '?' {
+			opt = true
+			k = k[:sz-1]
+		}
+
+		if uv, ok := j[k]; ok {
+			if v, ok := uv.(map[string]interface{}); ok {
+				j = v
+				continue
+			}
+			// ValueOf to enter reflect-land
+			dstPtrValue := reflect.ValueOf(o)
+			dstValue := reflect.Indirect(dstPtrValue)
+			dstValue.Set(reflect.ValueOf(uv))
+
+			return nil
+		}
+		if opt {
+			return nil
+		}
+		// otherwise key was not found
+		// keys are case sensitive, because maps are
+		for ki := range j {
+			if strings.ToLower(k) == strings.ToLower(ki) {
+				return fmt.Errorf("key %s wasn't found, but %s was ", k, ki)
+			}
+		}
+		return fmt.Errorf("key %s wasn't found in %v ", k, j)
+	}
+	return fmt.Errorf("query didn't match the structure")
 }
 
 // RawByte is skipping Marshalling from byte slice
@@ -1432,4 +1601,35 @@ func countLines(r io.Reader) (int, error) {
 			return lineCount, err
 		}
 	}
+}
+
+// ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
+type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
+
+// Marshal serializes clusterOperatorResource with IP address anonymization
+func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	bytes, err := json.Marshal(a.resource)
+	if err != nil {
+		return nil, err
+	}
+	resStr := string(bytes)
+	//anonymize URLs
+	re := regexp.MustCompile(`"(https|http)://(.*?)"`)
+	urlMatches := re.FindAllString(resStr, -1)
+	for _, m := range urlMatches {
+		m = strings.ReplaceAll(m, "\"", "")
+		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+	}
+	// anonymize IP addresses
+	re = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}`)
+	ipMatches := re.FindAllString(resStr, -1)
+	for _, m := range ipMatches {
+		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+	}
+	return []byte(resStr), nil
+}
+
+// GetExtension returns extension for anonymized cluster operator objects
+func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
+	return "json"
 }
