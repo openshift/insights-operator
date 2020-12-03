@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
@@ -23,21 +24,29 @@ import (
 // See: docs/insights-archive-sample/config/version
 func GatherClusterVersion(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+		config, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		config, err := gatherConfigClient.ClusterVersions().Get(g.ctx, "version", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
-		if err != nil {
-			return nil, []error{err}
-		}
-		g.setClusterVersion(config)
 		return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
 	}
 }
+
+func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.ClusterVersion, error) {
+	gatherConfigClient, err := configv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	config, err := gatherConfigClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
 
 // GatherClusterID stores ClusterID from ClusterVersion version
 // This method uses data already collected by Get ClusterVersion. In particular field .Spec.ClusterID
@@ -48,7 +57,10 @@ func GatherClusterVersion(g *Gatherer) func() ([]record.Record, []error) {
 // See: docs/insights-archive-sample/config/id
 func GatherClusterID(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		version := g.ClusterVersion()
+		version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
+		if err != nil {
+			return nil, []error{err}
+		}
 		if version == nil {
 			return nil, nil
 		}
