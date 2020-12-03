@@ -61,14 +61,14 @@ See: docs/insights-archive-sample/config/id
 
 fetches the image pruner configuration
 
-Location in archive: config/imagepruner/
+Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/pruner/cluster.json
 
 
 ## ClusterImageRegistry
 
 fetches the cluster Image Registry configuration
 
-Location in archive: config/imageregistry/
+Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 
 
 ## ClusterInfrastructure
@@ -117,7 +117,7 @@ See: docs/insights-archive-sample/config/oauth
 
 ## ClusterOperators
 
-collects all ClusterOperators.
+collects all ClusterOperators and their resources.
 It finds unhealthy Pods for unhealthy operators
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -293,4 +293,13 @@ Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeco
 
 Location in archive: config/containerruntimeconfigs/
 See: docs/insights-archive-sample/config/containerruntimeconfigs
+
+## StatefulSets
+
+collects StatefulSet configs from default namespaces
+
+The Kubernetes API https://github.com/kubernetes/api/blob/master/apps/v1/types.go
+Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
+
+Location in archive: config/statefulsets/
 

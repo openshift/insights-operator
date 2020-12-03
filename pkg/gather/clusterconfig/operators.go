@@ -3,8 +3,10 @@ package clusterconfig
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -36,7 +38,14 @@ const (
 	logCompressionRatio = 2
 )
 
-// GatherClusterOperators collects all ClusterOperators.
+type clusterOperatorResource struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Name       string `json:"name"`
+	Spec       interface{}
+}
+
+// GatherClusterOperators collects all ClusterOperators and their resources.
 // It finds unhealthy Pods for unhealthy operators
 //
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -87,9 +96,17 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 		}
 		relRes := collectClusterOperatorResources(ctx, dynamicClient, co, resVer)
 		for _, rr := range relRes {
+			// imageregistry resources (config, pruner) are gathered in image_registries.go, image_pruners.go
+			if strings.Contains(rr.APIVersion, "imageregistry") {
+				continue
+			}
+			gv, err := schema.ParseGroupVersion(rr.APIVersion)
+			if err != nil {
+				klog.Warningf("Unable to parse group version %s: %s", rr.APIVersion, err)
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/clusteroperator/%s-%s", co.Name, rr.Name),
-				Item: record.JSONMarshaller{Object: rr},
+				Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name),
+				Item: ClusterOperatorResourceAnonymizer{rr},
 			})
 		}
 	}
@@ -224,19 +241,22 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 				klog.V(2).Infof("Unable to list %s resource due to: %s", gvr, err)
 			}
 			if clusterResource == nil {
-				return nil
+				continue
 			}
-			var ms, kind, name, apiVersion string
+			var kind, name, apiVersion string
 			err = failEarly(
-				func() error { return parseJSONQuery(clusterResource.Object, "spec.managementState?", &ms) },
 				func() error { return parseJSONQuery(clusterResource.Object, "kind", &kind) },
 				func() error { return parseJSONQuery(clusterResource.Object, "apiVersion", &apiVersion) },
 				func() error { return parseJSONQuery(clusterResource.Object, "metadata.name", &name) },
 			)
 			if err != nil {
-				return nil
+				continue
 			}
-			res = append(res, clusterOperatorResource{ManagementState: ms, Kind: kind, Name: name, APIVersion: apiVersion})
+			spec, ok := clusterResource.Object["spec"]
+			if !ok {
+				klog.Warningf("Can't find spec for cluster operator resource %s", name)
+			}
+			res = append(res, clusterOperatorResource{Spec: spec, Kind: kind, Name: name, APIVersion: apiVersion})
 		}
 	}
 	return res
@@ -297,6 +317,37 @@ func (a ClusterOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized cluster operator objects
 func (a ClusterOperatorAnonymizer) GetExtension() string {
+	return "json"
+}
+
+// ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
+type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
+
+// Marshal serializes clusterOperatorResource with IP address anonymization
+func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	bytes, err := json.Marshal(a.resource)
+	if err != nil {
+		return nil, err
+	}
+	resStr := string(bytes)
+	//anonymize URLs
+	re := regexp.MustCompile(`"(https|http)://(.*?)"`)
+	urlMatches := re.FindAllString(resStr, -1)
+	for _, m := range urlMatches {
+		m = strings.ReplaceAll(m, "\"", "")
+		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+	}
+	// anonymize IP addresses
+	re = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}`)
+	ipMatches := re.FindAllString(resStr, -1)
+	for _, m := range ipMatches {
+		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+	}
+	return []byte(resStr), nil
+}
+
+// GetExtension returns extension for anonymized cluster operator objects
+func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
 	return "json"
 }
 

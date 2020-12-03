@@ -84,10 +84,3 @@ func (a StatefulSetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 func (a StatefulSetAnonymizer) GetExtension() string {
 	return "json"
 }
-
-type clusterOperatorResource struct {
-	APIVersion      string
-	Kind            string
-	Name            string
-	ManagementState string `json:"managementState,omitempty"`
-}

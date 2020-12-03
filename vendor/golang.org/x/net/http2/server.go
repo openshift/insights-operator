@@ -288,7 +288,7 @@ func ConfigureServer(s *http.Server, conf *Server) error {
 		// base context via an exported but unadvertised
 		// method on the Handler. This is for internal
 		// net/http<=>http2 use only.
-		ctx := context.Background()
+		var ctx context.Context
 		type baseContexter interface {
 			BaseContext() context.Context
 		}
