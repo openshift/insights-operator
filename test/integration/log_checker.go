@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"regexp"
@@ -88,13 +89,13 @@ func (lc *LogCheck) Search(s string) *LogCheck {
 
 func (lc *LogCheck) CheckPodLogs(podName string, logOptions *corev1.PodLogOptions, r *regexp.Regexp) error {
 	t := lc.test
-	pod, err := lc.clientset.CoreV1().Pods(lc.namespace).Get(podName, metav1.GetOptions{})
+	pod, err := lc.clientset.CoreV1().Pods(lc.namespace).Get(context.Background(), podName, metav1.GetOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
 	return wait.PollImmediate(lc.interval, lc.timeout, func() (bool, error) {
 		req := lc.clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOptions)
-		podLogs, err := req.Stream()
+		podLogs, err := req.Stream(context.Background())
 		if err != nil {
 			return false, nil
 		}
@@ -148,7 +149,7 @@ func (lc *LogCheck) Execute() *LogCheck {
 		lc.Err = lc.CheckPodLogs(lc.podName, logOptions, r)
 		return lc
 	}
-	newPods, err := kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	newPods, err := kubeClient.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}

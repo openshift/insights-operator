@@ -75,9 +75,9 @@ func TestChangeSupportConfig(t *testing.T) {
 				defaultConfig: ctrl,
 			}
 			c.mergeConfigLocked()
-			err := c.retrieveToken()
+			err := c.retrieveToken(context.Background())
 			if err == nil {
-				err = c.retrieveConfig()
+				err = c.retrieveConfig(context.Background())
 			}
 			expErrS := ""
 			if tt.expErr != nil {
