@@ -35,14 +35,12 @@ const (
 // Specifically, the age of pods, the set of running images and the container names are collected.
 //
 // Location in archive: config/running_containers.json
-func GatherContainerImages(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherContainerImages(gatherKubeClient.CoreV1(), g.ctx)
+func GatherContainerImages(g *Gatherer) ([]record.Record, []error) {
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherContainerImages(gatherKubeClient.CoreV1(), g.ctx)
 }
 
 func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.Context) ([]record.Record, []error) {

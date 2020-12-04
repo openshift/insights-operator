@@ -21,14 +21,12 @@ import (
 //
 // Location in archive: config/proxy/
 // See: docs/insights-archive-sample/config/proxy
-func GatherClusterProxy(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterProxy(g.ctx, gatherConfigClient)
+func GatherClusterProxy(g *Gatherer) ([]record.Record, []error) {
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherClusterProxy(g.ctx, gatherConfigClient)
 }
 
 func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

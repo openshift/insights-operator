@@ -34,14 +34,12 @@ const csrGatherLimit = 5000
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
 // Location in archive: config/certificatesigningrequests/
-func GatherCertificateSigningRequests(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1beta1())
+func GatherCertificateSigningRequests(g *Gatherer) ([]record.Record, []error) {
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1beta1())
 }
 
 func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1beta1.CertificatesV1beta1Interface) ([]record.Record, []error) {

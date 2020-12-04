@@ -21,15 +21,14 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 //
 // Location in archive: config/hostsubnet/
-func GatherHostSubnet(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherHostSubnet(g.ctx, gatherNetworkClient)
+func GatherHostSubnet(g *Gatherer) ([]record.Record, []error) {
+	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherHostSubnet(g.ctx, gatherNetworkClient)
 }
+
 func gatherHostSubnet(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {
 	hostSubnetList, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {

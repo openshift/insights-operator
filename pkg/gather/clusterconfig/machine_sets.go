@@ -20,14 +20,12 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 //
 // Location in archive: machinesets/
-func GatherMachineSet(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherMachineSet(g.ctx, dynamicClient)
+func GatherMachineSet(g *Gatherer) ([]record.Record, []error) {
+	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherMachineSet(g.ctx, dynamicClient)
 }
 
 func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

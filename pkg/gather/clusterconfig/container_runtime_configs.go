@@ -20,14 +20,13 @@ import (
 // Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 //
 // Location in archive: config/containerruntimeconfigs/
-func GatherContainerRuntimeConfig(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherContainerRuntimeConfig(g.ctx, dynamicClient)
+func GatherContainerRuntimeConfig(g *Gatherer) ([]record.Record, []error) {
+	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherContainerRuntimeConfig(g.ctx, dynamicClient)
+
 }
 
 func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

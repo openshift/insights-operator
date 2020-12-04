@@ -22,14 +22,12 @@ import (
 //
 // Location in archive: config/version/
 // See: docs/insights-archive-sample/config/version
-func GatherClusterVersion(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		config, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
+func GatherClusterVersion(g *Gatherer) ([]record.Record, []error) {
+	config, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
 }
 
 func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.ClusterVersion, error) {
@@ -47,7 +45,6 @@ func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.
 	return config, nil
 }
 
-
 // GatherClusterID stores ClusterID from ClusterVersion version
 // This method uses data already collected by Get ClusterVersion. In particular field .Spec.ClusterID
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
@@ -55,17 +52,15 @@ func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.
 //
 // Location in archive: config/id/
 // See: docs/insights-archive-sample/config/id
-func GatherClusterID(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		if version == nil {
-			return nil, nil
-		}
-		return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
+func GatherClusterID(g *Gatherer) ([]record.Record, []error) {
+	version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	if version == nil {
+		return nil, nil
+	}
+	return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
 }
 
 // ClusterVersionAnonymizer is serializing ClusterVersion with anonymization

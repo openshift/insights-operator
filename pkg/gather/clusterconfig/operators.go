@@ -54,26 +54,24 @@ type clusterOperatorResource struct {
 // Location of operators in archive: config/clusteroperator/
 // See: docs/insights-archive-sample/config/clusteroperator
 // Location of pods in archive: config/pod/
-func GatherClusterOperators(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		discoveryClient, err := discovery.NewDiscoveryClientForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterOperators(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1(), discoveryClient, dynamicClient)
+func GatherClusterOperators(g *Gatherer) ([]record.Record, []error) {
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return gatherClusterOperators(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1(), discoveryClient, dynamicClient)
 }
 
 func gatherClusterOperators(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface) ([]record.Record, []error) {

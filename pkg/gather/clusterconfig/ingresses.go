@@ -21,14 +21,12 @@ import (
 //
 // Location in archive: config/ingress/
 // See: docs/insights-archive-sample/config/ingress
-func GatherClusterIngress(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterIngress(g.ctx, gatherConfigClient)
+func GatherClusterIngress(g *Gatherer) ([]record.Record, []error) {
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherClusterIngress(g.ctx, gatherConfigClient)
 }
 
 func gatherClusterIngress(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

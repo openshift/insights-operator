@@ -31,18 +31,16 @@ const InstallPlansTopX = 100
 // The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 //
 // Location in archive: config/installplans/
-func GatherInstallPlans(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
+func GatherInstallPlans(g *Gatherer) ([]record.Record, []error) {
+	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
 }
 
 func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

@@ -21,14 +21,12 @@ import (
 //
 // Location in archive: config/infrastructure/
 // See: docs/insights-archive-sample/config/infrastructure
-func GatherClusterInfrastructure(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterInfrastructure(g.ctx, gatherConfigClient)
+func GatherClusterInfrastructure(g *Gatherer) ([]record.Record, []error) {
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherClusterInfrastructure(g.ctx, gatherConfigClient)
 }
 
 func gatherClusterInfrastructure(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

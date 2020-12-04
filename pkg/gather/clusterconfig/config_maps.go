@@ -27,14 +27,12 @@ import (
 //
 // Location in archive: config/configmaps/
 // See: docs/insights-archive-sample/config/configmaps
-func GatherConfigMaps(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherConfigMaps(g.ctx, gatherKubeClient.CoreV1())
+func GatherConfigMaps(g *Gatherer) ([]record.Record, []error) {
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherConfigMaps(g.ctx, gatherKubeClient.CoreV1())
 }
 
 func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

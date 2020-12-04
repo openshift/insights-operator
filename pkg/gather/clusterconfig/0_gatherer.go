@@ -32,6 +32,38 @@ type Gatherer struct {
 	metricsGatherKubeConfig *rest.Config
 }
 
+type gatherFunction func(g *Gatherer) ([]record.Record, []error)
+
+var bulkFns = []gatherFunction{
+	GatherPodDisruptionBudgets,
+	GatherMostRecentMetrics,
+	GatherClusterOperators,
+	GatherContainerImages,
+	GatherNodes,
+	GatherConfigMaps,
+	GatherClusterVersion,
+	GatherClusterID,
+	GatherClusterInfrastructure,
+	GatherClusterNetwork,
+	GatherClusterAuthentication,
+	GatherClusterImageRegistry,
+	GatherClusterImagePruner,
+	GatherClusterFeatureGates,
+	GatherClusterOAuth,
+	GatherClusterIngress,
+	GatherClusterProxy,
+	GatherCertificateSigningRequests,
+	GatherCRD,
+	GatherHostSubnet,
+	GatherMachineSet,
+	GatherInstallPlans,
+	GatherServiceAccounts,
+	GatherMachineConfigPool,
+	GatherContainerRuntimeConfig,
+	GatherStatefulSets,
+	GatherNetNamespace
+}
+
 // New creates new Gatherer
 func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metricsGatherKubeConfig *rest.Config) *Gatherer {
 	return &Gatherer{
@@ -44,36 +76,6 @@ func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metr
 // Gather is hosting and calling all the recording functions
 func (g *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
 	g.ctx = ctx
-	bulkFns := []func() ([]record.Record, []error){
-		GatherPodDisruptionBudgets(g),
-		GatherMostRecentMetrics(g),
-		GatherClusterOperators(g),
-		GatherContainerImages(g),
-		GatherNodes(g),
-		GatherConfigMaps(g),
-		GatherClusterVersion(g),
-		GatherClusterID(g),
-		GatherClusterInfrastructure(g),
-		GatherClusterNetwork(g),
-		GatherClusterAuthentication(g),
-		GatherClusterImageRegistry(g),
-		GatherClusterImagePruner(g),
-		GatherClusterFeatureGates(g),
-		GatherClusterOAuth(g),
-		GatherClusterIngress(g),
-		GatherClusterProxy(g),
-		GatherCertificateSigningRequests(g),
-		GatherCRD(g),
-		GatherHostSubnet(g),
-		GatherMachineSet(g),
-		GatherInstallPlans(g),
-		GatherServiceAccounts(g),
-		GatherMachineConfigPool(g),
-		GatherContainerRuntimeConfig(g),
-		GatherStatefulSets(g),
-		GatherNetNamespace(g),
-	}
-
 	var errors []string
 	var gatherReport []interface{}
 	for _, bulkFn := range bulkFns {
@@ -81,7 +83,7 @@ func (g *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		klog.V(5).Infof("Gathering %s", gatherName)
 
 		start := time.Now()
-		records, errs := bulkFn()
+		records, errs := bulkFn(g)
 		elapsed := time.Now().Sub(start).Truncate(time.Millisecond)
 
 		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(records))
