@@ -15,7 +15,7 @@ This PR implements a new data enhancement to...
 
 ## Documentation
 
-- `path/to/documentation.json`
+- `path/to/documentation.md`
 
 ## Tests
 <!-- If it includes new tests, list them down bellow -->
