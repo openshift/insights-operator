@@ -40,6 +40,10 @@ func TestPullSecretExists(t *testing.T) {
 	}
 }
 
+func TestIsIOHealthy(t *testing.T) {
+	checkPodsLogs(t, `The operator is healthy`)
+}
+
 // Check if opt-in/opt-out works
 func TestOptOutOptIn(t *testing.T) {
 	// initially IO should be running
@@ -127,7 +131,7 @@ func TestOptOutOptIn(t *testing.T) {
 
 	// Wait for operator to become disabled because of removed pull-secret
 	errDisabled = wait.PollImmediate(1*time.Second, 30*time.Second, func() (bool, error) {
-		insightsDisabled := isOperatorDisabled(t, clusterOperatorInsights())
+		insightsDisabled := operatorConditionCheck(t, clusterOperatorInsights(), "Disabled")
 		if insightsDisabled {
 			return true, nil
 		}
@@ -154,5 +158,5 @@ func TestOptOutOptIn(t *testing.T) {
 	if errDisabled != nil {
 		t.Fatalf("The Cluster Operator wasn't enabled after setting original pull-secret")
 	}
-	checkPodsLogs(t, clientset, "Successfully reported")
+	checkPodsLogs(t, "Successfully reported")
 }

@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
@@ -70,42 +74,31 @@ func configV1Client() (result *configv1client.ConfigV1Client) {
 	return client
 }
 
-func clusterOperatorInsights() *configv1.ClusterOperator {
-	// get info about insights cluster operator
-	operator, err := configClient.ClusterOperators().Get("insights", metav1.GetOptions{})
+func clusterOperator(clusterName string) *configv1.ClusterOperator {
+	// get info about given cluster operator
+	operator, err := configClient.ClusterOperators().Get(clusterName, metav1.GetOptions{})
 	if err != nil {
+		// TODO -> change to t.Fatal in follow-up PR
 		panic(err.Error())
 	}
 	return operator
 }
 
-func isOperatorDegraded(t *testing.T, operator *configv1.ClusterOperator) bool {
-	statusConditions := operator.Status.Conditions
-
-	for _, condition := range statusConditions {
-		if condition.Type == "Degraded" {
-			if condition.Status == "True" {
-				t.Logf("%s Operator is degraded ", time.Now())
-				return true
-			}
-		}
-	}
-	t.Logf("%s Operator is not degraded", time.Now())
-	return false
+func clusterOperatorInsights() *configv1.ClusterOperator {
+	// TODO -> delete this function in follow-up PR
+	return clusterOperator("insights")
 }
 
-func isOperatorDisabled(t *testing.T, operator *configv1.ClusterOperator) bool {
+func operatorConditionCheck(t *testing.T, operator *configv1.ClusterOperator, conditionType configv1.ClusterStatusConditionType) bool {
 	statusConditions := operator.Status.Conditions
 
 	for _, condition := range statusConditions {
-		if condition.Type == "Disabled" {
-			if condition.Status == "True" {
-				t.Log("Operator is Disabled")
-				return true
-			}
+		if (conditionType == condition.Type) && (condition.Status == "True") {
+			t.Logf("%s Operator is %v", time.Now(), conditionType)
+			return true
 		}
 	}
-	t.Log("Operator is not disabled")
+	t.Logf("%s Operator is not %v", time.Now(), conditionType)
 	return false
 }
 
@@ -125,16 +118,20 @@ func operatorStatus(t *testing.T, operator *configv1.ClusterOperator, conditionT
 }
 
 func restartInsightsOperator(t *testing.T) {
+	deleteAllPods(t, "openshift-insights")
+}
+
+func deleteAllPods(t *testing.T, namespace string) {
 	// restart insights-operator (delete pods)
-	pods, err := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	for _, pod := range pods.Items {
-		clientset.CoreV1().Pods("openshift-insights").Delete(pod.Name, &metav1.DeleteOptions{})
+		clientset.CoreV1().Pods(namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 		err := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-			_, err := clientset.CoreV1().Pods("openshift-insights").Get(pod.Name, metav1.GetOptions{})
+			_, err := clientset.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
 			if err == nil {
 				t.Logf("the pod is not yet deleted: %v\n", err)
 				return false, nil
@@ -147,14 +144,14 @@ func restartInsightsOperator(t *testing.T) {
 
 	// check new pods are created and running
 	errPod := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-		newPods, _ := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+		newPods, _ := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if len(newPods.Items) == 0 {
 			t.Log("pods are not yet created")
 			return false, nil
 		}
 
 		for _, newPod := range newPods.Items {
-			pod, err := clientset.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
+			pod, err := clientset.CoreV1().Pods(namespace).Get(newPod.Name, metav1.GetOptions{})
 			if err != nil {
 				panic(err.Error())
 			}
@@ -169,46 +166,40 @@ func restartInsightsOperator(t *testing.T) {
 	t.Log(errPod)
 }
 
-func checkPodsLogs(t *testing.T, kubeClient *kubernetes.Clientset, message string) {
-	newPods, err := kubeClient.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
-	if err != nil {
-		t.Fatal(err.Error())
+func logLineTime(t *testing.T, pattern string) time.Time {
+	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
+	lc := LogChecker(t).Timeout(10).Search(startOfLine + pattern)
+	if lc.Err != nil {
+		t.Fatalf("Couldn't find \"%s\"", pattern)
 	}
+	str := strings.Split(strings.Split(lc.Result, ".")[0], " ")[1]
+	time1, err := time.Parse("15:04:05", str)
+	e(t, err, "time parsing fail")
+	return time1
+}
 
-	for _, newPod := range newPods.Items {
-		pod, err := kubeClient.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		errLog := wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-			req := kubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
-			podLogs, err := req.Stream()
-			if err != nil {
-				return false, nil
-			}
-			defer podLogs.Close()
-
-			buf := new(bytes.Buffer)
-			_, err = io.Copy(buf, podLogs)
-			if err != nil {
-				panic(err.Error())
-			}
-			log := buf.String()
-
-			result := strings.Contains(log, message)
-			if result == false {
-				t.Logf("No %s in logs\n", message)
-				t.Logf("Logs for verification: ****\n%s", log)
-				return false, nil
-			}
-
-			t.Logf("%s found\n", message)
-			return true, nil
-		})
-		if errLog != nil {
-			t.Error(errLog)
-		}
+func duration(t *testing.T, start time.Time, end time.Time) float64 {
+	difference := end.Sub(start).Seconds()
+	if difference < 0 {
+		difference = 24*time.Hour.Seconds() + difference
 	}
+	return difference
+}
+
+func LogChecker(t *testing.T) *LogCheck {
+	defaults := &LogCheck{
+		interval:   time.Second,
+		logOptions: corev1.PodLogOptions{},
+		timeout:    5 * time.Minute,
+		failFast:   true,
+		test:       t,
+		clientset:  clientset,
+	}
+	return defaults
+}
+
+func checkPodsLogs(t *testing.T, message string) *LogCheck {
+	return LogChecker(t).Search(message)
 }
 
 func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
@@ -234,6 +225,153 @@ func forceUpdateSecret(ns string, secretName string, secret *v1.Secret) error {
 		return fmt.Errorf("Unable to update original secret: %s", err)
 	}
 	return nil
+}
+
+func ExecCmd(t *testing.T, client kubernetes.Interface, podName string, namespace string,
+	command string, stdin io.Reader) (string, string, error) {
+	cmd := []string{
+		"/bin/bash",
+		"-c",
+		command,
+	}
+	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(podName).
+		Namespace(namespace).SubResource("exec")
+	option := &corev1.PodExecOptions{
+		Command: cmd,
+		Stdin:   true,
+		Stdout:  true,
+		Stderr:  true,
+		TTY:     false,
+	}
+	if stdin == nil {
+		option.Stdin = false
+	}
+	req.VersionedParams(
+		option,
+		scheme.ParameterCodec,
+	)
+	exec, err := remotecommand.NewSPDYExecutor(kubeconfig(), "POST", req.URL())
+	if err != nil {
+		return "", "", err
+	}
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  stdin,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	return stdout.String(), stderr.String(), nil
+}
+
+func e(t *testing.T, err error, message string) {
+	if err != nil {
+		t.Fatal(message, err.Error())
+	}
+}
+
+func findPod(t *testing.T, kubeClient *kubernetes.Clientset, namespace string, prefix string) *corev1.Pod {
+	newPods, err := kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	for _, newPod := range newPods.Items {
+		if strings.HasPrefix(newPod.Name, prefix) {
+			return &newPod
+		}
+	}
+	return nil
+}
+
+func degradeOperatorMonitoring(t *testing.T) func() {
+	// delete just in case it was already there, so we don't care about error
+	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
+	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+	operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
+	_, err := clientset.CoreV1().ConfigMaps(pod.Namespace).Create(
+		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml": "telemeterClient: enabled: NOT_BOOELAN"}},
+	)
+	e(t, err, "Failed to create ConfigMap")
+	err = clientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+	e(t, err, "Failed to delete Pod")
+	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
+		return operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded"), nil
+	})
+	return func() {
+		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete("cluster-monitoring-config", &metav1.DeleteOptions{})
+		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
+			insightsDegraded := operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
+			return !insightsDegraded, nil
+		})
+	}
+}
+
+func changeReportTimeInterval(t *testing.T, newInterval []byte) []byte {
+	supportSecret, _ := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	previousInterval := supportSecret.Data["interval"]
+	supportSecret.Data["interval"] = newInterval
+	err := forceUpdateSecret(OpenShiftConfig, Support, supportSecret)
+	e(t, err, "changing report time interval failed")
+	restartInsightsOperator(t)
+	t.Log("forcing update secret")
+	return previousInterval
+}
+
+func ChangeReportTimeInterval(t *testing.T, minutes time.Duration) func() {
+	previousInterval := changeReportTimeInterval(t, []byte(fmt.Sprintf("%s", time.Minute*minutes)))
+	return func() { changeReportTimeInterval(t, previousInterval) }
+}
+
+func latestArchiveFiles(t *testing.T) []string {
+	insightsPod := findPod(t, clientset, "openshift-insights", "insights-operator")
+	archiveLogFiles := `tar tf $(ls -dtr /var/lib/insights-operator/* | tail -1)`
+	stdout, _, _ := ExecCmd(t, clientset, insightsPod.Name, "openshift-insights", archiveLogFiles, nil)
+	stdout = strings.TrimSpace(stdout)
+	return strings.Split(stdout, "\n")
+}
+
+func allFilesMatch(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+	for _, file := range files {
+		if !regex.MatchString(file) {
+			t.Errorf(`%s file "%s" does not match pattern "%s"`, prettyName, file, regex.String())
+		}
+	}
+	return nil
+}
+
+func matchingFileExists(t *testing.T, prettyName string, files []string, regex *regexp.Regexp) error {
+	count := 0
+	for _, file := range files {
+		if regex.MatchString(file) {
+			count++
+		}
+	}
+
+	word := "files"
+	suffix := ""
+	if count == 1 {
+		word = "file"
+		suffix = "es"
+	}
+	t.Logf("%d %s %s match%s pattern `%s`", count, prettyName, word, suffix, regex.String())
+
+	if count != 0 {
+		return nil
+	}
+	return fmt.Errorf("did not find any (%s)file matching %s", prettyName, regex.String())
+}
+
+func latestArchiveCheckFiles(t *testing.T, prettyName string, check func(*testing.T, string, []string, *regexp.Regexp) error, pattern string) error {
+	latestFiles := latestArchiveFiles(t)
+	if len(latestFiles) == 0 {
+		t.Fatal("No files in archive to check")
+	}
+	regex, err := regexp.Compile(pattern)
+	e(t, err, "failed to compile pattern")
+	return check(t, prettyName, latestFiles, regex)
 }
 
 func TestMain(m *testing.M) {
