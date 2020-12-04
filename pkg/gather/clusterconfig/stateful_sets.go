@@ -62,10 +62,10 @@ func gatherStatefulSets(ctx context.Context, coreClient corev1client.CoreV1Inter
 			continue
 		}
 
-		for _, i := range sets.Items {
+		for i := range sets.Items {
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/statefulsets/%s/%s", namespace, i.GetName()),
-				Item: StatefulSetAnonymizer{&i},
+				Name: fmt.Sprintf("config/statefulsets/%s/%s", namespace, sets.Items[i].Name),
+				Item: StatefulSetAnonymizer{&sets.Items[i]},
 			})
 		}
 	}

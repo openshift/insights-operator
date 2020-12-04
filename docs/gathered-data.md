@@ -61,7 +61,7 @@ See: docs/insights-archive-sample/config/id
 
 fetches the image pruner configuration
 
-Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/pruner/cluster.json
+Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
 
 
 ## ClusterImageRegistry
