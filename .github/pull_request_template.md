@@ -10,20 +10,22 @@ This PR implements a new data enhancement to...
 - [ ] Others (CI, Infrastructure, Documentation)
 
 ## Sample archive
+<!-- Are these changes reflected in sample archive? -->
 
 - `path/to/sample_data.json`
 
 ## Documentation
+<!-- Are these changes reflected in documentation? -->
 
 - `path/to/documentation.md`
 
-## Tests
-<!-- If it includes new tests, list them down bellow -->
+## Unit Tests
+<!-- If it includes new unit tests, list them down bellow -->
 
 - `path/to/file_test.go`
 
 ## Privacy
-<!-- It has anonymization/privacity beein considered by CCX? (e.g. external IP addresses) -->
+<!-- Has data anonymization/privacy been considered by CCX? (e.g. external IP addresses) -->
 
 Yes. There are no sensitive data in the newly collected information.
 
