@@ -78,19 +78,13 @@ func configV1Client() (result *configv1client.ConfigV1Client) {
 	return client
 }
 
-func clusterOperator(clusterName string) *configv1.ClusterOperator {
+func clusterOperator(clusterName string, t *testing.T) *configv1.ClusterOperator {
 	// get info about given cluster operator
 	operator, err := configClient.ClusterOperators().Get(context.Background(), clusterName, metav1.GetOptions{})
 	if err != nil {
-		// TODO -> change to t.Fatal in follow-up PR
-		panic(err.Error())
+		t.Fatalf("Failed to get information about the operator: %s", err)
 	}
 	return operator
-}
-
-func clusterOperatorInsights() *configv1.ClusterOperator {
-	// TODO -> delete this function in follow-up PR
-	return clusterOperator("insights")
 }
 
 func operatorConditionCheck(t *testing.T, operator *configv1.ClusterOperator, conditionType configv1.ClusterStatusConditionType) bool {
@@ -294,7 +288,7 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 	// delete just in case it was already there, so we don't care about error
 	pod := findPod(t, clientset, "openshift-monitoring", "cluster-monitoring-operator")
 	clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
-	operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
+	operatorConditionCheck(t, clusterOperator("monitoring", t), "Degraded")
 	_, err := clientset.CoreV1().ConfigMaps(pod.Namespace).Create(context.Background(),
 		&corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config"}, Data: map[string]string{"config.yaml": "telemeterClient: enabled: NOT_BOOELAN"}},
 		metav1.CreateOptions{},
@@ -303,12 +297,12 @@ func degradeOperatorMonitoring(t *testing.T) func() {
 	err = clientset.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 	e(t, err, "Failed to delete Pod")
 	wait.PollImmediate(1*time.Second, 5*time.Minute, func() (bool, error) {
-		return operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded"), nil
+		return operatorConditionCheck(t, clusterOperator("monitoring", t), "Degraded"), nil
 	})
 	return func() {
 		clientset.CoreV1().ConfigMaps(pod.Namespace).Delete(context.Background(), "cluster-monitoring-config", metav1.DeleteOptions{})
 		wait.PollImmediate(3*time.Second, 3*time.Minute, func() (bool, error) {
-			insightsDegraded := operatorConditionCheck(t, clusterOperator("monitoring"), "Degraded")
+			insightsDegraded := operatorConditionCheck(t, clusterOperator("monitoring", t), "Degraded")
 			return !insightsDegraded, nil
 		})
 	}
