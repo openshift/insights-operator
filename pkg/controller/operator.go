@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"k8s.io/klog"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/pkg/version"
@@ -17,7 +20,8 @@ import (
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
@@ -56,7 +60,7 @@ func (s *Support) LoadConfig(obj map[string]interface{}) error {
 
 func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
-
+	initialDelay := 0 * time.Second
 	if err := s.LoadConfig(controller.ComponentConfig.Object); err != nil {
 		return err
 	}
@@ -123,14 +127,21 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 		"clusterconfig": clusterConfigGatherer,
 	})
 	statusReporter.AddSources(periodic.Sources()...)
-	go periodic.Run(4, ctx.Done())
+
+	// check we can read IO container status and we are not in crash loop
+	err = wait.PollImmediate(20*time.Second, wait.Jitter(s.Controller.Interval/12, 0.1), isRunning(ctx, gatherKubeConfig))
+	if err != nil {
+		initialDelay = wait.Jitter(s.Controller.Interval/12, 1)
+		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
+	}
+	go periodic.Run(4, ctx.Done(), initialDelay)
 
 	authorizer := clusterauthorizer.New(configObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, clusterConfigGatherer)
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recorder, insightsClient, configObserver, statusReporter)
+	uploader := insightsuploader.New(recorder, insightsClient, configObserver, statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
 
 	// TODO: future ideas
@@ -156,4 +167,28 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	<-ctx.Done()
 	return nil
+}
+
+func isRunning(ctx context.Context, config *rest.Config) wait.ConditionFunc {
+	return func() (bool, error) {
+		c, err := corev1client.NewForConfig(config)
+		if err != nil {
+			return false, err
+		}
+		pod, err := c.Pods(os.Getenv("POD_NAMESPACE")).Get(ctx, os.Getenv("POD_NAME"), metav1.GetOptions{})
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				klog.Errorf("Couldn't get Insights Operator Pod to detect its status. Error: %v", err)
+			}
+			return false, nil
+		}
+		for _, c := range pod.Status.ContainerStatuses {
+			// all containers has to be in running state to consider them healthy
+			if c.LastTerminationState.Terminated != nil || c.LastTerminationState.Waiting != nil {
+				klog.Info("The last pod state is unhealthy")
+				return false, nil
+			}
+		}
+		return true, nil
+	}
 }

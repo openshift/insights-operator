@@ -79,17 +79,27 @@ func (c *Controller) sync(name string) error {
 	return gatherer.Gather(ctx, c.recorder)
 }
 
-func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
+// Run starts gathering with initialDelay
+func (c *Controller) Run(workers int, stopCh <-chan struct{}, initialDelay time.Duration) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
-
 	defer klog.Info("Shutting down")
 
 	// start watching for version changes
 	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
 
 	for i := 0; i < workers; i++ {
-		go wait.Until(c.runWorker, time.Second, stopCh)
+		go wait.Until(func() {
+			if initialDelay > 0 {
+				select {
+				case <-stopCh:
+					return
+				case <-time.After(initialDelay):
+					c.runWorker()
+				}
+			}
+			c.runWorker()
+		}, time.Second, stopCh)
 	}
 
 	// seed the queue
