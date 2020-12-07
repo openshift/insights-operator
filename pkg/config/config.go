@@ -18,6 +18,7 @@ type Serialized struct {
 		MinRetryTime string `json:"min_retry"`
 	} `json:"pull_report"`
 	Impersonate string `json:"impersonate"`
+	Gather []string `json:"gather"`
 }
 
 func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
@@ -28,6 +29,7 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	cfg.StoragePath = s.StoragePath
 	cfg.Endpoint = s.Endpoint
 	cfg.Impersonate = s.Impersonate
+	cfg.Gather = s.Gather
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
@@ -98,6 +100,7 @@ type Controller struct {
 	ReportMinRetryTime   time.Duration
 	ReportPullingTimeout time.Duration
 	Impersonate          string
+	Gather				 []string
 
 	Username string
 	Password string

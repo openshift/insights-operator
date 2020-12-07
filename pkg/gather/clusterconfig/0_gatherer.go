@@ -34,34 +34,34 @@ type Gatherer struct {
 
 type gatherFunction func(g *Gatherer) ([]record.Record, []error)
 
-var bulkFns = []gatherFunction{
-	GatherPodDisruptionBudgets,
-	GatherMostRecentMetrics,
-	GatherClusterOperators,
-	GatherContainerImages,
-	GatherNodes,
-	GatherConfigMaps,
-	GatherClusterVersion,
-	GatherClusterID,
-	GatherClusterInfrastructure,
-	GatherClusterNetwork,
-	GatherClusterAuthentication,
-	GatherClusterImageRegistry,
-	GatherClusterImagePruner,
-	GatherClusterFeatureGates,
-	GatherClusterOAuth,
-	GatherClusterIngress,
-	GatherClusterProxy,
-	GatherCertificateSigningRequests,
-	GatherCRD,
-	GatherHostSubnet,
-	GatherMachineSet,
-	GatherInstallPlans,
-	GatherServiceAccounts,
-	GatherMachineConfigPool,
-	GatherContainerRuntimeConfig,
-	GatherStatefulSets,
-	GatherNetNamespace
+var gatherFunctions = map[string]gatherFunction{
+	"pdbs": GatherPodDisruptionBudgets,
+	"metrics": GatherMostRecentMetrics,
+	"operators": GatherClusterOperators,
+	"container_images": GatherContainerImages,
+	"nodes": GatherNodes,
+	"config_maps": GatherConfigMaps,
+	"version": GatherClusterVersion,
+	"id": GatherClusterID,
+	"infrastructure": GatherClusterInfrastructure,
+	"network": GatherClusterNetwork,
+	"authentication": GatherClusterAuthentication,
+	"image_registry": GatherClusterImageRegistry,
+	"image_pruner": GatherClusterImagePruner,
+	"feature_gates": GatherClusterFeatureGates,
+	"oauth": GatherClusterOAuth,
+	"ingress": GatherClusterIngress,
+	"proxy": GatherClusterProxy,
+	"certificate_signing_requests": GatherCertificateSigningRequests,
+	"crd": GatherCRD,
+	"host_subnet": GatherHostSubnet,
+	"machine_set": GatherMachineSet,
+	"install_plans": GatherInstallPlans,
+	"service_accounts": GatherServiceAccounts,
+	"machine_config_pool": GatherMachineConfigPool,
+	"container_runtime_config": GatherContainerRuntimeConfig,
+	"stateful_sets": GatherStatefulSets,
+	"netnamepaces": GatherNetNamespace,
 }
 
 // New creates new Gatherer
@@ -74,17 +74,27 @@ func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metr
 }
 
 // Gather is hosting and calling all the recording functions
-func (g *Gatherer) Gather(ctx context.Context, recorder record.Interface) error {
+func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder record.Interface) error {
 	g.ctx = ctx
 	var errors []string
 	var gatherReport []interface{}
-	for _, bulkFn := range bulkFns {
-		gatherName := runtime.FuncForPC(reflect.ValueOf(bulkFn).Pointer()).Name()
+
+	if len(gatherList) == 0 {
+		errors = append(errors, "no gather functions are specified to run")
+	}
+
+	for _, gatherId := range gatherList {
+		gFn, ok := gatherFunctions[gatherId]
+		if !ok {
+			errors = append(errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
+			continue
+		}
+		gatherName := runtime.FuncForPC(reflect.ValueOf(gFn).Pointer()).Name()
 		klog.V(5).Infof("Gathering %s", gatherName)
 
 		start := time.Now()
-		records, errs := bulkFn(g)
-		elapsed := time.Now().Sub(start).Truncate(time.Millisecond)
+		records, errs := gFn(g)
+		elapsed := time.Since(start).Truncate(time.Millisecond)
 
 		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(records))
 		gatherReport = append(gatherReport, gatherStatusReport{gatherName, elapsed, len(records), errs})
