@@ -3,6 +3,7 @@ package clusterconfig
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -22,7 +23,7 @@ import (
 // The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-// Location in archive: logs/openshift-apiserver-operator
+// Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		messagesToSearch := []string{
@@ -48,7 +49,7 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) func() ([]record.Record, 
 
 func gatherOpenShiftAPIServerOperatorLastDayLogs(
 	ctx context.Context, coreClient corev1client.CoreV1Interface, messagesToSearch []string,
-	) ([]record.Record, error) {
+) ([]record.Record, error) {
 	const namespace = "openshift-apiserver-operator"
 	var (
 		sinceSeconds int64 = 86400     // last day
@@ -73,14 +74,16 @@ func gatherOpenShiftAPIServerOperatorLastDayLogs(
 			return nil, err
 		}
 
-		records = append(records, record.Record{
-			Name: "logs/openshift-apiserver-operator",
-			Item: Raw{logs},
-		})
+		if len(strings.TrimSpace(logs)) != 0 {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/pod/%s/logs/%s/errors.log", pod.Namespace, pod.Name),
+				Item: Raw{logs},
+			})
+		}
 	}
 
 	if len(pods.Items) == 0 {
-		klog.Info("openshift-apiserver-operator wasn't found")
+		klog.Infof("no pods in %v namespace were found", namespace)
 	}
 
 	return records, nil
