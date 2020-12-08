@@ -289,96 +289,27 @@ func (r *Recorder) Summary(ctx context.Context, since time.Time) (io.ReadCloser,
 	if err != nil {
 		return nil, false, err
 	}
-
-	var merged []string
-	for i, file := range files {
-		if file.IsDir() {
+	if len(files) == 0 {
+		return nil, false, nil
+	}
+	recentFiles := make([]string, 0, len(files))
+	for _, file := range files {
+		if file.IsDir() || !strings.HasPrefix(file.Name(), "insights-") || !strings.HasSuffix(file.Name(), ".tar.gz") {
 			continue
 		}
 		if !file.ModTime().After(since) {
 			continue
 		}
-		merged = make([]string, 0, len(files)-i)
-		for j := len(files) - 1; j >= i; j-- {
-			if files[j].IsDir() || !strings.HasPrefix(files[j].Name(), "insights-") || !strings.HasSuffix(files[j].Name(), ".tar.gz") {
-				continue
-			}
-			merged = append(merged, filepath.Join(r.basePath, files[j].Name()))
-		}
+		recentFiles = append(recentFiles, file.Name())
 	}
-	if len(merged) == 0 {
+	if len(recentFiles) == 0 {
 		return nil, false, nil
 	}
-	klog.V(4).Infof("Found files to send: %v", merged)
-
-	return &mergeReader{filenames: merged}, true, nil
-}
-
-type mergeReader struct {
-	filenames []string
-	pw        *io.PipeWriter
-	pr        *io.PipeReader
-}
-
-func (r *mergeReader) Read(p []byte) (int, error) {
-	if r.pw == nil {
-		r.pr, r.pw = io.Pipe()
-		go r.merge()
+	lastFile := recentFiles[len(recentFiles)-1]
+	klog.V(4).Infof("Found files to send: %v", lastFile)
+	f, err := os.Open(filepath.Join(r.basePath, lastFile))
+	if err != nil {
+		return nil, false, nil
 	}
-	return r.pr.Read(p)
-}
-
-func (r *mergeReader) Close() error {
-	if r.pw != nil {
-		return r.pw.Close()
-	}
-	return nil
-}
-
-func (r *mergeReader) merge() {
-	gw := gzip.NewWriter(r.pw)
-	tw := tar.NewWriter(gw)
-
-	types := make(map[string]struct{})
-	for _, filename := range r.filenames {
-		err := func() error {
-			f, err := os.Open(filename)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			gr, err := gzip.NewReader(f)
-			if err != nil {
-				return err
-			}
-			tr := tar.NewReader(gr)
-			for {
-				hdr, err := tr.Next()
-				if err != nil {
-					if err == io.EOF {
-						return nil
-					}
-					return err
-				}
-				if _, ok := types[hdr.Name]; ok {
-					continue
-				}
-				if err := tw.WriteHeader(hdr); err != nil {
-					return err
-				}
-				if _, err := io.Copy(tw, tr); err != nil {
-					return err
-				}
-			}
-		}()
-		if err != nil {
-			r.pw.CloseWithError(err)
-			return
-		}
-	}
-	if err := tw.Close(); err != nil {
-		r.pw.CloseWithError(err)
-		return
-	}
-	r.pw.CloseWithError(gw.Close())
+	return f, true, nil
 }
