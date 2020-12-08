@@ -129,9 +129,9 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	statusReporter.AddSources(periodic.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
-	err = wait.PollImmediate(20*time.Second, wait.Jitter(s.Controller.Interval/12, 0.1), isRunning(ctx, gatherKubeConfig))
+	err = wait.PollImmediate(20*time.Second, wait.Jitter(s.Controller.Interval/24, 0.1), isRunning(ctx, gatherKubeConfig))
 	if err != nil {
-		initialDelay = wait.Jitter(s.Controller.Interval/12, 1)
+		initialDelay = wait.Jitter(s.Controller.Interval/12, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
 	go periodic.Run(4, ctx.Done(), initialDelay)
