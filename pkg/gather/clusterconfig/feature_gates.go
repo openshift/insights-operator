@@ -21,6 +21,7 @@ import (
 //
 // Location in archive: config/featuregate/
 // See: docs/insights-archive-sample/config/featuregate
+// Id in config: feature_gates
 func GatherClusterFeatureGates(g *Gatherer) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

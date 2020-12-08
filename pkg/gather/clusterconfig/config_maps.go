@@ -27,6 +27,7 @@ import (
 //
 // Location in archive: config/configmaps/
 // See: docs/insights-archive-sample/config/configmaps
+// Id in config: config_maps
 func GatherConfigMaps(g *Gatherer) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

@@ -34,6 +34,8 @@ type Gatherer struct {
 
 type gatherFunction func(g *Gatherer) ([]record.Record, []error)
 
+const gatherAll = "ALL"
+
 var gatherFunctions = map[string]gatherFunction{
 	"pdbs": GatherPodDisruptionBudgets,
 	"metrics": GatherMostRecentMetrics,
@@ -43,23 +45,23 @@ var gatherFunctions = map[string]gatherFunction{
 	"config_maps": GatherConfigMaps,
 	"version": GatherClusterVersion,
 	"id": GatherClusterID,
-	"infrastructure": GatherClusterInfrastructure,
-	"network": GatherClusterNetwork,
+	"infrastructures": GatherClusterInfrastructure,
+	"networks": GatherClusterNetwork,
 	"authentication": GatherClusterAuthentication,
-	"image_registry": GatherClusterImageRegistry,
-	"image_pruner": GatherClusterImagePruner,
+	"image_registries": GatherClusterImageRegistry,
+	"image_pruners": GatherClusterImagePruner,
 	"feature_gates": GatherClusterFeatureGates,
-	"oauth": GatherClusterOAuth,
+	"oauths": GatherClusterOAuth,
 	"ingress": GatherClusterIngress,
-	"proxy": GatherClusterProxy,
+	"proxies": GatherClusterProxy,
 	"certificate_signing_requests": GatherCertificateSigningRequests,
-	"crd": GatherCRD,
-	"host_subnet": GatherHostSubnet,
-	"machine_set": GatherMachineSet,
+	"crds": GatherCRD,
+	"host_subnets": GatherHostSubnet,
+	"machine_sets": GatherMachineSet,
 	"install_plans": GatherInstallPlans,
 	"service_accounts": GatherServiceAccounts,
-	"machine_config_pool": GatherMachineConfigPool,
-	"container_runtime_config": GatherContainerRuntimeConfig,
+	"machine_config_pools": GatherMachineConfigPool,
+	"container_runtime_configs": GatherContainerRuntimeConfig,
 	"stateful_sets": GatherStatefulSets,
 	"netnamepaces": GatherNetNamespace,
 }
@@ -81,6 +83,13 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 
 	if len(gatherList) == 0 {
 		errors = append(errors, "no gather functions are specified to run")
+	}
+
+	if contains(gatherList, gatherAll) {
+		gatherList = make([]string, 0, len(gatherFunctions))
+		for k := range gatherFunctions {
+			gatherList = append(gatherList, k)
+		}
 	}
 
 	for _, gatherId := range gatherList {
@@ -146,4 +155,13 @@ func uniqueStrings(arr []string) []string {
 		last++
 	}
 	return arr[:last]
+}
+
+func contains(s []string, e string) bool {
+    for _, a := range s {
+        if a == e {
+            return true
+        }
+    }
+    return false
 }

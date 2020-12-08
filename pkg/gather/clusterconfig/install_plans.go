@@ -31,6 +31,7 @@ const InstallPlansTopX = 100
 // The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 //
 // Location in archive: config/installplans/
+// Id in config: install_plans
 func GatherInstallPlans(g *Gatherer) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

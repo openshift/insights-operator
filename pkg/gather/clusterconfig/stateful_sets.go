@@ -25,6 +25,7 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
 //
 // Location in archive: config/statefulsets/
+// Id in config: stateful_sets
 func GatherStatefulSets(g *Gatherer) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

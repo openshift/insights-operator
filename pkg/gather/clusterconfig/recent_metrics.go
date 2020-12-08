@@ -31,6 +31,7 @@ const (
 //
 // Location in archive: config/metrics/
 // See: docs/insights-archive-sample/config/metrics
+// Id in config: metrics
 func GatherMostRecentMetrics(g *Gatherer) ([]record.Record, []error) {
 	var metricsClient rest.Interface
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)

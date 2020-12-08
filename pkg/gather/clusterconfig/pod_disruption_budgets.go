@@ -31,6 +31,7 @@ var (
 //
 // Location in archive: config/pdbs/
 // See: docs/insights-archive-sample/config/pdbs
+// Id in config: pdbs
 func GatherPodDisruptionBudgets(g *Gatherer) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

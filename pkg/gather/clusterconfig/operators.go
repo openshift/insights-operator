@@ -54,6 +54,7 @@ type clusterOperatorResource struct {
 // Location of operators in archive: config/clusteroperator/
 // See: docs/insights-archive-sample/config/clusteroperator
 // Location of pods in archive: config/pod/
+// Id in config: operators
 func GatherClusterOperators(g *Gatherer) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

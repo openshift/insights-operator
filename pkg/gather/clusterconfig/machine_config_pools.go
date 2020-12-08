@@ -20,6 +20,7 @@ import (
 // Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 //
 // Location in archive: config/machineconfigpools/
+// Id in config: machine_config_pools
 func GatherMachineConfigPool(g *Gatherer) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

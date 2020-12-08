@@ -21,6 +21,7 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 //
 // Location in archive: config/hostsubnet/
+// Id in config: host_subnets
 func GatherHostSubnet(g *Gatherer) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

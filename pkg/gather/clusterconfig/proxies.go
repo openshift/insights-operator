@@ -21,6 +21,7 @@ import (
 //
 // Location in archive: config/proxy/
 // See: docs/insights-archive-sample/config/proxy
+// Id in config: proxies
 func GatherClusterProxy(g *Gatherer) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

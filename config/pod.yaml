@@ -12,29 +12,4 @@ pull_report:
   timeout: "3000s"
   min_retry: "30s"
 gather:
-  - pdbs
-  - metrics
-  - operators
-  - container_images
-  - nodes
-  - config_maps
-  - version
-  - id
-  - infrastructure
-  - network
-  - authentication
-  - image_registry
-  - image_pruner
-  - feature_gates
-  - oauth
-  - ingress
-  - proxy
-  - certificate_signing_requests
-  - crd
-  - host_subnet
-  - machine_set
-  - install_plans
-  - service_accounts
-  - machine_config_pool
-  - container_runtime_config
-  - stateful_sets
+  - ALL

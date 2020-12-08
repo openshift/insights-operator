@@ -18,6 +18,7 @@ import (
 //
 // Location in archive: config/authentication/
 // See: docs/insights-archive-sample/config/authentication
+// Id in config: authentication
 func GatherClusterAuthentication(g *Gatherer) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

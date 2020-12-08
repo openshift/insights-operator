@@ -22,6 +22,7 @@ import (
 //
 // Location in archive: config/version/
 // See: docs/insights-archive-sample/config/version
+// Id in config: version
 func GatherClusterVersion(g *Gatherer) ([]record.Record, []error) {
 	config, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
 	if err != nil {
@@ -52,6 +53,7 @@ func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.
 //
 // Location in archive: config/id/
 // See: docs/insights-archive-sample/config/id
+// Id in config: id
 func GatherClusterID(g *Gatherer) ([]record.Record, []error) {
 	version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
 	if err != nil {
