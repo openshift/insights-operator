@@ -175,6 +175,11 @@ func isRunning(ctx context.Context, config *rest.Config) wait.ConditionFunc {
 		if err != nil {
 			return false, err
 		}
+		// check if context hasn't been cancelled or done meanwhile
+		err = ctx.Err()
+		if err != nil {
+			return false, err
+		}
 		pod, err := c.Pods(os.Getenv("POD_NAMESPACE")).Get(ctx, os.Getenv("POD_NAME"), metav1.GetOptions{})
 		if err != nil {
 			if !errors.IsNotFound(err) {
