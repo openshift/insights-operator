@@ -26,8 +26,8 @@ func TestUploadNotDelayedAfterStart(t *testing.T) {
 	   this test would most likely fail and it's known issue, better solution is needed, skipping now*/
 	t.Skip()
 	LogChecker(t).Timeout(30 * time.Second).Search(`It is safe to use fast upload`)
-	time1 := logLineTime(t, `Reporting status periodically to .* every`)
-	time2 := logLineTime(t, `Successfully reported id=`)
+	time1 := logLineTime(t, `Reporting status periodically to .* every`, 5*time.Minute)
+	time2 := logLineTime(t, `Successfully reported id=`, 5*time.Minute)
 	delay := time2.Sub(time1)
 	allowedDelay := 3 * time.Minute
 	t.Logf("Archive upload delay was %d seconds", delay/time.Second)
@@ -66,7 +66,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// check logs for "Gathering cluster info every 2h0m0s"
-	checkPodsLogs(t, "Gathering cluster info every 2h0m0s")
+	checkPodsLogs(t, "Gathering cluster info every 2h0m0s", 0)
 
 	// verify it's possible to override it
 	newSecret := corev1.Secret{
@@ -89,7 +89,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// check logs for "Gathering cluster info every 3m0s"
-	checkPodsLogs(t, "Gathering cluster info every 3m0s")
+	checkPodsLogs(t, "Gathering cluster info every 3m0s", 0)
 }
 
 // TestUnreachableHost checks if insights operator reports "degraded" after 5 unsuccessful upload attempts
@@ -139,7 +139,7 @@ func TestUnreachableHost(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// Check the logs
-	checkPodsLogs(t, "exceeded than threshold 5. Marking as degraded.")
+	checkPodsLogs(t, "exceeded than threshold 5. Marking as degraded.", 0)
 
 	// Check the operator is degraded
 	insightsDegraded := operatorConditionCheck(t, clusterOperator("insights", t), "Degraded")

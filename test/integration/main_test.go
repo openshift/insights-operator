@@ -164,9 +164,9 @@ func deleteAllPods(t *testing.T, namespace string) {
 	t.Log(errPod)
 }
 
-func logLineTime(t *testing.T, pattern string) time.Time {
+func logLineTime(t *testing.T, pattern string, d time.Duration) time.Time {
 	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
-	lc := checkPodsLogs(t, startOfLine+pattern)
+	lc := checkPodsLogs(t, startOfLine+pattern, d)
 	if lc.Err != nil {
 		t.Fatalf("Couldn't find \"%s\"", pattern)
 	}
@@ -196,7 +196,10 @@ func LogChecker(t *testing.T) *LogCheck {
 	return defaults
 }
 
-func checkPodsLogs(t *testing.T, message string) *LogCheck {
+func checkPodsLogs(t *testing.T, message string, timeout time.Duration) *LogCheck {
+	if timeout != 0 {
+		return LogChecker(t).Timeout(timeout).Search(message)
+	}
 	return LogChecker(t).Search(message)
 }
 

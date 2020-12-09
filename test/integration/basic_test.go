@@ -42,19 +42,19 @@ func TestPullSecretExists(t *testing.T) {
 }
 
 func TestIsIOHealthy(t *testing.T) {
-	checkPodsLogs(t, `The operator is healthy`)
+	checkPodsLogs(t, `The operator is healthy`, 0)
 }
 
 // Check if an archive is uploaded and insights results retrieved in a reasonable amount of time
 // This test can be performed on OCP 4.7 and newer
 func TestArchiveUploadedAndResultReceived(t *testing.T) {
-	t.Skip("Test makes CI fail and should be checked manually for now")
-	start := logLineTime(t, `Reporting status periodically to .* every`)
-	end := logLineTime(t, `Successfully reported id=`)
+	//t.Skip("Test makes CI fail and should be checked manually for now")
+	start := logLineTime(t, `Reporting status periodically to .* every`, 15*time.Minute)
+	end := logLineTime(t, `Successfully reported id=`, 10*time.Minute)
 	uploadingTime := duration(t, start, end)
 	t.Logf("Archive upload time is %v seconds", uploadingTime)
-	start = logLineTime(t, `Successfully reported id=`)
-	end = logLineTime(t, `Report retrieved correctly`)
+	start = logLineTime(t, `Successfully reported id=`, 2*time.Minute)
+	end = logLineTime(t, `Report retrieved correctly`, 2*time.Minute)
 	retrievingTime := duration(t, start, end)
 	t.Logf("Insights results retrieving time is %v seconds", retrievingTime)
 }
@@ -173,5 +173,5 @@ func TestOptOutOptIn(t *testing.T) {
 	if errDisabled != nil {
 		t.Fatalf("The Cluster Operator wasn't enabled after setting original pull-secret")
 	}
-	checkPodsLogs(t, "Successfully reported")
+	checkPodsLogs(t, "Successfully reported", 0)
 }
