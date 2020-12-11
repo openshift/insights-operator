@@ -195,10 +195,10 @@ func genLatestArchiveContainsNodes(archive []string) test {
 }
 
 func TestArchiveContains(t *testing.T) {
-	defer ChangeReportTimeInterval(t, 1)()
+	defer ChangeReportTimeInterval(t, 2)()
 	defer degradeOperatorMonitoring(t)()
 
-	checker := LogChecker(t).Timeout(2 * time.Minute)
+	checker := LogChecker(t).Timeout(4 * time.Minute)
 	checker.SinceNow().Search(`Recording events/openshift-monitoring`)
 	checker.EnableSinceLastCheck().Search(`Wrote \d+ records to disk in \d+`)
 	archive := latestArchiveFiles(t)
