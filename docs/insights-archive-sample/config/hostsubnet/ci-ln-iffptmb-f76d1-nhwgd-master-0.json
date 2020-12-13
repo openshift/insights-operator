@@ -1,0 +1,38 @@
+{
+    "kind": "HostSubnet",
+    "apiVersion": "network.openshift.io/v1",
+    "metadata": {
+        "name": "ci-ln-iffptmb-f76d1-nhwgd-master-0",
+        "selfLink": "/apis/network.openshift.io/v1/hostsubnets/ci-ln-iffptmb-f76d1-nhwgd-master-0",
+        "uid": "ba02b433-fe1c-4558-bc30-47c1245cc7e8",
+        "resourceVersion": "3259",
+        "generation": 1,
+        "creationTimestamp": "2020-12-02T13:47:00Z",
+        "annotations": {
+            "pod.network.openshift.io/node-uid": "d392507b-5c7f-4332-8400-f0cb3ae2ea13"
+        },
+        "managedFields": [
+            {
+                "manager": "openshift-sdn-controller",
+                "operation": "Update",
+                "apiVersion": "network.openshift.io/v1",
+                "time": "2020-12-02T13:47:00Z",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:host": {},
+                    "f:hostIP": {},
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:pod.network.openshift.io/node-uid": {}
+                        }
+                    },
+                    "f:subnet": {}
+                }
+            }
+        ]
+    },
+    "host": "ci-ln-iffptmb-f76d1-nhwgd-master-0",
+    "hostIP": "xxxxxxxx",
+    "subnet": "xxxxxxxxxxxxx"
+}
