@@ -1,0 +1,43 @@
+apiVersion: v1
+baseDomain: origin-ci-int-gce.dev.openshift.com
+compute:
+- architecture: amd64
+  hyperthreading: Enabled
+  name: worker
+  platform: {}
+  replicas: 3
+controlPlane:
+  architecture: amd64
+  hyperthreading: Enabled
+  name: master
+  platform:
+    gcp:
+      osDisk:
+        DiskSizeGB: 128
+        DiskType: pd-ssd
+      type: n1-standard-4
+      zones:
+      - us-east1-b
+      - us-east1-c
+      - us-east1-d
+  replicas: 3
+metadata:
+  creationTimestamp: null
+  name: ci-ln-cnqv9yk-f76d1
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineNetwork:
+  - cidr: 10.0.0.0/16
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  gcp:
+    projectID: openshift-gce-devel-ci
+    region: us-east1
+publish: External
+pullSecret: ""
+sshKey: |
+  ssh-rsa ANONYMIZED
