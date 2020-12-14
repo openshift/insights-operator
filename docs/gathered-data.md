@@ -159,7 +159,9 @@ See: docs/insights-archive-sample/config/version
 
 ## ConfigMaps
 
-fetches the ConfigMaps from namespace openshift-config.
+fetches the ConfigMaps from the following namespaces:
+  - openshift-config.
+  - kube-system
 
 Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
 For ConfigMap of type BinaryData it is encoded as standard base64.
@@ -178,6 +180,16 @@ collects essential information about running containers.
 Specifically, the age of pods, the set of running images and the container names are collected.
 
 Location in archive: config/running_containers.json
+
+
+## ContainerRuntimeConfig
+
+collects ContainerRuntimeConfig  information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/containerruntimeconfigs/
 
 
 ## HostSubnet
@@ -200,6 +212,16 @@ It also collects Total number of all installplans and all non-unique installplan
 The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 
 Location in archive: config/installplans/
+
+
+## MachineConfigPool
+
+collects MachineConfigPool information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/machineconfigpools/
 
 
 ## MachineSet
@@ -261,16 +283,6 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
 
-## MachineConfigPool
-
-gathers the cluster's MachineConfigPools.
-
-The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
-Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
-
-Location in archive: config/machineconfigpools/
-See: docs/insights-archive-sample/config/machineconfigpools/
-
 
 ## ServiceAccounts
 
@@ -284,16 +296,6 @@ Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
 
 
-## ContainerRuntimeConfig
-
-collects ContainerRuntimeConfig information
-
-The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
-Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
-
-Location in archive: config/containerruntimeconfigs/
-See: docs/insights-archive-sample/config/containerruntimeconfigs
-
 ## StatefulSets
 
 collects StatefulSet configs from default namespaces
@@ -302,4 +304,5 @@ The Kubernetes API https://github.com/kubernetes/api/blob/master/apps/v1/types.g
 Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
 
 Location in archive: config/statefulsets/
+
 
