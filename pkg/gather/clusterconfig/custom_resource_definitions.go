@@ -23,14 +23,13 @@ import (
 // The CRD sizes above are in the raw (uncompressed) state.
 //
 // Location in archive: config/crd/
-func GatherCRD(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		crdClient, err := apixv1beta1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherCRD(g.ctx, crdClient)
+// Id in config: crds
+func GatherCRD(g *Gatherer) ([]record.Record, []error) {
+	crdClient, err := apixv1beta1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherCRD(g.ctx, crdClient)
 }
 
 func gatherCRD(ctx context.Context, crdClient apixv1beta1client.ApiextensionsV1beta1Interface) ([]record.Record, []error) {

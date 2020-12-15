@@ -19,14 +19,13 @@ import (
 //
 // Location in archive: config/network/
 // See: docs/insights-archive-sample/config/network
-func GatherClusterNetwork(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterNetwork(g.ctx, gatherConfigClient)
+// Id in config: networks
+func GatherClusterNetwork(g *Gatherer) ([]record.Record, []error) {
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherClusterNetwork(g.ctx, gatherConfigClient)
 }
 
 func gatherClusterNetwork(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

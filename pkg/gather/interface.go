@@ -7,5 +7,6 @@ import (
 )
 
 type Interface interface {
-	Gather(context.Context, record.Interface) error
+	Gather(context.Context, []string, record.Interface) error
 }
+

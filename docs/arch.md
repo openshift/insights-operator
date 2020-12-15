@@ -284,3 +284,47 @@ health_statuses_insights{metric="low"} 1
 health_statuses_insights{metric="moderate"} 1
 health_statuses_insights{metric="total"} 2
 ```
+
+## Configuring what to gather
+In the yaml config there is a field named `gather` it expects a list of strings, each string is an id that is connected to a gather function.
+Adding such an id to the list means that that certain gather function needs to be run.
+If nothing is set in the `gather` list then no gathering will take place and an error will be raised.
+There is a special id named `ALL` which if in the list then every gather function will be run.
+The id of each gather function can be found in the `docs/gathered-data.md` beside the `Id in config:` text for each section.
+
+#### Example for using special id `ALL`
+```
+gather:
+  - ALL
+```
+
+#### Example for using individual ids
+```
+gather:
+ - pdbs
+ - metrics
+ - operators
+ - container_images
+ - nodes
+ - config_maps
+ - version
+ - id
+ - infrastructures
+ - networks
+ - authentication
+ - image_registries
+ - image_pruners
+ - feature_gates
+ - oauths
+ - ingress
+ - proxies
+ - certificate_signing_requests
+ - crds
+ - host_subnets
+ - machine_sets
+ - install_plans
+ - service_accounts
+ - machine_config_pools
+ - container_runtime_configs
+ - stateful_sets
+```

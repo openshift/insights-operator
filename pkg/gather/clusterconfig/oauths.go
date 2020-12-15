@@ -19,14 +19,13 @@ import (
 //
 // Location in archive: config/oauth/
 // See: docs/insights-archive-sample/config/oauth
-func GatherClusterOAuth(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterOAuth(g.ctx, gatherConfigClient)
+// Id in config: oauths
+func GatherClusterOAuth(g *Gatherer) ([]record.Record, []error) {
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherClusterOAuth(g.ctx, gatherConfigClient)
 }
 
 func gatherClusterOAuth(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

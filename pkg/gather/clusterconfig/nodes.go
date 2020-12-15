@@ -22,14 +22,13 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 //
 // Location in archive: config/node/
-func GatherNodes(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherNodes(g.ctx, gatherKubeClient.CoreV1())
+// Id in config: nodes
+func GatherNodes(g *Gatherer) ([]record.Record, []error) {
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherNodes(g.ctx, gatherKubeClient.CoreV1())
 }
 
 func gatherNodes(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

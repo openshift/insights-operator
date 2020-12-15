@@ -26,15 +26,15 @@ type netNamespace struct {
 // Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
 //
 // Location in archive: config/netnamespaces
-func GatherNetNamespace(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherNetNamespace(g.ctx, gatherNetworkClient)
+// Id in config: netnamespaces
+func GatherNetNamespace(g *Gatherer) ([]record.Record, []error) {
+	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherNetNamespace(g.ctx, gatherNetworkClient)
 }
+
 func gatherNetNamespace(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {
 	nsList, err := networkClient.NetNamespaces().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {

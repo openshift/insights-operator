@@ -1,4 +1,4 @@
-package record
+package clusterconfig
 
 import (
 	"reflect"
@@ -11,9 +11,8 @@ func Test_uniqueStrings(t *testing.T) {
 		arr  []string
 		want []string
 	}{
-		{arr: []string{}, want: []string{}},
 		{arr: nil, want: nil},
-		{arr: []string{"a", "b", "a"}, want: []string{"a", "b", "a"}},
+		{arr: []string{}, want: []string{}},
 		{arr: []string{"a", "a", "a"}, want: []string{"a"}},
 		{arr: []string{"a", "b", "b"}, want: []string{"a", "b"}},
 		{arr: []string{"a", "a", "b"}, want: []string{"a", "b"}},

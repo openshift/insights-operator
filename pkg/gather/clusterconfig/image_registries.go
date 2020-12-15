@@ -21,14 +21,13 @@ import (
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
 // Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
-func GatherClusterImageRegistry(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1())
+// Id in config: image_registries
+func GatherClusterImageRegistry(g *Gatherer) ([]record.Record, []error) {
+	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1())
 }
 
 func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface) ([]record.Record, []error) {

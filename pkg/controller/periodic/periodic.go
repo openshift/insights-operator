@@ -76,7 +76,7 @@ func (c *Controller) sync(name string) error {
 		}
 	}()
 	klog.V(4).Infof("Running %s", name)
-	return gatherer.Gather(ctx, c.recorder)
+	return gatherer.Gather(ctx, c.config.Config().Gather, c.recorder)
 }
 
 // Run starts gathering with initialDelay
