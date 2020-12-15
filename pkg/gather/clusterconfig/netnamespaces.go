@@ -26,6 +26,7 @@ type netNamespace struct {
 // Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
 //
 // Location in archive: config/netnamespaces
+// Id in config: netnamespaces
 func GatherNetNamespace(g *Gatherer) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

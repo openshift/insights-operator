@@ -63,7 +63,7 @@ var gatherFunctions = map[string]gatherFunction{
 	"machine_config_pools": GatherMachineConfigPool,
 	"container_runtime_configs": GatherContainerRuntimeConfig,
 	"stateful_sets": GatherStatefulSets,
-	"netnamepaces": GatherNetNamespace,
+	"netnamespaces": GatherNetNamespace,
 }
 
 // New creates new Gatherer

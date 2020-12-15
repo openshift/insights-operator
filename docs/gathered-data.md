@@ -284,6 +284,7 @@ The Kubernetes api https://github.com/openshift/client-go/blob/master/network/cl
 Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
 
 Location in archive: config/netnamespaces
+Id in config: netnamespaces
 
 
 ## Nodes
