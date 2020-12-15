@@ -140,21 +140,19 @@ func recordGatherReport(recorder record.Interface, report []interface{}) error {
 	return recorder.Record(r)
 }
 
-func uniqueStrings(arr []string) []string {
-	var last int
-	for i := 1; i < len(arr); i++ {
-		if arr[i] == arr[last] {
-			continue
-		}
-		last++
-		if last != i {
-			arr[last] = arr[i]
-		}
+func uniqueStrings(list []string) []string {
+	if len(list) < 2 {
+		return list
 	}
-	if last < len(arr) {
-		last++
-	}
-	return arr[:last]
+    keys := make(map[string]bool)
+    set := []string{}
+    for _, entry := range list {
+        if _, value := keys[entry]; !value {
+            keys[entry] = true
+            set = append(set, entry)
+        }
+    }
+    return set
 }
 
 func contains(s []string, e string) bool {
