@@ -20,7 +20,9 @@ metadata:
     name: test-worker
 `
 	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
-	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+		gvr: "MachineSetsList",
+	})
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
 	testMachineSet := &unstructured.Unstructured{}

@@ -52,7 +52,7 @@ func TestGatherInstallPlans(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+			var client *dynamicfake.FakeDynamicClient
 			coreClient := kubefake.NewSimpleClientset()
 			for _, file := range test.testfiles {
 				f, err := os.Open(file)
@@ -85,6 +85,11 @@ func TestGatherInstallPlans(t *testing.T) {
 				}
 				if err != nil {
 					t.Fatal("unable to create ns fake ", err)
+				}
+				if client == nil {
+					client = dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+						gvr: "InstallPlansList",
+					})
 				}
 				_, err = client.Resource(gvr).Namespace(ns).Create(context.Background(), installplan, metav1.CreateOptions{})
 				if err != nil {

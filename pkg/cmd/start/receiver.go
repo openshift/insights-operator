@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // NewReceiver is a debug endpoint that allows testing of the status destination.

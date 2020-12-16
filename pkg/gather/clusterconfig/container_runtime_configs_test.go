@@ -20,7 +20,9 @@ metadata:
     name: test-ContainerRC
 `
 	gvr := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "containerruntimeconfigs"}
-	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+		gvr: "ContainerRuntimeConfigsList",
+	})
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
 	testContainerRuntimeConfigs := &unstructured.Unstructured{}

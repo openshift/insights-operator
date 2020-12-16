@@ -20,7 +20,9 @@ metadata:
     name: master-t
 `
 	gvr := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigpools"}
-	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+		gvr: "MachineConfigPoolsList",
+	})
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
 	testMachineConfigPools := &unstructured.Unstructured{}

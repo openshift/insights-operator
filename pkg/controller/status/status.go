@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // How many upload failures in a row we tolerate before starting reporting

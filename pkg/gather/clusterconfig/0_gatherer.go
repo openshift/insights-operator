@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"k8s.io/client-go/rest"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
@@ -37,33 +37,33 @@ type gatherFunction func(g *Gatherer) ([]record.Record, []error)
 const gatherAll = "ALL"
 
 var gatherFunctions = map[string]gatherFunction{
-	"pdbs": GatherPodDisruptionBudgets,
-	"metrics": GatherMostRecentMetrics,
-	"operators": GatherClusterOperators,
-	"container_images": GatherContainerImages,
-	"nodes": GatherNodes,
-	"config_maps": GatherConfigMaps,
-	"version": GatherClusterVersion,
-	"id": GatherClusterID,
-	"infrastructures": GatherClusterInfrastructure,
-	"networks": GatherClusterNetwork,
-	"authentication": GatherClusterAuthentication,
-	"image_registries": GatherClusterImageRegistry,
-	"image_pruners": GatherClusterImagePruner,
-	"feature_gates": GatherClusterFeatureGates,
-	"oauths": GatherClusterOAuth,
-	"ingress": GatherClusterIngress,
-	"proxies": GatherClusterProxy,
+	"pdbs":                         GatherPodDisruptionBudgets,
+	"metrics":                      GatherMostRecentMetrics,
+	"operators":                    GatherClusterOperators,
+	"container_images":             GatherContainerImages,
+	"nodes":                        GatherNodes,
+	"config_maps":                  GatherConfigMaps,
+	"version":                      GatherClusterVersion,
+	"id":                           GatherClusterID,
+	"infrastructures":              GatherClusterInfrastructure,
+	"networks":                     GatherClusterNetwork,
+	"authentication":               GatherClusterAuthentication,
+	"image_registries":             GatherClusterImageRegistry,
+	"image_pruners":                GatherClusterImagePruner,
+	"feature_gates":                GatherClusterFeatureGates,
+	"oauths":                       GatherClusterOAuth,
+	"ingress":                      GatherClusterIngress,
+	"proxies":                      GatherClusterProxy,
 	"certificate_signing_requests": GatherCertificateSigningRequests,
-	"crds": GatherCRD,
-	"host_subnets": GatherHostSubnet,
-	"machine_sets": GatherMachineSet,
-	"install_plans": GatherInstallPlans,
-	"service_accounts": GatherServiceAccounts,
-	"machine_config_pools": GatherMachineConfigPool,
-	"container_runtime_configs": GatherContainerRuntimeConfig,
-	"stateful_sets": GatherStatefulSets,
-	"netnamespaces": GatherNetNamespace,
+	"crds":                         GatherCRD,
+	"host_subnets":                 GatherHostSubnet,
+	"machine_sets":                 GatherMachineSet,
+	"install_plans":                GatherInstallPlans,
+	"service_accounts":             GatherServiceAccounts,
+	"machine_config_pools":         GatherMachineConfigPool,
+	"container_runtime_configs":    GatherContainerRuntimeConfig,
+	"stateful_sets":                GatherStatefulSets,
+	"netnamespaces":                GatherNetNamespace,
 }
 
 // New creates new Gatherer
@@ -144,22 +144,22 @@ func uniqueStrings(list []string) []string {
 	if len(list) < 2 {
 		return list
 	}
-    keys := make(map[string]bool)
-    set := []string{}
-    for _, entry := range list {
-        if _, value := keys[entry]; !value {
-            keys[entry] = true
-            set = append(set, entry)
-        }
-    }
-    return set
+	keys := make(map[string]bool)
+	set := []string{}
+	for _, entry := range list {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			set = append(set, entry)
+		}
+	}
+	return set
 }
 
 func contains(s []string, e string) bool {
-    for _, a := range s {
-        if a == e {
-            return true
-        }
-    }
-    return false
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
