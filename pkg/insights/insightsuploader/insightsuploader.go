@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -177,7 +177,7 @@ func (c *Controller) ArchiveUploaded() <-chan struct{} {
 }
 
 func reportToLogs(source io.Reader, klog klog.Verbose) error {
-	if !klog {
+	if !klog.Enabled() {
 		return nil
 	}
 	gr, err := gzip.NewReader(source)

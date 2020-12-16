@@ -11,6 +11,7 @@ The following CRDs are gathered:
 The CRD sizes above are in the raw (uncompressed) state.
 
 Location in archive: config/crd/
+Id in config: crds
 
 
 ## CertificateSigningRequests
@@ -22,6 +23,7 @@ The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernete
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 
 Location in archive: config/certificatesigningrequests/
+Id in config: certificate_signing_requests
 
 
 ## ClusterAuthentication
@@ -33,6 +35,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/authentication/
 See: docs/insights-archive-sample/config/authentication
+Id in config: authentication
 
 
 ## ClusterFeatureGates
@@ -44,6 +47,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/featuregate/
 See: docs/insights-archive-sample/config/featuregate
+Id in config: feature_gates
 
 
 ## ClusterID
@@ -55,6 +59,7 @@ Response see https://github.com/openshift/api/blob/master/config/v1/types_cluste
 
 Location in archive: config/id/
 See: docs/insights-archive-sample/config/id
+Id in config: id
 
 
 ## ClusterImagePruner
@@ -62,6 +67,7 @@ See: docs/insights-archive-sample/config/id
 fetches the image pruner configuration
 
 Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
+Id in config: image_pruners
 
 
 ## ClusterImageRegistry
@@ -69,6 +75,7 @@ Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/
 fetches the cluster Image Registry configuration
 
 Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
+Id in config: image_registries
 
 
 ## ClusterInfrastructure
@@ -80,6 +87,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/infrastructure/
 See: docs/insights-archive-sample/config/infrastructure
+Id in config: infrastructures
 
 
 ## ClusterIngress
@@ -91,6 +99,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/ingress/
 See: docs/insights-archive-sample/config/ingress
+Id in config: ingress
 
 
 ## ClusterNetwork
@@ -102,6 +111,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/network/
 See: docs/insights-archive-sample/config/network
+Id in config: networks
 
 
 ## ClusterOAuth
@@ -113,6 +123,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/oauth/
 See: docs/insights-archive-sample/config/oauth
+Id in config: oauths
 
 
 ## ClusterOperators
@@ -126,6 +137,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location of operators in archive: config/clusteroperator/
 See: docs/insights-archive-sample/config/clusteroperator
 Location of pods in archive: config/pod/
+Id in config: operators
 
 
 Output raw size: 245
@@ -144,6 +156,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/proxy/
 See: docs/insights-archive-sample/config/proxy
+Id in config: proxies
 
 
 ## ClusterVersion
@@ -155,6 +168,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/version/
 See: docs/insights-archive-sample/config/version
+Id in config: version
 
 
 ## ConfigMaps
@@ -170,6 +184,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/configmaps/
 See: docs/insights-archive-sample/config/configmaps
+Id in config: config_maps
 
 
 ## ContainerImages
@@ -178,6 +193,18 @@ collects essential information about running containers.
 Specifically, the age of pods, the set of running images and the container names are collected.
 
 Location in archive: config/running_containers.json
+Id in config: container_images
+
+
+## ContainerRuntimeConfig
+
+collects ContainerRuntimeConfig  information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/containerruntimeconfigs/
+Id in config: container_runtime_configs
 
 
 ## HostSubnet
@@ -188,6 +215,7 @@ The Kubernetes api https://github.com/openshift/client-go/blob/master/network/cl
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 
 Location in archive: config/hostsubnet/
+Id in config: host_subnets
 
 
 ## InstallPlans
@@ -200,6 +228,18 @@ It also collects Total number of all installplans and all non-unique installplan
 The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 
 Location in archive: config/installplans/
+Id in config: install_plans
+
+
+## MachineConfigPool
+
+collects MachineConfigPool information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/machineconfigpools/
+Id in config: machine_config_pools
 
 
 ## MachineSet
@@ -210,6 +250,7 @@ The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 
 Location in archive: machinesets/
+Id in config: machine_sets
 
 
 ## MostRecentMetrics
@@ -225,6 +266,7 @@ Gathered metrics:
 
 Location in archive: config/metrics/
 See: docs/insights-archive-sample/config/metrics
+Id in config: metrics
 
 
 Output raw size: 148
@@ -234,6 +276,17 @@ Output raw size: 148
 #### MostRecentMetrics
 [{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
 
+## NetNamespace
+
+collects NetNamespaces networking information
+
+The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
+Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
+
+Location in archive: config/netnamespaces
+Id in config: netnamespaces
+
+
 ## Nodes
 
 collects all Nodes.
@@ -242,6 +295,7 @@ The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernete
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 
 Location in archive: config/node/
+Id in config: nodes
 
 
 Output raw size: 491
@@ -260,16 +314,7 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
-
-## MachineConfigPool
-
-gathers the cluster's MachineConfigPools.
-
-The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
-Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
-
-Location in archive: config/machineconfigpools/
-See: docs/insights-archive-sample/config/machineconfigpools/
+Id in config: pdbs
 
 
 ## ServiceAccounts
@@ -282,17 +327,8 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
+Id in config: service_accounts
 
-
-## ContainerRuntimeConfig
-
-collects ContainerRuntimeConfig information
-
-The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
-Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
-
-Location in archive: config/containerruntimeconfigs/
-See: docs/insights-archive-sample/config/containerruntimeconfigs
 
 ## StatefulSets
 
@@ -302,4 +338,6 @@ The Kubernetes API https://github.com/kubernetes/api/blob/master/apps/v1/types.g
 Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
 
 Location in archive: config/statefulsets/
+Id in config: stateful_sets
+
 

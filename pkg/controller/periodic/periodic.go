@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -76,7 +76,7 @@ func (c *Controller) sync(name string) error {
 		}
 	}()
 	klog.V(4).Infof("Running %s", name)
-	return gatherer.Gather(ctx, c.recorder)
+	return gatherer.Gather(ctx, c.config.Config().Gather, c.recorder)
 }
 
 // Run starts gathering with initialDelay

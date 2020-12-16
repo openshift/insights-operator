@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	appsv1 "k8s.io/api/apps/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
@@ -25,18 +25,17 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
 //
 // Location in archive: config/statefulsets/
-func GatherStatefulSets(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		appsClient, err := appsclient.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherStatefulSets(g.ctx, gatherKubeClient.CoreV1(), appsClient)
+// Id in config: stateful_sets
+func GatherStatefulSets(g *Gatherer) ([]record.Record, []error) {
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	appsClient, err := appsclient.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return gatherStatefulSets(g.ctx, gatherKubeClient.CoreV1(), appsClient)
 }
 
 func gatherStatefulSets(ctx context.Context, coreClient corev1client.CoreV1Interface, appsClient appsclient.AppsV1Interface) ([]record.Record, []error) {

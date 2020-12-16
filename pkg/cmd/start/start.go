@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/library-go/pkg/serviceability"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/pkg/version"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller"

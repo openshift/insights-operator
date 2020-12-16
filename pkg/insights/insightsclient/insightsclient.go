@@ -18,16 +18,18 @@ import (
 	"time"
 
 	"k8s.io/client-go/pkg/version"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/transport"
 	"k8s.io/component-base/metrics"
 	"k8s.io/component-base/metrics/legacyregistry"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
+	clusterconfig "github.com/openshift/insights-operator/pkg/gather/clusterconfig"
 )
 
 const (
@@ -35,21 +37,18 @@ const (
 )
 
 type Client struct {
-	client      *http.Client
-	maxBytes    int64
-	metricsName string
+	client      		*http.Client
+	maxBytes    		int64
+	metricsName 		string
 
-	authorizer  Authorizer
-	clusterInfo ClusterVersionInfo
+	authorizer  		Authorizer
+	gatherKubeConfig	*rest.Config
+	clusterVersion  	*configv1.ClusterVersion
 }
 
 type Authorizer interface {
 	Authorize(req *http.Request) error
 	NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error)
-}
-
-type ClusterVersionInfo interface {
-	ClusterVersion() *configv1.ClusterVersion
 }
 
 type Source struct {
@@ -61,7 +60,7 @@ type Source struct {
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
 // New creates a Client
-func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, clusterInfo ClusterVersionInfo) *Client {
+func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, gatherKubeConfig *rest.Config) *Client {
 	if client == nil {
 		client = &http.Client{}
 	}
@@ -69,11 +68,11 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 		maxBytes = 10 * 1024 * 1024
 	}
 	return &Client{
-		client:      client,
-		maxBytes:    maxBytes,
-		metricsName: metricsName,
-		authorizer:  authorizer,
-		clusterInfo: clusterInfo,
+		client:      		client,
+		maxBytes:    		maxBytes,
+		metricsName: 		metricsName,
+		authorizer:  		authorizer,
+		gatherKubeConfig:	gatherKubeConfig,
 	}
 }
 
@@ -130,6 +129,19 @@ func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv
 	return fmt.Sprintf("insights-operator/%s cluster/%s", gitVersion, cv.Spec.ClusterID)
 }
 
+func (c *Client) getClusterVersion() (*configv1.ClusterVersion, error) {
+	if c.clusterVersion != nil {
+		return c.clusterVersion, nil
+	}
+	ctx := context.Background()
+	cv, err := clusterconfig.GetClusterVersion(ctx, c.gatherKubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	c.clusterVersion = cv
+	return cv, nil
+}
+
 func (c Client) prepareRequest(ctx context.Context, method string, endpoint string, cv *configv1.ClusterVersion) (*http.Request, error) {
 	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
@@ -152,7 +164,10 @@ func (c Client) prepareRequest(ctx context.Context, method string, endpoint stri
 
 // Send uploads archives to Ingress service
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
-	cv := c.clusterInfo.ClusterVersion()
+	cv, err := c.getClusterVersion()
+	if err != nil {
+		return err
+	}
 	if cv == nil {
 		return ErrWaitingForVersion
 	}
@@ -238,7 +253,10 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 
 // RecvReport perform a request to Insights Results Smart Proxy endpoint
 func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser, error) {
-	cv := c.clusterInfo.ClusterVersion()
+	cv, err := c.getClusterVersion()
+	if err != nil {
+		return nil, err
+	}
 	if cv == nil {
 		return nil, ErrWaitingForVersion
 	}

@@ -11,3 +11,5 @@ pull_report:
   delay: "60s"
   timeout: "3000s"
   min_retry: "30s"
+gather:
+  - ALL

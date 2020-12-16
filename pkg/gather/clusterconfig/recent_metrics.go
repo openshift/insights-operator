@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 
 	"k8s.io/client-go/rest"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -31,20 +31,19 @@ const (
 //
 // Location in archive: config/metrics/
 // See: docs/insights-archive-sample/config/metrics
-func GatherMostRecentMetrics(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		var metricsClient rest.Interface
-		metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
-		if err != nil {
-			klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
-		} else {
-			metricsClient = metricsRESTClient
-		}
-		if metricsClient == nil {
-			return nil, nil
-		}
-		return gatherMostRecentMetrics(g.ctx, metricsClient)
+// Id in config: metrics
+func GatherMostRecentMetrics(g *Gatherer) ([]record.Record, []error) {
+	var metricsClient rest.Interface
+	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
+	if err != nil {
+		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
+	} else {
+		metricsClient = metricsRESTClient
 	}
+	if metricsClient == nil {
+		return nil, nil
+	}
+	return gatherMostRecentMetrics(g.ctx, metricsClient)
 }
 
 func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) ([]record.Record, []error) {

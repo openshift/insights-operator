@@ -18,14 +18,13 @@ import (
 //
 // Location in archive: config/authentication/
 // See: docs/insights-archive-sample/config/authentication
-func GatherClusterAuthentication(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherClusterAuthentication(g.ctx, gatherConfigClient)
+// Id in config: authentication
+func GatherClusterAuthentication(g *Gatherer) ([]record.Record, []error) {
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherClusterAuthentication(g.ctx, gatherConfigClient)
 }
 func gatherClusterAuthentication(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {
 	config, err := configClient.Authentications().Get(ctx, "cluster", metav1.GetOptions{})

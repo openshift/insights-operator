@@ -31,14 +31,13 @@ var (
 //
 // Location in archive: config/pdbs/
 // See: docs/insights-archive-sample/config/pdbs
-func GatherPodDisruptionBudgets(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherPodDisruptionBudgets(g.ctx, gatherPolicyClient)
+// Id in config: pdbs
+func GatherPodDisruptionBudgets(g *Gatherer) ([]record.Record, []error) {
+	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherPodDisruptionBudgets(g.ctx, gatherPolicyClient)
 }
 
 func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1beta1Interface) ([]record.Record, []error) {

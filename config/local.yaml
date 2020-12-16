@@ -6,3 +6,5 @@ interval: "5m"
 storagePath: /tmp/insights-operator
 endpoint: http://[::1]:8081
 impersonate: system:serviceaccount:openshift-insights:gather
+gather:
+  - ALL

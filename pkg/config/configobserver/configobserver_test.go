@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	clsetfake "k8s.io/client-go/kubernetes/fake"
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	clienttesting "k8s.io/client-go/testing"
 )

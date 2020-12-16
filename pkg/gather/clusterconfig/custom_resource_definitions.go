@@ -7,7 +7,7 @@ import (
 	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
@@ -23,14 +23,13 @@ import (
 // The CRD sizes above are in the raw (uncompressed) state.
 //
 // Location in archive: config/crd/
-func GatherCRD(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		crdClient, err := apixv1beta1client.NewForConfig(g.gatherKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-		return gatherCRD(g.ctx, crdClient)
+// Id in config: crds
+func GatherCRD(g *Gatherer) ([]record.Record, []error) {
+	crdClient, err := apixv1beta1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
 	}
+	return gatherCRD(g.ctx, crdClient)
 }
 
 func gatherCRD(ctx context.Context, crdClient apixv1beta1client.ApiextensionsV1beta1Interface) ([]record.Record, []error) {

@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -137,7 +137,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	go periodic.Run(4, ctx.Done(), initialDelay)
 
 	authorizer := clusterauthorizer.New(configObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, clusterConfigGatherer)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
