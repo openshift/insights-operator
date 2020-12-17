@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -120,6 +121,21 @@ func (lc *LogCheck) CheckPodLogs(podName string, logOptions *corev1.PodLogOption
 		t.Logf("%s found\n", lc.Result)
 		return true, nil
 	})
+}
+
+func (lc *LogCheck) logLineTime(pattern string) time.Time {
+	// for IO logs
+	startOfLine := `^\S\d{2}\d{2}\s\d{2}:\d{2}:\d{2}\.\d{6}\s*\d+\s\S+\.go:\d+]\s`
+	lc.Search(startOfLine + pattern)
+	if lc.Err != nil {
+		lc.test.Fatalf("Couldn't find \"%s\"", pattern)
+	}
+	str := strings.Split(strings.Split(lc.Result, ".")[0], " ")[1]
+	time1, err := time.Parse("15:04:05", str)
+	if err != nil {
+		lc.test.Fatal(err, "time parsing fail")
+	}
+	return time1
 }
 
 func (lc *LogCheck) Execute() *LogCheck {

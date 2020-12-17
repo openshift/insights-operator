@@ -48,13 +48,15 @@ func TestIsIOHealthy(t *testing.T) {
 // Check if an archive is uploaded and insights results retrieved in a reasonable amount of time
 // This test can be performed on OCP 4.7 and newer
 func TestArchiveUploadedAndResultReceived(t *testing.T) {
-	t.Skip("Test makes CI fail and should be checked manually for now")
-	start := logLineTime(t, `Reporting status periodically to .* every`)
-	end := logLineTime(t, `Successfully reported id=`)
+	//t.Skip("Test makes CI fail and should be checked manually for now")
+	checker := LogChecker(t)
+	start := checker.Timeout(15 * time.Minute).logLineTime(`Reporting status periodically to .* every`)
+	end := checker.Timeout(10 * time.Minute).logLineTime(`Successfully reported id=`)
 	uploadingTime := duration(t, start, end)
 	t.Logf("Archive upload time is %v seconds", uploadingTime)
-	start = logLineTime(t, `Successfully reported id=`)
-	end = logLineTime(t, `Report retrieved correctly`)
+	checker.Timeout(2 * time.Minute)
+	start = checker.logLineTime(`Successfully reported id=`)
+	end = checker.logLineTime(`Report retrieved correctly`)
 	retrievingTime := duration(t, start, end)
 	t.Logf("Insights results retrieving time is %v seconds", retrievingTime)
 }
