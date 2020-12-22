@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -24,27 +24,25 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
-func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) func() ([]record.Record, []error) {
-	return func() ([]record.Record, []error) {
-		messagesToSearch := []string{
-			"the server has received too many requests and has asked us",
-			"because serving request timed out and response had been started",
-		}
-
-		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-		if err != nil {
-			return nil, []error{err}
-		}
-
-		client := gatherKubeClient.CoreV1()
-
-		records, err := gatherOpenShiftAPIServerOperatorLastDayLogs(g.ctx, client, messagesToSearch)
-		if err != nil {
-			return nil, []error{err}
-		}
-
-		return records, nil
+func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) ([]record.Record, []error) {
+	messagesToSearch := []string{
+		"the server has received too many requests and has asked us",
+		"because serving request timed out and response had been started",
 	}
+
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	client := gatherKubeClient.CoreV1()
+
+	records, err := gatherOpenShiftAPIServerOperatorLastDayLogs(g.ctx, client, messagesToSearch)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	return records, nil
 }
 
 func gatherOpenShiftAPIServerOperatorLastDayLogs(
