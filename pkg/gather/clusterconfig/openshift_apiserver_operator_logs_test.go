@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/RedHatInsights/insights-operator-utils/tests/helpers"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,12 +23,16 @@ func TestGatherOpenShiftAPIServerOperatorLogs(t *testing.T) {
 		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{}},
 		metav1.CreateOptions{},
 	)
-	helpers.FailOnError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	records, err := gatherOpenShiftAPIServerOperatorLastDayLogs(ctx, coreClient, []string{
 		stringToSearch,
 	})
-	helpers.FailOnError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	assert.Len(t, records, 1)
 	assert.Equal(t, "logs/openshift-apiserver-operator", records[0].Name)

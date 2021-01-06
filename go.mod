@@ -13,6 +13,7 @@ require (
 	github.com/openshift/library-go v0.0.0-20201214135256-d265f469e75b
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20201209123823-ac852fbbde11
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	gopkg.in/yaml.v2 v2.4.0 // indirect
