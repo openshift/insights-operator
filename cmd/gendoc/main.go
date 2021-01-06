@@ -305,8 +305,6 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 		fmt.Print(err)
 	}
 
-	defer tf.Close()
-
 	cmd := exec.Command("go", "run", "./"+f)
 	output, err := cmd.CombinedOutput()
 
