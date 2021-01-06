@@ -2,6 +2,7 @@ package clusterconfig
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,9 @@ func TestGatherOpenShiftAPIServerOperatorLogs(t *testing.T) {
 
 	_, err := coreClient.Pods(testPodNamespace).Create(
 		ctx,
-		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{}},
+		&corev1.Pod{ObjectMeta: metav1.ObjectMeta{
+			Name: testPodNamespace,
+		}},
 		metav1.CreateOptions{},
 	)
 	if err != nil {
@@ -35,6 +38,10 @@ func TestGatherOpenShiftAPIServerOperatorLogs(t *testing.T) {
 	}
 
 	assert.Len(t, records, 1)
-	assert.Equal(t, "logs/openshift-apiserver-operator", records[0].Name)
+	assert.Equal(
+		t,
+		fmt.Sprintf("config/pod/%s/logs/%s/errors.log", testPodNamespace, testPodNamespace),
+		records[0].Name,
+	)
 	assert.Equal(t, Raw{stringToSearch + "\n"}, records[0].Item)
 }
