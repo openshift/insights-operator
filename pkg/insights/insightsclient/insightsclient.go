@@ -37,13 +37,13 @@ const (
 )
 
 type Client struct {
-	client      		*http.Client
-	maxBytes    		int64
-	metricsName 		string
+	client      *http.Client
+	maxBytes    int64
+	metricsName string
 
-	authorizer  		Authorizer
-	gatherKubeConfig	*rest.Config
-	clusterVersion  	*configv1.ClusterVersion
+	authorizer       Authorizer
+	gatherKubeConfig *rest.Config
+	clusterVersion   *configv1.ClusterVersion
 }
 
 type Authorizer interface {
@@ -68,11 +68,11 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 		maxBytes = 10 * 1024 * 1024
 	}
 	return &Client{
-		client:      		client,
-		maxBytes:    		maxBytes,
-		metricsName: 		metricsName,
-		authorizer:  		authorizer,
-		gatherKubeConfig:	gatherKubeConfig,
+		client:           client,
+		maxBytes:         maxBytes,
+		metricsName:      metricsName,
+		authorizer:       authorizer,
+		gatherKubeConfig: gatherKubeConfig,
 	}
 }
 
@@ -187,16 +187,16 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		h.Set("Content-Type", source.Type)
 		fw, err := mw.CreatePart(h)
 		if err != nil {
-			pw.CloseWithError(err)
+			_ = pw.CloseWithError(err)
 			return
 		}
 		r := &LimitedReader{R: source.Contents, N: c.maxBytes}
 		n, err := io.Copy(fw, r)
 		bytesRead = n
 		if err != nil {
-			pw.CloseWithError(err)
+			_ = pw.CloseWithError(err)
 		}
-		pw.CloseWithError(mw.Close())
+		_ = pw.CloseWithError(mw.Close())
 	}()
 
 	req.Body = pr

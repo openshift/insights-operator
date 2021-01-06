@@ -232,7 +232,7 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 	var res []clusterOperatorResource
 	for _, ro := range relObj {
 		key := fmt.Sprintf("%s-%s", ro.Group, strings.ToLower(ro.Resource))
-		versions, _ := resVer[key]
+		versions := resVer[key]
 		for _, v := range versions {
 			gvr := schema.GroupVersionResource{Group: ro.Group, Version: v, Resource: strings.ToLower(ro.Resource)}
 			clusterResource, err := dynamicClient.Resource(gvr).Get(ctx, ro.Name, metav1.GetOptions{})
@@ -275,12 +275,12 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 			}
 			for _, ar := range v.APIResources {
 				key := fmt.Sprintf("%s-%s", gv.Group, ar.Name)
-				r, ok := resourceVersionMap[key]
+				_, ok := resourceVersionMap[key]
 				if !ok {
 					resourceVersionMap[key] = []string{gv.Version}
-				} else {
-					r = append(r, gv.Version)
+					continue
 				}
+				resourceVersionMap[key] = append(resourceVersionMap[key], gv.Version)
 			}
 		}
 	}

@@ -171,7 +171,7 @@ func parseJSONQuery(j map[string]interface{}, jq string, o interface{}) error {
 		// otherwise key was not found
 		// keys are case sensitive, because maps are
 		for ki := range j {
-			if strings.ToLower(k) == strings.ToLower(ki) {
+			if strings.EqualFold(k, ki) {
 				return fmt.Errorf("key %s wasn't found, but %s was ", k, ki)
 			}
 		}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -45,8 +44,6 @@ var (
 
 	// logTailLines sets maximum number of lines to fetch from pod logs
 	logTailLines = int64(100)
-
-	imageHostRegex = regexp.MustCompile(`(^|\.)(openshift\.org|registry\.redhat\.io|registry\.access\.redhat\.com)$`)
 
 	// lineSep is the line separator used by the alerts metric
 	lineSep = []byte{'\n'}
@@ -224,19 +221,6 @@ func isHealthyPod(pod *corev1.Pod, now time.Time) bool {
 type MinimalNodeInfo struct {
 	ProviderID string `json:"providerID"`
 	Image      string `json:"image"`
-}
-
-func forceParseURLHost(rawurl string) (string, error) {
-	// If the scheme isn't specified, the URL will not be parsed nicely and everything will end up in the "path"
-	if !strings.Contains(rawurl, "://") {
-		return forceParseURLHost("https://" + rawurl)
-	}
-
-	parsedURL, err := url.Parse(rawurl)
-	if err != nil {
-		return "", err
-	}
-	return parsedURL.Host, nil
 }
 
 func isContainerInCrashloop(status *corev1.ContainerStatus) bool {
