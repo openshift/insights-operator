@@ -47,7 +47,9 @@ func TestConfigMapAnonymizer(t *testing.T) {
 	}
 
 	for _, tt := range cases {
+		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
+			t.Parallel()
 			f, err := os.Open("testdata/configmaps.json")
 			mustNotFail(t, err, "error opening test data file. %+v")
 			defer f.Close()

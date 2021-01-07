@@ -19,7 +19,6 @@ func nonCachedProxyFromEnvironment() func(*http.Request) (*url.URL, error) {
 	}
 }
 
-
 func TestProxy(tt *testing.T) {
 	testCases := []struct {
 		Name       string
@@ -85,6 +84,7 @@ func TestProxy(tt *testing.T) {
 	for _, tcase := range testCases {
 		tc := tcase
 		tt.Run(tc.Name, func(t *testing.T) {
+			// do not use parallel here
 			for k, v := range tc.EnvValues {
 				defer SafeRestoreEnv(k)()
 				// nil will indicate the need to unset Env

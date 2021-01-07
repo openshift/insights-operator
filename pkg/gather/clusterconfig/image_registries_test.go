@@ -119,7 +119,9 @@ func TestGatherClusterImageRegistry(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			client := imageregistryfake.NewSimpleClientset(test.inputObj)
 			ctx := context.Background()
 			records, errs := gatherClusterImageRegistry(ctx, client.ImageregistryV1())
