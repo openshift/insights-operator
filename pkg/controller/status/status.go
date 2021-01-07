@@ -340,12 +340,12 @@ func (c *Controller) Start(ctx context.Context) error {
 			case <-timer.C:
 				err := limiter.Wait(ctx)
 				if err != nil {
-					klog.Errorf("Limiter error: %v", err)
+					klog.Errorf("Limiter error by timer: %v", err)
 				}
 			case <-c.statusCh:
 				err := limiter.Wait(ctx)
 				if err != nil {
-					klog.Errorf("Limiter error: %v", err)
+					klog.Errorf("Limiter error by status: %v", err)
 				}
 			}
 			if err := c.updateStatus(ctx, false); err != nil {
