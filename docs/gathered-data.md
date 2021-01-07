@@ -305,6 +305,18 @@ Output raw size: 491
 #### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
+## OpenShiftAPIServerOperatorLogs
+
+collects logs from openshift-apiserver-operator with following substrings:
+  - "the server has received too many requests and has asked us"
+  - "because serving request timed out and response had been started"
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
+
+
 ## PodDisruptionBudgets
 
 gathers the cluster's PodDisruptionBudgets.
