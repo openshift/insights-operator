@@ -316,6 +316,12 @@ Response see https://docs.openshift.com/container-platform/4.6/rest_api/workload
 
 Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 
+## OVSFlows
+
+collects OVS flow information for every OVS pod in the openshift-sdn namespace
+
+Location in archive: networking/ovs_flows/
+Id in config: ovs_flows
 
 ## PodDisruptionBudgets
 

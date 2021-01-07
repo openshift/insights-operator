@@ -117,6 +117,12 @@ rules:
   verbs:
     - list
 - apiGroups:
+    - ""
+  resources:
+    - pods/exec
+  verbs:
+    - create
+- apiGroups:
     - imageregistry.operator.openshift.io
   resources:
     - configs

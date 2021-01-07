@@ -15,7 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 
 	configv1 "github.com/openshift/api/config/v1"
 	registryv1 "github.com/openshift/api/imageregistry/v1"
@@ -312,4 +315,43 @@ func countLines(r io.Reader) (int, error) {
 			return lineCount, err
 		}
 	}
+}
+
+// ExecCmd - executes the shell command remotely in the given pod in the given namespace.
+// Returns standard output and standard error of the command.
+// Returns an error in case of command exit code is different than 0. In this case please check the stderr value.
+func ExecCmd(coreClient corev1client.CoreV1Interface, config *rest.Config, podName string, namespace string,
+	command string) (RawByte, RawByte, error) {
+	cmd := []string{
+		"/bin/bash",
+		"-c",
+		command,
+	}
+	req := coreClient.RESTClient().Post().Resource("pods").Name(podName).
+		Namespace(namespace).SubResource("exec")
+	option := &corev1.PodExecOptions{
+		Command: cmd,
+		Stdin:   false,
+		Stdout:  true,
+		Stderr:  true,
+		TTY:     false,
+	}
+	req.VersionedParams(
+		option,
+		scheme.ParameterCodec,
+	)
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return RawByte{}, RawByte{}, err
+	}
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return RawByte{}, stderr.Bytes(), err
+	}
+
+	return stdout.Bytes(), stderr.Bytes(), nil
 }
