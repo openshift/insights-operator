@@ -246,7 +246,7 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported AlreadyReport
 				return true, nil
 			})
 			if err != nil {
-				klog.V(2).Infof("Failed to wait for exponential backoff : %v", err)
+				klog.V(4).Infof("Fail to properly prune last report within %s: %v", interval.Truncate(time.Second), err)
 			}
 		}
 	}, time.Second, ctx.Done())
