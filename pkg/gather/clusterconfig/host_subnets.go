@@ -22,12 +22,15 @@ import (
 //
 // Location in archive: config/hostsubnet/
 // Id in config: host_subnets
-func GatherHostSubnet(g *Gatherer) ([]record.Record, []error) {
+func GatherHostSubnet(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherHostSubnet(g.ctx, gatherNetworkClient)
+	records, errors := gatherHostSubnet(g.ctx, gatherNetworkClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherHostSubnet(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {

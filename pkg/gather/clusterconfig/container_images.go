@@ -36,12 +36,15 @@ const (
 //
 // Location in archive: config/running_containers.json
 // Id in config: container_images
-func GatherContainerImages(g *Gatherer) ([]record.Record, []error) {
+func GatherContainerImages(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherContainerImages(gatherKubeClient.CoreV1(), g.ctx)
+	records, errors := gatherContainerImages(gatherKubeClient.CoreV1(), g.ctx)
+	c <- gatherResult{records, errors}
 }
 
 func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.Context) ([]record.Record, []error) {

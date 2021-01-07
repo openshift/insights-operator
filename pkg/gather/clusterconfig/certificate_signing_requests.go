@@ -35,12 +35,15 @@ const csrGatherLimit = 5000
 //
 // Location in archive: config/certificatesigningrequests/
 // Id in config: certificate_signing_requests
-func GatherCertificateSigningRequests(g *Gatherer) ([]record.Record, []error) {
+func GatherCertificateSigningRequests(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1beta1())
+	records, errors := gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1beta1())
+	c <- gatherResult{records, errors}
 }
 
 func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1beta1.CertificatesV1beta1Interface) ([]record.Record, []error) {

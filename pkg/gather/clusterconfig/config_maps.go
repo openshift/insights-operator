@@ -28,12 +28,15 @@ import (
 // Location in archive: config/configmaps/
 // See: docs/insights-archive-sample/config/configmaps
 // Id in config: config_maps
-func GatherConfigMaps(g *Gatherer) ([]record.Record, []error) {
+func GatherConfigMaps(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherConfigMaps(g.ctx, gatherKubeClient.CoreV1())
+	records, errors := gatherConfigMaps(g.ctx, gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errors}
 }
 
 func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

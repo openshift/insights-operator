@@ -26,16 +26,20 @@ import (
 //
 // Location in archive: config/statefulsets/
 // Id in config: stateful_sets
-func GatherStatefulSets(g *Gatherer) ([]record.Record, []error) {
+func GatherStatefulSets(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 	appsClient, err := appsclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherStatefulSets(g.ctx, gatherKubeClient.CoreV1(), appsClient)
+	records, errors := gatherStatefulSets(g.ctx, gatherKubeClient.CoreV1(), appsClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherStatefulSets(ctx context.Context, coreClient corev1client.CoreV1Interface, appsClient appsclient.AppsV1Interface) ([]record.Record, []error) {

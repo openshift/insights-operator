@@ -24,12 +24,15 @@ import (
 //
 // Location in archive: config/crd/
 // Id in config: crds
-func GatherCRD(g *Gatherer) ([]record.Record, []error) {
+func GatherCRD(g *Gatherer, c chan<- gatherResult){
+	defer close(c)
 	crdClient, err := apixv1beta1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherCRD(g.ctx, crdClient)
+	records, errors := gatherCRD(g.ctx, crdClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherCRD(ctx context.Context, crdClient apixv1beta1client.ApiextensionsV1beta1Interface) ([]record.Record, []error) {
