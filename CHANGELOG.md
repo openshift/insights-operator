@@ -2,6 +2,7 @@
 
 ## 4.7
 
+- [#307](https://github.com/openshift/insights-operator/pull/307) Gather network OVS flows
 - [#279](https://github.com/openshift/insights-operator/pull/279) Refactoring record and gatherer
 - [#297](https://github.com/openshift/insights-operator/pull/297) Gather netnamespaces network info
 - [#292](https://github.com/openshift/insights-operator/pull/292) Update initial waiting times and give TestIsIOHealthy more time
