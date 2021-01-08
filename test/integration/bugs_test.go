@@ -17,7 +17,7 @@ const knownFileSuffixesInsideArchiveRegex string = `(` +
 	`\.(crt|json|log)` +
 	`|` +
 	// exceptions - file names without extension
-	`(\/|^)(config|id|invoker|metrics|version)` +
+	`(\/|^)(config|id|invoker|metrics|version|networking\/ovs_flows\/ovs-\S+)` +
 	`)$`
 
 //https://bugzilla.redhat.com/show_bug.cgi?id=1841057
