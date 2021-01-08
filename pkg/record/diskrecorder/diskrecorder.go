@@ -246,7 +246,7 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported AlreadyReport
 				return true, nil
 			})
 			if err != nil {
-				klog.V(4).Infof("Fail to properly prune last report within %s: %v", interval.Truncate(time.Second), err)
+				klog.V(4).Infof("Fail to properly prune last report within %s: %v", interval.Truncate(time.Millisecond), err)
 			}
 		}
 	}, time.Second, ctx.Done())
