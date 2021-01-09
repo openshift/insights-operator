@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
@@ -25,7 +26,7 @@ const knownFileSuffixesInsideArchiveRegex string = `(` +
 func TestDefaultUploadFrequency(t *testing.T) {
 	// Backup support secret from openshift-config namespace.
 	// oc extract secret/support -n openshift-config --to=.
-	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("The support secret read failed: %s", err)
 	}
@@ -39,7 +40,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 		resetSecrets()
 	}()
 	// delete any existing overriding secret
-	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(Support, &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {
@@ -65,7 +66,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 		Type: "Opaque",
 	}
 
-	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(&newSecret)
+	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &newSecret, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -80,7 +81,7 @@ func TestDefaultUploadFrequency(t *testing.T) {
 // This tests takes about 317 s
 // https://bugzilla.redhat.com/show_bug.cgi?id=1745973
 func TestUnreachableHost(t *testing.T) {
-	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(Support, metav1.GetOptions{})
+	supportSecret, err := clientset.CoreV1().Secrets(OpenShiftConfig).Get(context.Background(), Support, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("The support secret read failed: %s", err)
 	}
@@ -108,13 +109,13 @@ func TestUnreachableHost(t *testing.T) {
 		Type: "Opaque",
 	}
 	// delete any existing overriding secret
-	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(Support, &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
 
 	// if the secret is not found, continue, not a problem
 	if err != nil && err.Error() != `secrets "support" not found` {
 		t.Fatal(err.Error())
 	}
-	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(&modifiedSecret)
+	_, err = clientset.CoreV1().Secrets(OpenShiftConfig).Create(context.Background(), &modifiedSecret, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -131,7 +132,7 @@ func TestUnreachableHost(t *testing.T) {
 		t.Fatal("Insights is not degraded")
 	}
 	// Delete secret
-	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(Support, &metav1.DeleteOptions{})
+	err = clientset.CoreV1().Secrets(OpenShiftConfig).Delete(context.Background(), Support, metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -156,7 +157,7 @@ func genLatestArchiveCheckPattern(prettyName string, check func(*testing.T, stri
 }
 
 func latestArchiveContainsConfigMaps(t *testing.T) {
-	configMaps, _ := clientset.CoreV1().ConfigMaps("openshift-config").List(metav1.ListOptions{})
+	configMaps, _ := clientset.CoreV1().ConfigMaps("openshift-config").List(context.Background(), metav1.ListOptions{})
 	if len(configMaps.Items) == 0 {
 		t.Fatal("Nothing to test: no config maps in openshift-config namespace")
 	}
@@ -170,7 +171,7 @@ func latestArchiveContainsConfigMaps(t *testing.T) {
 }
 
 func latestArchiveContainsNodes(t *testing.T) {
-	Nodes, _ := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	Nodes, _ := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if len(Nodes.Items) == 0 {
 		t.Fatal("Nothing to test: api doesn't return any nodes")
 	}
@@ -272,15 +273,15 @@ RgIhAIPCUx9FdzX1iDGxH9UgYJE07gfG+J3ObR31IHhmi+WwAiEAtzN35zYkXEaC
 YLluQUO+Jy/PjOnMPw5+DeSX6asUgXE=
 -----END CERTIFICATE REQUEST-----`)
 	name := "my-svc.my-namespace"
-	_, err := clientset.CertificatesV1beta1().CertificateSigningRequests().Create(&v1beta1.CertificateSigningRequest{
+	_, err := clientset.CertificatesV1beta1().CertificateSigningRequests().Create(context.Background(), &v1beta1.CertificateSigningRequest{
 		TypeMeta:   metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Spec:       v1beta1.CertificateSigningRequestSpec{Request: certificateRequest},
 		Status:     v1beta1.CertificateSigningRequestStatus{},
-	})
+	}, metav1.CreateOptions{})
 	e(t, err, "Failed creating certificate signing request")
 	defer func() {
-		clientset.CertificatesV1beta1().CertificateSigningRequests().Delete(name, &metav1.DeleteOptions{})
+		clientset.CertificatesV1beta1().CertificateSigningRequests().Delete(context.Background(), name, metav1.DeleteOptions{})
 		restartInsightsOperator(t)
 	}()
 	defer ChangeReportTimeInterval(t, 1)()
@@ -293,14 +294,14 @@ YLluQUO+Jy/PjOnMPw5+DeSX6asUgXE=
 // https://bugzilla.redhat.com/show_bug.cgi?id=1782151
 func TestClusterDefaultNodeSelector(t *testing.T) {
 	// set default selector of node-role.kubernetes.io/worker
-	schedulers, err := configClient.Schedulers().List(metav1.ListOptions{})
+	schedulers, err := configClient.Schedulers().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	for _, scheduler := range schedulers.Items {
 		if scheduler.ObjectMeta.Name == "cluster" {
 			scheduler.Spec.DefaultNodeSelector = "node-role.kubernetes.io/worker="
-			configClient.Schedulers().Update(&scheduler)
+			configClient.Schedulers().Update(context.Background(), &scheduler, metav1.UpdateOptions{})
 		}
 	}
 
@@ -308,13 +309,13 @@ func TestClusterDefaultNodeSelector(t *testing.T) {
 	restartInsightsOperator(t)
 
 	// check the pod is scheduled
-	newPods, err := clientset.CoreV1().Pods("openshift-insights").List(metav1.ListOptions{})
+	newPods, err := clientset.CoreV1().Pods("openshift-insights").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	for _, newPod := range newPods.Items {
-		pod, err := clientset.CoreV1().Pods("openshift-insights").Get(newPod.Name, metav1.GetOptions{})
+		pod, err := clientset.CoreV1().Pods("openshift-insights").Get(context.Background(), newPod.Name, metav1.GetOptions{})
 		if err != nil {
 			panic(err.Error())
 		}

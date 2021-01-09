@@ -11,16 +11,16 @@ import (
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
 	v1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	dynamicfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/klog"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/klog"
 
 	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -175,21 +175,21 @@ func TestGatherClusterPruner(t *testing.T) {
 
 }
 
-func TestGatherPodDisruptionBudgets(t *testing.T){
+func TestGatherPodDisruptionBudgets(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset()
 
 	fakeNamespace := "fake-namespace"
 
 	// name -> MinAvailabel
-	fakePDBs := map[string]string {
-		"pdb-four": "4",
+	fakePDBs := map[string]string{
+		"pdb-four":  "4",
 		"pdb-eight": "8",
-		"pdb-ten": "10",
+		"pdb-ten":   "10",
 	}
-	for name, minAvailable := range fakePDBs{
+	for name, minAvailable := range fakePDBs {
 		_, err := coreClient.PolicyV1beta1().
 			PodDisruptionBudgets(fakeNamespace).
-			Create(&policyv1beta1.PodDisruptionBudget{
+			Create(context.Background(), &policyv1beta1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: fakeNamespace,
 					Name:      name,
@@ -197,7 +197,7 @@ func TestGatherPodDisruptionBudgets(t *testing.T){
 				Spec: policyv1beta1.PodDisruptionBudgetSpec{
 					MinAvailable: &intstr.IntOrString{StrVal: minAvailable},
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("unable to create fake pdbs: %v", err)
 		}
@@ -220,7 +220,7 @@ func TestGatherPodDisruptionBudgets(t *testing.T){
 		}
 		name := pdba.PodDisruptionBudget.ObjectMeta.Name
 		minAvailable := pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal
-		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal !=  fakePDBs[name] {
+		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal != fakePDBs[name] {
 			t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
 		}
 	}
@@ -383,7 +383,7 @@ metadata:
 	if err != nil {
 		t.Fatal("unable to decode machineset ", err)
 	}
-	_, err = client.Resource(gvr).Create(testMachineSet, metav1.CreateOptions{})
+	_, err = client.Resource(gvr).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake machineset ", err)
 	}
@@ -407,11 +407,11 @@ func TestGatherHostSubnet(t *testing.T) {
 		Host:        "test.host",
 		HostIP:      "10.0.0.0",
 		Subnet:      "10.0.0.0/23",
-		EgressIPs:   []string{"10.0.0.0", "10.0.0.1"},
-		EgressCIDRs: []string{"10.0.0.0/24", "10.0.0.0/24"},
+		EgressIPs:   []networkv1.HostSubnetEgressIP{"10.0.0.0", "10.0.0.1"},
+		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{"10.0.0.0/24", "10.0.0.0/24"},
 	}
 	client := networkfake.NewSimpleClientset()
-	_, err := client.NetworkV1().HostSubnets().Create(&testHostSubnet)
+	_, err := client.NetworkV1().HostSubnets().Create(context.Background(), &testHostSubnet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake hostsubnet")
 	}

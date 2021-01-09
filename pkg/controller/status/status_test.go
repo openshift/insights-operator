@@ -1,6 +1,7 @@
 package status
 
 import (
+	"context"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,7 +77,7 @@ func TestSaveInitialStart(t *testing.T) {
 			client := configfake.NewSimpleClientset(operators...)
 			ctrl := &Controller{name: "insights", client: client.ConfigV1(), configurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient)}
 
-			err := ctrl.updateStatus(tt.initialRun)
+			err := ctrl.updateStatus(context.Background(), tt.initialRun)
 			isSafe := ctrl.SafeInitialStart()
 			if err != tt.expErr {
 				t.Fatalf("updateStatus returned unexpected error: %s Expected %s", err, tt.expErr)

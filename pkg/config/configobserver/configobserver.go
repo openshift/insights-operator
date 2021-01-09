@@ -41,10 +41,10 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 		checkPeriod:   5 * time.Minute,
 	}
 	c.mergeConfigLocked()
-	if err := c.retrieveToken(); err != nil {
+	if err := c.retrieveToken(context.TODO()); err != nil {
 		klog.Warningf("Unable to retrieve initial token config: %v", err)
 	}
-	if err := c.retrieveConfig(); err != nil {
+	if err := c.retrieveConfig(context.TODO()); err != nil {
 		klog.Warningf("Unable to retrieve initial config: %v", err)
 	}
 	return c
@@ -53,20 +53,20 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 // Start is periodically invoking check and set of config and token
 func (c *Controller) Start(ctx context.Context) {
 	wait.Until(func() {
-		if err := c.retrieveToken(); err != nil {
+		if err := c.retrieveToken(ctx); err != nil {
 			klog.Warningf("Unable to retrieve token config: %v", err)
 		}
-		if err := c.retrieveConfig(); err != nil {
+		if err := c.retrieveConfig(ctx); err != nil {
 			klog.Warningf("Unable to retrieve config: %v", err)
 		}
 	}, c.checkPeriod, ctx.Done())
 }
 
-func (c *Controller) retrieveToken() error {
+func (c *Controller) retrieveToken(ctx context.Context) error {
 	var nextConfig config.Controller
 
 	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
-	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get("pull-secret", metav1.GetOptions{})
+	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "pull-secret", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			klog.V(4).Infof("pull-secret does not exist")
@@ -104,11 +104,11 @@ func (c *Controller) retrieveToken() error {
 	return nil
 }
 
-func (c *Controller) retrieveConfig() error {
+func (c *Controller) retrieveConfig(ctx context.Context) error {
 	var nextConfig config.Controller
 
 	klog.V(2).Infof("Refreshing configuration from cluster secret")
-	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get("support", metav1.GetOptions{})
+	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "support", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			klog.V(4).Infof("Support secret does not exist")
