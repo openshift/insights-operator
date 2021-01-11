@@ -1,6 +1,8 @@
 package clusterconfig
 
 import (
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -22,13 +24,22 @@ func GatherOpenshiftSDNLogs(g *Gatherer) ([]record.Record, []error) {
 		"Failed to update proxy firewall for policy",
 	}
 
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	coreClient := gatherKubeClient.CoreV1()
+
 	records, err := gatherLogsFromPodsInNamespace(
-		g,
+		g.ctx,
+		coreClient,
 		"openshift-sdn",
 		messagesToSearch,
 		86400,   // last day
 		1024*64, // maximum 64 kb of logs
 		"errors",
+		"app=sdn",
 	)
 	if err != nil {
 		return nil, []error{err}

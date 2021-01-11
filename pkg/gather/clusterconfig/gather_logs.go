@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"k8s.io/klog/v2"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -20,25 +20,21 @@ import (
 //   - sinceSeconds sets the moment to fetch logs from(current time - sinceSeconds)
 //   - limitBytes sets the maximum amount of logs that can be fetched
 //   - logFileName sets the name of the file to save logs to.
+//   - labelSelector allows you to filter pods by their labels
 // Actual location is `config/pod/{namespace}/logs/{podName}/{fileName}.log`
 func gatherLogsFromPodsInNamespace(
-	g *Gatherer,
+	ctx context.Context,
+	coreClient v1.CoreV1Interface,
 	namespace string,
 	messagesToSearch []string,
 	sinceSeconds int64,
 	limitBytes int64,
 	logFileName string,
+	labelSelector string,
 ) ([]record.Record, error) {
-	ctx := g.ctx
-
-	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	coreClient := gatherKubeClient.CoreV1()
-
-	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{})
+	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -46,21 +42,29 @@ func gatherLogsFromPodsInNamespace(
 	var records []record.Record
 
 	for _, pod := range pods.Items {
-		request := coreClient.Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
-			SinceSeconds: &sinceSeconds,
-			LimitBytes:   &limitBytes,
-		})
-
-		logs, err := filterLogs(ctx, request, messagesToSearch)
+		pod, err := coreClient.Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 
-		if len(strings.TrimSpace(logs)) != 0 {
-			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pod.Namespace, pod.Name, logFileName),
-				Item: Raw{logs},
+		for _, container := range pod.Spec.Containers {
+			request := coreClient.Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+				Container:    container.Name,
+				SinceSeconds: &sinceSeconds,
+				LimitBytes:   &limitBytes,
 			})
+
+			logs, err := filterLogs(ctx, request, messagesToSearch)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(strings.TrimSpace(logs)) != 0 {
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pod.Namespace, pod.Name, logFileName),
+					Item: Raw{logs},
+				})
+			}
 		}
 	}
 
