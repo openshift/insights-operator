@@ -144,7 +144,7 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	return nil
 }
 
-func (g *Gatherer) startGathering(gatherList []string, errors* []string) ([]reflect.SelectCase, []time.Time, error) {
+func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]reflect.SelectCase, []time.Time, error) {
 	var cases []reflect.SelectCase
 	var starts []time.Time
 	// Starts the gathers in Go routines

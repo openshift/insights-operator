@@ -29,7 +29,6 @@ type Controller struct {
 	statuses     map[string]*controllerstatus.Simple
 
 	initialDelay time.Duration
-
 }
 
 func New(configurator Configurator, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
@@ -59,7 +58,6 @@ func (c *Controller) Sources() []controllerstatus.Interface {
 	return sources
 }
 
-
 func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	defer utilruntime.HandleCrash()
 	defer klog.Info("Shutting down")
@@ -83,7 +81,6 @@ func (c *Controller) Gather() {
 		c.statuses[name].UpdateStatus(controllerstatus.Summary{Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
 	}
 }
-
 
 func (c *Controller) runGatherer(name string) error {
 	gatherer, ok := c.gatherers[name]
