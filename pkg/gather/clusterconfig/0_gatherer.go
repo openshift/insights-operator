@@ -96,12 +96,8 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		gatherList = fullGatherList()
 	}
 
-	var cases []reflect.SelectCase
-	var starts []time.Time
-	var err error
-
 	// Starts the gathers in Go routines
-	cases, starts, err = g.startGathering(gatherList, &errors)
+	cases, starts, err := g.startGathering(gatherList, &errors)
 	if err != nil {
 		return err
 	}

@@ -14,8 +14,8 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
-func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, ch chan<- gatherResult) {
-	defer close(ch)
+func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	messagesToSearch := []string{
 		"the server has received too many requests and has asked us",
 		"because serving request timed out and response had been started",
@@ -23,7 +23,7 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, ch chan<- gatherResult) {
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		ch <- gatherResult{nil, []error{err}}
+		c <- gatherResult{nil, []error{err}}
 		return
 	}
 
@@ -40,9 +40,9 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, ch chan<- gatherResult) {
 		"app=openshift-apiserver-operator",
 	)
 	if err != nil {
-		ch <- gatherResult{nil, []error{err}}
+		c <- gatherResult{nil, []error{err}}
 		return
 	}
 
-	ch <- gatherResult{records, nil}
+	c <- gatherResult{records, nil}
 }
