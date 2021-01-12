@@ -48,20 +48,11 @@ func gatherHostSubnet(ctx context.Context, networkClient networkv1client.Network
 	return records, nil
 }
 
-// HostSubnetAnonymizer implements HostSubnet serialization wiht anonymization
+// HostSubnetAnonymizer implements HostSubnet serialization
 type HostSubnetAnonymizer struct{ networkv1.HostSubnet }
 
 // Marshal implements HostSubnet serialization
 func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	a.HostSubnet.HostIP = anonymizeString(a.HostSubnet.HostIP)
-	a.HostSubnet.Subnet = anonymizeString(a.HostSubnet.Subnet)
-
-	for i, s := range a.HostSubnet.EgressIPs {
-		a.HostSubnet.EgressIPs[i] = networkv1.HostSubnetEgressIP(anonymizeString(string(s)))
-	}
-	for i, s := range a.HostSubnet.EgressCIDRs {
-		a.HostSubnet.EgressCIDRs[i] = networkv1.HostSubnetEgressCIDR(anonymizeString(string(s)))
-	}
 	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), &a.HostSubnet)
 }
 
