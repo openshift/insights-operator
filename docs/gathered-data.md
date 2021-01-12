@@ -314,7 +314,21 @@ collects logs from openshift-apiserver-operator with following substrings:
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
+Location in archive: config/pod/openshift-apiserver-operator/logs/{pod-name}/errors.log
+
+
+## OpenshiftSDNLogs
+
+collects logs from pods in openshift-sdn namespace with following substrings:
+  - "Got OnEndpointsUpdate for unknown Endpoints",
+  - "Got OnEndpointsDelete for unknown Endpoints",
+  - "Unable to update proxy firewall for policy",
+  - "Failed to update proxy firewall for policy",
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
 
 
 ## PodDisruptionBudgets

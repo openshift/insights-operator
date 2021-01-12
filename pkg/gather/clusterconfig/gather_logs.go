@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// gatherLogsFromPodsInNamespace collects logs from all pods in provided namespace
+// gatherLogsFromPodsInNamespace collects logs from the pods in provided namespace
 //   - messagesToSearch are the messages to filter the logs(case-insensitive)
 //   - sinceSeconds sets the moment to fetch logs from(current time - sinceSeconds)
 //   - limitBytes sets the maximum amount of logs that can be fetched
