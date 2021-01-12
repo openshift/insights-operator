@@ -39,11 +39,11 @@ func TestGatherHostSubnet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to decode object: %v", err)
 	}
-	if gatheredHostSubnet.HostIP != "xxxxxxxx" {
-		t.Fatalf("Host IP is not anonymized %s", gatheredHostSubnet.HostIP)
+	if gatheredHostSubnet.HostIP != testHostSubnet.HostIP {
+		t.Fatalf("Unexpected Host IP value %s", gatheredHostSubnet.HostIP)
 	}
-	if gatheredHostSubnet.Subnet != "xxxxxxxxxxx" {
-		t.Fatalf("Host Subnet is not anonymized %s", gatheredHostSubnet.Subnet)
+	if gatheredHostSubnet.Subnet != testHostSubnet.Subnet {
+		t.Fatalf("Unexpected Subnet value %s", gatheredHostSubnet.Subnet)
 	}
 	if len(gatheredHostSubnet.EgressIPs) != len(testHostSubnet.EgressIPs) {
 		t.Fatalf("unexpected number of egress IPs gathered %s", gatheredHostSubnet.EgressIPs)
@@ -51,17 +51,5 @@ func TestGatherHostSubnet(t *testing.T) {
 
 	if len(gatheredHostSubnet.EgressCIDRs) != len(testHostSubnet.EgressCIDRs) {
 		t.Fatalf("unexpected number of egress CIDRs gathered %s", gatheredHostSubnet.EgressCIDRs)
-	}
-
-	for _, ip := range gatheredHostSubnet.EgressIPs {
-		if ip != "xxxxxxxx" {
-			t.Fatalf("Egress IP is not anonymized %s", ip)
-		}
-	}
-
-	for _, cidr := range gatheredHostSubnet.EgressCIDRs {
-		if cidr != "xxxxxxxxxxx" {
-			t.Fatalf("Egress CIDR is not anonymized %s", cidr)
-		}
 	}
 }
