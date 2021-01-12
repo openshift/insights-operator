@@ -28,7 +28,6 @@ type Controller struct {
 	gatherers    map[string]gather.Interface
 	statuses     map[string]*controllerstatus.Simple
 
-	workers		 int  // Not used, but I have plans for it
 	initialDelay time.Duration
 
 }
@@ -61,10 +60,9 @@ func (c *Controller) Sources() []controllerstatus.Interface {
 }
 
 
-func (c *Controller) Run(workers int, stopCh <-chan struct{}, initialDelay time.Duration) {
+func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	defer utilruntime.HandleCrash()
 	defer klog.Info("Shutting down")
-	c.workers = workers
 	c.initialDelay = initialDelay
 
 	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)

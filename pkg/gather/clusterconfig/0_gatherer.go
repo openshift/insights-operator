@@ -96,29 +96,14 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		gatherList = fullGatherList()
 	}
 
-	var chans []chan gatherResult
 	var cases []reflect.SelectCase
 	var starts []time.Time
+	var err error
 
 	// Starts the gathers in Go routines
-	for _, gatherId := range gatherList {
-		gFn, ok := gatherFunctions[gatherId]
-		if !ok {
-			errors = append(errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
-			continue
-		}
-		ch := make(chan gatherResult)
-		chans = append(chans, ch)
-		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)})
-		gatherName := runtime.FuncForPC(reflect.ValueOf(gFn).Pointer()).Name()
-
-		klog.V(5).Infof("Gathering %s", gatherName)
-		starts = append(starts, time.Now())
-		go gFn(g, ch)
-
-		if err := ctx.Err(); err != nil {
-			return err
-		}
+	cases, starts, err = g.startGathering(gatherList, &errors)
+	if err != nil {
+		return err
 	}
 
 	// Gets the info from the Go routines
@@ -145,7 +130,7 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 				continue
 			}
 		}
-		fmt.Printf("Read from channel %#v and received %s\n", chans[chosen], value.String())
+		fmt.Printf("Read from %s's channel and received %s\n", gatherName, value.String())
 	}
 
 	// Creates the gathering performance report
@@ -157,6 +142,31 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		return sumErrors(errors)
 	}
 	return nil
+}
+
+func (g *Gatherer) startGathering(gatherList []string, errors* []string) ([]reflect.SelectCase, []time.Time, error) {
+	var cases []reflect.SelectCase
+	var starts []time.Time
+	// Starts the gathers in Go routines
+	for _, gatherId := range gatherList {
+		gFn, ok := gatherFunctions[gatherId]
+		if !ok {
+			*errors = append(*errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
+			continue
+		}
+		channel := make(chan gatherResult)
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)})
+		gatherName := runtime.FuncForPC(reflect.ValueOf(gFn).Pointer()).Name()
+
+		klog.V(5).Infof("Gathering %s", gatherName)
+		starts = append(starts, time.Now())
+		go gFn(g, channel)
+
+		if err := g.ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+	}
+	return cases, starts, nil
 }
 
 func recordGatherReport(recorder record.Interface, report []interface{}) error {
