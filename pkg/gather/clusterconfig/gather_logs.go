@@ -42,11 +42,6 @@ func gatherLogsFromPodsInNamespace(
 	var records []record.Record
 
 	for _, pod := range pods.Items {
-		pod, err := coreClient.Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-
 		for _, container := range pod.Spec.Containers {
 			request := coreClient.Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
 				Container:    container.Name,
