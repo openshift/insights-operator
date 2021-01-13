@@ -126,7 +126,7 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 				continue
 			}
 		}
-		fmt.Printf("Read from %s's channel and received %s\n", gatherName, value.String())
+		klog.V(4).Infof("Read from %s's channel and received %s\n", gatherName, value.String())
 	}
 
 	// Creates the gathering performance report

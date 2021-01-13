@@ -6,8 +6,13 @@ import (
 	"testing"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
+
+type testError struct{}
+
+func (e *testError) Error() string {
+	return ("This is a test error")
+}
 
 func mockGatherFunction1(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{
@@ -24,7 +29,22 @@ func mockGatherFunction2(g *Gatherer, c chan<- gatherResult) {
 }
 
 func mockGatherFunctionError(g *Gatherer, c chan<- gatherResult) {
-	c <- gatherResult{nil, []error{&errors.StatusError{}}}
+	c <- gatherResult{nil, []error{&testError{}}}
+}
+
+type mockRecorder struct {
+	Recorded []record.Record
+}
+
+func (mr *mockRecorder) Record(r record.Record) error {
+	mr.Recorded = append(mr.Recorded, r)
+	return nil
+}
+
+type mockFailingRecorder struct{}
+
+func (mr *mockFailingRecorder) Record(r record.Record) error {
+	return &testError{}
 }
 
 func init_test() Gatherer {
@@ -42,6 +62,39 @@ func clean_up(cases []reflect.SelectCase) {
 		chosen, _, _ := reflect.Select(cases)
 		cases[chosen].Chan = reflect.ValueOf(nil)
 		remaining -= 1
+	}
+}
+
+func Test_Gather(t *testing.T) {
+	gatherer := init_test()
+	ctx := context.Background()
+	recorder := mockRecorder{}
+	gatherList := []string{gatherAll}
+
+	err := gatherer.Gather(ctx, gatherList, &recorder)
+
+	expected_error := "This is a test error"
+	if err.Error() != expected_error {
+		t.Fatalf("unexpected error returned: Expected %s but got %s", expected_error, err.Error())
+	}
+	expected_record_amount := 3 // 2 successful gather function + 1 io report
+	actual_record_amount := len(recorder.Recorded)
+	if actual_record_amount != expected_record_amount {
+		t.Fatalf("unexpected record amount, Expected %d, but got %d", expected_record_amount, actual_record_amount)
+	}
+}
+
+func Test_Gather_FailingRecorder(t *testing.T) {
+	gatherer := init_test()
+	ctx := context.Background()
+	recorder := mockFailingRecorder{}
+	gatherList := []string{gatherAll}
+
+	err := gatherer.Gather(ctx, gatherList, &recorder)
+
+	expected_error := "This is a test error, unable to record config/mock1: This is a test error, unable to record config/mock2: This is a test error, unable to record io status reports: This is a test error"
+	if err.Error() != expected_error {
+		t.Fatalf("unexpected error returned: Expected %s but got %s", expected_error, err.Error())
 	}
 }
 
@@ -83,7 +136,7 @@ func Test_fullGatherList(t *testing.T) {
 }
 
 func Test_sumErrors(t *testing.T) {
-	errors := []string {
+	errors := []string{
 		"Error1",
 		"Error2",
 		"Error1",
