@@ -2,8 +2,6 @@ package clusterconfig
 
 import (
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherOpenShiftAPIServerOperatorLogs collects logs from openshift-apiserver-operator with following substrings:
