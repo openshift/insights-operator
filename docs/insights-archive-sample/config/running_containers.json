@@ -1,0 +1,10 @@
+{
+  "images": {
+    "0": "registry.svc.ci.openshift.org/ocp/release@sha256:74b5cefea8c8bac158468458dbcb0fdb213aafdcf5b11c9aaefc75e2f7b9fe96"
+  },
+  "containers": {
+    "2020-08": {
+      "0": 1
+    }
+  }
+}
