@@ -11,31 +11,29 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherLogs(t *testing.T) {
-	const testPodNamespace = "pod-namespace"
+func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shouldExist bool) {
+	const testPodName = "test"
 	const testLogFileName = "errors"
-	// there's no way to specify logs fake pod will have, so we can only search for a hardcoded string "fake logs"
-	const stringToSearch = "fake logs"
 
 	coreClient := kubefake.NewSimpleClientset().CoreV1()
 	ctx := context.Background()
 
-	_, err := coreClient.Pods(testPodNamespace).Create(
+	_, err := coreClient.Pods(testPodName).Create(
 		ctx,
 		&corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      testPodNamespace,
-				Namespace: testPodNamespace,
+				Name:      testPodName,
+				Namespace: testPodName,
 			},
 			Status: corev1.PodStatus{
 				Phase: corev1.PodRunning,
 				ContainerStatuses: []corev1.ContainerStatus{
-					{Name: testPodNamespace},
+					{Name: testPodName},
 				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
-					{Name: testPodNamespace},
+					{Name: testPodName},
 				},
 			},
 		},
@@ -48,7 +46,7 @@ func TestGatherLogs(t *testing.T) {
 	records, err := gatherLogsFromPodsInNamespace(
 		ctx,
 		coreClient,
-		testPodNamespace,
+		testPodName,
 		[]string{
 			stringToSearch,
 		},
@@ -56,16 +54,45 @@ func TestGatherLogs(t *testing.T) {
 		1024*64, // maximum 64 kb of logs
 		testLogFileName,
 		"",
+		regexSearch,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	if !shouldExist {
+		assert.Len(t, records, 0)
+		return
+	}
+
 	assert.Len(t, records, 1)
 	assert.Equal(
 		t,
-		fmt.Sprintf("config/pod/%s/logs/%s/%s.log", testPodNamespace, testPodNamespace, testLogFileName),
+		fmt.Sprintf("config/pod/%s/logs/%s/%s.log", testPodName, testPodName, testLogFileName),
 		records[0].Name,
 	)
-	assert.Equal(t, Raw{stringToSearch + "\n"}, records[0].Item)
+	if regexSearch {
+		assert.Regexp(t, stringToSearch, records[0].Item)
+	} else {
+		assert.Equal(t, Raw{stringToSearch + "\n"}, records[0].Item)
+	}
+}
+
+func TestGatherLogs(t *testing.T) {
+	t.Run("SubstringSearch_ShouldExist", func(t *testing.T) {
+		testGatherLogs(t, false, "fake logs", true)
+	})
+	t.Run("SubstringSearch_ShouldNotExist", func(t *testing.T) {
+		testGatherLogs(t, false, "The quick brown fox jumps over the lazy dog", false)
+	})
+	t.Run("SubstringSearch_ShouldNotExist", func(t *testing.T) {
+		testGatherLogs(t, false, "f.*l", false)
+	})
+
+	t.Run("RegexSearch_ShouldExist", func(t *testing.T) {
+		testGatherLogs(t, true, "f.*l", true)
+	})
+	t.Run("RegexSearch_ShouldNotExist", func(t *testing.T) {
+		testGatherLogs(t, true, "[0-9]99", false)
+	})
 }

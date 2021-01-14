@@ -36,6 +36,7 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer) ([]record.Record, []error
 		1024*64, // maximum 64 kb of logs
 		"errors",
 		"app=openshift-apiserver-operator",
+		false,
 	)
 	if err != nil {
 		return nil, []error{err}
