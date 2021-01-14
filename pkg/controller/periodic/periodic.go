@@ -68,6 +68,9 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	<-stopCh
 }
 
+// Runs the gatherers one after the other.
+// Currently their is only 1 gatherer (clusterconfig) and no new gatherer is on the horizon.
+// Running the gatherers in parallel should be a future improvement when a new gatherer is introduced.
 func (c *Controller) Gather() {
 	for name := range c.gatherers {
 		start := time.Now()
@@ -82,6 +85,7 @@ func (c *Controller) Gather() {
 	}
 }
 
+// Does the prep for running a gatherer then calls gatherer.Gather. (getting the context, cleaning the recorder)
 func (c *Controller) runGatherer(name string) error {
 	gatherer, ok := c.gatherers[name]
 	if !ok {
@@ -99,6 +103,8 @@ func (c *Controller) runGatherer(name string) error {
 	return gatherer.Gather(ctx, c.configurator.Config().Gather, c.recorder)
 }
 
+// Periodically starts the gathering.
+// If there is an initialDelay set then it waits that much for the first gather to happen.
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	configCh, closeFn := c.configurator.ConfigChanged()
 	defer closeFn()
@@ -114,7 +120,6 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	}
 
 	interval := c.configurator.Config().Interval
-	expireCh := time.After(wait.Jitter(interval, 0.5))
 	klog.Infof("Gathering cluster info every %s", interval)
 	for {
 		select {
@@ -131,9 +136,6 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 
 		case <-time.After(wait.Jitter(interval/4, 2)):
 			c.Gather()
-
-		case <-expireCh:
 		}
-		expireCh = time.After(wait.Jitter(interval, 0.5))
 	}
 }

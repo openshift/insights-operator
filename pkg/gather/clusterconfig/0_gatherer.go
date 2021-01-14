@@ -140,6 +140,10 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	return nil
 }
 
+// Runs each gather functions in a goroutine.
+// Every gather function is given its own channel to send back the results.
+// 1. return value: `cases` list, used for dynamically reading from the channels.
+// 2. return value: `starts` list, contains that start time of each gather function.
 func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]reflect.SelectCase, []time.Time, error) {
 	var cases []reflect.SelectCase
 	var starts []time.Time
