@@ -12,8 +12,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 

@@ -21,7 +21,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"

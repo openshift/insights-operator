@@ -24,7 +24,6 @@ import (
 	networkv1 "github.com/openshift/api/network/v1"
 	openshiftscheme "github.com/openshift/client-go/config/clientset/versioned/scheme"
 	appsv1 "k8s.io/api/apps/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
