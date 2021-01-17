@@ -72,6 +72,7 @@ var gatherFunctions = map[string]gathering{
 	"metrics":                           failable(GatherMostRecentMetrics),
 	"operators":                         important(GatherClusterOperators),
 	"container_images":                  important(GatherContainerImages),
+	"workload_info":                     important(GatherWorkloadInfo),
 	"nodes":                             important(GatherNodes),
 	"config_maps":                       failable(GatherConfigMaps),
 	"version":                           important(GatherClusterVersion),
