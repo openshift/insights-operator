@@ -56,7 +56,7 @@ func TestOLMOperatorsGather(t *testing.T) {
 	if ooa.operators[0].Name != "test-olm-operator" {
 		t.Fatalf("unexpected name of gathered OLM operator %s", ooa.operators[0])
 	}
-	if ooa.operators[0].Version != "v6.6.6" {
+	if ooa.operators[0].Version != "v1.2.3" {
 		t.Fatalf("unexpected version of gathered OLM operator %s", ooa.operators[0])
 	}
 }
