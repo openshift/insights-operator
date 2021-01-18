@@ -1,8 +1,8 @@
 {
-    "APIVersion": "samples.operator.openshift.io/v1",
-    "Kind": "Config",
-    "Name": "cluster",
-    "Spec": {
+    "apiVersion": "samples.operator.openshift.io/v1",
+    "kind": "Config",
+    "name": "cluster",
+    "spec": {
         "architectures": [
             "x86_64"
         ],
