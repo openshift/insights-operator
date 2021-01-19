@@ -133,7 +133,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			interval = newInterval
 			klog.Infof("Gathering cluster info every %s", interval)
 
-		case <-time.After(wait.Jitter(interval/4, 2)):
+		case <-time.After(interval):
 			c.Gather()
 		}
 	}
