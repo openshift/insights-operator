@@ -22,12 +22,15 @@ import (
 // Location in archive: config/proxy/
 // See: docs/insights-archive-sample/config/proxy
 // Id in config: proxies
-func GatherClusterProxy(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterProxy(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherClusterProxy(g.ctx, gatherConfigClient)
+	records, errors := gatherClusterProxy(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

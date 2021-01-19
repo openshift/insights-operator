@@ -32,7 +32,12 @@ type Gatherer struct {
 	metricsGatherKubeConfig *rest.Config
 }
 
-type gatherFunction func(g *Gatherer) ([]record.Record, []error)
+type gatherResult struct {
+	records []record.Record
+	errors  []error
+}
+
+type gatherFunction func(g *Gatherer, c chan<- gatherResult)
 
 const gatherAll = "ALL"
 
@@ -88,40 +93,40 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	}
 
 	if contains(gatherList, gatherAll) {
-		gatherList = make([]string, 0, len(gatherFunctions))
-		for k := range gatherFunctions {
-			gatherList = append(gatherList, k)
-		}
+		gatherList = fullGatherList()
 	}
 
-	for _, gatherId := range gatherList {
-		gFn, ok := gatherFunctions[gatherId]
-		if !ok {
-			errors = append(errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
-			continue
-		}
-		gatherName := runtime.FuncForPC(reflect.ValueOf(gFn).Pointer()).Name()
-		klog.V(5).Infof("Gathering %s", gatherName)
+	// Starts the gathers in Go routines
+	cases, starts, err := g.startGathering(gatherList, &errors)
+	if err != nil {
+		return err
+	}
 
-		start := time.Now()
-		records, errs := gFn(g)
-		elapsed := time.Since(start).Truncate(time.Millisecond)
+	// Gets the info from the Go routines
+	remaining := len(cases)
+	for remaining > 0 {
+		chosen, value, _ := reflect.Select(cases)
+		// The chosen channel has been closed, so zero out the channel to disable the case
+		cases[chosen].Chan = reflect.ValueOf(nil)
+		remaining -= 1
 
-		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(records))
-		gatherReport = append(gatherReport, gatherStatusReport{gatherName, elapsed, len(records), errs})
+		elapsed := time.Since(starts[chosen]).Truncate(time.Millisecond)
 
-		for _, err := range errs {
+		gatherResults, _ := value.Interface().(gatherResult)
+		gatherName := runtime.FuncForPC(reflect.ValueOf(gatherFunctions[gatherList[chosen]]).Pointer()).Name()
+		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(gatherResults.records))
+		gatherReport = append(gatherReport, gatherStatusReport{gatherName, elapsed, len(gatherResults.records), gatherResults.errors})
+
+		for _, err := range gatherResults.errors {
 			errors = append(errors, err.Error())
 		}
-		for _, record := range records {
+		for _, record := range gatherResults.records {
 			if err := recorder.Record(record); err != nil {
 				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
 				continue
 			}
 		}
-		if err := ctx.Err(); err != nil {
-			return err
-		}
+		klog.V(5).Infof("Read from %s's channel and received %s\n", gatherName, value.String())
 	}
 
 	// Creates the gathering performance report
@@ -130,16 +135,57 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	}
 
 	if len(errors) > 0 {
-		sort.Strings(errors)
-		errors = uniqueStrings(errors)
-		return fmt.Errorf("%s", strings.Join(errors, ", "))
+		return sumErrors(errors)
 	}
 	return nil
+}
+
+// Runs each gather functions in a goroutine.
+// Every gather function is given its own channel to send back the results.
+// 1. return value: `cases` list, used for dynamically reading from the channels.
+// 2. return value: `starts` list, contains that start time of each gather function.
+func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]reflect.SelectCase, []time.Time, error) {
+	var cases []reflect.SelectCase
+	var starts []time.Time
+	// Starts the gathers in Go routines
+	for _, gatherId := range gatherList {
+		gFn, ok := gatherFunctions[gatherId]
+		if !ok {
+			*errors = append(*errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
+			continue
+		}
+		channel := make(chan gatherResult)
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)})
+		gatherName := runtime.FuncForPC(reflect.ValueOf(gFn).Pointer()).Name()
+
+		klog.V(5).Infof("Gathering %s", gatherName)
+		starts = append(starts, time.Now())
+		go gFn(g, channel)
+
+		if err := g.ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+	}
+	return cases, starts, nil
 }
 
 func recordGatherReport(recorder record.Interface, report []interface{}) error {
 	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
 	return recorder.Record(r)
+}
+
+func sumErrors(errors []string) error {
+	sort.Strings(errors)
+	errors = uniqueStrings(errors)
+	return fmt.Errorf("%s", strings.Join(errors, ", "))
+}
+
+func fullGatherList() []string {
+	gatherList := make([]string, 0, len(gatherFunctions))
+	for k := range gatherFunctions {
+		gatherList = append(gatherList, k)
+	}
+	return gatherList
 }
 
 func uniqueStrings(list []string) []string {

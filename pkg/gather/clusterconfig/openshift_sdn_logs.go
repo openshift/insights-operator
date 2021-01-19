@@ -2,8 +2,6 @@ package clusterconfig
 
 import (
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherOpenshiftSDNLogs collects logs from pods in openshift-sdn namespace with following substrings:
@@ -16,7 +14,8 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
-func GatherOpenshiftSDNLogs(g *Gatherer) ([]record.Record, []error) {
+func GatherOpenshiftSDNLogs(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	messagesToSearch := []string{
 		"Got OnEndpointsUpdate for unknown Endpoints",
 		"Got OnEndpointsDelete for unknown Endpoints",
@@ -26,7 +25,8 @@ func GatherOpenshiftSDNLogs(g *Gatherer) ([]record.Record, []error) {
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 
 	coreClient := gatherKubeClient.CoreV1()
@@ -42,8 +42,9 @@ func GatherOpenshiftSDNLogs(g *Gatherer) ([]record.Record, []error) {
 		"app=sdn",
 	)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 
-	return records, nil
+	c <- gatherResult{records, nil}
 }

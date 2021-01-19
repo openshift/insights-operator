@@ -134,7 +134,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 		initialDelay = wait.Jitter(s.Controller.Interval/12, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
-	go periodic.Run(4, ctx.Done(), initialDelay)
+	go periodic.Run(ctx.Done(), initialDelay)
 
 	authorizer := clusterauthorizer.New(configObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)

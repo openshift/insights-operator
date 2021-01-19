@@ -21,12 +21,15 @@ import (
 //
 // Location in archive: config/machineconfigpools/
 // Id in config: machine_config_pools
-func GatherMachineConfigPool(g *Gatherer) ([]record.Record, []error) {
+func GatherMachineConfigPool(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherMachineConfigPool(g.ctx, dynamicClient)
+	records, errors := gatherMachineConfigPool(g.ctx, dynamicClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

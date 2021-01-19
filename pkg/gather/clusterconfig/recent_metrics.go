@@ -32,7 +32,8 @@ const (
 // Location in archive: config/metrics/
 // See: docs/insights-archive-sample/config/metrics
 // Id in config: metrics
-func GatherMostRecentMetrics(g *Gatherer) ([]record.Record, []error) {
+func GatherMostRecentMetrics(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	var metricsClient rest.Interface
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
@@ -41,9 +42,11 @@ func GatherMostRecentMetrics(g *Gatherer) ([]record.Record, []error) {
 		metricsClient = metricsRESTClient
 	}
 	if metricsClient == nil {
-		return nil, nil
+		c <- gatherResult{nil, nil}
+		return
 	}
-	return gatherMostRecentMetrics(g.ctx, metricsClient)
+	records, errors := gatherMostRecentMetrics(g.ctx, metricsClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) ([]record.Record, []error) {

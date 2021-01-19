@@ -32,16 +32,20 @@ const InstallPlansTopX = 100
 //
 // Location in archive: config/installplans/
 // Id in config: install_plans
-func GatherInstallPlans(g *Gatherer) ([]record.Record, []error) {
+func GatherInstallPlans(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
+	records, errors := gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errors}
 }
 
 func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
