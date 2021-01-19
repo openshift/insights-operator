@@ -27,8 +27,6 @@ type Controller struct {
 	recorder     record.FlushInterface
 	gatherers    map[string]gather.Interface
 	statuses     map[string]*controllerstatus.Simple
-
-	initialDelay time.Duration
 }
 
 func New(configurator Configurator, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
@@ -61,7 +59,18 @@ func (c *Controller) Sources() []controllerstatus.Interface {
 func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	defer utilruntime.HandleCrash()
 	defer klog.Info("Shutting down")
-	c.initialDelay = initialDelay
+
+	// Runs a gather after startup
+	if initialDelay > 0 {
+		select {
+		case <-stopCh:
+			return
+		case <-time.After(initialDelay):
+			c.Gather()
+		}
+	} else {
+		c.Gather()
+	}
 
 	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
 
@@ -108,16 +117,6 @@ func (c *Controller) runGatherer(name string) error {
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	configCh, closeFn := c.configurator.ConfigChanged()
 	defer closeFn()
-
-	if c.initialDelay > 0 {
-		select {
-		case <-stopCh:
-			return
-		case <-time.After(c.initialDelay):
-			c.initialDelay = 0
-			c.Gather()
-		}
-	}
 
 	interval := c.configurator.Config().Interval
 	klog.Infof("Gathering cluster info every %s", interval)
