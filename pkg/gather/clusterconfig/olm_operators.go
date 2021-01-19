@@ -25,12 +25,15 @@ type olmOperator struct {
 // See: docs/insights-archive-sample/config/olm_operators
 // Location of in archive: config/olm_operators
 // Id in config: olm_operators
-func GatherOLMOperators(g *Gatherer) ([]record.Record, []error) {
+func GatherOLMOperators(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherOLMOperators(g.ctx, dynamicClient)
+	records, errors := gatherOLMOperators(g.ctx, dynamicClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
