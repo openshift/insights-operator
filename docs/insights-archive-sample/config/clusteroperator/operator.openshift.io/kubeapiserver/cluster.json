@@ -1,8 +1,8 @@
 {
-    "APIVersion": "operator.openshift.io/v1",
-    "Kind": "KubeAPIServer",
-    "Name": "cluster",
-    "Spec": {
+    "apiVersion": "operator.openshift.io/v1",
+    "kind": "KubeAPIServer",
+    "name": "cluster",
+    "spec": {
         "logLevel": "Normal",
         "managementState": "Managed",
         "observedConfig": {
@@ -20,8 +20,8 @@
                             "apiVersion": "network.openshift.io/v1",
                             "kind": "RestrictedEndpointsAdmissionConfig",
                             "restrictedCIDRs": [
-                                "xxxxxxxxxx/14",
-                                "xxxxxxxxxx/16"
+                                "10.128.0.0/14",
+                                "172.30.0.0/16"
                             ]
                         }
                     }
@@ -30,6 +30,12 @@
             "apiServerArguments": {
                 "audit-policy-file": [
                     "/etc/kubernetes/static-pod-resources/configmaps/kube-apiserver-audit-policies/default.yaml"
+                ],
+                "cloud-config": [
+                    "/etc/kubernetes/static-pod-resources/configmaps/cloud-config/config"
+                ],
+                "cloud-provider": [
+                    "gce"
                 ],
                 "etcd-servers": [
                     "xxxxxxxxxxxxxxxxxxxxxxx",
@@ -55,9 +61,9 @@
             "imagePolicyConfig": {
                 "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
             },
-            "servicesSubnet": "xxxxxxxxxx/16",
+            "servicesSubnet": "172.30.0.0/16",
             "servingInfo": {
-                "bindAddress": "xxxxxxx:6443",
+                "bindAddress": "0.0.0.0:6443",
                 "bindNetwork": "tcp4",
                 "cipherSuites": [
                     "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",

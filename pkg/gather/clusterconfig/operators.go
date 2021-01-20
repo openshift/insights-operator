@@ -39,10 +39,10 @@ const (
 )
 
 type clusterOperatorResource struct {
-	APIVersion string `json:"apiVersion"`
-	Kind       string `json:"kind"`
-	Name       string `json:"name"`
-	Spec       interface{}
+	APIVersion string      `json:"apiVersion"`
+	Kind       string      `json:"kind"`
+	Name       string      `json:"name"`
+	Spec       interface{} `json:"spec"`
 }
 
 // GatherClusterOperators collects all ClusterOperators and their resources.
@@ -340,12 +340,6 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 	urlMatches := re.FindAllString(resStr, -1)
 	for _, m := range urlMatches {
 		m = strings.ReplaceAll(m, "\"", "")
-		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
-	}
-	// anonymize IP addresses
-	re = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}`)
-	ipMatches := re.FindAllString(resStr, -1)
-	for _, m := range ipMatches {
 		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
 	}
 	return []byte(resStr), nil

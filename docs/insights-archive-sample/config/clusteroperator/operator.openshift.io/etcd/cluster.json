@@ -1,8 +1,8 @@
 {
-    "APIVersion": "operator.openshift.io/v1",
-    "Kind": "Etcd",
-    "Name": "cluster",
-    "Spec": {
+    "apiVersion": "operator.openshift.io/v1",
+    "kind": "Etcd",
+    "name": "cluster",
+    "spec": {
         "logLevel": "Normal",
         "managementState": "Managed",
         "operatorLogLevel": "Normal",
