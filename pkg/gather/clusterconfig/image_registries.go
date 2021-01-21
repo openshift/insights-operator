@@ -22,12 +22,15 @@ import (
 //
 // Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 // Id in config: image_registries
-func GatherClusterImageRegistry(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterImageRegistry(g *Gatherer, c chan<- gatherResult){
+	defer close(c)
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1())
+	records, errors := gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1())
+	c <- gatherResult{records, errors}
 }
 
 func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface) ([]record.Record, []error) {

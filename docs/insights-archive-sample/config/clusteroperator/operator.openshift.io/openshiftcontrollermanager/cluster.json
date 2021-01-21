@@ -1,8 +1,8 @@
 {
-    "APIVersion": "operator.openshift.io/v1",
-    "Kind": "OpenShiftControllerManager",
-    "Name": "cluster",
-    "Spec": {
+    "apiVersion": "operator.openshift.io/v1",
+    "kind": "OpenShiftControllerManager",
+    "name": "cluster",
+    "spec": {
         "logLevel": "Normal",
         "managementState": "Managed",
         "observedConfig": {

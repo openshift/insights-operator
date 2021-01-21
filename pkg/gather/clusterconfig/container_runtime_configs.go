@@ -21,13 +21,15 @@ import (
 //
 // Location in archive: config/containerruntimeconfigs/
 // Id in config: container_runtime_configs
-func GatherContainerRuntimeConfig(g *Gatherer) ([]record.Record, []error) {
+func GatherContainerRuntimeConfig(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherContainerRuntimeConfig(g.ctx, dynamicClient)
-
+	records, errors := gatherContainerRuntimeConfig(g.ctx, dynamicClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

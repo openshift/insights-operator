@@ -1,8 +1,8 @@
 {
-    "APIVersion": "operator.openshift.io/v1",
-    "Kind": "Storage",
-    "Name": "cluster",
-    "Spec": {
+    "apiVersion": "operator.openshift.io/v1",
+    "kind": "Storage",
+    "name": "cluster",
+    "spec": {
         "logLevel": "Normal",
         "managementState": "Managed",
         "operatorLogLevel": "Normal"

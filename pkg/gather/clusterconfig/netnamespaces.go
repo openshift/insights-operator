@@ -27,12 +27,15 @@ type netNamespace struct {
 //
 // Location in archive: config/netnamespaces
 // Id in config: netnamespaces
-func GatherNetNamespace(g *Gatherer) ([]record.Record, []error) {
+func GatherNetNamespace(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherNetNamespace(g.ctx, gatherNetworkClient)
+	records, errors := gatherNetNamespace(g.ctx, gatherNetworkClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherNetNamespace(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {

@@ -124,3 +124,32 @@ metricsGatherKubeConfig.BearerToken = "paste your token here"
 metricsGatherKubeConfig.CAFile = "" // by default it is "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 metricsGatherKubeConfig.CAData = []byte{}
 ```
+
+### Using the profiler
+
+#### Starting IO with the profiler
+IO starts a profiler if given the correct environment.
+Set the OPENSHIFT_PROFILE env variable to "web".
+```
+export OPENSHIFT_PROFILE=web
+```
+
+#### Collect profiling data
+After IO starts the profiling can be accessed at `http://localhost:6060`, you can use the `pprof` tool to connect to it.
+
+Some profiling examples:
+```
+go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30  // CPU profiling for 30 seconds
+```
+```
+go tool pprof http://localhost:6060/debug/pprof/heap      // heap profiling
+```
+These commands will create a compressed file that can be visualized using a variety of tools, one of them is the `pprof` tool.
+
+#### Analyzing profiling data
+Starting a web ui at `localhost:8080` to visualize/analyze the profiling data:
+```
+go tool pprof -http=:8080 /path/to/profiling.out
+```
+For extra info:
+[link](https://jvns.ca/blog/2017/09/24/profiling-go-with-pprof/)
