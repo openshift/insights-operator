@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -21,7 +22,9 @@ import (
 //   - limitBytes sets the maximum amount of logs that can be fetched
 //   - logFileName sets the name of the file to save logs to.
 //   - labelSelector allows you to filter pods by their labels
-// Actual location is `config/pod/{namespace}/logs/{podName}/{fileName}.log`
+//   - regexSearch makes messagesToSearch regex patterns, so you can accomplish more complicated search
+//
+// Location of the logs is `config/pod/{namespace}/logs/{podName}/{fileName}.log`
 func gatherLogsFromPodsInNamespace(
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
@@ -31,6 +34,7 @@ func gatherLogsFromPodsInNamespace(
 	limitBytes int64,
 	logFileName string,
 	labelSelector string,
+	regexSearch bool,
 ) ([]record.Record, error) {
 	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
@@ -49,7 +53,7 @@ func gatherLogsFromPodsInNamespace(
 				LimitBytes:   &limitBytes,
 			})
 
-			logs, err := filterLogs(ctx, request, messagesToSearch)
+			logs, err := filterLogs(ctx, request, messagesToSearch, regexSearch)
 			if err != nil {
 				return nil, err
 			}
@@ -70,7 +74,9 @@ func gatherLogsFromPodsInNamespace(
 	return records, nil
 }
 
-func filterLogs(ctx context.Context, request *restclient.Request, messagesToSearch []string) (string, error) {
+func filterLogs(
+	ctx context.Context, request *restclient.Request, messagesToSearch []string, regexSearch bool,
+) (string, error) {
 	stream, err := request.Stream(ctx)
 	if err != nil {
 		return "", err
@@ -90,8 +96,18 @@ func filterLogs(ctx context.Context, request *restclient.Request, messagesToSear
 	for scanner.Scan() {
 		line := scanner.Text()
 		for _, messageToSearch := range messagesToSearch {
-			if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
-				result += line + "\n"
+			if regexSearch {
+				matches, err := regexp.MatchString(messageToSearch, line)
+				if err != nil {
+					return "", err
+				}
+				if matches {
+					result += line + "\n"
+				}
+			} else {
+				if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
+					result += line + "\n"
+				}
 			}
 		}
 	}

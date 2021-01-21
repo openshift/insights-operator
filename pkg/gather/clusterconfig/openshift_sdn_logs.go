@@ -40,6 +40,7 @@ func GatherOpenshiftSDNLogs(g *Gatherer, c chan<- gatherResult) {
 		1024*64, // maximum 64 kb of logs
 		"errors",
 		"app=sdn",
+		false,
 	)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}
