@@ -171,6 +171,14 @@ rules:
   verbs:
     - get
     - list
+    - watch
+- apiGroups:
+    - installers.datahub.sap.com
+  resources:
+    - "*"
+  verbs:
+    - get
+    - list
     - watch 
 
 ---

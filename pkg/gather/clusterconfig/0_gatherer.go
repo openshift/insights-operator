@@ -72,6 +72,7 @@ var gatherFunctions = map[string]gatherFunction{
 	"openshift_apiserver_operator_logs": GatherOpenShiftAPIServerOperatorLogs,
 	"openshift_sdn_logs":                GatherOpenshiftSDNLogs,
 	"openshift_sdn_controller_logs":     GatherOpenshiftSDNControllerLogs,
+	"sap_config":                        GatherSAPConfig,
 }
 
 // New creates new Gatherer
