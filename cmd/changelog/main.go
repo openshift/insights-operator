@@ -29,6 +29,7 @@ var (
 
 type Change struct {
 	pullId 		string
+	hash		string
 	title 		string
 	description string
 	category 	string
@@ -53,11 +54,13 @@ func main() {
 	until := os.Args[2]
 
 	gitLog := simpleReverseGitLog(after, until)
-	pullRequestIds := getPullRequestIds(gitLog)
+	pullRequestIds, pullRequestHashes := getPullRequestInfo(gitLog)
 
-	changes := pruneChanges(getChanges(pullRequestIds))
+	changes := determineVersions(pruneChanges(getChanges(pullRequestIds, pullRequestHashes)))
 	createCHANGELOG(changes)
 }
+
+
 
 func createCHANGELOG(changes []Change) {
 	var bugfixes []Change
@@ -94,12 +97,16 @@ func createCHANGELOG(changes []Change) {
 
 }
 
+func determineVersions(changes []Change) []Change {
+	return changes
+}
+
 func pruneChanges(changes []Change) []Change {
 	// TODO: Somehow determine which change is changelog worthy
 	return changes
 }
 
-func getChanges(pullRequestIds []string) []Change {
+func getChanges(pullRequestIds []string, pullRequestHashes []string) []Change {
 	var changes []Change
 	var cases []reflect.SelectCase
 	for _, id := range pullRequestIds {
@@ -114,6 +121,7 @@ func getChanges(pullRequestIds []string) []Change {
 		cases[chosen].Chan = reflect.ValueOf(nil)
 		remaining -= 1
 		change, _ := value.Interface().(Change)
+		change.hash = pullRequestHashes[chosen]
 		changes = append(changes, change)
 	}
 	return changes
@@ -156,19 +164,22 @@ func createPullRequestLink(id string) string {
 }
 
 func simpleReverseGitLog(after string, until string) []string {
-	out, err := exec.Command("git", "log", "--topo-order", "--pretty=tformat:%f", "--reverse", fmt.Sprintf("--after=%s", after), fmt.Sprintf("--until=%s", until)).CombinedOutput()
+	out, err := exec.Command("git", "log", "--topo-order", "--pretty=tformat:%f|%H", "--reverse", fmt.Sprintf("--after=%s", after), fmt.Sprintf("--until=%s", until)).CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
 	return strings.Split(string(out), "\n")
 }
 
-func getPullRequestIds(gitLog []string) []string {
+func getPullRequestInfo(gitLog []string) ([]string, []string) {
 	var pullRequestIds []string
+	var pullRequestHashes []string
 	for _, line := range gitLog {
-		if match := mergeRequest.FindStringSubmatch(line); len(match) > 0 {
+		split := strings.Split(line, "|")
+		if match := mergeRequest.FindStringSubmatch(split[0]); len(match) > 0 {
 			pullRequestIds = append(pullRequestIds, match[1])
+			pullRequestHashes = append(pullRequestHashes, split[1])
 		}
 	}
-	return pullRequestIds
+	return pullRequestIds, pullRequestHashes
 }
