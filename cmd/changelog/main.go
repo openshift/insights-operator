@@ -1,49 +1,58 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"reflect"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"reflect"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
-	"net/http"
-	"io/ioutil"
 )
 
 var (
-	mergeRequest	= regexp.MustCompile(`Merge-pull-request-([\d]+)`)
-	prefix			= regexp.MustCompile(`^.+: (.+)`)
+	mergeRequest = regexp.MustCompile(`Merge-pull-request-([\d]+)`)
+	prefix       = regexp.MustCompile(`^.+: (.+)`)
+	release      = regexp.MustCompile(`release-\d\.\d`)
 
 	// PR categories
-	categories = map[string] *regexp.Regexp {
-		"BugFix" : regexp.MustCompile(`- \[[xX]\] Bugfix`),
+	categories = map[string]*regexp.Regexp{
+		"BugFix":      regexp.MustCompile(`- \[[xX]\] Bugfix`),
 		"Enhancement": regexp.MustCompile(`- \[[xX]\] Enhancement`),
-		"Other": regexp.MustCompile(`- \[[xX]\] Others`),
+		"Other":       regexp.MustCompile(`- \[[xX]\] Others`),
 		"Backporting": regexp.MustCompile(`- \[[xX]\] Backporting`),
 	}
+	gitHubToken = ""
 )
 
+const gitHubRepo = "insights-operator"
+const gitHubRepoOwner = "openshift"
+const gitHubPath = "https://github.com/openshift/insights-operator"
+
+// API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
+const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" //owner, repo, pull-number
 
 type Change struct {
-	pullId 		string
-	hash		string
-	title 		string
+	pullId      string
+	hash        string
+	title       string
 	description string
-	category 	string
+	category    string
+	release     string
 }
 
 func (c Change) toMarkdown() string {
 	return fmt.Sprintf("- [#%s](%s) %s\n", c.pullId, createPullRequestLink(c.pullId), c.title)
 }
 
-const gitHubRepo = "insights-operator"
-const gitHubRepoOwner = "openshift"
-const gitHubPath = "https://github.com/openshift/insights-operator"
-// API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
-const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" //owner, repo, pull-number
+func createPullRequestLink(id string) string {
+	return fmt.Sprintf("%s/pull/%s", gitHubPath, id)
+}
 
 func main() {
 	log.SetFlags(0)
@@ -53,52 +62,77 @@ func main() {
 	after := os.Args[1]
 	until := os.Args[2]
 
+	gitHubToken = os.Getenv("GITHUB_TOKEN")
+	if len(gitHubToken) == 0 {
+		log.Fatalf("Must set the GITHUB_TOKEN env variable to your GitHub access token.")
+	}
+
 	gitLog := simpleReverseGitLog(after, until)
 	pullRequestIds, pullRequestHashes := getPullRequestInfo(gitLog)
 
-	changes := determineVersions(pruneChanges(getChanges(pullRequestIds, pullRequestHashes)))
+	changes := pruneChanges(getChanges(pullRequestIds, pullRequestHashes))
 	createCHANGELOG(changes)
 }
 
-
-
-func createCHANGELOG(changes []Change) {
-	var bugfixes []Change
-	var others []Change
-	var enhancements []Change
-	for _, ch := range changes {
-		if ch.category == "BugFix" {
-			bugfixes = append(bugfixes, ch)
-		} else if ch.category == "Other" {
-			others = append(others, ch)
-		} else if ch.category == "Enhancement" {
-			enhancements = append(enhancements, ch)
-		}
-	}
-	file, _ := os.Create("example_CHANGELOG.md")
-	defer file.Close()
-	_,_ = file.WriteString("# Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes\n")
-
-	// TODO: Get the version info somehow
-	_,_ = file.WriteString("## VERSION\n")
-
-	_,_ = file.WriteString("### Enhancement\n")
-	for _, e := range enhancements {
-		_,_ = file.WriteString(e.toMarkdown())
-	}
-	_,_ = file.WriteString("### Bug fixes\n")
-	for _, b := range bugfixes {
-		_,_ = file.WriteString(b.toMarkdown())
-	}
-	_,_ = file.WriteString("### Others\n")
-	for _, o := range others {
-		_,_ = file.WriteString(o.toMarkdown())
-	}
-
+type MarkdownReleaseBlock struct {
+	enhancements string
+	bugfixes     string
+	others       string
+	misc         string
 }
 
-func determineVersions(changes []Change) []Change {
-	return changes
+func createCHANGELOG(changes []Change) {
+	release_blocks := make(map[string]MarkdownReleaseBlock)
+	for _, ch := range changes {
+		tmp := release_blocks[ch.release]
+		if ch.category == "BugFix" {
+			tmp.bugfixes += ch.toMarkdown()
+			release_blocks[ch.release] = tmp
+		} else if ch.category == "Other" {
+			tmp.others += ch.toMarkdown()
+			release_blocks[ch.release] = tmp
+		} else if ch.category == "Enhancement" {
+			tmp.enhancements += ch.toMarkdown()
+			release_blocks[ch.release] = tmp
+		} else {
+			tmp.misc += ch.toMarkdown()
+			release_blocks[ch.release] = tmp
+		}
+	}
+
+	file, _ := os.Create("example_CHANGELOG.md")
+	defer file.Close()
+	_, _ = file.WriteString("# Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes\n")
+
+	var releases []string
+	for k := range release_blocks {
+		releases = append(releases, k)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(releases)))
+	for _, release := range releases {
+		_, _ = file.WriteString(fmt.Sprintf("## %s\n", release))
+
+		enhancements := release_blocks[release].enhancements
+		if len(enhancements) > 0 {
+			_, _ = file.WriteString("### Enhancement\n")
+			_, _ = file.WriteString(fmt.Sprintf("%s\n", enhancements))
+		}
+		bugfixes := release_blocks[release].bugfixes
+		if len(bugfixes) > 0 {
+			_, _ = file.WriteString("### Bug fixes\n")
+			_, _ = file.WriteString(fmt.Sprintf("%s\n", bugfixes))
+		}
+		others := release_blocks[release].others
+		if len(others) > 0 {
+			_, _ = file.WriteString("### Others\n")
+			_, _ = file.WriteString(fmt.Sprintf("%s\n", others))
+		}
+		misc := release_blocks[release].misc
+		if len(misc) > 0 {
+			_, _ = file.WriteString("### Misc\n")
+			_, _ = file.WriteString(fmt.Sprintf("%s\n", misc))
+		}
+	}
 }
 
 func pruneChanges(changes []Change) []Change {
@@ -122,6 +156,7 @@ func getChanges(pullRequestIds []string, pullRequestHashes []string) []Change {
 		remaining -= 1
 		change, _ := value.Interface().(Change)
 		change.hash = pullRequestHashes[chosen]
+		change = determineReleases(change)
 		changes = append(changes, change)
 	}
 	return changes
@@ -129,7 +164,16 @@ func getChanges(pullRequestIds []string, pullRequestHashes []string) []Change {
 
 func getPullRequestFromGitHub(id string, channel chan<- Change) {
 	defer close(channel)
-	resp, err := http.Get(fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id))
+	// There is a limit for the GitHub API, if you use auth then its 5000/hour
+	var bearer = "token " + gitHubToken
+
+	req, err := http.NewRequest("GET", fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id), nil)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	req.Header.Add("Authorization", bearer)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -159,8 +203,45 @@ func getPullRequestFromGitHub(id string, channel chan<- Change) {
 	channel <- ch
 }
 
-func createPullRequestLink(id string) string {
-	return fmt.Sprintf("%s/pull/%s", gitHubPath, id)
+func determineReleases(change Change) Change {
+	releases := releaseBranchesContain(change.hash)
+	earliest_release := findEarliestRelease(releases)
+	change.release = earliest_release
+	return change
+}
+
+func releaseBranchesContain(hash string) []string {
+	var releaseBranches []string
+	out, err := exec.Command("git", "branch", "--contains", hash).CombinedOutput()
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	all_branches := strings.Split(string(out), "  ")
+	for _, branch := range all_branches {
+		if match := release.FindString(branch); len(match) > 0 {
+			releaseBranches = append(releaseBranches, branch)
+		}
+	}
+	return releaseBranches
+}
+
+func findEarliestRelease(releases []string) string {
+	// Its hacky I KNOW.
+	minStr := ""
+	minMayor := 99
+	minMinor := 99
+	for _, release := range releases {
+		release_number := strings.Split(release, "-")[1]
+		release_numbers := strings.Split(release_number, ".")
+		mayor_release, _ := strconv.Atoi(release_numbers[0])
+		minor_release, _ := strconv.Atoi(release_numbers[1])
+		if mayor_release < minMayor || mayor_release == minMayor && minor_release < minMinor {
+			minStr = release_number
+			minMayor = mayor_release
+			minMinor = minor_release
+		}
+	}
+	return minStr
 }
 
 func simpleReverseGitLog(after string, until string) []string {
