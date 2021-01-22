@@ -73,6 +73,8 @@ Id in config: image_pruners
 ## ClusterImageRegistry
 
 fetches the cluster Image Registry configuration
+If the Image Registry configuration uses some PersistentVolumeClaim for the storage then the corresponding
+PersistentVolume definition is gathered
 
 Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 Id in config: image_registries
