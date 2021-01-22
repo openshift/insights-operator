@@ -363,6 +363,18 @@ See: docs/insights-archive-sample/config/pdbs
 Id in config: pdbs
 
 
+## SAPConfig
+
+collects selected security context constraints
+and cluster role bindings from clusters running a SAP payload.
+
+Relevant OpenShift API docs:
+  - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
+  - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
+
+Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+
+
 ## ServiceAccounts
 
 collects ServiceAccount stats
