@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -81,16 +82,23 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 // Currently their is only 1 gatherer (clusterconfig) and no new gatherer is on the horizon.
 // Running the gatherers in parallel should be a future improvement when a new gatherer is introduced.
 func (c *Controller) Gather() {
+	interval := c.configurator.Config().Interval
+	threshold := status.GatherFailuresCountThreshold
 	for name := range c.gatherers {
-		start := time.Now()
-		err := c.runGatherer(name)
-		if err == nil {
-			klog.V(4).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
-			c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
-			return
+		retry_count := 0
+		for retry_count < threshold {
+			time.Sleep(interval / time.Duration(threshold) * time.Duration(retry_count))
+			start := time.Now()
+			err := c.runGatherer(name)
+			if err == nil {
+				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
+				break
+			}
+			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
+			c.statuses[name].UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.GatheringReport, Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
+			retry_count++
 		}
-		utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-		c.statuses[name].UpdateStatus(controllerstatus.Summary{Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
 	}
 }
 

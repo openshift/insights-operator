@@ -18,6 +18,8 @@ const (
 	DownloadingReport Operation = "DownloadingReport"
 	// Uploading specific flag for summary related to uploading process.
 	Uploading Operation = "Uploading"
+	// GatheringReport specific for gathering the report from the cluster
+	GatheringReport Operation = "GatheringReport"
 )
 
 type Summary struct {
