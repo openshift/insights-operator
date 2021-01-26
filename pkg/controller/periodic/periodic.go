@@ -84,21 +84,28 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 func (c *Controller) Gather() {
 	interval := c.configurator.Config().Interval
 	threshold := status.GatherFailuresCountThreshold
+	duration := interval / (time.Duration(threshold) * 2)
+	// IMPORTANT: We NEED to run retry $threshold times or we will never set status to degraded.
+	backoff := wait.Backoff{
+		Duration: duration,
+		Factor: 1.35,
+		Jitter: 0,
+		Steps:  threshold,
+		Cap:    interval,
+	}
 	for name := range c.gatherers {
-		retry_count := 0
-		for retry_count < threshold {
-			time.Sleep(interval / time.Duration(threshold) * time.Duration(retry_count))
+		_ = wait.ExponentialBackoff(backoff, func() (bool,error) {
 			start := time.Now()
 			err := c.runGatherer(name)
 			if err == nil {
 				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
 				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
-				break
+				return true, nil
 			}
 			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
 			c.statuses[name].UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.GatheringReport, Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
-			retry_count++
-		}
+			return false, nil
+		})
 	}
 }
 
