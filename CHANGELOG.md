@@ -2,6 +2,7 @@
 
 ## 4.7
 
+- [#319](https://github.com/openshift/insights-operator/pull/319) Gather PersistentVolume definition (if any) used in Image registry storage config
 - [#309](https://github.com/openshift/insights-operator/pull/309) Collect logs from openshift-sdn namespace
 - [#279](https://github.com/openshift/insights-operator/pull/279) Refactoring record and gatherer
 - [#297](https://github.com/openshift/insights-operator/pull/297) Gather netnamespaces network info
