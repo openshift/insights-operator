@@ -1,6 +1,7 @@
 package clusterconfig
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -43,7 +44,7 @@ import (
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	"github.com/openshift/library-go/pkg/image/reference"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	restclient "k8s.io/client-go/rest"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
@@ -185,6 +186,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherMachineConfigPool(i),
 		GatherInstallPlans(i),
 		GatherContainerRuntimeConfig(i),
+		GatherOpenshiftSDNLogs(i),
 	)
 }
 
@@ -1136,6 +1138,147 @@ type collectedPlan struct {
 	Name      string
 	CSV       string
 	Count     int
+}
+
+// GatherOpenshiftSDNLogs collects logs from pods in openshift-sdn namespace with following substrings:
+//   - "Got OnEndpointsUpdate for unknown Endpoints",
+//   - "Got OnEndpointsDelete for unknown Endpoints",
+//   - "Unable to update proxy firewall for policy",
+//   - "Failed to update proxy firewall for policy",
+//
+// The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+//
+// Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+func GatherOpenshiftSDNLogs(g *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		messagesToSearch := []string{
+			"Got OnEndpointsUpdate for unknown Endpoints",
+			"Got OnEndpointsDelete for unknown Endpoints",
+			"Unable to update proxy firewall for policy",
+			"Failed to update proxy firewall for policy",
+		}
+
+		records, err := gatherLogsFromPodsInNamespace(
+			g.ctx,
+			g.coreClient,
+			"openshift-sdn",
+			messagesToSearch,
+			86400,   // last day
+			1024*64, // maximum 64 kb of logs
+			"errors",
+			"app=sdn",
+			false,
+		)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		return records, nil
+	}
+}
+
+// gatherLogsFromPodsInNamespace collects logs from the pods in provided namespace
+//   - messagesToSearch are the messages to filter the logs(case-insensitive)
+//   - sinceSeconds sets the moment to fetch logs from(current time - sinceSeconds)
+//   - limitBytes sets the maximum amount of logs that can be fetched
+//   - logFileName sets the name of the file to save logs to.
+//   - labelSelector allows you to filter pods by their labels
+//   - regexSearch makes messagesToSearch regex patterns, so you can accomplish more complicated search
+//
+// Location of the logs is `config/pod/{namespace}/logs/{podName}/{fileName}.log`
+func gatherLogsFromPodsInNamespace(
+	ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
+	namespace string,
+	messagesToSearch []string,
+	sinceSeconds int64,
+	limitBytes int64,
+	logFileName string,
+	labelSelector string,
+	regexSearch bool,
+) ([]record.Record, error) {
+	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var records []record.Record
+
+	for _, pod := range pods.Items {
+		for _, container := range pod.Spec.Containers {
+			request := coreClient.Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+				Container:    container.Name,
+				SinceSeconds: &sinceSeconds,
+				LimitBytes:   &limitBytes,
+			})
+
+			logs, err := filterLogs(ctx, request, messagesToSearch, regexSearch)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(strings.TrimSpace(logs)) != 0 {
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pod.Namespace, pod.Name, logFileName),
+					Item: Raw{logs},
+				})
+			}
+		}
+	}
+
+	if len(pods.Items) == 0 {
+		klog.Infof("no pods in %v namespace were found", namespace)
+	}
+
+	return records, nil
+}
+
+func filterLogs(
+	ctx context.Context, request *restclient.Request, messagesToSearch []string, regexSearch bool,
+) (string, error) {
+	stream, err := request.Stream(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		err := stream.Close()
+		if err != nil {
+			klog.Errorf("error during closing a stream: %v", err)
+		}
+	}()
+
+	scanner := bufio.NewScanner(stream)
+
+	var result string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		for _, messageToSearch := range messagesToSearch {
+			if regexSearch {
+				matches, err := regexp.MatchString(messageToSearch, line)
+				if err != nil {
+					return "", err
+				}
+				if matches {
+					result += line + "\n"
+				}
+			} else {
+				if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
+					result += line + "\n"
+				}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
 func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []error) {
