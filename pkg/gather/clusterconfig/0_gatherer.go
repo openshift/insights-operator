@@ -38,41 +38,53 @@ type gatherResult struct {
 }
 
 type gatherFunction func(g *Gatherer, c chan<- gatherResult)
+type gathering struct {
+	function gatherFunction
+	canFail  bool
+}
+
+func important(function gatherFunction) gathering {
+	return gathering{function, false}
+}
+
+func failable(function gatherFunction) gathering {
+	return gathering{function, true}
+}
 
 const gatherAll = "ALL"
 
-var gatherFunctions = map[string]gatherFunction{
-	"pdbs":                              GatherPodDisruptionBudgets,
-	"metrics":                           GatherMostRecentMetrics,
-	"operators":                         GatherClusterOperators,
-	"container_images":                  GatherContainerImages,
-	"nodes":                             GatherNodes,
-	"config_maps":                       GatherConfigMaps,
-	"version":                           GatherClusterVersion,
-	"id":                                GatherClusterID,
-	"infrastructures":                   GatherClusterInfrastructure,
-	"networks":                          GatherClusterNetwork,
-	"authentication":                    GatherClusterAuthentication,
-	"image_registries":                  GatherClusterImageRegistry,
-	"image_pruners":                     GatherClusterImagePruner,
-	"feature_gates":                     GatherClusterFeatureGates,
-	"oauths":                            GatherClusterOAuth,
-	"ingress":                           GatherClusterIngress,
-	"proxies":                           GatherClusterProxy,
-	"certificate_signing_requests":      GatherCertificateSigningRequests,
-	"crds":                              GatherCRD,
-	"host_subnets":                      GatherHostSubnet,
-	"machine_sets":                      GatherMachineSet,
-	"install_plans":                     GatherInstallPlans,
-	"service_accounts":                  GatherServiceAccounts,
-	"machine_config_pools":              GatherMachineConfigPool,
-	"container_runtime_configs":         GatherContainerRuntimeConfig,
-	"stateful_sets":                     GatherStatefulSets,
-	"netnamespaces":                     GatherNetNamespace,
-	"openshift_apiserver_operator_logs": GatherOpenShiftAPIServerOperatorLogs,
-	"openshift_sdn_logs":                GatherOpenshiftSDNLogs,
-	"openshift_sdn_controller_logs":     GatherOpenshiftSDNControllerLogs,
-	"sap_config":                        GatherSAPConfig,
+var gatherFunctions = map[string]gathering{
+	"pdbs":                              important(GatherPodDisruptionBudgets),
+	"metrics":                           important(GatherMostRecentMetrics),
+	"operators":                         important(GatherClusterOperators),
+	"container_images":                  important(GatherContainerImages),
+	"nodes":                             important(GatherNodes),
+	"config_maps":                       important(GatherConfigMaps),
+	"version":                           important(GatherClusterVersion),
+	"id":                                important(GatherClusterID),
+	"infrastructures":                   important(GatherClusterInfrastructure),
+	"networks":                          important(GatherClusterNetwork),
+	"authentication":                    important(GatherClusterAuthentication),
+	"image_registries":                  important(GatherClusterImageRegistry),
+	"image_pruners":                     important(GatherClusterImagePruner),
+	"feature_gates":                     important(GatherClusterFeatureGates),
+	"oauths":                            important(GatherClusterOAuth),
+	"ingress":                           important(GatherClusterIngress),
+	"proxies":                           important(GatherClusterProxy),
+	"certificate_signing_requests":      important(GatherCertificateSigningRequests),
+	"crds":                              important(GatherCRD),
+	"host_subnets":                      important(GatherHostSubnet),
+	"machine_sets":                      important(GatherMachineSet),
+	"install_plans":                     important(GatherInstallPlans),
+	"service_accounts":                  important(GatherServiceAccounts),
+	"machine_config_pools":              important(GatherMachineConfigPool),
+	"container_runtime_configs":         important(GatherContainerRuntimeConfig),
+	"stateful_sets":                     important(GatherStatefulSets),
+	"netnamespaces":                     important(GatherNetNamespace),
+	"openshift_apiserver_operator_logs": important(GatherOpenShiftAPIServerOperatorLogs),
+	"openshift_sdn_logs":                important(GatherOpenshiftSDNLogs),
+	"openshift_sdn_controller_logs":     important(GatherOpenshiftSDNControllerLogs),
+	"sap_config":                        failable(GatherSAPConfig),
 }
 
 // New creates new Gatherer
@@ -115,12 +127,20 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		elapsed := time.Since(starts[chosen]).Truncate(time.Millisecond)
 
 		gatherResults, _ := value.Interface().(gatherResult)
-		gatherName := runtime.FuncForPC(reflect.ValueOf(gatherFunctions[gatherList[chosen]]).Pointer()).Name()
+		gatherFunc := gatherFunctions[gatherList[chosen]].function
+		gatherCanFail := gatherFunctions[gatherList[chosen]].canFail
+		gatherName := runtime.FuncForPC(reflect.ValueOf(gatherFunc).Pointer()).Name()
 		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(gatherResults.records))
 		gatherReport = append(gatherReport, gatherStatusReport{gatherName, elapsed, len(gatherResults.records), gatherResults.errors})
 
-		for _, err := range gatherResults.errors {
-			errors = append(errors, err.Error())
+		if gatherCanFail {
+			for _, err := range gatherResults.errors {
+				klog.V(5).Infof("Couldn't gather %s' received following error: %s\n", gatherName, err.Error())
+			}
+		} else {
+			for _, err := range gatherResults.errors {
+				errors = append(errors, err.Error())
+			}
 		}
 		for _, record := range gatherResults.records {
 			if err := recorder.Record(record); err != nil {
@@ -151,7 +171,8 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 	var starts []time.Time
 	// Starts the gathers in Go routines
 	for _, gatherId := range gatherList {
-		gFn, ok := gatherFunctions[gatherId]
+		gather, ok := gatherFunctions[gatherId]
+		gFn := gather.function
 		if !ok {
 			*errors = append(*errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
 			continue

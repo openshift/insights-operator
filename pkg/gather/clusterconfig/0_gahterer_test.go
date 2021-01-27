@@ -48,10 +48,10 @@ func (mr *mockFailingRecorder) Record(r record.Record) error {
 }
 
 func init_test() Gatherer {
-	gatherFunctions = map[string]gatherFunction{
-		"mock1": mockGatherFunction1,
-		"mock2": mockGatherFunction2,
-		"error": mockGatherFunctionError,
+	gatherFunctions = map[string]gathering{
+		"mock1": important(mockGatherFunction1),
+		"mock2": important(mockGatherFunction2),
+		"error": important(mockGatherFunctionError),
 	}
 	return Gatherer{ctx: context.Background()}
 }

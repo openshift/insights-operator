@@ -28,6 +28,9 @@ import (
 // as UploadDegraded
 const uploadFailuresCountThreshold = 5
 
+// How many gatherings can fail in a row before we report Degraded
+const GatherFailuresCountThreshold = 5
+
 type Reported struct {
 	LastReportTime metav1.Time `json:"lastReportTime"`
 }
@@ -154,7 +157,15 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 				disabledReason = summary.Reason
 				disabledMessage = summary.Message
 			}
+		} else if summary.Operation == controllerstatus.GatheringReport {
+			if summary.Count < GatherFailuresCountThreshold {
+				klog.V(4).Infof("Number of last gather failures %d lower than threshold %d. Not marking as degraded.", summary.Count, GatherFailuresCountThreshold)
+				degradingFailure = false
+			} else {
+				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as degraded.", summary.Count, GatherFailuresCountThreshold)
+			}
 		}
+
 		if degradingFailure {
 			reason = summary.Reason
 			errors = append(errors, summary.Message)
