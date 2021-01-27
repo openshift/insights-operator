@@ -307,6 +307,15 @@ Output raw size: 491
 #### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
+## OLMOperators
+
+collects list of all names (including version) of installed OLM operators.
+
+See: docs/insights-archive-sample/config/olm_operators
+Location of in archive: config/olm_operators
+Id in config: olm_operators
+
+
 ## OpenShiftAPIServerOperatorLogs
 
 collects logs from openshift-apiserver-operator with following substrings:

@@ -13,7 +13,6 @@ import (
 	registryv1 "github.com/openshift/api/imageregistry/v1"
 	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )

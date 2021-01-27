@@ -12,8 +12,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -85,6 +83,7 @@ var gatherFunctions = map[string]gathering{
 	"openshift_sdn_logs":                important(GatherOpenshiftSDNLogs),
 	"openshift_sdn_controller_logs":     important(GatherOpenshiftSDNControllerLogs),
 	"sap_config":                        failable(GatherSAPConfig),
+	"olm_operators":                     failable(GatherOLMOperators),
 }
 
 // New creates new Gatherer

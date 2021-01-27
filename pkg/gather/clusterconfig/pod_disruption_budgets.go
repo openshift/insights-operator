@@ -11,8 +11,6 @@ import (
 
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 

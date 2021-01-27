@@ -14,7 +14,6 @@ import (
 	"k8s.io/klog/v2"
 
 	appsv1 "k8s.io/api/apps/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )

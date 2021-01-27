@@ -8,8 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/api/certificates/v1beta1"
-	certificatesv1b1api "k8s.io/api/certificates/v1beta1"
+	certificatesv1api "k8s.io/api/certificates/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/kubernetes"
@@ -17,8 +16,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
+	certificatesv1 "k8s.io/client-go/kubernetes/typed/certificates/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -42,11 +40,11 @@ func GatherCertificateSigningRequests(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1beta1())
+	records, errors := gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1())
 	c <- gatherResult{records, errors}
 }
 
-func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1beta1.CertificatesV1beta1Interface) ([]record.Record, []error) {
+func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1.CertificateSigningRequestsGetter) ([]record.Record, []error) {
 	requests, err := certClient.CertificateSigningRequests().List(ctx, metav1.ListOptions{
 		Limit: csrGatherLimit,
 	})
@@ -85,11 +83,11 @@ func (a CSRAnonymizer) GetExtension() string {
 }
 
 type CSRs struct {
-	Requests   []v1beta1.CertificateSigningRequest
+	Requests   []certificatesv1api.CertificateSigningRequest
 	Anonymized []CSRAnonymizer
 }
 
-func FromCSRs(requests *v1beta1.CertificateSigningRequestList) *CSRs {
+func FromCSRs(requests *certificatesv1api.CertificateSigningRequestList) *CSRs {
 	return &CSRs{Requests: requests.Items}
 }
 
@@ -156,7 +154,7 @@ func IncludeCSR(c *CSRAnonymizedFeatures, opts ...FilterOptFunc) bool {
 	return true
 }
 
-func anonymizeCSRRequest(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
+func anonymizeCSRRequest(r *certificatesv1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
 	if r == nil || c == nil {
 		return
 	}
@@ -234,7 +232,7 @@ func anonymizePkxName(s pkix.Name) (a pkix.Name) {
 }
 
 // returns true if certificate is valid
-func anonymizeCSRCert(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
+func anonymizeCSRCert(r *certificatesv1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
 	if r == nil || c == nil {
 		return
 	}
@@ -261,7 +259,7 @@ func anonymizeCSRCert(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAn
 	c.Status.Cert.NotAfter = cert.NotAfter.Format(time.RFC3339)
 }
 
-func addMeta(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
+func addMeta(r *certificatesv1api.CertificateSigningRequest, c *CSRAnonymizedFeatures) {
 	if r == nil || c == nil {
 		return
 	}
@@ -269,9 +267,9 @@ func addMeta(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedF
 	c.ObjectMeta = r.ObjectMeta
 }
 
-func anonymizeCSR(r *certificatesv1b1api.CertificateSigningRequest) *CSRAnonymizedFeatures {
+func anonymizeCSR(r *certificatesv1api.CertificateSigningRequest) *CSRAnonymizedFeatures {
 	c := &CSRAnonymizedFeatures{}
-	fns := []func(r *certificatesv1b1api.CertificateSigningRequest, c *CSRAnonymizedFeatures){
+	fns := []func(r *certificatesv1api.CertificateSigningRequest, c *CSRAnonymizedFeatures){
 		addMeta,
 		anonymizeCSRRequest,
 		anonymizeCSRCert,
@@ -302,13 +300,13 @@ type StateFeatures struct {
 	UID      string
 	Username string
 	Groups   []string
-	Usages   []v1beta1.KeyUsage
+	Usages   []certificatesv1api.KeyUsage
 
 	Request *CsrFeatures
 }
 
 type StatusFeatures struct {
-	Conditions []v1beta1.CertificateSigningRequestCondition
+	Conditions []certificatesv1api.CertificateSigningRequestCondition
 	Cert       *CertFeatures
 }
 

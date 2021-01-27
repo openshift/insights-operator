@@ -10,7 +10,6 @@ import (
 
 	networkv1 "github.com/openshift/api/network/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
