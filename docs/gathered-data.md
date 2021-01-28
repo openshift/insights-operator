@@ -61,14 +61,14 @@ See: docs/insights-archive-sample/config/id
 
 fetches the image pruner configuration
 
-Location in archive: config/imagepruner/
+Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
 
 
 ## ClusterImageRegistry
 
 fetches the cluster Image Registry configuration
 
-Location in archive: config/imageregistry/
+Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 
 
 ## ClusterInfrastructure
@@ -117,7 +117,7 @@ See: docs/insights-archive-sample/config/oauth
 
 ## ClusterOperators
 
-collects all ClusterOperators.
+collects all ClusterOperators and their resources.
 It finds unhealthy Pods for unhealthy operators
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
