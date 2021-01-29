@@ -856,6 +856,7 @@ sigs.k8s.io/structured-merge-diff/v4/schema
 sigs.k8s.io/structured-merge-diff/v4/typed
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
+## explicit
 sigs.k8s.io/yaml
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20201214114959-164a2fb63b5f
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20201214125552-e615e336eb49
