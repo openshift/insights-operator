@@ -236,6 +236,17 @@ Output raw size: 148
 #### MostRecentMetrics
 [{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
 
+## NetNamespace
+
+collects NetNamespaces networking information
+
+The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
+Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
+
+Location in archive: config/netnamespaces
+Id in config: netnamespaces
+
+
 ## Nodes
 
 collects all Nodes.
