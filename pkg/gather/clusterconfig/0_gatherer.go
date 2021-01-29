@@ -16,10 +16,10 @@ import (
 )
 
 type gatherStatusReport struct {
-	Name    string        `json:"name"`
-	Elapsed time.Duration `json:"elapsed"`
-	Report  int           `json:"report"`
-	Errors  []string      `json:"errors"`
+	Name     string        `json:"name"`
+	Duration time.Duration `json:"duration_in_ms"`
+	Report   int           `json:"report"`
+	Errors   []string      `json:"errors"`
 }
 
 // Gatherer is a driving instance invoking collection of data
@@ -130,7 +130,7 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		gatherCanFail := gatherFunctions[gatherList[chosen]].canFail
 		gatherName := runtime.FuncForPC(reflect.ValueOf(gatherFunc).Pointer()).Name()
 		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(gatherResults.records))
-		gatherReport = append(gatherReport, gatherStatusReport{gatherName, elapsed, len(gatherResults.records), extractErrors(gatherResults.errors)})
+		gatherReport = append(gatherReport, gatherStatusReport{gatherName, time.Duration(elapsed.Milliseconds()), len(gatherResults.records), extractErrors(gatherResults.errors)})
 
 		if gatherCanFail {
 			for _, err := range gatherResults.errors {
