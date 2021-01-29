@@ -381,18 +381,12 @@ func TestGatherContainerImages(t *testing.T) {
 		"registry.redhat.io/3",
 	}
 
-	expected := ContainerInfo{
-		Images: ContainerImageSet{
-			0: "registry.redhat.io/1",
-			1: "registry.redhat.io/2",
-			2: "registry.redhat.io/3",
-		},
-		Containers: PodsWithAge{
-			"0001-01": RunningImages{
-				0: 1,
-				1: 1,
-				2: 1,
-			},
+	// It is not possible to predict the order of the images.
+	expectedPodsWithAge := PodsWithAge{
+		"0001-01": RunningImages{
+			0: 1,
+			1: 1,
+			2: 1,
 		},
 	}
 
@@ -405,15 +399,13 @@ func TestGatherContainerImages(t *testing.T) {
 					Namespace: fakeNamespace,
 					Name:      fmt.Sprintf("pod%d", index),
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
 						{
 							Name:  fmt.Sprintf("container%d", index),
 							Image: containerImage,
 						},
 					},
-				},
-				Status: corev1.PodStatus{
 					Phase: corev1.PodRunning,
 				},
 			}, metav1.CreateOptions{})
@@ -451,8 +443,7 @@ func TestGatherContainerImages(t *testing.T) {
 		expectedRecords[i] = fmt.Sprintf("config/pod/%s/%s", fakeOpenshiftNamespace, podName)
 	}
 
-	gatherer := &Gatherer{coreClient: coreClient.CoreV1()}
-
+	gatherer := &Gatherer{ctx: context.Background(), coreClient: coreClient.CoreV1()}
 	records, errs := GatherContainerImages(gatherer)()
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
@@ -480,8 +471,12 @@ func TestGatherContainerImages(t *testing.T) {
 		t.Fatal("container info has not been reported")
 	}
 
-	if !reflect.DeepEqual(*containerInfo, expected) {
-		t.Fatalf("unexpected result: %#v", *containerInfo)
+	if len(containerInfo.Images) != len(mockContainers) {
+		t.Fatalf("expected %d unique images, got %d", len(mockContainers), len(containerInfo.Images))
+	}
+
+	if !reflect.DeepEqual(containerInfo.Containers, expectedPodsWithAge) {
+		t.Fatalf("unexpected map of image counts: %#v", containerInfo.Containers)
 	}
 
 	for _, expectedRecordName := range expectedRecords {
