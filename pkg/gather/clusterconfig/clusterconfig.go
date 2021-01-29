@@ -134,6 +134,12 @@ type clusterOperatorResource struct {
 	Spec       interface{} `json:"spec"`
 }
 
+type netNamespace struct {
+	Name      string                           `json:"name"`
+	EgressIPs []networkv1.NetNamespaceEgressIP `json:"egressIPs"`
+	NetID     uint32                           `json:"netID"`
+}
+
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
 	registryClient imageregistryv1.ImageregistryV1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface, discoveryClient discovery.DiscoveryInterface) *Gatherer {
@@ -179,6 +185,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherMachineConfigPool(i),
 		GatherInstallPlans(i),
 		GatherContainerRuntimeConfig(i),
+		GatherNetNamespace(i),
 	)
 }
 
@@ -1051,6 +1058,39 @@ func GatherInstallPlans(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
+// GatherNetNamespace collects NetNamespaces networking information
+//
+// The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
+// Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
+//
+// Location in archive: config/netnamespaces
+// Id in config: netnamespaces
+func GatherNetNamespace(g *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		nsList, err := g.networkClient.NetNamespaces().List(g.ctx, metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		namespaces := []*netNamespace{}
+		for _, n := range nsList.Items {
+			netNS := &netNamespace{
+				Name:      n.Name,
+				EgressIPs: n.EgressIPs,
+				NetID:     n.NetID,
+			}
+			namespaces = append(namespaces, netNS)
+		}
+		r := record.Record{
+			Name: "config/netnamespaces",
+			Item: NetNamespaceAnonymizer{namespaces: namespaces},
+		}
+		return []record.Record{r}, nil
+	}
+}
+
 func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []error {
 	// Get common prefix
 	csv := "[NONE]"
@@ -1606,20 +1646,11 @@ func (a ConfigMapAnonymizer) GetExtension() string {
 	return ""
 }
 
-// HostSubnetAnonymizer implements HostSubnet serialization wiht anonymization
+// HostSubnetAnonymizer implements HostSubnet serialization
 type HostSubnetAnonymizer struct{ *networkv1.HostSubnet }
 
 // Marshal implements HostSubnet serialization
 func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	a.HostSubnet.HostIP = anonymizeString(a.HostSubnet.HostIP)
-	a.HostSubnet.Subnet = anonymizeString(a.HostSubnet.Subnet)
-
-	for i, s := range a.HostSubnet.EgressIPs {
-		a.HostSubnet.EgressIPs[i] = networkv1.HostSubnetEgressIP(anonymizeString(string(s)))
-	}
-	for i, s := range a.HostSubnet.EgressCIDRs {
-		a.HostSubnet.EgressCIDRs[i] = networkv1.HostSubnetEgressCIDR(anonymizeString(string(s)))
-	}
 	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), a.HostSubnet)
 }
 
@@ -1883,5 +1914,18 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized openshift objects
 func (a InstallPlanAnonymizer) GetExtension() string {
+	return "json"
+}
+
+// NetNamespaceAnonymizer implements NetNamespace serialization
+type NetNamespaceAnonymizer struct{ namespaces []*netNamespace }
+
+// Marshal implements NetNamespace serialization
+func (a NetNamespaceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return json.Marshal(a.namespaces)
+}
+
+// GetExtension returns extension for NetNamespace object
+func (a NetNamespaceAnonymizer) GetExtension() string {
 	return "json"
 }
