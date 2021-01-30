@@ -1,0 +1,36 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "KubeControllerManager",
+    "Name": "cluster",
+    "Spec": {
+        "logLevel": "Normal",
+        "managementState": "Managed",
+        "observedConfig": {
+            "extendedArguments": {
+                "cluster-cidr": [
+                    "xxxxxxxxxx/14"
+                ],
+                "cluster-name": [
+                    "tremes-5f2nt"
+                ],
+                "feature-gates": [
+                    "APIPriorityAndFairness=true",
+                    "RotateKubeletServerCertificate=true",
+                    "SupportPodPidsLimit=true",
+                    "NodeDisruptionExclusion=true",
+                    "ServiceNodeExclusion=true",
+                    "SCTPSupport=true",
+                    "LegacyNodeRoleBehavior=false"
+                ],
+                "service-cluster-ip-range": [
+                    "xxxxxxxxxx/16"
+                ]
+            },
+            "serviceServingCert": {
+                "certFile": "/etc/kubernetes/static-pod-resources/configmaps/service-ca/ca-bundle.crt"
+            }
+        },
+        "operatorLogLevel": "Normal",
+        "unsupportedConfigOverrides": null
+    }
+}

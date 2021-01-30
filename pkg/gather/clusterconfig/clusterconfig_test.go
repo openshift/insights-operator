@@ -8,8 +8,10 @@ import (
 	"os"
 	"testing"
 
+	configv1 "github.com/openshift/api/config/v1"
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
+	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -155,7 +157,7 @@ func TestGatherClusterPruner(t *testing.T) {
 			if test.expectedRecords == 0 {
 				return
 			}
-			if expectedRecordName := "config/imagepruner"; records[0].Name != expectedRecordName {
+			if expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster"; records[0].Name != expectedRecordName {
 				t.Errorf("expected %q record name, got %q", expectedRecordName, records[0].Name)
 				return
 			}
@@ -347,7 +349,7 @@ func TestGatherClusterImageRegistry(t *testing.T) {
 				t.Errorf("expected one record, got %d", numRecords)
 				return
 			}
-			if expectedRecordName := "config/imageregistry"; records[0].Name != expectedRecordName {
+			if expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/config/cluster"; records[0].Name != expectedRecordName {
 				t.Errorf("expected %q record name, got %q", expectedRecordName, records[0].Name)
 				return
 			}
@@ -457,6 +459,36 @@ func TestGatherHostSubnet(t *testing.T) {
 			t.Fatalf("Egress CIDR is not anonymized %s", cidr)
 		}
 	}
+}
+
+func TestGatherClusterOperator(t *testing.T) {
+	testOperator := &configv1.ClusterOperator{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-clusteroperator",
+		},
+	}
+	configCS := configfake.NewSimpleClientset()
+	_, err := configCS.ConfigV1().ClusterOperators().Create(context.Background(), testOperator, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake clusteroperator", err)
+	}
+	gatherer := &Gatherer{client: configCS.ConfigV1(), discoveryClient: configCS.Discovery()}
+	records, errs := GatherClusterOperators(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+
+	item, _ := records[0].Item.Marshal(context.TODO())
+	var gatheredCO configv1.ClusterOperator
+	_, _, err = openshiftSerializer.Decode(item, nil, &gatheredCO)
+	if err != nil {
+		t.Fatalf("failed to decode object: %v", err)
+	}
+	if gatheredCO.Name != "test-clusteroperator" {
+		t.Fatalf("unexpected clusteroperator name %s", gatheredCO.Name)
+	}
+
 }
 
 func ExampleGatherMostRecentMetrics_Test() {

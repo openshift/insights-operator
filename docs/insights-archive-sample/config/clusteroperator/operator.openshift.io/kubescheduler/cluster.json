@@ -1,0 +1,10 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "KubeScheduler",
+    "Name": "cluster",
+    "Spec": {
+        "logLevel": "Normal",
+        "managementState": "Managed",
+        "operatorLogLevel": "Normal"
+    }
+}

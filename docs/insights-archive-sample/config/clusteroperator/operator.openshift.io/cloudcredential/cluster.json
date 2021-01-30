@@ -1,0 +1,9 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "CloudCredential",
+    "Name": "cluster",
+    "Spec": {
+        "credentialsMode": "",
+        "logLevel": "Normal"
+    }
+}
