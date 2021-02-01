@@ -88,13 +88,14 @@ There are these main tasks scheduled:
 Gatherer is using this logic to start information gathering from the cluster, and it is handled in [periodic.go](pkg/controller/periodic/periodic.go).
 
 So far we have only 1 Gatherer(called `clusterconfig`), it has several gather-functions each collecting different data from the cluster.
-The workflow of the gather-functions is managed by the Gatherer and NOT `periodic.go`.
-1 Gatherer runs at one time, this is because we only have 1 Gatherer at the moment and its doubtful that we will have more anytime soon. (ie.: we can and concurrency here when its needed)
+The workflow of the gather-functions is managed by the Gatherer.
+Only one Gatherer runs at one time, this is because we only have 1 Gatherer at the moment. (ie.: we can and concurrency here when its needed)
 When IO starts there is an initial delay before the first `Gather` happens, after that a `Gather` is initiated every interval, this is done by `periodicTrigger`.
 `periodic.Run` handles the initial delay and starts the `periodicTrigger` like `go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)`.
 
 `Gather` uses `ExponentialBackoff` to retry (amount specified in: `status.GatherFailuresCountThreshold`) if a Gatherer returns any errors, these errors are mostly caused when a collected resource is not yet ready therefore it can't be right now collected so we should retry later.
-Its important that all retries needs to finish before the next gather period starts, so that we don't have potential conflicts, the Backoff is calibrated to take this into account.
+Its important that all retries finish before the next gather period starts, so that we don't have potential conflicts, the Backoff is calibrated to take this into account.
+Errors that occurred during a gather-function are logged in the metadata part of the IO archive. (`insigths-operator/gathers.json`)
 
 ### Scheduling and running of Uploader
 The `operator.go` is starting background task defined in `pkg/insights/insightsuploader/insightsuploader.go`. The insights uploader is periodically checking if there are any data to upload by calling summarizer.
@@ -262,11 +263,11 @@ When the `periodic.go` calls method Gather of the `clusterconfig` Gatherer, it's
 
 The clusterconfig Gatherer starts each gather-function in its own separate goroutine with a dedicated channel to send back their results.
 Each gather-function is its own separate entity, each creates their own clients using the configs present in the `Gatherer` object that was passed down as parameter.
-We further cut the gather-functions into to two main parts:
+We further divided the gather-functions into 2 main parts:
 1. the 'adapter-part' that is called by the `Gatherer.Gather`, named `Gather<Something>`, it handles the creation of the clients and handling the communication with the `Gatherer`.
 2. the 'core-part' that holds the actual logic of how to gather what is needed, named `gather<Something>`, the clients required for this are passed in as arguments by the 'adapter-part'.
 
-Gather-functions are IO bound and they don't use much of the CPU, so giving each of them a goroutine doesn't stresses the CPU but gives us an 'async' way of making REST calls, which improves the performance greatly.
+Gather-functions are IO bound and they don't use much of the CPU, so giving each of them a goroutine doesn't stress the CPU but gives us an 'async' way of making REST calls, which improves the performance greatly.
 
 After starting the goroutines, the Gatherer will start monitoring the channels, when it receives a result it will:
 - Store the received `record`s using the provided `record.Interface`'s `Record` method.
@@ -280,7 +281,7 @@ Each has an id (the key in the map) these can be used to only execute a selectio
 Furthermore each gather-function is categorized into either:
 - `important` meaning if that gather-function has an error we will notify `periodic.go` about it, which will handle it accordingly.
 - `failable` meaning if that gather-function has an error we will just log it and add it to our metadata.
-This is necessary as we are expanding into gathering data about resources that are not guaranteed to be present on the cluster. By default if a resource is not present we shouldn't see an error, but its better to be safe.
+This is necessary as we are expanding into gathering data about resources that are not guaranteed to be present on the cluster. By default if a resource is not present we shouldn't see an error, but it's better to be safe.
 
 ## Downloading and exposing Archive Analysis
 After the successful upload of archive, the progress monitoring task starts. By default it waits for 1m until it checks if results of analysis of the archive (done by external pipeline in cloud.redhat.com) are available. The report contains LastUpdatedAt timestamp, and verifies if report has changed its state (for this cluster) since the last time. If there was no
