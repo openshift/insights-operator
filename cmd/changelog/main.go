@@ -16,9 +16,16 @@ import (
 )
 
 var (
-	mergeRequest = regexp.MustCompile(`Merge-pull-request-([\d]+)`)
-	prefix       = regexp.MustCompile(`^.+: (.+)`)
-	release      = regexp.MustCompile(`release-\d\.\d`)
+	mergeRequestRegexp 			= regexp.MustCompile(`Merge-pull-request-([\d]+)`)
+	prefixRegexp       			= regexp.MustCompile(`^.+: (.+)`)
+	releaseRegexp      			= regexp.MustCompile(`release-\d\.\d`)
+	latestHashRegexp 		 	= regexp.MustCompile(`<!--Latest hash: (.+)-->`)
+
+	version_sectionRegExp 		= regexp.MustCompile(`^(\d.\d)`)
+	enhancement_sectionRegExp 	= regexp.MustCompile(`### Enhancements\n((.+\n)+)`)
+	bugfix_sectionRegExp 		= regexp.MustCompile(`### Bug fixes\n((.+\n)+)`)
+	other_sectionRegExp 		= regexp.MustCompile(`### Others\n((.+\n)+)`)
+	misc_sectionRegExp 			= regexp.MustCompile(`### Misc\n((.+\n)+)`)
 
 	// PR categories
 	categories = map[string]*regexp.Regexp{
@@ -27,7 +34,9 @@ var (
 		"Other":       regexp.MustCompile(`- \[[xX]\] Others`),
 		"Backporting": regexp.MustCompile(`- \[[xX]\] Backporting`),
 	}
+
 	gitHubToken = ""
+	latestHash  = ""
 )
 
 const gitHubRepo = "insights-operator"
@@ -56,22 +65,32 @@ func createPullRequestLink(id string) string {
 
 func main() {
 	log.SetFlags(0)
-	if len(os.Args) != 3 {
-		log.Fatalf("Must specify two date arguments, AFTER and UNTIL, example 2021-01-01")
+	if len(os.Args) != 1 && len(os.Args) != 3 {
+		log.Fatalf("Either specify two date arguments, AFTER and UNTIL, to create a brand new CHANGELOG, or call it without arguments to update the current one with new changes.")
 	}
-	after := os.Args[1]
-	until := os.Args[2]
-
 	gitHubToken = os.Getenv("GITHUB_TOKEN")
 	if len(gitHubToken) == 0 {
 		log.Fatalf("Must set the GITHUB_TOKEN env variable to your GitHub access token.")
 	}
 
-	gitLog := simpleReverseGitLog(after, until)
+	var gitLog []string
+	var release_blocks map[string]MarkdownReleaseBlock
+	if len(os.Args) == 3 {
+		release_blocks = make(map[string]MarkdownReleaseBlock)
+		after := os.Args[1]
+		until := os.Args[2]
+		gitLog = timeFrameReverseGitLog(after, until)
+	} else {
+		release_blocks = readCHANGELOG()
+		if latestHash == "" {
+			log.Fatalf("Latest hash is missing from CHANGELOG, can't update without it.")
+		}
+		gitLog = sinceHashReverseGitLog(latestHash)
+	}
 	pullRequestIds, pullRequestHashes := getPullRequestInfo(gitLog)
-
+	latestHash = pullRequestHashes[len(pullRequestHashes)-1]
 	changes := pruneChanges(getChanges(pullRequestIds, pullRequestHashes))
-	createCHANGELOG(changes)
+	createCHANGELOG(updateToMarkdownReleaseBlock(release_blocks, changes))
 }
 
 type MarkdownReleaseBlock struct {
@@ -81,8 +100,41 @@ type MarkdownReleaseBlock struct {
 	misc         string
 }
 
-func createCHANGELOG(changes []Change) {
+func readCHANGELOG() map[string]MarkdownReleaseBlock{
 	release_blocks := make(map[string]MarkdownReleaseBlock)
+	rawBytes, _ := ioutil.ReadFile("./example_CHANGELOG.md")
+	rawString := string(rawBytes)
+	if match := latestHashRegexp.FindStringSubmatch(rawString); len(match) > 0 {
+		latestHash = match[1]
+	}
+	versions := strings.Split(rawString, "\n## ")
+	versions = versions[1:] // Trim 1. not relevant section
+
+	for _, version_section := range versions {
+		var release_block MarkdownReleaseBlock
+		var version string
+		if match := version_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
+			version = match[1]
+		}
+		if match := enhancement_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
+			release_block.enhancements = match[1]
+		}
+		if match := bugfix_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
+			release_block.bugfixes = match[1]
+		}
+		if match := other_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
+			release_block.others = match[1]
+		}
+		if match := misc_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
+			release_block.misc = match[1]
+		}
+		release_blocks[version] = release_block
+	}
+
+	return release_blocks
+}
+
+func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock, changes []Change) map[string]MarkdownReleaseBlock{
 	for _, ch := range changes {
 		tmp := release_blocks[ch.release]
 		if ch.category == "BugFix" {
@@ -99,22 +151,26 @@ func createCHANGELOG(changes []Change) {
 			release_blocks[ch.release] = tmp
 		}
 	}
+	return release_blocks
+}
 
+
+func createCHANGELOG(release_blocks map[string]MarkdownReleaseBlock) {
 	file, _ := os.Create("example_CHANGELOG.md")
 	defer file.Close()
 	_, _ = file.WriteString("# Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes\n")
-
+	_, _ = file.WriteString(fmt.Sprintf("<!--Latest hash: %s-->\n", latestHash))
 	var releases []string
 	for k := range release_blocks {
 		releases = append(releases, k)
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(releases)))
 	for _, release := range releases {
-		_, _ = file.WriteString(fmt.Sprintf("## %s\n", release))
+		_, _ = file.WriteString(fmt.Sprintf("## %s\n\n", release))
 
 		enhancements := release_blocks[release].enhancements
 		if len(enhancements) > 0 {
-			_, _ = file.WriteString("### Enhancement\n")
+			_, _ = file.WriteString("### Enhancements\n")
 			_, _ = file.WriteString(fmt.Sprintf("%s\n", enhancements))
 		}
 		bugfixes := release_blocks[release].bugfixes
@@ -133,6 +189,7 @@ func createCHANGELOG(changes []Change) {
 			_, _ = file.WriteString(fmt.Sprintf("%s\n", misc))
 		}
 	}
+
 }
 
 func pruneChanges(changes []Change) []Change {
@@ -188,7 +245,7 @@ func getPullRequestFromGitHub(id string, channel chan<- Change) {
 	ch.pullId = id
 	_ = json.Unmarshal(jsonMap["title"], &ch.title)
 	// Remove nosy prefix
-	if match := prefix.FindStringSubmatch(ch.title); len(match) > 0 {
+	if match := prefixRegexp.FindStringSubmatch(ch.title); len(match) > 0 {
 		ch.title = match[1]
 	}
 
@@ -206,7 +263,7 @@ func getPullRequestFromGitHub(id string, channel chan<- Change) {
 func determineReleases(change Change) Change {
 	releases := releaseBranchesContain(change.hash)
 	earliest_release := findEarliestRelease(releases)
-	change.release = earliest_release
+	change.release = strings.Trim(earliest_release," \n")
 	return change
 }
 
@@ -218,7 +275,7 @@ func releaseBranchesContain(hash string) []string {
 	}
 	all_branches := strings.Split(string(out), "  ")
 	for _, branch := range all_branches {
-		if match := release.FindString(branch); len(match) > 0 {
+		if match := releaseRegexp.FindString(branch); len(match) > 0 {
 			releaseBranches = append(releaseBranches, branch)
 		}
 	}
@@ -244,8 +301,16 @@ func findEarliestRelease(releases []string) string {
 	return minStr
 }
 
-func simpleReverseGitLog(after string, until string) []string {
+func timeFrameReverseGitLog(after string, until string) []string {
 	out, err := exec.Command("git", "log", "--topo-order", "--pretty=tformat:%f|%H", "--reverse", fmt.Sprintf("--after=%s", after), fmt.Sprintf("--until=%s", until)).CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strings.Split(string(out), "\n")
+}
+
+func sinceHashReverseGitLog(hash string) []string {
+	out, err := exec.Command("git", "log", "--topo-order", "--pretty=tformat:%f|%H", "--reverse", fmt.Sprintf("%s..HEAD", hash)).CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -257,7 +322,7 @@ func getPullRequestInfo(gitLog []string) ([]string, []string) {
 	var pullRequestHashes []string
 	for _, line := range gitLog {
 		split := strings.Split(line, "|")
-		if match := mergeRequest.FindStringSubmatch(split[0]); len(match) > 0 {
+		if match := mergeRequestRegexp.FindStringSubmatch(split[0]); len(match) > 0 {
 			pullRequestIds = append(pullRequestIds, match[1])
 			pullRequestHashes = append(pullRequestHashes, split[1])
 		}
