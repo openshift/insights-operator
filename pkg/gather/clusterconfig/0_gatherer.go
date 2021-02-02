@@ -16,10 +16,10 @@ import (
 )
 
 type gatherStatusReport struct {
-	Name    string        `json:"name"`
-	Elapsed time.Duration `json:"elapsed"`
-	Report  int           `json:"report"`
-	Errors  []error       `json:"errors"`
+	Name     		string        `json:"name"`
+	Duration 		time.Duration `json:"duration_in_ms"`
+	RecordsCount  	int           `json:"records_count"`
+	Errors   		[]string      `json:"errors"`
 }
 
 // Gatherer is a driving instance invoking collection of data
@@ -99,7 +99,7 @@ func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metr
 func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder record.Interface) error {
 	g.ctx = ctx
 	var errors []string
-	var gatherReport []interface{}
+	var gatherReport []gatherStatusReport
 
 	if len(gatherList) == 0 {
 		errors = append(errors, "no gather functions are specified to run")
@@ -130,16 +130,14 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		gatherCanFail := gatherFunctions[gatherList[chosen]].canFail
 		gatherName := runtime.FuncForPC(reflect.ValueOf(gatherFunc).Pointer()).Name()
 		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(gatherResults.records))
-		gatherReport = append(gatherReport, gatherStatusReport{gatherName, elapsed, len(gatherResults.records), gatherResults.errors})
+		gatherReport = append(gatherReport, gatherStatusReport{gatherName, time.Duration(elapsed.Milliseconds()), len(gatherResults.records), extractErrors(gatherResults.errors)})
 
 		if gatherCanFail {
 			for _, err := range gatherResults.errors {
 				klog.V(5).Infof("Couldn't gather %s' received following error: %s\n", gatherName, err.Error())
 			}
 		} else {
-			for _, err := range gatherResults.errors {
-				errors = append(errors, err.Error())
-			}
+			errors = append(errors, extractErrors(gatherResults.errors)...)
 		}
 		for _, record := range gatherResults.records {
 			if err := recorder.Record(record); err != nil {
@@ -191,9 +189,17 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 	return cases, starts, nil
 }
 
-func recordGatherReport(recorder record.Interface, report []interface{}) error {
+func recordGatherReport(recorder record.Interface, report []gatherStatusReport) error {
 	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
 	return recorder.Record(r)
+}
+
+func extractErrors(errors []error) []string {
+	var errStrings []string
+	for _, err := range errors {
+		errStrings = append(errStrings, err.Error())
+	}
+	return errStrings
 }
 
 func sumErrors(errors []string) error {
