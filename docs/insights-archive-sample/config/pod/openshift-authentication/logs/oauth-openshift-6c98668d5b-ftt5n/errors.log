@@ -1,0 +1,1 @@
+E0201 16:15:39.833795       1 errorpage.go:26] AuthenticationError: invalid resource name "openid-keycloak:test/test": [may not contain '/']

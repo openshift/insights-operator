@@ -82,6 +82,7 @@ var gatherFunctions = map[string]gathering{
 	"openshift_apiserver_operator_logs": important(GatherOpenShiftAPIServerOperatorLogs),
 	"openshift_sdn_logs":                important(GatherOpenshiftSDNLogs),
 	"openshift_sdn_controller_logs":     important(GatherOpenshiftSDNControllerLogs),
+	"openshift_authentication_logs":     important(GatherOpenshiftAuthenticationLogs),
 	"sap_config":                        failable(GatherSAPConfig),
 	"olm_operators":                     failable(GatherOLMOperators),
 }
