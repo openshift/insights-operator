@@ -319,4 +319,13 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
 
+## SAPConfig
 
+collects selected security context constraints
+and cluster role bindings from clusters running a SAP payload.
+
+Relevant OpenShift API docs:
+  - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
+  - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
+
+Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
