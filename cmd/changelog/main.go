@@ -102,7 +102,7 @@ type MarkdownReleaseBlock struct {
 
 func readCHANGELOG() map[string]MarkdownReleaseBlock{
 	release_blocks := make(map[string]MarkdownReleaseBlock)
-	rawBytes, _ := ioutil.ReadFile("./example_CHANGELOG.md")
+	rawBytes, _ := ioutil.ReadFile("./CHANGELOG.md")
 	rawString := string(rawBytes)
 	if match := latestHashRegexp.FindStringSubmatch(rawString); len(match) > 0 {
 		latestHash = match[1]
@@ -156,7 +156,7 @@ func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock
 
 
 func createCHANGELOG(release_blocks map[string]MarkdownReleaseBlock) {
-	file, _ := os.Create("example_CHANGELOG.md")
+	file, _ := os.Create("CHANGELOG.md")
 	defer file.Close()
 	_, _ = file.WriteString("# Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes\n")
 	_, _ = file.WriteString(fmt.Sprintf("<!--Latest hash: %s-->\n", latestHash))
