@@ -89,12 +89,12 @@ Gatherer is using this logic to start information gathering from the cluster, an
 
 So far we have only 1 Gatherer(called `clusterconfig`), it has several gather-functions each collecting different data from the cluster.
 The workflow of the gather-functions is managed by the Gatherer.
-Only one Gatherer runs at one time, this is because we only have 1 Gatherer at the moment. (ie.: we can and concurrency here when its needed)
+Only one Gatherer runs at one time, this is because we only have 1 Gatherer at the moment. (ie.: we can add concurrency here when its needed)
 When IO starts there is an initial delay before the first `Gather` happens, after that a `Gather` is initiated every interval, this is done by `periodicTrigger`.
 `periodic.Run` handles the initial delay and starts the `periodicTrigger` like `go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)`.
 
 `Gather` uses `ExponentialBackoff` to retry (amount specified in: `status.GatherFailuresCountThreshold`) if a Gatherer returns any errors, these errors are mostly caused when a collected resource is not yet ready therefore it can't be right now collected so we should retry later.
-Its important that all retries finish before the next gather period starts, so that we don't have potential conflicts, the Backoff is calibrated to take this into account.
+It's important that all retries finish before the next gather period starts, so that we don't have potential conflicts, the Backoff is calibrated to take this into account.
 Errors that occurred during a gather-function are logged in the metadata part of the IO archive. (`insigths-operator/gathers.json`)
 
 ### Scheduling and running of Uploader
@@ -265,7 +265,7 @@ The clusterconfig Gatherer starts each gather-function in its own separate gorou
 Each gather-function is its own separate entity, each creates their own clients using the configs present in the `Gatherer` object that was passed down as parameter.
 We further divided the gather-functions into 2 main parts:
 1. the 'adapter-part' that is called by the `Gatherer.Gather`, named `Gather<Something>`, it handles the creation of the clients and handling the communication with the `Gatherer`.
-2. the 'core-part' that holds the actual logic of how to gather what is needed, named `gather<Something>`, the clients required for this are passed in as arguments by the 'adapter-part'.
+2. the 'core-part' that holds the actual logic of what to gather, named `gather<Something>`, the clients required for this are passed in as arguments by the 'adapter-part'.
 
 Gather-functions are IO bound and they don't use much of the CPU, so giving each of them a goroutine doesn't stress the CPU but gives us an 'async' way of making REST calls, which improves the performance greatly.
 
