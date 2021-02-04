@@ -88,7 +88,7 @@ func (r *Recorder) Record(record record.Record) error {
 		recordName = fmt.Sprintf("%s.%s", record.Name, extension)
 	}
 
-	r.records[record.Name] = &memoryRecord{
+	r.records[recordName] = &memoryRecord{
 		name:        recordName,
 		fingerprint: record.Fingerprint,
 		at:          at,
