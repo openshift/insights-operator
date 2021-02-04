@@ -159,6 +159,14 @@ Location in archive: config/configmaps/
 See: docs/insights-archive-sample/config/configmaps
 
 
+## ContainerImages
+
+collects essential information about running containers.
+Specifically, the age of pods, the set of running images and the container names are collected.
+
+Location in archive: config/running_containers.json
+
+
 ## HostSubnet
 
 collects HostSubnet information
