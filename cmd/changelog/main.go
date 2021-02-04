@@ -16,16 +16,17 @@ import (
 )
 
 var (
-	mergeRequestRegexp 			= regexp.MustCompile(`Merge-pull-request-([\d]+)`)
-	prefixRegexp       			= regexp.MustCompile(`^.+: (.+)`)
-	releaseRegexp      			= regexp.MustCompile(`release-\d\.\d`)
-	latestHashRegexp 		 	= regexp.MustCompile(`<!--Latest hash: (.+)-->`)
+	mergeRequestRegexp = regexp.MustCompile(`Merge-pull-request-([\d]+)`)
+	prefixRegexp       = regexp.MustCompile(`^.+: (.+)`)
+	releaseRegexp      = regexp.MustCompile(`(release-\d\.\d)`)
+	latestHashRegexp   = regexp.MustCompile(`<!--Latest hash: (.+)-->`)
 
-	version_sectionRegExp 		= regexp.MustCompile(`^(\d.\d)`)
-	enhancement_sectionRegExp 	= regexp.MustCompile(`### Enhancements\n((.+\n)+)`)
-	bugfix_sectionRegExp 		= regexp.MustCompile(`### Bug fixes\n((.+\n)+)`)
-	other_sectionRegExp 		= regexp.MustCompile(`### Others\n((.+\n)+)`)
-	misc_sectionRegExp 			= regexp.MustCompile(`### Misc\n((.+\n)+)`)
+	version_sectionRegExp     = regexp.MustCompile(`^(\d.\d)`)
+	backports_sectionRegExp   = regexp.MustCompile(`### Backports\n((.+\n)+)`)
+	enhancement_sectionRegExp = regexp.MustCompile(`### Enhancements\n((.+\n)+)`)
+	bugfix_sectionRegExp      = regexp.MustCompile(`### Bug fixes\n((.+\n)+)`)
+	other_sectionRegExp       = regexp.MustCompile(`### Others\n((.+\n)+)`)
+	misc_sectionRegExp        = regexp.MustCompile(`### Misc\n((.+\n)+)`)
 
 	// PR categories
 	categories = map[string]*regexp.Regexp{
@@ -88,19 +89,24 @@ func main() {
 		gitLog = sinceHashReverseGitLog(latestHash)
 	}
 	pullRequestIds, pullRequestHashes := getPullRequestInfo(gitLog)
-	latestHash = pullRequestHashes[len(pullRequestHashes)-1]
+	numberOfChanges := len(pullRequestHashes)
+	if numberOfChanges < 1 {
+		log.Fatal("No new changes detected.")
+	}
+	latestHash = pullRequestHashes[numberOfChanges - 1]
 	changes := pruneChanges(getChanges(pullRequestIds, pullRequestHashes))
 	createCHANGELOG(updateToMarkdownReleaseBlock(release_blocks, changes))
 }
 
 type MarkdownReleaseBlock struct {
+	backports    string
 	enhancements string
 	bugfixes     string
 	others       string
 	misc         string
 }
 
-func readCHANGELOG() map[string]MarkdownReleaseBlock{
+func readCHANGELOG() map[string]MarkdownReleaseBlock {
 	release_blocks := make(map[string]MarkdownReleaseBlock)
 	rawBytes, _ := ioutil.ReadFile("./CHANGELOG.md")
 	rawString := string(rawBytes)
@@ -115,6 +121,9 @@ func readCHANGELOG() map[string]MarkdownReleaseBlock{
 		var version string
 		if match := version_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
 			version = match[1]
+		}
+		if match := backports_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
+			release_block.backports = match[1]
 		}
 		if match := enhancement_sectionRegExp.FindStringSubmatch(version_section); len(match) > 0 {
 			release_block.enhancements = match[1]
@@ -134,7 +143,7 @@ func readCHANGELOG() map[string]MarkdownReleaseBlock{
 	return release_blocks
 }
 
-func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock, changes []Change) map[string]MarkdownReleaseBlock{
+func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock, changes []Change) map[string]MarkdownReleaseBlock {
 	for _, ch := range changes {
 		tmp := release_blocks[ch.release]
 		if ch.category == "BugFix" {
@@ -146,6 +155,9 @@ func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock
 		} else if ch.category == "Enhancement" {
 			tmp.enhancements += ch.toMarkdown()
 			release_blocks[ch.release] = tmp
+		} else if ch.category == "Backporting" {
+			tmp.backports += ch.toMarkdown()
+			release_blocks[ch.release] = tmp
 		} else {
 			tmp.misc += ch.toMarkdown()
 			release_blocks[ch.release] = tmp
@@ -153,7 +165,6 @@ func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock
 	}
 	return release_blocks
 }
-
 
 func createCHANGELOG(release_blocks map[string]MarkdownReleaseBlock) {
 	file, _ := os.Create("CHANGELOG.md")
@@ -168,6 +179,11 @@ func createCHANGELOG(release_blocks map[string]MarkdownReleaseBlock) {
 	for _, release := range releases {
 		_, _ = file.WriteString(fmt.Sprintf("## %s\n\n", release))
 
+		backports := release_blocks[release].backports
+		if len(backports) > 0 {
+			_, _ = file.WriteString("### Backports\n")
+			_, _ = file.WriteString(fmt.Sprintf("%s\n", backports))
+		}
 		enhancements := release_blocks[release].enhancements
 		if len(enhancements) > 0 {
 			_, _ = file.WriteString("### Enhancements\n")
@@ -251,8 +267,13 @@ func getPullRequestFromGitHub(id string, channel chan<- Change) {
 
 	_ = json.Unmarshal(jsonMap["body"], &ch.description)
 	// Figure out the change`s category
-	for cat, reg := range categories {
-		if match := reg.FindStringSubmatch(ch.description); len(match) > 0 {
+	var cats []string
+	for c := range categories {
+		cats = append(cats, c)
+	}
+	sort.Strings(cats) // Hacky way to make sure that Backports get matched first.
+	for _, cat := range cats {
+		if match := categories[cat].FindStringSubmatch(ch.description); len(match) > 0 {
 			ch.category = cat
 			break
 		}
@@ -263,7 +284,7 @@ func getPullRequestFromGitHub(id string, channel chan<- Change) {
 func determineReleases(change Change) Change {
 	releases := releaseBranchesContain(change.hash)
 	earliest_release := findEarliestRelease(releases)
-	change.release = strings.Trim(earliest_release," \n")
+	change.release = strings.Trim(earliest_release, " \n*")
 	return change
 }
 
@@ -273,11 +294,10 @@ func releaseBranchesContain(hash string) []string {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	all_branches := strings.Split(string(out), "  ")
-	for _, branch := range all_branches {
-		if match := releaseRegexp.FindString(branch); len(match) > 0 {
-			releaseBranches = append(releaseBranches, branch)
-		}
+	branches := string(out)
+	matches := releaseRegexp.FindAllStringSubmatch(branches, -1)
+	for _, match := range matches {
+		releaseBranches = append(releaseBranches, match[1])
 	}
 	return releaseBranches
 }

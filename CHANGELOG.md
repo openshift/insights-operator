@@ -1,5 +1,5 @@
 # Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes
-<!--Latest hash: e758cd083ea6758e3f94984323ba2d6e293f0db4-->
+<!--Latest hash: 45317ed3cdf69afe421d0105e5195de3e5c129e4-->
 ## 4.7
 
 ### Enhancements
@@ -10,10 +10,12 @@
 - [#291](https://github.com/openshift/insights-operator/pull/291) Gather SAP configuration (SCC & ClusterRoleBinding)
 - [#316](https://github.com/openshift/insights-operator/pull/316) Gather list of OLM operator names and versions & minor clean up
 - [#319](https://github.com/openshift/insights-operator/pull/319) Gather PersistentVolume definition (if any) used in Image registry st…
+- [#327](https://github.com/openshift/insights-operator/pull/327) collect invalid resource name error from logs 
 
 ### Bug fixes
 - [#317](https://github.com/openshift/insights-operator/pull/317) Update the sample archive and remove IP anonymization in clusteropera…
 - [#320](https://github.com/openshift/insights-operator/pull/320) Monitors how many gatherings failed in a row, and applies degraded status accordingly
+- [#325](https://github.com/openshift/insights-operator/pull/325) Fixes error metadata gathering
 
 ### Others
 - [#298](https://github.com/openshift/insights-operator/pull/298) Bug 1908400:tests-e2e, increase timeouts, re-add TestArchiveUploadedAndResultsReceived
@@ -24,6 +26,7 @@
 - [#300](https://github.com/openshift/insights-operator/pull/300) Added changelog file
 - [#279](https://github.com/openshift/insights-operator/pull/279) Refactoring record and gatherer
 - [#310](https://github.com/openshift/insights-operator/pull/310) Remove HostSubnet anonymization
+- [#323](https://github.com/openshift/insights-operator/pull/323) Updates arch.md
 
 ### Misc
 - [#234](https://github.com/openshift/insights-operator/pull/234) Simplify/generalize host subnet pattern
