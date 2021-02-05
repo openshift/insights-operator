@@ -23,6 +23,7 @@ require (
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/component-base v0.20.0
 	k8s.io/klog/v2 v2.4.0
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (

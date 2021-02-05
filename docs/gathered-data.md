@@ -175,16 +175,18 @@ Id in config: version
 
 ## ConfigMaps
 
-fetches the ConfigMaps from namespace openshift-config.
+fetches the ConfigMaps from namespace openshift-config
+and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitoring namespace.
 
 Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
 For ConfigMap of type BinaryData it is encoded as standard base64.
-In the archive under configmaps we store name of ConfigMap and then each ConfigMap Key. For example config/configmaps/CONFIGMAPNAME/CONFIGMAPKEY1
+In the archive under configmaps we store name of the namesapce, name of the ConfigMap and then each ConfigMap Key.
+For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 
-Location in archive: config/configmaps/
+Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
 See: docs/insights-archive-sample/config/configmaps
 Id in config: config_maps
 
@@ -408,16 +410,5 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
 Id in config: service_accounts
-
-
-## StatefulSets
-
-collects StatefulSet configs from default namespaces
-
-The Kubernetes API https://github.com/kubernetes/api/blob/master/apps/v1/types.go
-Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
-
-Location in archive: config/statefulsets/
-Id in config: stateful_sets
 
 

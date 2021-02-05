@@ -186,7 +186,7 @@ func parsePatterns(pattern string, list interface{}) (names []string) {
 
 func genLatestArchiveContainsConfigMaps(archive []string) test {
 	configMaps, _ := clientset.CoreV1().ConfigMaps("openshift-config").List(context.Background(), metav1.ListOptions{})
-	return genLatestArchiveCheckPattern("config map", matchingFileExists, archive, parsePatterns("^config/configmaps/%s/.*$", configMaps.Items)...)
+	return genLatestArchiveCheckPattern("config map", matchingFileExists, archive, parsePatterns("^config/configmaps/openshift-config/%s/.*$", configMaps.Items)...)
 }
 
 func genLatestArchiveContainsNodes(archive []string) test {
