@@ -176,6 +176,19 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 Location in archive: config/hostsubnet/
 
+
+## InstallPlans
+
+collects Top x InstallPlans from all openshift namespaces.
+Because InstallPlans have unique generated names, it groups them by namespace and the "template"
+for name generation from field generateName.
+It also collects Total number of all installplans and all non-unique installplans.
+
+The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
+
+Location in archive: config/installplans/
+
+
 ## MachineSet
 
 collects MachineSet information
@@ -192,22 +205,23 @@ gathers cluster Federated Monitoring metrics.
 
 The GET REST query to URL /federate
 Gathered metrics:
-  ALERTS
   etcd_object_counts
   cluster_installer
+  namespace CPU and memory usage
+  followed by at most 1000 lines of ALERTS metric
 
 Location in archive: config/metrics/
 See: docs/insights-archive-sample/config/metrics
 
 
-Output raw size: 108
+Output raw size: 148
 
 ### Examples
 
 #### MostRecentMetrics
-[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAo="}]
+[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
 
-## UnhealthyNodes
+## Nodes
 
 collects all unhealthy Nodes.
 
@@ -226,7 +240,7 @@ Output raw size: 491
 
 ### Examples
 
-#### UnhealthyNodes
+#### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
 ## PodDisruptionBudgets
