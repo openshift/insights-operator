@@ -628,12 +628,12 @@ func TestGatherServiceAccounts(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			coreClient := kubefake.NewSimpleClientset()
 			for _, d := range test.data {
-				_, err := coreClient.CoreV1().Namespaces().Create(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: d.Namespace}})
+				_, err := coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: d.Namespace}}, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatalf("unable to create fake ns %s", err)
 				}
 				_, err = coreClient.CoreV1().ServiceAccounts(d.Namespace).
-					Create(d)
+					Create(context.Background(), d, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatalf("unable to create fake service account %s", err)
 				}
@@ -654,7 +654,7 @@ func TestGatherServiceAccounts(t *testing.T) {
 			}
 		})
 	}
-}      
+}
 
 func TestGatherClusterOperator(t *testing.T) {
 	testOperator := &configv1.ClusterOperator{
@@ -702,7 +702,7 @@ metadata:
 	if err != nil {
 		t.Fatal("unable to decode machineconfigpool ", err)
 	}
-	_, err = client.Resource(gvr).Create(context.Background(),testMachineConfigPools, metav1.CreateOptions{})
+	_, err = client.Resource(gvr).Create(context.Background(), testMachineConfigPools, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake machineconfigpool ", err)
 	}

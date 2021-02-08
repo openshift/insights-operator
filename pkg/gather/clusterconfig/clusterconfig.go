@@ -79,13 +79,10 @@ const (
 	// Maximal total number of service accounts
 	maxServiceAccountsLimit          = 1000
 	maxServiceAccountNamespacesLimit = 1000
-  maxNamespacesLimit               = 1000
+	maxNamespacesLimit               = 1000
 
-  // InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
+	// InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
 	InstallPlansTopX = 100
-
-	// Maximal total number of service accounts
-	maxServiceAccountsLimit = 1000
 )
 
 var (
@@ -939,7 +936,6 @@ func GatherMachineSet(i *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
-
 //GatherMachineConfigPool collects MachineConfigPool information
 //
 // The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
@@ -967,6 +963,7 @@ func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
 		return records, nil
 	}
 }
+
 // GatherInstallPlans collects Top x InstallPlans from all openshift namespaces.
 // Because InstallPlans have unique generated names, it groups them by namespace and the "template"
 // for name generation from field generateName.
@@ -1119,7 +1116,7 @@ func (i *Gatherer) gatherNamespaceEvents(namespace string) ([]record.Record, []e
 // See: docs/insights-archive-sample/config/serviceaccounts
 func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.coreClient.Namespaces().List(metav1.ListOptions{Limit: maxServiceAccountNamespacesLimit})
+		config, err := i.coreClient.Namespaces().List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountNamespacesLimit})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -1142,7 +1139,7 @@ func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
 			if namespaceCollected.Has(namespace) {
 				continue
 			}
-			svca, err := i.coreClient.ServiceAccounts(namespace).List(metav1.ListOptions{Limit: maxServiceAccountsLimit})
+			svca, err := i.coreClient.ServiceAccounts(namespace).List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
 			if err != nil {
 				klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
 				continue
@@ -1862,12 +1859,12 @@ func (a ServiceAccountsMarshaller) Marshal(_ context.Context) ([]byte, error) {
 		ns["name"] = sa.Name
 		ns["secrets"] = len(sa.Secrets)
 	}
-  return json.Marshal(sr)
+	return json.Marshal(sr)
 }
 
 // GetExtension returns extension for anonymized openshift objects
 func (a ServiceAccountsMarshaller) GetExtension() string {
-  return "json"
+	return "json"
 }
 
 // ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
