@@ -1,0 +1,10 @@
+{
+    "APIVersion": "operator.openshift.io/v1",
+    "Kind": "KubeStorageVersionMigrator",
+    "Name": "cluster",
+    "Spec": {
+        "logLevel": "Normal",
+        "managementState": "Managed",
+        "operatorLogLevel": "Normal"
+    }
+}

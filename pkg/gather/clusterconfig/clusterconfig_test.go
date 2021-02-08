@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 
+	configv1 "github.com/openshift/api/config/v1"
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
-	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
-	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
-	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils"
+	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +26,11 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/klog"
+
+	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
+	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 func TestConfigMapAnonymizer(t *testing.T) {
@@ -155,7 +160,7 @@ func TestGatherClusterPruner(t *testing.T) {
 			if test.expectedRecords == 0 {
 				return
 			}
-			if expectedRecordName := "config/imagepruner"; records[0].Name != expectedRecordName {
+			if expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster"; records[0].Name != expectedRecordName {
 				t.Errorf("expected %q record name, got %q", expectedRecordName, records[0].Name)
 				return
 			}
@@ -189,7 +194,7 @@ func TestGatherPodDisruptionBudgets(t *testing.T) {
 	for name, minAvailable := range fakePDBs {
 		_, err := coreClient.PolicyV1beta1().
 			PodDisruptionBudgets(fakeNamespace).
-			Create(&policyv1beta1.PodDisruptionBudget{
+			Create(context.Background(), &policyv1beta1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: fakeNamespace,
 					Name:      name,
@@ -197,7 +202,7 @@ func TestGatherPodDisruptionBudgets(t *testing.T) {
 				Spec: policyv1beta1.PodDisruptionBudgetSpec{
 					MinAvailable: &intstr.IntOrString{StrVal: minAvailable},
 				},
-			})
+			}, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("unable to create fake pdbs: %v", err)
 		}
@@ -347,7 +352,7 @@ func TestGatherClusterImageRegistry(t *testing.T) {
 				t.Errorf("expected one record, got %d", numRecords)
 				return
 			}
-			if expectedRecordName := "config/imageregistry"; records[0].Name != expectedRecordName {
+			if expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/config/cluster"; records[0].Name != expectedRecordName {
 				t.Errorf("expected %q record name, got %q", expectedRecordName, records[0].Name)
 				return
 			}
@@ -366,6 +371,129 @@ func TestGatherClusterImageRegistry(t *testing.T) {
 	}
 
 }
+
+func TestGatherContainerImages(t *testing.T) {
+	const fakeNamespace = "fake-namespace"
+	const fakeOpenshiftNamespace = "openshift-fake-namespace"
+
+	mockContainers := []string{
+		"registry.redhat.io/1",
+		"registry.redhat.io/2",
+		"registry.redhat.io/3",
+	}
+
+	// It is not possible to predict the order of the images.
+	expectedPodsWithAge := PodsWithAge{
+		"0001-01": RunningImages{
+			0: 1,
+			1: 1,
+			2: 1,
+		},
+	}
+
+	coreClient := kubefake.NewSimpleClientset()
+	for index, containerImage := range mockContainers {
+		_, err := coreClient.CoreV1().
+			Pods(fakeNamespace).
+			Create(context.Background(), &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: fakeNamespace,
+					Name:      fmt.Sprintf("pod%d", index),
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  fmt.Sprintf("container%d", index),
+							Image: containerImage,
+						},
+					},
+					Phase: v1.PodRunning,
+				},
+			}, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatal("unable to create fake pod")
+		}
+	}
+
+	const numberOfCrashlooping = 10
+	expectedRecords := make([]string, numberOfCrashlooping)
+	for i := 0; i < numberOfCrashlooping; i++ {
+		podName := fmt.Sprintf("crashlooping%d", i)
+		_, err := coreClient.CoreV1().
+			Pods(fakeOpenshiftNamespace).
+			Create(context.Background(), &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: podName,
+				},
+				Status: v1.PodStatus{
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							RestartCount: int32(numberOfCrashlooping - i),
+							LastTerminationState: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									ExitCode: int32(i + 1),
+								},
+							},
+						},
+					},
+				},
+			}, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatal("unable to create fake pod")
+		}
+		expectedRecords[i] = fmt.Sprintf("config/pod/%s/%s", fakeOpenshiftNamespace, podName)
+	}
+
+	gatherer := &Gatherer{coreClient: coreClient.CoreV1()}
+	records, errs := GatherContainerImages(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+
+	var containerInfo *ContainerInfo = nil
+	for _, rec := range records {
+		if rec.Name == "config/running_containers" {
+			anonymizer, ok := rec.Item.(record.JSONMarshaller)
+			if !ok {
+				t.Fatal("reported running containers item has invalid type")
+			}
+
+			containers, ok := anonymizer.Object.(ContainerInfo)
+			if !ok {
+				t.Fatal("anonymized running containers data have wrong type")
+			}
+
+			containerInfo = &containers
+		}
+	}
+
+	if containerInfo == nil {
+		t.Fatal("container info has not been reported")
+	}
+
+	if len(containerInfo.Images) != len(mockContainers) {
+		t.Fatalf("expected %d unique images, got %d", len(mockContainers), len(containerInfo.Images))
+	}
+
+	if !reflect.DeepEqual(containerInfo.Containers, expectedPodsWithAge) {
+		t.Fatalf("unexpected map of image counts: %#v", containerInfo.Containers)
+	}
+
+	for _, expectedRecordName := range expectedRecords {
+		wasReported := false
+		for _, reportedRecord := range records {
+			if reportedRecord.Name == expectedRecordName {
+				wasReported = true
+				break
+			}
+		}
+		if !wasReported {
+			t.Fatalf("expected record '%s' was not reported", expectedRecordName)
+		}
+	}
+}
+
 func TestGatherMachineSet(t *testing.T) {
 	var machineSetYAML = `
 apiVersion: machine.openshift.io/v1beta1
@@ -383,7 +511,7 @@ metadata:
 	if err != nil {
 		t.Fatal("unable to decode machineset ", err)
 	}
-	_, err = client.Resource(gvr).Create(testMachineSet, metav1.CreateOptions{})
+	_, err = client.Resource(gvr).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake machineset ", err)
 	}
@@ -407,11 +535,11 @@ func TestGatherHostSubnet(t *testing.T) {
 		Host:        "test.host",
 		HostIP:      "10.0.0.0",
 		Subnet:      "10.0.0.0/23",
-		EgressIPs:   []string{"10.0.0.0", "10.0.0.1"},
-		EgressCIDRs: []string{"10.0.0.0/24", "10.0.0.0/24"},
+		EgressIPs:   []networkv1.HostSubnetEgressIP{"10.0.0.0", "10.0.0.1"},
+		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{"10.0.0.0/24", "10.0.0.0/24"},
 	}
 	client := networkfake.NewSimpleClientset()
-	_, err := client.NetworkV1().HostSubnets().Create(&testHostSubnet)
+	_, err := client.NetworkV1().HostSubnets().Create(context.Background(), &testHostSubnet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake hostsubnet")
 	}
@@ -525,6 +653,172 @@ func TestGatherServiceAccounts(t *testing.T) {
 				t.Fatalf("serviceaccount test failed. expected: %s got: %s", test.exp, s)
 			}
 		})
+	}
+}      
+
+func TestGatherClusterOperator(t *testing.T) {
+	testOperator := &configv1.ClusterOperator{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-clusteroperator",
+		},
+	}
+	configCS := configfake.NewSimpleClientset()
+	_, err := configCS.ConfigV1().ClusterOperators().Create(context.Background(), testOperator, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake clusteroperator", err)
+	}
+	gatherer := &Gatherer{client: configCS.ConfigV1(), discoveryClient: configCS.Discovery()}
+	records, errs := GatherClusterOperators(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+
+	item, _ := records[0].Item.Marshal(context.TODO())
+	var gatheredCO configv1.ClusterOperator
+	_, _, err = openshiftSerializer.Decode(item, nil, &gatheredCO)
+	if err != nil {
+		t.Fatalf("failed to decode object: %v", err)
+	}
+	if gatheredCO.Name != "test-clusteroperator" {
+		t.Fatalf("unexpected clusteroperator name %s", gatheredCO.Name)
+	}
+}
+
+func TestGatherMachineConfigPool(t *testing.T) {
+	var machineconfigpoolYAML = `
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+    name: master-t
+`
+	gvr := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigpools"}
+	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+
+	testMachineConfigPools := &unstructured.Unstructured{}
+
+	_, _, err := decUnstructured.Decode([]byte(machineconfigpoolYAML), nil, testMachineConfigPools)
+	if err != nil {
+		t.Fatal("unable to decode machineconfigpool ", err)
+	}
+	_, err = client.Resource(gvr).Create(context.Background(),testMachineConfigPools, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatal("unable to create fake machineconfigpool ", err)
+	}
+
+	gatherer := &Gatherer{dynamicClient: client}
+	records, errs := GatherMachineConfigPool(gatherer)()
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != 1 {
+		t.Fatalf("unexpected number or records %d", len(records))
+	}
+	if records[0].Name != "config/machineconfigpools/master-t" {
+		t.Fatalf("unexpected machineconfigpool name %s", records[0].Name)
+	}
+}
+
+func TestGatherInstallPlans(t *testing.T) {
+	tests := []struct {
+		name      string
+		testfiles []string
+		limit     int
+		exp       string
+	}{
+		{
+			name:      "one installplan",
+			testfiles: []string{"testdata/installplan.yaml"},
+			exp: `{"items":[{"count":1,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],` +
+				`"stats":{"TOTAL_COUNT":1,"TOTAL_NONUNIQ_COUNT":1}}`,
+		},
+		{
+			name:      "two are same to keep ordering and one is different",
+			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml", "testdata/installplan_openshift.yaml"},
+			exp:       `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"},{"count":1,"csv":"3scale-community-operator.v0.5.1","name":"install-","ns":"openshift"}],"stats":{"TOTAL_COUNT":3,"TOTAL_NONUNIQ_COUNT":2}}`,
+		},
+		{
+			name:      "two similar installplans",
+			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml"},
+			exp: `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],` +
+				`"stats":{"TOTAL_COUNT":2,"TOTAL_NONUNIQ_COUNT":1}}`,
+		},
+		{
+			name:      "test marshaller with limit to 1 item",
+			testfiles: []string{"testdata/installplan.yaml", "testdata/installplan2.yaml", "testdata/installplan_openshift.yaml"},
+			limit:     1,
+			exp:       `{"items":[{"count":2,"csv":"lib-bucket-provisioner.v2.0.0","name":"install-","ns":"openshift-operators"}],"stats":{"TOTAL_COUNT":3,"TOTAL_NONUNIQ_COUNT":2}}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+			coreClient := kubefake.NewSimpleClientset()
+			for _, file := range test.testfiles {
+				f, err := os.Open(file)
+				if err != nil {
+					t.Fatal("test failed to read installplan data", err)
+				}
+				defer f.Close()
+				installplancontent, err := ioutil.ReadAll(f)
+				if err != nil {
+					t.Fatal("error reading test data file", err)
+				}
+
+				decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+				installplan := &unstructured.Unstructured{}
+
+				_, _, err = decUnstructured.Decode(installplancontent, nil, installplan)
+				if err != nil {
+					t.Fatal("unable to decode", err)
+				}
+				gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
+				gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
+				var ns string
+				err = parseJSONQuery(installplan.Object, "metadata.namespace", &ns)
+				if err != nil {
+					t.Fatal("unable to read ns ", err)
+				}
+				_, err = coreClient.CoreV1().Namespaces().Get(context.Background(), ns, metav1.GetOptions{})
+				if errors.IsNotFound(err) {
+					_, err = coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
+				}
+				if err != nil {
+					t.Fatal("unable to create ns fake ", err)
+				}
+				_, err = client.Resource(gvr).Namespace(ns).Create(context.Background(), installplan, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatal("unable to create installplan fake ", err)
+				}
+			}
+
+			gatherer := &Gatherer{ctx: context.Background(), dynamicClient: client, coreClient: coreClient.CoreV1()}
+			records, errs := GatherInstallPlans(gatherer)()
+			if len(errs) > 0 {
+				t.Errorf("unexpected errors: %#v", errs)
+				return
+			}
+			if len(records) != 1 {
+				t.Fatalf("unexpected number or records %d", len(records))
+			}
+			m, ok := records[0].Item.(InstallPlanAnonymizer)
+			if !ok {
+				t.Fatalf("returned item is not of type InstallPlanAnonymizer")
+			}
+			if test.limit != 0 {
+				// copy to new anonymizer with limited max
+				m = InstallPlanAnonymizer{limit: 1, total: m.total, v: m.v}
+			}
+			b, _ := m.Marshal(context.Background())
+			sb := string(b)
+			if sb != test.exp {
+				t.Fatalf("unexpected installplan exp: %s got: %s", test.exp, sb)
+			}
+		})
+
 	}
 }
 

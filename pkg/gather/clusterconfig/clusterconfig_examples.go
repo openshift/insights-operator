@@ -1,6 +1,7 @@
 package clusterconfig
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	clsetfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
@@ -32,7 +34,7 @@ func ExampleMostRecentMetrics() (string, error) {
 	re := rest.NewRequestWithClient(u, "", rest.ClientContentConfig{}, c).Verb("get")
 
 	r := mockRest{GetMock: re}
-	g := &Gatherer{metricsClient: r}
+	g := &Gatherer{ctx: context.Background(), metricsClient: r}
 	d, errs := GatherMostRecentMetrics(g)()
 	if len(errs) > 0 {
 		return "", errs[0]
@@ -55,7 +57,10 @@ func ExampleClusterOperators() (string, error) {
 			return true, sv, nil
 		})
 
-	g := &Gatherer{client: kube.ConfigV1()}
+	g := &Gatherer{
+		client:          kube.ConfigV1(),
+		discoveryClient: kube.Discovery(),
+		dynamicClient:   dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())}
 	d, errs := GatherClusterOperators(g)()
 	if len(errs) > 0 {
 		return "", errs[0]

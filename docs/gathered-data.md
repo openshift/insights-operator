@@ -48,14 +48,14 @@ See: docs/insights-archive-sample/config/id
 
 fetches the image pruner configuration
 
-Location in archive: config/imagepruner/
+Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
 
 
 ## ClusterImageRegistry
 
 fetches the cluster Image Registry configuration
 
-Location in archive: config/imageregistry/
+Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 
 
 ## ClusterInfrastructure
@@ -104,7 +104,7 @@ See: docs/insights-archive-sample/config/oauth
 
 ## ClusterOperators
 
-collects all ClusterOperators.
+collects all ClusterOperators and their resources.
 It finds unhealthy Pods for unhealthy operators
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -159,6 +159,14 @@ Location in archive: config/configmaps/
 See: docs/insights-archive-sample/config/configmaps
 
 
+## ContainerImages
+
+collects essential information about running containers.
+Specifically, the age of pods, the set of running images and the container names are collected.
+
+Location in archive: config/running_containers.json
+
+
 ## HostSubnet
 
 collects HostSubnet information
@@ -167,6 +175,18 @@ The Kubernetes api https://github.com/openshift/client-go/blob/master/network/cl
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 
 Location in archive: config/hostsubnet/
+
+
+## InstallPlans
+
+collects Top x InstallPlans from all openshift namespaces.
+Because InstallPlans have unique generated names, it groups them by namespace and the "template"
+for name generation from field generateName.
+It also collects Total number of all installplans and all non-unique installplans.
+
+The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
+
+Location in archive: config/installplans/
 
 
 ## MachineSet
@@ -246,3 +266,12 @@ Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
 
 
+## MachineConfigPool
+
+gathers the cluster's MachineConfigPools.
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/machineconfigpools/
+See: docs/insights-archive-sample/config/machineconfigpools/
