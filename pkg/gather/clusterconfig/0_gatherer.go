@@ -53,7 +53,7 @@ const gatherAll = "ALL"
 
 var gatherFunctions = map[string]gathering{
 	"pdbs":                              important(GatherPodDisruptionBudgets),
-	"metrics":                           important(GatherMostRecentMetrics),
+	"metrics":                           failable(GatherMostRecentMetrics),
 	"operators":                         important(GatherClusterOperators),
 	"container_images":                  important(GatherContainerImages),
 	"nodes":                             important(GatherNodes),
