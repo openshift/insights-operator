@@ -16,10 +16,10 @@ import (
 )
 
 type gatherStatusReport struct {
-	Name     		string        `json:"name"`
-	Duration 		time.Duration `json:"duration_in_ms"`
-	RecordsCount  	int           `json:"records_count"`
-	Errors   		[]string      `json:"errors"`
+	Name         string        `json:"name"`
+	Duration     time.Duration `json:"duration_in_ms"`
+	RecordsCount int           `json:"records_count"`
+	Errors       []string      `json:"errors"`
 }
 
 // Gatherer is a driving instance invoking collection of data
@@ -78,10 +78,10 @@ var gatherFunctions = map[string]gathering{
 	"machine_config_pools":              important(GatherMachineConfigPool),
 	"container_runtime_configs":         important(GatherContainerRuntimeConfig),
 	"netnamespaces":                     important(GatherNetNamespace),
-	"openshift_apiserver_operator_logs": important(GatherOpenShiftAPIServerOperatorLogs),
-	"openshift_sdn_logs":                important(GatherOpenshiftSDNLogs),
-	"openshift_sdn_controller_logs":     important(GatherOpenshiftSDNControllerLogs),
-	"openshift_authentication_logs":     important(GatherOpenshiftAuthenticationLogs),
+	"openshift_apiserver_operator_logs": failable(GatherOpenShiftAPIServerOperatorLogs),
+	"openshift_sdn_logs":                failable(GatherOpenshiftSDNLogs),
+	"openshift_sdn_controller_logs":     failable(GatherOpenshiftSDNControllerLogs),
+	"openshift_authentication_logs":     failable(GatherOpenshiftAuthenticationLogs),
 	"sap_config":                        failable(GatherSAPConfig),
 	"olm_operators":                     failable(GatherOLMOperators),
 }
