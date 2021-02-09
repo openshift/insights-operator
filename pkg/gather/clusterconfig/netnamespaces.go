@@ -8,6 +8,7 @@ import (
 
 	networkv1 "github.com/openshift/api/network/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
+	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -27,30 +28,37 @@ type netNamespace struct {
 // Id in config: netnamespaces
 func GatherNetNamespace(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		nsList, err := g.networkClient.NetNamespaces().List(g.ctx, metav1.ListOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		namespaces := []*netNamespace{}
-		for _, n := range nsList.Items {
-			netNS := &netNamespace{
-				Name:      n.Name,
-				EgressIPs: n.EgressIPs,
-				NetID:     n.NetID,
-			}
-			namespaces = append(namespaces, netNS)
-		}
-		r := record.Record{
-			Name: "config/netnamespaces",
-			Item: NetNamespaceAnonymizer{namespaces: namespaces},
-		}
-		return []record.Record{r}, nil
+		return gatherNetNamespace(g.ctx, gatherNetworkClient)
 	}
 }
 
+func gatherNetNamespace(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {
+	nsList, err := networkClient.NetNamespaces().List(ctx, metav1.ListOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	namespaces := []*netNamespace{}
+	for _, n := range nsList.Items {
+		netNS := &netNamespace{
+			Name:      n.Name,
+			EgressIPs: n.EgressIPs,
+			NetID:     n.NetID,
+		}
+		namespaces = append(namespaces, netNS)
+	}
+	r := record.Record{
+		Name: "config/netnamespaces",
+		Item: NetNamespaceAnonymizer{namespaces: namespaces},
+	}
+	return []record.Record{r}, nil
+}
 
 // NetNamespaceAnonymizer implements NetNamespace serialization
 type NetNamespaceAnonymizer struct{ namespaces []*netNamespace }

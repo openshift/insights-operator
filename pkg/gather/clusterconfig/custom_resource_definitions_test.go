@@ -32,8 +32,8 @@ func TestCollectVolumeSnapshotCRD(t *testing.T) {
 		}, metav1.CreateOptions{})
 	}
 
-	gatherer := &Gatherer{crdClient: crdClientset.ApiextensionsV1beta1()}
-	records, errs := GatherCRD(gatherer)()
+	ctx := context.Background()
+	records, errs := gatherCRD(ctx, crdClientset.ApiextensionsV1beta1())
 	if len(errs) != 0 {
 		t.Fatalf("gather CRDs resulted in error: %#v", errs)
 	}

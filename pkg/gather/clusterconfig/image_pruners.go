@@ -1,9 +1,9 @@
 package clusterconfig
 
 import (
+	"context"
 	"fmt"
 	"strings"
-	"context"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,6 +11,8 @@ import (
 	"k8s.io/klog"
 
 	registryv1 "github.com/openshift/api/imageregistry/v1"
+	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
+	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -19,29 +21,38 @@ import (
 // GatherClusterImagePruner fetches the image pruner configuration
 //
 // Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
-func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterImagePruner(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		pruner, err := i.registryClient.ImagePruners().Get(i.ctx, "cluster", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
-		kinds, _, err := registryScheme.ObjectKinds(pruner)
-		if err != nil {
-			return nil, []error{err}
-		}
-		if len(kinds) > 1 {
-			klog.Warningf("More kinds for image registry pruner operator resource %s", kinds)
-		}
-		objKind := kinds[0]
-		return []record.Record{{
-			Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), pruner.Name),
-			Item: ImagePrunerAnonymizer{pruner},
-		}}, nil
+		return gatherClusterImagePruner(g.ctx, registryClient.ImageregistryV1())
 	}
+}
+
+func gatherClusterImagePruner(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface) ([]record.Record, []error) {
+	pruner, err := registryClient.ImagePruners().Get(ctx, "cluster", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
+	kinds, _, err := registryScheme.ObjectKinds(pruner)
+	if err != nil {
+		return nil, []error{err}
+	}
+	if len(kinds) > 1 {
+		klog.Warningf("More kinds for image registry pruner operator resource %s", kinds)
+	}
+	objKind := kinds[0]
+	return []record.Record{{
+		Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), pruner.Name),
+		Item: ImagePrunerAnonymizer{pruner},
+	}}, nil
+
 }
 
 // ImagePrunerAnonymizer implements serialization with marshalling

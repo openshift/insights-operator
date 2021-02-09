@@ -78,15 +78,7 @@ metadata:
 		metav1.CreateOptions{},
 	)
 
-	gatherer := &Gatherer{
-		ctx:            context.Background(),
-		dynamicClient:  datahubsClient,
-		coreClient:     coreClient.CoreV1(),
-		securityClient: securityClient.SecurityV1(),
-		authClient:     authClient.AuthorizationV1(),
-	}
-
-	records, errs := GatherSAPConfig(gatherer)()
+	records, errs := gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -97,7 +89,7 @@ metadata:
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
 	datahubsClient.Resource(datahubsResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
-	records, errs = GatherSAPConfig(gatherer)()
+	records, errs = gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}

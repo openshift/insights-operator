@@ -1,12 +1,15 @@
 package clusterconfig
 
 import (
+	"context"
 	"fmt"
-	"strings"
 	"sort"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
@@ -30,88 +33,97 @@ const (
 // Specifically, the age of pods, the set of running images and the container names are collected.
 //
 // Location in archive: config/running_containers.json
-func GatherContainerImages(i *Gatherer) func() ([]record.Record, []error) {
+func GatherContainerImages(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		records := []record.Record{}
-
-		// Cache for the temporary image count list.
-		img2month2count := img2Month2CountMap{}
-
-		// Use the Limit and Continue fields to request the pod information in chunks.
-		continueValue := ""
-		for {
-			pods, err := i.coreClient.Pods("").List(i.ctx, metav1.ListOptions{
-				Limit:    imageGatherPodLimit,
-				Continue: continueValue,
-				// FieldSelector: "status.phase=Running",
-			})
-			if err != nil {
-				return nil, []error{err}
-			}
-
-			for podIndex, pod := range pods.Items {
-				podPtr := &pods.Items[podIndex]
-				if strings.HasPrefix(pod.Namespace, "openshift") && hasContainerInCrashloop(podPtr) {
-					records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{podPtr}})
-				} else if pod.Status.Phase == corev1.PodRunning {
-					startMonth := pod.CreationTimestamp.Time.UTC().Format(yyyyMmDateFormat)
-
-					gatherImages(startMonth, img2month2count, pod.Status.ContainerStatuses)
-					gatherImages(startMonth, img2month2count, pod.Status.InitContainerStatuses)
-					gatherImages(startMonth, img2month2count, pod.Status.EphemeralContainerStatuses)
-				}
-			}
-
-			// If the Continue field is not set, this should be the end of available data.
-			// Otherwise, update the Continue value and perform another request iteration.
-			if pods.Continue == "" {
-				break
-			}
-			continueValue = pods.Continue
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+		if err != nil {
+			return nil, []error{err}
 		}
-
-		// Transform map into a list for sorting.
-		imageCounts := []tmpImageCountEntry{}
-		for img, countMap := range img2month2count {
-			totalCount := 0
-			for _, count := range countMap {
-				totalCount += count
-			}
-			imageCounts = append(imageCounts, tmpImageCountEntry{
-				Image:         img,
-				TotalCount:    totalCount,
-				CountPerMonth: countMap,
-			})
-		}
-
-		// Sort images from most common to least common.
-		sort.Slice(imageCounts, func(i, j int) bool {
-			return imageCounts[i].TotalCount > imageCounts[j].TotalCount
-		})
-
-		// Reconstruct the image information into the reported data structure.
-		contInfo := ContainerInfo{
-			Images:     ContainerImageSet{},
-			Containers: PodsWithAge{},
-		}
-		totalEntries := 0
-		for _, img := range imageCounts {
-			if totalEntries >= containerImageLimit {
-				break
-			}
-
-			imgIndex := contInfo.Images.Add(img.Image)
-			for month, count := range img.CountPerMonth {
-				contInfo.Containers.Add(month, imgIndex, count)
-				totalEntries++
-			}
-		}
-
-		return append(records, record.Record{
-			Name: "config/running_containers",
-			Item: record.JSONMarshaller{Object: contInfo},
-		}), nil
+		return gatherContainerImages(gatherKubeClient.CoreV1(), g.ctx)
 	}
+}
+
+func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.Context) ([]record.Record, []error) {
+	records := []record.Record{}
+
+	// Cache for the temporary image count list.
+	img2month2count := img2Month2CountMap{}
+
+	// Use the Limit and Continue fields to request the pod information in chunks.
+	continueValue := ""
+	for {
+		pods, err := coreClient.Pods("").List(ctx, metav1.ListOptions{
+			Limit:    imageGatherPodLimit,
+			Continue: continueValue,
+			// FieldSelector: "status.phase=Running",
+		})
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		for podIndex, pod := range pods.Items {
+			podPtr := &pods.Items[podIndex]
+			if strings.HasPrefix(pod.Namespace, "openshift") && hasContainerInCrashloop(podPtr) {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{podPtr}})
+			} else if pod.Status.Phase == corev1.PodRunning {
+				startMonth := pod.CreationTimestamp.Time.UTC().Format(yyyyMmDateFormat)
+
+				gatherImages(startMonth, img2month2count, pod.Status.ContainerStatuses)
+				gatherImages(startMonth, img2month2count, pod.Status.InitContainerStatuses)
+				gatherImages(startMonth, img2month2count, pod.Status.EphemeralContainerStatuses)
+			}
+		}
+
+		// If the Continue field is not set, this should be the end of available data.
+		// Otherwise, update the Continue value and perform another request iteration.
+		if pods.Continue == "" {
+			break
+		}
+		continueValue = pods.Continue
+	}
+
+	// Transform map into a list for sorting.
+	imageCounts := []tmpImageCountEntry{}
+	for img, countMap := range img2month2count {
+		totalCount := 0
+		for _, count := range countMap {
+			totalCount += count
+		}
+		imageCounts = append(imageCounts, tmpImageCountEntry{
+			Image:         img,
+			TotalCount:    totalCount,
+			CountPerMonth: countMap,
+		})
+	}
+
+	// Sort images from most common to least common.
+	sort.Slice(imageCounts, func(i, j int) bool {
+		return imageCounts[i].TotalCount > imageCounts[j].TotalCount
+	})
+
+	// Reconstruct the image information into the reported data structure.
+	contInfo := ContainerInfo{
+		Images:     ContainerImageSet{},
+		Containers: PodsWithAge{},
+	}
+	totalEntries := 0
+	for _, img := range imageCounts {
+		if totalEntries >= containerImageLimit {
+			break
+		}
+
+		imgIndex := contInfo.Images.Add(img.Image)
+		for month, count := range img.CountPerMonth {
+			contInfo.Containers.Add(month, imgIndex, count)
+			totalEntries++
+		}
+	}
+
+	return append(records, record.Record{
+		Name: "config/running_containers",
+		Item: record.JSONMarshaller{Object: contInfo},
+	}), nil
+
 }
 
 type img2Month2CountMap map[string]map[string]int

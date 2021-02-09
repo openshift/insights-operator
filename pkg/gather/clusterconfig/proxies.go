@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -20,17 +21,25 @@ import (
 //
 // Location in archive: config/proxy/
 // See: docs/insights-archive-sample/config/proxy
-func GatherClusterProxy(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterProxy(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.Proxies().Get(i.ctx, "cluster", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
+		return gatherClusterProxy(g.ctx, gatherConfigClient)
 	}
+}
+
+func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {
+	config, err := configClient.Proxies().Get(ctx, "cluster", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
 }
 
 // ProxyAnonymizer implements serialization of HttpProxy/NoProxy with anonymization

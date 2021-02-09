@@ -24,9 +24,8 @@ func TestGatherHostSubnet(t *testing.T) {
 		t.Fatal("unable to create fake hostsubnet")
 	}
 
-	gatherer := &Gatherer{networkClient: client.NetworkV1()}
-
-	records, errs := GatherHostSubnet(gatherer)()
+	ctx := context.Background()
+	records, errs := gatherHostSubnet(ctx, client.NetworkV1())
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return

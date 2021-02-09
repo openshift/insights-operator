@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -20,16 +21,17 @@ import (
 //
 // Location in archive: config/version/
 // See: docs/insights-archive-sample/config/version
-func GatherClusterVersion(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterVersion(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.client.ClusterVersions().Get(i.ctx, "version", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		i.setClusterVersion(config)
+		config, err := gatherConfigClient.ClusterVersions().Get(g.ctx, "version", metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		g.setClusterVersion(config)
 		return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
 	}
 }
@@ -41,9 +43,9 @@ func GatherClusterVersion(i *Gatherer) func() ([]record.Record, []error) {
 //
 // Location in archive: config/id/
 // See: docs/insights-archive-sample/config/id
-func GatherClusterID(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterID(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		version := i.ClusterVersion()
+		version := g.ClusterVersion()
 		if version == nil {
 			return nil, nil
 		}

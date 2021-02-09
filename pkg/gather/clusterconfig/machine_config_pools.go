@@ -1,11 +1,13 @@
 package clusterconfig
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
@@ -18,10 +20,19 @@ import (
 // Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 //
 // Location in archive: config/machineconfigpools/
-func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
+func GatherMachineConfigPool(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
+		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
+		if err != nil {
+			return nil, []error{err}
+		}
+		return gatherMachineConfigPool(g.ctx, dynamicClient)
+	}
+}
+
+func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 		mcp := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigpools"}
-		machineCPs, err := i.dynamicClient.Resource(mcp).List(i.ctx, metav1.ListOptions{})
+		machineCPs, err := dynamicClient.Resource(mcp).List(ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -36,5 +47,4 @@ func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
 			})
 		}
 		return records, nil
-	}
 }

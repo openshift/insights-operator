@@ -28,10 +28,8 @@ func TestGatherNetNamespaces(t *testing.T) {
 	}
 	ctx := context.Background()
 	cs := networkfake.NewSimpleClientset()
-
-	gatherer := &Gatherer{networkClient: cs.NetworkV1()}
 	createNetNamespaces(ctx, t, cs, ns1, ns2)
-	rec, errs := GatherNetNamespace(gatherer)()
+	rec, errs := gatherNetNamespace(ctx, cs.NetworkV1())
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return

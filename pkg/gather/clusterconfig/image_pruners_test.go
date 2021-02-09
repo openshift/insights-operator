@@ -51,8 +51,8 @@ func TestGatherClusterPruner(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			client := imageregistryfake.NewSimpleClientset(test.inputObj)
-			gatherer := &Gatherer{registryClient: client.ImageregistryV1()}
-			records, errs := GatherClusterImagePruner(gatherer)()
+			ctx := context.Background()
+			records, errs := gatherClusterImagePruner(ctx, client.ImageregistryV1())
 			if len(errs) > 0 {
 				t.Errorf("unexpected errors: %#v", errs)
 				return

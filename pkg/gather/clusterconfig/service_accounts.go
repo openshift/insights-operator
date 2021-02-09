@@ -1,17 +1,19 @@
 package clusterconfig
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/openshift/insights-operator/pkg/record"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
-	"github.com/openshift/insights-operator/pkg/record"
 )
 
 const (
@@ -27,52 +29,59 @@ const (
 //
 // Location of serviceaccounts in archive: config/serviceaccounts
 // See: docs/insights-archive-sample/config/serviceaccounts
-func GatherServiceAccounts(i *Gatherer) func() ([]record.Record, []error) {
+func GatherServiceAccounts(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.coreClient.Namespaces().List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountNamespacesLimit})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		totalServiceAccounts := 0
-		serviceAccounts := []corev1.ServiceAccount{}
-		records := []record.Record{}
-		namespaces := defaultNamespaces
-		namespaceCollected := sets.NewString()
-		// collect from all openshift* namespaces + kubernetes defaults
-		for _, item := range config.Items {
-			if strings.HasPrefix(item.Name, "openshift") {
-				namespaces = append(namespaces, item.Name)
-			}
-		}
-		for _, namespace := range namespaces {
-			// fetching service accounts from namespace
-			if namespaceCollected.Has(namespace) {
-				continue
-			}
-			svca, err := i.coreClient.ServiceAccounts(namespace).List(i.ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
-			if err != nil {
-				klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
-				continue
-			}
-
-			totalServiceAccounts += len(svca.Items)
-			for _, j := range svca.Items {
-				if len(serviceAccounts) > maxServiceAccountsLimit {
-					break
-				}
-				serviceAccounts = append(serviceAccounts, j)
-			}
-			namespaceCollected.Insert(namespace)
-		}
-
-		records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
-		return records, nil
+		return gatherServiceAccounts(g.ctx, gatherKubeClient.CoreV1())
 	}
 }
 
+func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	config, err := coreClient.Namespaces().List(ctx, metav1.ListOptions{Limit: maxServiceAccountNamespacesLimit})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	totalServiceAccounts := 0
+	serviceAccounts := []corev1.ServiceAccount{}
+	records := []record.Record{}
+	namespaces := defaultNamespaces
+	namespaceCollected := sets.NewString()
+	// collect from all openshift* namespaces + kubernetes defaults
+	for _, item := range config.Items {
+		if strings.HasPrefix(item.Name, "openshift") {
+			namespaces = append(namespaces, item.Name)
+		}
+	}
+	for _, namespace := range namespaces {
+		// fetching service accounts from namespace
+		if namespaceCollected.Has(namespace) {
+			continue
+		}
+		svca, err := coreClient.ServiceAccounts(namespace).List(ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
+		if err != nil {
+			klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
+			continue
+		}
+
+		totalServiceAccounts += len(svca.Items)
+		for _, j := range svca.Items {
+			if len(serviceAccounts) > maxServiceAccountsLimit {
+				break
+			}
+			serviceAccounts = append(serviceAccounts, j)
+		}
+		namespaceCollected.Insert(namespace)
+	}
+
+	records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
+	return records, nil
+}
 
 // ServiceAccountsMarshaller implements serialization of Service Accounts
 type ServiceAccountsMarshaller struct {

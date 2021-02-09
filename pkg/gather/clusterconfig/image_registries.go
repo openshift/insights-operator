@@ -1,19 +1,22 @@
 package clusterconfig
 
 import (
+	"context"
 	"fmt"
 	"strings"
-	"context"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
+	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
+	"k8s.io/client-go/kubernetes"
 
 	registryv1 "github.com/openshift/api/imageregistry/v1"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -21,48 +24,62 @@ import (
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
 // Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
-func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
+func GatherClusterImageRegistry(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		config, err := i.registryClient.Configs().Get(i.ctx, "cluster", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return nil, nil
-		}
+		registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		records := []record.Record{}
-		// if there is some PVC then try to gather used persistent volume
-		if config.Spec.Storage.PVC != nil {
-
-			pvcName := config.Spec.Storage.PVC.Claim
-			pv, err := findPVByPVCName(i.ctx, i.coreClient, pvcName)
-			if err != nil {
-				klog.Errorf("unable to find persistent volume: %s", err)
-			} else {
-				pvRecord := record.Record{
-					Name: fmt.Sprintf("config/persistentvolumes/%s", pv.Name),
-					Item: PersistentVolumeAnonymizer{pv},
-				}
-				records = append(records, pvRecord)
-			}
-		}
-		// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
-		kinds, _, err := registryScheme.ObjectKinds(config)
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-		if len(kinds) > 1 {
-			klog.Warningf("More kinds for image registry config operator resource %s", kinds)
-		}
-		objKind := kinds[0]
-		coRecord := record.Record{
-			Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), config.Name),
-			Item: ImageRegistryAnonymizer{config},
-		}
-
-		records = append(records, coRecord)
-		return records, nil
+		return gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1(), gatherKubeClient.CoreV1())
 	}
+}
+
+func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	config, err := registryClient.Configs().Get(ctx, "cluster", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	records := []record.Record{}
+	// if there is some PVC then try to gather used persistent volume
+	if config.Spec.Storage.PVC != nil {
+
+		pvcName := config.Spec.Storage.PVC.Claim
+		pv, err := findPVByPVCName(ctx, coreClient, pvcName)
+		if err != nil {
+			klog.Errorf("unable to find persistent volume: %s", err)
+		} else {
+			pvRecord := record.Record{
+				Name: fmt.Sprintf("config/persistentvolumes/%s", pv.Name),
+				Item: PersistentVolumeAnonymizer{pv},
+			}
+			records = append(records, pvRecord)
+		}
+	}
+
+	// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
+	kinds, _, err := registryScheme.ObjectKinds(config)
+	if err != nil {
+		return nil, []error{err}
+	}
+	if len(kinds) > 1 {
+		klog.Warningf("More kinds for image registry config operator resource %s", kinds)
+	}
+	objKind := kinds[0]
+	coRecord := record.Record{
+		Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), config.Name),
+		Item: ImageRegistryAnonymizer{config},
+	}
+
+	records = append(records, coRecord)
+	return records, nil
 }
 
 // ImageRegistryAnonymizer implements serialization with marshalling

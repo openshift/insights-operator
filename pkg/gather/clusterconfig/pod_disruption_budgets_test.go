@@ -37,10 +37,8 @@ func TestGatherPodDisruptionBudgets(t *testing.T) {
 			t.Fatalf("unable to create fake pdbs: %v", err)
 		}
 	}
-
-	gatherer := &Gatherer{policyClient: coreClient.PolicyV1beta1()}
-
-	records, errs := GatherPodDisruptionBudgets(gatherer)()
+	ctx := context.Background()
+	records, errs := gatherPodDisruptionBudgets(ctx, coreClient.PolicyV1beta1())
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return

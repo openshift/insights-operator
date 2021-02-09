@@ -1,6 +1,9 @@
 package clusterconfig
 
-import "github.com/openshift/insights-operator/pkg/record"
+import (
+	"github.com/openshift/insights-operator/pkg/record"
+	"k8s.io/client-go/kubernetes"
+)
 
 // GatherOpenshiftSDNControllerLogs collects logs from sdn-controller pod in openshift-sdn namespace with following substrings:
 //   - "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
@@ -27,9 +30,15 @@ func GatherOpenshiftSDNControllerLogs(g *Gatherer) func() ([]record.Record, []er
 			"Node.+is back online",
 		}
 
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+		if err != nil {
+			return nil, []error{err}
+		}
+		coreClient := gatherKubeClient.CoreV1()
+
 		records, err := gatherLogsFromPodsInNamespace(
 			g.ctx,
-			g.coreClient,
+			coreClient,
 			"openshift-sdn",
 			messagesToSearch,
 			86400,   // last day

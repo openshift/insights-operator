@@ -91,9 +91,8 @@ func TestGatherInstallPlans(t *testing.T) {
 					t.Fatal("unable to create installplan fake ", err)
 				}
 			}
-
-			gatherer := &Gatherer{ctx: context.Background(), dynamicClient: client, coreClient: coreClient.CoreV1()}
-			records, errs := GatherInstallPlans(gatherer)()
+			ctx := context.Background()
+			records, errs := gatherInstallPlans(ctx, client, coreClient.CoreV1())
 			if len(errs) > 0 {
 				t.Errorf("unexpected errors: %#v", errs)
 				return

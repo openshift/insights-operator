@@ -34,8 +34,8 @@ metadata:
 		t.Fatal("unable to create fake machineset ", err)
 	}
 
-	gatherer := &Gatherer{dynamicClient: client}
-	records, errs := GatherMachineSet(gatherer)()
+	ctx := context.Background()
+	records, errs := gatherMachineSet(ctx, client)
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return

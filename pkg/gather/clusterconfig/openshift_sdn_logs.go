@@ -2,6 +2,7 @@ package clusterconfig
 
 import (
 	"github.com/openshift/insights-operator/pkg/record"
+	"k8s.io/client-go/kubernetes"
 )
 
 // GatherOpenshiftSDNLogs collects logs from pods in openshift-sdn namespace with following substrings:
@@ -23,9 +24,16 @@ func GatherOpenshiftSDNLogs(g *Gatherer) func() ([]record.Record, []error) {
 			"Failed to update proxy firewall for policy",
 		}
 
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+		if err != nil {
+			return nil, []error{err}
+		}
+
+		coreClient := gatherKubeClient.CoreV1()
+
 		records, err := gatherLogsFromPodsInNamespace(
 			g.ctx,
-			g.coreClient,
+			coreClient,
 			"openshift-sdn",
 			messagesToSearch,
 			86400,   // last day
