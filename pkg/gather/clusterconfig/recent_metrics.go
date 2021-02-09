@@ -57,18 +57,16 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "namespace:container_memory_usage_bytes:sum").
 		DoRaw(ctx)
 	if err != nil {
-		// write metrics errors to the file format as a comment
 		klog.Errorf("Unable to retrieve most recent metrics: %v", err)
-		return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
+		return nil, []error{err}
 	}
 
 	rsp, err := metricsClient.Get().AbsPath("federate").
 		Param("match[]", "ALERTS").
 		Stream(ctx)
 	if err != nil {
-		// write metrics errors to the file format as a comment
 		klog.Errorf("Unable to retrieve most recent alerts from metrics: %v", err)
-		return []record.Record{{Name: "config/metrics", Item: RawByte(fmt.Sprintf("# error: %v\n", err))}}, nil
+		return nil, []error{err}
 	}
 	r := NewLineLimitReader(rsp, metricsAlertsLinesLimit)
 	alerts, err := ioutil.ReadAll(r)
