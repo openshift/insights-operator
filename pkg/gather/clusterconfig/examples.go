@@ -49,9 +49,9 @@ func ExampleClusterOperators() (string, error) {
 	kube.Fake.AddReactor("list", "clusteroperators",
 		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 			sv := &configv1.ClusterOperatorList{Items: []configv1.ClusterOperator{
-				configv1.ClusterOperator{Status: configv1.ClusterOperatorStatus{
+				{Status: configv1.ClusterOperatorStatus{
 					Conditions: []configv1.ClusterOperatorStatusCondition{
-						configv1.ClusterOperatorStatusCondition{Type: configv1.OperatorDegraded},
+						{Type: configv1.OperatorDegraded},
 					}},
 				}}}
 			return true, sv, nil
@@ -75,9 +75,9 @@ func ExampleNodes() (string, error) {
 	kube.Fake.AddReactor("list", "nodes",
 		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
 			sv := &corev1.NodeList{Items: []corev1.Node{
-				corev1.Node{Status: corev1.NodeStatus{
+				{Status: corev1.NodeStatus{
 					Conditions: []corev1.NodeCondition{
-						corev1.NodeCondition{Type: corev1.NodeReady, Status: corev1.ConditionFalse},
+						{Type: corev1.NodeReady, Status: corev1.ConditionFalse},
 					}},
 				}}}
 			return true, sv, nil
