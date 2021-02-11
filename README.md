@@ -153,3 +153,19 @@ go tool pprof -http=:8080 /path/to/profiling.out
 ```
 For extra info:
 [link](https://jvns.ca/blog/2017/09/24/profiling-go-with-pprof/)
+
+
+### Creating a changelog
+At `./cmd/changelog/main.go` there is a script that can generate a changelog for you.
+
+#### Prerequisites
+It uses both the local git and GitHub`s API to generate the file so:
+- To get info from GitHub you will need to set the `GITHUB_TOKEN` envvar to a GitHub access-token.
+- Make sure that you have a local, up-to-date copy of each release-branch that might be in the changelog.
+
+#### Use
+It can be used 2 ways:
+1. Providing no command line arguments the script will update the current CHANGELOG.md with the latest changes according to the local git state. (IMPORTANT: It will only work with changelogs created with this script)
+    - Example: `go run cmd/changelog/main.go`
+2. Providing 2 command line arguments, `AFTER` and `UNTIL` dates the script will generate a new CHANGELOG.md within the provided time frame.
+    - Example: `go run cmd/changelog/main.go 2021-01-10 2021-01-20`
