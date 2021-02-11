@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -155,19 +154,19 @@ func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock
 	for _, ch := range changes {
 		tmp := release_blocks[ch.release]
 		if ch.category == BUGFIX {
-			tmp.bugfixes += ch.toMarkdown()
+			tmp.bugfixes = ch.toMarkdown() + tmp.bugfixes
 			release_blocks[ch.release] = tmp
 		} else if ch.category == OTHER {
-			tmp.others += ch.toMarkdown()
+			tmp.others = ch.toMarkdown() + tmp.others
 			release_blocks[ch.release] = tmp
 		} else if ch.category == ENHANCEMENT {
-			tmp.enhancements += ch.toMarkdown()
+			tmp.enhancements = ch.toMarkdown() + tmp.enhancements
 			release_blocks[ch.release] = tmp
 		} else if ch.category == BACKPORTING {
-			tmp.backports += ch.toMarkdown()
+			tmp.backports = ch.toMarkdown() + tmp.backports
 			release_blocks[ch.release] = tmp
 		} else {
-			tmp.misc += ch.toMarkdown()
+			tmp.misc = ch.toMarkdown() + tmp.misc
 			release_blocks[ch.release] = tmp
 		}
 	}
@@ -218,28 +217,16 @@ func createCHANGELOG(release_blocks map[string]MarkdownReleaseBlock) {
 
 func getChanges(pullRequestIds []string, pullRequestHashes []string) []Change {
 	var changes []Change
-	var cases []reflect.SelectCase
-	for _, id := range pullRequestIds {
-		channel := make(chan Change)
-		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)})
-		go getPullRequestFromGitHub(id, channel)
-	}
-
-	remaining := len(cases)
-	for remaining > 0 {
-		chosen, value, _ := reflect.Select(cases)
-		cases[chosen].Chan = reflect.ValueOf(nil)
-		remaining -= 1
-		change, _ := value.Interface().(Change)
-		change.hash = pullRequestHashes[chosen]
+	for i, id := range pullRequestIds {
+		change := getPullRequestFromGitHub(id)
+		change.hash = pullRequestHashes[i]
 		change = determineReleases(change)
 		changes = append(changes, change)
 	}
 	return changes
 }
 
-func getPullRequestFromGitHub(id string, channel chan<- Change) {
-	defer close(channel)
+func getPullRequestFromGitHub(id string) Change {
 	// There is a limit for the GitHub API, if you use auth then its 5000/hour
 	var bearer = "token " + gitHubToken
 
@@ -281,7 +268,7 @@ func getPullRequestFromGitHub(id string, channel chan<- Change) {
 			break
 		}
 	}
-	channel <- ch
+	return ch
 }
 
 func determineReleases(change Change) Change {
