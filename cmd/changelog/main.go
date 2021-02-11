@@ -15,6 +15,14 @@ import (
 	"strings"
 )
 
+const (
+	BUGFIX = "Bugfix"
+	ENHANCEMENT = "Enhancement"
+	OTHER = "Others"
+	BACKPORTING = "Backporting"
+	MISC = "Misc"
+)
+
 var (
 	mergeRequestRegexp = regexp.MustCompile(`Merge-pull-request-([\d]+)`)
 	prefixRegexp       = regexp.MustCompile(`^.+: (.+)`)
@@ -22,18 +30,18 @@ var (
 	latestHashRegexp   = regexp.MustCompile(`<!--Latest hash: (.+)-->`)
 
 	version_sectionRegExp     = regexp.MustCompile(`^(\d.\d)`)
-	backports_sectionRegExp   = regexp.MustCompile(`### Backports\n((.+\n)+)`)
-	enhancement_sectionRegExp = regexp.MustCompile(`### Enhancements\n((.+\n)+)`)
-	bugfix_sectionRegExp      = regexp.MustCompile(`### Bug fixes\n((.+\n)+)`)
-	other_sectionRegExp       = regexp.MustCompile(`### Others\n((.+\n)+)`)
-	misc_sectionRegExp        = regexp.MustCompile(`### Misc\n((.+\n)+)`)
+	backports_sectionRegExp   = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BACKPORTING))
+	enhancement_sectionRegExp = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, ENHANCEMENT))
+	bugfix_sectionRegExp      = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BUGFIX))
+	other_sectionRegExp       = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, OTHER))
+	misc_sectionRegExp        = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, MISC))
 
 	// PR categories
 	categories = map[string]*regexp.Regexp{
-		"BugFix":      regexp.MustCompile(`- \[[xX]\] Bugfix`),
-		"Enhancement": regexp.MustCompile(`- \[[xX]\] Enhancement`),
-		"Other":       regexp.MustCompile(`- \[[xX]\] Others`),
-		"Backporting": regexp.MustCompile(`- \[[xX]\] Backporting`),
+		BUGFIX:      regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BUGFIX)),
+		ENHANCEMENT: regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, ENHANCEMENT)),
+		OTHER:       regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, OTHER)),
+		BACKPORTING: regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BACKPORTING)),
 	}
 
 	gitHubToken = ""
@@ -94,7 +102,7 @@ func main() {
 		log.Fatal("No new changes detected.")
 	}
 	latestHash = pullRequestHashes[numberOfChanges - 1]
-	changes := pruneChanges(getChanges(pullRequestIds, pullRequestHashes))
+	changes := getChanges(pullRequestIds, pullRequestHashes)
 	createCHANGELOG(updateToMarkdownReleaseBlock(release_blocks, changes))
 }
 
@@ -146,16 +154,16 @@ func readCHANGELOG() map[string]MarkdownReleaseBlock {
 func updateToMarkdownReleaseBlock(release_blocks map[string]MarkdownReleaseBlock, changes []Change) map[string]MarkdownReleaseBlock {
 	for _, ch := range changes {
 		tmp := release_blocks[ch.release]
-		if ch.category == "BugFix" {
+		if ch.category == BUGFIX {
 			tmp.bugfixes += ch.toMarkdown()
 			release_blocks[ch.release] = tmp
-		} else if ch.category == "Other" {
+		} else if ch.category == OTHER {
 			tmp.others += ch.toMarkdown()
 			release_blocks[ch.release] = tmp
-		} else if ch.category == "Enhancement" {
+		} else if ch.category == ENHANCEMENT {
 			tmp.enhancements += ch.toMarkdown()
 			release_blocks[ch.release] = tmp
-		} else if ch.category == "Backporting" {
+		} else if ch.category == BACKPORTING {
 			tmp.backports += ch.toMarkdown()
 			release_blocks[ch.release] = tmp
 		} else {
@@ -181,36 +189,31 @@ func createCHANGELOG(release_blocks map[string]MarkdownReleaseBlock) {
 
 		backports := release_blocks[release].backports
 		if len(backports) > 0 {
-			_, _ = file.WriteString("### Backports\n")
+			_, _ = file.WriteString(fmt.Sprintf("### %s\n", BACKPORTING))
 			_, _ = file.WriteString(fmt.Sprintf("%s\n", backports))
 		}
 		enhancements := release_blocks[release].enhancements
 		if len(enhancements) > 0 {
-			_, _ = file.WriteString("### Enhancements\n")
+			_, _ = file.WriteString(fmt.Sprintf("### %s\n", ENHANCEMENT))
 			_, _ = file.WriteString(fmt.Sprintf("%s\n", enhancements))
 		}
 		bugfixes := release_blocks[release].bugfixes
 		if len(bugfixes) > 0 {
-			_, _ = file.WriteString("### Bug fixes\n")
+			_, _ = file.WriteString(fmt.Sprintf("### %s\n", BUGFIX))
 			_, _ = file.WriteString(fmt.Sprintf("%s\n", bugfixes))
 		}
 		others := release_blocks[release].others
 		if len(others) > 0 {
-			_, _ = file.WriteString("### Others\n")
+			_, _ = file.WriteString(fmt.Sprintf("### %s\n", OTHER))
 			_, _ = file.WriteString(fmt.Sprintf("%s\n", others))
 		}
 		misc := release_blocks[release].misc
 		if len(misc) > 0 {
-			_, _ = file.WriteString("### Misc\n")
+			_, _ = file.WriteString(fmt.Sprintf("### %s\n", MISC))
 			_, _ = file.WriteString(fmt.Sprintf("%s\n", misc))
 		}
 	}
 
-}
-
-func pruneChanges(changes []Change) []Change {
-	// TODO: Somehow determine which change is changelog worthy
-	return changes
 }
 
 func getChanges(pullRequestIds []string, pullRequestHashes []string) []Change {
