@@ -158,11 +158,13 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 				disabledMessage = summary.Message
 			}
 		} else if summary.Operation == controllerstatus.GatheringReport {
+			degradingFailure = false
 			if summary.Count < GatherFailuresCountThreshold {
-				klog.V(4).Infof("Number of last gather failures %d lower than threshold %d. Not marking as degraded.", summary.Count, GatherFailuresCountThreshold)
-				degradingFailure = false
+				klog.V(5).Infof("Number of last gather failures %d lower than threshold %d. Not marking as disabled.", summary.Count, GatherFailuresCountThreshold)
 			} else {
-				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as degraded.", summary.Count, GatherFailuresCountThreshold)
+				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as disabled.", summary.Count, GatherFailuresCountThreshold)
+				disabledReason = summary.Reason
+				disabledMessage = summary.Message
 			}
 		}
 
