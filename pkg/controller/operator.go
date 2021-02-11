@@ -33,7 +33,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
-	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
 type Support struct {
@@ -117,7 +118,8 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
-	recorder := diskrecorder.New(s.StoragePath, s.Interval)
+	recdriver := diskrecorder.New(s.StoragePath)
+	recorder := recorder.New(recdriver, s.Interval)
 	go recorder.PeriodicallyPrune(ctx, statusReporter)
 
 	// the gatherers periodically check the state of the cluster and report any
@@ -141,7 +143,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recorder, insightsClient, configObserver, statusReporter, initialDelay)
+	uploader := insightsuploader.New(recdriver, insightsClient, configObserver, statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
 
 	// TODO: future ideas
