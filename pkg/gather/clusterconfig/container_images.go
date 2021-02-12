@@ -137,11 +137,7 @@ type PodsWithAge map[string]RunningImages
 // Add inserts the specified container information into the data structure.
 func (p PodsWithAge) Add(startMonth string, image int, count int) {
 	if imageMap, exists := p[startMonth]; exists {
-		if _, exists := imageMap[image]; exists {
-			imageMap[image] += count
-		} else {
-			imageMap[image] = count
-		}
+		imageMap[image] += count
 	} else {
 		p[startMonth] = RunningImages{image: count}
 	}

@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -74,7 +73,7 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 		}
 	}
 
-	records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
+	records = append(records, record.Record{Name: "config/serviceaccounts", Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
 	return records, nil
 }
 

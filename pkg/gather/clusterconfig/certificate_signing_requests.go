@@ -253,6 +253,9 @@ func anonymizeCSRCert(r *certificatesv1api.CertificateSigningRequest, c *CSRAnon
 	}
 	c.Status.Cert = &CertFeatures{}
 	c.Status.Cert.Verified = cert != nil
+	if cert == nil {
+		return
+	}
 	c.Status.Cert.Issuer = anonymizePkxName(cert.Issuer)
 	c.Status.Cert.Subject = anonymizePkxName(cert.Subject)
 	c.Status.Cert.NotBefore = cert.NotBefore.Format(time.RFC3339)

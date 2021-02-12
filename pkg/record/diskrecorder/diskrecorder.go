@@ -140,7 +140,7 @@ func (r *Recorder) Flush(ctx context.Context) error {
 	start := time.Now()
 	defer func() {
 		if wrote > 0 {
-			klog.V(2).Infof("Wrote %d records to disk in %s", wrote, time.Now().Sub(start).Truncate(time.Millisecond))
+			klog.V(2).Infof("Wrote %d records to disk in %s", wrote, time.Since(start).Truncate(time.Millisecond))
 		}
 	}()
 
@@ -233,7 +233,7 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported AlreadyReport
 			case <-timer.C:
 			}
 
-			wait.ExponentialBackoff(wait.Backoff{Duration: time.Second, Steps: 4, Factor: 1.5}, func() (bool, error) {
+			err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second, Steps: 4, Factor: 1.5}, func() (bool, error) {
 				lastReported := reported.LastReportedTime()
 				if oldestAllowed := time.Now().Add(-r.maxAge); lastReported.Before(oldestAllowed) {
 					lastReported = oldestAllowed
@@ -245,6 +245,9 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported AlreadyReport
 				}
 				return true, nil
 			})
+			if err != nil {
+				klog.V(4).Infof("Fail to properly prune last report within %s: %v", interval.Truncate(time.Minute), err)
+			}
 		}
 	}, time.Second, ctx.Done())
 }
