@@ -1,0 +1,107 @@
+{
+    "kind": "PersistentVolume",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "task-pv-volume",
+        "selfLink": "/api/v1/persistentvolumes/task-pv-volume",
+        "uid": "acb1c20e-9bec-4fbf-807a-84f694e00865",
+        "resourceVersion": "1356638",
+        "creationTimestamp": "2021-02-12T12:03:26Z",
+        "labels": {
+            "type": "local"
+        },
+        "annotations": {
+            "pv.kubernetes.io/bound-by-controller": "yes"
+        },
+        "finalizers": [
+            "kubernetes.io/pv-protection"
+        ],
+        "managedFields": [
+            {
+                "manager": "oc",
+                "operation": "Update",
+                "apiVersion": "v1",
+                "time": "2021-02-12T12:03:26Z",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:labels": {
+                            ".": {},
+                            "f:type": {}
+                        }
+                    },
+                    "f:spec": {
+                        "f:accessModes": {},
+                        "f:capacity": {
+                            ".": {},
+                            "f:storage": {}
+                        },
+                        "f:hostPath": {
+                            ".": {},
+                            "f:path": {},
+                            "f:type": {}
+                        },
+                        "f:persistentVolumeReclaimPolicy": {},
+                        "f:storageClassName": {},
+                        "f:volumeMode": {}
+                    }
+                }
+            },
+            {
+                "manager": "kube-controller-manager",
+                "operation": "Update",
+                "apiVersion": "v1",
+                "time": "2021-02-12T12:03:40Z",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:pv.kubernetes.io/bound-by-controller": {}
+                        }
+                    },
+                    "f:spec": {
+                        "f:claimRef": {
+                            ".": {},
+                            "f:apiVersion": {},
+                            "f:kind": {},
+                            "f:name": {},
+                            "f:namespace": {},
+                            "f:resourceVersion": {},
+                            "f:uid": {}
+                        }
+                    },
+                    "f:status": {
+                        "f:phase": {}
+                    }
+                }
+            }
+        ]
+    },
+    "spec": {
+        "capacity": {
+            "storage": "50Mi"
+        },
+        "hostPath": {
+            "path": "/tmp/data",
+            "type": ""
+        },
+        "accessModes": [
+            "ReadWriteOnce"
+        ],
+        "claimRef": {
+            "kind": "PersistentVolumeClaim",
+            "namespace": "openshift-insights",
+            "name": "task-pvc-volume",
+            "uid": "b9edf0d4-4785-4f44-8f23-152250daafa3",
+            "apiVersion": "v1",
+            "resourceVersion": "1356636"
+        },
+        "persistentVolumeReclaimPolicy": "Retain",
+        "storageClassName": "manual",
+        "volumeMode": "Filesystem"
+    },
+    "status": {
+        "phase": "Bound"
+    }
+}
