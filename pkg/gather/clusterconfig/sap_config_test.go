@@ -26,9 +26,8 @@ metadata:
     namespace: example-namespace
 `
 
-	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
 	datahubsClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-		datahubsResource: "DataHubsList",
+		datahubGroupVersionResource: "DataHubsList",
 	})
 
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
@@ -89,7 +88,7 @@ metadata:
 	}
 
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
-	datahubsClient.Resource(datahubsResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
+	datahubsClient.Resource(datahubGroupVersionResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
 	records, errs = gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {
