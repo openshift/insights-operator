@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	certificatesv1b1api "k8s.io/api/certificates/v1beta1"
+	certificatesv1api "k8s.io/api/certificates/v1"
 )
 
 func TestCSRs(t *testing.T) {
@@ -24,7 +24,7 @@ func TestCSRs(t *testing.T) {
 	for _, tt := range files {
 		t.Run(tt.dataFile, func(t *testing.T) {
 
-			r := &certificatesv1b1api.CertificateSigningRequest{}
+			r := &certificatesv1api.CertificateSigningRequest{}
 
 			f, err := os.Open(tt.dataFile)
 			if err != nil {

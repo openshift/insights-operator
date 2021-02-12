@@ -21,7 +21,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -39,10 +38,10 @@ const (
 )
 
 type clusterOperatorResource struct {
-	APIVersion string `json:"apiVersion"`
-	Kind       string `json:"kind"`
-	Name       string `json:"name"`
-	Spec       interface{}
+	APIVersion string      `json:"apiVersion"`
+	Kind       string      `json:"kind"`
+	Name       string      `json:"name"`
+	Spec       interface{} `json:"spec"`
 }
 
 // GatherClusterOperators collects all ClusterOperators and their resources.
@@ -55,24 +54,30 @@ type clusterOperatorResource struct {
 // See: docs/insights-archive-sample/config/clusteroperator
 // Location of pods in archive: config/pod/
 // Id in config: operators
-func GatherClusterOperators(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterOperators(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherClusterOperators(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1(), discoveryClient, dynamicClient)
+	records, errors := gatherClusterOperators(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1(), discoveryClient, dynamicClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherClusterOperators(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -334,12 +339,6 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 	urlMatches := re.FindAllString(resStr, -1)
 	for _, m := range urlMatches {
 		m = strings.ReplaceAll(m, "\"", "")
-		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
-	}
-	// anonymize IP addresses
-	re = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}`)
-	ipMatches := re.FindAllString(resStr, -1)
-	for _, m := range ipMatches {
 		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
 	}
 	return []byte(resStr), nil

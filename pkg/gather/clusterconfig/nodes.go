@@ -9,7 +9,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -23,12 +22,15 @@ import (
 //
 // Location in archive: config/node/
 // Id in config: nodes
-func GatherNodes(g *Gatherer) ([]record.Record, []error) {
+func GatherNodes(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherNodes(g.ctx, gatherKubeClient.CoreV1())
+	records, errors := gatherNodes(g.ctx, gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errors}
 }
 
 func gatherNodes(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

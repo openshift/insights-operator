@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
 func TestGatherClusterImageRegistry(t *testing.T) {
@@ -121,8 +122,9 @@ func TestGatherClusterImageRegistry(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			client := imageregistryfake.NewSimpleClientset(test.inputObj)
+			coreClient := kubefake.NewSimpleClientset()
 			ctx := context.Background()
-			records, errs := gatherClusterImageRegistry(ctx, client.ImageregistryV1())
+			records, errs := gatherClusterImageRegistry(ctx, client.ImageregistryV1(), coreClient.CoreV1())
 			if len(errs) > 0 {
 				t.Errorf("unexpected errors: %#v", errs)
 				return

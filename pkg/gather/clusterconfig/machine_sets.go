@@ -9,8 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -21,12 +19,15 @@ import (
 //
 // Location in archive: machinesets/
 // Id in config: machine_sets
-func GatherMachineSet(g *Gatherer) ([]record.Record, []error) {
+func GatherMachineSet(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherMachineSet(g.ctx, dynamicClient)
+	records, errors := gatherMachineSet(g.ctx, dynamicClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

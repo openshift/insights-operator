@@ -12,16 +12,14 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
 type gatherStatusReport struct {
-	Name    string        `json:"name"`
-	Elapsed time.Duration `json:"elapsed"`
-	Report  int           `json:"report"`
-	Errors  []error       `json:"errors"`
+	Name         string        `json:"name"`
+	Duration     time.Duration `json:"duration_in_ms"`
+	RecordsCount int           `json:"records_count"`
+	Errors       []string      `json:"errors"`
 }
 
 // Gatherer is a driving instance invoking collection of data
@@ -32,38 +30,60 @@ type Gatherer struct {
 	metricsGatherKubeConfig *rest.Config
 }
 
-type gatherFunction func(g *Gatherer) ([]record.Record, []error)
+type gatherResult struct {
+	records []record.Record
+	errors  []error
+}
+
+type gatherFunction func(g *Gatherer, c chan<- gatherResult)
+type gathering struct {
+	function gatherFunction
+	canFail  bool
+}
+
+func important(function gatherFunction) gathering {
+	return gathering{function, false}
+}
+
+func failable(function gatherFunction) gathering {
+	return gathering{function, true}
+}
 
 const gatherAll = "ALL"
 
-var gatherFunctions = map[string]gatherFunction{
-	"pdbs":                         GatherPodDisruptionBudgets,
-	"metrics":                      GatherMostRecentMetrics,
-	"operators":                    GatherClusterOperators,
-	"container_images":             GatherContainerImages,
-	"nodes":                        GatherNodes,
-	"config_maps":                  GatherConfigMaps,
-	"version":                      GatherClusterVersion,
-	"id":                           GatherClusterID,
-	"infrastructures":              GatherClusterInfrastructure,
-	"networks":                     GatherClusterNetwork,
-	"authentication":               GatherClusterAuthentication,
-	"image_registries":             GatherClusterImageRegistry,
-	"image_pruners":                GatherClusterImagePruner,
-	"feature_gates":                GatherClusterFeatureGates,
-	"oauths":                       GatherClusterOAuth,
-	"ingress":                      GatherClusterIngress,
-	"proxies":                      GatherClusterProxy,
-	"certificate_signing_requests": GatherCertificateSigningRequests,
-	"crds":                         GatherCRD,
-	"host_subnets":                 GatherHostSubnet,
-	"machine_sets":                 GatherMachineSet,
-	"install_plans":                GatherInstallPlans,
-	"service_accounts":             GatherServiceAccounts,
-	"machine_config_pools":         GatherMachineConfigPool,
-	"container_runtime_configs":    GatherContainerRuntimeConfig,
-	"stateful_sets":                GatherStatefulSets,
-	"netnamespaces":                GatherNetNamespace,
+var gatherFunctions = map[string]gathering{
+	"pdbs":                              important(GatherPodDisruptionBudgets),
+	"metrics":                           failable(GatherMostRecentMetrics),
+	"operators":                         important(GatherClusterOperators),
+	"container_images":                  important(GatherContainerImages),
+	"nodes":                             important(GatherNodes),
+	"config_maps":                       failable(GatherConfigMaps),
+	"version":                           important(GatherClusterVersion),
+	"id":                                important(GatherClusterID),
+	"infrastructures":                   important(GatherClusterInfrastructure),
+	"networks":                          important(GatherClusterNetwork),
+	"authentication":                    important(GatherClusterAuthentication),
+	"image_registries":                  important(GatherClusterImageRegistry),
+	"image_pruners":                     important(GatherClusterImagePruner),
+	"feature_gates":                     important(GatherClusterFeatureGates),
+	"oauths":                            important(GatherClusterOAuth),
+	"ingress":                           important(GatherClusterIngress),
+	"proxies":                           important(GatherClusterProxy),
+	"certificate_signing_requests":      important(GatherCertificateSigningRequests),
+	"crds":                              important(GatherCRD),
+	"host_subnets":                      important(GatherHostSubnet),
+	"machine_sets":                      important(GatherMachineSet),
+	"install_plans":                     important(GatherInstallPlans),
+	"service_accounts":                  important(GatherServiceAccounts),
+	"machine_config_pools":              important(GatherMachineConfigPool),
+	"container_runtime_configs":         important(GatherContainerRuntimeConfig),
+	"netnamespaces":                     important(GatherNetNamespace),
+	"openshift_apiserver_operator_logs": failable(GatherOpenShiftAPIServerOperatorLogs),
+	"openshift_sdn_logs":                failable(GatherOpenshiftSDNLogs),
+	"openshift_sdn_controller_logs":     failable(GatherOpenshiftSDNControllerLogs),
+	"openshift_authentication_logs":     failable(GatherOpenshiftAuthenticationLogs),
+	"sap_config":                        failable(GatherSAPConfig),
+	"olm_operators":                     failable(GatherOLMOperators),
 }
 
 // New creates new Gatherer
@@ -79,47 +99,53 @@ func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metr
 func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder record.Interface) error {
 	g.ctx = ctx
 	var errors []string
-	var gatherReport []interface{}
+	var gatherReport []gatherStatusReport
 
 	if len(gatherList) == 0 {
 		errors = append(errors, "no gather functions are specified to run")
 	}
 
 	if contains(gatherList, gatherAll) {
-		gatherList = make([]string, 0, len(gatherFunctions))
-		for k := range gatherFunctions {
-			gatherList = append(gatherList, k)
-		}
+		gatherList = fullGatherList()
 	}
 
-	for _, gatherId := range gatherList {
-		gFn, ok := gatherFunctions[gatherId]
-		if !ok {
-			errors = append(errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
-			continue
+	// Starts the gathers in Go routines
+	cases, starts, err := g.startGathering(gatherList, &errors)
+	if err != nil {
+		return err
+	}
+
+	// Gets the info from the Go routines
+	remaining := len(cases)
+	for remaining > 0 {
+		chosen, value, _ := reflect.Select(cases)
+		// The chosen channel has been closed, so zero out the channel to disable the case
+		cases[chosen].Chan = reflect.ValueOf(nil)
+		remaining -= 1
+
+		elapsed := time.Since(starts[chosen]).Truncate(time.Millisecond)
+
+		gatherResults, _ := value.Interface().(gatherResult)
+		gatherFunc := gatherFunctions[gatherList[chosen]].function
+		gatherCanFail := gatherFunctions[gatherList[chosen]].canFail
+		gatherName := runtime.FuncForPC(reflect.ValueOf(gatherFunc).Pointer()).Name()
+		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(gatherResults.records))
+		gatherReport = append(gatherReport, gatherStatusReport{gatherName, time.Duration(elapsed.Milliseconds()), len(gatherResults.records), extractErrors(gatherResults.errors)})
+
+		if gatherCanFail {
+			for _, err := range gatherResults.errors {
+				klog.V(5).Infof("Couldn't gather %s' received following error: %s\n", gatherName, err.Error())
+			}
+		} else {
+			errors = append(errors, extractErrors(gatherResults.errors)...)
 		}
-		gatherName := runtime.FuncForPC(reflect.ValueOf(gFn).Pointer()).Name()
-		klog.V(5).Infof("Gathering %s", gatherName)
-
-		start := time.Now()
-		records, errs := gFn(g)
-		elapsed := time.Since(start).Truncate(time.Millisecond)
-
-		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(records))
-		gatherReport = append(gatherReport, gatherStatusReport{gatherName, elapsed, len(records), errs})
-
-		for _, err := range errs {
-			errors = append(errors, err.Error())
-		}
-		for _, record := range records {
+		for _, record := range gatherResults.records {
 			if err := recorder.Record(record); err != nil {
 				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
 				continue
 			}
 		}
-		if err := ctx.Err(); err != nil {
-			return err
-		}
+		klog.V(5).Infof("Read from %s's channel and received %s\n", gatherName, value.String())
 	}
 
 	// Creates the gathering performance report
@@ -128,16 +154,66 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	}
 
 	if len(errors) > 0 {
-		sort.Strings(errors)
-		errors = uniqueStrings(errors)
-		return fmt.Errorf("%s", strings.Join(errors, ", "))
+		return sumErrors(errors)
 	}
 	return nil
 }
 
-func recordGatherReport(recorder record.Interface, report []interface{}) error {
+// Runs each gather functions in a goroutine.
+// Every gather function is given its own channel to send back the results.
+// 1. return value: `cases` list, used for dynamically reading from the channels.
+// 2. return value: `starts` list, contains that start time of each gather function.
+func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]reflect.SelectCase, []time.Time, error) {
+	var cases []reflect.SelectCase
+	var starts []time.Time
+	// Starts the gathers in Go routines
+	for _, gatherId := range gatherList {
+		gather, ok := gatherFunctions[gatherId]
+		gFn := gather.function
+		if !ok {
+			*errors = append(*errors, fmt.Sprintf("unknown gatherId in config: %s", gatherId))
+			continue
+		}
+		channel := make(chan gatherResult)
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(channel)})
+		gatherName := runtime.FuncForPC(reflect.ValueOf(gFn).Pointer()).Name()
+
+		klog.V(5).Infof("Gathering %s", gatherName)
+		starts = append(starts, time.Now())
+		go gFn(g, channel)
+
+		if err := g.ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+	}
+	return cases, starts, nil
+}
+
+func recordGatherReport(recorder record.Interface, report []gatherStatusReport) error {
 	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
 	return recorder.Record(r)
+}
+
+func extractErrors(errors []error) []string {
+	var errStrings []string
+	for _, err := range errors {
+		errStrings = append(errStrings, err.Error())
+	}
+	return errStrings
+}
+
+func sumErrors(errors []string) error {
+	sort.Strings(errors)
+	errors = uniqueStrings(errors)
+	return fmt.Errorf("%s", strings.Join(errors, ", "))
+}
+
+func fullGatherList() []string {
+	gatherList := make([]string, 0, len(gatherFunctions))
+	for k := range gatherFunctions {
+		gatherList = append(gatherList, k)
+	}
+	return gatherList
 }
 
 func uniqueStrings(list []string) []string {

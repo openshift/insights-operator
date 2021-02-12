@@ -9,7 +9,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -22,12 +21,15 @@ import (
 // Location in archive: config/ingress/
 // See: docs/insights-archive-sample/config/ingress
 // Id in config: ingress
-func GatherClusterIngress(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterIngress(g *Gatherer, c chan<- gatherResult){
+	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherClusterIngress(g.ctx, gatherConfigClient)
+	records, errors := gatherClusterIngress(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherClusterIngress(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

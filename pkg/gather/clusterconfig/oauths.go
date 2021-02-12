@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -20,12 +19,15 @@ import (
 // Location in archive: config/oauth/
 // See: docs/insights-archive-sample/config/oauth
 // Id in config: oauths
-func GatherClusterOAuth(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterOAuth(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherClusterOAuth(g.ctx, gatherConfigClient)
+	records, errors := gatherClusterOAuth(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherClusterOAuth(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

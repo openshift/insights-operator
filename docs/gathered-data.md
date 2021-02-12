@@ -73,6 +73,8 @@ Id in config: image_pruners
 ## ClusterImageRegistry
 
 fetches the cluster Image Registry configuration
+If the Image Registry configuration uses some PersistentVolumeClaim for the storage then the corresponding
+PersistentVolume definition is gathered
 
 Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 Id in config: image_registries
@@ -173,16 +175,18 @@ Id in config: version
 
 ## ConfigMaps
 
-fetches the ConfigMaps from namespace openshift-config.
+fetches the ConfigMaps from namespace openshift-config
+and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitoring namespace.
 
 Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
 For ConfigMap of type BinaryData it is encoded as standard base64.
-In the archive under configmaps we store name of ConfigMap and then each ConfigMap Key. For example config/configmaps/CONFIGMAPNAME/CONFIGMAPKEY1
+In the archive under configmaps we store name of the namesapce, name of the ConfigMap and then each ConfigMap Key.
+For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 
-Location in archive: config/configmaps/
+Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
 See: docs/insights-archive-sample/config/configmaps
 Id in config: config_maps
 
@@ -305,6 +309,72 @@ Output raw size: 491
 #### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
+## OLMOperators
+
+collects list of all names (including version) of installed OLM operators.
+
+See: docs/insights-archive-sample/config/olm_operators
+Location of in archive: config/olm_operators
+Id in config: olm_operators
+
+
+## OpenShiftAPIServerOperatorLogs
+
+collects logs from openshift-apiserver-operator with following substrings:
+  - "the server has received too many requests and has asked us"
+  - "because serving request timed out and response had been started"
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
+
+
+## OpenshiftAuthenticationLogs
+
+collects logs from pods in openshift-authentication namespace with following substring:
+  - "AuthenticationError: invalid resource name"
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+
+
+## OpenshiftSDNControllerLogs
+
+collects logs from sdn-controller pod in openshift-sdn namespace with following substrings:
+  - "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
+  - "Node %s may be offline... retrying": An egress node has failed the egress IP health check once,
+      so it has big chances to be marked as offline soon or, at the very least, there has been a connectivity glitch.
+  - "Node %s is offline": An egress node has failed enough probes to have been marked offline for egress IPs.
+      If it has egress CIDRs assigned, its egress IPs have been moved to other nodes.
+      Indicates issues at either the node or the network between the master and the node.
+  - "Node %s is back online": This indicates that a node has recovered from the condition described
+      at the previous message, by starting succeeding the egress IP health checks.
+      Useful just in case that previous “Node %s is offline” messages are lost,
+      so that we have a clue that there was failure previously.
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+
+
+## OpenshiftSDNLogs
+
+collects logs from pods in openshift-sdn namespace with following substrings:
+  - "Got OnEndpointsUpdate for unknown Endpoints",
+  - "Got OnEndpointsDelete for unknown Endpoints",
+  - "Unable to update proxy firewall for policy",
+  - "Failed to update proxy firewall for policy",
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+
+
 ## PodDisruptionBudgets
 
 gathers the cluster's PodDisruptionBudgets.
@@ -315,6 +385,18 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
 Id in config: pdbs
+
+
+## SAPConfig
+
+collects selected security context constraints
+and cluster role bindings from clusters running a SAP payload.
+
+Relevant OpenShift API docs:
+  - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
+  - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
+
+Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 
 
 ## ServiceAccounts
@@ -328,16 +410,5 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
 Id in config: service_accounts
-
-
-## StatefulSets
-
-collects StatefulSet configs from default namespaces
-
-The Kubernetes API https://github.com/kubernetes/api/blob/master/apps/v1/types.go
-Response see https://docs.openshift.com/container-platform/4.5/rest_api/workloads_apis/statefulset-apps-v1.html#statefulset-apps-v1
-
-Location in archive: config/statefulsets/
-Id in config: stateful_sets
 
 

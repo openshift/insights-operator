@@ -10,7 +10,6 @@ import (
 
 	networkv1 "github.com/openshift/api/network/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -22,12 +21,15 @@ import (
 //
 // Location in archive: config/hostsubnet/
 // Id in config: host_subnets
-func GatherHostSubnet(g *Gatherer) ([]record.Record, []error) {
+func GatherHostSubnet(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherHostSubnet(g.ctx, gatherNetworkClient)
+	records, errors := gatherHostSubnet(g.ctx, gatherNetworkClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherHostSubnet(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {
@@ -48,20 +50,11 @@ func gatherHostSubnet(ctx context.Context, networkClient networkv1client.Network
 	return records, nil
 }
 
-// HostSubnetAnonymizer implements HostSubnet serialization wiht anonymization
+// HostSubnetAnonymizer implements HostSubnet serialization
 type HostSubnetAnonymizer struct{ networkv1.HostSubnet }
 
 // Marshal implements HostSubnet serialization
 func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	a.HostSubnet.HostIP = anonymizeString(a.HostSubnet.HostIP)
-	a.HostSubnet.Subnet = anonymizeString(a.HostSubnet.Subnet)
-
-	for i, s := range a.HostSubnet.EgressIPs {
-		a.HostSubnet.EgressIPs[i] = networkv1.HostSubnetEgressIP(anonymizeString(string(s)))
-	}
-	for i, s := range a.HostSubnet.EgressCIDRs {
-		a.HostSubnet.EgressCIDRs[i] = networkv1.HostSubnetEgressCIDR(anonymizeString(string(s)))
-	}
 	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), &a.HostSubnet)
 }
 

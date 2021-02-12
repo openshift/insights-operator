@@ -1,0 +1,22 @@
+[
+    {
+        "name": "eap.openshift-operators",
+        "version": "v2.0.2"
+    },
+    {
+        "name": "elasticsearch-operator.openshift-operators-redhat",
+        "version": "4.6.0-202011221454.p0"
+    },
+    {
+        "name": "kiali-ossm.openshift-operators",
+        "version": "v1.24.4"
+    },
+    {
+        "name": "postgresql-operator-dev4devs-com.postgresql-operator",
+        "version": "v0.1.1"
+    },
+    {
+        "name": "radanalytics-spark.openshift-operators",
+        "version": "v1.1.0"
+    }
+]

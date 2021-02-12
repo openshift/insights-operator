@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -24,15 +22,18 @@ import (
 //
 // Location in archive: config/crd/
 // Id in config: crds
-func GatherCRD(g *Gatherer) ([]record.Record, []error) {
-	crdClient, err := apixv1beta1client.NewForConfig(g.gatherKubeConfig)
+func GatherCRD(g *Gatherer, c chan<- gatherResult){
+	defer close(c)
+	crdClient, err := apixv1.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherCRD(g.ctx, crdClient)
+	records, errors := gatherCRD(g.ctx, crdClient)
+	c <- gatherResult{records, errors}
 }
 
-func gatherCRD(ctx context.Context, crdClient apixv1beta1client.ApiextensionsV1beta1Interface) ([]record.Record, []error) {
+func gatherCRD(ctx context.Context, crdClient apixv1.ApiextensionsV1Interface) ([]record.Record, []error) {
 	toBeCollected := []string{
 		"volumesnapshots.snapshot.storage.k8s.io",
 		"volumesnapshotcontents.snapshot.storage.k8s.io",

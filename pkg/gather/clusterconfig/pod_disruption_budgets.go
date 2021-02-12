@@ -11,8 +11,6 @@ import (
 
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -32,12 +30,15 @@ var (
 // Location in archive: config/pdbs/
 // See: docs/insights-archive-sample/config/pdbs
 // Id in config: pdbs
-func GatherPodDisruptionBudgets(g *Gatherer) ([]record.Record, []error) {
+func GatherPodDisruptionBudgets(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherPodDisruptionBudgets(g.ctx, gatherPolicyClient)
+	records, errors := gatherPodDisruptionBudgets(g.ctx, gatherPolicyClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1beta1Interface) ([]record.Record, []error) {

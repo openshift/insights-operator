@@ -10,7 +10,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -23,12 +22,14 @@ import (
 // Location in archive: config/version/
 // See: docs/insights-archive-sample/config/version
 // Id in config: version
-func GatherClusterVersion(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	config, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return []record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil
+	c <- gatherResult{[]record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil}
 }
 
 func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.ClusterVersion, error) {
@@ -54,15 +55,18 @@ func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.
 // Location in archive: config/id/
 // See: docs/insights-archive-sample/config/id
 // Id in config: id
-func GatherClusterID(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterID(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
 	if version == nil {
-		return nil, nil
+		c <- gatherResult{nil, nil}
+		return
 	}
-	return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
+	c <- gatherResult{[]record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil}
 }
 
 // ClusterVersionAnonymizer is serializing ClusterVersion with anonymization

@@ -9,7 +9,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -22,12 +21,15 @@ import (
 // Location in archive: config/featuregate/
 // See: docs/insights-archive-sample/config/featuregate
 // Id in config: feature_gates
-func GatherClusterFeatureGates(g *Gatherer) ([]record.Record, []error) {
+func GatherClusterFeatureGates(g *Gatherer, c chan<- gatherResult) {
+	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{nil, []error{err}}
+		return
 	}
-	return gatherClusterFeatureGates(g.ctx, gatherConfigClient)
+	records, errors := gatherClusterFeatureGates(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errors}
 }
 
 func gatherClusterFeatureGates(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

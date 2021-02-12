@@ -1,0 +1,15 @@
+{
+    "prometheusK8s": {
+        "volumeClaimTemplate": {
+            "spec": {
+                "resources": {
+                    "requests": {
+                        "storage": "10Mi"
+                    }
+                },
+                "storageClassName": "manual",
+                "volumeMode": "Filesystem"
+            }
+        }
+    }
+}
