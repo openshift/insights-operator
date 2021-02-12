@@ -1,9 +1,3 @@
-GO_PKG=github.com/openshift/insights-operator
-GO111MODULE?=on
-GOFLAGS=-mod=vendor
-export GO111MODULE
-export GOFLAGS
-
 build:
 	GO111MODULE=on go build -mod=vendor -ldflags "-X k8s.io/client-go/pkg/version.gitCommit=$$(git rev-parse HEAD) -X k8s.io/client-go/pkg/version.gitVersion=v1.0.0+$$(git rev-parse --short=7 HEAD)" -o bin/insights-operator ./cmd/insights-operator
 .PHONY: build
