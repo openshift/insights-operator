@@ -4,19 +4,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// GatherOpenShiftAPIServerOperatorLogs collects logs from openshift-apiserver-operator with following substrings:
-//   - "the server has received too many requests and has asked us"
-//   - "because serving request timed out and response had been started"
+// GatherSAPLicenseManagementLogs collects logs from license management pods with the following substrings:
+//   - "can't initialize iptables table",
 //
 // The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-// Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
-func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
+// Location in archive: config/pod/sdi/logs/{pod-name}/errors.log
+func GatherSAPLicenseManagementLogs(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	messagesToSearch := []string{
-		"the server has received too many requests and has asked us",
-		"because serving request timed out and response had been started",
+		"can't initialize iptables table",
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -30,14 +28,14 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
 	records, err := gatherLogsFromPodsInNamespace(
 		g.ctx,
 		coreClient,
-		"openshift-apiserver-operator",
+		"sdi",
 		messagesToSearch,
 		false,
 		86400,   // last day
 		1024*64, // maximum 64 kb of logs
 		"errors",
-		"app=openshift-apiserver-operator",
 		"",
+		"^license-manager.*$",
 	)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}

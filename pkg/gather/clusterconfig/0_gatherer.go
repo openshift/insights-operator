@@ -84,6 +84,7 @@ var gatherFunctions = map[string]gathering{
 	"openshift_authentication_logs":     failable(GatherOpenshiftAuthenticationLogs),
 	"sap_config":                        failable(GatherSAPConfig),
 	"olm_operators":                     failable(GatherOLMOperators),
+	"sap_license_management_logs":       failable(GatherSAPLicenseManagementLogs),
 }
 
 // New creates new Gatherer

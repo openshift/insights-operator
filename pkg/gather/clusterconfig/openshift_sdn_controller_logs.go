@@ -41,11 +41,12 @@ func GatherOpenshiftSDNControllerLogs(g *Gatherer, c chan<- gatherResult) {
 		coreClient,
 		"openshift-sdn",
 		messagesToSearch,
+		true,
 		86400,   // last day
 		1024*64, // maximum 64 kb of logs
 		"errors",
 		"app=sdn-controller",
-		true,
+		"",
 	)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}

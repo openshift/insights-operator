@@ -29,11 +29,12 @@ func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
 		coreClient,
 		"openshift-authentication",
 		messagesToSearch,
+		false,
 		86400,   // last day
 		1024*64, // maximum 64 kb of logs
 		"errors",
 		"",
-		false,
+		"",
 	)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}

@@ -30,11 +30,12 @@ func gatherLogsFromPodsInNamespace(
 	coreClient v1.CoreV1Interface,
 	namespace string,
 	messagesToSearch []string,
+	regexSearch bool,
 	sinceSeconds int64,
 	limitBytes int64,
 	logFileName string,
 	labelSelector string,
-	regexSearch bool,
+	podNameRegexFilter string,
 ) ([]record.Record, error) {
 	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
@@ -46,9 +47,27 @@ func gatherLogsFromPodsInNamespace(
 	var records []record.Record
 
 	for _, pod := range pods.Items {
+		if len(podNameRegexFilter) > 0 {
+			match, err := regexp.MatchString(podNameRegexFilter, pod.Name)
+			if err != nil {
+				return nil, err
+			}
+			if !match {
+				continue
+			}
+		}
+
+		var containers []string
 		for _, container := range pod.Spec.Containers {
+			containers = append(containers, container.Name)
+		}
+		for _, container := range pod.Spec.InitContainers {
+			containers = append(containers, container.Name)
+		}
+
+		for _, container := range containers {
 			request := coreClient.Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
-				Container:    container.Name,
+				Container:    container,
 				SinceSeconds: &sinceSeconds,
 				LimitBytes:   &limitBytes,
 			})
