@@ -59,7 +59,9 @@ func TestChangeSupportConfig(t *testing.T) {
 	}
 
 	for _, tt := range cases {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			// log klog to test
 			klog.SetOutput(utils.NewTestLog(t).Writer())

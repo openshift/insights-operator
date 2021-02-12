@@ -163,7 +163,9 @@ func Test_uniqueStrings(t *testing.T) {
 		{arr: []string{"a"}, want: []string{"a"}},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := uniqueStrings(tt.arr); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("uniqueStrings() = %v, want %v", got, tt.want)
 			}

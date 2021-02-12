@@ -47,7 +47,9 @@ func TestGatherServiceAccounts(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			coreClient := kubefake.NewSimpleClientset()
 			for _, d := range test.data {
 				_, err := coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: d.Namespace}}, metav1.CreateOptions{})

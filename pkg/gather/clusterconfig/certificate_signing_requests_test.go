@@ -22,7 +22,9 @@ func TestCSRs(t *testing.T) {
 	}
 
 	for _, tt := range files {
+		tt := tt
 		t.Run(tt.dataFile, func(t *testing.T) {
+			t.Parallel()
 
 			r := &certificatesv1api.CertificateSigningRequest{}
 
@@ -84,7 +86,10 @@ func TestCSRFilters(t *testing.T) {
 
 	for i, tt := range files {
 		n := csrName(tt.csr, fmt.Sprintf("[n/a:%d]", i))
+		tt := tt
 		t.Run(n, func(t *testing.T) {
+			t.Parallel()
+
 			now, err := time.Parse("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)", "Tue Feb 18 2020 09:38:42 GMT+0100 (CEST)")
 			if err != nil {
 				t.Fatalf("parse couldnt parse date %v", err)
