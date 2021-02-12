@@ -85,7 +85,7 @@ metadata:
 	}
 
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
-	datahubsClient.Resource(datahubGVR).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
+	datahubsClient.Resource(datahubGroupVersionResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
 	records, errs = gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {

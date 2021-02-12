@@ -1,23 +1,20 @@
 package clusterconfig
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"strings"
 
+	authclient "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
+	securityv1client "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	authclient "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
-	securityv1client "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	"github.com/openshift/insights-operator/pkg/record"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
-
-var datahubGVR = schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
 
 // GatherSAPConfig collects selected security context constraints
 // and cluster role bindings from clusters running a SAP payload.
@@ -53,8 +50,7 @@ func gatherSAPConfig(ctx context.Context, dynamicClient dynamic.Interface, coreC
 	sccToGather := []string{"anyuid", "privileged"}
 	crbToGather := []string{"system:openshift:scc:anyuid", "system:openshift:scc:privileged"}
 
-	datahubsList, err := dynamicClient.Resource(datahubGVR).List(ctx, metav1.ListOptions{})
-
+	datahubsList, err := dynamicClient.Resource(datahubGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
