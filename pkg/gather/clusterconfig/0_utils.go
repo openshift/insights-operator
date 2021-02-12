@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/url"
 	"reflect"
 	"regexp"
 	"strings"
