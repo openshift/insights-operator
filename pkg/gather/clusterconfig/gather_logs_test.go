@@ -50,11 +50,12 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 		[]string{
 			stringToSearch,
 		},
+		regexSearch,
 		86400,   // last day
 		1024*64, // maximum 64 kb of logs
 		testLogFileName,
 		"",
-		regexSearch,
+		"",
 	)
 	if err != nil {
 		t.Fatal(err)
