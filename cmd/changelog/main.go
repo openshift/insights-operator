@@ -290,16 +290,16 @@ func releaseBranchesContain(hash string) []string {
 func findEarliestRelease(releases []string) string {
 	// Its hacky I KNOW.
 	minStr := ""
-	minMayor := 99
+	minMajor := 99
 	minMinor := 99
 	for _, release := range releases {
 		releaseNumber := strings.Split(release, "-")[1]
 		releaseNumbers := strings.Split(releaseNumber, ".")
-		mayorRelease, _ := strconv.Atoi(releaseNumbers[0])
+		majorRelease, _ := strconv.Atoi(releaseNumbers[0])
 		minorRelease, _ := strconv.Atoi(releaseNumbers[1])
-		if mayorRelease < minMayor || mayorRelease == minMayor && minorRelease < minMinor {
+		if majorRelease < minMajor || majorRelease == minMajor && minorRelease < minMinor {
 			minStr = releaseNumber
-			minMayor = mayorRelease
+			minMajor = majorRelease
 			minMinor = minorRelease
 		}
 	}
