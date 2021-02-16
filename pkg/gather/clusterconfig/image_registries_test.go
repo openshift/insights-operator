@@ -6,7 +6,10 @@ import (
 
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	registryv1 "github.com/openshift/api/imageregistry/v1"
 	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
@@ -144,6 +147,8 @@ func TestGatherClusterImageRegistry(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to marshal config: %v", err)
 			}
+			utilruntime.Must(registryv1.AddToScheme(registryScheme))
+			registrySerializer := serializer.NewCodecFactory(registryScheme)
 			var output imageregistryv1.Config
 			obj, _, err := registrySerializer.LegacyCodec(imageregistryv1.SchemeGroupVersion).Decode(itemBytes, nil, &output)
 			if err != nil {

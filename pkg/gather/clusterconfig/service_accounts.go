@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // Maximal total number of service accounts
@@ -39,7 +40,7 @@ func GatherServiceAccounts(g *Gatherer, c chan<- gatherResult) {
 }
 
 func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
-	config, ctx, err := getAllNamespaces(ctx, coreClient)
+	config, err := utils.GetAllNamespaces(ctx, coreClient)
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}

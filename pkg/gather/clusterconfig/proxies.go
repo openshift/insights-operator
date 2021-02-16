@@ -5,12 +5,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherClusterProxy fetches the cluster Proxy - the Proxy with name cluster.
@@ -40,25 +40,17 @@ func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
+	return []record.Record{{Name: "config/proxy", Item: record.JSONMarshaller{Object: anonymizeProxy(config)}}}, nil
 }
 
-// ProxyAnonymizer implements serialization of HttpProxy/NoProxy with anonymization
-type ProxyAnonymizer struct{ *configv1.Proxy }
 
-// Marshal implements Proxy serialization with anonymization
-func (a ProxyAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	a.Proxy.Spec.HTTPProxy = anonymizeURLCSV(a.Proxy.Spec.HTTPProxy)
-	a.Proxy.Spec.HTTPSProxy = anonymizeURLCSV(a.Proxy.Spec.HTTPSProxy)
-	a.Proxy.Spec.NoProxy = anonymizeURLCSV(a.Proxy.Spec.NoProxy)
-	a.Proxy.Spec.ReadinessEndpoints = anonymizeURLSlice(a.Proxy.Spec.ReadinessEndpoints)
-	a.Proxy.Status.HTTPProxy = anonymizeURLCSV(a.Proxy.Status.HTTPProxy)
-	a.Proxy.Status.HTTPSProxy = anonymizeURLCSV(a.Proxy.Status.HTTPSProxy)
-	a.Proxy.Status.NoProxy = anonymizeURLCSV(a.Proxy.Status.NoProxy)
-	return runtime.Encode(openshiftSerializer, a.Proxy)
-}
-
-// GetExtension returns extension for anonymized proxy objects
-func (a ProxyAnonymizer) GetExtension() string {
-	return "json"
+func anonymizeProxy(proxy *configv1.Proxy) *configv1.Proxy {
+	proxy.Spec.HTTPProxy = anonymize.AnonymizeURLCSV(proxy.Spec.HTTPProxy)
+	proxy.Spec.HTTPSProxy = anonymize.AnonymizeURLCSV(proxy.Spec.HTTPSProxy)
+	proxy.Spec.NoProxy = anonymize.AnonymizeURLCSV(proxy.Spec.NoProxy)
+	proxy.Spec.ReadinessEndpoints = anonymize.AnonymizeURLSlice(proxy.Spec.ReadinessEndpoints)
+	proxy.Status.HTTPProxy = anonymize.AnonymizeURLCSV(proxy.Status.HTTPProxy)
+	proxy.Status.HTTPSProxy = anonymize.AnonymizeURLCSV(proxy.Status.HTTPSProxy)
+	proxy.Status.NoProxy = anonymize.AnonymizeURLCSV(proxy.Status.NoProxy)
+	return proxy
 }

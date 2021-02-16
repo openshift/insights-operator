@@ -4,6 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	networkv1 "github.com/openshift/api/network/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -34,7 +37,13 @@ func TestGatherHostSubnet(t *testing.T) {
 		t.Fatalf("unexpected number or records %d", len(records))
 	}
 	item, err := records[0].Item.Marshal(context.TODO())
+	if err != nil {
+		t.Fatalf("failed to marshal object: %v", err)
+	}
 	var gatheredHostSubnet networkv1.HostSubnet
+	networkScheme := runtime.NewScheme()
+	utilruntime.Must(networkv1.AddToScheme(networkScheme))
+	networkSerializer := serializer.NewCodecFactory(networkScheme)
 	_, _, err = networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion).Decode(item, nil, &gatheredHostSubnet)
 	if err != nil {
 		t.Fatalf("failed to decode object: %v", err)

@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 type olmOperator struct {
@@ -48,7 +49,7 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 	var refs []interface{}
 	olms := []olmOperator{}
 	for _, i := range olmOperators.Items {
-		err := parseJSONQuery(i.Object, "status.components.refs", &refs)
+		err := utils.ParseJSONQuery(i.Object, "status.components.refs", &refs)
 		if err != nil {
 			klog.Errorf("Cannot find \"status.components.refs\" in %s definition: %v", i.GetName(), err)
 			continue

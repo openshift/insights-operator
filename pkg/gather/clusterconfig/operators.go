@@ -14,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
@@ -27,7 +26,11 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/check"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 const (
@@ -42,6 +45,19 @@ type clusterOperatorResource struct {
 	Kind       string      `json:"kind"`
 	Name       string      `json:"name"`
 	Spec       interface{} `json:"spec"`
+}
+
+// CompactedEvent holds one Namespace Event
+type CompactedEvent struct {
+	Namespace     string    `json:"namespace"`
+	LastTimestamp time.Time `json:"lastTimestamp"`
+	Reason        string    `json:"reason"`
+	Message       string    `json:"message"`
+}
+
+// CompactedEventList is collection of events
+type CompactedEventList struct {
+	Items []CompactedEvent `json:"items"`
 }
 
 // GatherClusterOperators collects all ClusterOperators and their resources.
@@ -93,7 +109,7 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 	for idx, co := range config.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[idx].Name),
-			Item: ClusterOperatorAnonymizer{&config.Items[idx]},
+			Item: record.JSONMarshaller{Object: &config.Items[idx]},
 		})
 		if resVer == nil {
 			continue
@@ -129,10 +145,10 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 			}
 			for j := range pods.Items {
 				pod := &pods.Items[j]
-				if isHealthyPod(pod, now) {
+				if check.IsHealthyPod(pod, now) {
 					continue
 				}
-				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{pod}})
+				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: pod}})
 				unhealthyPods = append(unhealthyPods, pod)
 			}
 			if namespaceEventsCollected.Has(namespace) {
@@ -182,7 +198,7 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 					klog.V(2).Infof("Error: %q", err)
 					continue
 				}
-				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName), Item: Raw{buf.String()}})
+				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName), Item: marshal.Raw{Str: buf.String()}})
 			}
 		}
 	}
@@ -221,7 +237,7 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 	sort.Slice(compactedEvents.Items, func(i, j int) bool {
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
-	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: EventAnonymizer{&compactedEvents}}}, nil
+	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
 
 func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.Interface, co configv1.ClusterOperator, resVer map[string][]string) []clusterOperatorResource {
@@ -249,9 +265,9 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 			}
 			var kind, name, apiVersion string
 			err = failEarly(
-				func() error { return parseJSONQuery(clusterResource.Object, "kind", &kind) },
-				func() error { return parseJSONQuery(clusterResource.Object, "apiVersion", &apiVersion) },
-				func() error { return parseJSONQuery(clusterResource.Object, "metadata.name", &name) },
+				func() error { return utils.ParseJSONQuery(clusterResource.Object, "kind", &kind) },
+				func() error { return utils.ParseJSONQuery(clusterResource.Object, "apiVersion", &apiVersion) },
+				func() error { return utils.ParseJSONQuery(clusterResource.Object, "metadata.name", &name) },
 			)
 			if err != nil {
 				continue
@@ -311,19 +327,6 @@ func collectContainerLogs(ctx context.Context, coreClient corev1client.CoreV1Int
 	return nil
 }
 
-// ClusterOperatorAnonymizer implements serialization of ClusterOperator without change
-type ClusterOperatorAnonymizer struct{ *configv1.ClusterOperator }
-
-// Marshal serializes ClusterOperator
-func (a ClusterOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(openshiftSerializer, a.ClusterOperator)
-}
-
-// GetExtension returns extension for anonymized cluster operator objects
-func (a ClusterOperatorAnonymizer) GetExtension() string {
-	return "json"
-}
-
 // ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
 type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
 
@@ -339,7 +342,7 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 	urlMatches := re.FindAllString(resStr, -1)
 	for _, m := range urlMatches {
 		m = strings.ReplaceAll(m, "\"", "")
-		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+		resStr = strings.ReplaceAll(resStr, m, anonymize.AnonymizeString(m))
 	}
 	return []byte(resStr), nil
 }

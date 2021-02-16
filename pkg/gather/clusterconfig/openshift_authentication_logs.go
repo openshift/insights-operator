@@ -41,5 +41,4 @@ func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
 	}
 
 	c <- gatherResult{records, nil}
-	return
 }
