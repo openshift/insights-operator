@@ -1,7 +1,16 @@
 package clusterconfig
 
 import (
+	"context"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherSAPLicenseManagementLogs collects logs from license management pods with the following substrings:
@@ -13,34 +22,79 @@ import (
 // Location in archive: config/pod/sdi/logs/{pod-name}/errors.log
 func GatherSAPLicenseManagementLogs(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
+
 	messagesToSearch := []string{
 		"can't initialize iptables table",
 	}
 
-	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		c <- gatherResult{errors: []error{err}}
+		return
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
 
-	coreClient := gatherKubeClient.CoreV1()
+	coreClient := kubeClient.CoreV1()
 
-	records, err := gatherLogsFromPodsInNamespace(
-		g.ctx,
-		coreClient,
-		"sdi",
-		messagesToSearch,
-		false,
-		86400,   // last day
-		1024*64, // maximum 64 kb of logs
-		"errors",
-		"",
-		"^license-manager.*$",
-	)
-	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+	records, errs := gatherSAPLicenseManagementLogs(g.ctx, dynamicClient, coreClient, messagesToSearch)
+	c <- gatherResult{records, errs}
+}
+
+func gatherSAPLicenseManagementLogs(
+	ctx context.Context,
+	dynamicClient dynamic.Interface,
+	coreClient corev1client.CoreV1Interface,
+	messagesToSearch []string,
+) ([]record.Record, []error) {
+	datahubsResource := schema.GroupVersionResource{
+		Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs",
 	}
 
-	c <- gatherResult{records, nil}
+	datahubsList, err := dynamicClient.Resource(datahubsResource).List(ctx, metav1.ListOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	// If no DataHubs resource exists on the cluster, skip this gathering.
+	// This may already be handled by the IsNotFound check, but it's better to be sure.
+	if len(datahubsList.Items) == 0 {
+		return nil, nil
+	}
+
+	var records []record.Record
+	var errs []error
+
+	for _, item := range datahubsList.Items {
+		namespace := item.GetNamespace()
+
+		namespaceRecords, err := gatherLogsFromContainers(
+			ctx,
+			coreClient,
+			logsContainersFilter{
+				namespace:                namespace,
+				containerNameRegexFilter: "^vsystem-iptables$",
+			},
+			logMessagesFilter{
+				messagesToSearch: messagesToSearch,
+				regexSearch:      false,
+				sinceSeconds:     86400,
+				limitBytes:       1024 * 64,
+			},
+			"errors",
+		)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			records = append(records, namespaceRecords...)
+		}
+	}
+
+	return records, errs
 }

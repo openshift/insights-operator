@@ -27,17 +27,20 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := gatherLogsFromPodsInNamespace(
+	records, err := gatherLogsFromContainers(
 		g.ctx,
 		coreClient,
-		"openshift-apiserver-operator",
-		messagesToSearch,
-		false,
-		86400,   // last day
-		1024*64, // maximum 64 kb of logs
+		logsContainersFilter{
+			namespace:     "openshift-apiserver-operator",
+			labelSelector: "app=openshift-apiserver-operator",
+		},
+		logMessagesFilter{
+			messagesToSearch: messagesToSearch,
+			regexSearch:      false,
+			sinceSeconds:     86400,     // last day
+			limitBytes:       1024 * 64, // maximum 64 kb of logs
+		},
 		"errors",
-		"app=openshift-apiserver-operator",
-		"",
 	)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}

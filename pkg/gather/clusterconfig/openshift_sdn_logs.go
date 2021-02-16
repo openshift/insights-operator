@@ -31,17 +31,20 @@ func GatherOpenshiftSDNLogs(g *Gatherer, c chan<- gatherResult) {
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := gatherLogsFromPodsInNamespace(
+	records, err := gatherLogsFromContainers(
 		g.ctx,
 		coreClient,
-		"openshift-sdn",
-		messagesToSearch,
-		false,
-		86400,   // last day
-		1024*64, // maximum 64 kb of logs
+		logsContainersFilter{
+			namespace:     "openshift-sdn",
+			labelSelector: "app=sdn",
+		},
+		logMessagesFilter{
+			messagesToSearch: messagesToSearch,
+			regexSearch:      false,
+			sinceSeconds:     86400,
+			limitBytes:       1024 * 64,
+		},
 		"errors",
-		"app=sdn",
-		"",
 	)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}
