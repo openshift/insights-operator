@@ -26,7 +26,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
