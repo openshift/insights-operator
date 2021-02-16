@@ -27,12 +27,12 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
 const (
 	// Log compression ratio is defining a multiplier for uncompressed logs
-	// diskrecorder would refuse to write files larger than MaxLogSize, so GatherClusterOperators
+	// recorder would refuse to write files larger than MaxLogSize, so GatherClusterOperators
 	// has to limit the expected size of the buffer for logs
 	logCompressionRatio = 2
 )
@@ -160,7 +160,7 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 	for _, pod := range unhealthyPods {
 		totalUnhealthyContainers += len(pod.Spec.InitContainers) + len(pod.Spec.Containers)
 	}
-	bufferSize := int64(diskrecorder.MaxLogSize * logCompressionRatio / totalUnhealthyContainers / 2)
+	bufferSize := int64(recorder.MaxLogSize * logCompressionRatio / totalUnhealthyContainers / 2)
 	klog.V(2).Infof("Maximum buffer size: %v bytes", bufferSize)
 	buf := bytes.NewBuffer(make([]byte, 0, bufferSize))
 
