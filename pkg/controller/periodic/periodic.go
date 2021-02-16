@@ -67,10 +67,14 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 		case <-stopCh:
 			return
 		case <-time.After(initialDelay):
-			c.Gather()
+			if c.configurator.Config().Report {
+				c.Gather()
+			}
 		}
 	} else {
-		c.Gather()
+		if c.configurator.Config().Report {
+			c.Gather()
+		}
 	}
 
 	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
@@ -149,7 +153,9 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			c.Gather()
+			if c.configurator.Config().Report {
+				c.Gather()
+			}
 		}
 	}
 }
