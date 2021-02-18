@@ -16,7 +16,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-type logsContainersFilter struct {
+type logContainersFilter struct {
 	namespace                string
 	labelSelector            string
 	containerNameRegexFilter string
@@ -24,7 +24,7 @@ type logsContainersFilter struct {
 
 type logMessagesFilter struct {
 	messagesToSearch []string
-	regexSearch      bool
+	isRegexSearch    bool
 	sinceSeconds     int64
 	limitBytes       int64
 }
@@ -46,22 +46,12 @@ type logMessagesFilter struct {
 func gatherLogsFromContainers(
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
-	containersFilter logsContainersFilter,
-	logMessagesFilter logMessagesFilter,
+	containersFilter logContainersFilter,
+	messagesFilter logMessagesFilter,
 	logFileName string,
 ) ([]record.Record, error) {
-	var (
-		namespace                = containersFilter.namespace
-		labelSelector            = containersFilter.labelSelector
-		containerNameRegexFilter = containersFilter.containerNameRegexFilter
-		messagesToSearch         = logMessagesFilter.messagesToSearch
-		regexSearch              = logMessagesFilter.regexSearch
-		sinceSeconds             = logMessagesFilter.sinceSeconds
-		limitBytes               = logMessagesFilter.limitBytes
-	)
-
-	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
+	pods, err := coreClient.Pods(containersFilter.namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: containersFilter.labelSelector,
 	})
 	if err != nil {
 		return nil, err
@@ -79,8 +69,8 @@ func gatherLogsFromContainers(
 		}
 
 		for _, container := range containers {
-			if len(containerNameRegexFilter) > 0 {
-				match, err := regexp.MatchString(containerNameRegexFilter, container)
+			if len(containersFilter.containerNameRegexFilter) > 0 {
+				match, err := regexp.MatchString(containersFilter.containerNameRegexFilter, container)
 				if err != nil {
 					return nil, err
 				}
@@ -89,13 +79,13 @@ func gatherLogsFromContainers(
 				}
 			}
 
-			request := coreClient.Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+			request := coreClient.Pods(containersFilter.namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
 				Container:    container,
-				SinceSeconds: &sinceSeconds,
-				LimitBytes:   &limitBytes,
+				SinceSeconds: &messagesFilter.sinceSeconds,
+				LimitBytes:   &messagesFilter.limitBytes,
 			})
 
-			logs, err := filterLogs(ctx, request, messagesToSearch, regexSearch)
+			logs, err := filterLogs(ctx, request, messagesFilter.messagesToSearch, messagesFilter.isRegexSearch)
 			if err != nil {
 				return nil, err
 			}
@@ -110,7 +100,7 @@ func gatherLogsFromContainers(
 	}
 
 	if len(pods.Items) == 0 {
-		klog.Infof("no pods in %v namespace were found", namespace)
+		klog.Infof("no pods in %v namespace were found", containersFilter.namespace)
 	}
 
 	return records, nil

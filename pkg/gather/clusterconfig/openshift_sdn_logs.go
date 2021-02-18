@@ -16,11 +16,21 @@ import (
 // Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
 func GatherOpenshiftSDNLogs(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
-	messagesToSearch := []string{
-		"Got OnEndpointsUpdate for unknown Endpoints",
-		"Got OnEndpointsDelete for unknown Endpoints",
-		"Unable to update proxy firewall for policy",
-		"Failed to update proxy firewall for policy",
+
+	containersFilter := logContainersFilter{
+		namespace:     "openshift-sdn",
+		labelSelector: "app=sdn",
+	}
+	messagesFilter := logMessagesFilter{
+		messagesToSearch: []string{
+			"Got OnEndpointsUpdate for unknown Endpoints",
+			"Got OnEndpointsDelete for unknown Endpoints",
+			"Unable to update proxy firewall for policy",
+			"Failed to update proxy firewall for policy",
+		},
+		isRegexSearch: false,
+		sinceSeconds:  86400,
+		limitBytes:    1024 * 64,
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -34,16 +44,8 @@ func GatherOpenshiftSDNLogs(g *Gatherer, c chan<- gatherResult) {
 	records, err := gatherLogsFromContainers(
 		g.ctx,
 		coreClient,
-		logsContainersFilter{
-			namespace:     "openshift-sdn",
-			labelSelector: "app=sdn",
-		},
-		logMessagesFilter{
-			messagesToSearch: messagesToSearch,
-			regexSearch:      false,
-			sinceSeconds:     86400,
-			limitBytes:       1024 * 64,
-		},
+		containersFilter,
+		messagesFilter,
 		"errors",
 	)
 	if err != nil {

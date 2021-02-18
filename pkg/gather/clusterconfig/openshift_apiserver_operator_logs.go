@@ -14,9 +14,19 @@ import (
 // Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
-	messagesToSearch := []string{
-		"the server has received too many requests and has asked us",
-		"because serving request timed out and response had been started",
+
+	containersFilter := logContainersFilter{
+		namespace:     "openshift-apiserver-operator",
+		labelSelector: "app=openshift-apiserver-operator",
+	}
+	messagesFilter := logMessagesFilter{
+		messagesToSearch: []string{
+			"the server has received too many requests and has asked us",
+			"because serving request timed out and response had been started",
+		},
+		isRegexSearch: false,
+		sinceSeconds:  86400,     // last day
+		limitBytes:    1024 * 64, // maximum 64 kb of logs
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -30,16 +40,8 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
 	records, err := gatherLogsFromContainers(
 		g.ctx,
 		coreClient,
-		logsContainersFilter{
-			namespace:     "openshift-apiserver-operator",
-			labelSelector: "app=openshift-apiserver-operator",
-		},
-		logMessagesFilter{
-			messagesToSearch: messagesToSearch,
-			regexSearch:      false,
-			sinceSeconds:     86400,     // last day
-			limitBytes:       1024 * 64, // maximum 64 kb of logs
-		},
+		containersFilter,
+		messagesFilter,
 		"errors",
 	)
 	if err != nil {

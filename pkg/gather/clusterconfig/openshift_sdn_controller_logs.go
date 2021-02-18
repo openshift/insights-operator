@@ -21,11 +21,22 @@ import (
 //
 // Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
 func GatherOpenshiftSDNControllerLogs(g *Gatherer, c chan<- gatherResult) {
-	messagesToSearch := []string{
-		"Node.+is not Ready",
-		"Node.+may be offline\\.\\.\\. retrying",
-		"Node.+is offline",
-		"Node.+is back online",
+	defer close(c)
+
+	containersFilter := logContainersFilter{
+		namespace:     "openshift-sdn",
+		labelSelector: "app=sdn-controller",
+	}
+	messagesFilter := logMessagesFilter{
+		messagesToSearch: []string{
+			"Node.+is not Ready",
+			"Node.+may be offline\\.\\.\\. retrying",
+			"Node.+is offline",
+			"Node.+is back online",
+		},
+		isRegexSearch: true,
+		sinceSeconds:  86400,     // last day
+		limitBytes:    1024 * 64, // maximum 64 kb of logs
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -39,16 +50,8 @@ func GatherOpenshiftSDNControllerLogs(g *Gatherer, c chan<- gatherResult) {
 	records, err := gatherLogsFromContainers(
 		g.ctx,
 		coreClient,
-		logsContainersFilter{
-			namespace:     "openshift-sdn",
-			labelSelector: "app=sdn-controller",
-		},
-		logMessagesFilter{
-			messagesToSearch: messagesToSearch,
-			regexSearch:      true,
-			sinceSeconds:     86400,     // last day
-			limitBytes:       1024 * 64, // maximum 64 kb of logs
-		},
+		containersFilter,
+		messagesFilter,
 		"errors",
 	)
 	if err != nil {

@@ -12,8 +12,18 @@ import (
 //
 // Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
 func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
-	messagesToSearch := []string{
-		"AuthenticationError: invalid resource name",
+	defer close(c)
+
+	containersFilter := logContainersFilter{
+		namespace: "openshift-authentication",
+	}
+	messagesFilter := logMessagesFilter{
+		messagesToSearch: []string{
+			"AuthenticationError: invalid resource name",
+		},
+		isRegexSearch: false,
+		sinceSeconds:  86400,     // last day
+		limitBytes:    1024 * 64, // maximum 64 kb of logs
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -27,13 +37,8 @@ func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
 	records, err := gatherLogsFromContainers(
 		g.ctx,
 		coreClient,
-		logsContainersFilter{namespace: "openshift-authentication"},
-		logMessagesFilter{
-			messagesToSearch: messagesToSearch,
-			regexSearch:      false,
-			sinceSeconds:     86400, // last day
-			limitBytes:       1024 * 64, // maximum 64 kb of logs
-		},
+		containersFilter,
+		messagesFilter,
 		"errors",
 	)
 	if err != nil {

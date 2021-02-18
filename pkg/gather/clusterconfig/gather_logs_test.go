@@ -46,16 +46,16 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 	records, err := gatherLogsFromContainers(
 		ctx,
 		coreClient,
-		logsContainersFilter{
+		logContainersFilter{
 			namespace: testPodName,
 		},
 		logMessagesFilter{
 			messagesToSearch: []string{
 				stringToSearch,
 			},
-			regexSearch:  regexSearch,
-			sinceSeconds: 86400,     // last day
-			limitBytes:   1024 * 64, // maximum 64 kb of logs
+			isRegexSearch: regexSearch,
+			sinceSeconds:  86400,     // last day
+			limitBytes:    1024 * 64, // maximum 64 kb of logs
 		},
 		testLogFileName,
 	)
