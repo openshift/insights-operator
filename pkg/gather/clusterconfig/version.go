@@ -5,13 +5,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherClusterVersion fetches the ClusterVersion - the ClusterVersion with name version.
@@ -29,7 +30,7 @@ func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	c <- gatherResult{[]record.Record{{Name: "config/version", Item: ClusterVersionAnonymizer{config}}}, nil}
+	c <- gatherResult{[]record.Record{{Name: "config/version", Item: record.JSONMarshaller{Object: anonymizeClusterVersion(config)}}}, nil}
 }
 
 func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.ClusterVersion, error) {
@@ -66,19 +67,10 @@ func GatherClusterID(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, nil}
 		return
 	}
-	c <- gatherResult{[]record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil}
+	c <- gatherResult{[]record.Record{{Name: "config/id", Item: marshal.Raw{Str: string(version.Spec.ClusterID)}}}, nil}
 }
 
-// ClusterVersionAnonymizer is serializing ClusterVersion with anonymization
-type ClusterVersionAnonymizer struct{ *configv1.ClusterVersion }
-
-// Marshal serializes ClusterVersion with anonymization
-func (a ClusterVersionAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	a.ClusterVersion.Spec.Upstream = configv1.URL(anonymizeURL(string(a.ClusterVersion.Spec.Upstream)))
-	return runtime.Encode(openshiftSerializer, a.ClusterVersion)
-}
-
-// GetExtension returns extension for anonymized cluster version objects
-func (a ClusterVersionAnonymizer) GetExtension() string {
-	return "json"
+func anonymizeClusterVersion(version *configv1.ClusterVersion) *configv1.ClusterVersion {
+	version.Spec.Upstream = configv1.URL(anonymize.AnonymizeURL(string(version.Spec.Upstream)))
+	return version
 }

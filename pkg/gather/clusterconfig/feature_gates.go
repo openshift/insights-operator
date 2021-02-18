@@ -5,9 +5,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -40,18 +37,5 @@ func gatherClusterFeatureGates(ctx context.Context, configClient configv1client.
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}}, nil
-}
-
-// FeatureGateAnonymizer implements serializaton of FeatureGate with anonymization
-type FeatureGateAnonymizer struct{ *configv1.FeatureGate }
-
-// Marshal serializes FeatureGate with anonymization
-func (a FeatureGateAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(openshiftSerializer, a.FeatureGate)
-}
-
-// GetExtension returns extension for anonymized feature gate objects
-func (a FeatureGateAnonymizer) GetExtension() string {
-	return "json"
+	return []record.Record{{Name: "config/featuregate", Item: record.JSONMarshaller{Object: config}}}, nil
 }

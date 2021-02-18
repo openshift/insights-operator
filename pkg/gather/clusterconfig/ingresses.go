@@ -5,12 +5,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherClusterIngress fetches the cluster Ingress - the Ingress with name cluster.
@@ -40,19 +40,10 @@ func gatherClusterIngress(ctx context.Context, configClient configv1client.Confi
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/ingress", Item: IngressAnonymizer{config}}}, nil
+	return []record.Record{{Name: "config/ingress", Item: record.JSONMarshaller{Object: anonymizeIngress(config)}}}, nil
 }
 
-// IngressAnonymizer implements serialization with marshalling
-type IngressAnonymizer struct{ *configv1.Ingress }
-
-// Marshal implements serialization of Ingres.Spec.Domain with anonymization
-func (a IngressAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	a.Ingress.Spec.Domain = anonymizeURL(a.Ingress.Spec.Domain)
-	return runtime.Encode(openshiftSerializer, a.Ingress)
-}
-
-// GetExtension returns extension for anonymized ingress objects
-func (a IngressAnonymizer) GetExtension() string {
-	return "json"
+func anonymizeIngress(ingress *configv1.Ingress) *configv1.Ingress {
+	ingress.Spec.Domain = anonymize.AnonymizeURL(ingress.Spec.Domain)
+	return ingress
 }

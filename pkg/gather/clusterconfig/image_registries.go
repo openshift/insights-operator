@@ -8,7 +8,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
@@ -18,6 +17,7 @@ import (
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
@@ -61,7 +61,7 @@ func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistr
 		} else {
 			pvRecord := record.Record{
 				Name: fmt.Sprintf("config/persistentvolumes/%s", pv.Name),
-				Item: PersistentVolumeAnonymizer{pv},
+				Item: record.JSONMarshaller{Object: pv},
 			}
 			records = append(records, pvRecord)
 		}
@@ -77,50 +77,10 @@ func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistr
 	objKind := kinds[0]
 	coRecord := record.Record{
 		Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), config.Name),
-		Item: ImageRegistryAnonymizer{config},
+		Item: record.JSONMarshaller{Object: anonymizeImageRegistry(config)},
 	}
 	records = append(records, coRecord)
 	return records, nil
-}
-
-// ImageRegistryAnonymizer implements serialization with marshalling
-type ImageRegistryAnonymizer struct {
-	*registryv1.Config
-}
-
-// Marshal implements serialization of Ingres.Spec.Domain with anonymization
-func (a ImageRegistryAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	a.Spec.HTTPSecret = anonymizeString(a.Spec.HTTPSecret)
-	if a.Spec.Storage.S3 != nil {
-		a.Spec.Storage.S3.Bucket = anonymizeString(a.Spec.Storage.S3.Bucket)
-		a.Spec.Storage.S3.KeyID = anonymizeString(a.Spec.Storage.S3.KeyID)
-		a.Spec.Storage.S3.RegionEndpoint = anonymizeString(a.Spec.Storage.S3.RegionEndpoint)
-		a.Spec.Storage.S3.Region = anonymizeString(a.Spec.Storage.S3.Region)
-	}
-	if a.Spec.Storage.Azure != nil {
-		a.Spec.Storage.Azure.AccountName = anonymizeString(a.Spec.Storage.Azure.AccountName)
-		a.Spec.Storage.Azure.Container = anonymizeString(a.Spec.Storage.Azure.Container)
-	}
-	if a.Spec.Storage.GCS != nil {
-		a.Spec.Storage.GCS.Bucket = anonymizeString(a.Spec.Storage.GCS.Bucket)
-		a.Spec.Storage.GCS.ProjectID = anonymizeString(a.Spec.Storage.GCS.ProjectID)
-		a.Spec.Storage.GCS.KeyID = anonymizeString(a.Spec.Storage.GCS.KeyID)
-	}
-	if a.Spec.Storage.Swift != nil {
-		a.Spec.Storage.Swift.AuthURL = anonymizeString(a.Spec.Storage.Swift.AuthURL)
-		a.Spec.Storage.Swift.Container = anonymizeString(a.Spec.Storage.Swift.Container)
-		a.Spec.Storage.Swift.Domain = anonymizeString(a.Spec.Storage.Swift.Domain)
-		a.Spec.Storage.Swift.DomainID = anonymizeString(a.Spec.Storage.Swift.DomainID)
-		a.Spec.Storage.Swift.Tenant = anonymizeString(a.Spec.Storage.Swift.Tenant)
-		a.Spec.Storage.Swift.TenantID = anonymizeString(a.Spec.Storage.Swift.TenantID)
-		a.Spec.Storage.Swift.RegionName = anonymizeString(a.Spec.Storage.Swift.RegionName)
-	}
-	return runtime.Encode(registrySerializer.LegacyCodec(registryv1.SchemeGroupVersion), a.Config)
-}
-
-// GetExtension returns extension for anonymized image registry objects
-func (a ImageRegistryAnonymizer) GetExtension() string {
-	return "json"
 }
 
 // findPVByPVCName tries to find *corev1.PersistentVolume used in PersistentVolumeClaim with provided name
@@ -148,17 +108,32 @@ func findPVByPVCName(ctx context.Context, coreClient corev1client.CoreV1Interfac
 	return pv, nil
 }
 
-// PersistentVolumeAnonymizer implements serialization with marshalling
-type PersistentVolumeAnonymizer struct {
-	*corev1.PersistentVolume
-}
 
-// Marshal implements serialization of corev1.PersistentVolume without anonymization
-func (p PersistentVolumeAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(kubeSerializer, p.PersistentVolume)
-}
-
-// GetExtension returns extension for PersistentVolume objects
-func (p PersistentVolumeAnonymizer) GetExtension() string {
-	return "json"
+func anonymizeImageRegistry(config *registryv1.Config) *registryv1.Config {
+	config.Spec.HTTPSecret = anonymize.AnonymizeString(config.Spec.HTTPSecret)
+	if config.Spec.Storage.S3 != nil {
+		config.Spec.Storage.S3.Bucket = anonymize.AnonymizeString(config.Spec.Storage.S3.Bucket)
+		config.Spec.Storage.S3.KeyID = anonymize.AnonymizeString(config.Spec.Storage.S3.KeyID)
+		config.Spec.Storage.S3.RegionEndpoint = anonymize.AnonymizeString(config.Spec.Storage.S3.RegionEndpoint)
+		config.Spec.Storage.S3.Region = anonymize.AnonymizeString(config.Spec.Storage.S3.Region)
+	}
+	if config.Spec.Storage.Azure != nil {
+		config.Spec.Storage.Azure.AccountName = anonymize.AnonymizeString(config.Spec.Storage.Azure.AccountName)
+		config.Spec.Storage.Azure.Container = anonymize.AnonymizeString(config.Spec.Storage.Azure.Container)
+	}
+	if config.Spec.Storage.GCS != nil {
+		config.Spec.Storage.GCS.Bucket = anonymize.AnonymizeString(config.Spec.Storage.GCS.Bucket)
+		config.Spec.Storage.GCS.ProjectID = anonymize.AnonymizeString(config.Spec.Storage.GCS.ProjectID)
+		config.Spec.Storage.GCS.KeyID = anonymize.AnonymizeString(config.Spec.Storage.GCS.KeyID)
+	}
+	if config.Spec.Storage.Swift != nil {
+		config.Spec.Storage.Swift.AuthURL = anonymize.AnonymizeString(config.Spec.Storage.Swift.AuthURL)
+		config.Spec.Storage.Swift.Container = anonymize.AnonymizeString(config.Spec.Storage.Swift.Container)
+		config.Spec.Storage.Swift.Domain = anonymize.AnonymizeString(config.Spec.Storage.Swift.Domain)
+		config.Spec.Storage.Swift.DomainID = anonymize.AnonymizeString(config.Spec.Storage.Swift.DomainID)
+		config.Spec.Storage.Swift.Tenant = anonymize.AnonymizeString(config.Spec.Storage.Swift.Tenant)
+		config.Spec.Storage.Swift.TenantID = anonymize.AnonymizeString(config.Spec.Storage.Swift.TenantID)
+		config.Spec.Storage.Swift.RegionName = anonymize.AnonymizeString(config.Spec.Storage.Swift.RegionName)
+	}
+	return config
 }

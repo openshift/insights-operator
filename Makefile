@@ -1,6 +1,6 @@
 GOCMD ?= go
-GORUN ?= $(GOCMD) run 
-GOBUILD ?= $(GOCMD) build 
+GORUN ?= $(GOCMD) run
+GOBUILD ?= $(GOCMD) build
 GOBUILDFLAGS ?= -mod=vendor -ldflags "-X k8s.io/client-go/pkg/version.gitCommit=$$(git rev-parse HEAD) -X k8s.io/client-go/pkg/version.gitVersion=v1.0.0+$$(git rev-parse --short=7 HEAD)"
 GOTEST ?= $(GOCMD) test
 GOGET ?= $(GOCMD) get

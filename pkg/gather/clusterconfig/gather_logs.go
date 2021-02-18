@@ -14,6 +14,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 // gatherLogsFromPodsInNamespace collects logs from the pods in provided namespace
@@ -61,7 +62,7 @@ func gatherLogsFromPodsInNamespace(
 			if len(strings.TrimSpace(logs)) != 0 {
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pod.Namespace, pod.Name, logFileName),
-					Item: Raw{logs},
+					Item: marshal.Raw{Str: logs},
 				})
 			}
 		}

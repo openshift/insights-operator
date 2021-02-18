@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 type testError struct{}
@@ -17,14 +18,14 @@ func (e *testError) Error() string {
 func mockGatherFunction1(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{
 		Name: "config/mock1",
-		Item: Raw{"mock1"},
+		Item: marshal.Raw{Str: "mock1"},
 	}}, nil}
 }
 
 func mockGatherFunction2(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{
 		Name: "config/mock2",
-		Item: Raw{"mock2"},
+		Item: marshal.Raw{Str: "mock2"},
 	}}, nil}
 }
 

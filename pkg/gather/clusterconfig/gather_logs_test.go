@@ -9,6 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shouldExist bool) {
@@ -74,7 +76,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 	if regexSearch {
 		assert.Regexp(t, stringToSearch, records[0].Item)
 	} else {
-		assert.Equal(t, Raw{stringToSearch + "\n"}, records[0].Item)
+		assert.Equal(t, marshal.Raw{Str: stringToSearch + "\n"}, records[0].Item)
 	}
 }
 

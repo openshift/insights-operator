@@ -7,10 +7,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 
-	registryv1 "github.com/openshift/api/imageregistry/v1"
 	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 
@@ -51,21 +49,6 @@ func gatherClusterImagePruner(ctx context.Context, registryClient imageregistryv
 	objKind := kinds[0]
 	return []record.Record{{
 		Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), pruner.Name),
-		Item: ImagePrunerAnonymizer{pruner},
+		Item: record.JSONMarshaller{Object: pruner},
 	}}, nil
-}
-
-// ImagePrunerAnonymizer implements serialization with marshalling
-type ImagePrunerAnonymizer struct {
-	*registryv1.ImagePruner
-}
-
-// Marshal serializes ImagePruner with anonymization
-func (a ImagePrunerAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(registrySerializer.LegacyCodec(registryv1.SchemeGroupVersion), a.ImagePruner)
-}
-
-// GetExtension returns extension for anonymized image pruner objects
-func (a ImagePrunerAnonymizer) GetExtension() string {
-	return "json"
 }

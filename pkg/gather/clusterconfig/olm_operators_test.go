@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/openshift/insights-operator/pkg/record"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,14 +50,14 @@ func TestOLMOperatorsGather(t *testing.T) {
 	if len(records) != 1 {
 		t.Fatalf("unexpected number or records %d", len(records))
 	}
-	ooa, ok := records[0].Item.(OlmOperatorAnonymizer)
+	ooa, ok := records[0].Item.(record.JSONMarshaller).Object.([]olmOperator)
 	if !ok {
-		t.Fatalf("returned item is not of type OlmOperatorAnonymizer")
+		t.Fatalf("returned item is not of type []olmOperator")
 	}
-	if ooa.operators[0].Name != "test-olm-operator" {
-		t.Fatalf("unexpected name of gathered OLM operator %s", ooa.operators[0])
+	if ooa[0].Name != "test-olm-operator" {
+		t.Fatalf("unexpected name of gathered OLM operator %s", ooa)
 	}
-	if ooa.operators[0].Version != "v1.2.3" {
-		t.Fatalf("unexpected version of gathered OLM operator %s", ooa.operators[0])
+	if ooa[0].Version != "v1.2.3" {
+		t.Fatalf("unexpected version of gathered OLM operator %s", ooa)
 	}
 }
