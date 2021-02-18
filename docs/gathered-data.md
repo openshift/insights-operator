@@ -275,3 +275,13 @@ Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-
 
 Location in archive: config/machineconfigpools/
 See: docs/insights-archive-sample/config/machineconfigpools/
+## ContainerRuntimeConfig
+
+collects ContainerRuntimeConfig information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/containerruntimeconfigs/
+See: docs/insights-archive-sample/config/containerruntimeconfigs
+
