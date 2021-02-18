@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -74,7 +73,7 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 	}
 	r := record.Record{
 		Name: "config/olm_operators",
-		Item: OlmOperatorAnonymizer{operators: olms},
+		Item: record.JSONMarshaller{Object: olms},
 	}
 	return []record.Record{r}, nil
 }
@@ -101,17 +100,4 @@ func readVersionFromRefs(r interface{}) string {
 		return nameVer[1]
 	}
 	return ""
-}
-
-// OlmOperatorAnonymizer implements HostSubnet serialization
-type OlmOperatorAnonymizer struct{ operators []olmOperator }
-
-// Marshal implements OlmOperator serialization
-func (a OlmOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return json.Marshal(a.operators)
-}
-
-// GetExtension returns extension for OlmOperator object
-func (a OlmOperatorAnonymizer) GetExtension() string {
-	return "json"
 }
