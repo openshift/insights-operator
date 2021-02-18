@@ -251,6 +251,20 @@ Output raw size: 491
 #### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
+## OpenshiftSDNLogs
+
+collects logs from pods in openshift-sdn namespace with following substrings:
+  - "Got OnEndpointsUpdate for unknown Endpoints",
+  - "Got OnEndpointsDelete for unknown Endpoints",
+  - "Unable to update proxy firewall for policy",
+  - "Failed to update proxy firewall for policy",
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+
+
 ## PodDisruptionBudgets
 
 gathers the cluster's PodDisruptionBudgets.
