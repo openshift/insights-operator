@@ -67,14 +67,10 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 		case <-stopCh:
 			return
 		case <-time.After(initialDelay):
-			if c.configurator.Config().Report {
-				c.Gather()
-			}
-		}
-	} else {
-		if c.configurator.Config().Report {
 			c.Gather()
 		}
+	} else {
+		c.Gather()
 	}
 
 	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
@@ -86,6 +82,11 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 // Currently their is only 1 gatherer (clusterconfig) and no new gatherer is on the horizon.
 // Running the gatherers in parallel should be a future improvement when a new gatherer is introduced.
 func (c *Controller) Gather() {
+	if !c.configurator.Config().Report {
+		klog.V(3).Info("Gather is disabled by configuration.")
+		return
+	}
+
 	interval := c.configurator.Config().Interval
 	threshold := status.GatherFailuresCountThreshold
 	duration := interval / (time.Duration(threshold) * 2)
@@ -153,9 +154,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			if c.configurator.Config().Report {
-				c.Gather()
-			}
+			c.Gather()
 		}
 	}
 }
