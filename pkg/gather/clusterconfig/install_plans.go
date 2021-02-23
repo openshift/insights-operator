@@ -15,6 +15,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
@@ -51,7 +52,7 @@ func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, co
 	recs := map[string]*collectedPlan{}
 	total := 0
 	opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
-	config, ctx, err := getAllNamespaces(ctx, coreClient)
+	config, err := utils.GetAllNamespaces(ctx, coreClient)
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -75,8 +76,8 @@ func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, co
 			jsonMap := u.UnstructuredContent()
 			var items []interface{}
 			err = failEarly(
-				func() error { return parseJSONQuery(jsonMap, "metadata.continue?", &cont) },
-				func() error { return parseJSONQuery(jsonMap, "items", &items) },
+				func() error { return utils.ParseJSONQuery(jsonMap, "metadata.continue?", &cont) },
+				func() error { return utils.ParseJSONQuery(jsonMap, "items", &items) },
 			)
 			if err != nil {
 				return nil, []error{err}
@@ -111,10 +112,10 @@ func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []erro
 
 	err := failEarly(
 		func() error {
-			return parseJSONQuery(itemMap, "spec.clusterServiceVersionNames", &clusterServiceVersionNames)
+			return utils.ParseJSONQuery(itemMap, "spec.clusterServiceVersionNames", &clusterServiceVersionNames)
 		},
-		func() error { return parseJSONQuery(itemMap, "metadata.namespace", &ns) },
-		func() error { return parseJSONQuery(itemMap, "metadata.generateName", &genName) },
+		func() error { return utils.ParseJSONQuery(itemMap, "metadata.namespace", &ns) },
+		func() error { return utils.ParseJSONQuery(itemMap, "metadata.generateName", &genName) },
 	)
 	if err != nil {
 		return []error{err}

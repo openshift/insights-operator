@@ -6,7 +6,6 @@ import (
 
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
@@ -54,22 +53,9 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: PodDisruptionBudgetsAnonymizer{&pdb},
+			Item: record.JSONMarshaller{Object: pdb},
 		})
 	}
 	return records, nil
 }
 
-type PodDisruptionBudgetsAnonymizer struct {
-	*policyv1beta1.PodDisruptionBudget
-}
-
-// Marshal implements serialization of a PodDisruptionBudget with anonymization
-func (a PodDisruptionBudgetsAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(policyV1Beta1Serializer, a.PodDisruptionBudget)
-}
-
-// GetExtension returns extension for anonymized PodDisruptionBudget objects
-func (a PodDisruptionBudgetsAnonymizer) GetExtension() string {
-	return "json"
-}

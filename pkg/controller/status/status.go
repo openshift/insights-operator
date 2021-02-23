@@ -351,9 +351,15 @@ func (c *Controller) Start(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 			case <-timer.C:
-				limiter.Wait(ctx)
+				err := limiter.Wait(ctx)
+				if err != nil {
+					klog.Errorf("Limiter error by timer: %v", err)
+				}
 			case <-c.statusCh:
-				limiter.Wait(ctx)
+				err := limiter.Wait(ctx)
+				if err != nil {
+					klog.Errorf("Limiter error by status: %v", err)
+				}
 			}
 			if err := c.updateStatus(ctx, false); err != nil {
 				klog.Errorf("Unable to write cluster operator status: %v", err)

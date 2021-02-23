@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
 type gatherStatusReport struct {
@@ -97,7 +98,7 @@ func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metr
 }
 
 // Gather is hosting and calling all the recording functions
-func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder record.Interface) error {
+func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder recorder.Interface) error {
 	g.ctx = ctx
 	var errors []string
 	var gatherReport []gatherStatusReport
@@ -190,7 +191,7 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 	return cases, starts, nil
 }
 
-func recordGatherReport(recorder record.Interface, report []gatherStatusReport) error {
+func recordGatherReport(recorder recorder.Interface, report []gatherStatusReport) error {
 	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
 	return recorder.Record(r)
 }

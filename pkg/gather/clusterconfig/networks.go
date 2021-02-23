@@ -38,5 +38,5 @@ func gatherClusterNetwork(ctx context.Context, configClient configv1client.Confi
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/network", Item: Anonymizer{config}}}, nil
+	return []record.Record{{Name: "config/network", Item: record.JSONMarshaller{Object: config}}}, nil
 }

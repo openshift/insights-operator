@@ -14,6 +14,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 type logContainersFilter struct {
@@ -93,7 +94,7 @@ func gatherLogsFromContainers(
 			if len(strings.TrimSpace(logs)) != 0 {
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pod.Namespace, pod.Name, logFileName),
-					Item: Raw{logs},
+					Item: marshal.Raw{Str: logs},
 				})
 			}
 		}

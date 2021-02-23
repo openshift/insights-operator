@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"context"
-	"encoding/json"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -13,6 +12,7 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 type olmOperator struct {
@@ -48,7 +48,7 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 	var refs []interface{}
 	olms := []olmOperator{}
 	for _, i := range olmOperators.Items {
-		err := parseJSONQuery(i.Object, "status.components.refs", &refs)
+		err := utils.ParseJSONQuery(i.Object, "status.components.refs", &refs)
 		if err != nil {
 			klog.Errorf("Cannot find \"status.components.refs\" in %s definition: %v", i.GetName(), err)
 			continue
@@ -73,7 +73,7 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 	}
 	r := record.Record{
 		Name: "config/olm_operators",
-		Item: OlmOperatorAnonymizer{operators: olms},
+		Item: record.JSONMarshaller{Object: olms},
 	}
 	return []record.Record{r}, nil
 }
@@ -100,17 +100,4 @@ func readVersionFromRefs(r interface{}) string {
 		return nameVer[1]
 	}
 	return ""
-}
-
-// OlmOperatorAnonymizer implements HostSubnet serialization
-type OlmOperatorAnonymizer struct{ operators []olmOperator }
-
-// Marshal implements OlmOperator serialization
-func (a OlmOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return json.Marshal(a.operators)
-}
-
-// GetExtension returns extension for OlmOperator object
-func (a OlmOperatorAnonymizer) GetExtension() string {
-	return "json"
 }

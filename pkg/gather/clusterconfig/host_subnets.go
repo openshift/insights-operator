@@ -6,9 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
-	networkv1 "github.com/openshift/api/network/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -44,21 +42,8 @@ func gatherHostSubnet(ctx context.Context, networkClient networkv1client.Network
 	for _, h := range hostSubnetList.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/hostsubnet/%s", h.Host),
-			Item: HostSubnetAnonymizer{h},
+			Item: record.JSONMarshaller{Object: h},
 		})
 	}
 	return records, nil
-}
-
-// HostSubnetAnonymizer implements HostSubnet serialization
-type HostSubnetAnonymizer struct{ networkv1.HostSubnet }
-
-// Marshal implements HostSubnet serialization
-func (a HostSubnetAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion), &a.HostSubnet)
-}
-
-// GetExtension returns extension for HostSubnet object
-func (a HostSubnetAnonymizer) GetExtension() string {
-	return "json"
 }

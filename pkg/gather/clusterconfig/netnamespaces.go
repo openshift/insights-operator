@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"context"
-	"encoding/json"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,20 +55,7 @@ func gatherNetNamespace(ctx context.Context, networkClient networkv1client.Netwo
 	}
 	r := record.Record{
 		Name: "config/netnamespaces",
-		Item: NetNamespaceAnonymizer{namespaces: namespaces},
+		Item: record.JSONMarshaller{Object: namespaces},
 	}
 	return []record.Record{r}, nil
-}
-
-// NetNamespaceAnonymizer implements NetNamespace serialization
-type NetNamespaceAnonymizer struct{ namespaces []*netNamespace }
-
-// Marshal implements NetNamespace serialization
-func (a NetNamespaceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return json.Marshal(a.namespaces)
-}
-
-// GetExtension returns extension for NetNamespace object
-func (a NetNamespaceAnonymizer) GetExtension() string {
-	return "json"
 }

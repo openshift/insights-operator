@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 func TestGatherInstallPlans(t *testing.T) {
@@ -50,7 +52,9 @@ func TestGatherInstallPlans(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
 			var client *dynamicfake.FakeDynamicClient
 			coreClient := kubefake.NewSimpleClientset()
@@ -75,7 +79,7 @@ func TestGatherInstallPlans(t *testing.T) {
 				gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
 				gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
 				var ns string
-				err = parseJSONQuery(installplan.Object, "metadata.namespace", &ns)
+				err = utils.ParseJSONQuery(installplan.Object, "metadata.namespace", &ns)
 				if err != nil {
 					t.Fatal("unable to read ns ", err)
 				}

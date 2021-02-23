@@ -10,6 +10,8 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 const (
@@ -68,14 +70,14 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		klog.Errorf("Unable to retrieve most recent alerts from metrics: %v", err)
 		return nil, []error{err}
 	}
-	r := NewLineLimitReader(rsp, metricsAlertsLinesLimit)
+	r := utils.NewLineLimitReader(rsp, metricsAlertsLinesLimit)
 	alerts, err := ioutil.ReadAll(r)
 	if err != nil && err != io.EOF {
 		klog.Errorf("Unable to read most recent alerts from metrics: %v", err)
 		return nil, []error{err}
 	}
 
-	remainingAlertLines, err := countLines(rsp)
+	remainingAlertLines, err := utils.CountLines(rsp)
 	if err != nil && err != io.EOF {
 		klog.Errorf("Unable to count truncated lines of alerts metric: %v", err)
 		return nil, []error{err}
@@ -88,7 +90,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 	data = append(data, []byte(fmt.Sprintf("# ALERTS %d/%d\n", totalAlertCount, metricsAlertsLinesLimit))...)
 	data = append(data, alerts...)
 	records := []record.Record{
-		{Name: "config/metrics", Item: RawByte(data)},
+		{Name: "config/metrics", Item: marshal.RawByte(data)},
 	}
 
 	return records, nil

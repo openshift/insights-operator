@@ -3,17 +3,9 @@ package record
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 )
-
-type Interface interface {
-	Record(Record) error
-}
-
-type FlushInterface interface {
-	Interface
-	Flush(context.Context) error
-}
 
 type Record struct {
 	Name     string
@@ -21,6 +13,15 @@ type Record struct {
 
 	Fingerprint string
 	Item        Marshalable
+}
+
+// Filename with extention, if present
+func (r *Record) Filename() string {
+	extension := r.Item.GetExtension()
+	if len(extension) > 0 {
+		return fmt.Sprintf("%s.%s", r.Name, extension)
+	}
+	return r.Name
 }
 
 type Marshalable interface {
