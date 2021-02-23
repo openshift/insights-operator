@@ -147,7 +147,7 @@ Output raw size: 245
 ### Examples
 
 #### ClusterOperators
-[{"Name":"config/clusteroperator/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Degraded","status":"","lastTransitionTime":null}],"extension":null}}}]
+```[{"Name":"config/clusteroperator/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Degraded","status":"","lastTransitionTime":null}],"extension":null}}}]```
 
 ## ClusterProxy
 
@@ -278,7 +278,7 @@ Output raw size: 148
 ### Examples
 
 #### MostRecentMetrics
-[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
+```[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]```
 
 ## NetNamespace
 
@@ -307,7 +307,7 @@ Output raw size: 491
 ### Examples
 
 #### Nodes
-[{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
+```[{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]```
 
 ## OLMOperators
 
@@ -409,6 +409,20 @@ The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernete
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
+
+
+## SAPPods
+
+collects information about pods running in SAP/SDI namespaces.
+Only pods with a failing status are collected.
+Failed pods belonging to a job that has later succeeded are ignored.
+
+Relevant Kubernetes API docs:
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
+  - https://pkg.go.dev/k8s.io/client-go/dynamic
+
+Location in archive: config/pod/{namespace}/{pod-name}.json
 
 
 ## ServiceAccounts
