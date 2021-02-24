@@ -124,7 +124,7 @@ func (c *Controller) runGatherer(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
 	defer cancel()
 	defer func() {
-		if err := c.recorder.Flush(ctx); err != nil {
+		if err := c.recorder.Flush(); err != nil {
 			klog.Errorf("Unable to flush recorder: %v", err)
 		}
 	}()

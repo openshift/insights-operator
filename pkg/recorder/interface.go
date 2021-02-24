@@ -1,7 +1,6 @@
 package recorder
 
 import (
-	"context"
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -15,11 +14,11 @@ type Interface interface {
 // FlushInterface extends Recorder by requiring flush
 type FlushInterface interface {
 	Interface
-	Flush(context.Context) error
+	Flush() error
 }
 
 // Driver for the recorder
 type Driver interface {
-	Save(context.Context, record.MemoryRecords) (record.MemoryRecords, error)
-	Prune(context.Context, time.Time) error
+	Save(record.MemoryRecords) (record.MemoryRecords, error)
+	Prune(time.Time) error
 }

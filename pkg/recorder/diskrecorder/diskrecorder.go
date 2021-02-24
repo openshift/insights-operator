@@ -26,7 +26,7 @@ func New(path string) *DiskRecorder {
 }
 
 // Save the records into the archive
-func (d *DiskRecorder) Save(ctx context.Context, records record.MemoryRecords) (record.MemoryRecords, error) {
+func (d *DiskRecorder) Save(records record.MemoryRecords) (record.MemoryRecords, error) {
 	wrote := 0
 	start := time.Now()
 	defer func() {
@@ -59,14 +59,7 @@ func (d *DiskRecorder) Save(ctx context.Context, records record.MemoryRecords) (
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
 
-	done := ctx.Done()
 	for _, record := range records {
-		select {
-		case <-done:
-			return nil, fmt.Errorf("cancelled before all results could be written to disk")
-		default:
-		}
-
 		if err := tw.WriteHeader(&tar.Header{
 			Name:     record.Name,
 			ModTime:  record.At,
@@ -95,7 +88,7 @@ func (d *DiskRecorder) Save(ctx context.Context, records record.MemoryRecords) (
 }
 
 // Prune the archives older than given time
-func (d *DiskRecorder) Prune(ctx context.Context, olderThan time.Time) error {
+func (d *DiskRecorder) Prune(olderThan time.Time) error {
 	files, err := ioutil.ReadDir(d.basePath)
 	if err != nil {
 		return err
