@@ -2,21 +2,21 @@
     "kind": "HostSubnet",
     "apiVersion": "network.openshift.io/v1",
     "metadata": {
-        "name": "ci-ln-iffptmb-f76d1-nhwgd-master-1",
-        "selfLink": "/apis/network.openshift.io/v1/hostsubnets/ci-ln-iffptmb-f76d1-nhwgd-master-1",
-        "uid": "8fb03f7e-daee-4ee7-85ea-c9e593f1df45",
-        "resourceVersion": "3300",
+        "name": "ci-ln-h9vpcgk-f76d1-8zsf5-master-1",
+        "selfLink": "/apis/network.openshift.io/v1/hostsubnets/ci-ln-h9vpcgk-f76d1-8zsf5-master-1",
+        "uid": "32f1dd3a-f095-41dc-a898-92764a13d7ed",
+        "resourceVersion": "3390",
         "generation": 1,
-        "creationTimestamp": "2020-12-02T13:47:01Z",
+        "creationTimestamp": "2021-01-12T07:57:07Z",
         "annotations": {
-            "pod.network.openshift.io/node-uid": "ac4124f9-6413-43b7-874f-143d28d26515"
+            "pod.network.openshift.io/node-uid": "41c67588-d3ea-4613-a57b-fb2d481a0436"
         },
         "managedFields": [
             {
                 "manager": "openshift-sdn-controller",
                 "operation": "Update",
                 "apiVersion": "network.openshift.io/v1",
-                "time": "2020-12-02T13:47:01Z",
+                "time": "2021-01-12T07:57:07Z",
                 "fieldsType": "FieldsV1",
                 "fieldsV1": {
                     "f:host": {},
@@ -32,7 +32,7 @@
             }
         ]
     },
-    "host": "ci-ln-iffptmb-f76d1-nhwgd-master-1",
-    "hostIP": "xxxxxxxx",
-    "subnet": "xxxxxxxxxxxxx"
+    "host": "ci-ln-h9vpcgk-f76d1-8zsf5-master-1",
+    "hostIP": "10.0.0.5",
+    "subnet": "10.129.0.0/23"
 }
