@@ -9,10 +9,14 @@ import (
 	"reflect"
 	"testing"
 
+	authv1 "github.com/openshift/api/authorization/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
+	securityv1 "github.com/openshift/api/security/v1"
+	authfake "github.com/openshift/client-go/authorization/clientset/versioned/fake"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
+	securityfake "github.com/openshift/client-go/security/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -932,6 +936,95 @@ func TestGatherServiceAccounts(t *testing.T) {
 				t.Fatalf("serviceaccount test failed. expected: %s got: %s", test.exp, s)
 			}
 		})
+	}
+}
+
+func TestGatherSAPConfig(t *testing.T) {
+	// Initialize the fake dynamic client.
+	var datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
+kind: DataHub
+metadata:
+    name: example-datahub
+    namespace: example-namespace
+`
+
+	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
+	datahubsClient := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	testDatahub := &unstructured.Unstructured{}
+
+	_, _, err := decUnstructured.Decode([]byte(datahubYAML), nil, testDatahub)
+	if err != nil {
+		t.Fatal("unable to decode datahub YAML", err)
+	}
+
+	// Initialize the remaining K8s/OS fake clients.
+	coreClient := kubefake.NewSimpleClientset()
+	authClient := authfake.NewSimpleClientset()
+	securityClient := securityfake.NewSimpleClientset()
+
+	// Security Context Constraints.
+	securityClient.SecurityV1().SecurityContextConstraints().Create(
+		context.Background(),
+		&securityv1.SecurityContextConstraints{ObjectMeta: metav1.ObjectMeta{Name: "anyuid"}},
+		metav1.CreateOptions{},
+	)
+	securityClient.SecurityV1().SecurityContextConstraints().Create(
+		context.Background(),
+		&securityv1.SecurityContextConstraints{ObjectMeta: metav1.ObjectMeta{Name: "privileged"}},
+		metav1.CreateOptions{},
+	)
+	// This SCC should not be collected.
+	securityClient.SecurityV1().SecurityContextConstraints().Create(
+		context.Background(),
+		&securityv1.SecurityContextConstraints{ObjectMeta: metav1.ObjectMeta{Name: "ignored"}},
+		metav1.CreateOptions{},
+	)
+
+	// Cluster Role Bindings.
+	authClient.AuthorizationV1().ClusterRoleBindings().Create(
+		context.Background(),
+		&authv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "system:openshift:scc:anyuid"}},
+		metav1.CreateOptions{},
+	)
+	authClient.AuthorizationV1().ClusterRoleBindings().Create(
+		context.Background(),
+		&authv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "system:openshift:scc:privileged"}},
+		metav1.CreateOptions{},
+	)
+	// This CRB should not be collected.
+	authClient.AuthorizationV1().ClusterRoleBindings().Create(
+		context.Background(),
+		&authv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "system:openshift:scc:ignored"}},
+		metav1.CreateOptions{},
+	)
+
+	gatherer := &Gatherer{
+		ctx:            context.Background(),
+		dynamicClient:  datahubsClient,
+		coreClient:     coreClient.CoreV1(),
+		securityClient: securityClient.SecurityV1(),
+		authClient:     authClient.AuthorizationV1(),
+	}
+
+	records, errs := GatherSAPConfig(gatherer)()
+	if len(errs) > 0 {
+		t.Fatalf("unexpected errors: %#v", errs)
+	}
+	if len(records) != 0 {
+		t.Fatalf("unexpected number or records in the first run: %d", len(records))
+	}
+
+	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
+	datahubsClient.Resource(datahubsResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
+
+	records, errs = GatherSAPConfig(gatherer)()
+	if len(errs) > 0 {
+		t.Fatalf("unexpected errors: %#v", errs)
+	}
+	if len(records) != 4 {
+		t.Fatalf("unexpected number or records in the second run: %d", len(records))
 	}
 }
 

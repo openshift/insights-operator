@@ -39,10 +39,12 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	registryv1 "github.com/openshift/api/imageregistry/v1"
 	networkv1 "github.com/openshift/api/network/v1"
+	authv1client "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
 	openshiftscheme "github.com/openshift/client-go/config/clientset/versioned/scheme"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
+	securityv1client "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	"github.com/openshift/library-go/pkg/image/reference"
 	restclient "k8s.io/client-go/rest"
 
@@ -133,6 +135,8 @@ type Gatherer struct {
 	lock            sync.Mutex
 	lastVersion     *configv1.ClusterVersion
 	discoveryClient discovery.DiscoveryInterface
+	authClient      authv1client.AuthorizationV1Interface
+	securityClient  securityv1client.SecurityV1Interface
 }
 
 type clusterOperatorResource struct {
@@ -150,7 +154,7 @@ type netNamespace struct {
 
 // New creates new Gatherer
 func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, certClient certificatesv1beta1.CertificatesV1beta1Interface, metricsClient rest.Interface,
-	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface, discoveryClient discovery.DiscoveryInterface) *Gatherer {
+	registryClient imageregistryv1.ImageregistryV1Interface, crdClient apixv1beta1client.ApiextensionsV1beta1Interface, networkClient networkv1client.NetworkV1Interface, dynamicClient dynamic.Interface, policyClient policyclient.PolicyV1beta1Interface, discoveryClient discovery.DiscoveryInterface, authClient authv1client.AuthorizationV1Interface, securityClient securityv1client.SecurityV1Interface) *Gatherer {
 	return &Gatherer{
 		client:          client,
 		coreClient:      coreClient,
@@ -162,6 +166,8 @@ func New(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1
 		dynamicClient:   dynamicClient,
 		policyClient:    policyClient,
 		discoveryClient: discoveryClient,
+		authClient:      authClient,
+		securityClient:  securityClient,
 	}
 }
 
@@ -198,6 +204,7 @@ func (i *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherOpenshiftSDNLogs(i),
 		GatherNetNamespace(i),
 		GatherServiceAccounts(i),
+		GatherSAPConfig(i),
 	)
 }
 
@@ -1160,6 +1167,73 @@ func GatherNetNamespace(g *Gatherer) func() ([]record.Record, []error) {
 			Item: NetNamespaceAnonymizer{namespaces: namespaces},
 		}
 		return []record.Record{r}, nil
+	}
+}
+
+// GatherSAPConfig collects selected security context constraints
+// and cluster role bindings from clusters running a SAP payload.
+//
+// Relevant OpenShift API docs:
+//   - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
+//   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
+//
+// Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+func GatherSAPConfig(i *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		sccToGather := []string{"anyuid", "privileged"}
+		crbToGather := []string{"system:openshift:scc:anyuid", "system:openshift:scc:privileged"}
+
+		datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
+
+		datahubsList, err := i.dynamicClient.Resource(datahubsResource).List(i.ctx, metav1.ListOptions{})
+
+		if errors.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, []error{err}
+		}
+		// If no DataHubs resource exists on the cluster, skip this gathering.
+		// This may already be handled by the IsNotFound check, but it's better to be sure.
+		if len(datahubsList.Items) == 0 {
+			return nil, nil
+		}
+
+		records := []record.Record{}
+
+		for _, name := range sccToGather {
+			scc, err := i.securityClient.SecurityContextConstraints().Get(i.ctx, name, metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				continue
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/securitycontextconstraint/%s", scc.Name),
+				// It is not possible to use the generic OpenShift Anonymizer type here
+				// because the SCC and CRB resources returned by their respective clients
+				// are currently missing some properties (kind, apiVersion).
+				Item: record.JSONMarshaller{Object: scc},
+			})
+		}
+
+		for _, name := range crbToGather {
+			crb, err := i.authClient.ClusterRoleBindings().Get(i.ctx, name, metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				continue
+			}
+			if err != nil {
+				return nil, []error{err}
+			}
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/clusterrolebinding/%s", strings.ReplaceAll(crb.Name, ":", "_")),
+				// See the note above on why it is not possible to use the generic Anonymizer type.
+				Item: record.JSONMarshaller{Object: crb},
+			})
+		}
+
+		return records, nil
 	}
 }
 
