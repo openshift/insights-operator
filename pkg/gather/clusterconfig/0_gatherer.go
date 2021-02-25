@@ -16,6 +16,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
+type gatherMetadata struct {
+	StatusReports []gatherStatusReport `json:"status_reports"`
+	MemoryAlloc   uint64               `json:"memory_alloc"`
+	Uptime     	  string        	   `json:"uptime"`
+}
+
 type gatherStatusReport struct {
 	Name         string        `json:"name"`
 	Duration     time.Duration `json:"duration_in_ms"`
@@ -89,8 +95,11 @@ var gatherFunctions = map[string]gathering{
 	"olm_operators":                     failable(GatherOLMOperators),
 }
 
+var startTime time.Time
+
 // New creates new Gatherer
 func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metricsGatherKubeConfig *rest.Config) *Gatherer {
+	startTime = time.Now()
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
@@ -230,7 +239,10 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 }
 
 func recordGatherReport(recorder recorder.Interface, report []gatherStatusReport) error {
-	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	metadata := gatherMetadata{report, m.HeapAlloc, time.Since(startTime).Truncate(time.Millisecond).String()}
+	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: metadata}}
 	return recorder.Record(r)
 }
 
