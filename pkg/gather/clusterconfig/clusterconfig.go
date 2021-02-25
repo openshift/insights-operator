@@ -776,6 +776,8 @@ func GatherClusterImagePruner(i *Gatherer) func() ([]record.Record, []error) {
 }
 
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
+// If the Image Registry configuration uses some PersistentVolumeClaim for the storage then the corresponding
+// PersistentVolume definition is gathered
 //
 // Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
@@ -787,6 +789,22 @@ func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
 		if err != nil {
 			return nil, []error{err}
 		}
+		records := []record.Record{}
+		// if there is some PVC then try to gather used persistent volume
+		if config.Spec.Storage.PVC != nil {
+
+			pvcName := config.Spec.Storage.PVC.Claim
+			pv, err := findPVByPVCName(i.ctx, i.coreClient, pvcName)
+			if err != nil {
+				klog.Errorf("unable to find persistent volume: %s", err)
+			} else {
+				pvRecord := record.Record{
+					Name: fmt.Sprintf("config/persistentvolumes/%s", pv.Name),
+					Item: PersistentVolumeAnonymizer{pv},
+				}
+				records = append(records, pvRecord)
+			}
+		}
 		// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
 		kinds, _, err := registryScheme.ObjectKinds(config)
 		if err != nil {
@@ -796,10 +814,13 @@ func GatherClusterImageRegistry(i *Gatherer) func() ([]record.Record, []error) {
 			klog.Warningf("More kinds for image registry config operator resource %s", kinds)
 		}
 		objKind := kinds[0]
-		return []record.Record{{
+		coRecord := record.Record{
 			Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), config.Name),
 			Item: ImageRegistryAnonymizer{config},
-		}}, nil
+		}
+
+		records = append(records, coRecord)
+		return records, nil
 	}
 }
 
@@ -1006,6 +1027,7 @@ func GatherMachineConfigPool(i *Gatherer) func() ([]record.Record, []error) {
 		return records, nil
 	}
 }
+
 // GatherContainerRuntimeConfig collects ContainerRuntimeConfig  information
 //
 // The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
@@ -2071,5 +2093,45 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized openshift objects
 func (a InstallPlanAnonymizer) GetExtension() string {
+	return "json"
+}
+
+// findPVByPVCName tries to find *corev1.PersistentVolume used in PersistentVolumeClaim with provided name
+func findPVByPVCName(ctx context.Context, coreClient corev1client.CoreV1Interface, name string) (*corev1.PersistentVolume, error) {
+	// unfortunately we can't do "coreClient.PersistentVolumeClaims("").Get(ctx, name, ... )"
+	pvcs, err := coreClient.PersistentVolumeClaims("").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var pvc *corev1.PersistentVolumeClaim
+	for _, p := range pvcs.Items {
+		if p.Name == name {
+			pvc = &p
+			break
+		}
+	}
+	if pvc == nil {
+		return nil, fmt.Errorf("can't find any %s persistentvolumeclaim", name)
+	}
+	pvName := pvc.Spec.VolumeName
+	pv, err := coreClient.PersistentVolumes().Get(ctx, pvName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return pv, nil
+}
+
+// PersistentVolumeAnonymizer implements serialization with marshalling
+type PersistentVolumeAnonymizer struct {
+	*corev1.PersistentVolume
+}
+
+// Marshal implements serialization of corev1.PersistentVolume without anonymization
+func (p PersistentVolumeAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+	return runtime.Encode(kubeSerializer, p.PersistentVolume)
+}
+
+// GetExtension returns extension for PersistentVolume objects
+func (p PersistentVolumeAnonymizer) GetExtension() string {
 	return "json"
 }
