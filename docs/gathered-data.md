@@ -297,6 +297,7 @@ Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-
 
 Location in archive: config/machineconfigpools/
 See: docs/insights-archive-sample/config/machineconfigpools/
+
 ## ContainerRuntimeConfig
 
 collects ContainerRuntimeConfig information
@@ -306,4 +307,16 @@ Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeco
 
 Location in archive: config/containerruntimeconfigs/
 See: docs/insights-archive-sample/config/containerruntimeconfigs
+
+## ServiceAccounts
+
+collects ServiceAccount stats
+from kubernetes default and namespaces starting with openshift.
+
+The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
+Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
+
+Location of serviceaccounts in archive: config/serviceaccounts
+See: docs/insights-archive-sample/config/serviceaccounts
+
 
