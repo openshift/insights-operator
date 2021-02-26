@@ -1,3 +1,5 @@
+# bitbucket.org/ww/goautoneg v0.0.0-20120707110453-75cd24fc2f2c
+bitbucket.org/ww/goautoneg
 # github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46
 github.com/NYTimes/gziphandler
 # github.com/PuerkitoBio/purell v1.1.1
@@ -738,3 +740,4 @@ sigs.k8s.io/structured-merge-diff/v3/typed
 sigs.k8s.io/structured-merge-diff/v3/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
+

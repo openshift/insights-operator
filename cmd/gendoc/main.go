@@ -222,7 +222,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 	}
 		`, methodFullPackage, methodPackage, methodName))
 	tf.Close()
-	cmd := exec.Command("go", "run", "./"+f)
+	cmd := exec.Command("go", "run", "-mod=vendor", "./"+f)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
 }
