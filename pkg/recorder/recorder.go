@@ -85,7 +85,7 @@ func (r *Recorder) Record(rec record.Record) error {
 }
 
 // Flush and save the reports using recorder driver
-func (r *Recorder) Flush(ctx context.Context) error {
+func (r *Recorder) Flush() error {
 	records := r.copy()
 	if len(records) == 0 {
 		return nil
@@ -93,7 +93,7 @@ func (r *Recorder) Flush(ctx context.Context) error {
 
 	sort.Sort(records)
 
-	saved, err := r.driver.Save(ctx, records)
+	saved, err := r.driver.Save(records)
 	defer func() {
 		r.clear(saved)
 	}()
@@ -124,7 +124,7 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReport
 					lastReported = oldestAllowed
 				}
 
-				if err := r.driver.Prune(ctx, lastReported); err != nil {
+				if err := r.driver.Prune(lastReported); err != nil {
 					klog.Errorf("Failed to prune older records: %v", err)
 					return false, nil
 				}

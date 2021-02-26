@@ -1,7 +1,6 @@
 package recorder
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -16,12 +15,12 @@ type driverMock struct {
 	mock.Mock
 }
 
-func (d *driverMock) Save(ctx context.Context, records record.MemoryRecords) (record.MemoryRecords, error) {
+func (d *driverMock) Save(records record.MemoryRecords) (record.MemoryRecords, error) {
 	args := d.Called()
 	return records, args.Error(1)
 }
 
-func (d *driverMock) Prune(ctx context.Context, olderThan time.Time) error {
+func (d *driverMock) Prune(olderThan time.Time) error {
 	args := d.Called()
 	return args.Error(1)
 }
@@ -84,13 +83,13 @@ func TestFlush(t *testing.T) {
 			Item: tests.RawReport{Data: "mockdata"},
 		})
 	}
-	err := rec.Flush(context.TODO())
+	err := rec.Flush()
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), rec.size)
 }
 
 func TestFlushEmptyRecorder(t *testing.T) {
 	rec := newRecorder()
-	err := rec.Flush(context.TODO())
+	err := rec.Flush()
 	assert.Nil(t, err)
 }
