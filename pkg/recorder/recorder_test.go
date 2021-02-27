@@ -2,6 +2,7 @@ package recorder
 
 import (
 	"fmt"
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"testing"
 	"time"
 
@@ -29,6 +30,8 @@ func newRecorder() Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 
+	anonymizer := anonymization.NewAnonymizer(nil, "")
+
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{
 		driver:    &driver,
@@ -37,6 +40,7 @@ func newRecorder() Recorder {
 		records:   make(map[string]*record.MemoryRecord),
 		flushCh:   make(chan struct{}, 1),
 		flushSize: 8 * 1024 * 1024,
+		anonymizer: anonymizer,
 	}
 }
 

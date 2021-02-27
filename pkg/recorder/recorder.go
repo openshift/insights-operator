@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -22,25 +22,27 @@ type alreadyReported interface {
 
 // Recorder struct
 type Recorder struct {
-	driver    Driver
-	flushCh   chan struct{}
-	flushSize int64 // defines maximum allowed report size
-	interval  time.Duration
-	maxAge    time.Duration
-	lock      sync.Mutex
-	size      int64
-	records   map[string]*record.MemoryRecord
+	driver     Driver
+	flushCh    chan struct{}
+	flushSize  int64 // defines maximum allowed report size
+	interval   time.Duration
+	maxAge     time.Duration
+	lock       sync.Mutex
+	size       int64
+	records    map[string]*record.MemoryRecord
+	anonymizer *anonymization.Anonymizer
 }
 
 // New recorder
-func New(driver Driver, interval time.Duration) *Recorder {
+func New(driver Driver, interval time.Duration, anonymizer *anonymization.Anonymizer) *Recorder {
 	return &Recorder{
-		driver:    driver,
-		interval:  interval,
-		maxAge:    interval * 6 * 24,
-		records:   make(map[string]*record.MemoryRecord),
-		flushCh:   make(chan struct{}, 1),
-		flushSize: MaxLogSize,
+		driver:     driver,
+		interval:   interval,
+		maxAge:     interval * 6 * 24,
+		records:    make(map[string]*record.MemoryRecord),
+		flushCh:    make(chan struct{}, 1),
+		flushSize:  MaxLogSize,
+		anonymizer: anonymizer,
 	}
 }
 
@@ -65,12 +67,12 @@ func (r *Recorder) Record(rec record.Record) error {
 	}
 
 	recordName := rec.Filename()
-	r.records[recordName] = &record.MemoryRecord{
+	r.records[recordName] = r.anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
 		Name:        recordName,
 		Fingerprint: rec.Fingerprint,
 		At:          at,
 		Data:        data,
-	}
+	})
 	r.size += int64(len(data))
 
 	// trigger a flush if we're above our threshold

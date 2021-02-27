@@ -7,22 +7,21 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/klog/v2"
-
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/openshift/library-go/pkg/controller/controllercmd"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
@@ -35,6 +34,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 type Support struct {
@@ -116,10 +116,18 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient, gatherKubeClient.CoreV1(), configObserver, os.Getenv("POD_NAMESPACE"))
 
+	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
+	if err != nil {
+		return nil
+	}
+
+	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+	anonymizer := anonymization.NewAnonymizer(configObserver, baseDomain)
+
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
 	recdriver := diskrecorder.New(s.StoragePath)
-	recorder := recorder.New(recdriver, s.Interval)
+	recorder := recorder.New(recdriver, s.Interval, anonymizer)
 	go recorder.PeriodicallyPrune(ctx, statusReporter)
 
 	// the gatherers periodically check the state of the cluster and report any

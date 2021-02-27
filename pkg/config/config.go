@@ -17,19 +17,23 @@ type Serialized struct {
 		Timeout      string `json:"timeout"`
 		MinRetryTime string `json:"min_retry"`
 	} `json:"pull_report"`
-	Impersonate string   `json:"impersonate"`
-	Gather      []string `json:"gather"`
+	Impersonate                  string   `json:"impersonate"`
+	Gather                       []string `json:"gather"`
+	DisabledGlobalAnonymizations []string `json:"disabledGlobalAnonymizations"`
 }
 
 func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
 	}
+
 	cfg.Report = s.Report
 	cfg.StoragePath = s.StoragePath
 	cfg.Endpoint = s.Endpoint
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
+
+	s.fillAnonymizationConfig(cfg)
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
@@ -86,6 +90,7 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	if len(cfg.StoragePath) == 0 {
 		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
 	}
+
 	return cfg, nil
 }
 
@@ -101,6 +106,12 @@ type Controller struct {
 	ReportPullingTimeout time.Duration
 	Impersonate          string
 	Gather               []string
+	// DisabledGlobalAnonymizations specifies which of global anonymizations to disable.
+	// By default, we anonymize everything.
+	// To see the detailed info about what we anonymize, go to the docs of package anonymization.
+	DisabledGlobalAnonymizations struct {
+		DisableClusterBaseDomainAnonymization bool
+	}
 
 	Username string
 	Password string
