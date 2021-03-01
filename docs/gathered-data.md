@@ -264,6 +264,26 @@ Output raw size: 491
 #### Nodes
 [{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
+## OpenshiftSDNControllerLogs
+
+collects logs from sdn-controller pod in openshift-sdn namespace with following substrings:
+  - "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
+  - "Node %s may be offline... retrying": An egress node has failed the egress IP health check once,
+      so it has big chances to be marked as offline soon or, at the very least, there has been a connectivity glitch.
+  - "Node %s is offline": An egress node has failed enough probes to have been marked offline for egress IPs.
+      If it has egress CIDRs assigned, its egress IPs have been moved to other nodes.
+      Indicates issues at either the node or the network between the master and the node.
+  - "Node %s is back online": This indicates that a node has recovered from the condition described
+      at the previous message, by starting succeeding the egress IP health checks.
+      Useful just in case that previous “Node %s is offline” messages are lost,
+      so that we have a clue that there was failure previously.
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+
+
 ## OpenshiftSDNLogs
 
 collects logs from pods in openshift-sdn namespace with following substrings:
