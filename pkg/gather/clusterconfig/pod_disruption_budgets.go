@@ -5,12 +5,10 @@ import (
 	"fmt"
 
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
-	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
-
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -22,6 +20,10 @@ const (
 var (
 	policyV1Beta1Serializer = kubescheme.Codecs.LegacyCodec(policyv1beta1.SchemeGroupVersion)
 )
+
+type PodDisruptionBudgetsAnonymizer struct {
+	*policyv1beta1.PodDisruptionBudget
+}
 
 // GatherPodDisruptionBudgets gathers the cluster's PodDisruptionBudgets.
 //
@@ -57,10 +59,6 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 		})
 	}
 	return records, nil
-}
-
-type PodDisruptionBudgetsAnonymizer struct {
-	*policyv1beta1.PodDisruptionBudget
 }
 
 // Marshal implements serialization of a PodDisruptionBudget with anonymization

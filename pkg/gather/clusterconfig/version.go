@@ -9,10 +9,12 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// ClusterVersionAnonymizer is serializing ClusterVersion with anonymization
+type ClusterVersionAnonymizer struct{ *configv1.ClusterVersion }
 
 // GatherClusterVersion fetches the ClusterVersion - the ClusterVersion with name version.
 //
@@ -52,9 +54,6 @@ func GatherClusterID(g *Gatherer) func() ([]record.Record, []error) {
 		return []record.Record{{Name: "config/id", Item: Raw{string(version.Spec.ClusterID)}}}, nil
 	}
 }
-
-// ClusterVersionAnonymizer is serializing ClusterVersion with anonymization
-type ClusterVersionAnonymizer struct{ *configv1.ClusterVersion }
 
 // Marshal serializes ClusterVersion with anonymization
 func (a ClusterVersionAnonymizer) Marshal(_ context.Context) ([]byte, error) {

@@ -17,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+var datahubGVR = schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
+
 // GatherSAPConfig collects selected security context constraints
 // and cluster role bindings from clusters running a SAP payload.
 //
@@ -51,9 +53,7 @@ func gatherSAPConfig(ctx context.Context, dynamicClient dynamic.Interface, coreC
 	sccToGather := []string{"anyuid", "privileged"}
 	crbToGather := []string{"system:openshift:scc:anyuid", "system:openshift:scc:privileged"}
 
-	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
-
-	datahubsList, err := dynamicClient.Resource(datahubsResource).List(ctx, metav1.ListOptions{})
+	datahubsList, err := dynamicClient.Resource(datahubGVR).List(ctx, metav1.ListOptions{})
 
 	if errors.IsNotFound(err) {
 		return nil, nil

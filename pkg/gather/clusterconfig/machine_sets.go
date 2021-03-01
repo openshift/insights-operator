@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+var machineSetSchema = schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
 
 func GatherMachineSet(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
@@ -31,8 +31,7 @@ func GatherMachineSet(g *Gatherer) func() ([]record.Record, []error) {
 //
 // Location in archive: machinesets/
 func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
-	machineSets, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
+	machineSets, err := dynamicClient.Resource(machineSetSchema).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}

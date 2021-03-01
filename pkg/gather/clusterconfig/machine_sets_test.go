@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
@@ -19,7 +18,6 @@ kind: MachineSet
 metadata:
     name: test-worker
 `
-	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
 	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
@@ -29,7 +27,7 @@ metadata:
 	if err != nil {
 		t.Fatal("unable to decode machineset ", err)
 	}
-	_, err = client.Resource(gvr).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
+	_, err = client.Resource(machineSetSchema).Create(context.Background(), testMachineSet, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake machineset ", err)
 	}

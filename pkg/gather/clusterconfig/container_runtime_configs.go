@@ -12,6 +12,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+var containerRuntimeConfigGVR = schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "containerruntimeconfigs"}
+
 // GatherContainerRuntimeConfig collects ContainerRuntimeConfig  information
 //
 // The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
@@ -29,8 +31,7 @@ func GatherContainerRuntimeConfig(g *Gatherer) func() ([]record.Record, []error)
 }
 
 func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	crc := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "containerruntimeconfigs"}
-	containerRCs, err := dynamicClient.Resource(crc).List(ctx, metav1.ListOptions{})
+	containerRCs, err := dynamicClient.Resource(containerRuntimeConfigGVR).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}

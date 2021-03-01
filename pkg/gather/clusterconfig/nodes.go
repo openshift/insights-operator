@@ -9,12 +9,15 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// NodeAnonymizer implements serialization of Node with anonymization
+type NodeAnonymizer struct{ *corev1.Node }
 
 // GatherNodes collects all Nodes.
 //
@@ -44,9 +47,6 @@ func gatherNodes(ctx context.Context, coreClient corev1client.CoreV1Interface) (
 	return records, nil
 
 }
-
-// NodeAnonymizer implements serialization of Node with anonymization
-type NodeAnonymizer struct{ *corev1.Node }
 
 // Marshal implements serialization of Node with anonymization
 func (a NodeAnonymizer) Marshal(_ context.Context) ([]byte, error) {

@@ -9,10 +9,12 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// ProxyAnonymizer implements serialization of HttpProxy/NoProxy with anonymization
+type ProxyAnonymizer struct{ *configv1.Proxy }
 
 // GatherClusterProxy fetches the cluster Proxy - the Proxy with name cluster.
 //
@@ -41,9 +43,6 @@ func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV
 	}
 	return []record.Record{{Name: "config/proxy", Item: ProxyAnonymizer{config}}}, nil
 }
-
-// ProxyAnonymizer implements serialization of HttpProxy/NoProxy with anonymization
-type ProxyAnonymizer struct{ *configv1.Proxy }
 
 // Marshal implements Proxy serialization with anonymization
 func (a ProxyAnonymizer) Marshal(_ context.Context) ([]byte, error) {

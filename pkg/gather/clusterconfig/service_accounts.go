@@ -9,9 +9,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
 )
@@ -20,6 +20,12 @@ const (
 	maxServiceAccountsLimit          = 1000
 	maxServiceAccountNamespacesLimit = 1000
 )
+
+// ServiceAccountsMarshaller implements serialization of Service Accounts
+type ServiceAccountsMarshaller struct {
+	sa                   []corev1.ServiceAccount
+	totalServiceAccounts int
+}
 
 // GatherServiceAccounts collects ServiceAccount stats
 // from kubernetes default and namespaces starting with openshift.
@@ -81,12 +87,6 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 
 	records = append(records, record.Record{Name: fmt.Sprintf("config/serviceaccounts"), Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
 	return records, nil
-}
-
-// ServiceAccountsMarshaller implements serialization of Service Accounts
-type ServiceAccountsMarshaller struct {
-	sa                   []corev1.ServiceAccount
-	totalServiceAccounts int
 }
 
 // Marshal implements serialization of ServiceAccount

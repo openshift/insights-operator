@@ -9,8 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 

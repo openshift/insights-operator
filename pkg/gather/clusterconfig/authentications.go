@@ -2,11 +2,11 @@ package clusterconfig
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )

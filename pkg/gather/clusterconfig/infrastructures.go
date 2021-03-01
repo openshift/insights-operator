@@ -9,10 +9,12 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// InfrastructureAnonymizer anonymizes infrastructure
+type InfrastructureAnonymizer struct{ *configv1.Infrastructure }
 
 // GatherClusterInfrastructure fetches the cluster Infrastructure - the Infrastructure with name cluster.
 //
@@ -42,9 +44,6 @@ func gatherClusterInfrastructure(ctx context.Context, configClient configv1clien
 	return []record.Record{{Name: "config/infrastructure", Item: InfrastructureAnonymizer{config}}}, nil
 
 }
-
-// InfrastructureAnonymizer anonymizes infrastructure
-type InfrastructureAnonymizer struct{ *configv1.Infrastructure }
 
 // Marshal serializes Infrastructure with anonymization
 func (a InfrastructureAnonymizer) Marshal(_ context.Context) ([]byte, error) {

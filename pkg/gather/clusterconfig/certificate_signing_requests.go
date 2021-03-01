@@ -17,7 +17,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -26,6 +25,63 @@ import (
 // csrGatherLimit is the maximum number of crs that
 // will be listed in a single request to reduce memory usage.
 const csrGatherLimit = 5000
+
+type CSRs struct {
+	Requests   []v1beta1.CertificateSigningRequest
+	Anonymized []CSRAnonymizer
+}
+
+type CSRAnonymizer struct {
+	*CSRAnonymizedFeatures
+}
+
+type FilterFeatures func(c *CSRAnonymizedFeatures, opt ...FilterOptFunc) bool
+
+type FilterOpt struct {
+	time time.Time
+}
+
+type FilterOptFunc = func(o *FilterOpt)
+
+type CSRAnonymizedFeatures struct {
+	TypeMeta   metav1.TypeMeta
+	ObjectMeta metav1.ObjectMeta
+	Spec       *StateFeatures
+	Status     *StatusFeatures
+}
+
+type StateFeatures struct {
+	UID      string
+	Username string
+	Groups   []string
+	Usages   []v1beta1.KeyUsage
+
+	Request *CsrFeatures
+}
+
+type StatusFeatures struct {
+	Conditions []v1beta1.CertificateSigningRequestCondition
+	Cert       *CertFeatures
+}
+
+type CsrFeatures struct {
+	ValidSignature     bool
+	SignatureAlgorithm string
+	PublicKeyAlgorithm string
+	DNSNames           []string
+	EmailAddresses     []string
+	IPAddresses        []string
+	URIs               []string
+	Subject            pkix.Name
+}
+
+type CertFeatures struct {
+	Verified  bool
+	Issuer    pkix.Name
+	Subject   pkix.Name
+	NotBefore string
+	NotAfter  string
+}
 
 // GatherCertificateSigningRequests collects anonymized CertificateSigningRequests.
 // Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAfter
@@ -68,10 +124,6 @@ func gatherCertificateSigningRequests(ctx context.Context, certClient certificat
 	return records, nil
 }
 
-type CSRAnonymizer struct {
-	*CSRAnonymizedFeatures
-}
-
 func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	// json.Marshal can handle nil well
 	return json.Marshal(a.CSRAnonymizedFeatures)
@@ -80,11 +132,6 @@ func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 // GetExtension returns extension for CSR objects
 func (a CSRAnonymizer) GetExtension() string {
 	return "json"
-}
-
-type CSRs struct {
-	Requests   []v1beta1.CertificateSigningRequest
-	Anonymized []CSRAnonymizer
 }
 
 func FromCSRs(requests *v1beta1.CertificateSigningRequestList) *CSRs {
@@ -113,14 +160,6 @@ func (c *CSRs) Filter(f FilterFeatures) *CSRs {
 func (c *CSRs) Select() ([]CSRAnonymizer, error) {
 	return c.Anonymized, nil
 }
-
-type FilterFeatures func(c *CSRAnonymizedFeatures, opt ...FilterOptFunc) bool
-
-type FilterOpt struct {
-	time time.Time
-}
-
-type FilterOptFunc = func(o *FilterOpt)
 
 func WithTime(t time.Time) FilterOptFunc {
 	return func(o *FilterOpt) {
@@ -287,44 +326,4 @@ func Map(it []string, fn func(string) string) []string {
 		outSlice = append(outSlice, fn(str))
 	}
 	return outSlice
-}
-
-type CSRAnonymizedFeatures struct {
-	TypeMeta   metav1.TypeMeta
-	ObjectMeta metav1.ObjectMeta
-	Spec       *StateFeatures
-	Status     *StatusFeatures
-}
-
-type StateFeatures struct {
-	UID      string
-	Username string
-	Groups   []string
-	Usages   []v1beta1.KeyUsage
-
-	Request *CsrFeatures
-}
-
-type StatusFeatures struct {
-	Conditions []v1beta1.CertificateSigningRequestCondition
-	Cert       *CertFeatures
-}
-
-type CsrFeatures struct {
-	ValidSignature     bool
-	SignatureAlgorithm string
-	PublicKeyAlgorithm string
-	DNSNames           []string
-	EmailAddresses     []string
-	IPAddresses        []string
-	URIs               []string
-	Subject            pkix.Name
-}
-
-type CertFeatures struct {
-	Verified  bool
-	Issuer    pkix.Name
-	Subject   pkix.Name
-	NotBefore string
-	NotAfter  string
 }

@@ -19,6 +19,9 @@ type netNamespace struct {
 	NetID     uint32                           `json:"netID"`
 }
 
+// NetNamespaceAnonymizer implements NetNamespace serialization
+type NetNamespaceAnonymizer struct{ namespaces []*netNamespace }
+
 // GatherNetNamespace collects NetNamespaces networking information
 //
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
@@ -59,9 +62,6 @@ func gatherNetNamespace(ctx context.Context, networkClient networkv1client.Netwo
 	}
 	return []record.Record{r}, nil
 }
-
-// NetNamespaceAnonymizer implements NetNamespace serialization
-type NetNamespaceAnonymizer struct{ namespaces []*netNamespace }
 
 // Marshal implements NetNamespace serialization
 func (a NetNamespaceAnonymizer) Marshal(_ context.Context) ([]byte, error) {

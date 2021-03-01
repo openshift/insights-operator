@@ -12,8 +12,6 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/library-go/pkg/image/reference"
 )
@@ -28,6 +26,32 @@ const (
 	// yyyyMmDateFormat is the date format used to get a YYYY-MM string.
 	yyyyMmDateFormat = "2006-01"
 )
+
+type img2Month2CountMap map[string]map[string]int
+
+type tmpImageCountEntry struct {
+	Image         string
+	CountPerMonth map[string]int
+	TotalCount    int
+}
+
+/// RunningImages assigns information about running containers to a specific image index.
+// The index is a reference to an item in the related `ContainerImageSet` instance.
+type RunningImages map[int]int
+
+// PodsWithAge maps the YYYY-MM string representation of start time to list of pods running since that month.
+type PodsWithAge map[string]RunningImages
+
+// ContainerImageSet is used to store unique container image URLs.
+// The key is a continuous index starting from 0.
+// The value is the image URL itself.
+type ContainerImageSet map[int]string
+
+// ContainerInfo encapsulates the essential information about running containers in a minimalized data structure.
+type ContainerInfo struct {
+	Images     ContainerImageSet `json:"images"`
+	Containers PodsWithAge       `json:"containers"`
+}
 
 // GatherContainerImages collects essential information about running containers.
 // Specifically, the age of pods, the set of running images and the container names are collected.
@@ -126,14 +150,6 @@ func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.
 
 }
 
-type img2Month2CountMap map[string]map[string]int
-
-type tmpImageCountEntry struct {
-	Image         string
-	CountPerMonth map[string]int
-	TotalCount    int
-}
-
 func gatherImages(startMonth string, img2month2count img2Month2CountMap, containers []corev1.ContainerStatus) {
 	for _, container := range containers {
 		dockerRef, err := reference.Parse(container.Image)
@@ -162,13 +178,6 @@ func gatherImages(startMonth string, img2month2count img2Month2CountMap, contain
 	}
 }
 
-/// RunningImages assigns information about running containers to a specific image index.
-// The index is a reference to an item in the related `ContainerImageSet` instance.
-type RunningImages map[int]int
-
-// PodsWithAge maps the YYYY-MM string representation of start time to list of pods running since that month.
-type PodsWithAge map[string]RunningImages
-
 // Add inserts the specified container information into the data structure.
 func (p PodsWithAge) Add(startMonth string, image int, count int) {
 	if imageMap, exists := p[startMonth]; exists {
@@ -182,21 +191,10 @@ func (p PodsWithAge) Add(startMonth string, image int, count int) {
 	}
 }
 
-// ContainerImageSet is used to store unique container image URLs.
-// The key is a continuous index starting from 0.
-// The value is the image URL itself.
-type ContainerImageSet map[int]string
-
 // Add puts the image at the end of the set.
 // It will be assigned the highest index and this index will be returned.
 func (is ContainerImageSet) Add(image string) int {
 	nextIndex := len(is)
 	is[nextIndex] = image
 	return nextIndex
-}
-
-// ContainerInfo encapsulates the essential information about running containers in a minimalized data structure.
-type ContainerInfo struct {
-	Images     ContainerImageSet `json:"images"`
-	Containers PodsWithAge       `json:"containers"`
 }

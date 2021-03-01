@@ -9,10 +9,12 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// IngressAnonymizer implements serialization with marshalling
+type IngressAnonymizer struct{ *configv1.Ingress }
 
 // GatherClusterIngress fetches the cluster Ingress - the Ingress with name cluster.
 //
@@ -41,9 +43,6 @@ func gatherClusterIngress(ctx context.Context, configClient configv1client.Confi
 	}
 	return []record.Record{{Name: "config/ingress", Item: IngressAnonymizer{config}}}, nil
 }
-
-// IngressAnonymizer implements serialization with marshalling
-type IngressAnonymizer struct{ *configv1.Ingress }
 
 // Marshal implements serialization of Ingres.Spec.Domain with anonymization
 func (a IngressAnonymizer) Marshal(_ context.Context) ([]byte, error) {

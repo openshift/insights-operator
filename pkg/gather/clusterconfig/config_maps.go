@@ -11,10 +11,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// ConfigMapAnonymizer implements serialization of configmap
+// and potentially anonymizes if it is a certificate
+type ConfigMapAnonymizer struct {
+	v            []byte
+	encodeBase64 bool
+}
 
 // GatherConfigMaps fetches the ConfigMaps from namespace openshift-config.
 //
@@ -59,13 +64,6 @@ func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interfa
 	}
 
 	return records, nil
-}
-
-// ConfigMapAnonymizer implements serialization of configmap
-// and potentially anonymizes if it is a certificate
-type ConfigMapAnonymizer struct {
-	v            []byte
-	encodeBase64 bool
 }
 
 // Marshal implements serialization of Node with anonymization

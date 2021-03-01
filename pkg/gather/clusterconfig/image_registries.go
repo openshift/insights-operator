@@ -11,15 +11,25 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 
 	registryv1 "github.com/openshift/api/imageregistry/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// ImageRegistryAnonymizer implements serialization with marshalling
+type ImageRegistryAnonymizer struct {
+	*registryv1.Config
+}
+
+// PersistentVolumeAnonymizer implements serialization with marshalling
+type PersistentVolumeAnonymizer struct {
+	*corev1.PersistentVolume
+}
 
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
@@ -82,11 +92,6 @@ func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistr
 	return records, nil
 }
 
-// ImageRegistryAnonymizer implements serialization with marshalling
-type ImageRegistryAnonymizer struct {
-	*registryv1.Config
-}
-
 // Marshal implements serialization of Ingres.Spec.Domain with anonymization
 func (a ImageRegistryAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	a.Spec.HTTPSecret = anonymizeString(a.Spec.HTTPSecret)
@@ -145,11 +150,6 @@ func findPVByPVCName(ctx context.Context, coreClient corev1client.CoreV1Interfac
 		return nil, err
 	}
 	return pv, nil
-}
-
-// PersistentVolumeAnonymizer implements serialization with marshalling
-type PersistentVolumeAnonymizer struct {
-	*corev1.PersistentVolume
 }
 
 // Marshal implements serialization of corev1.PersistentVolume without anonymization

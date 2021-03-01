@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -72,8 +71,6 @@ func TestGatherInstallPlans(t *testing.T) {
 				if err != nil {
 					t.Fatal("unable to decode", err)
 				}
-				gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
-				gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
 				var ns string
 				err = parseJSONQuery(installplan.Object, "metadata.namespace", &ns)
 				if err != nil {
@@ -86,7 +83,7 @@ func TestGatherInstallPlans(t *testing.T) {
 				if err != nil {
 					t.Fatal("unable to create ns fake ", err)
 				}
-				_, err = client.Resource(gvr).Namespace(ns).Create(context.Background(), installplan, metav1.CreateOptions{})
+				_, err = client.Resource(installPlanGVR).Namespace(ns).Create(context.Background(), installplan, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatal("unable to create installplan fake ", err)
 				}

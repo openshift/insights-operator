@@ -9,10 +9,12 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// FeatureGateAnonymizer implements serializaton of FeatureGate with anonymization
+type FeatureGateAnonymizer struct{ *configv1.FeatureGate }
 
 // GatherClusterFeatureGates fetches the cluster FeatureGate - the FeatureGate with name cluster.
 //
@@ -41,9 +43,6 @@ func gatherClusterFeatureGates(ctx context.Context, configClient configv1client.
 	}
 	return []record.Record{{Name: "config/featuregate", Item: FeatureGateAnonymizer{config}}}, nil
 }
-
-// FeatureGateAnonymizer implements serializaton of FeatureGate with anonymization
-type FeatureGateAnonymizer struct{ *configv1.FeatureGate }
 
 // Marshal serializes FeatureGate with anonymization
 func (a FeatureGateAnonymizer) Marshal(_ context.Context) ([]byte, error) {

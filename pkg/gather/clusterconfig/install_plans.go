@@ -14,13 +14,27 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
 const InstallPlansTopX = 100
+
+var installPlanGVR = schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
+
+type collectedPlan struct {
+	Namespace string
+	Name      string
+	CSV       string
+	Count     int
+}
+
+// InstallPlanAnonymizer implements serialization of top x installplans
+type InstallPlanAnonymizer struct {
+	v     map[string]*collectedPlan
+	total int
+	limit int
+}
 
 // GatherInstallPlans collects Top x InstallPlans from all openshift namespaces.
 // Because InstallPlans have unique generated names, it groups them by namespace and the "template"
@@ -49,7 +63,6 @@ func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, co
 	cont := ""
 	recs := map[string]*collectedPlan{}
 	total := 0
-	opResource := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "installplans"}
 
 	config, ctx, err := getAllNamespaces(ctx, coreClient)
 	if errors.IsNotFound(err) {
@@ -64,7 +77,7 @@ func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, co
 			continue
 		}
 
-		resInterface := dynamicClient.Resource(opResource).Namespace(ns.Name)
+		resInterface := dynamicClient.Resource(installPlanGVR).Namespace(ns.Name)
 		for {
 			u, err := resInterface.List(ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
 			if errors.IsNotFound(err) {
@@ -131,20 +144,6 @@ func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []erro
 		m.Count++
 	}
 	return nil
-}
-
-type collectedPlan struct {
-	Namespace string
-	Name      string
-	CSV       string
-	Count     int
-}
-
-// InstallPlanAnonymizer implements serialization of top x installplans
-type InstallPlanAnonymizer struct {
-	v     map[string]*collectedPlan
-	total int
-	limit int
 }
 
 // Marshal implements serialization of InstallPlan

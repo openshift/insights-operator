@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -26,7 +25,6 @@ metadata:
     namespace: example-namespace
 `
 
-	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
 	datahubsClient := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
 
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
@@ -87,7 +85,7 @@ metadata:
 	}
 
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
-	datahubsClient.Resource(datahubsResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
+	datahubsClient.Resource(datahubGVR).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
 	records, errs = gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {

@@ -25,7 +25,6 @@ import (
 	"k8s.io/klog"
 
 	configv1 "github.com/openshift/api/config/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/record/diskrecorder"
@@ -44,6 +43,12 @@ type clusterOperatorResource struct {
 	Name       string `json:"name"`
 	Spec       interface{}
 }
+
+// ClusterOperatorAnonymizer implements serialization of ClusterOperator without change
+type ClusterOperatorAnonymizer struct{ *configv1.ClusterOperator }
+
+// ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
+type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
 
 // GatherClusterOperators collects all ClusterOperators and their resource.
 // It finds unhealthy Pods for unhealthy operators
@@ -302,9 +307,6 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 	return resourceVersionMap, nil
 }
 
-// ClusterOperatorAnonymizer implements serialization of ClusterOperator without change
-type ClusterOperatorAnonymizer struct{ *configv1.ClusterOperator }
-
 // Marshal serializes ClusterOperator
 func (a ClusterOperatorAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	return runtime.Encode(openshiftSerializer, a.ClusterOperator)
@@ -335,9 +337,6 @@ func namespacesForOperator(operator *configv1.ClusterOperator) []string {
 	}
 	return ns
 }
-
-// ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
-type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
 
 // Marshal serializes clusterOperatorResource with IP address anonymization
 func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
