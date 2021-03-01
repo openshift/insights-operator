@@ -28,9 +28,9 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 const (
@@ -60,8 +60,12 @@ type CompactedEventList struct {
 	Items []CompactedEvent `json:"items"`
 }
 
-// GatherClusterOperators collects all ClusterOperators and their resources.
-// It finds unhealthy Pods for unhealthy operators
+// GatherClusterOperators collects all the ClusterOperators definitions and their resources.
+// It finds degraded Pods for degraded cluster operators or that lives at the Cluster Operator's namespace, to collect:
+//
+// - Pod definitions
+// - Previous and current Pod Container logs (when available)
+// - Namespace Events
 //
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
@@ -92,28 +96,124 @@ func GatherClusterOperators(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherClusterOperators(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1(), discoveryClient, dynamicClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherClusterOperators(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1(), discoveryClient, dynamicClient)
+	if errs != nil {
+		c <- gatherResult{records, []error{errs}}
+		return
+	}
+	c <- gatherResult{records, []error{}}
 }
 
-func gatherClusterOperators(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface) ([]record.Record, []error) {
+// gatherClusterOperators collects cluster operators
+func gatherClusterOperators(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface) ([]record.Record, error) {
 	config, err := configClient.ClusterOperators().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, []error{err}
+		return nil, err
 	}
+
+	// collect the cluster operators reports
+	records := clusterOperatorsRecords(ctx, config.Items, dynamicClient, discoveryClient)
+
+	// gather pods from unhealthy operators
+	pods, recs, totalContainers := gatherUnhealthyClusterOperator(ctx, config.Items, coreClient)
+	records = append(records, recs...)
+	// Exit early if no pods found
+	klog.V(2).Infof("Found %d pods with %d containers", len(pods), totalContainers)
+	if len(pods) == 0 || totalContainers <= 0 {
+		return records, nil
+	}
+
+	// gather pods containers logs
+	bufferSize := int64(recorder.MaxLogSize * logCompressionRatio / totalContainers / 2)
+	clogs, err := gatherPodContainersLogs(ctx, coreClient, pods, bufferSize)
+	if err != nil {
+		klog.V(2).Infof("Unable to gather pod containers logs: %v", err)
+		return records, nil
+	}
+	if len(clogs) > 0 {
+		records = append(records, clogs...)
+	}
+
+	return records, nil
+}
+
+// gatherPodContainersLogs collect the pod current and previous containers logs
+func gatherPodContainersLogs(ctx context.Context, client corev1client.CoreV1Interface, pods []*corev1.Pod, bufferSize int64) ([]record.Record, error) {
+	if bufferSize <= 0 {
+		return nil, fmt.Errorf("invalid buffer size %d", bufferSize)
+	}
+
+	// Fetch a list of containers in pods and calculate a log size quota
+	// Total log size must not exceed maxLogsSize multiplied by logCompressionRatio
+	klog.V(2).Infof("Maximum buffer size: %v bytes", bufferSize)
+	buf := bytes.NewBuffer(make([]byte, 0, bufferSize))
+
+	// Fetch previous and current container logs
+	var records []record.Record
+	for _, isPrevious := range []bool{true, false} {
+		for _, pod := range pods {
+			clog := getContainerLogs(ctx, client, pod, isPrevious, buf, bufferSize)
+			if len(clog) > 0 {
+				records = append(records, clog...)
+			}
+		}
+	}
+
+	return records, nil
+}
+
+// getContainerLogs get previous and current log reports for pod containers using the k8s API response
+func getContainerLogs(ctx context.Context, client corev1client.CoreV1Interface, pod *corev1.Pod, isPrevious bool, buf *bytes.Buffer, bufferSize int64) []record.Record {
+	var records []record.Record
+
+	allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
+	for _, c := range allContainers {
+		// only grab previous log if the pod is restarted
+		if isPrevious && !isPodRestarted(pod) {
+			continue
+		}
+
+		logName := fmt.Sprintf("%s_current.log", c.Name)
+		if isPrevious {
+			logName = fmt.Sprintf("%s_previous.log", c.Name)
+		}
+
+		buf.Reset()
+		klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v).", c.Name, pod.Name, pod.Namespace, isPrevious)
+		// Fetch container logs and continue on error
+		err := fetchPodContainerLog(ctx, client, pod, buf, c.Name, isPrevious, &bufferSize)
+		if err != nil {
+			klog.V(2).Infof("Error: %q", err)
+			continue
+		}
+
+		// Do not record empty records
+		if buf.Len() == 0 {
+			continue
+		}
+		records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName), Item: marshal.Raw{Str: buf.String()}})
+	}
+
+	return records
+}
+
+// clusterOperatorsRecords generates the cluster operator records
+func clusterOperatorsRecords(ctx context.Context, items []configv1.ClusterOperator, dynamicClient dynamic.Interface, discoveryClient discovery.DiscoveryInterface) []record.Record {
 	resVer, _ := getOperatorResourcesVersions(discoveryClient)
-	records := make([]record.Record, 0, len(config.Items))
-	for idx, co := range config.Items {
+	records := make([]record.Record, 0, len(items))
+
+	for _, co := range items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/clusteroperator/%s", config.Items[idx].Name),
-			Item: record.JSONMarshaller{Object: &config.Items[idx]},
+			Name: fmt.Sprintf("config/clusteroperator/%s", co.Name),
+			Item: record.JSONMarshaller{Object: &co},
 		})
 		if resVer == nil {
 			continue
 		}
+
 		relRes := collectClusterOperatorResources(ctx, dynamicClient, co, resVer)
 		for _, rr := range relRes {
 			// imageregistry resources (config, pruner) are gathered in image_registries.go, image_pruners.go
@@ -130,90 +230,82 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 			})
 		}
 	}
+
+	return records
+}
+
+// gatherUnhealthyClusterOperator collects unhealthy cluster operator resources
+func gatherUnhealthyClusterOperator(ctx context.Context, items []configv1.ClusterOperator, coreClient corev1client.CoreV1Interface) ([]*corev1.Pod, []record.Record, int) {
+	var records []record.Record
+
 	namespaceEventsCollected := sets.NewString()
-	now := time.Now()
-	unhealthyPods := []*corev1.Pod{}
-	for _, item := range config.Items {
+	pods := []*corev1.Pod{}
+	totalContainers := 0
+
+	for _, item := range items {
 		if isHealthyOperator(&item) {
 			continue
 		}
+
 		for _, namespace := range namespacesForOperator(&item) {
-			pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{})
+			podList, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				klog.V(2).Infof("Unable to find pods in namespace %s for failing operator %s", namespace, item.Name)
 				continue
 			}
-			for j := range pods.Items {
-				pod := &pods.Items[j]
-				if check.IsHealthyPod(pod, now) {
-					continue
-				}
-				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: pod}})
-				unhealthyPods = append(unhealthyPods, pod)
-			}
+
+			uhPods, uhRecords, uhTotal := gatherUnhealthyPods(podList.Items)
+			pods = append(pods, uhPods...)
+			records = append(records, uhRecords...)
+			totalContainers += uhTotal
+
 			if namespaceEventsCollected.Has(namespace) {
 				continue
 			}
-			namespaceRecords, errs := gatherNamespaceEvents(ctx, coreClient, namespace)
-			if len(errs) > 0 {
-				klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, errs)
+
+			namespaceRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace)
+			if err != nil {
+				klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, err)
 				continue
 			}
+
 			records = append(records, namespaceRecords...)
 			namespaceEventsCollected.Insert(namespace)
 		}
 	}
 
-	// Exit early if no unhealthy pods found
-	if len(unhealthyPods) == 0 {
-		return records, nil
-	}
-
-	// Fetch a list of containers in unhealthy pods and calculate a log size quota
-	// Total log size must not exceed maxLogsSize multiplied by logCompressionRatio
-	klog.V(2).Infof("Found %d unhealthy pods", len(unhealthyPods))
-	totalUnhealthyContainers := 0
-	for _, pod := range unhealthyPods {
-		totalUnhealthyContainers += len(pod.Spec.InitContainers) + len(pod.Spec.Containers)
-	}
-	bufferSize := int64(recorder.MaxLogSize * logCompressionRatio / totalUnhealthyContainers / 2)
-	klog.V(2).Infof("Maximum buffer size: %v bytes", bufferSize)
-	buf := bytes.NewBuffer(make([]byte, 0, bufferSize))
-
-	// Fetch previous and current container logs
-	for _, isPrevious := range []bool{true, false} {
-		for _, pod := range unhealthyPods {
-			allContainers := pod.Spec.InitContainers
-			allContainers = append(allContainers, pod.Spec.Containers...)
-			for _, c := range allContainers {
-				logName := fmt.Sprintf("%s_current.log", c.Name)
-				if isPrevious {
-					logName = fmt.Sprintf("%s_previous.log", c.Name)
-				}
-				buf.Reset()
-				klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v): %v", c.Name, pod.Name, pod.Namespace, isPrevious, err)
-				// Collect container logs and continue on error
-				err = collectContainerLogs(ctx, coreClient, pod, buf, c.Name, isPrevious, &bufferSize)
-				if err != nil {
-					klog.V(2).Infof("Error: %q", err)
-					continue
-				}
-				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName), Item: marshal.Raw{Str: buf.String()}})
-			}
-		}
-	}
-
-	return records, nil
+	return pods, records, totalContainers
 }
 
-func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1Interface, namespace string) ([]record.Record, []error) {
+// gatherUnhealthyPods collects cluster operator unhealthy pods
+func gatherUnhealthyPods(pods []corev1.Pod) ([]*corev1.Pod, []record.Record, int) {
+	var records []record.Record
+	var podList []*corev1.Pod
+	total := 0
+	now := time.Now()
+
+	for j := range pods {
+		pod := &pods[j]
+		if check.IsHealthyPod(pod, now) {
+			continue
+		}
+		records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: pod}})
+		podList = append(podList, pod)
+		total += len(pod.Spec.InitContainers) + len(pod.Spec.Containers)
+	}
+
+	return podList, records, total
+}
+
+// gatherNamespaceEvents gather all namespace events
+func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1Interface, namespace string) ([]record.Record, error) {
 	// do not accidentally collect events for non-openshift namespace
 	if !strings.HasPrefix(namespace, "openshift-") {
 		return []record.Record{}, nil
 	}
 	events, err := coreClient.Events(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, []error{err}
+		return nil, err
 	}
 	// filter the event list to only recent events
 	oldestEventTime := time.Now().Add(-maxEventTimeInterval)
@@ -240,6 +332,7 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
 
+// collectClusterOperatorResources list all cluster operator resources
 func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.Interface, co configv1.ClusterOperator, resVer map[string][]string) []clusterOperatorResource {
 	var relObj []configv1.ObjectReference
 	for _, ro := range co.Status.RelatedObjects {
@@ -282,6 +375,7 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 	return res
 }
 
+// getOperatorResourcesVersions get all the operator resource versions
 func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) (map[string][]string, error) {
 	resources, err := discoveryClient.ServerPreferredResources()
 	if err != nil {
@@ -308,8 +402,8 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 	return resourceVersionMap, nil
 }
 
-// collectContainerLogs fetches log lines from the pod
-func collectContainerLogs(ctx context.Context, coreClient corev1client.CoreV1Interface, pod *corev1.Pod, buf *bytes.Buffer, containerName string, isPrevious bool, maxBytes *int64) error {
+// fetchPodContainerLog fetches log lines from the pod
+func fetchPodContainerLog(ctx context.Context, coreClient corev1client.CoreV1Interface, pod *corev1.Pod, buf *bytes.Buffer, containerName string, isPrevious bool, maxBytes *int64) error {
 	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Previous: isPrevious, Container: containerName, LimitBytes: maxBytes, TailLines: &logTailLines})
 	readCloser, err := req.Stream(ctx)
 	if err != nil {
@@ -325,6 +419,53 @@ func collectContainerLogs(ctx context.Context, coreClient corev1client.CoreV1Int
 		return err
 	}
 	return nil
+}
+
+// isHealthyOperator checks if operator ins't degraded or unavailable
+func isHealthyOperator(operator *configv1.ClusterOperator) bool {
+	for _, condition := range operator.Status.Conditions {
+		if isOperatorConditionDegraded(condition) || isOperatorConditionAvailable(condition) {
+			return false
+		}
+	}
+	return true
+}
+
+// isOperatorConditionDegraded check if the operator status condition degraded is true
+func isOperatorConditionDegraded(c configv1.ClusterOperatorStatusCondition) bool {
+	return c.Type == configv1.OperatorDegraded && c.Status == configv1.ConditionTrue
+}
+
+// isOperatorConditionAvailable check if the operator status condition available is false
+func isOperatorConditionAvailable(c configv1.ClusterOperatorStatusCondition) bool {
+	return c.Type == configv1.OperatorAvailable && c.Status == configv1.ConditionFalse
+}
+
+// isPodRestarted checks if pod was restarted by testing its container's restart count status is bigger than zero
+func isPodRestarted(pod *corev1.Pod) bool {
+	// pods that have containers that have terminated with non-zero exit codes are considered failure
+	for _, status := range pod.Status.InitContainerStatuses {
+		if status.RestartCount > 0 {
+			return true
+		}
+	}
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.RestartCount > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// namespacesForOperator get all the cluster operator namespaces
+func namespacesForOperator(operator *configv1.ClusterOperator) []string {
+	var ns []string
+	for _, ref := range operator.Status.RelatedObjects {
+		if ref.Resource == "namespaces" {
+			ns = append(ns, ref.Name)
+		}
+	}
+	return ns
 }
 
 // ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
@@ -350,25 +491,4 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 // GetExtension returns extension for anonymized cluster operator objects
 func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
 	return "json"
-}
-
-func isHealthyOperator(operator *configv1.ClusterOperator) bool {
-	for _, condition := range operator.Status.Conditions {
-		switch {
-		case condition.Type == configv1.OperatorDegraded && condition.Status == configv1.ConditionTrue,
-			condition.Type == configv1.OperatorAvailable && condition.Status == configv1.ConditionFalse:
-			return false
-		}
-	}
-	return true
-}
-
-func namespacesForOperator(operator *configv1.ClusterOperator) []string {
-	var ns []string
-	for _, ref := range operator.Status.RelatedObjects {
-		if ref.Resource == "namespaces" {
-			ns = append(ns, ref.Name)
-		}
-	}
-	return ns
 }
