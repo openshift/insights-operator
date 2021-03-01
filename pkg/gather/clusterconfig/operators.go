@@ -252,7 +252,7 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 	var res []clusterOperatorResource
 	for _, ro := range relObj {
 		key := fmt.Sprintf("%s-%s", ro.Group, strings.ToLower(ro.Resource))
-		versions, _ := resVer[key]
+		versions := resVer[key]
 		for _, v := range versions {
 			gvr := schema.GroupVersionResource{Group: ro.Group, Version: v, Resource: strings.ToLower(ro.Resource)}
 			clusterResource, err := dynamicClient.Resource(gvr).Get(ctx, ro.Name, metav1.GetOptions{})
@@ -299,7 +299,7 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 				if !ok {
 					resourceVersionMap[key] = []string{gv.Version}
 				} else {
-					r = append(r, gv.Version)
+					resourceVersionMap[key] = append(r, gv.Version)
 				}
 			}
 		}
@@ -350,12 +350,6 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 	urlMatches := re.FindAllString(resStr, -1)
 	for _, m := range urlMatches {
 		m = strings.ReplaceAll(m, "\"", "")
-		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
-	}
-	// anonymize IP addresses
-	re = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}`)
-	ipMatches := re.FindAllString(resStr, -1)
-	for _, m := range ipMatches {
 		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
 	}
 	return []byte(resStr), nil
