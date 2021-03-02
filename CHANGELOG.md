@@ -1,12 +1,31 @@
 # Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes
-<!--Latest hash: 6731c31b903095758a08c9c51b4081303a055abf-->
+<!--Latest hash: 2268d255d9ba889978c00ab2c234bfb62259677a-->
 ## 4.8
 
+### Enhancement
+- [#347](https://github.com/openshift/insights-operator/pull/347) Gather info about unhealthy SAP pods
+- [#342](https://github.com/openshift/insights-operator/pull/342) sap license management logs gatherer
+- [#337](https://github.com/openshift/insights-operator/pull/337) Recorder refactoring that improves maintainability
+- [#341](https://github.com/openshift/insights-operator/pull/341) Fixes changelog script code styling
+- [#303](https://github.com/openshift/insights-operator/pull/303) Improve code removing some codesmells
+
 ### Bugfix
+- [#352](https://github.com/openshift/insights-operator/pull/352) Do not use context in the recorder
 - [#336](https://github.com/openshift/insights-operator/pull/336) Disable instead of Degrade in case of gather fails
 - [#334](https://github.com/openshift/insights-operator/pull/334) Do not create the metrics file in case of any error
 - [#332](https://github.com/openshift/insights-operator/pull/332) Relax the recent log gatherers to avoid degrading during…
 - [#329](https://github.com/openshift/insights-operator/pull/329) Remove StatefulSet gatherer & replace it with gathering "cluster-mon…
+
+### Others
+- [#353](https://github.com/openshift/insights-operator/pull/353) Update relatedObjects
+- [#351](https://github.com/openshift/insights-operator/pull/351) Reduce Gatherer's code complexity
+- [#350](https://github.com/openshift/insights-operator/pull/350) Remove code duplication that disable the gather
+- [#348](https://github.com/openshift/insights-operator/pull/348) Do not run gathering when IO is disabled
+- [#349](https://github.com/openshift/insights-operator/pull/349) Sample archive - update metrics file to contain all the metrics we ga…
+- [#345](https://github.com/openshift/insights-operator/pull/345) Small clean up and utils reorg
+- [#306](https://github.com/openshift/insights-operator/pull/306) Introduce parallelism to unit tests
+- [#305](https://github.com/openshift/insights-operator/pull/305) Some charms to Makefile
+- [#318](https://github.com/openshift/insights-operator/pull/318) Auto changelog
 
 ### Misc
 - [#333](https://github.com/openshift/insights-operator/pull/333) Updating ose-insights-operator builder & base images to be consistent with ART
