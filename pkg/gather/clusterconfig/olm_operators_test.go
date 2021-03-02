@@ -16,29 +16,26 @@ import (
 )
 
 func TestOLMOperatorsGather(t *testing.T) {
-	f, err := os.Open("testdata/olm_operator_1.yaml")
+	olmOpContent, err := readFromFile("testdata/olm_operator_1.yaml")
 	if err != nil {
 		t.Fatal("test failed to read OLM operator data", err)
 	}
-	olmOpContent, err := ioutil.ReadAll(f)
+
+	csvContent, err := readFromFile("testdata/csv_1.yaml")
 	if err != nil {
-		t.Fatal("error reading test data file", err)
+		t.Fatal("test failed to read CSV ", err)
 	}
-	gvr := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1", Resource: "operators"}
 	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-		gvr: "OperatorsList",
+		operatorGVR:              "OperatorsList",
+		clusterServiceVersionGVR: "ClusterServiceVersionsList",
 	})
-	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-
-	testOLMOperator := &unstructured.Unstructured{}
-
-	_, _, err = decUnstructured.Decode(olmOpContent, nil, testOLMOperator)
+	err = createUnstructuredResource(olmOpContent, client, operatorGVR)
 	if err != nil {
-		t.Fatal("unable to decode OLM operator ", err)
+		t.Fatal("cannot create OLM operator ", err)
 	}
-	_, err = client.Resource(gvr).Create(context.Background(), testOLMOperator, metav1.CreateOptions{})
+	err = createUnstructuredResource(csvContent, client, clusterServiceVersionGVR)
 	if err != nil {
-		t.Fatal("unable to create fake OLM operator ", err)
+		t.Fatal("cannot create ClusterServiceVersion ", err)
 	}
 
 	ctx := context.Background()
@@ -55,9 +52,40 @@ func TestOLMOperatorsGather(t *testing.T) {
 		t.Fatalf("returned item is not of type []olmOperator")
 	}
 	if ooa[0].Name != "test-olm-operator" {
-		t.Fatalf("unexpected name of gathered OLM operator %s", ooa)
+		t.Fatalf("unexpected name of gathered OLM operator %s", ooa[0].Name)
 	}
 	if ooa[0].Version != "v1.2.3" {
-		t.Fatalf("unexpected version of gathered OLM operator %s", ooa)
+		t.Fatalf("unexpected version of gathered OLM operator %s", ooa[0].Version)
 	}
+	if len(ooa[0].Conditions) != 2 {
+		t.Fatalf("unexpected number of conditions %s", ooa[0].Conditions...)
+	}
+}
+
+func createUnstructuredResource(content []byte, client *dynamicfake.FakeDynamicClient, gvr schema.GroupVersionResource) error {
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	unstructuredResource := &unstructured.Unstructured{}
+
+	_, _, err := decUnstructured.Decode(content, nil, unstructuredResource)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Resource(gvr).Namespace("test-olm-operator").Create(context.Background(), unstructuredResource, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func readFromFile(filePath string) ([]byte, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	content, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
 }
