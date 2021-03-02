@@ -1,0 +1,214 @@
+{
+    "status_reports": [
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherMostRecentMetrics",
+            "duration_in_ms": 23,
+            "records_count": 0,
+            "errors": [
+                "Get \"https://prometheus-k8s.openshift-monitoring.svc:9091/federate?match%5B%5D=etcd_object_counts\u0026match%5B%5D=cluster_installer\u0026match%5B%5D=namespace%3Acontainer_cpu_usage_seconds_total%3Asum_rate\u0026match%5B%5D=namespace%3Acontainer_memory_usage_bytes%3Asum\": dial tcp: lookup prometheus-k8s.openshift-monitoring.svc: no such host"
+            ]
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherHostSubnet",
+            "duration_in_ms": 127,
+            "records_count": 6,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterInfrastructure",
+            "duration_in_ms": 128,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherSAPVsystemIptablesLogs",
+            "duration_in_ms": 240,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterIngress",
+            "duration_in_ms": 243,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterOAuth",
+            "duration_in_ms": 244,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherOLMOperators",
+            "duration_in_ms": 246,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherMachineConfigPool",
+            "duration_in_ms": 247,
+            "records_count": 2,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterProxy",
+            "duration_in_ms": 248,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherPodDisruptionBudgets",
+            "duration_in_ms": 248,
+            "records_count": 2,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterNetwork",
+            "duration_in_ms": 248,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterAuthentication",
+            "duration_in_ms": 248,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterFeatureGates",
+            "duration_in_ms": 249,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterVersion",
+            "duration_in_ms": 249,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterID",
+            "duration_in_ms": 249,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherMachineSet",
+            "duration_in_ms": 360,
+            "records_count": 3,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterImagePruner",
+            "duration_in_ms": 368,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherContainerRuntimeConfig",
+            "duration_in_ms": 489,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherSAPPods",
+            "duration_in_ms": 518,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherSAPConfig",
+            "duration_in_ms": 623,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherNetNamespace",
+            "duration_in_ms": 648,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterImageRegistry",
+            "duration_in_ms": 650,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherCRD",
+            "duration_in_ms": 774,
+            "records_count": 2,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherCertificateSigningRequests",
+            "duration_in_ms": 791,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherNodes",
+            "duration_in_ms": 920,
+            "records_count": 6,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherOpenShiftAPIServerOperatorLogs",
+            "duration_in_ms": 940,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherConfigMaps",
+            "duration_in_ms": 1018,
+            "records_count": 11,
+            "errors": [
+                "configmaps \"cluster-monitoring-config\" not found"
+            ]
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherContainerImages",
+            "duration_in_ms": 1105,
+            "records_count": 10,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherOpenshiftAuthenticationLogs",
+            "duration_in_ms": 1177,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherOpenshiftSDNControllerLogs",
+            "duration_in_ms": 1328,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherOpenshiftSDNLogs",
+            "duration_in_ms": 2611,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherClusterOperators",
+            "duration_in_ms": 3860,
+            "records_count": 49,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherInstallPlans",
+            "duration_in_ms": 10445,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "github.com/openshift/insights-operator/pkg/gather/clusterconfig.GatherServiceAccounts",
+            "duration_in_ms": 11065,
+            "records_count": 1,
+            "errors": null
+        }
+    ],
+    "memory_alloc": 10924832,
+    "uptime": "54.024s"
+}
