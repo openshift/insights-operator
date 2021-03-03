@@ -142,13 +142,6 @@ Location of pods in archive: config/pod/
 Id in config: operators
 
 
-Output raw size: 245
-
-### Examples
-
-#### ClusterOperators
-```[{"Name":"config/clusteroperator/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Degraded","status":"","lastTransitionTime":null}],"extension":null}}}]```
-
 ## ClusterProxy
 
 fetches the cluster Proxy - the Proxy with name cluster.
@@ -273,13 +266,6 @@ See: docs/insights-archive-sample/config/metrics
 Id in config: metrics
 
 
-Output raw size: 148
-
-### Examples
-
-#### MostRecentMetrics
-```[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]```
-
 ## NetNamespace
 
 collects NetNamespaces networking information
@@ -301,13 +287,6 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location in archive: config/node/
 Id in config: nodes
 
-
-Output raw size: 491
-
-### Examples
-
-#### Nodes
-```[{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]```
 
 ## OLMOperators
 
@@ -399,18 +378,6 @@ Relevant OpenShift API docs:
 Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 
 
-## SAPVsystemIptablesLogs
-
-collects logs from SAP vsystem-iptables containers
-including one from license management pods with the following substring:
-  - "can't initialize iptables table",
-
-The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
-
-
 ## SAPPods
 
 collects information about pods running in SAP/SDI namespaces.
@@ -423,6 +390,18 @@ Relevant Kubernetes API docs:
   - https://pkg.go.dev/k8s.io/client-go/dynamic
 
 Location in archive: config/pod/{namespace}/{pod-name}.json
+
+
+## SAPVsystemIptablesLogs
+
+collects logs from SAP vsystem-iptables containers
+including one from license management pods with the following substring:
+  - "can't initialize iptables table",
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 
 
 ## ServiceAccounts
