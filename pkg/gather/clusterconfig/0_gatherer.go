@@ -18,8 +18,8 @@ import (
 
 type gatherMetadata struct {
 	StatusReports []gatherStatusReport `json:"status_reports"`
-	MemoryAlloc   uint64               `json:"memory_alloc"`
-	Uptime     	  string        	   `json:"uptime"`
+	MemoryAlloc   uint64               `json:"memory_alloc_bytes"`
+	Uptime        float64              `json:"uptime_seconds"`
 }
 
 type gatherStatusReport struct {
@@ -181,7 +181,8 @@ func createStatusReport(gather *GatherInfo, recorder recorder.Interface, starts 
 
 	klog.V(4).Infof("Gather %s took %s to process %d records", gather.name, elapsed, len(gather.result.records))
 
-	report := gatherStatusReport{gather.name, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
+	shortName := strings.Replace(gather.name, "github.com/openshift/insights-operator/pkg/gather/", "", 1)
+	report := gatherStatusReport{shortName, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
 
 	if gather.canFail {
 		for _, err := range gather.result.errors {
@@ -241,7 +242,7 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 func recordGatherReport(recorder recorder.Interface, report []gatherStatusReport) error {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	metadata := gatherMetadata{report, m.HeapAlloc, time.Since(startTime).Truncate(time.Millisecond).String()}
+	metadata := gatherMetadata{report, m.HeapAlloc, time.Since(startTime).Truncate(time.Millisecond).Seconds()}
 	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: metadata}}
 	return recorder.Record(r)
 }
