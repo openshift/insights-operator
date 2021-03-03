@@ -1,22 +1,207 @@
 [
     {
         "name": "eap.openshift-operators",
-        "version": "v2.0.2"
+        "version": "v2.1.1",
+        "csv_conditions": [
+            {
+                "lastTransitionTime": "2021-03-02T08:52:24Z",
+                "lastUpdateTime": "2021-03-02T08:52:24Z",
+                "message": "requirements not yet checked",
+                "phase": "Pending",
+                "reason": "RequirementsUnknown"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:24Z",
+                "lastUpdateTime": "2021-03-02T08:52:24Z",
+                "message": "all requirements found, attempting install",
+                "phase": "InstallReady",
+                "reason": "AllRequirementsMet"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:24Z",
+                "lastUpdateTime": "2021-03-02T08:52:24Z",
+                "message": "waiting for install components to report healthy",
+                "phase": "Installing",
+                "reason": "InstallSucceeded"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:24Z",
+                "lastUpdateTime": "2021-03-02T08:52:25Z",
+                "message": "installing: waiting for deployment eap-operator to become ready: Waiting for rollout to finish: 0 of 1 updated replicas are available...\n",
+                "phase": "Installing",
+                "reason": "InstallWaiting"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:46Z",
+                "lastUpdateTime": "2021-03-02T08:52:46Z",
+                "message": "install strategy completed with no errors",
+                "phase": "Succeeded",
+                "reason": "InstallSucceeded"
+            }
+        ]
     },
     {
         "name": "elasticsearch-operator.openshift-operators-redhat",
-        "version": "4.6.0-202011221454.p0"
+        "version": "4.6.0-202102200141.p0",
+        "csv_conditions": [
+            {
+                "lastTransitionTime": "2021-03-02T06:38:14Z",
+                "lastUpdateTime": "2021-03-02T06:38:14Z",
+                "message": "requirements not yet checked",
+                "phase": "Pending",
+                "reason": "RequirementsUnknown"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T06:38:15Z",
+                "lastUpdateTime": "2021-03-02T06:38:15Z",
+                "message": "all requirements found, attempting install",
+                "phase": "InstallReady",
+                "reason": "AllRequirementsMet"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T06:38:16Z",
+                "lastUpdateTime": "2021-03-02T06:38:16Z",
+                "message": "waiting for install components to report healthy",
+                "phase": "Installing",
+                "reason": "InstallSucceeded"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T06:38:16Z",
+                "lastUpdateTime": "2021-03-02T06:38:17Z",
+                "message": "installing: waiting for deployment elasticsearch-operator to become ready: Waiting for rollout to finish: 1 old replicas are pending termination...\n",
+                "phase": "Installing",
+                "reason": "InstallWaiting"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T06:38:26Z",
+                "lastUpdateTime": "2021-03-02T06:38:26Z",
+                "message": "install strategy completed with no errors",
+                "phase": "Succeeded",
+                "reason": "InstallSucceeded"
+            }
+        ]
     },
     {
         "name": "kiali-ossm.openshift-operators",
-        "version": "v1.24.4"
+        "version": "v1.24.5",
+        "csv_conditions": [
+            {
+                "lastTransitionTime": "2021-03-02T08:52:09Z",
+                "lastUpdateTime": "2021-03-02T08:52:09Z",
+                "message": "requirements not yet checked",
+                "phase": "Pending",
+                "reason": "RequirementsUnknown"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:09Z",
+                "lastUpdateTime": "2021-03-02T08:52:09Z",
+                "message": "all requirements found, attempting install",
+                "phase": "InstallReady",
+                "reason": "AllRequirementsMet"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:09Z",
+                "lastUpdateTime": "2021-03-02T08:52:09Z",
+                "message": "waiting for install components to report healthy",
+                "phase": "Installing",
+                "reason": "InstallSucceeded"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:09Z",
+                "lastUpdateTime": "2021-03-02T08:52:10Z",
+                "message": "installing: waiting for deployment kiali-operator to become ready: Waiting for rollout to finish: 0 of 1 updated replicas are available...\n",
+                "phase": "Installing",
+                "reason": "InstallWaiting"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:52:29Z",
+                "lastUpdateTime": "2021-03-02T08:52:29Z",
+                "message": "install strategy completed with no errors",
+                "phase": "Succeeded",
+                "reason": "InstallSucceeded"
+            }
+        ]
     },
     {
-        "name": "postgresql-operator-dev4devs-com.postgresql-operator",
-        "version": "v0.1.1"
+        "name": "postgresql-operator-dev4devs-com.psql-test",
+        "version": "v0.1.1",
+        "csv_conditions": [
+            {
+                "lastTransitionTime": "2021-03-02T08:53:34Z",
+                "lastUpdateTime": "2021-03-02T08:53:34Z",
+                "message": "requirements not yet checked",
+                "phase": "Pending",
+                "reason": "RequirementsUnknown"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:53:35Z",
+                "lastUpdateTime": "2021-03-02T08:53:35Z",
+                "message": "all requirements found, attempting install",
+                "phase": "InstallReady",
+                "reason": "AllRequirementsMet"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:53:35Z",
+                "lastUpdateTime": "2021-03-02T08:53:35Z",
+                "message": "waiting for install components to report healthy",
+                "phase": "Installing",
+                "reason": "InstallSucceeded"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:53:35Z",
+                "lastUpdateTime": "2021-03-02T08:53:36Z",
+                "message": "installing: waiting for deployment postgresql-operator to become ready: Waiting for rollout to finish: 0 of 1 updated replicas are available...\n",
+                "phase": "Installing",
+                "reason": "InstallWaiting"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:53:47Z",
+                "lastUpdateTime": "2021-03-02T08:53:47Z",
+                "message": "install strategy completed with no errors",
+                "phase": "Succeeded",
+                "reason": "InstallSucceeded"
+            }
+        ]
     },
     {
         "name": "radanalytics-spark.openshift-operators",
-        "version": "v1.1.0"
+        "version": "v1.1.0",
+        "csv_conditions": [
+            {
+                "lastTransitionTime": "2021-03-02T08:55:36Z",
+                "lastUpdateTime": "2021-03-02T08:55:36Z",
+                "message": "requirements not yet checked",
+                "phase": "Pending",
+                "reason": "RequirementsUnknown"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:55:37Z",
+                "lastUpdateTime": "2021-03-02T08:55:37Z",
+                "message": "all requirements found, attempting install",
+                "phase": "InstallReady",
+                "reason": "AllRequirementsMet"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:55:38Z",
+                "lastUpdateTime": "2021-03-02T08:55:38Z",
+                "message": "waiting for install components to report healthy",
+                "phase": "Installing",
+                "reason": "InstallSucceeded"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:55:38Z",
+                "lastUpdateTime": "2021-03-02T08:55:38Z",
+                "message": "installing: waiting for deployment spark-operator to become ready: Waiting for rollout to finish: 0 of 1 updated replicas are available...\n",
+                "phase": "Installing",
+                "reason": "InstallWaiting"
+            },
+            {
+                "lastTransitionTime": "2021-03-02T08:55:51Z",
+                "lastUpdateTime": "2021-03-02T08:55:51Z",
+                "message": "install strategy completed with no errors",
+                "phase": "Succeeded",
+                "reason": "InstallSucceeded"
+            }
+        ]
     }
 ]
