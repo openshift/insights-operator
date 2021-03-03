@@ -15,12 +15,29 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+var (
+	operatorGVR              = schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1", Resource: "operators"}
+	clusterServiceVersionGVR = schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "clusterserviceversions"}
+)
+
 type olmOperator struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name       string        `json:"name"`
+	Version    string        `json:"version"`
+	Conditions []interface{} `json:"csv_conditions"`
 }
 
-// GatherOLMOperators collects list of all names (including version) of installed OLM operators.
+// ClusterServiceVersion helper struct
+type csvRef struct {
+	Name      string
+	Namespace string
+	Version   string
+}
+
+// GatherOLMOperators collects list of installed OLM operators.
+// Each OLM operator (in the list) contains following data:
+// - OLM operator name
+// - OLM operator version
+// - related ClusterServiceVersion conditions
 //
 // See: docs/insights-archive-sample/config/olm_operators
 // Location of in archive: config/olm_operators
@@ -37,8 +54,7 @@ func GatherOLMOperators(g *Gatherer, c chan<- gatherResult) {
 }
 
 func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	gvr := schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1", Resource: "operators"}
-	olmOperators, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
+	olmOperators, err := dynamicClient.Resource(operatorGVR).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -54,13 +70,19 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 			continue
 		}
 		for _, r := range refs {
-			ver := readVersionFromRefs(r)
-			if ver == "" {
+			csvRef := getCSVRefFromRefs(r)
+			if csvRef == nil {
+				continue
+			}
+			conditions, err := getCSVConditions(ctx, dynamicClient, csvRef)
+			if err != nil {
+				klog.Errorf("failed to get %s conditions: %v", csvRef.Name, err)
 				continue
 			}
 			olmO := olmOperator{
-				Name:    i.GetName(),
-				Version: ver,
+				Name:       i.GetName(),
+				Version:    csvRef.Version,
+				Conditions: conditions,
 			}
 			if isInArray(olmO, olms) {
 				continue
@@ -80,26 +102,44 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 
 func isInArray(o olmOperator, a []olmOperator) bool {
 	for _, op := range a {
-		if o == op {
+		if o.Name == op.Name && o.Version == op.Version {
 			return true
 		}
 	}
 	return false
 }
 
-func readVersionFromRefs(r interface{}) string {
+func getCSVRefFromRefs(r interface{}) *csvRef {
 	refMap, ok := r.(map[string]interface{})
 	if !ok {
 		klog.Errorf("Cannot convert %s to map[string]interface{}", r)
-		return ""
+		return nil
 	}
 	// version is part of the name of ClusterServiceVersion
 	if refMap["kind"] == "ClusterServiceVersion" {
 		name := refMap["name"].(string)
 		nameVer := strings.SplitN(name, ".", 2)
-		return nameVer[1]
+		csvRef := &csvRef{
+			Name:      name,
+			Namespace: refMap["namespace"].(string),
+			Version:   nameVer[1],
+		}
+		return csvRef
 	}
-	return ""
+	return nil
+}
+
+func getCSVConditions(ctx context.Context, dynamicClient dynamic.Interface, csvRef *csvRef) ([]interface{}, error) {
+	csv, err := dynamicClient.Resource(clusterServiceVersionGVR).Namespace(csvRef.Namespace).Get(ctx, csvRef.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var conditions []interface{}
+	err = parseJSONQuery(csv.Object, "status.conditions", &conditions)
+	if err != nil {
+		return nil, err
+	}
+	return conditions, nil
 }
 
 // OlmOperatorAnonymizer implements HostSubnet serialization
