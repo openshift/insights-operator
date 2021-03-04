@@ -29,32 +29,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
-type Simple struct {
+type Disconnected struct {
 	config.Controller
 }
 
 // LoadConfig unmarshalls config from obj and loads it to this Support struct
-func (s *Simple) LoadConfig(obj map[string]interface{}) error {
+func (d *Disconnected) LoadConfig(obj map[string]interface{}) error {
 	var cfg config.Serialized
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	controller, err := cfg.ToSimpleController(&s.Controller)
+	controller, err := cfg.ToSimpleController(&d.Controller)
 	if err != nil {
 		return err
 	}
-	s.Controller = *controller
+	d.Controller = *controller
 
 	data, _ := json.Marshal(cfg)
 	klog.V(2).Infof("Current config: %s", string(data))
 	return nil
 }
 
-func (s *Simple) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
+func (d *Disconnected) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	initialDelay := 0 * time.Second
-	if err := s.LoadConfig(controller.ComponentConfig.Object); err != nil {
+	if err := d.LoadConfig(controller.ComponentConfig.Object); err != nil {
 		return err
 	}
 
@@ -69,12 +69,12 @@ func (s *Simple) Run(ctx context.Context, controller *controllercmd.ControllerCo
 	}
 	// these are gathering clients
 	gatherProtoKubeConfig := rest.CopyConfig(controller.ProtoKubeConfig)
-	if len(s.Impersonate) > 0 {
-		gatherProtoKubeConfig.Impersonate.UserName = s.Impersonate
+	if len(d.Impersonate) > 0 {
+		gatherProtoKubeConfig.Impersonate.UserName = d.Impersonate
 	}
 	gatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
-	if len(s.Impersonate) > 0 {
-		gatherKubeConfig.Impersonate.UserName = s.Impersonate
+	if len(d.Impersonate) > 0 {
+		gatherKubeConfig.Impersonate.UserName = d.Impersonate
 	}
 
 	// the metrics client will connect to prometheus and scrape a small set of metrics
@@ -94,14 +94,14 @@ func (s *Simple) Run(ctx context.Context, controller *controllercmd.ControllerCo
 		return err
 	}
 	// ensure the insight snapshot directory exists
-	if _, err := os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
-		if err := os.MkdirAll(s.StoragePath, 0777); err != nil {
+	if _, err := os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
+		if err := os.MkdirAll(d.StoragePath, 0777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
 
 	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(s.Controller, kubeClient)
+	configObserver := configobserver.New(d.Controller, kubeClient)
 	go configObserver.Start(ctx)
 
 	// the status controller initializes the cluster operator object and retrieves
@@ -110,8 +110,8 @@ func (s *Simple) Run(ctx context.Context, controller *controllercmd.ControllerCo
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
-	recdriver := diskrecorder.New(s.StoragePath)
-	recorder := recorder.New(recdriver, s.Interval)
+	recdriver := diskrecorder.New(d.StoragePath)
+	recorder := recorder.New(recdriver, d.Interval)
 	go recorder.PeriodicallyPrune(ctx, statusReporter)
 
 	// the gatherers periodically check the state of the cluster and report any
@@ -123,9 +123,9 @@ func (s *Simple) Run(ctx context.Context, controller *controllercmd.ControllerCo
 	statusReporter.AddSources(periodic.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
-	err = wait.PollImmediate(20*time.Second, wait.Jitter(s.Controller.Interval/24, 0.1), isRunning(ctx, gatherKubeConfig))
+	err = wait.PollImmediate(20*time.Second, wait.Jitter(d.Controller.Interval/24, 0.1), isRunning(ctx, gatherKubeConfig))
 	if err != nil {
-		initialDelay = wait.Jitter(s.Controller.Interval/12, 0.5)
+		initialDelay = wait.Jitter(d.Controller.Interval/12, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
 	go periodic.Run(ctx.Done(), initialDelay)
