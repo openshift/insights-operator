@@ -16,6 +16,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
+type gatherMetadata struct {
+	StatusReports []gatherStatusReport `json:"status_reports"`
+	MemoryAlloc   uint64               `json:"memory_alloc_bytes"`
+	Uptime        float64              `json:"uptime_seconds"`
+}
+
 type gatherStatusReport struct {
 	Name         string        `json:"name"`
 	Duration     time.Duration `json:"duration_in_ms"`
@@ -89,8 +95,11 @@ var gatherFunctions = map[string]gathering{
 	"olm_operators":                     failable(GatherOLMOperators),
 }
 
+var startTime time.Time
+
 // New creates new Gatherer
 func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metricsGatherKubeConfig *rest.Config) *Gatherer {
+	startTime = time.Now()
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
@@ -172,7 +181,8 @@ func createStatusReport(gather *GatherInfo, recorder recorder.Interface, starts 
 
 	klog.V(4).Infof("Gather %s took %s to process %d records", gather.name, elapsed, len(gather.result.records))
 
-	report := gatherStatusReport{gather.name, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
+	shortName := strings.Replace(gather.name, "github.com/openshift/insights-operator/pkg/gather/", "", 1)
+	report := gatherStatusReport{shortName, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
 
 	if gather.canFail {
 		for _, err := range gather.result.errors {
@@ -230,7 +240,10 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 }
 
 func recordGatherReport(recorder recorder.Interface, report []gatherStatusReport) error {
-	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	metadata := gatherMetadata{report, m.HeapAlloc, time.Since(startTime).Truncate(time.Millisecond).Seconds()}
+	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: metadata}}
 	return recorder.Record(r)
 }
 
