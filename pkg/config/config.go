@@ -89,6 +89,34 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	return cfg, nil
 }
 
+
+func (s *Serialized) ToSimpleController(cfg *Controller) (*Controller, error) {
+	if cfg == nil {
+		cfg = &Controller{}
+	}
+	cfg.Report = s.Report
+	cfg.StoragePath = s.StoragePath
+	cfg.Impersonate = s.Impersonate
+	cfg.Gather = s.Gather
+
+	if len(s.Interval) > 0 {
+		d, err := time.ParseDuration(s.Interval)
+		if err != nil {
+			return nil, fmt.Errorf("interval must be a valid duration: %v", err)
+		}
+		cfg.Interval = d
+	}
+
+	if cfg.Interval <= 0 {
+		return nil, fmt.Errorf("interval must be a non-negative duration")
+	}
+
+	if len(cfg.StoragePath) == 0 {
+		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
+	}
+	return cfg, nil
+}
+
 // Controller defines the standard config for this operator.
 type Controller struct {
 	Report               bool
