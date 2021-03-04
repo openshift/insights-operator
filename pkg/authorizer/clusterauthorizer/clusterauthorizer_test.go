@@ -19,6 +19,7 @@ func nonCachedProxyFromEnvironment() func(*http.Request) (*url.URL, error) {
 	}
 }
 
+
 func TestProxy(tt *testing.T) {
 	testCases := []struct {
 		Name       string

@@ -12,11 +12,116 @@ import (
 	certificatesv1b1api "k8s.io/api/certificates/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
+
+// csrGatherLimit is the maximum number of crs that
+// will be listed in a single request to reduce memory usage.
+const csrGatherLimit = 5000
+
+type CSRs struct {
+	Requests   []v1beta1.CertificateSigningRequest
+	Anonymized []CSRAnonymizer
+}
 
 type CSRAnonymizer struct {
 	*CSRAnonymizedFeatures
+}
+
+type FilterFeatures func(c *CSRAnonymizedFeatures, opt ...FilterOptFunc) bool
+
+type FilterOpt struct {
+	time time.Time
+}
+
+type FilterOptFunc = func(o *FilterOpt)
+
+type CSRAnonymizedFeatures struct {
+	TypeMeta   metav1.TypeMeta
+	ObjectMeta metav1.ObjectMeta
+	Spec       *StateFeatures
+	Status     *StatusFeatures
+}
+
+type StateFeatures struct {
+	UID      string
+	Username string
+	Groups   []string
+	Usages   []v1beta1.KeyUsage
+
+	Request *CsrFeatures
+}
+
+type StatusFeatures struct {
+	Conditions []v1beta1.CertificateSigningRequestCondition
+	Cert       *CertFeatures
+}
+
+type CsrFeatures struct {
+	ValidSignature     bool
+	SignatureAlgorithm string
+	PublicKeyAlgorithm string
+	DNSNames           []string
+	EmailAddresses     []string
+	IPAddresses        []string
+	URIs               []string
+	Subject            pkix.Name
+}
+
+type CertFeatures struct {
+	Verified  bool
+	Issuer    pkix.Name
+	Subject   pkix.Name
+	NotBefore string
+	NotAfter  string
+}
+
+// GatherCertificateSigningRequests collects anonymized CertificateSigningRequests.
+// Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAfter
+//
+// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+//
+// Location in archive: config/certificatesigningrequests/
+func GatherCertificateSigningRequests(g *Gatherer) func() ([]record.Record, []error) {
+	return func() ([]record.Record, []error) {
+		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+		if err != nil {
+			return nil, []error{err}
+		}
+		return gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1beta1())
+	}
+}
+
+func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1beta1.CertificatesV1beta1Interface) ([]record.Record, []error) {
+	requests, err := certClient.CertificateSigningRequests().List(ctx, metav1.ListOptions{
+		Limit: csrGatherLimit,
+	})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, []error{err}
+	}
+	csrs, err := FromCSRs(requests).Anonymize().Filter(IncludeCSR).Select()
+	if err != nil {
+		return nil, []error{err}
+	}
+	records := make([]record.Record, len(csrs))
+	for i, sr := range csrs {
+		records[i] = record.Record{
+			Name: fmt.Sprintf("config/certificatesigningrequests/%s", sr.ObjectMeta.Name),
+			Item: sr,
+		}
+	}
+	return records, nil
 }
 
 func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
@@ -27,11 +132,6 @@ func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 // GetExtension returns extension for CSR objects
 func (a CSRAnonymizer) GetExtension() string {
 	return "json"
-}
-
-type CSRs struct {
-	Requests   []v1beta1.CertificateSigningRequest
-	Anonymized []CSRAnonymizer
 }
 
 func FromCSRs(requests *v1beta1.CertificateSigningRequestList) *CSRs {
@@ -60,14 +160,6 @@ func (c *CSRs) Filter(f FilterFeatures) *CSRs {
 func (c *CSRs) Select() ([]CSRAnonymizer, error) {
 	return c.Anonymized, nil
 }
-
-type FilterFeatures func(c *CSRAnonymizedFeatures, opt ...FilterOptFunc) bool
-
-type FilterOpt struct {
-	time time.Time
-}
-
-type FilterOptFunc = func(o *FilterOpt)
 
 func WithTime(t time.Time) FilterOptFunc {
 	return func(o *FilterOpt) {
@@ -234,44 +326,4 @@ func Map(it []string, fn func(string) string) []string {
 		outSlice = append(outSlice, fn(str))
 	}
 	return outSlice
-}
-
-type CSRAnonymizedFeatures struct {
-	TypeMeta   metav1.TypeMeta
-	ObjectMeta metav1.ObjectMeta
-	Spec       *StateFeatures
-	Status     *StatusFeatures
-}
-
-type StateFeatures struct {
-	UID      string
-	Username string
-	Groups   []string
-	Usages   []v1beta1.KeyUsage
-
-	Request *CsrFeatures
-}
-
-type StatusFeatures struct {
-	Conditions []v1beta1.CertificateSigningRequestCondition
-	Cert       *CertFeatures
-}
-
-type CsrFeatures struct {
-	ValidSignature     bool
-	SignatureAlgorithm string
-	PublicKeyAlgorithm string
-	DNSNames           []string
-	EmailAddresses     []string
-	IPAddresses        []string
-	URIs               []string
-	Subject            pkix.Name
-}
-
-type CertFeatures struct {
-	Verified  bool
-	Issuer    pkix.Name
-	Subject   pkix.Name
-	NotBefore string
-	NotAfter  string
 }
