@@ -90,7 +90,7 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 }
 
 
-func (s *Serialized) ToSimpleController(cfg *Controller) (*Controller, error) {
+func (s *Serialized) ToDisconnectedController(cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
 	}

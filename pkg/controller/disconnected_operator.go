@@ -40,7 +40,7 @@ func (d *Disconnected) LoadConfig(obj map[string]interface{}) error {
 		return fmt.Errorf("unable to load config: %v", err)
 	}
 
-	controller, err := cfg.ToSimpleController(&d.Controller)
+	controller, err := cfg.ToDisconnectedController(&d.Controller)
 	if err != nil {
 		return err
 	}
