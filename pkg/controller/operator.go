@@ -34,7 +34,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
-	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 type Support struct {
@@ -116,13 +115,11 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient, gatherKubeClient.CoreV1(), configObserver, os.Getenv("POD_NAMESPACE"))
 
-	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
-	if err != nil {
-		return nil
-	}
-
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer := anonymization.NewAnonymizer(configObserver, baseDomain)
+	anonymizer, err := anonymization.NewAnonymizerFromConfigClient(ctx, configObserver, configClient)
+	if err != nil {
+		return err
+	}
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age

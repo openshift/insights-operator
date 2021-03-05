@@ -17,9 +17,9 @@ type Serialized struct {
 		Timeout      string `json:"timeout"`
 		MinRetryTime string `json:"min_retry"`
 	} `json:"pull_report"`
-	Impersonate                  string   `json:"impersonate"`
-	Gather                       []string `json:"gather"`
-	DisabledGlobalAnonymizations []string `json:"disabledGlobalAnonymizations"`
+	Impersonate             string   `json:"impersonate"`
+	Gather                  []string `json:"gather"`
+	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
 }
 
 func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
@@ -32,8 +32,7 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	cfg.Endpoint = s.Endpoint
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
-
-	s.fillAnonymizationConfig(cfg)
+	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
@@ -106,12 +105,9 @@ type Controller struct {
 	ReportPullingTimeout time.Duration
 	Impersonate          string
 	Gather               []string
-	// DisabledGlobalAnonymizations specifies which of global anonymizations to disable.
-	// By default, we anonymize everything.
-	// To see the detailed info about what we anonymize, go to the docs of package anonymization.
-	DisabledGlobalAnonymizations struct {
-		DisableClusterBaseDomainAnonymization bool
-	}
+	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
+	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
+	EnableGlobalObfuscation bool
 
 	Username string
 	Password string

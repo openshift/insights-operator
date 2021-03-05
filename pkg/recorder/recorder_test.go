@@ -30,16 +30,16 @@ func newRecorder() Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 
-	anonymizer := anonymization.NewAnonymizer(nil, "")
+	anonymizer, _ := anonymization.NewAnonymizer(nil, "", nil)
 
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{
-		driver:    &driver,
-		interval:  interval,
-		maxAge:    interval * 6 * 24,
-		records:   make(map[string]*record.MemoryRecord),
-		flushCh:   make(chan struct{}, 1),
-		flushSize: 8 * 1024 * 1024,
+		driver:     &driver,
+		interval:   interval,
+		maxAge:     interval * 6 * 24,
+		records:    make(map[string]*record.MemoryRecord),
+		flushCh:    make(chan struct{}, 1),
+		flushSize:  8 * 1024 * 1024,
 		anonymizer: anonymizer,
 	}
 }

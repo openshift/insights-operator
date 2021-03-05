@@ -8,5 +8,4 @@ endpoint: http://[::1]:8081
 impersonate: system:serviceaccount:openshift-insights:gather
 gather:
   - ALL
-disabledGlobalAnonymizations:
-  - clusterBaseDomain
+enableGlobalObfuscation: true
