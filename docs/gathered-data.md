@@ -119,7 +119,7 @@ See: docs/insights-archive-sample/config/oauth
 
 ## ClusterOperators
 
-collects all ClusterOperators and their resources.
+collects all ClusterOperators and their resource.
 It finds unhealthy Pods for unhealthy operators
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -129,13 +129,6 @@ Location of operators in archive: config/clusteroperator/
 See: docs/insights-archive-sample/config/clusteroperator
 Location of pods in archive: config/pod/
 
-
-Output raw size: 245
-
-### Examples
-
-#### ClusterOperators
-[{"Name":"config/clusteroperator/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Degraded","status":"","lastTransitionTime":null}],"extension":null}}}]
 
 ## ClusterProxy
 
@@ -184,6 +177,16 @@ Specifically, the age of pods, the set of running images and the container names
 Location in archive: config/running_containers.json
 
 
+## ContainerRuntimeConfig
+
+collects ContainerRuntimeConfig  information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/containerruntimeconfigs/
+
+
 ## HostSubnet
 
 collects HostSubnet information
@@ -204,6 +207,16 @@ It also collects Total number of all installplans and all non-unique installplan
 The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 
 Location in archive: config/installplans/
+
+
+## MachineConfigPool
+
+collects MachineConfigPool information
+
+The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+
+Location in archive: config/machineconfigpools/
 
 
 ## MachineSet
@@ -231,13 +244,6 @@ Location in archive: config/metrics/
 See: docs/insights-archive-sample/config/metrics
 
 
-Output raw size: 148
-
-### Examples
-
-#### MostRecentMetrics
-[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
-
 ## NetNamespace
 
 collects NetNamespaces networking information
@@ -259,12 +265,18 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location in archive: config/node/
 
 
-Output raw size: 491
+## OLMOperators
 
-### Examples
+collects list of installed OLM operators.
+Each OLM operator (in the list) contains following data:
+- OLM operator name
+- OLM operator version
+- related ClusterServiceVersion conditions
 
-#### Nodes
-[{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
+See: docs/insights-archive-sample/config/olm_operators
+Location of in archive: config/olm_operators
+Id in config: olm_operators
+
 
 ## OpenshiftSDNControllerLogs
 
@@ -310,25 +322,18 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 Location in archive: config/pdbs/
 See: docs/insights-archive-sample/config/pdbs
 
-## MachineConfigPool
 
-gathers the cluster's MachineConfigPools.
+## SAPConfig
 
-The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
-Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+collects selected security context constraints
+and cluster role bindings from clusters running a SAP payload.
 
-Location in archive: config/machineconfigpools/
-See: docs/insights-archive-sample/config/machineconfigpools/
+Relevant OpenShift API docs:
+  - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
+  - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
-## ContainerRuntimeConfig
+Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 
-collects ContainerRuntimeConfig information
-
-The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
-Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
-
-Location in archive: config/containerruntimeconfigs/
-See: docs/insights-archive-sample/config/containerruntimeconfigs
 
 ## SAPVsystemIptablesLogs
 
@@ -353,14 +358,6 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
 
-## SAPConfig
-
-collects selected security context constraints
-and cluster role bindings from clusters running a SAP payload.
-
-Relevant OpenShift API docs:
-  - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
-  - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
 Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 
