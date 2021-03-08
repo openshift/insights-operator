@@ -15,7 +15,8 @@ func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 
 	containersFilter := logContainersFilter{
-		namespace: "openshift-authentication",
+		namespace:     "openshift-authentication",
+		labelSelector: "app=oauth-openshift",
 	}
 	messagesFilter := logMessagesFilter{
 		messagesToSearch: []string{
