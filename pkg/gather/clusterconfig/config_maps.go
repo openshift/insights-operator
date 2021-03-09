@@ -20,7 +20,7 @@ import (
 //
 // Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
 // For ConfigMap of type BinaryData it is encoded as standard base64.
-// In the archive under configmaps we store name of the namesapce, name of the ConfigMap and then each ConfigMap Key.
+// In the archive under configmaps we store name of the namespace, name of the ConfigMap and then each ConfigMap Key.
 // For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 //
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
@@ -58,7 +58,7 @@ func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interfa
 		}
 		for dk, dv := range cms.Items[i].BinaryData {
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/configmaps/%s/%s", cms.Items[i].Name, dk),
+				Name: fmt.Sprintf("config/configmaps/%s/%s/%s", cms.Items[i].Namespace, cms.Items[i].Name, dk),
 				Item: ConfigMapAnonymizer{v: dv, encodeBase64: true},
 			})
 		}
