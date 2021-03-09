@@ -80,6 +80,7 @@ func createUnstructuredResource(content []byte, client *dynamicfake.FakeDynamicC
 
 func readFromFile(filePath string) ([]byte, error) {
 	f, err := os.Open(filePath)
+	defer f.Close()
 	if err != nil {
 		return nil, err
 	}
