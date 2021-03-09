@@ -2,19 +2,17 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
-	"k8s.io/klog/v2"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -29,34 +27,18 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
-type Disconnected struct {
+type DisconnectedOperator struct {
 	config.Controller
 }
 
-// LoadConfig unmarshalls config from obj and loads it to this Support struct
-func (d *Disconnected) LoadConfig(obj map[string]interface{}) error {
-	var cfg config.Serialized
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
-		return fmt.Errorf("unable to load config: %v", err)
-	}
-
-	controller, err := cfg.ToDisconnectedController(&d.Controller)
+func (d *DisconnectedOperator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
+	klog.Infof("Starting insights-operator %s", version.Get().String())
+	initialDelay := 0 * time.Second
+	cont, err := config.LoadConfig(d.Controller, controller.ComponentConfig.Object, config.ToDisconnectedController)
 	if err != nil {
 		return err
 	}
-	d.Controller = *controller
-
-	data, _ := json.Marshal(cfg)
-	klog.V(2).Infof("Current config: %s", string(data))
-	return nil
-}
-
-func (d *Disconnected) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
-	klog.Infof("Starting insights-operator %s", version.Get().String())
-	initialDelay := 0 * time.Second
-	if err := d.LoadConfig(controller.ComponentConfig.Object); err != nil {
-		return err
-	}
+	d.Controller = cont
 
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(controller.ProtoKubeConfig)

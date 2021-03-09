@@ -1,8 +1,12 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 )
 
 // Serialized defines the standard config for this operator.
@@ -21,7 +25,36 @@ type Serialized struct {
 	Gather      []string `json:"gather"`
 }
 
-func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
+// Controller defines the standard config for this operator.
+type Controller struct {
+	Report               bool
+	StoragePath          string
+	Interval             time.Duration
+	Endpoint             string
+	ReportEndpoint       string
+	ReportPullingDelay   time.Duration
+	ReportMinRetryTime   time.Duration
+	ReportPullingTimeout time.Duration
+	Impersonate          string
+	Gather               []string
+
+	Username string
+	Password string
+	Token    string
+
+	HTTPConfig HTTPConfig
+}
+
+// HTTPConfig configures http proxy and exception settings if they come from config
+type HTTPConfig struct {
+	HTTPProxy  string
+	HTTPSProxy string
+	NoProxy    string
+}
+
+type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
+
+func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
 	}
@@ -89,8 +122,7 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	return cfg, nil
 }
 
-
-func (s *Serialized) ToDisconnectedController(cfg *Controller) (*Controller, error) {
+func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
 	}
@@ -117,29 +149,18 @@ func (s *Serialized) ToDisconnectedController(cfg *Controller) (*Controller, err
 	return cfg, nil
 }
 
-// Controller defines the standard config for this operator.
-type Controller struct {
-	Report               bool
-	StoragePath          string
-	Interval             time.Duration
-	Endpoint             string
-	ReportEndpoint       string
-	ReportPullingDelay   time.Duration
-	ReportMinRetryTime   time.Duration
-	ReportPullingTimeout time.Duration
-	Impersonate          string
-	Gather               []string
+// LoadConfig unmarshalls config from obj and loads it to this Controller struct
+func LoadConfig(controller Controller, obj map[string]interface{}, converter Converter) (Controller, error) {
+	var cfg Serialized
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
+		return controller, fmt.Errorf("unable to load config: %v", err)
+	}
 
-	Username string
-	Password string
-	Token    string
-
-	HTTPConfig HTTPConfig
-}
-
-// HTTPConfig configures http proxy and exception settings if they come from config
-type HTTPConfig struct {
-	HTTPProxy  string
-	HTTPSProxy string
-	NoProxy    string
+	loadedController, err := converter(&cfg, &controller)
+	if err != nil {
+		return controller, err
+	}
+	data, _ := json.Marshal(cfg)
+	klog.V(2).Infof("Current config: %s", string(data))
+	return *loadedController, nil
 }

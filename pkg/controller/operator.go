@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -10,7 +9,6 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -37,34 +35,18 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
-type Support struct {
+type Operator struct {
 	config.Controller
 }
 
-// LoadConfig unmarshalls config from obj and loads it to this Support struct
-func (s *Support) LoadConfig(obj map[string]interface{}) error {
-	var cfg config.Serialized
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
-		return fmt.Errorf("unable to load config: %v", err)
-	}
-
-	controller, err := cfg.ToController(&s.Controller)
+func (s *Operator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
+	klog.Infof("Starting insights-operator %s", version.Get().String())
+	initialDelay := 0 * time.Second
+	cont, err := config.LoadConfig(s.Controller, controller.ComponentConfig.Object, config.ToController)
 	if err != nil {
 		return err
 	}
-	s.Controller = *controller
-
-	data, _ := json.Marshal(cfg)
-	klog.V(2).Infof("Current config: %s", string(data))
-	return nil
-}
-
-func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
-	klog.Infof("Starting insights-operator %s", version.Get().String())
-	initialDelay := 0 * time.Second
-	if err := s.LoadConfig(controller.ComponentConfig.Object); err != nil {
-		return err
-	}
+	s.Controller = cont
 
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(controller.ProtoKubeConfig)

@@ -24,7 +24,7 @@ type operatorController interface {
 }
 
 func NewOperator() *cobra.Command {
-	operator := &controller.Support{
+	operator := &controller.Operator{
 		Controller: config.Controller{
 			StoragePath:          "/var/lib/insights-operator",
 			Interval:             10 * time.Minute,
@@ -47,10 +47,11 @@ func NewOperator() *cobra.Command {
 }
 
 func NewDisconnectedOperator() *cobra.Command {
-	operator := &controller.Disconnected{
+	operator := &controller.DisconnectedOperator{
 		Controller: config.Controller{
 			StoragePath: "/var/lib/insights-operator",
 			Interval:    10 * time.Minute,
+			Endpoint:    "local",
 		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), operator.Run)
