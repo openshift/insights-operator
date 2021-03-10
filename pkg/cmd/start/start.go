@@ -9,8 +9,11 @@ import (
 
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/serviceability"
+
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/pkg/version"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -19,8 +22,12 @@ import (
 
 const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 
+type operatorController interface {
+	Run(ctx context.Context, controller *controllercmd.ControllerContext) error
+}
+
 func NewOperator() *cobra.Command {
-	operator := &controller.Support{
+	operator := &controller.Operator{
 		Controller: config.Controller{
 			StoragePath:          "/var/lib/insights-operator",
 			Interval:             10 * time.Minute,
@@ -35,59 +42,126 @@ func NewOperator() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start the operator",
-		Run: func(cmd *cobra.Command, args []string) {
-			// boiler plate for the "normal" command
-			rand.Seed(time.Now().UTC().UnixNano())
-			defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
-			defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
-			serviceability.StartProfiler()
-
-			if config := cmd.Flags().Lookup("config").Value.String(); len(config) == 0 {
-				klog.Fatalf("error: --config is required")
-			}
-
-			unstructured, config, configBytes, err := cfg.Config()
-			if err != nil {
-				klog.Fatal(err)
-			}
-
-			startingFileContent, observedFiles, err := cfg.AddDefaultRotationToConfig(config, configBytes)
-			if err != nil {
-				klog.Fatal(err)
-			}
-
-			// if the service CA is rotated, we want to restart
-			if data, err := ioutil.ReadFile(serviceCACertPath); err == nil {
-				startingFileContent[serviceCACertPath] = data
-			} else {
-				klog.V(4).Infof("Unable to read service ca bundle: %v", err)
-			}
-			observedFiles = append(observedFiles, serviceCACertPath)
-
-			exitOnChangeReactorCh := make(chan struct{})
-			ctx := context.Background()
-			ctx2, cancel := context.WithCancel(ctx)
-			go func() {
-				select {
-				case <-exitOnChangeReactorCh:
-					cancel()
-				case <-ctx.Done():
-					cancel()
-				}
-			}()
-
-			builder := controllercmd.NewController("openshift-insights-operator", operator.Run).
-				WithKubeConfigFile(cmd.Flags().Lookup("kubeconfig").Value.String(), nil).
-				WithLeaderElection(config.LeaderElection, "", "openshift-insights-operator-lock").
-				WithServer(config.ServingInfo, config.Authentication, config.Authorization).
-				WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
-
-			if err := builder.Run(ctx2, unstructured); err != nil {
-				klog.Fatal(err)
-			}
-		},
+		Run:   runOperator(operator, cfg),
 	}
 	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
 
 	return cmd
+}
+
+func NewGather() *cobra.Command {
+	operator := &controller.GatherJob{
+		Controller: config.Controller{
+			StoragePath: "/var/lib/insights-operator",
+			Interval:    10 * time.Minute,
+			Endpoint:    "local",
+		},
+	}
+	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil)
+	cmd := &cobra.Command{
+		Use:   "gather",
+		Short: "Does a single gather, without uploading it",
+		Run:   runGather(*operator, cfg),
+	}
+	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
+
+	return cmd
+}
+
+func runGather(operator controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		if config := cmd.Flags().Lookup("config").Value.String(); len(config) == 0 {
+			klog.Fatalf("error: --config is required")
+		}
+		unstructured, _, _, err := cfg.Config()
+		if err != nil {
+			klog.Fatal(err)
+		}
+		cont, err := config.LoadConfig(operator.Controller, unstructured.Object, config.ToDisconnectedController)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		operator.Controller = cont
+
+		kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String()
+		if len(kubeConfigPath) == 0 {
+			klog.Fatalf("error: --kubeconfig is required")
+		}
+		kubeConfigBytes, err := ioutil.ReadFile(kubeConfigPath)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		kubeConfig, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		clientConfig, err := kubeConfig.ClientConfig()
+		if err != nil {
+			klog.Fatal(err)
+		}
+		protoConfig := rest.CopyConfig(clientConfig)
+		protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+		protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
+
+		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval/2)
+		err = operator.Gather(ctx, clientConfig, protoConfig)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		cancel()
+		os.Exit(0)
+	}
+}
+
+func runOperator(operator operatorController, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		// boiler plate for the "normal" command
+		rand.Seed(time.Now().UTC().UnixNano())
+		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
+		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
+		serviceability.StartProfiler()
+
+		if config := cmd.Flags().Lookup("config").Value.String(); len(config) == 0 {
+			klog.Fatalf("error: --config is required")
+		}
+
+		unstructured, config, configBytes, err := cfg.Config()
+		if err != nil {
+			klog.Fatal(err)
+		}
+
+		startingFileContent, observedFiles, err := cfg.AddDefaultRotationToConfig(config, configBytes)
+		if err != nil {
+			klog.Fatal(err)
+		}
+
+		// if the service CA is rotated, we want to restart
+		if data, err := ioutil.ReadFile(serviceCACertPath); err == nil {
+			startingFileContent[serviceCACertPath] = data
+		} else {
+			klog.V(4).Infof("Unable to read service ca bundle: %v", err)
+		}
+		observedFiles = append(observedFiles, serviceCACertPath)
+
+		exitOnChangeReactorCh := make(chan struct{})
+		ctx := context.Background()
+		ctx2, cancel := context.WithCancel(ctx)
+		go func() {
+			select {
+			case <-exitOnChangeReactorCh:
+				cancel()
+			case <-ctx.Done():
+				cancel()
+			}
+		}()
+
+		builder := controllercmd.NewController("openshift-insights-operator", operator.Run).
+			WithKubeConfigFile(cmd.Flags().Lookup("kubeconfig").Value.String(), nil).
+			WithLeaderElection(config.LeaderElection, "", "openshift-insights-operator-lock").
+			WithServer(config.ServingInfo, config.Authentication, config.Authorization).
+			WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
+		if err := builder.Run(ctx2, unstructured); err != nil {
+			klog.Fatal(err)
+		}
+	}
 }
