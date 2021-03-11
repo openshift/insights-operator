@@ -24,6 +24,10 @@ type Serialized struct {
 	Impersonate             string   `json:"impersonate"`
 	Gather                  []string `json:"gather"`
 	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
+	Ocm         struct {
+		Endpoint string `json:"endpoint"`
+		Interval string `json:"interval"`
+	}
 }
 
 // Controller defines the standard config for this operator.
@@ -50,6 +54,8 @@ type Controller struct {
 	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
 	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
 	EnableGlobalObfuscation bool
+	OcmEndpoint          string
+	OcmInterval          time.Duration
 
 	Username string
 	Password string
@@ -159,6 +165,17 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
 	}
 
+	if len(s.Ocm.Endpoint) > 0 {
+		cfg.OcmEndpoint = s.Ocm.Endpoint
+	}
+
+	if len(s.Ocm.Interval) > 0 {
+		i, err := time.ParseDuration(s.Ocm.Interval)
+		if err != nil {
+			return nil, fmt.Errorf("ocm interval must be a valid duration: %v", err)
+		}
+		cfg.OcmInterval = i
+	}
 	return cfg, nil
 }
 

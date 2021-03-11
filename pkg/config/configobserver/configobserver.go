@@ -202,6 +202,21 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 				nextConfig.Report = false
 			}
 		}
+
+		// OCM config
+		if ocmEndpoint, ok := secret.Data["ocmEndpoint"]; ok {
+			nextConfig.OcmEndpoint = string(ocmEndpoint)
+		}
+		if ocmInterval, ok := secret.Data["ocmInterval"]; ok {
+			if oi, err := time.ParseDuration(string(ocmInterval)); err == nil {
+				nextConfig.OcmInterval = oi
+			} else {
+				klog.Warningf(
+					"secret contains an invalid value (%s) for ocmInterval. Using previous value",
+					ocmInterval,
+				)
+			}
+		}
 	}
 	if err != nil {
 		return err
@@ -281,6 +296,14 @@ func (c *Controller) mergeConfigLocked() {
 			cfg.ReportMinRetryTime = c.secretConfig.ReportMinRetryTime
 		}
 		cfg.EnableGlobalObfuscation = cfg.EnableGlobalObfuscation || c.secretConfig.EnableGlobalObfuscation
+		
+		// OCM config
+		if len(c.secretConfig.OcmEndpoint) > 0 {
+			cfg.OcmEndpoint = c.secretConfig.OcmEndpoint
+		}
+		if c.secretConfig.OcmInterval > 0 {
+			cfg.OcmInterval = c.secretConfig.OcmInterval
+		}
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {
