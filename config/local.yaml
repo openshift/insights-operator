@@ -6,5 +6,8 @@ interval: "5m"
 storagePath: /tmp/insights-operator
 endpoint: http://[::1]:8081
 impersonate: system:serviceaccount:openshift-insights:gather
+ocm:
+  endpoint: https://jsonplaceholder.typicode.com/albums?id=1
+  interval: "4h"
 gather:
   - ALL
