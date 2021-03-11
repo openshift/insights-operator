@@ -22,10 +22,7 @@ import (
 
 const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 
-type operatorController interface {
-	Run(ctx context.Context, controller *controllercmd.ControllerContext) error
-}
-
+// Create the commad for running the Insights Operator.
 func NewOperator() *cobra.Command {
 	operator := &controller.Operator{
 		Controller: config.Controller{
@@ -49,12 +46,12 @@ func NewOperator() *cobra.Command {
 	return cmd
 }
 
+// Create the commad for running the a single gather.
 func NewGather() *cobra.Command {
 	operator := &controller.GatherJob{
 		Controller: config.Controller{
 			StoragePath: "/var/lib/insights-operator",
-			Interval:    10 * time.Minute,
-			Endpoint:    "local",
+			Interval:    30 * time.Minute,
 		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil)
@@ -68,6 +65,7 @@ func NewGather() *cobra.Command {
 	return cmd
 }
 
+// Starts a single gather, main responsibility is loading in the necessary configs.
 func runGather(operator controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		if config := cmd.Flags().Lookup("config").Value.String(); len(config) == 0 {
@@ -103,7 +101,7 @@ func runGather(operator controller.GatherJob, cfg *controllercmd.ControllerComma
 		protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 		protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
 
-		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval/2)
+		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
 		err = operator.Gather(ctx, clientConfig, protoConfig)
 		if err != nil {
 			klog.Fatal(err)
@@ -113,7 +111,8 @@ func runGather(operator controller.GatherJob, cfg *controllercmd.ControllerComma
 	}
 }
 
-func runOperator(operator operatorController, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
+// Boilerplate for running an operator and handling command line arguments.
+func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		// boiler plate for the "normal" command
 		rand.Seed(time.Now().UTC().UnixNano())

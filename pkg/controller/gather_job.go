@@ -19,10 +19,18 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
+// Object responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
 	config.Controller
 }
 
+
+// Runs a single gather and stores the generated archive, without uploading it.
+// 1. Creates the necessary configs/clients
+// 2. Creates the configobserver to get more configs
+// 3. Initiates the recorder
+// 4. Executes a Gather
+// 5. Flushes the results
 func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKubeConfig *rest.Config) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	// these are operator clients
@@ -30,7 +38,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 	if err != nil {
 		return err
 	}
-	// these are gathering clients
+	// these are gathering configs
 	gatherProtoKubeConfig := rest.CopyConfig(protoKubeConfig)
 	if len(d.Impersonate) > 0 {
 		gatherProtoKubeConfig.Impersonate.UserName = d.Impersonate
@@ -41,8 +49,6 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 	}
 
 	// the metrics client will connect to prometheus and scrape a small set of metrics
-	// TODO: the oauth-proxy and delegating authorizer do not support Impersonate-User,
-	//   so we do not impersonate gather
 	metricsGatherKubeConfig := rest.CopyConfig(kubeConfig)
 	metricsGatherKubeConfig.CAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
@@ -60,19 +66,18 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(d.Controller, kubeClient)
 
-	// the recorder periodically flushes any recorded data to disk as tar.gz files
-	// in s.StoragePath, and also prunes files above a certain age
+	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(d.StoragePath)
 	recorder := recorder.New(recdriver, d.Interval)
+	defer recorder.Flush()
 
-	// the gatherers periodically check the state of the cluster and report any
+	// the gatherers check the state of the cluster and report any
 	// config to the recorder
 	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig)
 	err = clusterConfigGatherer.Gather(ctx, configObserver.Config().Gather, recorder)
 	if err != nil {
 		return err
 	}
-	recorder.Flush()
 
 	klog.Warning("stopped")
 	return nil

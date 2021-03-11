@@ -35,10 +35,17 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
+// Object responsible for controlling the start up of the Insights Operator
 type Operator struct {
 	config.Controller
 }
 
+// Starts the Insights Operator:
+// 1. Gets/Creates the necessary configs/clients
+// 2. Starts the configobserver and status reporter
+// 3. Initiates the recorder and starts the periodic record pruneing
+// 4. Starts the periodic gathering
+// 5. Creates the insights-client and starts uploader and reporter
 func (s *Operator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	initialDelay := 0 * time.Second
@@ -57,7 +64,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
-	// these are gathering clients
+	// these are gathering configs
 	gatherProtoKubeConfig := rest.CopyConfig(controller.ProtoKubeConfig)
 	if len(s.Impersonate) > 0 {
 		gatherProtoKubeConfig.Impersonate.UserName = s.Impersonate
