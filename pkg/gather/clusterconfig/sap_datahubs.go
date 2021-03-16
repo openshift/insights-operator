@@ -7,8 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -22,17 +20,12 @@ func GatherSAPDatahubs(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{errors: []error{err}}
 		return
 	}
-	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
-	}
 
-	records, errors := gatherSAPDatahubs(g.ctx, gatherDynamicClient, gatherKubeClient.CoreV1())
+	records, errors := gatherSAPDatahubs(g.ctx, gatherDynamicClient)
 	c <- gatherResult{records: records, errors: errors}
 }
 
-func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	datahubsList, err := dynamicClient.Resource(datahubGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
