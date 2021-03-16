@@ -34,5 +34,5 @@ func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface, coreClient
 		return nil, []error{err}
 	}
 
-	return []record.Record{{Name: "config/aaaaaaaaa", Item: record.JSONMarshaller{Object: pnccList}}}, nil
+	return []record.Record{{Name: "config/podnetworkconnectivitychecks", Item: record.JSONMarshaller{Object: pnccList}}}, nil
 }
