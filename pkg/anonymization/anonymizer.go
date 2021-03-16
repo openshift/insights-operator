@@ -19,12 +19,14 @@ package anonymization
 import (
 	"bytes"
 	"context"
+	"math/big"
 	"net"
 	"regexp"
 	"strings"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	k8snet "k8s.io/utils/net"
 
@@ -35,15 +37,22 @@ import (
 
 const (
 	Ipv4Regex                    = `((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
+	Ipv4NetworkRegex             = Ipv4Regex + "/([0-9]{1,2})"
 	ClusterBaseDomainPlaceholder = "<CLUSTER_BASE_DOMAIN>"
 )
+
+type subnetInformation struct {
+	network net.IPNet
+	lastIP  net.IP
+}
 
 // Anonymizer is used to anonymize sensitive data.
 // Config can be used to disable anonymization of particular types of data.
 type Anonymizer struct {
 	configObserver    *configobserver.Controller
 	clusterBaseDomain string
-	networks          []*net.IPNet
+	networks          []subnetInformation
+	translationTable  map[string]string
 	ipRegex           *regexp.Regexp
 }
 
@@ -58,17 +67,26 @@ func NewAnonymizer(
 		return nil, err
 	}
 
+	var networksInformation []subnetInformation
+	for _, network := range cidrs {
+		lastIP := network.IP
+		networksInformation = append(networksInformation, subnetInformation{
+			network: *network,
+			lastIP:  lastIP,
+		})
+	}
+
 	return &Anonymizer{
 		configObserver:    configObserver,
 		clusterBaseDomain: strings.TrimSpace(clusterBaseDomain),
-		networks:          cidrs,
+		networks:          networksInformation,
 		ipRegex:           regexp.MustCompile(Ipv4Regex),
 	}, nil
 }
 
 // NewAnonymizer creates a new instance of anonymizer with a provided config observer and openshift config client
 func NewAnonymizerFromConfigClient(
-	ctx context.Context, configObserver *configobserver.Controller, configClient configv1client.ConfigV1Interface,
+	ctx context.Context, configObserver *configobserver.Controller, kubeClient kubernetes.Interface, configClient configv1client.ConfigV1Interface,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
@@ -97,6 +115,36 @@ func NewAnonymizerFromConfigClient(
 		networks = append(networks, network)
 	}
 
+	clusterConfigV1, err := kubeClient.CoreV1().ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
+		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
+		for _, network := range networkRegex.FindAllString(installConfig, -1) {
+			networks = append(networks, network)
+		}
+	}
+
+	utils.SortAndRemoveDuplicates(&networks, func(i, j int) bool {
+		if !strings.Contains(networks[i], "/") || !strings.Contains(networks[j], "/") {
+			return networks[i] > networks[j]
+		}
+
+		network1 := strings.Split(networks[i], "/")
+		network2 := strings.Split(networks[j], "/")
+
+		// subnet length
+		if network1[1] > network2[1] {
+			return true
+		} else if network1[1] > network2[1] {
+			return false
+		} else {
+			return network1[0] > network2[0]
+		}
+	})
+
 	return NewAnonymizer(configObserver, baseDomain, networks)
 }
 
@@ -123,40 +171,112 @@ func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryR
 		)
 	}
 
-	// We could use something like https://github.com/yl2chen/cidranger but we shouldn't typically have many networks
-	// so it's fine to just iterate over them
-
 	memoryRecord.Data = anonymizer.ipRegex.ReplaceAllFunc(memoryRecord.Data, func(originalIPBytes []byte) []byte {
-		originalIP := net.ParseIP(string(originalIPBytes))
-		if originalIP == nil {
-			klog.Warningf("Unable to parse IP '%v'", string(originalIPBytes))
-			// Unable to parse an IP, so just return whatever it is. It shouldn't happen.
-			return originalIPBytes
-		}
-
-		isIPv4 := originalIP.To4() != nil
-
-		if !isIPv4 {
-			// TODO: to be implemented later
-			// the problem is that some strings can be incorrectly identified as ip v6
-			// we can try looking only for those which are wrapped by quotes or something
-			return originalIPBytes
-		}
-
-		for _, network := range anonymizer.networks {
-			if network.Contains(originalIP) {
-				// return the first matched network
-				return []byte(network.IP.String())
-			}
-		}
-
-		if originalIP.To4() != nil {
-			// ipv4
-			return []byte("0.0.0.0")
-		}
-		// ipv6
-		return []byte("::")
+		return []byte(anonymizer.ObfuscateIP(string(originalIPBytes)))
 	})
 
 	return memoryRecord
+}
+
+func (anonymizer Anonymizer) ObfuscateIP(ipStr string) string {
+	if obfuscatedIP, exists := anonymizer.translationTable[ipStr]; exists {
+		return obfuscatedIP
+	}
+
+	originalIP := net.ParseIP(ipStr)
+	if originalIP == nil {
+		klog.Warningf("Unable to parse IP '%v'", ipStr)
+		// Unable to parse an IP, so just return whatever it is. It shouldn't happen.
+		return ipStr
+	}
+
+	isIPv4 := originalIP.To4() != nil
+
+	if !isIPv4 {
+		// TODO: to be implemented later
+		// the problem is that some strings can be incorrectly identified as ip v6
+		// we can try looking only for those which are wrapped by quotes or something
+		return ipStr
+	}
+
+	// We could use something like https://github.com/yl2chen/cidranger but we shouldn't typically have many networks
+	// so it's fine to just iterate over them
+	for i := range anonymizer.networks {
+		networkInfo := &anonymizer.networks[i]
+		network := &networkInfo.network
+		if network.Contains(originalIP) {
+			nextIP, overflow := getNextIP(networkInfo.lastIP, network.Mask)
+			if overflow {
+				// it's very unlikely to ever happen
+				klog.Warningf(
+					"Anonymizer couldn't find the next IP for %v with mask", networkInfo.lastIP, network.Mask,
+				)
+			}
+
+			networkInfo.lastIP = nextIP
+			anonymizer.translationTable[ipStr] = nextIP.String()
+			return nextIP.String()
+		}
+	}
+
+	if isIPv4 {
+		// ipv4
+		return "0.0.0.0"
+	}
+	// ipv6
+	return "::"
+}
+
+// getNextIP returns the next IP address in the current subnetwork and the flag indicating if there was an overflow
+func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
+	isIpv4 := originalIP.To4() != nil
+
+	fixArraySize := func(ip net.IP) net.IP {
+		if isIpv4 {
+			return utils.TakeLastNItemsFromByteArray(ip, net.IPv4len)
+		}
+		return utils.TakeLastNItemsFromByteArray(ip, net.IPv6len)
+	}
+
+	// for ipv4 take last 4 bytes because IPv4  can be represented as IPv6 internally
+	originalIP = fixArraySize(originalIP)
+
+	intValue := big.NewInt(0)
+
+	for byteIndex, byteValue := range originalIP {
+		shiftTo := uint((len(originalIP) - byteIndex - 1) * 8)
+		intValue = intValue.Or(
+			intValue, big.NewInt(0).Lsh(big.NewInt(int64(byteValue)), shiftTo),
+		)
+	}
+
+	intValue = intValue.Add(intValue, big.NewInt(1))
+
+	resultIP := net.IP(intValue.Bytes())
+
+	// adding one can overflow the value leading to an array of 5 or 17 elements
+	// and there is an options where we don't have enough leading zeros
+	resultIP = fixArraySize(resultIP)
+
+	originalIPNetwork := originalIP.Mask(mask)
+	resultIPNetwork := resultIP.Mask(mask)
+
+	if !originalIPNetwork.Equal(resultIPNetwork) {
+		// network differs, there was an overflow
+		// we still want networks to be the same
+		var invertedMask net.IPMask
+		for _, maskByte := range mask {
+			invertedMask = append(invertedMask, maskByte^255)
+		}
+
+		resultHostIP := resultIP.Mask(invertedMask)
+
+		// combine original IP's network part and result IP's host part
+		intValue := big.NewInt(0).SetBytes(originalIPNetwork)
+		intValue = intValue.Or(intValue, big.NewInt(0).SetBytes(resultHostIP))
+
+		return intValue.Bytes(), true
+	}
+
+	return resultIP, false
 }

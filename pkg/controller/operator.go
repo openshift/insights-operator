@@ -116,7 +116,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	statusReporter := status.NewController(configClient, gatherKubeClient.CoreV1(), configObserver, os.Getenv("POD_NAMESPACE"))
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizerFromConfigClient(ctx, configObserver, configClient)
+	anonymizer, err := anonymization.NewAnonymizerFromConfigClient(ctx, configObserver, kubeClient, configClient)
 	if err != nil {
 		return err
 	}
