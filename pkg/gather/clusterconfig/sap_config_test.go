@@ -17,7 +17,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestSAPConfig(t *testing.T) {
+func Test_SAPConfig(t *testing.T) {
 	// Initialize the fake dynamic client.
 	var datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
 kind: DataHub

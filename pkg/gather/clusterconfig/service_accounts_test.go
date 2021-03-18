@@ -9,7 +9,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherServiceAccounts(t *testing.T) {
+func Test_ServiceAccounts_Gather(t *testing.T) {
 	tests := []struct {
 		name string
 		data []*corev1.ServiceAccount

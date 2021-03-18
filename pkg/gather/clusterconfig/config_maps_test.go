@@ -18,7 +18,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestConfigMapAnonymizer(t *testing.T) {
+func Test_ConfigMap_Anonymizer(t *testing.T) {
 	klog.SetOutput(utils.NewTestLog(t).Writer())
 
 	var cases = []struct {
@@ -128,7 +128,7 @@ func readConfigMapsTestData() (*corev1.ConfigMapList, error) {
 	return cml, nil
 }
 
-func TestGatherConfigMap(t *testing.T) {
+func Test_ConfigMap_Gather(t *testing.T) {
 	cml, err := readConfigMapsTestData()
 	mustNotFail(t, err, "error creating test data %+v")
 	coreClient := kubefake.NewSimpleClientset()

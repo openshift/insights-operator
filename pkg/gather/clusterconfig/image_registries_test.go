@@ -12,7 +12,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherClusterImageRegistry(t *testing.T) {
+func Test_ImageRegistry_Gather(t *testing.T) {
 	tests := []struct {
 		name       string
 		inputObj   *imageregistryv1.Config

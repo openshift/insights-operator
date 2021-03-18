@@ -12,7 +12,7 @@ import (
 	imageregistryfake "github.com/openshift/client-go/imageregistry/clientset/versioned/fake"
 )
 
-func TestGatherClusterPruner(t *testing.T) {
+func Test_ImagePruner_Gather(t *testing.T) {
 	tests := []struct {
 		name            string
 		inputObj        runtime.Object

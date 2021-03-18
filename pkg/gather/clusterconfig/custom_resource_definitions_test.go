@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestCollectVolumeSnapshotCRD(t *testing.T) {
+func Test_CollectVolumeSnapshotCRD(t *testing.T) {
 	expectedRecords := map[string]v1.CustomResourceDefinition{
 		"config/crd/volumesnapshots.snapshot.storage.k8s.io":        {ObjectMeta: metav1.ObjectMeta{Name: "volumesnapshots.snapshot.storage.k8s.io"}},
 		"config/crd/volumesnapshotcontents.snapshot.storage.k8s.io": {ObjectMeta: metav1.ObjectMeta{Name: "volumesnapshotcontents.snapshot.storage.k8s.io"}},

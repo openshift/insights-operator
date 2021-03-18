@@ -16,7 +16,7 @@ import (
 	batchv1fake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 )
 
-func TestSAPPods(t *testing.T) {
+func Test_SAPPods(t *testing.T) {
 	// Initialize the fake dynamic client.
 	var datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
 kind: DataHub

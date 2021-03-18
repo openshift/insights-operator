@@ -21,7 +21,7 @@ import (
 	clienttesting "k8s.io/client-go/testing"
 )
 
-func TestChangeSupportConfig(t *testing.T) {
+func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 	var cases = []struct {
 		name      string
 		config    map[string]*corev1.Secret

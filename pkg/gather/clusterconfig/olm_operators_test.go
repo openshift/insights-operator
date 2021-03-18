@@ -15,7 +15,7 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func TestOLMOperatorsGather(t *testing.T) {
+func Test_OLMOperators_Gather(t *testing.T) {
 	olmOpContent, err := readFromFile("testdata/olm_operator_1.yaml")
 	if err != nil {
 		t.Fatal("test failed to read OLM operator data", err)
