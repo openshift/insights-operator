@@ -27,7 +27,7 @@ func Test_CollectVolumeSnapshotCRD(t *testing.T) {
 	crdClientset := apixv1clientfake.NewSimpleClientset()
 
 	for _, name := range crdNames {
-		crdClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(), &v1.CustomResourceDefinition{
+		_, _ = crdClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(), &v1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 		}, metav1.CreateOptions{})
 	}

@@ -58,6 +58,10 @@ func Test_ConfigMap_Anonymizer(t *testing.T) {
 			mustNotFail(t, err, "error creating test data %+v")
 			cm := findMap(cml, tt.configMapName)
 			mustNotFail(t, cm != nil, "haven't found a ConfigMap %+v")
+			// just to make lint happy
+			if cm != nil {
+				return
+			}
 			var res []byte
 			cmdata := map[string]string{}
 			addAnonymized := func(cmdata map[string]string, dn string, encodebase64 bool, d []byte) {

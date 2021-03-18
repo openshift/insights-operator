@@ -42,7 +42,7 @@ metadata:
 	coreClient := kubefake.NewSimpleClientset()
 	jobsClient := &batchv1fake.FakeBatchV1{Fake: &coreClient.Fake}
 
-	coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
+	_, _ = coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-pod1",
 			Namespace: "example-namespace",
@@ -62,7 +62,7 @@ metadata:
 	}
 
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
-	datahubsClient.Resource(datahubsResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
+	_, _ = datahubsClient.Resource(datahubsResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
 	records, errs = gatherSAPPods(context.Background(), datahubsClient, coreClient.CoreV1(), jobsClient)
 	if len(errs) > 0 {
@@ -89,7 +89,7 @@ metadata:
 	}
 
 	// Add a failed pod to the failed job.
-	coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
+	_, _ = coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-pod2",
 			Namespace: "example-namespace",
@@ -128,7 +128,7 @@ metadata:
 	}
 
 	// Add a failed pod to the successful job.
-	coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
+	_, _ = coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-pod3",
 			Namespace: "example-namespace",
@@ -152,7 +152,7 @@ metadata:
 	}
 
 	// Create a healthy successful pod.
-	coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
+	_, _ = coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-pod4",
 			Namespace: "example-namespace",
