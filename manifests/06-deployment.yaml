@@ -72,8 +72,11 @@ spec:
           name: https
         resources:
           requests:
-            cpu: 10m
-            memory: 30Mi
+            cpu: 40m
+            memory: 80Mi
+          limits:
+            cpu: 100m
+            memory: 1Gi
         env:
         - name: POD_NAME
           valueFrom:
