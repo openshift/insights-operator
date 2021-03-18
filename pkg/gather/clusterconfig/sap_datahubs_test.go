@@ -23,8 +23,8 @@ metadata:
 	datahubYAML2 := `apiVersion: installers.datahub.sap.com/v1alpha1
 kind: DataHub
 metadata:
-	name: example-datahub
-	namespace: example-namespace2
+    name: example-datahub
+    namespace: example-namespace2
 `
 
 	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
@@ -41,7 +41,7 @@ metadata:
 
 	decUnstructured2 := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	testDatahub2 := &unstructured.Unstructured{}
-	_, _, err := decUnstructured2.Decode([]byte(datahubYAML2), nil, testDatahub2)
+	_, _, err = decUnstructured2.Decode([]byte(datahubYAML2), nil, testDatahub2)
 	if err != nil {
 		t.Fatal("unable to decode datahub YAML", err)
 	}
@@ -75,7 +75,7 @@ metadata:
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
 	// 2 record because there are now two datahubs resources.
-	if len(records) != 1 {
+	if len(records) != 2 {
 		t.Fatalf("unexpected number or records in the second run: %d", len(records))
 	}
 }
