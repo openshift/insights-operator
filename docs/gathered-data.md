@@ -180,7 +180,7 @@ and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitori
 
 Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
 For ConfigMap of type BinaryData it is encoded as standard base64.
-In the archive under configmaps we store name of the namesapce, name of the ConfigMap and then each ConfigMap Key.
+In the archive under configmaps we store name of the namespace, name of the ConfigMap and then each ConfigMap Key.
 For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
