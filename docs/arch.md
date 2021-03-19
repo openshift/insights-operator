@@ -260,7 +260,7 @@ Such a client is used in [GatherMachineSet](pkg/gather/clusterconfig/clusterconf
 ## Resource usage
 In the IO deployment [manifest](manifests/06-deployment.yaml) there are resource:
 - `requests` set to inform the cluster how much resources it needs at minimum.
-- `limits` set to make sure we don't overstay our welcome on a cluster.
+- `limits` set to inform the cluster how much resources it can use maximum.
 
 > Side note: Resource limits/requests are set for Containers, but because in our case the IO operator is the only Container in the Pod therefore these limits/requests are the same for the Pod as well.
 
@@ -272,7 +272,7 @@ Effects of:
 Both `requests` and `limits` were based on tests where we tried to starve the operator and some statistics based on the [metadata](https://github.com/openshift/insights-operator/tree/master/docs/insights-archive-sample/insights-operator/gathers.json).
 
 >Currently the memory usage `limit` is very generous because we found that there are few clusters that have very excessive memory usage.(~500 Mi)
-We identified a potential cause and are making steps to solve it also we plan to get further metadata so we can set a more reasonable limit in the future.
+We identified a potential cause and are taking steps to solve it also we plan to get further metadata so we can set a more reasonable limit in the future.
 In normal/average scenarios 200Mi memory is more then enough for the operator to work without any issue
 
 
