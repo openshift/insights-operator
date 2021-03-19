@@ -267,9 +267,9 @@ In the IO deployment [manifest](manifests/06-deployment.yaml) there are resource
 Effects of:
 - `requests`: These are checked when the pod is scheduled so to make sure that the place where it's going to be deployed has enough capacity to run it.
 - CPU `limit`: Slows down the work that the operator does, but as long as we are fast enough to not cause timeouts in network communication then we are fine.
-- Memory `limit`: If the memory usage of the pod exceeds the limit, the pod is killed without mercy and restarted. There is no easy way to notice from the operator's side that this happened, so we should tread carefully here.
+- Memory `limit`: If the memory usage of the pod exceeds the limit, the pod is killed without mercy and restarted. There is no easy way to notice this from the operator's side that this happened, so we should tread carefully here.
 
-Both `requests` and `limits` were based on tests where we tried to starve the operator and some statistics based on the metadata.
+Both `requests` and `limits` were based on tests where we tried to starve the operator and some statistics based on the [metadata](https://github.com/openshift/insights-operator/tree/master/docs/insights-archive-sample/insights-operator/gathers.json).
 
 >Currently the memory usage `limit` is very generous because we found that there are few clusters that have very excessive memory usage.(~500 Mi)
 We identified a potential cause and are making steps to solve it also we plan to get further metadata so we can set a more reasonable limit in the future.
