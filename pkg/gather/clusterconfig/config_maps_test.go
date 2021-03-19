@@ -59,7 +59,7 @@ func Test_ConfigMap_Anonymizer(t *testing.T) {
 			cm := findMap(cml, tt.configMapName)
 			mustNotFail(t, cm != nil, "haven't found a ConfigMap %+v")
 			// just to make lint happy
-			if cm != nil {
+			if cm == nil {
 				return
 			}
 			var res []byte
