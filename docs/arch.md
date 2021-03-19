@@ -256,6 +256,27 @@ Api, we can still use non type safe custom build types called [dynamic client](k
 Such a client is used in [GatherMachineSet](pkg/gather/clusterconfig/clusterconfig.go).
 
 
+
+## Resource usage
+In the IO deployment [manifest](manifests/06-deployment.yaml) there are resource:
+- `requests` set to inform the cluster how much resources it needs at minimum.
+- `limits` set to make sure we don't overstay our welcome on a cluster.
+
+> Side note: Resource limits/requests are set for Containers, but because in our case the IO operator is the only Container in the Pod therefore these limits/requests are the same for the Pod as well.
+
+Effects of:
+- `requests`: These are checked when the pod is scheduled so to make sure that the place where it's going to be deployed has enough capacity to run it.
+- CPU `limit`: Slows down the work that the operator does, but as long as we are fast enough to not cause timeouts in network communication then we are fine.
+- Memory `limit`: If the memory usage of the pod exceeds the limit, the pod is killed without mercy and restarted. There is no easy way to notice from the operator's side that this happened, so we should tread carefully here.
+
+Both `requests` and `limits` were based on tests where we tried to starve the operator and some statistics based on the metadata.
+
+>Currently the memory usage `limit` is very generous because we found that there are few clusters that have very excessive memory usage.(~500 Mi)
+We identified a potential cause and are making steps to solve it also we plan to get further metadata so we can set a more reasonable limit in the future.
+In normal/average scenarios 200Mi memory is more then enough for the operator to work without any issue
+
+
+
 ## Gathering the data
 
 ### clusterconfig
