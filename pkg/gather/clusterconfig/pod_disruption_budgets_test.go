@@ -11,7 +11,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherPodDisruptionBudgets(t *testing.T) {
+func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset()
 
 	fakeNamespace := "fake-namespace"

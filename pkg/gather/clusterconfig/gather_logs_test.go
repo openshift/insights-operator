@@ -83,7 +83,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 	}
 }
 
-func TestGatherLogs(t *testing.T) {
+func Test_GatherLogs(t *testing.T) {
 	t.Run("SubstringSearch_ShouldExist", func(t *testing.T) {
 		testGatherLogs(t, false, "fake logs", true)
 	})

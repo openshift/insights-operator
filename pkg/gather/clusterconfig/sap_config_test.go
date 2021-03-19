@@ -17,7 +17,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestSAPConfig(t *testing.T) {
+func Test_SAPConfig(t *testing.T) {
 	// Initialize the fake dynamic client.
 	var datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
 kind: DataHub
@@ -44,36 +44,36 @@ metadata:
 	securityClient := securityfake.NewSimpleClientset()
 
 	// Security Context Constraints.
-	securityClient.SecurityV1().SecurityContextConstraints().Create(
+	_, _ = securityClient.SecurityV1().SecurityContextConstraints().Create(
 		context.Background(),
 		&securityv1.SecurityContextConstraints{ObjectMeta: metav1.ObjectMeta{Name: "anyuid"}},
 		metav1.CreateOptions{},
 	)
-	securityClient.SecurityV1().SecurityContextConstraints().Create(
+	_, _ = securityClient.SecurityV1().SecurityContextConstraints().Create(
 		context.Background(),
 		&securityv1.SecurityContextConstraints{ObjectMeta: metav1.ObjectMeta{Name: "privileged"}},
 		metav1.CreateOptions{},
 	)
 	// This SCC should not be collected.
-	securityClient.SecurityV1().SecurityContextConstraints().Create(
+	_, _ = securityClient.SecurityV1().SecurityContextConstraints().Create(
 		context.Background(),
 		&securityv1.SecurityContextConstraints{ObjectMeta: metav1.ObjectMeta{Name: "ignored"}},
 		metav1.CreateOptions{},
 	)
 
 	// Cluster Role Bindings.
-	authClient.AuthorizationV1().ClusterRoleBindings().Create(
+	_, _ = authClient.AuthorizationV1().ClusterRoleBindings().Create(
 		context.Background(),
 		&authv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "system:openshift:scc:anyuid"}},
 		metav1.CreateOptions{},
 	)
-	authClient.AuthorizationV1().ClusterRoleBindings().Create(
+	_, _ = authClient.AuthorizationV1().ClusterRoleBindings().Create(
 		context.Background(),
 		&authv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "system:openshift:scc:privileged"}},
 		metav1.CreateOptions{},
 	)
 	// This CRB should not be collected.
-	authClient.AuthorizationV1().ClusterRoleBindings().Create(
+	_, _ = authClient.AuthorizationV1().ClusterRoleBindings().Create(
 		context.Background(),
 		&authv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "system:openshift:scc:ignored"}},
 		metav1.CreateOptions{},
@@ -88,7 +88,7 @@ metadata:
 	}
 
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
-	datahubsClient.Resource(datahubGroupVersionResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
+	_, _ = datahubsClient.Resource(datahubGroupVersionResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
 	records, errs = gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {

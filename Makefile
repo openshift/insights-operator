@@ -31,11 +31,11 @@ test-e2e:
 
 vet:
 	@echo ">> vetting code"
-	$(GOCMD) vet $$(go list ./... | grep -v /vendor/)
+	$(GOCMD) vet $$(go list ./... | egrep -v '/vendor/|/tests/integration')
 
 lint:
 	@echo ">> linting code"
-	$(GOLINT) $$(go list ./... | grep -v /vendor/)
+	$(GOLINT) $$(go list ./... | egrep -v '/vendor/|/tests/integration') 
 
 .PHONY: gen-doc
 gen-doc:

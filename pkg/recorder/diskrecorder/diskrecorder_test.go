@@ -28,7 +28,7 @@ func newDiskRecorder() DiskRecorder {
 	return DiskRecorder{basePath: tests.BaseTestPath}
 }
 
-func TestSave(t *testing.T) {
+func Test_Diskrecorder_Save(t *testing.T) {
 	dr := newDiskRecorder()
 	records := getMemoryRecords()
 	saved, err := dr.Save(records)
@@ -36,7 +36,7 @@ func TestSave(t *testing.T) {
 	assert.Len(t, saved, len(records))
 }
 
-func TestSaveInvalidPath(t *testing.T) {
+func Test_Diskrecorder_SaveInvalidPath(t *testing.T) {
 	dr := DiskRecorder{basePath: "/tmp/this-path-not-exists"}
 	records := getMemoryRecords()
 	saved, err := dr.Save(records)
@@ -44,7 +44,7 @@ func TestSaveInvalidPath(t *testing.T) {
 	assert.Nil(t, saved)
 }
 
-func TestSaveFailsIfDuplicatedReport(t *testing.T) {
+func Test_Diskrecorder_SaveFailsIfDuplicatedReport(t *testing.T) {
 	dr := newDiskRecorder()
 	records := record.MemoryRecords{
 		record.MemoryRecord{
@@ -62,7 +62,7 @@ func TestSaveFailsIfDuplicatedReport(t *testing.T) {
 	assert.Nil(t, saved)
 }
 
-func TestSummary(t *testing.T) {
+func Test_Diskrecorder_Summary(t *testing.T) {
 	since := time.Now().Add(time.Duration(-5) * time.Minute)
 	dr := newDiskRecorder()
 	reader, ok, err := dr.Summary(context.TODO(), since)
@@ -72,7 +72,7 @@ func TestSummary(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestPrune(t *testing.T) {
+func Test_Diskrecorder_Prune(t *testing.T) {
 	olderThan := time.Now().Add(time.Duration(5) * time.Minute)
 	dr := newDiskRecorder()
 	err := dr.Prune(olderThan)

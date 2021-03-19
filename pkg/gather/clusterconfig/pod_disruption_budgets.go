@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubescheme "k8s.io/client-go/kubernetes/scheme"
 
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 
@@ -15,10 +13,6 @@ import (
 
 const (
 	gatherPodDisruptionBudgetLimit = 5000
-)
-
-var (
-	policyV1Beta1Serializer = kubescheme.Codecs.LegacyCodec(policyv1beta1.SchemeGroupVersion)
 )
 
 // GatherPodDisruptionBudgets gathers the cluster's PodDisruptionBudgets.
@@ -58,4 +52,3 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 	}
 	return records, nil
 }
-

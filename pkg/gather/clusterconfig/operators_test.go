@@ -14,7 +14,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherClusterOperator(t *testing.T) {
+func Test_Operators_Gather(t *testing.T) {
 	testOperator := &configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-clusteroperator",

@@ -12,7 +12,7 @@ import (
 	certificatesv1api "k8s.io/api/certificates/v1"
 )
 
-func TestCSRs(t *testing.T) {
+func Test_CSR(t *testing.T) {
 	var files = []struct {
 		dataFile string
 		expFile  string
@@ -66,7 +66,7 @@ func TestCSRs(t *testing.T) {
 }
 
 // Verifies if CSR features will be ignored in package
-func TestCSRFilters(t *testing.T) {
+func Test_CSR_Filters(t *testing.T) {
 	var files = []struct {
 		name             string
 		csr              *CSRAnonymizedFeatures

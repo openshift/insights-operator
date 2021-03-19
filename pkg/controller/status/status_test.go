@@ -16,7 +16,7 @@ import (
 	kubeclientfake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestSaveInitialStart(t *testing.T) {
+func Test_Status_SaveInitialStart(t *testing.T) {
 
 	tests := []struct {
 		name                     string

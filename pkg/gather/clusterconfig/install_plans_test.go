@@ -19,7 +19,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
-func TestGatherInstallPlans(t *testing.T) {
+func Test_InstallPlans_Gather(t *testing.T) {
 	tests := []struct {
 		name      string
 		testfiles []string
