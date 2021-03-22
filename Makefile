@@ -8,6 +8,7 @@ GOGET ?= $(GOCMD) get
 GOMOD ?= $(GOCMD) mod
 GOFMT ?= gofmt
 GOLINT ?= golint
+CONTAINER_RUNTIME ?= podman
 
 .PHONY: run
 run:
@@ -22,6 +23,9 @@ build:
 
 build-debug:
 	$(GOBUILD) $(GOBUILDFLAGS) $(GOBUILDDEBUGFLAGS) -o bin/insights-operator ./cmd/insights-operator
+
+build-debug-container:
+	$(CONTAINER_RUNTIME) build -t insights-operator -f debug.Dockerfile .
 
 .PHONY: test-unit
 test-unit:
