@@ -2,3 +2,8 @@
 main
 .vscode/
 .idea/
+
+# Ignore DevSpace cache and log folder
+.devspace/
+.dockerignore
+devspace.yaml

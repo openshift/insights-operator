@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
-	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
 type Configurator interface {
@@ -25,12 +25,12 @@ type Configurator interface {
 
 type Controller struct {
 	configurator Configurator
-	recorder     record.FlushInterface
+	recorder     recorder.FlushInterface
 	gatherers    map[string]gather.Interface
 	statuses     map[string]*controllerstatus.Simple
 }
 
-func New(configurator Configurator, recorder record.FlushInterface, gatherers map[string]gather.Interface) *Controller {
+func New(configurator Configurator, recorder recorder.FlushInterface, gatherers map[string]gather.Interface) *Controller {
 	statuses := make(map[string]*controllerstatus.Simple)
 	for k := range gatherers {
 		statuses[k] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", k)}
@@ -82,19 +82,24 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 // Currently their is only 1 gatherer (clusterconfig) and no new gatherer is on the horizon.
 // Running the gatherers in parallel should be a future improvement when a new gatherer is introduced.
 func (c *Controller) Gather() {
+	if !c.configurator.Config().Report {
+		klog.V(3).Info("Gather is disabled by configuration.")
+		return
+	}
+
 	interval := c.configurator.Config().Interval
 	threshold := status.GatherFailuresCountThreshold
 	duration := interval / (time.Duration(threshold) * 2)
 	// IMPORTANT: We NEED to run retry $threshold times or we will never set status to degraded.
 	backoff := wait.Backoff{
 		Duration: duration,
-		Factor: 1.35,
-		Jitter: 0,
-		Steps:  threshold,
-		Cap:    interval,
+		Factor:   1.35,
+		Jitter:   0,
+		Steps:    threshold,
+		Cap:      interval,
 	}
 	for name := range c.gatherers {
-		_ = wait.ExponentialBackoff(backoff, func() (bool,error) {
+		_ = wait.ExponentialBackoff(backoff, func() (bool, error) {
 			start := time.Now()
 			err := c.runGatherer(name)
 			if err == nil {
@@ -119,7 +124,7 @@ func (c *Controller) runGatherer(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
 	defer cancel()
 	defer func() {
-		if err := c.recorder.Flush(ctx); err != nil {
+		if err := c.recorder.Flush(); err != nil {
 			klog.Errorf("Unable to flush recorder: %v", err)
 		}
 	}()

@@ -8,12 +8,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
+	openshiftscheme "github.com/openshift/client-go/config/clientset/versioned/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherClusterOperator(t *testing.T) {
+func Test_Operators_Gather(t *testing.T) {
 	testOperator := &configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-clusteroperator",
@@ -32,7 +33,8 @@ func TestGatherClusterOperator(t *testing.T) {
 
 	item, _ := records[0].Item.Marshal(context.TODO())
 	var gatheredCO configv1.ClusterOperator
-	_, _, err = openshiftSerializer.Decode(item, nil, &gatheredCO)
+	openshiftCodec := openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+	_, _, err = openshiftCodec.Decode(item, nil, &gatheredCO)
 	if err != nil {
 		t.Fatalf("failed to decode object: %v", err)
 	}

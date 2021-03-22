@@ -16,7 +16,11 @@ import (
 
 func main() {
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
-	pflag.CommandLine.Lookup("alsologtostderr").Value.Set("true")
+	err := pflag.CommandLine.Lookup("alsologtostderr").Value.Set("true")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 
 	logs.InitLogs()
 	defer logs.FlushLogs()
@@ -37,7 +41,10 @@ func NewOperatorCommand() *cobra.Command {
 		SilenceErrors: true,
 
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+			err := cmd.Help()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			}
 			os.Exit(1)
 		},
 	}
@@ -50,6 +57,7 @@ func NewOperatorCommand() *cobra.Command {
 
 	cmd.AddCommand(start.NewOperator())
 	cmd.AddCommand(start.NewReceiver())
+	cmd.AddCommand(start.NewGather())
 
 	return cmd
 }

@@ -19,6 +19,7 @@ import (
 	certificatesv1 "k8s.io/client-go/kubernetes/typed/certificates/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // csrGatherLimit is the maximum number of crs that
@@ -187,18 +188,18 @@ func anonymizeCSRRequest(r *certificatesv1api.CertificateSigningRequest, c *CSRA
 
 	c.Spec.Request.SignatureAlgorithm = csr.SignatureAlgorithm.String()
 	c.Spec.Request.PublicKeyAlgorithm = csr.PublicKeyAlgorithm.String()
-	c.Spec.Request.DNSNames = Map(csr.DNSNames, anonymizeURL)
-	c.Spec.Request.EmailAddresses = Map(csr.EmailAddresses, anonymizeURL)
+	c.Spec.Request.DNSNames = Map(csr.DNSNames, anonymize.AnonymizeURL)
+	c.Spec.Request.EmailAddresses = Map(csr.EmailAddresses, anonymize.AnonymizeURL)
 	ipsl := make([]string, len(csr.IPAddresses))
 	for i, ip := range csr.IPAddresses {
 		ipsl[i] = ip.String()
 	}
-	c.Spec.Request.IPAddresses = Map(ipsl, anonymizeURL)
+	c.Spec.Request.IPAddresses = Map(ipsl, anonymize.AnonymizeURL)
 	urlsl := make([]string, len(csr.URIs))
 	for i, u := range csr.URIs {
 		urlsl[i] = u.String()
 	}
-	c.Spec.Request.URIs = Map(urlsl, anonymizeURL)
+	c.Spec.Request.URIs = Map(urlsl, anonymize.AnonymizeURL)
 }
 
 func anonymizePkxName(s pkix.Name) (a pkix.Name) {
@@ -221,9 +222,9 @@ func anonymizePkxName(s pkix.Name) (a pkix.Name) {
 	for i := range src {
 		switch s := src[i].(type) {
 		case *string:
-			*(dst[i].(*string)) = anonymizeString(*s)
+			*(dst[i].(*string)) = anonymize.AnonymizeString(*s)
 		case *[]string:
-			*(dst[i].(*[]string)) = Map(*s, anonymizeString)
+			*(dst[i].(*[]string)) = Map(*s, anonymize.AnonymizeString)
 		default:
 			panic(fmt.Sprintf("unknown type %T", s))
 		}
@@ -253,6 +254,9 @@ func anonymizeCSRCert(r *certificatesv1api.CertificateSigningRequest, c *CSRAnon
 	}
 	c.Status.Cert = &CertFeatures{}
 	c.Status.Cert.Verified = cert != nil
+	if cert == nil {
+		return
+	}
 	c.Status.Cert.Issuer = anonymizePkxName(cert.Issuer)
 	c.Status.Cert.Subject = anonymizePkxName(cert.Subject)
 	c.Status.Cert.NotBefore = cert.NotBefore.Format(time.RFC3339)

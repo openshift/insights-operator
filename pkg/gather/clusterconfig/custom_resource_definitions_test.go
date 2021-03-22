@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestCollectVolumeSnapshotCRD(t *testing.T) {
+func Test_CollectVolumeSnapshotCRD(t *testing.T) {
 	expectedRecords := map[string]v1.CustomResourceDefinition{
 		"config/crd/volumesnapshots.snapshot.storage.k8s.io":        {ObjectMeta: metav1.ObjectMeta{Name: "volumesnapshots.snapshot.storage.k8s.io"}},
 		"config/crd/volumesnapshotcontents.snapshot.storage.k8s.io": {ObjectMeta: metav1.ObjectMeta{Name: "volumesnapshotcontents.snapshot.storage.k8s.io"}},
@@ -27,7 +27,7 @@ func TestCollectVolumeSnapshotCRD(t *testing.T) {
 	crdClientset := apixv1clientfake.NewSimpleClientset()
 
 	for _, name := range crdNames {
-		crdClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(), &v1.CustomResourceDefinition{
+		_, _ = crdClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(), &v1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
 		}, metav1.CreateOptions{})
 	}

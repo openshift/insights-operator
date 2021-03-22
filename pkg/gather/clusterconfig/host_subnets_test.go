@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	networkv1 "github.com/openshift/api/network/v1"
+	"github.com/openshift/insights-operator/pkg/record"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
 )
 
-func TestGatherHostSubnet(t *testing.T) {
+func Test_GatherHostSubnet(t *testing.T) {
 	testHostSubnet := networkv1.HostSubnet{
 		Host:        "test.host",
 		HostIP:      "10.0.0.0",
@@ -33,23 +34,26 @@ func TestGatherHostSubnet(t *testing.T) {
 	if len(records) != 1 {
 		t.Fatalf("unexpected number or records %d", len(records))
 	}
-	item, err := records[0].Item.Marshal(context.TODO())
-	var gatheredHostSubnet networkv1.HostSubnet
-	_, _, err = networkSerializer.LegacyCodec(networkv1.SchemeGroupVersion).Decode(item, nil, &gatheredHostSubnet)
+	_, err = records[0].Item.Marshal(context.TODO())
 	if err != nil {
-		t.Fatalf("failed to decode object: %v", err)
-	}
-	if gatheredHostSubnet.HostIP != testHostSubnet.HostIP {
-		t.Fatalf("Unexpected Host IP value %s", gatheredHostSubnet.HostIP)
-	}
-	if gatheredHostSubnet.Subnet != testHostSubnet.Subnet {
-		t.Fatalf("Unexpected Subnet value %s", gatheredHostSubnet.Subnet)
-	}
-	if len(gatheredHostSubnet.EgressIPs) != len(testHostSubnet.EgressIPs) {
-		t.Fatalf("unexpected number of egress IPs gathered %s", gatheredHostSubnet.EgressIPs)
+		t.Fatalf("failed to marshal object: %v", err)
 	}
 
-	if len(gatheredHostSubnet.EgressCIDRs) != len(testHostSubnet.EgressCIDRs) {
-		t.Fatalf("unexpected number of egress CIDRs gathered %s", gatheredHostSubnet.EgressCIDRs)
+	hs, ok := records[0].Item.(record.JSONMarshaller).Object.(networkv1.HostSubnet)
+	if !ok {
+		t.Fatalf("failed to decode object")
+	}
+	if hs.HostIP != testHostSubnet.HostIP {
+		t.Fatalf("Unexpected Host IP value %s", hs.HostIP)
+	}
+	if hs.Subnet != testHostSubnet.Subnet {
+		t.Fatalf("Unexpected Subnet value %s", hs.Subnet)
+	}
+	if len(hs.EgressIPs) != len(testHostSubnet.EgressIPs) {
+		t.Fatalf("unexpected number of egress IPs gathered %s", hs.EgressIPs)
+	}
+
+	if len(hs.EgressCIDRs) != len(testHostSubnet.EgressCIDRs) {
+		t.Fatalf("unexpected number of egress CIDRs gathered %s", hs.EgressCIDRs)
 	}
 }

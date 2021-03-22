@@ -153,7 +153,7 @@ func (lc *LogCheck) Execute() *LogCheck {
 		lc.firstCheck = now
 	}
 	r := regexp.MustCompile(`(?m)` + lc.searching)
-	logOptions := &corev1.PodLogOptions{}
+	var logOptions *corev1.PodLogOptions
 	if lc.sinceLastCheck && lc.lastCheck != startOfAges {
 		last := metav1.NewTime(lc.lastCheck)
 		logOptions = &corev1.PodLogOptions{SinceTime: &last}

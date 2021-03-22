@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 type testError struct{}
@@ -17,14 +18,14 @@ func (e *testError) Error() string {
 func mockGatherFunction1(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{
 		Name: "config/mock1",
-		Item: Raw{"mock1"},
+		Item: marshal.Raw{Str: "mock1"},
 	}}, nil}
 }
 
 func mockGatherFunction2(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{
 		Name: "config/mock2",
-		Item: Raw{"mock2"},
+		Item: marshal.Raw{Str: "mock2"},
 	}}, nil}
 }
 
@@ -98,7 +99,7 @@ func Test_Gather_FailingRecorder(t *testing.T) {
 	}
 }
 
-func Test_startGathering_empty(t *testing.T) {
+func Test_Gather_StartEmpty(t *testing.T) {
 	var gatherList []string
 	var errors []string
 	g := init_test()
@@ -109,7 +110,7 @@ func Test_startGathering_empty(t *testing.T) {
 
 }
 
-func Test_startGathering(t *testing.T) {
+func Test_Gather_StartGathering(t *testing.T) {
 	var errors []string
 	g := init_test()
 	gatherList := fullGatherList()
@@ -126,7 +127,7 @@ func Test_startGathering(t *testing.T) {
 
 }
 
-func Test_fullGatherList(t *testing.T) {
+func Test_Gather_FullGatherList(t *testing.T) {
 	init_test()
 	gatherList := fullGatherList()
 	expected := 3
@@ -135,7 +136,7 @@ func Test_fullGatherList(t *testing.T) {
 	}
 }
 
-func Test_sumErrors(t *testing.T) {
+func Test_Gather_SumErrors(t *testing.T) {
 	errors := []string{
 		"Error1",
 		"Error2",
@@ -148,7 +149,7 @@ func Test_sumErrors(t *testing.T) {
 	}
 }
 
-func Test_uniqueStrings(t *testing.T) {
+func Test_Gather_UniqueStrings(t *testing.T) {
 	tests := []struct {
 		name string
 		arr  []string

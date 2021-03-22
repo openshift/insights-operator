@@ -201,6 +201,12 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		existing.Status.RelatedObjects = []configv1.ObjectReference{
 			{Resource: "namespaces", Name: c.namespace},
 			{Group: "apps", Resource: "deployments", Namespace: c.namespace, Name: "insights-operator"},
+			{Resource: "secrets", Namespace: "openshift-config", Name: "pull-secret"},
+			{Resource: "secrets", Namespace: "openshift-config", Name: "support"},
+			{Resource: "serviceaccounts", Namespace: c.namespace, Name: "gather"},
+			{Resource: "serviceaccounts", Namespace: c.namespace, Name: "operator"},
+			{Resource: "services", Namespace: c.namespace, Name: "metrics"},
+			{Resource: "configmaps", Namespace: c.namespace, Name: "service-ca-bundle"},
 		}
 	}
 	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}
@@ -351,9 +357,15 @@ func (c *Controller) Start(ctx context.Context) error {
 			select {
 			case <-ctx.Done():
 			case <-timer.C:
-				limiter.Wait(ctx)
+				err := limiter.Wait(ctx)
+				if err != nil {
+					klog.Errorf("Limiter error by timer: %v", err)
+				}
 			case <-c.statusCh:
-				limiter.Wait(ctx)
+				err := limiter.Wait(ctx)
+				if err != nil {
+					klog.Errorf("Limiter error by status: %v", err)
+				}
 			}
 			if err := c.updateStatus(ctx, false); err != nil {
 				klog.Errorf("Unable to write cluster operator status: %v", err)

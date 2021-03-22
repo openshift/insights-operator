@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGatherNetNamespaces(t *testing.T) {
+func Test_NetNamespaces_Gather(t *testing.T) {
 	ns1 := &networkv1.NetNamespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-namespaces-1",

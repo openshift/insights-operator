@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/openshift/insights-operator/pkg/record"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherPodDisruptionBudgets(t *testing.T) {
+func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset()
 
 	fakeNamespace := "fake-namespace"
@@ -46,15 +47,13 @@ func TestGatherPodDisruptionBudgets(t *testing.T) {
 	if len(records) != len(fakePDBs) {
 		t.Fatalf("unexpected number of records gathered: %d (expected %d)", len(records), len(fakePDBs))
 	}
-	for _, rec := range records {
-		pdba, ok := rec.Item.(PodDisruptionBudgetsAnonymizer)
-		if !ok {
-			t.Fatal("pdb item has invalid type")
-		}
-		name := pdba.PodDisruptionBudget.ObjectMeta.Name
-		minAvailable := pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal
-		if pdba.PodDisruptionBudget.Spec.MinAvailable.StrVal != fakePDBs[name] {
-			t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
-		}
+	pdba, ok := records[0].Item.(record.JSONMarshaller).Object.(policyv1beta1.PodDisruptionBudget)
+	if !ok {
+		t.Fatal("pdb item has invalid type")
+	}
+	name := pdba.ObjectMeta.Name
+	minAvailable := pdba.Spec.MinAvailable.StrVal
+	if pdba.Spec.MinAvailable.StrVal != fakePDBs[name] {
+		t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", fakePDBs[name], minAvailable)
 	}
 }

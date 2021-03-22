@@ -142,13 +142,6 @@ Location of pods in archive: config/pod/
 Id in config: operators
 
 
-Output raw size: 245
-
-### Examples
-
-#### ClusterOperators
-[{"Name":"config/clusteroperator/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Degraded","status":"","lastTransitionTime":null}],"extension":null}}}]
-
 ## ClusterProxy
 
 fetches the cluster Proxy - the Proxy with name cluster.
@@ -180,7 +173,7 @@ and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitori
 
 Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
 For ConfigMap of type BinaryData it is encoded as standard base64.
-In the archive under configmaps we store name of the namesapce, name of the ConfigMap and then each ConfigMap Key.
+In the archive under configmaps we store name of the namespace, name of the ConfigMap and then each ConfigMap Key.
 For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
@@ -273,13 +266,6 @@ See: docs/insights-archive-sample/config/metrics
 Id in config: metrics
 
 
-Output raw size: 148
-
-### Examples
-
-#### MostRecentMetrics
-[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
-
 ## NetNamespace
 
 collects NetNamespaces networking information
@@ -302,16 +288,13 @@ Location in archive: config/node/
 Id in config: nodes
 
 
-Output raw size: 491
-
-### Examples
-
-#### Nodes
-[{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
-
 ## OLMOperators
 
-collects list of all names (including version) of installed OLM operators.
+collects list of installed OLM operators.
+Each OLM operator (in the list) contains following data:
+- OLM operator name
+- OLM operator version
+- related ClusterServiceVersion conditions
 
 See: docs/insights-archive-sample/config/olm_operators
 Location of in archive: config/olm_operators
@@ -397,6 +380,32 @@ Relevant OpenShift API docs:
   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
 Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+
+
+## SAPPods
+
+collects information about pods running in SAP/SDI namespaces.
+Only pods with a failing status are collected.
+Failed pods belonging to a job that has later succeeded are ignored.
+
+Relevant Kubernetes API docs:
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
+  - https://pkg.go.dev/k8s.io/client-go/dynamic
+
+Location in archive: config/pod/{namespace}/{pod-name}.json
+
+
+## SAPVsystemIptablesLogs
+
+collects logs from SAP vsystem-iptables containers
+including one from license management pods with the following substring:
+  - "can't initialize iptables table",
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 
 
 ## ServiceAccounts

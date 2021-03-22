@@ -1,6 +1,6 @@
 GOCMD ?= go
-GORUN ?= $(GOCMD) run 
-GOBUILD ?= $(GOCMD) build 
+GORUN ?= $(GOCMD) run
+GOBUILD ?= $(GOCMD) build
 GOBUILDFLAGS ?= -mod=vendor -ldflags "-X k8s.io/client-go/pkg/version.gitCommit=$$(git rev-parse HEAD) -X k8s.io/client-go/pkg/version.gitVersion=v1.0.0+$$(git rev-parse --short=7 HEAD)"
 GOBUILDDEBUGFLAGS ?= -gcflags="all=-N -l"
 GOTEST ?= $(GOCMD) test
@@ -25,21 +25,21 @@ build-debug:
 
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+	$(GOTEST) $$(go list ./... | grep -v /tests/) $(TEST_OPTIONS)
 
 .PHONY: test-e2e
 test-e2e:
-	$(GOTEST) ./test/integration -v -run ^\(TestIsIOHealthy\)$$ ^\(TestPullSecretExists\)$$ -timeout 6m30s
-	test/integration/resource_samples/apply.sh
-	$(GOTEST) ./test/integration -v -timeout 45m $(TEST_OPTIONS)
+	$(GOTEST) ./tests/integration -v -run ^\(TestIsIOHealthy\)$$ ^\(TestPullSecretExists\)$$ -timeout 6m30s
+	tests/integration/resource_samples/apply.sh
+	$(GOTEST) ./tests/integration -v -timeout 45m $(TEST_OPTIONS)
 
 vet:
 	@echo ">> vetting code"
-	$(GOCMD) vet $$(go list ./... | grep -v /vendor/)
+	$(GOCMD) vet $$(go list ./... | egrep -v '/vendor/|/tests/integration')
 
 lint:
 	@echo ">> linting code"
-	$(GOLINT) $$(go list ./... | grep -v /vendor/)
+	$(GOLINT) $$(go list ./... | egrep -v '/vendor/|/tests/integration') 
 
 .PHONY: gen-doc
 gen-doc:

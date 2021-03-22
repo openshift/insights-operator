@@ -132,7 +132,7 @@ func (c *Controller) Run(ctx context.Context) {
 				Type:     "application/vnd.redhat.openshift.periodic",
 				Contents: source,
 			}); err != nil {
-				klog.V(2).Infof("Unable to upload report after %s: %v", time.Now().Sub(start).Truncate(time.Second/100), err)
+				klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
 				if err == insightsclient.ErrWaitingForVersion {
 					c.initialDelay = wait.Jitter(time.Second*15, 1)
 					return
@@ -149,7 +149,7 @@ func (c *Controller) Run(ctx context.Context) {
 					Reason: "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err)})
 				return
 			}
-			klog.V(4).Infof("Uploaded report successfully in %s", time.Now().Sub(start))
+			klog.V(4).Infof("Uploaded report successfully in %s", time.Since(start))
 			select {
 			case c.archiveUploaded <- struct{}{}:
 			default:

@@ -1,0 +1,17 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+    name: test-olm-operator.v1.2.3
+    namespace: test-olm-operator
+status:
+    conditions:
+        - lastTransitionTime: "2021-03-02T08:52:24Z"
+          lastUpdateTime: "2021-03-02T08:52:24Z"
+          message: requirements not yet checked
+          phase: Pending
+          reason: RequirementsUnknown
+        - lastTransitionTime: "2021-03-02T08:52:24Z"
+          lastUpdateTime: "2021-03-02T08:52:24Z"
+          message: all requirements found, attempting install
+          phase: InstallReady
+          reason: AllRequirementsMet

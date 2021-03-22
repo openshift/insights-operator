@@ -12,8 +12,9 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/library-go/pkg/image/reference"
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/check"
 )
 
 const (
@@ -65,8 +66,8 @@ func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.
 
 		for podIndex, pod := range pods.Items {
 			podPtr := &pods.Items[podIndex]
-			if strings.HasPrefix(pod.Namespace, "openshift") && hasContainerInCrashloop(podPtr) {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: PodAnonymizer{podPtr}})
+			if strings.HasPrefix(pod.Namespace, "openshift") && check.HasContainerInCrashloop(podPtr) {
+				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: podPtr}})
 			} else if pod.Status.Phase == corev1.PodRunning {
 				startMonth := pod.CreationTimestamp.Time.UTC().Format(yyyyMmDateFormat)
 
@@ -137,11 +138,7 @@ type PodsWithAge map[string]RunningImages
 // Add inserts the specified container information into the data structure.
 func (p PodsWithAge) Add(startMonth string, image int, count int) {
 	if imageMap, exists := p[startMonth]; exists {
-		if _, exists := imageMap[image]; exists {
-			imageMap[image] += count
-		} else {
-			imageMap[image] = count
-		}
+		imageMap[image] += count
 	} else {
 		p[startMonth] = RunningImages{image: count}
 	}

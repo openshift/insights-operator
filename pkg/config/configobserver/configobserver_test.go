@@ -2,10 +2,8 @@ package configobserver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -21,7 +19,7 @@ import (
 	clienttesting "k8s.io/client-go/testing"
 )
 
-func TestChangeSupportConfig(t *testing.T) {
+func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 	var cases = []struct {
 		name      string
 		config    map[string]*corev1.Secret
@@ -100,99 +98,10 @@ func TestChangeSupportConfig(t *testing.T) {
 
 }
 
-// ignore until resolved
-func testChangeObserved(t *testing.T) {
-	setIntervals := map[int]time.Duration{
-		0: time.Duration(10 * time.Minute),
-		1: time.Duration(1 * time.Minute),
-		2: time.Duration(3 * time.Minute),
-		3: time.Duration(4 * time.Minute),
-	}
-
-	klog.SetOutput(utils.NewTestLog(t).Writer())
-
-	ctrl := config.Controller{}
-	kube := kubeClientResponder{}
-	// The initial values set in configobserver.New
-	secs := map[string]*corev1.Secret{
-		pullSecretKey: &corev1.Secret{Data: map[string][]byte{
-			".dockerconfigjson": fakeDockerConfig(),
-		}},
-		supportKey: &corev1.Secret{Data: map[string][]byte{
-			"username":  []byte("someone"),
-			"password":  []byte("secret"),
-			"endpoint":  []byte("http://po.rt"),
-			intervalKey: []byte("10m"),
-		}},
-	}
-
-	provideSecretMock(&kube, secs)
-	// New reads first k8 configuration
-	co := New(ctrl, &kube)
-	// set some initial config because we are tracking changes only
-	co.setConfigLocked(&config.Controller{})
-
-	// observe changes every 50 ms
-	co.checkPeriod = 50 * time.Millisecond
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Watch for changes in configurations
-	done := make(chan bool)
-	go co.Start(ctx)
-	changedC, _ := co.ConfigChanged()
-
-	// Sets gather intervals in config to 3 and 4 minutes after 100ms elapses
-	go func() {
-
-		for i := range setIntervals {
-			time.Sleep(100 * time.Millisecond)
-			secs[supportKey].Data[intervalKey] = []byte(setIntervals[i].String())
-		}
-		// Give observer chance to catch the change
-		time.Sleep(50 * time.Millisecond)
-		done <- true
-	}()
-
-	actualIntervals := map[int]time.Duration{}
-	actIntMu := sync.Mutex{}
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				done <- true
-
-			case <-changedC:
-				actInt := co.Config().Interval
-
-				actIntMu.Lock()
-				actIntMu.Unlock()
-				actualIntervals[len(actualIntervals)] = actInt
-			}
-		}
-	}()
-	<-done
-
-	if !reflect.DeepEqual(setIntervals, actualIntervals) {
-		t.Fatalf("the expected intervals didn't match actual intervals. \nExpected %v \nActual %v", setIntervals, actualIntervals)
-	}
-}
-
 const (
 	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret"
 	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
-	intervalKey   = "interval"
 )
-
-func fakeDockerConfig() []byte {
-	d, _ := json.Marshal(
-		serializedAuthMap{
-			Auths: map[string]serializedAuth{
-				"cloud.openshift.com": serializedAuth{Auth: ".."},
-			},
-		})
-	return d
-}
 
 func provideSecretMock(kube kubernetes.Interface, secs map[string]*corev1.Secret) {
 	kube.CoreV1().(*corefake.FakeCoreV1).Fake.AddReactor("get", "secrets",

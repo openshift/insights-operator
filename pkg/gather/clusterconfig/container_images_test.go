@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-func TestGatherContainerImages(t *testing.T) {
+func Test_ContainerImages_Gather(t *testing.T) {
 	const fakeNamespace = "fake-namespace"
 	const fakeOpenshiftNamespace = "openshift-fake-namespace"
 
