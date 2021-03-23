@@ -382,6 +382,13 @@ Relevant OpenShift API docs:
 Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 
 
+## SAPDatahubs
+
+collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
+
+Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+
+
 ## SAPPods
 
 collects information about pods running in SAP/SDI namespaces.
