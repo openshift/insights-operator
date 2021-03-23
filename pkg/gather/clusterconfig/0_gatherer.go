@@ -15,6 +15,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+type gatherMetadata struct {
+	StatusReports []gatherStatusReport `json:"status_reports"`
+	MemoryAlloc   uint64               `json:"memory_alloc_bytes"`
+	Uptime        float64              `json:"uptime_seconds"`
+}
+
 type gatherStatusReport struct {
 	Name         string        `json:"name"`
 	Duration     time.Duration `json:"duration_in_ms"`
@@ -39,6 +45,27 @@ type gatherFunction func(g *Gatherer, c chan<- gatherResult)
 type gathering struct {
 	function gatherFunction
 	canFail  bool
+}
+
+// GatherInfo from reflection
+type GatherInfo struct {
+	name     string
+	result   gatherResult
+	function gatherFunction
+	canFail  bool
+	rvString string
+}
+
+// NewGatherInfo that holds reflection information
+func NewGatherInfo(gather string, rv reflect.Value) *GatherInfo {
+	gatherFunc := gatherFunctions[gather].function
+	return &GatherInfo{
+		name:     runtime.FuncForPC(reflect.ValueOf(gatherFunc).Pointer()).Name(),
+		result:   rv.Interface().(gatherResult),
+		function: gatherFunc,
+		canFail:  gatherFunctions[gather].canFail,
+		rvString: rv.String(),
+	}
 }
 
 func important(function gatherFunction) gathering {
@@ -87,8 +114,11 @@ var gatherFunctions = map[string]gathering{
 	"olm_operators":                     failable(GatherOLMOperators),
 }
 
+var startTime time.Time
+
 // New creates new Gatherer
 func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metricsGatherKubeConfig *rest.Config) *Gatherer {
+	startTime = time.Now()
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
@@ -117,36 +147,19 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	}
 
 	// Gets the info from the Go routines
-	remaining := len(cases)
-	for remaining > 0 {
+	for range gatherList {
 		chosen, value, _ := reflect.Select(cases)
 		// The chosen channel has been closed, so zero out the channel to disable the case
 		cases[chosen].Chan = reflect.ValueOf(nil)
-		remaining -= 1
+		gather := gatherList[chosen]
 
-		elapsed := time.Since(starts[chosen]).Truncate(time.Millisecond)
+		gi := NewGatherInfo(gather, value)
+		statusReport, errorsReport := createStatusReport(gi, recorder, starts[chosen])
 
-		gatherResults, _ := value.Interface().(gatherResult)
-		gatherFunc := gatherFunctions[gatherList[chosen]].function
-		gatherCanFail := gatherFunctions[gatherList[chosen]].canFail
-		gatherName := runtime.FuncForPC(reflect.ValueOf(gatherFunc).Pointer()).Name()
-		klog.V(4).Infof("Gather %s took %s to process %d records", gatherName, elapsed, len(gatherResults.records))
-		gatherReport = append(gatherReport, gatherStatusReport{gatherName, time.Duration(elapsed.Milliseconds()), len(gatherResults.records), extractErrors(gatherResults.errors)})
-
-		if gatherCanFail {
-			for _, err := range gatherResults.errors {
-				klog.V(5).Infof("Couldn't gather %s' received following error: %s\n", gatherName, err.Error())
-			}
-		} else {
-			errors = append(errors, extractErrors(gatherResults.errors)...)
+		if len(errorsReport) > 0 {
+			errors = append(errors, errorsReport...)
 		}
-		for _, record := range gatherResults.records {
-			if err := recorder.Record(record); err != nil {
-				errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
-				continue
-			}
-		}
-		klog.V(5).Infof("Read from %s's channel and received %s\n", gatherName, value.String())
+		gatherReport = append(gatherReport, statusReport)
 	}
 
 	// Creates the gathering performance report
@@ -158,6 +171,40 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		return sumErrors(errors)
 	}
 	return nil
+}
+
+func createStatusReport(gather *GatherInfo, recorder record.Interface, starts time.Time) (gatherStatusReport, []string) {
+	var errors []string
+	elapsed := time.Since(starts).Truncate(time.Millisecond)
+
+	klog.V(4).Infof("Gather %s took %s to process %d records", gather.name, elapsed, len(gather.result.records))
+
+	shortName := strings.Replace(gather.name, "github.com/openshift/insights-operator/pkg/gather/", "", 1)
+	report := gatherStatusReport{shortName, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
+
+	if gather.canFail {
+		for _, err := range gather.result.errors {
+			klog.V(5).Infof("Couldn't gather %s' received following error: %s\n", gather.name, err.Error())
+		}
+	} else {
+		errors = extractErrors(gather.result.errors)
+	}
+
+	errors = append(errors, recordStatusReport(recorder, gather.result.records)...)
+	klog.V(5).Infof("Read from %s's channel and received %s\n", gather.name, gather.rvString)
+
+	return report, errors
+}
+
+func recordStatusReport(recorder record.Interface, records []record.Record) []string {
+	var errors []string
+	for _, record := range records {
+		if err := recorder.Record(record); err != nil {
+			errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
+			continue
+		}
+	}
+	return errors
 }
 
 // Runs each gather functions in a goroutine.
@@ -191,7 +238,10 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 }
 
 func recordGatherReport(recorder record.Interface, report []gatherStatusReport) error {
-	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	metadata := gatherMetadata{report, m.HeapAlloc, time.Since(startTime).Truncate(time.Millisecond).Seconds()}
+	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: metadata}}
 	return recorder.Record(r)
 }
 
