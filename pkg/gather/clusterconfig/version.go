@@ -25,7 +25,7 @@ import (
 // Id in config: version
 func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
-	config, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
+	config, err := getClusterVersion(g.ctx, g.gatherKubeConfig)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}
 		return
@@ -33,7 +33,7 @@ func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{Name: "config/version", Item: record.JSONMarshaller{Object: anonymizeClusterVersion(config)}}}, nil}
 }
 
-func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.ClusterVersion, error) {
+func getClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.ClusterVersion, error) {
 	gatherConfigClient, err := configv1client.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.
 // * Id in config: id
 func GatherClusterID(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
-	version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
+	version, err := getClusterVersion(g.ctx, g.gatherKubeConfig)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}
 		return
