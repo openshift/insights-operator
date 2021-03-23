@@ -83,12 +83,6 @@
             "errors": null
         },
         {
-            "name": "clusterconfig.GatherClusterID",
-            "duration_in_ms": 1002,
-            "records_count": 1,
-            "errors": null
-        },
-        {
             "name": "clusterconfig.GatherClusterOAuth",
             "duration_in_ms": 1152,
             "records_count": 1,
