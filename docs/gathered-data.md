@@ -311,7 +311,11 @@ Output raw size: 491
 
 ## OLMOperators
 
-collects list of all names (including version) of installed OLM operators.
+collects list of installed OLM operators.
+Each OLM operator (in the list) contains following data:
+- OLM operator name
+- OLM operator version
+- related ClusterServiceVersion conditions
 
 See: docs/insights-archive-sample/config/olm_operators
 Location of in archive: config/olm_operators
