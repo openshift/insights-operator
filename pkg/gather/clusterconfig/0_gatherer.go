@@ -12,11 +12,21 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
-type gatherStatusReport struct {
+// gatheringReport contains general information about specific gathering(archive)
+type gatheringReport struct {
+	// info about gathering functions
+	Gatherers []gathererStatusReport `json:"gatherers"`
+	// shows if obfuscation(hiding IPs and cluster domain) is enabled
+	IsGlobalObfuscationEnabled bool `json:"is_global_obfuscation_enabled"`
+}
+
+// gathererStatusReport contains general information about specific gatherer function
+type gathererStatusReport struct {
 	Name         string        `json:"name"`
 	Duration     time.Duration `json:"duration_in_ms"`
 	RecordsCount int           `json:"records_count"`
@@ -29,6 +39,7 @@ type Gatherer struct {
 	gatherKubeConfig        *rest.Config
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
+	anonymizer              *anonymization.Anonymizer
 }
 
 type gatherResult struct {
@@ -90,11 +101,17 @@ var gatherFunctions = map[string]gathering{
 }
 
 // New creates new Gatherer
-func New(gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, metricsGatherKubeConfig *rest.Config) *Gatherer {
+func New(
+	gatherKubeConfig *rest.Config,
+	gatherProtoKubeConfig *rest.Config,
+	metricsGatherKubeConfig *rest.Config,
+	anonymizer *anonymization.Anonymizer,
+) *Gatherer {
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
+		anonymizer:              anonymizer,
 	}
 }
 
@@ -123,7 +140,7 @@ func NewGatherInfo(gather string, rv reflect.Value) *GatherInfo {
 func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder recorder.Interface) error {
 	g.ctx = ctx
 	var errors []string
-	var gatherReport []gatherStatusReport
+	var gatherReport gatheringReport
 
 	if len(gatherList) == 0 {
 		errors = append(errors, "no gather functions are specified to run")
@@ -152,7 +169,11 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		if len(errorsReport) > 0 {
 			errors = append(errors, errorsReport...)
 		}
-		gatherReport = append(gatherReport, statusReport)
+		gatherReport.Gatherers = append(gatherReport.Gatherers, statusReport)
+	}
+
+	if g.anonymizer != nil {
+		gatherReport.IsGlobalObfuscationEnabled = g.anonymizer.IsObfuscationEnabled()
 	}
 
 	// Creates the gathering performance report
@@ -166,13 +187,13 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	return nil
 }
 
-func createStatusReport(gather *GatherInfo, recorder recorder.Interface, starts time.Time) (gatherStatusReport, []string) {
+func createStatusReport(gather *GatherInfo, recorder recorder.Interface, starts time.Time) (gathererStatusReport, []string) {
 	var errors []string
 	elapsed := time.Since(starts).Truncate(time.Millisecond)
 
 	klog.V(4).Infof("Gather %s took %s to process %d records", gather.name, elapsed, len(gather.result.records))
 
-	report := gatherStatusReport{gather.name, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
+	report := gathererStatusReport{gather.name, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
 
 	if gather.canFail {
 		for _, err := range gather.result.errors {
@@ -190,9 +211,9 @@ func createStatusReport(gather *GatherInfo, recorder recorder.Interface, starts 
 
 func recordStatusReport(recorder recorder.Interface, records []record.Record) []string {
 	var errors []string
-	for _, record := range records {
-		if err := recorder.Record(record); err != nil {
-			errors = append(errors, fmt.Sprintf("unable to record %s: %v", record.Name, err))
+	for _, r := range records {
+		if err := recorder.Record(r); err != nil {
+			errors = append(errors, fmt.Sprintf("unable to record %s: %v", r.Name, err))
 			continue
 		}
 	}
@@ -229,8 +250,8 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 	return cases, starts, nil
 }
 
-func recordGatherReport(recorder recorder.Interface, report []gatherStatusReport) error {
-	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: report}}
+func recordGatherReport(recorder recorder.Interface, report gatheringReport) error {
+	r := record.Record{Name: "insights-operator/gathering", Item: record.JSONMarshaller{Object: report}}
 	return recorder.Record(r)
 }
 

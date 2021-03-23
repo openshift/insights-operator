@@ -129,7 +129,9 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig)
+	clusterConfigGatherer := clusterconfig.New(
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
+	)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"clusterconfig": clusterConfigGatherer,
 	})

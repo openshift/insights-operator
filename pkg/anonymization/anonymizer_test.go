@@ -1,10 +1,14 @@
 package anonymization
 
 import (
+	"fmt"
 	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 func TestGetNextIP(t *testing.T) {
@@ -96,4 +100,120 @@ func TestGetNextIP(t *testing.T) {
 		)
 		assert.Equal(t, overflow, testCase.overflow)
 	}
+}
+
+type mockConfigProvider struct {
+	config *config.Controller
+}
+
+func (mcp mockConfigProvider) Config() *config.Controller {
+	return mcp.config
+}
+
+func getMockConfigProvider(isAnonymizationEnabled bool) ConfigProvider {
+	return mockConfigProvider{&config.Controller{
+		EnableGlobalObfuscation: isAnonymizationEnabled,
+	}}
+}
+
+func getAnonymizer(t *testing.T, isEnabled bool) *Anonymizer {
+	clusterBaseDomain := "example.com"
+	networks := []string{
+		"127.0.0.0/8",
+		"192.168.0.0/16",
+	}
+
+	anonymizer, err := NewAnonymizer(getMockConfigProvider(isEnabled), clusterBaseDomain, networks)
+	assert.NoError(t, err)
+
+	return anonymizer
+}
+
+func TestAnonymizer(t *testing.T) {
+	anonymizer := getAnonymizer(t, true)
+
+	type testCase struct {
+		before string
+		after  string
+	}
+
+	nameTestCases := []testCase{
+		{"node1.example.com", "node1.<CLUSTER_BASE_DOMAIN>"}, // TODO:
+	}
+	dataTestCases := []testCase{
+		{"api.example.com\n127.0.0.1  ", "api.<CLUSTER_BASE_DOMAIN>\n127.0.0.1  "},
+		{"api.example.com\n127.0.0.128  ", "api.<CLUSTER_BASE_DOMAIN>\n127.0.0.2  "},
+		{"127.0.0.1  ", "127.0.0.1  "},
+		{"127.0.0.128  ", "127.0.0.2  "},
+		{"192.168.1.15  ", "192.168.0.1  "},
+		{"192.168.1.5  ", "192.168.0.2  "},
+		{"192.168.1.255  ", "192.168.0.3  "},
+		{"192.169.1.255  ", "0.0.0.0  "},
+		{`{"key1": "val1", "key2": "127.0.0.128"'}`, `{"key1": "val1", "key2": "127.0.0.2"'}`},
+	}
+
+	for _, testCase := range nameTestCases {
+		obfuscatedName := anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+			Name: testCase.before,
+		}).Name
+
+		assert.Equal(t, testCase.after, obfuscatedName)
+	}
+
+	for _, testCase := range dataTestCases {
+		obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+			Data: []byte(testCase.before),
+		}).Data)
+
+		assert.Equal(t, testCase.after, obfuscatedData)
+	}
+}
+
+func TestAnonymizer_AnonymizationIsDisabled(t *testing.T) {
+	anonymizer := getAnonymizer(t, false)
+
+	const data = "api.example.com\n127.0.0.128  "
+
+	obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		Data: []byte(data),
+	}).Data)
+
+	assert.Equal(t, data, obfuscatedData)
+}
+
+func TestAnonymizer_TranslationTableTest(t *testing.T) {
+	anonymizer := getAnonymizer(t, true)
+
+	for i := 0; i < 254; i++ {
+		obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+			Data: []byte(fmt.Sprintf("192.168.0.%v", 255-i)),
+		}).Data)
+
+		assert.Equal(t, fmt.Sprintf("192.168.0.%v", i+1), obfuscatedData)
+	}
+
+	// 192.168.0.0 is the network address, we don't want to change it
+	obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		Data: []byte("192.168.0.0"),
+	}).Data)
+
+	assert.Equal(t, "192.168.0.0", obfuscatedData)
+
+	obfuscatedData = string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		Data: []byte("192.168.1.255"),
+	}).Data)
+
+	assert.Equal(t, "192.168.0.255", obfuscatedData)
+
+	obfuscatedData = string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		Data: []byte("192.168.1.55"),
+	}).Data)
+
+	assert.Equal(t, "192.168.1.0", obfuscatedData)
+
+	obfuscatedData = string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		Data: []byte("192.168.1.56"),
+	}).Data)
+
+	assert.Equal(t, "192.168.1.1", obfuscatedData)
 }
