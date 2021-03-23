@@ -13,7 +13,7 @@ import (
 
 // GatherSAPDatahubs collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 //
-// Location in archive: config/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+// Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
 func GatherSAPDatahubs(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -38,7 +38,7 @@ func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]
 
 	for i, datahub := range datahubsList.Items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/%s/%s/%s/%s",
+			Name: fmt.Sprintf("customresources/%s/%s/%s/%s",
 				datahubGroupVersionResource.Group,
 				datahubGroupVersionResource.Resource,
 				datahub.GetNamespace(),

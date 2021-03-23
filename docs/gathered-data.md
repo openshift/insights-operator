@@ -386,7 +386,7 @@ Location in archive: config/securitycontentconstraint/, config/clusterrolebindin
 
 collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
-Location in archive: config/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
 
 
 ## SAPPods
