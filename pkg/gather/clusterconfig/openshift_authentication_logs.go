@@ -32,7 +32,7 @@ func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
 		86400,   // last day
 		1024*64, // maximum 64 kb of logs
 		"errors",
-		"",
+		"app=oauth-openshift",
 		false,
 	)
 	if err != nil {
