@@ -32,7 +32,7 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	cfg.Endpoint = s.Endpoint
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
-	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
+	cfg.EnableGlobalObfuscation = cfg.EnableGlobalObfuscation || s.EnableGlobalObfuscation
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)

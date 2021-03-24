@@ -1,18 +1,22 @@
 // Package anonymization provides Anonymizer which is used to anonymize sensitive data. At the moment,
 // anonymization is applied to all the data before storing it in the archive(see AnonymizeMemoryRecordFunction).
-// If you enable it in the config, the following data will be anonymized:
+// If you enable it in config or "support" secret in "openshift-config" namespace,
+// the following data will be anonymized:
 //   - cluster base domain. For example, if the cluster base domain is `openshift.example.com`,
 //     all the occurrences of this keyword will be replaced with `<CLUSTER_BASE_DOMAIN>`,
 //     `cluster-api.openshift.example.com` will become `cluster-api.<CLUSTER_BASE_DOMAIN>`
 //   - IPv4 addresses. Using a config client, it retrieves cluster networks and uses them to anonymize IP addresses
 //     preserving subnet information. For example, if you have the following networks in your cluster:
 //     "10.128.0.0/14", "172.30.0.0/16", "127.0.0.1/8"(added by default) the anonymization will handle the IPs like this:
-//       - 10.128.0.0 -> 10.128.0.0
-//       - 10.128.0.1 -> 10.128.0.0
-//       - 10.129.0.0 -> 10.128.0.0
-//       - 172.30.0.5 -> 172.30.0.0
-//       - 127.0.0.1 -> 127.0.0.0
-//       - 10.0.134.130 -> 0.0.0.0  // ip doesn't match any subnet
+//       - 10.128.0.0 -> 10.128.0.0  // subnetwork itself won't be anonymized
+//       - 10.128.0.55 -> 10.128.0.1
+//       - 10.128.0.56 -> 10.128.0.2
+//       - 10.128.0.55 -> 10.128.0.1
+//           // anonymizer maintains a translation table to replace the same original IPs with the same obfuscated IPs
+//       - 10.129.0.0 -> 10.128.0.3
+//       - 172.30.0.5 -> 172.30.0.1  // new subnet, so we use a new set of fake IPs
+//       - 127.0.0.1 -> 127.0.0.1  // it was the first IP, so the new IP matched the original in this case
+//       - 10.0.134.130 -> 0.0.0.0  // ip doesn't match any subnet, we replace such IPs with 0.0.0.0
 
 package anonymization
 
@@ -164,11 +168,7 @@ func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
 func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryRecord) *record.MemoryRecord {
-	if anonymizer.configObserver == nil {
-		return memoryRecord
-	}
-
-	if !anonymizer.configObserver.Config().EnableGlobalObfuscation {
+	if !anonymizer.IsObfuscationEnabled() {
 		return memoryRecord
 	}
 

@@ -142,6 +142,9 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 		if reportEndpoint, ok := secret.Data["reportEndpoint"]; ok {
 			nextConfig.ReportEndpoint = string(reportEndpoint)
 		}
+		if enableGlobalObfuscation, ok := secret.Data["enableGlobalObfuscation"]; ok {
+			nextConfig.EnableGlobalObfuscation = strings.ToLower(string(enableGlobalObfuscation)) == "true"
+		}
 		if reportPullingDelay, ok := secret.Data["reportPullingDelay"]; ok {
 			if v, err := time.ParseDuration(string(reportPullingDelay)); err == nil {
 				nextConfig.ReportPullingDelay = v
@@ -263,6 +266,7 @@ func (c *Controller) mergeConfigLocked() {
 		if c.secretConfig.ReportMinRetryTime > 0 {
 			cfg.ReportMinRetryTime = c.secretConfig.ReportMinRetryTime
 		}
+		cfg.EnableGlobalObfuscation = cfg.EnableGlobalObfuscation || c.secretConfig.EnableGlobalObfuscation
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {
