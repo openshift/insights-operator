@@ -17,10 +17,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
-// gatheringReport contains general information about specific gathering(archive)
-type gatheringReport struct {
+// gatherMetadata contains general information about collected data
+type gatherMetadata struct {
 	// info about gathering functions
-	Gatherers []gathererStatusReport `json:"gatherers"`
+	StatusReports []gathererStatusReport `json:"status_reports"`
+	MemoryAlloc   uint64                 `json:"memory_alloc_bytes"`
+	Uptime        float64                `json:"uptime_seconds"`
 	// shows if obfuscation(hiding IPs and cluster domain) is enabled
 	IsGlobalObfuscationEnabled bool `json:"is_global_obfuscation_enabled"`
 }
@@ -40,6 +42,7 @@ type Gatherer struct {
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
 	anonymizer              *anonymization.Anonymizer
+	startTime time.Time
 }
 
 type gatherResult struct {
@@ -97,6 +100,7 @@ var gatherFunctions = map[string]gathering{
 	"sap_config":                        failable(GatherSAPConfig),
 	"sap_license_management_logs":       failable(GatherSAPVsystemIptablesLogs),
 	"sap_pods":                          failable(GatherSAPPods),
+	"sap_datahubs":                      failable(GatherSAPDatahubs),
 	"olm_operators":                     failable(GatherOLMOperators),
 }
 
@@ -112,6 +116,7 @@ func New(
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
 		anonymizer:              anonymizer,
+		startTime: time.Now(),
 	}
 }
 
@@ -140,7 +145,7 @@ func NewGatherInfo(gather string, rv reflect.Value) *GatherInfo {
 func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder recorder.Interface) error {
 	g.ctx = ctx
 	var errors []string
-	var gatherReport gatheringReport
+	var gatherReport gatherMetadata
 
 	if len(gatherList) == 0 {
 		errors = append(errors, "no gather functions are specified to run")
@@ -169,14 +174,21 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		if len(errorsReport) > 0 {
 			errors = append(errors, errorsReport...)
 		}
-		gatherReport.Gatherers = append(gatherReport.Gatherers, statusReport)
+		gatherReport.StatusReports = append(gatherReport.StatusReports, statusReport)
 	}
 
+	// if obfuscation is enabled, we want to know it from the archive
 	if g.anonymizer != nil {
 		gatherReport.IsGlobalObfuscationEnabled = g.anonymizer.IsObfuscationEnabled()
 	}
 
-	// Creates the gathering performance report
+	// fill in performance related data to the report
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	gatherReport.MemoryAlloc = m.HeapAlloc
+	gatherReport.Uptime = time.Since(g.startTime).Truncate(time.Millisecond).Seconds()
+
+	// records the report
 	if err := recordGatherReport(recorder, gatherReport); err != nil {
 		errors = append(errors, fmt.Sprintf("unable to record io status reports: %v", err))
 	}
@@ -193,7 +205,8 @@ func createStatusReport(gather *GatherInfo, recorder recorder.Interface, starts 
 
 	klog.V(4).Infof("Gather %s took %s to process %d records", gather.name, elapsed, len(gather.result.records))
 
-	report := gathererStatusReport{gather.name, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
+	shortName := strings.Replace(gather.name, "github.com/openshift/insights-operator/pkg/gather/", "", 1)
+	report := gathererStatusReport{shortName, time.Duration(elapsed.Milliseconds()), len(gather.result.records), extractErrors(gather.result.errors)}
 
 	if gather.canFail {
 		for _, err := range gather.result.errors {
@@ -227,6 +240,7 @@ func recordStatusReport(recorder recorder.Interface, records []record.Record) []
 func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]reflect.SelectCase, []time.Time, error) {
 	var cases []reflect.SelectCase
 	var starts []time.Time
+
 	// Starts the gathers in Go routines
 	for _, gatherID := range gatherList {
 		gather, ok := gatherFunctions[gatherID]
@@ -247,14 +261,16 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 			return nil, nil, err
 		}
 	}
+
 	return cases, starts, nil
 }
 
-func recordGatherReport(recorder recorder.Interface, report gatheringReport) error {
-	r := record.Record{Name: "insights-operator/gathering", Item: record.JSONMarshaller{Object: report}}
+func recordGatherReport(recorder recorder.Interface, metadata gatherMetadata) error {
+	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: metadata}}
 	return recorder.Record(r)
 }
 
+// TODO: move to utils?
 func extractErrors(errors []error) []string {
 	var errStrings []string
 	for _, err := range errors {
@@ -263,6 +279,7 @@ func extractErrors(errors []error) []string {
 	return errStrings
 }
 
+// TODO: move to utils?
 func sumErrors(errors []string) error {
 	sort.Strings(errors)
 	errors = uniqueStrings(errors)
@@ -277,6 +294,7 @@ func fullGatherList() []string {
 	return gatherList
 }
 
+// TODO: move to utils
 func uniqueStrings(list []string) []string {
 	if len(list) < 2 {
 		return list
@@ -292,6 +310,7 @@ func uniqueStrings(list []string) []string {
 	return set
 }
 
+// TODO: move to utils
 func contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {

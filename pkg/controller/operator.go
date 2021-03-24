@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -11,7 +10,6 @@ import (
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -36,34 +34,25 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
-type Support struct {
+// Object responsible for controlling the start up of the Insights Operator
+type Operator struct {
 	config.Controller
 }
 
-// LoadConfig unmarshalls config from obj and loads it to this Support struct
-func (s *Support) LoadConfig(obj map[string]interface{}) error {
-	var cfg config.Serialized
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
-		return fmt.Errorf("unable to load config: %v", err)
-	}
-
-	controller, err := cfg.ToController(&s.Controller)
+// Starts the Insights Operator:
+// 1. Gets/Creates the necessary configs/clients
+// 2. Starts the configobserver and status reporter
+// 3. Initiates the recorder and starts the periodic record pruneing
+// 4. Starts the periodic gathering
+// 5. Creates the insights-client and starts uploader and reporter
+func (s *Operator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
+	klog.Infof("Starting insights-operator %s", version.Get().String())
+	initialDelay := 0 * time.Second
+	cont, err := config.LoadConfig(s.Controller, controller.ComponentConfig.Object, config.ToController)
 	if err != nil {
 		return err
 	}
-	s.Controller = *controller
-
-	data, _ := json.Marshal(cfg)
-	klog.V(2).Infof("Current config: %s", string(data))
-	return nil
-}
-
-func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
-	klog.Infof("Starting insights-operator %s", version.Get().String())
-	initialDelay := 0 * time.Second
-	if err := s.LoadConfig(controller.ComponentConfig.Object); err != nil {
-		return err
-	}
+	s.Controller = cont
 
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(controller.ProtoKubeConfig)
@@ -74,7 +63,7 @@ func (s *Support) Run(ctx context.Context, controller *controllercmd.ControllerC
 	if err != nil {
 		return err
 	}
-	// these are gathering clients
+	// these are gathering configs
 	gatherProtoKubeConfig := rest.CopyConfig(controller.ProtoKubeConfig)
 	if len(s.Impersonate) > 0 {
 		gatherProtoKubeConfig.Impersonate.UserName = s.Impersonate

@@ -12,7 +12,7 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func TestGatherMachineSet(t *testing.T) {
+func Test_MachineSet_Gather(t *testing.T) {
 	var machineSetYAML = `
 apiVersion: machine.openshift.io/v1beta1
 kind: MachineSet

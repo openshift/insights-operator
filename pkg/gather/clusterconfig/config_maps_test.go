@@ -3,8 +3,10 @@ package clusterconfig
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -12,9 +14,11 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestConfigMapAnonymizer(t *testing.T) {
+func Test_ConfigMap_Anonymizer(t *testing.T) {
 	klog.SetOutput(utils.NewTestLog(t).Writer())
 
 	var cases = []struct {
@@ -50,15 +54,14 @@ func TestConfigMapAnonymizer(t *testing.T) {
 		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			t.Parallel()
-			f, err := os.Open("testdata/configmaps.json")
-			mustNotFail(t, err, "error opening test data file. %+v")
-			defer f.Close()
-			bts, err := ioutil.ReadAll(f)
-			mustNotFail(t, err, "error reading test data file. %+v")
-			var cml *corev1.ConfigMapList
-			mustNotFail(t, json.Unmarshal([]byte(bts), &cml), "error unmarshalling json %+v")
+			cml, err := readConfigMapsTestData()
+			mustNotFail(t, err, "error creating test data %+v")
 			cm := findMap(cml, tt.configMapName)
 			mustNotFail(t, cm != nil, "haven't found a ConfigMap %+v")
+			// just to make lint happy
+			if cm == nil {
+				return
+			}
 			var res []byte
 			cmdata := map[string]string{}
 			addAnonymized := func(cmdata map[string]string, dn string, encodebase64 bool, d []byte) {
@@ -106,4 +109,51 @@ func findMap(cml *corev1.ConfigMapList, name string) *corev1.ConfigMap {
 		}
 	}
 	return nil
+}
+
+func readConfigMapsTestData() (*corev1.ConfigMapList, error) {
+	f, err := os.Open("testdata/configmaps.json")
+	if err != nil {
+		return nil, fmt.Errorf("error reading test data file %+v ", err)
+	}
+	defer f.Close()
+	bts, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("error reading test data file %+v ", err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error reading test data file %+v ", err)
+	}
+	var cml *corev1.ConfigMapList
+	err = json.Unmarshal([]byte(bts), &cml)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling json %+v ", err)
+	}
+	return cml, nil
+}
+
+func Test_ConfigMap_Gather(t *testing.T) {
+	cml, err := readConfigMapsTestData()
+	mustNotFail(t, err, "error creating test data %+v")
+	coreClient := kubefake.NewSimpleClientset()
+
+	for _, cm := range cml.Items {
+		_, err := coreClient.CoreV1().ConfigMaps(cm.Namespace).Create(context.Background(), &cm, metav1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("error creating configmap %s", cm.Name)
+		}
+	}
+	records, errs := gatherConfigMaps(context.Background(), coreClient.CoreV1())
+	if len(errs) > 0 {
+		t.Errorf("unexpected errors: %#v", errs)
+		return
+	}
+	if len(records) != 8 {
+		t.Fatalf("unexpected number of configmaps gathered %d", len(records))
+	}
+	for _, r := range records {
+		if !strings.HasPrefix(r.Name, "config/configmaps/openshift-config/") {
+			t.Fatalf("unexpected configmap path in archive %s", r.Name)
+		}
+	}
 }

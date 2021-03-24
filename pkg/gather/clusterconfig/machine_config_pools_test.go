@@ -12,7 +12,7 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func TestGatherMachineConfigPool(t *testing.T) {
+func Test_MachineConfigPool_Gather(t *testing.T) {
 	var machineconfigpoolYAML = `
 apiVersion: machineconfiguration.openshift.io/v1
 kind: MachineConfigPool

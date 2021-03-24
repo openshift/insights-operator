@@ -44,7 +44,7 @@ func newRecorder() Recorder {
 	}
 }
 
-func TestRecord(t *testing.T) {
+func Test_Record(t *testing.T) {
 	rec := newRecorder()
 	err := rec.Record(record.Record{
 		Name: "config/mock1",
@@ -54,7 +54,7 @@ func TestRecord(t *testing.T) {
 	assert.Equal(t, 1, len(rec.records))
 }
 
-func TestRecordDuplicated(t *testing.T) {
+func Test_Record_Duplicated(t *testing.T) {
 	rec := newRecorder()
 	_ = rec.Record(record.Record{
 		Name:        "config/mock1",
@@ -70,7 +70,7 @@ func TestRecordDuplicated(t *testing.T) {
 	assert.Equal(t, 1, len(rec.records))
 }
 
-func TestRecordCantBeSerialized(t *testing.T) {
+func Test_Record_CantBeSerialized(t *testing.T) {
 	rec := newRecorder()
 	err := rec.Record(record.Record{
 		Name: "config/mock1",
@@ -79,7 +79,7 @@ func TestRecordCantBeSerialized(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestFlush(t *testing.T) {
+func Test_Record_Flush(t *testing.T) {
 	rec := newRecorder()
 	for i := range []int{1, 2, 3} {
 		_ = rec.Record(record.Record{
@@ -92,7 +92,7 @@ func TestFlush(t *testing.T) {
 	assert.Equal(t, int64(0), rec.size)
 }
 
-func TestFlushEmptyRecorder(t *testing.T) {
+func Test_Record_FlushEmptyRecorder(t *testing.T) {
 	rec := newRecorder()
 	err := rec.Flush()
 	assert.Nil(t, err)

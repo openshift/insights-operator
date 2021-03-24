@@ -11,7 +11,7 @@ import (
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
 )
 
-func TestGatherHostSubnet(t *testing.T) {
+func Test_GatherHostSubnet(t *testing.T) {
 	testHostSubnet := networkv1.HostSubnet{
 		Host:        "test.host",
 		HostIP:      "10.0.0.0",

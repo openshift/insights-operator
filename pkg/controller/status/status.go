@@ -201,6 +201,12 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		existing.Status.RelatedObjects = []configv1.ObjectReference{
 			{Resource: "namespaces", Name: c.namespace},
 			{Group: "apps", Resource: "deployments", Namespace: c.namespace, Name: "insights-operator"},
+			{Resource: "secrets", Namespace: "openshift-config", Name: "pull-secret"},
+			{Resource: "secrets", Namespace: "openshift-config", Name: "support"},
+			{Resource: "serviceaccounts", Namespace: c.namespace, Name: "gather"},
+			{Resource: "serviceaccounts", Namespace: c.namespace, Name: "operator"},
+			{Resource: "services", Namespace: c.namespace, Name: "metrics"},
+			{Resource: "configmaps", Namespace: c.namespace, Name: "service-ca-bundle"},
 		}
 	}
 	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}

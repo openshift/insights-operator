@@ -23,6 +23,7 @@ const (
 )
 
 var (
+	squashRegexp       = regexp.MustCompile(`(.*)-(\d+)`)
 	mergeRequestRegexp = regexp.MustCompile(`Merge-pull-request-([\d]+)`)
 	prefixRegexp       = regexp.MustCompile(`^.+: (.+)`)
 	releaseRegexp      = regexp.MustCompile(`(release-\d\.\d)`)
@@ -329,6 +330,9 @@ func getPullRequestInfo(gitLog []string) ([]string, []string) {
 		split := strings.Split(line, "|")
 		if match := mergeRequestRegexp.FindStringSubmatch(split[0]); len(match) > 0 {
 			pullRequestIds = append(pullRequestIds, match[1])
+			pullRequestHashes = append(pullRequestHashes, split[1])
+		} else if match := squashRegexp.FindStringSubmatch(split[0]); len(match) > 0 {
+			pullRequestIds = append(pullRequestIds, match[2])
 			pullRequestHashes = append(pullRequestHashes, split[1])
 		}
 	}

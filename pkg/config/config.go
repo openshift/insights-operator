@@ -1,8 +1,12 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 )
 
 // Serialized defines the standard config for this operator.
@@ -22,7 +26,39 @@ type Serialized struct {
 	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
 }
 
-func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
+// Controller defines the standard config for this operator.
+type Controller struct {
+	Report               bool
+	StoragePath          string
+	Interval             time.Duration
+	Endpoint             string
+	ReportEndpoint       string
+	ReportPullingDelay   time.Duration
+	ReportMinRetryTime   time.Duration
+	ReportPullingTimeout time.Duration
+	Impersonate          string
+	Gather               []string
+	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
+	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
+	EnableGlobalObfuscation bool
+
+	Username string
+	Password string
+	Token    string
+
+	HTTPConfig HTTPConfig
+}
+
+// HTTPConfig configures http proxy and exception settings if they come from config
+type HTTPConfig struct {
+	HTTPProxy  string
+	HTTPSProxy string
+	NoProxy    string
+}
+
+type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
+
+func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
 	}
@@ -93,32 +129,45 @@ func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
 	return cfg, nil
 }
 
-// Controller defines the standard config for this operator.
-type Controller struct {
-	Report               bool
-	StoragePath          string
-	Interval             time.Duration
-	Endpoint             string
-	ReportEndpoint       string
-	ReportPullingDelay   time.Duration
-	ReportMinRetryTime   time.Duration
-	ReportPullingTimeout time.Duration
-	Impersonate          string
-	Gather               []string
-	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
-	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
-	EnableGlobalObfuscation bool
+func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, error) {
+	if cfg == nil {
+		cfg = &Controller{}
+	}
+	cfg.Report = s.Report
+	cfg.StoragePath = s.StoragePath
+	cfg.Impersonate = s.Impersonate
+	cfg.Gather = s.Gather
 
-	Username string
-	Password string
-	Token    string
+	if len(s.Interval) > 0 {
+		d, err := time.ParseDuration(s.Interval)
+		if err != nil {
+			return nil, fmt.Errorf("interval must be a valid duration: %v", err)
+		}
+		cfg.Interval = d
+	}
 
-	HTTPConfig HTTPConfig
+	if cfg.Interval <= 0 {
+		return nil, fmt.Errorf("interval must be a non-negative duration")
+	}
+
+	if len(cfg.StoragePath) == 0 {
+		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
+	}
+	return cfg, nil
 }
 
-// HTTPConfig configures http proxy and exception settings if they come from config
-type HTTPConfig struct {
-	HTTPProxy  string
-	HTTPSProxy string
-	NoProxy    string
+// LoadConfig unmarshalls config from obj and loads it to this Controller struct
+func LoadConfig(controller Controller, obj map[string]interface{}, converter Converter) (Controller, error) {
+	var cfg Serialized
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
+		return controller, fmt.Errorf("unable to load config: %v", err)
+	}
+
+	loadedController, err := converter(&cfg, &controller)
+	if err != nil {
+		return controller, err
+	}
+	data, _ := json.Marshal(cfg)
+	klog.V(2).Infof("Current config: %s", string(data))
+	return *loadedController, nil
 }
