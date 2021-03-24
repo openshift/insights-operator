@@ -1,0 +1,180 @@
+{
+    "status_reports": [
+        {
+            "name": "clusterconfig.GatherPodDisruptionBudgets",
+            "duration_in_ms": 123,
+            "records_count": 2,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherMostRecentMetrics",
+            "duration_in_ms": 0,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterOperators",
+            "duration_in_ms": 3365,
+            "records_count": 50,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherContainerImages",
+            "duration_in_ms": 368,
+            "records_count": 13,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherNodes",
+            "duration_in_ms": 154,
+            "records_count": 6,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherConfigMaps",
+            "duration_in_ms": 260,
+            "records_count": 11,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterVersion",
+            "duration_in_ms": 130,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterID",
+            "duration_in_ms": 0,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterInfrastructure",
+            "duration_in_ms": 125,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterNetwork",
+            "duration_in_ms": 125,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterAuthentication",
+            "duration_in_ms": 140,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterImageRegistry",
+            "duration_in_ms": 131,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterImagePruner",
+            "duration_in_ms": 128,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterFeatureGates",
+            "duration_in_ms": 136,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterOAuth",
+            "duration_in_ms": 124,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterIngress",
+            "duration_in_ms": 128,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherClusterProxy",
+            "duration_in_ms": 125,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherCertificateSigningRequests",
+            "duration_in_ms": 124,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherCRD",
+            "duration_in_ms": 268,
+            "records_count": 2,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherHostSubnet",
+            "duration_in_ms": 130,
+            "records_count": 6,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherMachineSet",
+            "duration_in_ms": 137,
+            "records_count": 3,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherMachineConfigPool",
+            "duration_in_ms": 130,
+            "records_count": 2,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherInstallPlans",
+            "duration_in_ms": 10278,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherContainerRuntimeConfig",
+            "duration_in_ms": 129,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherOpenshiftSDNLogs",
+            "duration_in_ms": 6843,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherNetNamespace",
+            "duration_in_ms": 255,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherServiceAccounts",
+            "duration_in_ms": 11544,
+            "records_count": 1,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherSAPConfig",
+            "duration_in_ms": 121,
+            "records_count": 0,
+            "errors": null
+        },
+        {
+            "name": "clusterconfig.GatherOpenshiftSDNControllerLogs",
+            "duration_in_ms": 549,
+            "records_count": 0,
+            "errors": null
+        }
+    ],
+    "memory_alloc_bytes": 11303784,
+    "uptime_seconds": 36.113
+}
