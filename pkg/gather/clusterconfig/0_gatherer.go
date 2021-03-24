@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // gatherMetadata contains general information about collected data
@@ -42,7 +43,7 @@ type Gatherer struct {
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
 	anonymizer              *anonymization.Anonymizer
-	startTime time.Time
+	startTime               time.Time
 }
 
 type gatherResult struct {
@@ -116,7 +117,7 @@ func New(
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
 		anonymizer:              anonymizer,
-		startTime: time.Now(),
+		startTime:               time.Now(),
 	}
 }
 
@@ -151,7 +152,7 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 		errors = append(errors, "no gather functions are specified to run")
 	}
 
-	if contains(gatherList, gatherAll) {
+	if utils.StringInSlice(gatherAll, gatherList) {
 		gatherList = fullGatherList()
 	}
 
@@ -196,6 +197,7 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	if len(errors) > 0 {
 		return sumErrors(errors)
 	}
+
 	return nil
 }
 
@@ -270,7 +272,6 @@ func recordGatherReport(recorder recorder.Interface, metadata gatherMetadata) er
 	return recorder.Record(r)
 }
 
-// TODO: move to utils?
 func extractErrors(errors []error) []string {
 	var errStrings []string
 	for _, err := range errors {
@@ -279,10 +280,9 @@ func extractErrors(errors []error) []string {
 	return errStrings
 }
 
-// TODO: move to utils?
 func sumErrors(errors []string) error {
 	sort.Strings(errors)
-	errors = uniqueStrings(errors)
+	errors = utils.UniqueStrings(errors)
 	return fmt.Errorf("%s", strings.Join(errors, ", "))
 }
 
@@ -292,30 +292,4 @@ func fullGatherList() []string {
 		gatherList = append(gatherList, k)
 	}
 	return gatherList
-}
-
-// TODO: move to utils
-func uniqueStrings(list []string) []string {
-	if len(list) < 2 {
-		return list
-	}
-	keys := make(map[string]bool)
-	set := []string{}
-	for _, entry := range list {
-		if _, value := keys[entry]; !value {
-			keys[entry] = true
-			set = append(set, entry)
-		}
-	}
-	return set
-}
-
-// TODO: move to utils
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }

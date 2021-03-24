@@ -24,7 +24,6 @@ type GatherJob struct {
 	config.Controller
 }
 
-
 // Runs a single gather and stores the generated archive, without uploading it.
 // 1. Creates the necessary configs/clients
 // 2. Creates the configobserver to get more configs
@@ -68,12 +67,12 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 
 	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(d.StoragePath)
-	recorder := recorder.New(recdriver, d.Interval)
+	recorder := recorder.New(recdriver, d.Interval, nil)
 	defer recorder.Flush()
 
 	// the gatherers check the state of the cluster and report any
 	// config to the recorder
-	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig)
+	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, nil)
 	err = clusterConfigGatherer.Gather(ctx, configObserver.Config().Gather, recorder)
 	if err != nil {
 		return err
