@@ -51,7 +51,8 @@ type subnetInformation struct {
 }
 
 // Anonymizer is used to anonymize sensitive data.
-// Config can be used to disable anonymization of particular types of data.
+// Config can be used to enable anonymization of cluster base domain
+// and obfuscation of IPv4 addresses
 type Anonymizer struct {
 	configObserver    ConfigProvider
 	clusterBaseDomain string
@@ -136,6 +137,7 @@ func NewAnonymizerFromConfigClient(
 		}
 	}
 
+	// we're sorting by subnet lengths, if they are the same, we use subnet itself
 	utils.SortAndRemoveDuplicates(&networks, func(i, j int) bool {
 		if !strings.Contains(networks[i], "/") || !strings.Contains(networks[j], "/") {
 			return networks[i] > networks[j]
@@ -147,7 +149,7 @@ func NewAnonymizerFromConfigClient(
 		// subnet length
 		if network1[1] > network2[1] {
 			return true
-		} else if network1[1] > network2[1] {
+		} else if network1[1] < network2[1] {
 			return false
 		} else {
 			return network1[0] > network2[0]

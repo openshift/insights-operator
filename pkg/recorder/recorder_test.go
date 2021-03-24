@@ -2,14 +2,15 @@ package recorder
 
 import (
 	"fmt"
-	"github.com/openshift/insights-operator/pkg/anonymization"
 	"testing"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/tests"
 )
 
 type driverMock struct {
