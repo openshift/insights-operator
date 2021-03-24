@@ -73,6 +73,7 @@ type CompactedEventList struct {
 // * Location of operators in archive: config/clusteroperator/
 // * See: docs/insights-archive-sample/config/clusteroperator
 // * Location of pods in archive: config/pod/
+// * Location of events in archive: events/
 // * Id in config: operators
 // * Spec config for CO resources since versions:
 //   * 4.6.16+
