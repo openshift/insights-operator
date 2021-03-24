@@ -268,7 +268,7 @@ func (g *Gatherer) startGathering(gatherList []string, errors *[]string) ([]refl
 }
 
 func recordGatherReport(recorder recorder.Interface, metadata gatherMetadata) error {
-	r := record.Record{Name: "insights-operator/gathers", Item: record.JSONMarshaller{Object: metadata}}
+	r := record.Record{Name: "insights-operator/gathering-metadata", Item: record.JSONMarshaller{Object: metadata}}
 	return recorder.Record(r)
 }
 
