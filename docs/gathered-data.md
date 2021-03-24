@@ -415,6 +415,13 @@ Response see https://docs.openshift.com/container-platform/4.6/rest_api/workload
 Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 
 
+## SAPDatahubs
+
+collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
+
+Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+
+
 ## SAPPods
 
 collects information about pods running in SAP/SDI namespaces.
