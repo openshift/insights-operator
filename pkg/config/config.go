@@ -17,8 +17,8 @@ type Serialized struct {
 		Timeout      string `json:"timeout"`
 		MinRetryTime string `json:"min_retry"`
 	} `json:"pull_report"`
-	Impersonate string `json:"impersonate"`
-	Gather []string `json:"gather"`
+	Impersonate string   `json:"impersonate"`
+	Gather      []string `json:"gather"`
 }
 
 func (s *Serialized) ToController(cfg *Controller) (*Controller, error) {
@@ -100,7 +100,7 @@ type Controller struct {
 	ReportMinRetryTime   time.Duration
 	ReportPullingTimeout time.Duration
 	Impersonate          string
-	Gather				 []string
+	Gather               []string
 
 	Username string
 	Password string
