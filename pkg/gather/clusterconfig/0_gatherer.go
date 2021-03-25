@@ -64,6 +64,7 @@ func (g *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherSAPConfig(g),
 		GatherSAPVsystemIptablesLogs(g),
 		GatherSAPPods(g),
+		GatherSAPDatahubs(g),
 		GatherOpenshiftSDNControllerLogs(g),
 	)
 }
