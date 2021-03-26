@@ -45,9 +45,7 @@ func gatherClusterInfrastructure(ctx context.Context, configClient configv1clien
 }
 
 func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastructure {
-	config.Status.APIServerURL = anonymize.AnonymizeURL(config.Status.APIServerURL)
 	config.Status.EtcdDiscoveryDomain = anonymize.AnonymizeURL(config.Status.EtcdDiscoveryDomain)
 	config.Status.InfrastructureName = anonymize.AnonymizeURL(config.Status.InfrastructureName)
-	config.Status.APIServerInternalURL = anonymize.AnonymizeURL(config.Status.APIServerInternalURL)
 	return config
 }

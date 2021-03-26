@@ -6,11 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherClusterIngress fetches the cluster Ingress - the Ingress with name cluster.
@@ -40,10 +38,5 @@ func gatherClusterIngress(ctx context.Context, configClient configv1client.Confi
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/ingress", Item: record.JSONMarshaller{Object: anonymizeIngress(config)}}}, nil
-}
-
-func anonymizeIngress(ingress *configv1.Ingress) *configv1.Ingress {
-	ingress.Spec.Domain = anonymize.AnonymizeURL(ingress.Spec.Domain)
-	return ingress
+	return []record.Record{{Name: "config/ingress", Item: record.JSONMarshaller{Object: config}}}, nil
 }

@@ -57,9 +57,6 @@ func anonymizeNode(node *corev1.Node) *corev1.Node {
 		}
 		node.Labels[k] = anonymize.AnonymizeString(v)
 	}
-	for i := range node.Status.Addresses {
-		node.Status.Addresses[i].Address = anonymize.AnonymizeURL(node.Status.Addresses[i].Address)
-	}
 	node.Status.NodeInfo.BootID = anonymize.AnonymizeString(node.Status.NodeInfo.BootID)
 	node.Status.NodeInfo.SystemUUID = anonymize.AnonymizeString(node.Status.NodeInfo.SystemUUID)
 	node.Status.NodeInfo.MachineID = anonymize.AnonymizeString(node.Status.NodeInfo.MachineID)
