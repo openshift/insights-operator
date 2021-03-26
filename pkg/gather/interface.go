@@ -9,4 +9,3 @@ import (
 type Interface interface {
 	Gather(context.Context, []string, record.Interface) error
 }
-

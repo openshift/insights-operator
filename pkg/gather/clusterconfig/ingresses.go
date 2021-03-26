@@ -21,7 +21,7 @@ import (
 // Location in archive: config/ingress/
 // See: docs/insights-archive-sample/config/ingress
 // Id in config: ingress
-func GatherClusterIngress(g *Gatherer, c chan<- gatherResult){
+func GatherClusterIngress(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

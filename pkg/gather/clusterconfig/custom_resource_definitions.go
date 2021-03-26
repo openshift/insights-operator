@@ -22,7 +22,7 @@ import (
 //
 // Location in archive: config/crd/
 // Id in config: crds
-func GatherCRD(g *Gatherer, c chan<- gatherResult){
+func GatherCRD(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	crdClient, err := apixv1.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

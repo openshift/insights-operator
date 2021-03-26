@@ -110,6 +110,7 @@ var gatherFunctions = map[string]gathering{
 	"openshift_sdn_controller_logs":     failable(GatherOpenshiftSDNControllerLogs),
 	"openshift_authentication_logs":     failable(GatherOpenshiftAuthenticationLogs),
 	"sap_config":                        failable(GatherSAPConfig),
+	"sap_license_management_logs":       failable(GatherSAPVsystemIptablesLogs),
 	"sap_pods":                          failable(GatherSAPPods),
 	"olm_operators":                     failable(GatherOLMOperators),
 }

@@ -88,13 +88,13 @@ func (c *Controller) Gather() {
 	// IMPORTANT: We NEED to run retry $threshold times or we will never set status to degraded.
 	backoff := wait.Backoff{
 		Duration: duration,
-		Factor: 1.35,
-		Jitter: 0,
-		Steps:  threshold,
-		Cap:    interval,
+		Factor:   1.35,
+		Jitter:   0,
+		Steps:    threshold,
+		Cap:      interval,
 	}
 	for name := range c.gatherers {
-		_ = wait.ExponentialBackoff(backoff, func() (bool,error) {
+		_ = wait.ExponentialBackoff(backoff, func() (bool, error) {
 			start := time.Now()
 			err := c.runGatherer(name)
 			if err == nil {

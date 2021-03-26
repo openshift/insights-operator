@@ -37,13 +37,13 @@ const (
 )
 
 type Client struct {
-	client      		*http.Client
-	maxBytes    		int64
-	metricsName 		string
+	client      *http.Client
+	maxBytes    int64
+	metricsName string
 
-	authorizer  		Authorizer
-	gatherKubeConfig	*rest.Config
-	clusterVersion  	*configv1.ClusterVersion
+	authorizer       Authorizer
+	gatherKubeConfig *rest.Config
+	clusterVersion   *configv1.ClusterVersion
 }
 
 type Authorizer interface {
@@ -68,11 +68,11 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 		maxBytes = 10 * 1024 * 1024
 	}
 	return &Client{
-		client:      		client,
-		maxBytes:    		maxBytes,
-		metricsName: 		metricsName,
-		authorizer:  		authorizer,
-		gatherKubeConfig:	gatherKubeConfig,
+		client:           client,
+		maxBytes:         maxBytes,
+		metricsName:      metricsName,
+		authorizer:       authorizer,
+		gatherKubeConfig: gatherKubeConfig,
 	}
 }
 
