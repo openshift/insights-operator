@@ -17,9 +17,9 @@ import (
 
 // GatherClusterImagePruner fetches the image pruner configuration
 //
-// Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
-// Id in config: image_pruners
-func GatherClusterImagePruner(g *Gatherer, c chan<- gatherResult){
+// * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
+// * Id in config: image_pruners
+func GatherClusterImagePruner(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

@@ -17,8 +17,11 @@ import (
 // The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
 // Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 //
-// Location in archive: config/machineconfigpools/
-// Id in config: machine_config_pools
+// * Location in archive: config/machineconfigpools/
+// * Id in config: machine_config_pools
+// * Since versions:
+//   * 4.5.33+
+//   * 4.6+
 func GatherMachineConfigPool(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

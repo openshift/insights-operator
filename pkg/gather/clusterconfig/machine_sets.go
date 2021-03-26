@@ -19,6 +19,10 @@ import (
 //
 // Location in archive: machinesets/
 // Id in config: machine_sets
+// Since versions:
+//     - 4.4.29+
+//     - 4.5.15+
+//     - 4.6+
 func GatherMachineSet(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

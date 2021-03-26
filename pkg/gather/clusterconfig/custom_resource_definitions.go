@@ -20,9 +20,9 @@ import (
 //
 // The CRD sizes above are in the raw (uncompressed) state.
 //
-// Location in archive: config/crd/
-// Id in config: crds
-func GatherCRD(g *Gatherer, c chan<- gatherResult){
+// * Location in archive: config/crd/
+// * Id in config: crds
+func GatherCRD(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	crdClient, err := apixv1.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

@@ -17,8 +17,12 @@ import (
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 //
-// Location in archive: config/hostsubnet/
-// Id in config: host_subnets
+// * Location in archive: config/hostsubnet/
+// * Id in config: host_subnets
+// * Since versions:
+//   * 4.4.29+
+//   * 4.5.15+
+//   * 4.6+
 func GatherHostSubnet(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)

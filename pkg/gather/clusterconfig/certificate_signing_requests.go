@@ -32,8 +32,8 @@ const csrGatherLimit = 5000
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
-// Location in archive: config/certificatesigningrequests/
-// Id in config: certificate_signing_requests
+// * Location in archive: config/certificatesigningrequests/
+// * Id in config: certificate_signing_requests
 func GatherCertificateSigningRequests(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

@@ -28,9 +28,9 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 const (
@@ -66,10 +66,13 @@ type CompactedEventList struct {
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
 //
-// Location of operators in archive: config/clusteroperator/
-// See: docs/insights-archive-sample/config/clusteroperator
-// Location of pods in archive: config/pod/
-// Id in config: operators
+// * Location of operators in archive: config/clusteroperator/
+// * See: docs/insights-archive-sample/config/clusteroperator
+// * Location of pods in archive: config/pod/
+// * Id in config: operators
+// * Spec config for CO resources since versions:
+//   * 4.6.16+
+//   * 4.7+
 func GatherClusterOperators(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
