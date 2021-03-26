@@ -6,7 +6,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -27,8 +26,7 @@ func GatherSAPDatahubs(g *Gatherer, c chan<- gatherResult) {
 }
 
 func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
-	datahubsList, err := dynamicClient.Resource(datahubsResource).List(ctx, metav1.ListOptions{})
+	datahubsList, err := dynamicClient.Resource(datahubGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -41,8 +39,8 @@ func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]
 	for i, datahub := range datahubsList.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("customresources/%s/%s/%s/%s",
-				datahubsResource.Group,
-				datahubsResource.Resource,
+				datahubGroupVersionResource.Group,
+				datahubGroupVersionResource.Resource,
 				datahub.GetNamespace(),
 				datahub.GetName(),
 			),

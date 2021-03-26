@@ -27,9 +27,8 @@ metadata:
     namespace: example-namespace2
 `
 
-	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
 	datahubsClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-		datahubsResource: "DataHubsList",
+		datahubGroupVersionResource: "DataHubsList",
 	})
 
 	decUnstructured1 := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
@@ -56,7 +55,7 @@ metadata:
 	}
 
 	// Create first datahubs resource.
-	datahubsClient.Resource(datahubsResource).Namespace("example-namespace1").Create(context.Background(), testDatahub1, metav1.CreateOptions{})
+	datahubsClient.Resource(datahubGroupVersionResource).Namespace("example-namespace1").Create(context.Background(), testDatahub1, metav1.CreateOptions{})
 
 	records, errs = gatherSAPDatahubs(context.Background(), datahubsClient)
 	if len(errs) > 0 {
@@ -68,7 +67,7 @@ metadata:
 	}
 
 	// Create second datahubs resource.
-	datahubsClient.Resource(datahubsResource).Namespace("example-namespace2").Create(context.Background(), testDatahub2, metav1.CreateOptions{})
+	datahubsClient.Resource(datahubGroupVersionResource).Namespace("example-namespace2").Create(context.Background(), testDatahub2, metav1.CreateOptions{})
 
 	records, errs = gatherSAPDatahubs(context.Background(), datahubsClient)
 	if len(errs) > 0 {
