@@ -24,6 +24,10 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 * Location in archive: config/certificatesigningrequests/
 * Id in config: certificate_signing_requests
+* Since versions:
+  * 4.3.25+
+  * 4.4.12+
+  * 4.5+
 
 
 ## ClusterAuthentication
@@ -79,8 +83,12 @@ PersistentVolume definition is gathered
 * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 * Id in config: image_registries
 * Since versions:
+  * 4.3.40+
   * 4.4.12+
   * 4.5+
+* PV definition since versions:
+  * 4.6.20+
+  * 4.7+
 
 
 ## ClusterInfrastructure
@@ -189,6 +197,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * See: docs/insights-archive-sample/config/configmaps
 * Id in config: config_maps
 * Since versions:
+  * 4.3.25+
   * 4.4.6+
   * 4.5+
 * "cluster-monitoring-config" ConfigMap data since versions:
@@ -250,6 +259,7 @@ The Operators-Framework api https://github.com/operator-framework/api/blob/maste
 * Location in archive: config/installplans/
 * Id in config: install_plans
 * Since versions:
+  * 4.5.33+
   * 4.6.16+
   * 4.7+
 
@@ -335,6 +345,8 @@ Each OLM operator (in the list) contains following data:
 * See: docs/insights-archive-sample/config/olm_operators
 * Location of in archive: config/olm_operators
 * Id in config: olm_operators
+* Since versions:
+  * 4.7+
 
 
 ## OpenShiftAPIServerOperatorLogs
@@ -358,6 +370,8 @@ The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernete
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.7+
 
 
 ## OpenshiftSDNControllerLogs

@@ -30,6 +30,7 @@ import (
 // * See: docs/insights-archive-sample/config/configmaps
 // * Id in config: config_maps
 // * Since versions:
+//   * 4.3.25+
 //   * 4.4.6+
 //   * 4.5+
 // * "cluster-monitoring-config" ConfigMap data since versions:

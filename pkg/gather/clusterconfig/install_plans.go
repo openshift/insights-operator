@@ -31,6 +31,7 @@ const InstallPlansTopX = 100
 // * Location in archive: config/installplans/
 // * Id in config: install_plans
 // * Since versions:
+//   * 4.5.33+
 //   * 4.6.16+
 //   * 4.7+
 func GatherInstallPlans(g *Gatherer, c chan<- gatherResult) {

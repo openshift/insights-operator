@@ -34,6 +34,10 @@ const csrGatherLimit = 5000
 //
 // * Location in archive: config/certificatesigningrequests/
 // * Id in config: certificate_signing_requests
+// * Since versions:
+//   * 4.3.25+
+//   * 4.4.12+
+//   * 4.5+
 func GatherCertificateSigningRequests(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

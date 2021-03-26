@@ -27,8 +27,12 @@ import (
 // * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 // * Id in config: image_registries
 // * Since versions:
+//   * 4.3.40+
 //   * 4.4.12+
 //   * 4.5+
+// * PV definition since versions:
+//   * 4.6.20+
+//   * 4.7+
 func GatherClusterImageRegistry(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
