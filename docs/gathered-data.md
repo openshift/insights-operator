@@ -57,9 +57,9 @@ This method uses data already collected by Get ClusterVersion. In particular fie
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
 Response see https://github.com/openshift/api/blob/master/config/v1/types_cluster_version.go#L38
 
-Location in archive: config/id/
-See: docs/insights-archive-sample/config/id
-Id in config: id
+* Location in archive: config/id/
+* See: docs/insights-archive-sample/config/id
+* Id in config: id
 
 
 ## ClusterImagePruner
@@ -114,9 +114,9 @@ fetches the cluster Network - the Network with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/network.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#network-v1-config-openshift-io
 
-Location in archive: config/network/
-See: docs/insights-archive-sample/config/network
-Id in config: networks
+* Location in archive: config/network/
+* See: docs/insights-archive-sample/config/network
+* Id in config: networks
 
 
 ## ClusterOAuth
@@ -126,9 +126,9 @@ fetches the cluster OAuth - the OAuth with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#oauth-v1-config-openshift-io
 
-Location in archive: config/oauth/
-See: docs/insights-archive-sample/config/oauth
-Id in config: oauths
+* Location in archive: config/oauth/
+* See: docs/insights-archive-sample/config/oauth
+* Id in config: oauths
 
 
 ## ClusterOperators
@@ -155,9 +155,9 @@ fetches the cluster Proxy - the Proxy with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
 
-Location in archive: config/proxy/
-See: docs/insights-archive-sample/config/proxy
-Id in config: proxies
+* Location in archive: config/proxy/
+* See: docs/insights-archive-sample/config/proxy
+* Id in config: proxies
 
 
 ## ClusterVersion
@@ -275,12 +275,12 @@ collects MachineSet information
 The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 
-Location in archive: machinesets/
-Id in config: machine_sets
-Since versions:
-    - 4.4.29+
-    - 4.5.15+
-    - 4.6+
+* Location in archive: machinesets/
+* Id in config: machine_sets
+* Since versions:
+  * 4.4.29+
+  * 4.5.15+
+  * 4.6+
 
 
 ## MostRecentMetrics
@@ -294,9 +294,9 @@ Gathered metrics:
   namespace CPU and memory usage
   followed by at most 1000 lines of ALERTS metric
 
-Location in archive: config/metrics/
-See: docs/insights-archive-sample/config/metrics
-Id in config: metrics
+* Location in archive: config/metrics/
+* See: docs/insights-archive-sample/config/metrics
+* Id in config: metrics
 
 
 ## NetNamespace
@@ -306,11 +306,11 @@ collects NetNamespaces networking information
 The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
 Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
 
-Location in archive: config/netnamespaces
-Id in config: netnamespaces
-Since versions:
-    - 4.6.20+
-    - 4.7+
+* Location in archive: config/netnamespaces
+* Id in config: netnamespaces
+* Since versions:
+  * 4.6.20+
+  * 4.7+
 
 
 ## Nodes
@@ -320,8 +320,8 @@ collects all Nodes.
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 
-Location in archive: config/node/
-Id in config: nodes
+* Location in archive: config/node/
+* Id in config: nodes
 
 
 ## OLMOperators
@@ -332,9 +332,9 @@ Each OLM operator (in the list) contains following data:
 - OLM operator version
 - related ClusterServiceVersion conditions
 
-See: docs/insights-archive-sample/config/olm_operators
-Location of in archive: config/olm_operators
-Id in config: olm_operators
+* See: docs/insights-archive-sample/config/olm_operators
+* Location of in archive: config/olm_operators
+* Id in config: olm_operators
 
 
 ## OpenShiftAPIServerOperatorLogs
@@ -346,7 +346,7 @@ collects logs from openshift-apiserver-operator with following substrings:
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
+* Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 
 
 ## OpenshiftAuthenticationLogs
@@ -357,7 +357,7 @@ collects logs from pods in openshift-authentication namespace with following sub
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+* Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
 
 
 ## OpenshiftSDNControllerLogs
@@ -377,10 +377,10 @@ collects logs from sdn-controller pod in openshift-sdn namespace with following 
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
-Since versions:
-    - 4.6.19+
-    - 4.7+
+* Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.6.21+
+  * 4.7+
 
 
 ## OpenshiftSDNLogs
@@ -394,10 +394,10 @@ collects logs from pods in openshift-sdn namespace with following substrings:
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
-Since versions:
-    - 4.6.19+
-    - 4.7+
+* Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.6.19+
+  * 4.7+
 
 
 ## PodDisruptionBudgets
@@ -425,17 +425,19 @@ Relevant OpenShift API docs:
   - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
-Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
-Since versions:
-    - 4.6.20+
-    - 4.7+
+* Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+* Since versions:
+  * 4.6.20+
+  * 4.7+
 
 
 ## SAPDatahubs
 
 collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
-Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+* Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+* Since versions:
+  * 4.8+
 
 
 ## SAPPods
@@ -449,7 +451,9 @@ Relevant Kubernetes API docs:
   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
   - https://pkg.go.dev/k8s.io/client-go/dynamic
 
-Location in archive: config/pod/{namespace}/{pod-name}.json
+* Location in archive: config/pod/{namespace}/{pod-name}.json
+* Since versions:
+  * 4.8+
 
 
 ## SAPVsystemIptablesLogs
@@ -461,7 +465,9 @@ including one from license management pods with the following substring:
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
+* Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.8+
 
 
 ## ServiceAccounts
@@ -472,12 +478,12 @@ from kubernetes default and namespaces starting with openshift.
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
 
-Location of serviceaccounts in archive: config/serviceaccounts
-See: docs/insights-archive-sample/config/serviceaccounts
-Id in config: service_accounts
-Since versions:
-    - 4.5.34+
-    - 4.6.20+
-    - 4.7+
+* Location of serviceaccounts in archive: config/serviceaccounts
+* See: docs/insights-archive-sample/config/serviceaccounts
+* Id in config: service_accounts
+* Since versions:
+  * 4.5.34+
+  * 4.6.20+
+  * 4.7+
 
 

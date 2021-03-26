@@ -23,11 +23,11 @@ type netNamespace struct {
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
 // Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
 //
-// Location in archive: config/netnamespaces
-// Id in config: netnamespaces
-// Since versions:
-//     - 4.6.20+
-//     - 4.7+
+// * Location in archive: config/netnamespaces
+// * Id in config: netnamespaces
+// * Since versions:
+//   * 4.6.20+
+//   * 4.7+
 func GatherNetNamespace(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)

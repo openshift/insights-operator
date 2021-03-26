@@ -13,7 +13,9 @@ import (
 
 // GatherSAPDatahubs collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 //
-// Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+// * Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+// * Since versions:
+//   * 4.8+
 func GatherSAPDatahubs(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

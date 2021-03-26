@@ -25,7 +25,9 @@ import (
 //   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
 //   - https://pkg.go.dev/k8s.io/client-go/dynamic
 //
-// Location in archive: config/pod/{namespace}/{pod-name}.json
+// * Location in archive: config/pod/{namespace}/{pod-name}.json
+// * Since versions:
+//   * 4.8+
 func GatherSAPPods(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
