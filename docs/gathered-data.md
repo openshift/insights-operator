@@ -351,3 +351,16 @@ Relevant OpenShift API docs:
   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
 Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+
+## SAPPods
+
+collects information about pods running in SAP/SDI namespaces.
+Only pods with a failing status are collected.
+Failed pods belonging to a job that has later succeeded are ignored.
+
+Relevant Kubernetes API docs:
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
+  - https://pkg.go.dev/k8s.io/client-go/dynamic
+
+Location in archive: config/pod/{namespace}/{pod-name}.json
