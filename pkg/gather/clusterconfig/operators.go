@@ -101,7 +101,7 @@ func GatherClusterOperators(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{records, []error{errs}}
 		return
 	}
-	c <- gatherResult{records, []error{}}
+	c <- gatherResult{records, nil}
 }
 
 // gatherClusterOperators collects cluster operators
