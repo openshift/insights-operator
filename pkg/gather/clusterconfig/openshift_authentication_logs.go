@@ -10,7 +10,9 @@ import (
 // The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-// Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+// * Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+// * Since versions:
+//   * 4.7+
 func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 

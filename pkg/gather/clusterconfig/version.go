@@ -11,8 +11,8 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils/marshal"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 // GatherClusterVersion fetches the ClusterVersion - the ClusterVersion with name version.
@@ -53,9 +53,9 @@ func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
 // Response see https://github.com/openshift/api/blob/master/config/v1/types_cluster_version.go#L38
 //
-// Location in archive: config/id/
-// See: docs/insights-archive-sample/config/id
-// Id in config: id
+// * Location in archive: config/id/
+// * See: docs/insights-archive-sample/config/id
+// * Id in config: id
 func GatherClusterID(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)

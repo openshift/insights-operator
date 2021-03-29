@@ -26,9 +26,16 @@ import (
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 //
-// Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
-// See: docs/insights-archive-sample/config/configmaps
-// Id in config: config_maps
+// * Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
+// * See: docs/insights-archive-sample/config/configmaps
+// * Id in config: config_maps
+// * Since versions:
+//   * 4.3.25+
+//   * 4.4.6+
+//   * 4.5+
+// * "cluster-monitoring-config" ConfigMap data since versions:
+//   * 4.6.22+
+//   * 4.7+
 func GatherConfigMaps(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

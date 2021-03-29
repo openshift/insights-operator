@@ -19,8 +19,8 @@ import (
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 //
-// Location in archive: config/node/
-// Id in config: nodes
+// * Location in archive: config/node/
+// * Id in config: nodes
 func GatherNodes(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

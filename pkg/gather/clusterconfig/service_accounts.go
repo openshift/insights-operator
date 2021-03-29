@@ -25,9 +25,13 @@ const maxServiceAccountsLimit = 1000
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
 //
-// Location of serviceaccounts in archive: config/serviceaccounts
-// See: docs/insights-archive-sample/config/serviceaccounts
-// Id in config: service_accounts
+// * Location of serviceaccounts in archive: config/serviceaccounts
+// * See: docs/insights-archive-sample/config/serviceaccounts
+// * Id in config: service_accounts
+// * Since versions:
+//   * 4.5.34+
+//   * 4.6.20+
+//   * 4.7+
 func GatherServiceAccounts(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

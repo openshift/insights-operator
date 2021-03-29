@@ -18,9 +18,9 @@ import (
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
 //
-// Location in archive: config/infrastructure/
-// See: docs/insights-archive-sample/config/infrastructure
-// Id in config: infrastructures
+// * Location in archive: config/infrastructure/
+// * See: docs/insights-archive-sample/config/infrastructure
+// * Id in config: infrastructures
 func GatherClusterInfrastructure(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)

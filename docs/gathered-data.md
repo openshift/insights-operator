@@ -10,8 +10,8 @@ The following CRDs are gathered:
 
 The CRD sizes above are in the raw (uncompressed) state.
 
-Location in archive: config/crd/
-Id in config: crds
+* Location in archive: config/crd/
+* Id in config: crds
 
 
 ## CertificateSigningRequests
@@ -22,8 +22,12 @@ Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAft
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 
-Location in archive: config/certificatesigningrequests/
-Id in config: certificate_signing_requests
+* Location in archive: config/certificatesigningrequests/
+* Id in config: certificate_signing_requests
+* Since versions:
+  * 4.3.25+
+  * 4.4.12+
+  * 4.5+
 
 
 ## ClusterAuthentication
@@ -33,9 +37,9 @@ fetches the cluster Authentication - the Authentication with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#authentication-v1operator-openshift-io
 
-Location in archive: config/authentication/
-See: docs/insights-archive-sample/config/authentication
-Id in config: authentication
+* Location in archive: config/authentication/
+* See: docs/insights-archive-sample/config/authentication
+* Id in config: authentication
 
 
 ## ClusterFeatureGates
@@ -45,9 +49,9 @@ fetches the cluster FeatureGate - the FeatureGate with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
 
-Location in archive: config/featuregate/
-See: docs/insights-archive-sample/config/featuregate
-Id in config: feature_gates
+* Location in archive: config/featuregate/
+* See: docs/insights-archive-sample/config/featuregate
+* Id in config: feature_gates
 
 
 ## ClusterID
@@ -57,17 +61,17 @@ This method uses data already collected by Get ClusterVersion. In particular fie
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
 Response see https://github.com/openshift/api/blob/master/config/v1/types_cluster_version.go#L38
 
-Location in archive: config/id/
-See: docs/insights-archive-sample/config/id
-Id in config: id
+* Location in archive: config/id/
+* See: docs/insights-archive-sample/config/id
+* Id in config: id
 
 
 ## ClusterImagePruner
 
 fetches the image pruner configuration
 
-Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
-Id in config: image_pruners
+* Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
+* Id in config: image_pruners
 
 
 ## ClusterImageRegistry
@@ -76,8 +80,15 @@ fetches the cluster Image Registry configuration
 If the Image Registry configuration uses some PersistentVolumeClaim for the storage then the corresponding
 PersistentVolume definition is gathered
 
-Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
-Id in config: image_registries
+* Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
+* Id in config: image_registries
+* Since versions:
+  * 4.3.40+
+  * 4.4.12+
+  * 4.5+
+* PV definition since versions:
+  * 4.6.20+
+  * 4.7+
 
 
 ## ClusterInfrastructure
@@ -87,9 +98,9 @@ fetches the cluster Infrastructure - the Infrastructure with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
 
-Location in archive: config/infrastructure/
-See: docs/insights-archive-sample/config/infrastructure
-Id in config: infrastructures
+* Location in archive: config/infrastructure/
+* See: docs/insights-archive-sample/config/infrastructure
+* Id in config: infrastructures
 
 
 ## ClusterIngress
@@ -99,9 +110,9 @@ fetches the cluster Ingress - the Ingress with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
 
-Location in archive: config/ingress/
-See: docs/insights-archive-sample/config/ingress
-Id in config: ingress
+* Location in archive: config/ingress/
+* See: docs/insights-archive-sample/config/ingress
+* Id in config: ingress
 
 
 ## ClusterNetwork
@@ -111,9 +122,9 @@ fetches the cluster Network - the Network with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/network.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#network-v1-config-openshift-io
 
-Location in archive: config/network/
-See: docs/insights-archive-sample/config/network
-Id in config: networks
+* Location in archive: config/network/
+* See: docs/insights-archive-sample/config/network
+* Id in config: networks
 
 
 ## ClusterOAuth
@@ -123,9 +134,9 @@ fetches the cluster OAuth - the OAuth with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#oauth-v1-config-openshift-io
 
-Location in archive: config/oauth/
-See: docs/insights-archive-sample/config/oauth
-Id in config: oauths
+* Location in archive: config/oauth/
+* See: docs/insights-archive-sample/config/oauth
+* Id in config: oauths
 
 
 ## ClusterOperators
@@ -136,10 +147,13 @@ It finds unhealthy Pods for unhealthy operators
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
 
-Location of operators in archive: config/clusteroperator/
-See: docs/insights-archive-sample/config/clusteroperator
-Location of pods in archive: config/pod/
-Id in config: operators
+* Location of operators in archive: config/clusteroperator/
+* See: docs/insights-archive-sample/config/clusteroperator
+* Location of pods in archive: config/pod/
+* Id in config: operators
+* Spec config for CO resources since versions:
+  * 4.6.16+
+  * 4.7+
 
 
 ## ClusterProxy
@@ -149,9 +163,9 @@ fetches the cluster Proxy - the Proxy with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
 
-Location in archive: config/proxy/
-See: docs/insights-archive-sample/config/proxy
-Id in config: proxies
+* Location in archive: config/proxy/
+* See: docs/insights-archive-sample/config/proxy
+* Id in config: proxies
 
 
 ## ClusterVersion
@@ -179,9 +193,16 @@ For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 
-Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
-See: docs/insights-archive-sample/config/configmaps
-Id in config: config_maps
+* Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
+* See: docs/insights-archive-sample/config/configmaps
+* Id in config: config_maps
+* Since versions:
+  * 4.3.25+
+  * 4.4.6+
+  * 4.5+
+* "cluster-monitoring-config" ConfigMap data since versions:
+  * 4.6.22+
+  * 4.7+
 
 
 ## ContainerImages
@@ -189,8 +210,12 @@ Id in config: config_maps
 collects essential information about running containers.
 Specifically, the age of pods, the set of running images and the container names are collected.
 
-Location in archive: config/running_containers.json
-Id in config: container_images
+* Location in archive: config/running_containers.json
+* Id in config: container_images
+* Since versions:
+  * 4.5.33+
+  * 4.6.16+
+  * 4.7+
 
 
 ## ContainerRuntimeConfig
@@ -200,8 +225,11 @@ collects ContainerRuntimeConfig  information
 The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
 Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 
-Location in archive: config/containerruntimeconfigs/
-Id in config: container_runtime_configs
+* Location in archive: config/containerruntimeconfigs/
+* Id in config: container_runtime_configs
+* Since versions:
+  * 4.6.18+
+  * 4.7+
 
 
 ## HostSubnet
@@ -211,8 +239,12 @@ collects HostSubnet information
 The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 
-Location in archive: config/hostsubnet/
-Id in config: host_subnets
+* Location in archive: config/hostsubnet/
+* Id in config: host_subnets
+* Since versions:
+  * 4.4.29+
+  * 4.5.15+
+  * 4.6+
 
 
 ## InstallPlans
@@ -224,8 +256,12 @@ It also collects Total number of all installplans and all non-unique installplan
 
 The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 
-Location in archive: config/installplans/
-Id in config: install_plans
+* Location in archive: config/installplans/
+* Id in config: install_plans
+* Since versions:
+  * 4.5.33+
+  * 4.6.16+
+  * 4.7+
 
 
 ## MachineConfigPool
@@ -235,8 +271,11 @@ collects MachineConfigPool information
 The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
 Response see https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 
-Location in archive: config/machineconfigpools/
-Id in config: machine_config_pools
+* Location in archive: config/machineconfigpools/
+* Id in config: machine_config_pools
+* Since versions:
+  * 4.5.33+
+  * 4.6+
 
 
 ## MachineSet
@@ -246,8 +285,12 @@ collects MachineSet information
 The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 
-Location in archive: machinesets/
-Id in config: machine_sets
+* Location in archive: machinesets/
+* Id in config: machine_sets
+* Since versions:
+  * 4.4.29+
+  * 4.5.15+
+  * 4.6+
 
 
 ## MostRecentMetrics
@@ -261,9 +304,9 @@ Gathered metrics:
   namespace CPU and memory usage
   followed by at most 1000 lines of ALERTS metric
 
-Location in archive: config/metrics/
-See: docs/insights-archive-sample/config/metrics
-Id in config: metrics
+* Location in archive: config/metrics/
+* See: docs/insights-archive-sample/config/metrics
+* Id in config: metrics
 
 
 ## NetNamespace
@@ -273,8 +316,11 @@ collects NetNamespaces networking information
 The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
 Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
 
-Location in archive: config/netnamespaces
-Id in config: netnamespaces
+* Location in archive: config/netnamespaces
+* Id in config: netnamespaces
+* Since versions:
+  * 4.6.20+
+  * 4.7+
 
 
 ## Nodes
@@ -284,8 +330,8 @@ collects all Nodes.
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 
-Location in archive: config/node/
-Id in config: nodes
+* Location in archive: config/node/
+* Id in config: nodes
 
 
 ## OLMOperators
@@ -296,9 +342,11 @@ Each OLM operator (in the list) contains following data:
 - OLM operator version
 - related ClusterServiceVersion conditions
 
-See: docs/insights-archive-sample/config/olm_operators
-Location of in archive: config/olm_operators
-Id in config: olm_operators
+* See: docs/insights-archive-sample/config/olm_operators
+* Location of in archive: config/olm_operators
+* Id in config: olm_operators
+* Since versions:
+  * 4.7+
 
 
 ## OpenShiftAPIServerOperatorLogs
@@ -310,7 +358,7 @@ collects logs from openshift-apiserver-operator with following substrings:
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
+* Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 
 
 ## OpenshiftAuthenticationLogs
@@ -321,7 +369,9 @@ collects logs from pods in openshift-authentication namespace with following sub
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+* Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.7+
 
 
 ## OpenshiftSDNControllerLogs
@@ -341,7 +391,10 @@ collects logs from sdn-controller pod in openshift-sdn namespace with following 
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+* Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.6.21+
+  * 4.7+
 
 
 ## OpenshiftSDNLogs
@@ -355,7 +408,10 @@ collects logs from pods in openshift-sdn namespace with following substrings:
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+* Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.6.19+
+  * 4.7+
 
 
 ## PodDisruptionBudgets
@@ -365,9 +421,13 @@ gathers the cluster's PodDisruptionBudgets.
 The Kubernetes api https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
 Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
 
-Location in archive: config/pdbs/
-See: docs/insights-archive-sample/config/pdbs
-Id in config: pdbs
+* Location in archive: config/pdbs/
+* See: docs/insights-archive-sample/config/pdbs
+* Id in config: pdbs
+* Since versions:
+  * 4.4.30+
+  * 4.5.34+
+  * 4.6+
 
 
 ## SAPConfig
@@ -379,14 +439,19 @@ Relevant OpenShift API docs:
   - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
-Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+* Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+* Since versions:
+  * 4.6.20+
+  * 4.7+
 
 
 ## SAPDatahubs
 
 collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
-Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+* Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+* Since versions:
+  * 4.8+
 
 
 ## SAPPods
@@ -400,7 +465,9 @@ Relevant Kubernetes API docs:
   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
   - https://pkg.go.dev/k8s.io/client-go/dynamic
 
-Location in archive: config/pod/{namespace}/{pod-name}.json
+* Location in archive: config/pod/{namespace}/{pod-name}.json
+* Since versions:
+  * 4.8+
 
 
 ## SAPVsystemIptablesLogs
@@ -412,7 +479,9 @@ including one from license management pods with the following substring:
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
+* Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.8+
 
 
 ## ServiceAccounts
@@ -423,8 +492,12 @@ from kubernetes default and namespaces starting with openshift.
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
 
-Location of serviceaccounts in archive: config/serviceaccounts
-See: docs/insights-archive-sample/config/serviceaccounts
-Id in config: service_accounts
+* Location of serviceaccounts in archive: config/serviceaccounts
+* See: docs/insights-archive-sample/config/serviceaccounts
+* Id in config: service_accounts
+* Since versions:
+  * 4.5.34+
+  * 4.6.20+
+  * 4.7+
 
 
