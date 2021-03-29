@@ -63,6 +63,7 @@ func (g *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherServiceAccounts(g),
 		GatherSAPConfig(g),
 		GatherSAPVsystemIptablesLogs(g),
+		GatherSAPPods(g),
 		GatherOpenshiftSDNControllerLogs(g),
 	)
 }

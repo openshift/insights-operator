@@ -161,16 +161,18 @@ See: docs/insights-archive-sample/config/version
 
 ## ConfigMaps
 
-fetches the ConfigMaps from namespace openshift-config.
+fetches the ConfigMaps from namespace openshift-config
+and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitoring namespace.
 
 Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
 For ConfigMap of type BinaryData it is encoded as standard base64.
-In the archive under configmaps we store name of ConfigMap and then each ConfigMap Key. For example config/configmaps/CONFIGMAPNAME/CONFIGMAPKEY1
+In the archive under configmaps we store name of the namespace, name of ConfigMap and then each ConfigMap Key.
+For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 
 The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 
-Location in archive: config/configmaps/
+Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
 See: docs/insights-archive-sample/config/configmaps
 
 
@@ -361,3 +363,16 @@ Relevant OpenShift API docs:
   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
 Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+
+## SAPPods
+
+collects information about pods running in SAP/SDI namespaces.
+Only pods with a failing status are collected.
+Failed pods belonging to a job that has later succeeded are ignored.
+
+Relevant Kubernetes API docs:
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
+  - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
+  - https://pkg.go.dev/k8s.io/client-go/dynamic
+
+Location in archive: config/pod/{namespace}/{pod-name}.json

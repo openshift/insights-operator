@@ -169,6 +169,10 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 				disabledMessage = summary.Message
 			}
 		}
+		// Do not degrade in case of some gathering error
+		if summary.Operation == controllerstatus.GatheringReport {
+			degradingFailure = false
+		}
 		if degradingFailure {
 			reason = summary.Reason
 			errors = append(errors, summary.Message)

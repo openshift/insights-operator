@@ -162,7 +162,7 @@ func latestArchiveContainsConfigMaps(t *testing.T) {
 		t.Fatal("Nothing to test: no config maps in openshift-config namespace")
 	}
 	for _, configMap := range configMaps.Items {
-		configMapPath := fmt.Sprintf("^config/configmaps/%s/.*$", configMap.Name)
+		configMapPath := fmt.Sprintf("^config/configmaps/openshift-config/%s/.*$", configMap.Name)
 		err := latestArchiveCheckFiles(t, "config map", matchingFileExists, configMapPath)
 		if err != nil {
 			t.Error(err)

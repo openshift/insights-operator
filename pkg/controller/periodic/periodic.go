@@ -156,7 +156,8 @@ func (c *Controller) processNextWorkItem() bool {
 
 	utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", dsKey, time.Now().Sub(start).Truncate(time.Millisecond), err))
 	c.queue.AddRateLimited(dsKey)
-	c.status[name].UpdateStatus(controllerstatus.Summary{Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
+	summary := controllerstatus.Summary{Operation: controllerstatus.GatheringReport, Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)}
+	c.status[name].UpdateStatus(summary)
 
 	return true
 }

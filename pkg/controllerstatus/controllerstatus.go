@@ -13,8 +13,13 @@ type Interface interface {
 
 type Operation string
 
-// Specific flag for summary related to uploading process.
-const Uploading Operation = "Uploading"
+const (
+	// Specific flag for summary related to uploading process.
+	Uploading Operation = "Uploading"
+
+	// Specific flag for summary related to gathering process.
+	GatheringReport Operation = "GatheringReport"
+)
 
 type Summary struct {
 	Operation          Operation
@@ -55,6 +60,7 @@ func (s *Simple) UpdateStatus(summary Summary) {
 		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
 		s.summary.Reason = summary.Reason
 		s.summary.Message = summary.Message
+		s.summary.Operation = summary.Operation
 		return
 	}
 }
