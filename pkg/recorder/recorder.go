@@ -67,12 +67,18 @@ func (r *Recorder) Record(rec record.Record) error {
 	}
 
 	recordName := rec.Filename()
-	r.records[recordName] = r.anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+
+	memoryRecord := &record.MemoryRecord{
 		Name:        recordName,
 		Fingerprint: rec.Fingerprint,
 		At:          at,
 		Data:        data,
-	})
+	}
+	if r.anonymizer != nil {
+		memoryRecord = r.anonymizer.AnonymizeMemoryRecord(memoryRecord)
+	}
+
+	r.records[recordName] = memoryRecord
 	r.size += int64(len(data))
 
 	// trigger a flush if we're above our threshold

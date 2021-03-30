@@ -42,6 +42,7 @@ import (
 const (
 	Ipv4Regex                    = `((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
 	Ipv4NetworkRegex             = Ipv4Regex + "/([0-9]{1,2})"
+	Ipv4AddressOrNetworkRegex    = Ipv4Regex + "(/([0-9]{1,2}))?"
 	ClusterBaseDomainPlaceholder = "<CLUSTER_BASE_DOMAIN>"
 )
 
@@ -58,7 +59,7 @@ type Anonymizer struct {
 	clusterBaseDomain string
 	networks          []subnetInformation
 	translationTable  map[string]string
-	ipRegex           *regexp.Regexp
+	ipNetworkRegex    *regexp.Regexp
 }
 
 type ConfigProvider interface {
@@ -90,7 +91,7 @@ func NewAnonymizer(
 		clusterBaseDomain: strings.TrimSpace(clusterBaseDomain),
 		networks:          networksInformation,
 		translationTable:  make(map[string]string),
-		ipRegex:           regexp.MustCompile(Ipv4Regex),
+		ipNetworkRegex:    regexp.MustCompile(Ipv4AddressOrNetworkRegex),
 	}, nil
 }
 
@@ -187,7 +188,7 @@ func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryR
 		)
 	}
 
-	memoryRecord.Data = anonymizer.ipRegex.ReplaceAllFunc(memoryRecord.Data, func(originalIPBytes []byte) []byte {
+	memoryRecord.Data = anonymizer.ipNetworkRegex.ReplaceAllFunc(memoryRecord.Data, func(originalIPBytes []byte) []byte {
 		return []byte(anonymizer.ObfuscateIP(string(originalIPBytes)))
 	})
 
@@ -198,6 +199,11 @@ func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryR
 // we just take it from there, if it doesn't, we create an obfuscated version of this IP
 // and record it to the translation table
 func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
+	if strings.Contains(ipStr, "/") {
+		// we do not touch subnets themselves
+		return ipStr
+	}
+
 	if obfuscatedIP, exists := anonymizer.translationTable[ipStr]; exists {
 		return obfuscatedIP
 	}
