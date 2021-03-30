@@ -205,10 +205,10 @@ func clusterOperatorsRecords(ctx context.Context, items []configv1.ClusterOperat
 	resVer, _ := getOperatorResourcesVersions(discoveryClient)
 	records := make([]record.Record, 0, len(items))
 
-	for _, co := range items {
+	for idx, co := range items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/clusteroperator/%s", co.Name),
-			Item: record.JSONMarshaller{Object: &co},
+			Name: fmt.Sprintf("config/clusteroperator/%s", items[idx].Name),
+			Item: record.JSONMarshaller{Object: &items[idx]},
 		})
 		if resVer == nil {
 			continue
