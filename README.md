@@ -30,7 +30,7 @@ The current operator only collects global configuration. Future revisions will e
 
 ## Contributing
 
-Please make sure to run `make test-unit` and `make test-e2e` to check all changes made in the source code.
+Please make sure to run `make test-unit` to check all changes made in the source code.
 
 ### Sample IO archive
 There is a sample IO archive maintained in this repo to use as a quick reference. (can be found at [docs/insights-archive-sample](https://github.com/openshift/insights-operator/tree/master/docs/insights-archive-sample))
