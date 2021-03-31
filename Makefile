@@ -1,51 +1,127 @@
-GOCMD ?= go
-GORUN ?= $(GOCMD) run
-GOBUILD ?= $(GOCMD) build
-GOBUILDFLAGS ?= -mod=vendor -ldflags "-X k8s.io/client-go/pkg/version.gitCommit=$$(git rev-parse HEAD) -X k8s.io/client-go/pkg/version.gitVersion=v1.0.0+$$(git rev-parse --short=7 HEAD)"
-GOBUILDDEBUGFLAGS ?= -gcflags="all=-N -l"
-GOTEST ?= $(GOCMD) test
-GOGET ?= $(GOCMD) get
-GOMOD ?= $(GOCMD) mod
-GOFMT ?= gofmt
-GOLINT ?= golint
-CONTAINER_RUNTIME ?= podman
+# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
+ifeq (,$(shell go env GOBIN))
+GOBIN=$(shell go env GOPATH)/bin
+else
+GOBIN=$(shell go env GOBIN)
+endif
+
+# Testing
+GO_TEST_FLAGS = $(VERBOSE)
+COVER_PROFILE = cover.out
+
+# Build
+CLIENTGO_VERSION := $(shell git rev-parse --short=7 HEAD)
+CLIENTGO_COMMIT := "v1.0.0+$(shell git rev-parse HEAD)"
+export LDFLAGS="-X k8s.io/client-go/pkg/version.gitCommit=${CLIENTGO_COMMIT} \
+			-X k8s.io/client-go/pkg/version.gitVersion=${CLIENTGO_VERSION}"
+
+# Configuration
+KUBECONFIG ?= config/local.yaml
+RUN_FLAGS ?= -v4
+
+# Tools
+CONTAINER_RUNTIME := $(shell command -v podman 2> /dev/null || echo docker)
+GOLANGCI_LINT := $(GOBIN)/golangci-lint
+
+export GO111MODULE=on
+export GOFLAGS=-mod=vendor
+
+## --------------------------------------
+## Tests
+## --------------------------------------
+
+# Run the tests
+.PHONY: test
+test: unit
+
+# Run the unit tests
+.PHONY: unit
+unit:
+	go test ./... $(VERBOSE) -coverprofile $(COVER_PROFILE)
+
+.PHONY: unit-cover
+unit-cover:
+	go test -coverprofile=$(COVER_PROFILE) $(GO_TEST_FLAGS) ./...
+	go tool cover -func=$(COVER_PROFILE)
+
+.PHONE: unit-verbose
+unit-verbose:
+	VERBOSE=-v make unit
+
+## --------------------------------------
+## Linting
+## --------------------------------------
+
+.PHONY: sec
+sec: lint
+
+.PHONY: fmt
+fmt: lint
+
+.PHONY: vet
+vet: lint
+
+.PHONY: lint
+lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run
+
+$(GOLANGCI_LINT):
+	./hack/install-golangci-lint.sh
+
+## --------------------------------------
+## Build/Run
+## --------------------------------------
 
 .PHONY: run
 run:
-	$(GORUN) ./cmd/insights-operator/main.go start \
-		--config=config/local.yaml \
-		--kubeconfig=$(KUBECONFIG) \
-		-v4
+	go run ./cmd/insights-operator/main.go start \
+		--config=$(KUBECONFIG) \
+		$(RUN_FLAGS)
 
 .PHONY: build
 build:
-	$(GOBUILD) $(GOBUILDFLAGS) -o bin/insights-operator ./cmd/insights-operator
+	go build -o ./bin/insights-operator ./cmd/insights-operator
 
-build-debug:
-	$(GOBUILD) $(GOBUILDFLAGS) $(GOBUILDDEBUGFLAGS) -o bin/insights-operator ./cmd/insights-operator
+.PHONY: build-debug
+	go build $(GO_BUILD_FLAGS) -gcflags="all=-N -l" \
+		-o ./bin/insights-operator ./cmd/insights-operator
 
+## --------------------------------------
+## Container
+## --------------------------------------
+
+.PHONY build-debug-container:
 build-debug-container:
-	$(CONTAINER_RUNTIME) build -t insights-operator -f debug.Dockerfile .
+	$(CONTAINER_RUNTIME) build -t insights-operator -f ./docker/Dockerfile.docker ../.
 
-.PHONY: test-unit
-test-unit:
-	$(GOTEST) $$(go list ./... | grep -v /tests/) $(TEST_OPTIONS)
+## --------------------------------------
+## Tools
+## --------------------------------------
 
-vet:
-	@echo ">> vetting code"
-	$(GOCMD) vet $$(go list ./... | egrep -v '/vendor/|/tests/integration')
+.PHONY: docs
+docs:
+	go run ./cmd/gendoc/main.go --out=./docs/gathered-data.md
 
-lint:
-	@echo ">> linting code"
-	$(GOLINT) $$(go list ./... | egrep -v '/vendor/|/tests/integration') 
+.PHONY: changelog
+changelog: check-github-token
+	go run ./cmd/changelog/main.go $(CHANGELOG_FROM) $(CHANGELOG_UNTIL)
 
-.PHONY: gen-doc
-gen-doc:
-	@echo ">> generating documentation"
-	$(GORUN) cmd/gendoc/main.go --out=docs/gathered-data.md
+## --------------------------------------
+## Go Module
+## --------------------------------------
 
 .PHONY: vendor
 vendor:
-	$(GOMOD) tidy
-	$(GOMOD) vendor
-	$(GOMOD) verify
+	go mod tidy
+	go mod vendor
+	go mod verify
+
+## --------------------------------------
+## Checks (mostly "private" targets)
+## --------------------------------------
+
+.PHONY: check-github-token
+check-github-token:
+ifndef GITHUB_TOKEN
+	$(error GITHUB_TOKEN is undefined)
+endif
