@@ -31,12 +31,6 @@ build-debug-container:
 test-unit:
 	$(GOTEST) $$(go list ./... | grep -v /tests/) $(TEST_OPTIONS)
 
-.PHONY: test-e2e
-test-e2e:
-	$(GOTEST) ./tests/integration -v -run ^\(TestIsIOHealthy\)$$ ^\(TestPullSecretExists\)$$ -timeout 6m30s
-	tests/integration/resource_samples/apply.sh
-	$(GOTEST) ./tests/integration -v -timeout 45m $(TEST_OPTIONS)
-
 vet:
 	@echo ">> vetting code"
 	$(GOCMD) vet $$(go list ./... | egrep -v '/vendor/|/tests/integration')
