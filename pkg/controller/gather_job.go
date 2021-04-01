@@ -67,14 +67,17 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(d.Controller, kubeClient)
 
-	configClient, err := configv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		return err
-	}
-	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizerFromConfigClient(ctx, configObserver, kubeClient, configClient)
-	if err != nil {
-		return err
+	var anonymizer *anonymization.Anonymizer
+	if anonymization.IsObfuscationEnabled(configObserver) {
+		configClient, err := configv1client.NewForConfig(kubeConfig)
+		if err != nil {
+			return err
+		}
+		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+		anonymizer, err = anonymization.NewAnonymizerFromConfigClient(ctx, configObserver, kubeClient, configClient)
+		if err != nil {
+			return err
+		}
 	}
 
 	// the recorder stores the collected data and we flush at the end.

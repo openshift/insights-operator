@@ -104,10 +104,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient, gatherKubeClient.CoreV1(), configObserver, os.Getenv("POD_NAMESPACE"))
 
-	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizerFromConfigClient(ctx, configObserver, kubeClient, configClient)
-	if err != nil {
-		return err
+	var anonymizer *anonymization.Anonymizer
+	if anonymization.IsObfuscationEnabled(configObserver) {
+		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+		anonymizer, err = anonymization.NewAnonymizerFromConfigClient(ctx, configObserver, kubeClient, configClient)
+		if err != nil {
+			return err
+		}
 	}
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files

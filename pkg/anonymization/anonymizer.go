@@ -1,7 +1,9 @@
 // Package anonymization provides Anonymizer which is used to anonymize sensitive data. At the moment,
 // anonymization is applied to all the data before storing it in the archive(see AnonymizeMemoryRecordFunction).
-// If you enable it in config or "support" secret in "openshift-config" namespace,
-// the following data will be anonymized:
+// If you want to enable the anonymization you need to set "enableGlobalObfuscation" to "true" in config
+// or "support" secret in "openshift-config" namespace, the anonymizer object then will be created and used
+// (see pkg/controller/operator.go and pkg/controller/gather_job.go).
+// When enabled, the following data will be anonymized:
 //   - cluster base domain. For example, if the cluster base domain is `openshift.example.com`,
 //     all the occurrences of this keyword will be replaced with `<CLUSTER_BASE_DOMAIN>`,
 //     `cluster-api.openshift.example.com` will become `cluster-api.<CLUSTER_BASE_DOMAIN>`
@@ -160,21 +162,8 @@ func NewAnonymizerFromConfigClient(
 	return NewAnonymizer(configObserver, baseDomain, networks)
 }
 
-// IsObfuscationEnabled returns true if obfuscation(hiding IP and domain names) is enabled and false otherwise
-func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
-	if anonymizer.configObserver == nil {
-		return false
-	}
-
-	return anonymizer.configObserver.Config().EnableGlobalObfuscation
-}
-
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
 func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryRecord) *record.MemoryRecord {
-	if !anonymizer.IsObfuscationEnabled() {
-		return memoryRecord
-	}
-
 	if len(anonymizer.clusterBaseDomain) != 0 {
 		memoryRecord.Data = bytes.ReplaceAll(
 			memoryRecord.Data,
@@ -255,6 +244,15 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 	}
 	// ipv6
 	return "::"
+}
+
+// IsObfuscationEnabled returns true if obfuscation(hiding IP and domain names) is enabled and false otherwise
+func IsObfuscationEnabled(configObserver ConfigProvider) bool {
+	if configObserver == nil {
+		return false
+	}
+
+	return configObserver.Config().EnableGlobalObfuscation
 }
 
 // getNextIP returns the next IP address in the current subnetwork and the flag indicating if there was an overflow

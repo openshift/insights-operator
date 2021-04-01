@@ -179,9 +179,7 @@ func (g *Gatherer) Gather(ctx context.Context, gatherList []string, recorder rec
 	}
 
 	// if obfuscation is enabled, we want to know it from the archive
-	if g.anonymizer != nil {
-		gatherReport.IsGlobalObfuscationEnabled = g.anonymizer.IsObfuscationEnabled()
-	}
+	gatherReport.IsGlobalObfuscationEnabled = g.anonymizer != nil
 
 	// fill in performance related data to the report
 	var m runtime.MemStats
