@@ -12,9 +12,9 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/library-go/pkg/image/reference"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/check"
+	"github.com/openshift/library-go/pkg/image/reference"
 )
 
 const (
@@ -33,8 +33,12 @@ const (
 // GatherContainerImages collects essential information about running containers.
 // Specifically, the age of pods, the set of running images and the container names are collected.
 //
-// Location in archive: config/running_containers.json
-// Id in config: container_images
+// * Location in archive: config/running_containers.json
+// * Id in config: container_images
+// * Since versions:
+//   * 4.5.33+
+//   * 4.6.16+
+//   * 4.7+
 func GatherContainerImages(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

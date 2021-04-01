@@ -31,9 +31,9 @@ const (
 //   namespace CPU and memory usage
 //   followed by at most 1000 lines of ALERTS metric
 //
-// Location in archive: config/metrics/
-// See: docs/insights-archive-sample/config/metrics
-// Id in config: metrics
+// * Location in archive: config/metrics/
+// * See: docs/insights-archive-sample/config/metrics
+// * Id in config: metrics
 func GatherMostRecentMetrics(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	var metricsClient rest.Interface

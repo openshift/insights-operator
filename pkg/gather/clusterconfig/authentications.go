@@ -16,9 +16,9 @@ import (
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#authentication-v1operator-openshift-io
 //
-// Location in archive: config/authentication/
-// See: docs/insights-archive-sample/config/authentication
-// Id in config: authentication
+// * Location in archive: config/authentication/
+// * See: docs/insights-archive-sample/config/authentication
+// * Id in config: authentication
 func GatherClusterAuthentication(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)

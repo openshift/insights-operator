@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/tests"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ func getMemoryRecords() record.MemoryRecords {
 }
 
 func newDiskRecorder() DiskRecorder {
-	return DiskRecorder{basePath: tests.BaseTestPath}
+	return DiskRecorder{basePath: "/tmp"}
 }
 
 func Test_Diskrecorder_Save(t *testing.T) {

@@ -3,9 +3,9 @@ package clusterconfig
 import (
 	"context"
 
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -15,9 +15,9 @@ import (
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
 //
-// Location in archive: config/featuregate/
-// See: docs/insights-archive-sample/config/featuregate
-// Id in config: feature_gates
+// * Location in archive: config/featuregate/
+// * See: docs/insights-archive-sample/config/featuregate
+// * Id in config: feature_gates
 func GatherClusterFeatureGates(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)

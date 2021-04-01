@@ -18,9 +18,9 @@ import (
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
 //
-// Location in archive: config/proxy/
-// See: docs/insights-archive-sample/config/proxy
-// Id in config: proxies
+// * Location in archive: config/proxy/
+// * See: docs/insights-archive-sample/config/proxy
+// * Id in config: proxies
 func GatherClusterProxy(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
@@ -42,7 +42,6 @@ func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV
 	}
 	return []record.Record{{Name: "config/proxy", Item: record.JSONMarshaller{Object: anonymizeProxy(config)}}}, nil
 }
-
 
 func anonymizeProxy(proxy *configv1.Proxy) *configv1.Proxy {
 	proxy.Spec.HTTPProxy = anonymize.AnonymizeURLCSV(proxy.Spec.HTTPProxy)

@@ -39,9 +39,11 @@ type csvRef struct {
 // - OLM operator version
 // - related ClusterServiceVersion conditions
 //
-// See: docs/insights-archive-sample/config/olm_operators
-// Location of in archive: config/olm_operators
-// Id in config: olm_operators
+// * See: docs/insights-archive-sample/config/olm_operators
+// * Location of in archive: config/olm_operators
+// * Id in config: olm_operators
+// * Since versions:
+//   * 4.7+
 func GatherOLMOperators(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

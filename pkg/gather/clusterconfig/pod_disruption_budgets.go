@@ -20,9 +20,13 @@ const (
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
 // Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
 //
-// Location in archive: config/pdbs/
-// See: docs/insights-archive-sample/config/pdbs
-// Id in config: pdbs
+// * Location in archive: config/pdbs/
+// * See: docs/insights-archive-sample/config/pdbs
+// * Id in config: pdbs
+// * Since versions:
+//   * 4.4.30+
+//   * 4.5.34+
+//   * 4.6+
 func GatherPodDisruptionBudgets(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)

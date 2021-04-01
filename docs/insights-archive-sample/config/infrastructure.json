@@ -1,32 +1,73 @@
 {
-  "kind": "Infrastructure",
-  "apiVersion": "config.openshift.io/v1",
-  "metadata": {
-    "name": "cluster",
-    "selfLink": "/apis/config.openshift.io/v1/infrastructures/cluster",
-    "uid": "8ed61cc3-b4d2-4e5c-9618-df0167fa24af",
-    "resourceVersion": "435",
-    "generation": 1,
-    "creationTimestamp": "2020-08-12T08:27:16Z"
-  },
-  "spec": {
-    "cloudConfig": {
-      "name": "cloud-provider-config",
-      "key": "config"
-    }
-  },
-  "status": {
-    "infrastructureName": "xx-xx-xxxxxxx-xxxxx-xxxxx",
-    "platform": "GCP",
-    "platformStatus": {
-      "type": "GCP",
-      "gcp": {
-        "projectID": "openshift-gce-devel-ci",
-        "region": "us-east1"
-      }
+    "metadata": {
+        "name": "cluster",
+        "selfLink": "/apis/config.openshift.io/v1/infrastructures/cluster",
+        "uid": "d10e8596-1c99-4740-af17-f0edeab55402",
+        "resourceVersion": "542",
+        "generation": 1,
+        "creationTimestamp": "2021-03-26T14:19:41Z",
+        "managedFields": [
+            {
+                "manager": "cluster-bootstrap",
+                "operation": "Update",
+                "apiVersion": "config.openshift.io/v1",
+                "time": "2021-03-26T14:19:41Z",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:spec": {
+                        ".": {},
+                        "f:cloudConfig": {
+                            ".": {},
+                            "f:key": {},
+                            "f:name": {}
+                        },
+                        "f:platformSpec": {
+                            ".": {},
+                            "f:type": {}
+                        }
+                    },
+                    "f:status": {
+                        ".": {},
+                        "f:apiServerInternalURI": {},
+                        "f:apiServerURL": {},
+                        "f:etcdDiscoveryDomain": {},
+                        "f:infrastructureName": {},
+                        "f:platform": {},
+                        "f:platformStatus": {
+                            ".": {},
+                            "f:gcp": {
+                                ".": {},
+                                "f:projectID": {},
+                                "f:region": {}
+                            },
+                            "f:type": {}
+                        }
+                    }
+                }
+            }
+        ]
     },
-    "etcdDiscoveryDomain": "xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxxxx.xxx",
-    "apiServerURL": "xxxxx://xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxxxx.xxx:xxxx",
-    "apiServerInternalURI": "xxxxx://xxx-xxx.xx-xx-xxxxxxx-xxxxx.xxxxxx-xx-xxx-xxx.xxx.xxxxxxxxx.xxx:xxxx"
-  }
+    "spec": {
+        "cloudConfig": {
+            "name": "cloud-provider-config",
+            "key": "config"
+        },
+        "platformSpec": {
+            "type": "GCP"
+        }
+    },
+    "status": {
+        "infrastructureName": "xx-xx-xxxxxxx-xxxxx-xxxxx",
+        "platform": "GCP",
+        "platformStatus": {
+            "type": "GCP",
+            "gcp": {
+                "projectID": "openshift-gce-devel-ci",
+                "region": "us-east1"
+            }
+        },
+        "etcdDiscoveryDomain": "",
+        "apiServerURL": "https://api.ci-ln-ywdpkbt-f76d1.origin-ci-int-gce.dev.openshift.com:6443",
+        "apiServerInternalURI": "https://api-int.ci-ln-ywdpkbt-f76d1.origin-ci-int-gce.dev.openshift.com:6443"
+    }
 }

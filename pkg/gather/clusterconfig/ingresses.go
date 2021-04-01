@@ -6,11 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherClusterIngress fetches the cluster Ingress - the Ingress with name cluster.
@@ -18,10 +16,10 @@ import (
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
 //
-// Location in archive: config/ingress/
-// See: docs/insights-archive-sample/config/ingress
-// Id in config: ingress
-func GatherClusterIngress(g *Gatherer, c chan<- gatherResult){
+// * Location in archive: config/ingress/
+// * See: docs/insights-archive-sample/config/ingress
+// * Id in config: ingress
+func GatherClusterIngress(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -40,10 +38,5 @@ func gatherClusterIngress(ctx context.Context, configClient configv1client.Confi
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/ingress", Item: record.JSONMarshaller{Object: anonymizeIngress(config)}}}, nil
-}
-
-func anonymizeIngress(ingress *configv1.Ingress) *configv1.Ingress {
-	ingress.Spec.Domain = anonymize.AnonymizeURL(ingress.Spec.Domain)
-	return ingress
+	return []record.Record{{Name: "config/ingress", Item: record.JSONMarshaller{Object: config}}}, nil
 }
