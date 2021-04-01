@@ -12,7 +12,6 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/tests"
 )
 
 // RawReport implements Marshable interface
@@ -59,7 +58,7 @@ func newRecorder() Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 
-	anonymizer, _ := anonymization.NewAnonymizer(nil, "", nil)
+	anonymizer, _ := anonymization.NewAnonymizer("", nil)
 
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{

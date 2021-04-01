@@ -57,7 +57,6 @@ type subnetInformation struct {
 // Config can be used to enable anonymization of cluster base domain
 // and obfuscation of IPv4 addresses
 type Anonymizer struct {
-	configObserver    ConfigProvider
 	clusterBaseDomain string
 	networks          []subnetInformation
 	translationTable  map[string]string
@@ -69,9 +68,7 @@ type ConfigProvider interface {
 }
 
 // NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
-func NewAnonymizer(
-	configObserver ConfigProvider, clusterBaseDomain string, networks []string,
-) (*Anonymizer, error) {
+func NewAnonymizer(clusterBaseDomain string, networks []string) (*Anonymizer, error) {
 	networks = append(networks, "127.0.0.1/8")
 
 	cidrs, err := k8snet.ParseCIDRs(networks)
@@ -89,7 +86,6 @@ func NewAnonymizer(
 	}
 
 	return &Anonymizer{
-		configObserver:    configObserver,
 		clusterBaseDomain: strings.TrimSpace(clusterBaseDomain),
 		networks:          networksInformation,
 		translationTable:  make(map[string]string),
@@ -99,7 +95,7 @@ func NewAnonymizer(
 
 // NewAnonymizer creates a new instance of anonymizer with a provided config observer and openshift config client
 func NewAnonymizerFromConfigClient(
-	ctx context.Context, configObserver ConfigProvider, kubeClient kubernetes.Interface, configClient configv1client.ConfigV1Interface,
+	ctx context.Context, kubeClient kubernetes.Interface, configClient configv1client.ConfigV1Interface,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
@@ -159,7 +155,7 @@ func NewAnonymizerFromConfigClient(
 		}
 	})
 
-	return NewAnonymizer(configObserver, baseDomain, networks)
+	return NewAnonymizer(baseDomain, networks)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object

@@ -110,27 +110,21 @@ func (mcp mockConfigProvider) Config() *config.Controller {
 	return mcp.config
 }
 
-func getMockConfigProvider(isAnonymizationEnabled bool) ConfigProvider {
-	return mockConfigProvider{&config.Controller{
-		EnableGlobalObfuscation: isAnonymizationEnabled,
-	}}
-}
-
-func getAnonymizer(t *testing.T, isEnabled bool) *Anonymizer {
+func getAnonymizer(t *testing.T) *Anonymizer {
 	clusterBaseDomain := "example.com"
 	networks := []string{
 		"127.0.0.0/8",
 		"192.168.0.0/16",
 	}
 
-	anonymizer, err := NewAnonymizer(getMockConfigProvider(isEnabled), clusterBaseDomain, networks)
+	anonymizer, err := NewAnonymizer(clusterBaseDomain, networks)
 	assert.NoError(t, err)
 
 	return anonymizer
 }
 
 func TestAnonymizer(t *testing.T) {
-	anonymizer := getAnonymizer(t, true)
+	anonymizer := getAnonymizer(t)
 
 	type testCase struct {
 		before string
@@ -169,20 +163,8 @@ func TestAnonymizer(t *testing.T) {
 	}
 }
 
-func TestAnonymizer_AnonymizationIsDisabled(t *testing.T) {
-	anonymizer := getAnonymizer(t, false)
-
-	const data = "api.example.com\n127.0.0.128  "
-
-	obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
-		Data: []byte(data),
-	}).Data)
-
-	assert.Equal(t, data, obfuscatedData)
-}
-
 func TestAnonymizer_TranslationTableTest(t *testing.T) {
-	anonymizer := getAnonymizer(t, true)
+	anonymizer := getAnonymizer(t)
 
 	for i := 0; i < 254; i++ {
 		obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
