@@ -448,6 +448,7 @@ collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
 * Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
 * Since versions:
+  * 4.7.5+
   * 4.8+
 
 
@@ -464,6 +465,8 @@ Relevant Kubernetes API docs:
 
 * Location in archive: config/pod/{namespace}/{pod-name}.json
 * Since versions:
+  * 4.6.24+
+  * 4.7.5+
   * 4.8+
 
 
