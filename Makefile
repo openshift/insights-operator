@@ -61,7 +61,7 @@ lint: $(GOLANGCI_LINT) ## Executes the linting tool (vet, sec, and others)
 	$(GOLANGCI_LINT) run
 
 $(GOLANGCI_LINT):
-	./hack/install-golangci-lint.sh
+	./.openshiftci/install-golangci-lint.sh
 
 ## --------------------------------------
 ## Build/Run
