@@ -81,28 +81,32 @@ func runGather(operator controller.GatherJob, cfg *controllercmd.ControllerComma
 		}
 		operator.Controller = cont
 
-		kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String()
-		if len(kubeConfigPath) == 0 {
-			klog.Fatalf("error: --kubeconfig is required")
+		var kubeConfig *rest.Config
+		if kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String(); len(kubeConfigPath) > 0 {
+			kubeConfigBytes, err := ioutil.ReadFile(kubeConfigPath)
+			if err != nil {
+				klog.Fatal(err)
+			}
+			config, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
+			if err != nil {
+				klog.Fatal(err)
+			}
+			kubeConfig, err = config.ClientConfig()
+			if err != nil {
+				klog.Fatal(err)
+			}
+		} else {
+			kubeConfig, err = rest.InClusterConfig()
+			if err != nil {
+				klog.Fatal(err)
+			}
 		}
-		kubeConfigBytes, err := ioutil.ReadFile(kubeConfigPath)
-		if err != nil {
-			klog.Fatal(err)
-		}
-		kubeConfig, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
-		if err != nil {
-			klog.Fatal(err)
-		}
-		clientConfig, err := kubeConfig.ClientConfig()
-		if err != nil {
-			klog.Fatal(err)
-		}
-		protoConfig := rest.CopyConfig(clientConfig)
+		protoConfig := rest.CopyConfig(kubeConfig)
 		protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 		protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
 
 		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
-		err = operator.Gather(ctx, clientConfig, protoConfig)
+		err = operator.Gather(ctx, kubeConfig, protoConfig)
 		if err != nil {
 			klog.Fatal(err)
 		}
