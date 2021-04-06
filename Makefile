@@ -16,7 +16,7 @@ export LDFLAGS="-X k8s.io/client-go/pkg/version.gitCommit=${CLIENTGO_COMMIT} \
 			-X k8s.io/client-go/pkg/version.gitVersion=${CLIENTGO_VERSION}"
 
 # Configuration
-KUBECONFIG ?= config/local.yaml
+CONFIG ?= config/local.yaml
 RUN_FLAGS ?= -v4
 
 # Tools
@@ -70,7 +70,7 @@ $(GOLANGCI_LINT):
 .PHONY: run
 run: ## Executes the insights operator
 	go run ./cmd/insights-operator/main.go start \
-		--config=$(KUBECONFIG) \
+		--config=$(CONFIG) \
 		$(RUN_FLAGS)
 
 .PHONY: build

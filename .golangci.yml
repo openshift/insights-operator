@@ -127,6 +127,5 @@ issues:
 
 run:
   skip-dirs:
-    - tests/integration    
-    - cmd
+    - tests/integration
     - pkg/insights
