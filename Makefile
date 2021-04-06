@@ -26,17 +26,21 @@ GOLANGCI_LINT := $(GOBIN)/golangci-lint
 export GO111MODULE=on
 export GOFLAGS=-mod=vendor
 
+.PHONY: help
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
 ## --------------------------------------
 ## Tests
 ## --------------------------------------
 
 # Run the tests
 .PHONY: test
-test: unit
+test: unit ## Run all the tests
 
 # Run the unit tests
 .PHONY: unit
-unit:
+unit: ## Run the unit tests
 	go test ./... $(VERBOSE) -coverprofile $(COVER_PROFILE)
 
 .PHONY: unit-cover
@@ -52,17 +56,8 @@ unit-verbose:
 ## Linting
 ## --------------------------------------
 
-.PHONY: sec
-sec: lint
-
-.PHONY: fmt
-fmt: lint
-
-.PHONY: vet
-vet: lint
-
 .PHONY: lint
-lint: $(GOLANGCI_LINT)
+lint: $(GOLANGCI_LINT) ## Executes the linting tool (vet, sec, and others)
 	$(GOLANGCI_LINT) run
 
 $(GOLANGCI_LINT):
@@ -73,16 +68,17 @@ $(GOLANGCI_LINT):
 ## --------------------------------------
 
 .PHONY: run
-run:
+run: ## Executes the insights operator
 	go run ./cmd/insights-operator/main.go start \
 		--config=$(KUBECONFIG) \
 		$(RUN_FLAGS)
 
 .PHONY: build
-build:
+build: ## Compiles the insights operator
 	go build -o ./bin/insights-operator ./cmd/insights-operator
 
 .PHONY: build-debug
+build-debug: ## Compiles the insights operator in debug mode
 	go build $(GO_BUILD_FLAGS) -gcflags="all=-N -l" \
 		-o ./bin/insights-operator ./cmd/insights-operator
 
@@ -91,19 +87,19 @@ build:
 ## --------------------------------------
 
 .PHONY build-debug-container:
-build-debug-container:
-	$(CONTAINER_RUNTIME) build -t insights-operator -f ./docker/Dockerfile.docker ../.
+build-debug-container: ## Compiles the insights operator and its container image for debug
+	$(CONTAINER_RUNTIME) build -t insights-operator -f ./Dockerfile.debug ../.
 
 ## --------------------------------------
 ## Tools
 ## --------------------------------------
 
 .PHONY: docs
-docs:
+docs: ## Generate the documentation
 	go run ./cmd/gendoc/main.go --out=./docs/gathered-data.md
 
 .PHONY: changelog
-changelog: check-github-token
+changelog: check-github-token ## Updates the changelog entries
 	go run ./cmd/changelog/main.go $(CHANGELOG_FROM) $(CHANGELOG_UNTIL)
 
 ## --------------------------------------
@@ -111,7 +107,7 @@ changelog: check-github-token
 ## --------------------------------------
 
 .PHONY: vendor
-vendor:
+vendor: ## Runs tiny, vendor and verify the module
 	go mod tidy
 	go mod vendor
 	go mod verify
