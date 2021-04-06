@@ -66,7 +66,6 @@ var gatherFunctions = map[string]gathering{
 	"nodes":                             important(GatherNodes),
 	"config_maps":                       failable(GatherConfigMaps),
 	"version":                           important(GatherClusterVersion),
-	"id":                                important(GatherClusterID),
 	"infrastructures":                   important(GatherClusterInfrastructure),
 	"networks":                          important(GatherClusterNetwork),
 	"authentication":                    important(GatherClusterAuthentication),

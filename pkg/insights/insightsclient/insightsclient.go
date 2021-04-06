@@ -26,10 +26,12 @@ import (
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
-	clusterconfig "github.com/openshift/insights-operator/pkg/gather/clusterconfig"
 )
 
 const (
@@ -134,10 +136,20 @@ func (c *Client) getClusterVersion() (*configv1.ClusterVersion, error) {
 		return c.clusterVersion, nil
 	}
 	ctx := context.Background()
-	cv, err := clusterconfig.GetClusterVersion(ctx, c.gatherKubeConfig)
+
+	gatherConfigClient, err := configv1client.NewForConfig(c.gatherKubeConfig)
 	if err != nil {
 		return nil, err
 	}
+
+	cv, err := gatherConfigClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
 	c.clusterVersion = cv
 	return cv, nil
 }

@@ -2,72 +2,108 @@ package clusterconfig
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
+	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// GatherClusterVersion fetches the ClusterVersion - the ClusterVersion with name version.
+// GatherClusterVersion fetches the ClusterVersion (including the cluster ID) with the name 'version' and its resources.
 //
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusterversion-v1config-openshift-io
 //
-// Location in archive: config/version/
-// See: docs/insights-archive-sample/config/version
-// Id in config: version
+// * Location in archive: config/version/
+// * See: docs/insights-archive-sample/config/version
+// * Location of pods in archive: config/pod/
+// * Location of events in archive: events/
+// * Location of cluster ID: config/id
+// * See: docs/insights-archive-sample/config/id
+// * Id in config: version
 func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
-	config, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
+	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	c <- gatherResult{[]record.Record{{Name: "config/version", Item: record.JSONMarshaller{Object: anonymizeClusterVersion(config)}}}, nil}
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		c <- gatherResult{nil, []error{err}}
+		return
+	}
+	records, errors := getClusterVersion(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errors}
 }
 
-func GetClusterVersion(ctx context.Context, kubeConfig *rest.Config) (*configv1.ClusterVersion, error) {
-	gatherConfigClient, err := configv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		return nil, err
-	}
-	config, err := gatherConfigClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
+func getClusterVersion(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	config, err := configClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, []error{err}
 	}
-	return config, nil
-}
 
-// GatherClusterID stores ClusterID from ClusterVersion version
-// This method uses data already collected by Get ClusterVersion. In particular field .Spec.ClusterID
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
-// Response see https://github.com/openshift/api/blob/master/config/v1/types_cluster_version.go#L38
-//
-// * Location in archive: config/id/
-// * See: docs/insights-archive-sample/config/id
-// * Id in config: id
-func GatherClusterID(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
-	version, err := GetClusterVersion(g.ctx, g.gatherKubeConfig)
+	records := []record.Record{
+		{Name: "config/version", Item: record.JSONMarshaller{Object: anonymizeClusterVersion(config)}},
+	}
+
+	if config.Spec.ClusterID != "" {
+		records = append(records, record.Record{Name: "config/id", Item: marshal.Raw{Str: string(config.Spec.ClusterID)}})
+	}
+
+	// TODO: In the future, make this conditional on sad ClusterVersion conditions or ClusterVersionOperatorDown alerting, etc.
+	namespace := "openshift-cluster-version"
+	now := time.Now()
+	unhealthyPods := []*corev1.Pod{}
+
+	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		klog.V(2).Infof("Unable to find pods in namespace %s for cluster-version operator", namespace)
+		return records, nil
 	}
-	if version == nil {
-		c <- gatherResult{nil, nil}
-		return
+	for i := range pods.Items {
+		pod := &pods.Items[i]
+
+		// TODO: shift after IsHealthyPod
+		records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: pod}})
+
+		if check.IsHealthyPod(pod, now) {
+			continue
+		}
+
+		unhealthyPods = append(unhealthyPods, pod)
+
+		// TODO: gather container logs
 	}
-	c <- gatherResult{[]record.Record{{Name: "config/id", Item: marshal.Raw{Str: string(version.Spec.ClusterID)}}}, nil}
+
+	// Exit early if no unhealthy pods found
+	if len(unhealthyPods) == 0 {
+		return records, nil
+	}
+	klog.V(2).Infof("Found %d unhealthy pods in %s", len(unhealthyPods), namespace)
+
+	namespaceRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace)
+	if err != nil {
+		klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, err)
+	}
+	records = append(records, namespaceRecords...)
+
+	return records, nil
 }
 
 func anonymizeClusterVersion(version *configv1.ClusterVersion) *configv1.ClusterVersion {
