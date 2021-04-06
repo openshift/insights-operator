@@ -54,18 +54,6 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * Id in config: feature_gates
 
 
-## ClusterID
-
-stores ClusterID from ClusterVersion version
-This method uses data already collected by Get ClusterVersion. In particular field .Spec.ClusterID
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
-Response see https://github.com/openshift/api/blob/master/config/v1/types_cluster_version.go#L38
-
-* Location in archive: config/id/
-* See: docs/insights-archive-sample/config/id
-* Id in config: id
-
-
 ## ClusterImagePruner
 
 fetches the image pruner configuration
@@ -154,6 +142,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * Location of operators in archive: config/clusteroperator/
 * See: docs/insights-archive-sample/config/clusteroperator
 * Location of pods in archive: config/pod/
+* Location of events in archive: events/
 * Id in config: operators
 * Spec config for CO resources since versions:
   * 4.6.16+
@@ -174,14 +163,18 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 ## ClusterVersion
 
-fetches the ClusterVersion - the ClusterVersion with name version.
+fetches the ClusterVersion (including the cluster ID) with the name 'version' and its resources.
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusterversion-v1config-openshift-io
 
-Location in archive: config/version/
-See: docs/insights-archive-sample/config/version
-Id in config: version
+* Location in archive: config/version/
+* See: docs/insights-archive-sample/config/version
+* Location of pods in archive: config/pod/
+* Location of events in archive: events/
+* Location of cluster ID: config/id
+* See: docs/insights-archive-sample/config/id
+* Id in config: version
 
 
 ## ConfigMaps
