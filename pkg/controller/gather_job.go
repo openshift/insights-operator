@@ -83,7 +83,6 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(d.StoragePath)
 	recorder := recorder.New(recdriver, d.Interval, anonymizer)
-	defer recorder.Flush()
 
 	// the gatherers check the state of the cluster and report any
 	// config to the recorder
@@ -93,6 +92,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 		return err
 	}
 
-	klog.Warning("stopped")
-	return nil
+	recorder.Flush()
+	// sleep forever
+	select{}
 }

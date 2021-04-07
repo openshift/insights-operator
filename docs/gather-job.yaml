@@ -63,7 +63,7 @@ spec:
         resources:
           requests:
             cpu: 10m
-            memory: 30Mi
+            memory: 70Mi
         env:
         - name: POD_NAME
           valueFrom:
