@@ -65,15 +65,23 @@ func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface, coreClient
 		}
 	}
 
-	msg := map[string]struct{}{}
-	reason := map[string]struct{}{}
+	reasons := map[string]map[string]int{}
 	for _, entry := range unsuccessful {
-		msg[entry.Message] = struct{}{}
-		reason[entry.Reason] = struct{}{}
+		if _, reasonExist := reasons[entry.Reason]; reasonExist {
+			msgMap := reasons[entry.Reason]
+			if _, msgExist := msgMap[entry.Message]; msgExist {
+				msgMap[entry.Message]++
+			} else {
+				msgMap[entry.Message] = 1
+			}
+		} else {
+			reasons[entry.Reason] = map[string]int{
+				entry.Message: 1,
+			}
+		}
 	}
 
 	return []record.Record{{Name: "config/podnetworkconnectivitychecks_unstruct", Item: record.JSONMarshaller{Object: pnccListUnstruct}},
 		{Name: "config/podnetworkconnectivitychecks_struct", Item: record.JSONMarshaller{Object: pnccListStruct}},
-		{Name: "config/podnetworkconnectivitychecks_msg", Item: record.JSONMarshaller{Object: msg}},
-		{Name: "config/podnetworkconnectivitychecks_reason", Item: record.JSONMarshaller{Object: reason}}}, nil
+		{Name: "config/podnetworkconnectivitychecks_reasons", Item: record.JSONMarshaller{Object: reasons}}}, nil
 }
