@@ -1,17 +1,17 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_SortAndRemoveDuplicates(t *testing.T) {
 	testIntSlice := func(original []int, expected []int) {
-		got := append([]int{}, original...) // clone it
-		SortAndRemoveDuplicates(&got, func(i, j int) bool {
-			return got[i] < got[j]
+		SortAndRemoveDuplicates(&original, func(i, j int) bool {
+			return original[i] < original[j]
 		})
-		assert.Equal(t, expected, got)
+		assert.Equal(t, expected, original)
 	}
 
 	testIntSlice([]int{1, 9, 5, -3, 9, -3, -3, 5, 2, 11}, []int{-3, 1, 2, 5, 9, 11})
@@ -23,11 +23,10 @@ func Test_SortAndRemoveDuplicates(t *testing.T) {
 	testIntSlice([]int{}, []int{})
 
 	testStringSlice := func(original []string, expected []string) {
-		got := append([]string{}, original...) // clone it
-		SortAndRemoveDuplicates(&got, func(i, j int) bool {
-			return got[i] < got[j]
+		SortAndRemoveDuplicates(&original, func(i, j int) bool {
+			return original[i] < original[j]
 		})
-		assert.Equal(t, expected, got)
+		assert.Equal(t, expected, original)
 	}
 
 	testStringSlice([]string{"abc", "acd", "ade"}, []string{"abc", "acd", "ade"})
