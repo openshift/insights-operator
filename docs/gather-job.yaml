@@ -42,7 +42,7 @@ spec:
         secret:
           secretName: openshift-insights-serving-cert
           optional: true
-      containers:
+      initContainers:
       - name: insights-operator
         image: quay.io/openshift/origin-insights-operator:latest
         terminationMessagePolicy: FallbackToLogsOnError
@@ -79,3 +79,11 @@ spec:
         - gather
         - -v=4
         - --config=/etc/insights-operator/server.yaml
+      containers:
+        - name: sleepy
+          image: busybox
+          args:
+            - /bin/sh
+            - -c
+            - sleep 10m
+          volumeMounts: [{name: snapshots, mountPath: /var/lib/insights-operator}]

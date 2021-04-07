@@ -93,6 +93,6 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 	}
 
 	recorder.Flush()
-	// sleep forever
-	select{}
+	klog.Info("Finished")
+	return nil
 }
