@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_Gather_UniqueStrings(t *testing.T) {
+func Test_UniqueStrings(t *testing.T) {
 	tests := []struct {
 		name string
 		arr  []string

@@ -7,11 +7,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-func TestGetNextIP(t *testing.T) {
+func Test_GetNextIP(t *testing.T) {
 	type testCase struct {
 		originalIP net.IP
 		nextIP     net.IP
@@ -102,14 +101,6 @@ func TestGetNextIP(t *testing.T) {
 	}
 }
 
-type mockConfigProvider struct {
-	config *config.Controller
-}
-
-func (mcp mockConfigProvider) Config() *config.Controller {
-	return mcp.config
-}
-
 func getAnonymizer(t *testing.T) *Anonymizer {
 	clusterBaseDomain := "example.com"
 	networks := []string{
@@ -123,7 +114,7 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 	return anonymizer
 }
 
-func TestAnonymizer(t *testing.T) {
+func Test_Anonymizer(t *testing.T) {
 	anonymizer := getAnonymizer(t)
 
 	type testCase struct {
@@ -132,7 +123,8 @@ func TestAnonymizer(t *testing.T) {
 	}
 
 	nameTestCases := []testCase{
-		{"node1.example.com", "node1.<CLUSTER_BASE_DOMAIN>"}, // TODO:
+		{"node1.example.com", "node1.<CLUSTER_BASE_DOMAIN>"},
+		{"api.example.com/test", "api.<CLUSTER_BASE_DOMAIN>/test"},
 	}
 	dataTestCases := []testCase{
 		{"api.example.com\n127.0.0.1  ", "api.<CLUSTER_BASE_DOMAIN>\n127.0.0.1  "},
@@ -163,7 +155,7 @@ func TestAnonymizer(t *testing.T) {
 	}
 }
 
-func TestAnonymizer_TranslationTableTest(t *testing.T) {
+func Test_Anonymizer_TranslationTableTest(t *testing.T) {
 	anonymizer := getAnonymizer(t)
 
 	for i := 0; i < 254; i++ {
