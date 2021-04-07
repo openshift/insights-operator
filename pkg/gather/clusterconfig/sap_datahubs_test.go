@@ -12,7 +12,7 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func TestSAPDatahubs(t *testing.T) {
+func Test_SAPDatahubs(t *testing.T) {
 	// Initialize the fake dynamic client.
 	datahubYAML1 := `apiVersion: installers.datahub.sap.com/v1alpha1
 kind: DataHub
