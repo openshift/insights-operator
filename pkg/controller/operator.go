@@ -109,7 +109,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 		anonymizer, err = anonymization.NewAnonymizerFromConfigClient(ctx, kubeClient, configClient)
 		if err != nil {
-			return err
+			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
+			// anonymizer will be nil and anonymization will be just skipped
 		}
 	}
 

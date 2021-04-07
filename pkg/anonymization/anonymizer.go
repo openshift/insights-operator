@@ -42,10 +42,12 @@ import (
 )
 
 const (
-	Ipv4Regex                    = `((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
-	Ipv4NetworkRegex             = Ipv4Regex + "/([0-9]{1,2})"
-	Ipv4AddressOrNetworkRegex    = Ipv4Regex + "(/([0-9]{1,2}))?"
-	ClusterBaseDomainPlaceholder = "<CLUSTER_BASE_DOMAIN>"
+	Ipv4Regex                            = `((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
+	Ipv4NetworkRegex                     = Ipv4Regex + "/([0-9]{1,2})"
+	Ipv4AddressOrNetworkRegex            = Ipv4Regex + "(/([0-9]{1,2}))?"
+	ClusterBaseDomainPlaceholder         = "<CLUSTER_BASE_DOMAIN>"
+	UnableToCreateAnonymizerErrorMessage = "Unable to create anonymizer, " +
+		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
 )
 
 type subnetInformation struct {
