@@ -6,21 +6,20 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/klog/v2"
-
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/openshift/library-go/pkg/controller/controllercmd"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
@@ -105,15 +104,27 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient, gatherKubeClient.CoreV1(), configObserver, os.Getenv("POD_NAMESPACE"))
 
+	var anonymizer *anonymization.Anonymizer
+	if anonymization.IsObfuscationEnabled(configObserver) {
+		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+		anonymizer, err = anonymization.NewAnonymizerFromConfigClient(ctx, kubeClient, configClient)
+		if err != nil {
+			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
+			// anonymizer will be nil and anonymization will be just skipped
+		}
+	}
+
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
 	recdriver := diskrecorder.New(s.StoragePath)
-	recorder := recorder.New(recdriver, s.Interval)
+	recorder := recorder.New(recdriver, s.Interval, anonymizer)
 	go recorder.PeriodicallyPrune(ctx, statusReporter)
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
-	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig)
+	clusterConfigGatherer := clusterconfig.New(
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
+	)
 	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
 		"clusterconfig": clusterConfigGatherer,
 	})

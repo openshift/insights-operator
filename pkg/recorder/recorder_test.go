@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // RawReport implements Marshable interface
@@ -56,14 +58,17 @@ func newRecorder() Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 
+	anonymizer, _ := anonymization.NewAnonymizer("", nil)
+
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{
-		driver:    &driver,
-		interval:  interval,
-		maxAge:    interval * 6 * 24,
-		records:   make(map[string]*record.MemoryRecord),
-		flushCh:   make(chan struct{}, 1),
-		flushSize: 8 * 1024 * 1024,
+		driver:     &driver,
+		interval:   interval,
+		maxAge:     interval * 6 * 24,
+		records:    make(map[string]*record.MemoryRecord),
+		flushCh:    make(chan struct{}, 1),
+		flushSize:  8 * 1024 * 1024,
+		anonymizer: anonymizer,
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
@@ -23,7 +25,6 @@ import (
 type GatherJob struct {
 	config.Controller
 }
-
 
 // Runs a single gather and stores the generated archive, without uploading it.
 // 1. Creates the necessary configs/clients
@@ -66,14 +67,27 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(d.Controller, kubeClient)
 
+	var anonymizer *anonymization.Anonymizer
+	if anonymization.IsObfuscationEnabled(configObserver) {
+		configClient, err := configv1client.NewForConfig(kubeConfig)
+		if err != nil {
+			return err
+		}
+		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+		anonymizer, err = anonymization.NewAnonymizerFromConfigClient(ctx, kubeClient, configClient)
+		if err != nil {
+			return err
+		}
+	}
+
 	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(d.StoragePath)
-	recorder := recorder.New(recdriver, d.Interval)
+	recorder := recorder.New(recdriver, d.Interval, anonymizer)
 	defer recorder.Flush()
 
 	// the gatherers check the state of the cluster and report any
 	// config to the recorder
-	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig)
+	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer)
 	err = clusterConfigGatherer.Gather(ctx, configObserver.Config().Gather, recorder)
 	if err != nil {
 		return err

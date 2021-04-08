@@ -21,8 +21,9 @@ type Serialized struct {
 		Timeout      string `json:"timeout"`
 		MinRetryTime string `json:"min_retry"`
 	} `json:"pull_report"`
-	Impersonate string   `json:"impersonate"`
-	Gather      []string `json:"gather"`
+	Impersonate             string   `json:"impersonate"`
+	Gather                  []string `json:"gather"`
+	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
 }
 
 // Controller defines the standard config for this operator.
@@ -37,6 +38,9 @@ type Controller struct {
 	ReportPullingTimeout time.Duration
 	Impersonate          string
 	Gather               []string
+	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
+	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
+	EnableGlobalObfuscation bool
 
 	Username string
 	Password string
@@ -58,11 +62,13 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
 	}
+
 	cfg.Report = s.Report
 	cfg.StoragePath = s.StoragePath
 	cfg.Endpoint = s.Endpoint
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
+	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
@@ -119,6 +125,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if len(cfg.StoragePath) == 0 {
 		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
 	}
+
 	return cfg, nil
 }
 
@@ -130,6 +137,7 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 	cfg.StoragePath = s.StoragePath
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
+	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
