@@ -1,0 +1,58 @@
+#!/bin/sh
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+############################
+## Testing
+############################
+
+echo -e "\nExecuting the tests...\n\n"
+make test
+if [[ $? -ne 0 ]]; then
+  echo -e "\n${RED}Tests must pass before commit!${NC}\n"
+  exit 1
+fi
+
+echo -e "\n${GREEN}Success!${NC}\n"
+
+############################
+## Liting
+############################
+
+echo -e "\nExecuting the linting...\n\n"
+
+STAGED_GO_FILES=$(git diff --cached --name-only | grep ".go$")
+
+if [[ "$STAGED_GO_FILES" = "" ]]; then
+  exit 0
+fi
+
+hash golangci-lint 2>/dev/null || { echo -e >&2 "${RED}[ERROR] golangci-lint not found.${NC}\n"; exit 1; }
+
+PASS=true
+
+for FILE in $STAGED_GO_FILES
+do
+  m1=$(md5sum $FILE)
+  golangci-lint run --fix --issues-exit-code=1 $FILE
+  if [[ $? == 1 ]]; then
+    PASS=false
+  fi
+
+  m2=$(md5sum $FILE)
+  if [[ "$m1" != "$m2" ]]; then
+    # if the file was autofixed add it to the commit
+    git add $FILE
+  fi
+done
+
+if ! $PASS; then
+  echo -e "${RED}Commit failed! Please check the messages above.${NC}\n"
+  exit 1
+else
+  echo -e "${GREEN}Success!${NC}\n"
+fi
+
+exit 0
