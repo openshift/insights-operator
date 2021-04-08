@@ -152,9 +152,9 @@ func NewAnonymizerFromConfigClient(
 			return true
 		} else if network1[1] < network2[1] {
 			return false
-		} else {
-			return network1[0] > network2[0]
 		}
+
+		return network1[0] > network2[0]
 	})
 
 	return NewAnonymizer(baseDomain, networks)
