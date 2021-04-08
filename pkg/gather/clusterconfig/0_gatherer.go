@@ -106,10 +106,7 @@ var gatherFunctions = map[string]gathering{
 
 // New creates new Gatherer
 func New(
-	gatherKubeConfig *rest.Config,
-	gatherProtoKubeConfig *rest.Config,
-	metricsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer,
+	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config, anonymizer *anonymization.Anonymizer,
 ) *Gatherer {
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
