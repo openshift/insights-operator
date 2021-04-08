@@ -29,18 +29,9 @@ spec:
       volumes:
       - name: snapshots
         emptyDir: {}
-          #sizeLimit: 1Gi # bug https://bugzilla.redhat.com/show_bug.cgi?id=1713207
-      - name: trusted-ca-bundle
-        configMap:
-          name: trusted-ca-bundle
-          optional: true
       - name: service-ca-bundle
         configMap:
           name: service-ca-bundle
-          optional: true
-      - name: serving-cert
-        secret:
-          secretName: openshift-insights-serving-cert
           optional: true
       initContainers:
       - name: insights-operator
@@ -49,14 +40,9 @@ spec:
         volumeMounts:
         - name: snapshots
           mountPath: /var/lib/insights-operator
-        - mountPath: /var/run/configmaps/trusted-ca-bundle
-          name: trusted-ca-bundle
+        - name: service-ca-bundle
+          mountPath: /var/run/configmaps/service-ca-bundle
           readOnly: true
-        - mountPath: /var/run/configmaps/service-ca-bundle
-          name: service-ca-bundle
-          readOnly: true
-        - mountPath: /var/run/secrets/serving-cert
-          name: serving-cert
         ports:
         - containerPort: 8443
           name: https
@@ -64,17 +50,6 @@ spec:
           requests:
             cpu: 10m
             memory: 70Mi
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: RELEASE_VERSION
-          value: "0.0.1-snapshot"
         args:
         - gather
         - -v=4
