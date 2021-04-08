@@ -28,10 +28,10 @@ questions: what changed and why. The subject line should feature the what and
 the body of the commit should describe the why.
 
 ```
-Add the test-cluster command
+Add the gitgooks command
 
-This uses tmux to setup a test cluster that you can easily kill and
-start for debugging.
+This add githooks to the project, in order to run tests
+and liting and prevent bad commits.
 ```
 
 ## Pull Request Formats
