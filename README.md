@@ -237,7 +237,9 @@ $ find . -type f -name '*.json' -print | while read line; do cat "$line" | jq > 
 
 # Contributing
 
-Please make sure to run `make test` to check all changes made in the source code.
+See [CONTRIBUTING](CONTRIBUTING.md) for workflow & convention details.
+
+See [STYLEGUIDE](STYLEGUIDE.md) for file format and coding style guide.
 
 # Support
 
