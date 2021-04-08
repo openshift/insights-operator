@@ -7,3 +7,5 @@ main
 .devspace/
 .dockerignore
 devspace.yaml
+
+cover.out
