@@ -38,9 +38,6 @@ githooks: ## Configure the repository to use the git hooks
 ## Tests
 ## --------------------------------------
 
-.PHONY: test-unit
-test-unit: test
-
 # Run the tests
 .PHONY: test
 test: unit ## Run all the tests
