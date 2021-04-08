@@ -147,11 +147,9 @@ func NewAnonymizerFromConfigClient(
 		network1 := strings.Split(networks[i], "/")
 		network2 := strings.Split(networks[j], "/")
 
-		// subnet length
-		if network1[1] > network2[1] {
-			return true
-		} else if network1[1] < network2[1] {
-			return false
+		// first we compare by subnet lengths, but if they are equal, we compare the subnet itself
+		if network1[1] != network2[1] {
+			return network1[1] > network2[1]
 		}
 
 		return network1[0] > network2[0]
