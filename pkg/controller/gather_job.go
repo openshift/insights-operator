@@ -32,7 +32,7 @@ type GatherJob struct {
 // 3. Initiates the recorder
 // 4. Executes a Gather
 // 5. Flushes the results
-func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKubeConfig *rest.Config) error {
+func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *rest.Config) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
@@ -51,15 +51,15 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 
 	// the metrics client will connect to prometheus and scrape a small set of metrics
 	metricsGatherKubeConfig := rest.CopyConfig(kubeConfig)
-	metricsGatherKubeConfig.CAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
+	metricsGatherKubeConfig.CAFile = metricCAFile
 	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
 	metricsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
 	metricsGatherKubeConfig.APIPath = "/"
-	metricsGatherKubeConfig.Host = "https://prometheus-k8s.openshift-monitoring.svc:9091"
+	metricsGatherKubeConfig.Host = metricHost
 
 	// ensure the insight snapshot directory exists
-	if _, err := os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
-		if err := os.MkdirAll(d.StoragePath, 0777); err != nil {
+	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
+		if err = os.MkdirAll(d.StoragePath, 0777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
@@ -69,7 +69,8 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
-		configClient, err := configv1client.NewForConfig(kubeConfig)
+		var configClient *configv1client.ConfigV1Client
+		configClient, err = configv1client.NewForConfig(kubeConfig)
 		if err != nil {
 			return err
 		}
@@ -82,17 +83,17 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig *rest.Config, protoKu
 
 	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(d.StoragePath)
-	recorder := recorder.New(recdriver, d.Interval, anonymizer)
+	rec := recorder.New(recdriver, d.Interval, anonymizer)
 
 	// the gatherers check the state of the cluster and report any
 	// config to the recorder
 	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer)
-	err = clusterConfigGatherer.Gather(ctx, configObserver.Config().Gather, recorder)
+	err = clusterConfigGatherer.Gather(ctx, configObserver.Config().Gather, rec)
 	if err != nil {
 		return err
 	}
 
-	recorder.Flush()
+	rec.Flush()
 	klog.Info("Finished")
 	return nil
 }
