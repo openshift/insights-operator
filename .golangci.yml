@@ -22,6 +22,7 @@ linters-settings:
       - octalLiteral
       - whyNoLint
       - wrapperFunc
+      - emptyStringTest
   gocyclo:
     min-complexity: 15
   goimports:
@@ -32,7 +33,7 @@ linters-settings:
     settings:
       mnd:
         # don't include the "operation" and "assign"
-        checks: 
+        checks:
           - argument
           - case
           - condition

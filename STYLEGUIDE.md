@@ -12,3 +12,7 @@
 - Import statement pkgs should be separated into 3 groups: stdlib, external dependency, current project.
 - TESTS: Should follow the "test tables" convention.
 - TESTS: Methods should follow the code style `Test_<FunctionName>` or `Test_<GatherName>_<FunctionName>`
+
+### Recommendations
+
+- **Comparing strings**, its is recommended that you use  `if string != ""` over `if len(string) > 0`, but both are acceptable.
