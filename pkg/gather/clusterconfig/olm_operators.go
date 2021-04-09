@@ -2,11 +2,11 @@ package clusterconfig
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -17,13 +17,17 @@ import (
 
 var (
 	operatorGVR              = schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1", Resource: "operators"}
-	clusterServiceVersionGVR = schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1alpha1", Resource: "clusterserviceversions"}
+	clusterServiceVersionGVR = schema.GroupVersionResource{
+		Group:    "operators.coreos.com",
+		Version:  "v1alpha1",
+		Resource: "clusterserviceversions"}
 )
 
 type olmOperator struct {
-	Name       string        `json:"name"`
-	Version    string        `json:"version"`
-	Conditions []interface{} `json:"csv_conditions"`
+	Name        string        `json:"name"`
+	DisplayName string        `json:"displayName"`
+	Version     string        `json:"version"`
+	Conditions  []interface{} `json:"csv_conditions"`
 }
 
 // ClusterServiceVersion helper struct
@@ -64,32 +68,46 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 		return nil, []error{err}
 	}
 	var refs []interface{}
-	var olms []olmOperator
+	olms := []olmOperator{}
+	errs := []error{}
 	for _, i := range olmOperators.Items {
+		newOlm := olmOperator{
+			Name: i.GetName(),
+		}
 		err := utils.ParseJSONQuery(i.Object, "status.components.refs", &refs)
 		if err != nil {
-			klog.Errorf("Cannot find \"status.components.refs\" in %s definition: %v", i.GetName(), err)
+			// if no references are found then add an error and OLM operator with only name and continue
+			errs = append(errs, fmt.Errorf("cannot find \"status.components.refs\" in %s definition: %v", i.GetName(), err))
+			olms = append(olms, newOlm)
 			continue
 		}
 		for _, r := range refs {
-			csvRef := getCSVRefFromRefs(r)
+			csvRef, err := findCSVRefInRefs(r)
+			if err != nil {
+				errs = append(errs, err)
+				olms = append(olms, newOlm)
+				continue
+			}
+			// CSV reference can still be nil
 			if csvRef == nil {
 				continue
 			}
-			conditions, err := getCSVConditions(ctx, dynamicClient, csvRef)
+			newOlm.Version = csvRef.Version
+
+			name, conditions, err := getCSVAndParse(ctx, dynamicClient, csvRef)
 			if err != nil {
-				klog.Errorf("failed to get %s conditions: %v", csvRef.Name, err)
+				// append the error and the OLM data we already have and continue
+				errs = append(errs, err)
+				olms = append(olms, newOlm)
 				continue
 			}
-			olmO := olmOperator{
-				Name:       i.GetName(),
-				Version:    csvRef.Version,
-				Conditions: conditions,
-			}
-			if isInArray(olmO, olms) {
+			newOlm.DisplayName = name
+			newOlm.Conditions = conditions
+
+			if isInArray(newOlm, olms) {
 				continue
 			}
-			olms = append(olms, olmO)
+			olms = append(olms, newOlm)
 		}
 	}
 	if len(olms) == 0 {
@@ -98,6 +116,9 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 	r := record.Record{
 		Name: "config/olm_operators",
 		Item: record.JSONMarshaller{Object: olms},
+	}
+	if len(errs) != 0 {
+		return []record.Record{r}, errs
 	}
 	return []record.Record{r}, nil
 }
@@ -111,35 +132,67 @@ func isInArray(o olmOperator, a []olmOperator) bool {
 	return false
 }
 
-func getCSVRefFromRefs(r interface{}) *csvRef {
+//getCSVAndParse gets full CSV definition from csvRef and tries to parse the definition
+func getCSVAndParse(ctx context.Context, dynamicClient dynamic.Interface, csvRef *csvRef) (name string, conditions []interface{}, err error) {
+	csv, err := getCsvFromRef(ctx, dynamicClient, csvRef)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to get %s ClusterServiceVersion: %v", csvRef.Name, err)
+	}
+	name, conditions, err = parseCsv(csv)
+
+	if err != nil {
+		return "", nil, fmt.Errorf("cannot read %s ClusterServiceVersion attributes: %v", csvRef.Name, err)
+	}
+
+	return name, conditions, nil
+}
+
+//findCSVRefInRefs tries to find ClusterServiceVersion reference in the references
+//and parse the ClusterServiceVersion if successful.
+//It can return nil with no error if the CSV was not found
+func findCSVRefInRefs(r interface{}) (*csvRef, error) {
 	refMap, ok := r.(map[string]interface{})
 	if !ok {
-		klog.Errorf("Cannot convert %s to map[string]interface{}", r)
-		return nil
+		return nil, fmt.Errorf("cannot convert %s to map[string]interface{}", r)
 	}
 	// version is part of the name of ClusterServiceVersion
 	if refMap["kind"] == "ClusterServiceVersion" {
 		name := refMap["name"].(string)
+		if !strings.Contains(name, ".") {
+			return nil, fmt.Errorf("clusterserviceversion \"%s\" probably doesn't include version", name)
+		}
 		nameVer := strings.SplitN(name, ".", 2)
 		csvRef := &csvRef{
 			Name:      name,
 			Namespace: refMap["namespace"].(string),
 			Version:   nameVer[1],
 		}
-		return csvRef
+		return csvRef, nil
 	}
-	return nil
+	return nil, nil
 }
 
-func getCSVConditions(ctx context.Context, dynamicClient dynamic.Interface, csvRef *csvRef) ([]interface{}, error) {
+func getCsvFromRef(ctx context.Context, dynamicClient dynamic.Interface, csvRef *csvRef) (map[string]interface{}, error) {
 	csv, err := dynamicClient.Resource(clusterServiceVersionGVR).Namespace(csvRef.Namespace).Get(ctx, csvRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
+	return csv.Object, nil
+}
+
+//parseCsv tries to parse "status.conditions" and "spec.displayName" from the input map.
+// Returns an error if any of the values cannot be parsed.
+func parseCsv(csv map[string]interface{}) (string, []interface{}, error) {
 	var conditions []interface{}
-	err = utils.ParseJSONQuery(csv.Object, "status.conditions", &conditions)
+	var name string
+	err := utils.ParseJSONQuery(csv, "status.conditions", &conditions)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	return conditions, nil
+	err = utils.ParseJSONQuery(csv, "spec.displayName", &name)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return name, conditions, nil
 }
