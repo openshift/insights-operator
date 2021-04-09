@@ -16,7 +16,7 @@ import (
 
 const (
 	targetNamespaceName = "openshift-config-managed"
-	secretName          = "simple-content-access-cert"
+	secretName          = "etc-pki-entitlement"
 )
 
 // Controller holds all the required resources to be able to communicate with OCM API
