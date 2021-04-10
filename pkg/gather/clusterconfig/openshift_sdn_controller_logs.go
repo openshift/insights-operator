@@ -23,11 +23,20 @@ import (
 // Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
 func GatherOpenshiftSDNControllerLogs(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
-		messagesToSearch := []string{
-			"Node.+is not Ready",
-			"Node.+may be offline\\.\\.\\. retrying",
-			"Node.+is offline",
-			"Node.+is back online",
+		containersFilter := logContainersFilter{
+			namespace:     "openshift-sdn",
+			labelSelector: "app=sdn-controller",
+		}
+		messagesFilter := logMessagesFilter{
+			messagesToSearch: []string{
+				"Node.+is not Ready",
+				"Node.+may be offline\\.\\.\\. retrying",
+				"Node.+is offline",
+				"Node.+is back online",
+			},
+			isRegexSearch: true,
+			sinceSeconds:  86400,     // last day
+			limitBytes:    1024 * 64, // maximum 64 kb of logs
 		}
 
 		gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -36,16 +45,12 @@ func GatherOpenshiftSDNControllerLogs(g *Gatherer) func() ([]record.Record, []er
 		}
 		coreClient := gatherKubeClient.CoreV1()
 
-		records, err := gatherLogsFromPodsInNamespace(
+		records, err := gatherLogsFromContainers(
 			g.ctx,
 			coreClient,
-			"openshift-sdn",
-			messagesToSearch,
-			86400,   // last day
-			1024*64, // maximum 64 kb of logs
+			containersFilter,
+			messagesFilter,
 			"errors",
-			"app=sdn-controller",
-			true,
 		)
 		if err != nil {
 			return nil, []error{err}

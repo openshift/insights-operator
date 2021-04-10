@@ -330,6 +330,18 @@ Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeco
 Location in archive: config/containerruntimeconfigs/
 See: docs/insights-archive-sample/config/containerruntimeconfigs
 
+## SAPVsystemIptablesLogs
+
+collects logs from SAP vsystem-iptables containers
+including one from license management pods with the following substring:
+  - "can't initialize iptables table",
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
+
+
 ## ServiceAccounts
 
 collects ServiceAccount stats
