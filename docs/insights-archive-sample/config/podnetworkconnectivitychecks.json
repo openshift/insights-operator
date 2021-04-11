@@ -1,0 +1,8 @@
+{
+  "TCPConnectError": {
+    "kubernetes-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.74.181.101:6443: dial tcp 10.74.181.101:6443: connect: connection refused": 6,
+    "kubernetes-apiserver-service-cluster: failed to establish a TCP connection to 172.30.101.107:443: dial tcp 172.30.101.107:443: connect: connection refused": 6,
+    "openshift-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.128.0.31:8443: dial tcp 10.128.0.31:8443: connect: connection refused": 3,
+    "openshift-apiserver-service-cluster: failed to establish a TCP connection to 172.30.137.129:443: dial tcp 172.30.137.129:443: i/o timeout": 3
+  }
+}
