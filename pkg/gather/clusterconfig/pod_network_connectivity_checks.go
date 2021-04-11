@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherPNCC collects PodNetworkConnectivityChecks.
+// GatherPNCC collects a summary of failed PodNetworkConnectivityChecks.
 func GatherPNCC(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -81,7 +81,5 @@ func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface, coreClient
 		}
 	}
 
-	return []record.Record{{Name: "config/podnetworkconnectivitychecks_unstruct", Item: record.JSONMarshaller{Object: pnccListUnstruct}},
-		{Name: "config/podnetworkconnectivitychecks_struct", Item: record.JSONMarshaller{Object: pnccListStruct}},
-		{Name: "config/podnetworkconnectivitychecks_reasons", Item: record.JSONMarshaller{Object: reasons}}}, nil
+	return []record.Record{{Name: "config/podnetworkconnectivitychecks", Item: record.JSONMarshaller{Object: reasons}}}, nil
 }
