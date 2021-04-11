@@ -421,6 +421,19 @@ Response see https://docs.openshift.com/container-platform/4.6/rest_api/workload
   * 4.7+
 
 
+## PNCC
+
+collects a summary of failed PodNetworkConnectivityChecks.
+The checks are requested via a dynamic client and
+then unmarshaled into the appropriate structure.
+
+Resource API: podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
+Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
+
+* Location in archive: config/podnetworkconnectivitychecks.json
+* Id in config: pod_network_connectivity_checks
+
+
 ## PodDisruptionBudgets
 
 gathers the cluster's PodDisruptionBudgets.
