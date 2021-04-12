@@ -83,13 +83,13 @@ func readFromFile(filePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer f.Close()
-	if err != nil {
-		return nil, err
-	}
+
 	content, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
+
 	return content, nil
 }

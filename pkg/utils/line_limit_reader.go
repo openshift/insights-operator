@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"io"
 	"bytes"
+	"io"
 )
 
 // NewLineLimitReader returns a Reader that reads from `r` but stops with EOF after `n` lines.

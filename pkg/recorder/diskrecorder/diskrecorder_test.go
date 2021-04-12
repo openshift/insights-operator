@@ -3,7 +3,6 @@ package diskrecorder
 import (
 	"context"
 	"fmt"
-	"io"
 	"testing"
 	"time"
 
@@ -66,7 +65,7 @@ func Test_Diskrecorder_Summary(t *testing.T) {
 	dr := newDiskRecorder()
 	reader, ok, err := dr.Summary(context.TODO(), since)
 	// assert.Implements(t, io.ReadCloser{}, reader)
-	assert.IsType(t, (io.ReadCloser)(reader), reader)
+	assert.IsType(t, reader, reader)
 	assert.True(t, ok)
 	assert.Nil(t, err)
 }

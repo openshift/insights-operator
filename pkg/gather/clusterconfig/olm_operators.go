@@ -51,8 +51,8 @@ func GatherOLMOperators(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherOLMOperators(g.ctx, dynamicClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherOLMOperators(g.ctx, dynamicClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -64,7 +64,7 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 		return nil, []error{err}
 	}
 	var refs []interface{}
-	olms := []olmOperator{}
+	var olms []olmOperator
 	for _, i := range olmOperators.Items {
 		err := utils.ParseJSONQuery(i.Object, "status.components.refs", &refs)
 		if err != nil {

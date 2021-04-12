@@ -2,7 +2,7 @@ package marshal
 
 import "context"
 
-// Raw is another simplification of marshalling from string
+// Raw is another simplification of marshaling from string
 type Raw struct{ Str string }
 
 // Marshal returns raw bytes

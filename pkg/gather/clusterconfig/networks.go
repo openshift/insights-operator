@@ -26,8 +26,8 @@ func GatherClusterNetwork(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherClusterNetwork(g.ctx, gatherConfigClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherClusterNetwork(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherClusterNetwork(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

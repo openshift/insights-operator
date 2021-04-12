@@ -37,7 +37,7 @@ func Test_CSR(t *testing.T) {
 			if err != nil {
 				t.Fatal("error reading test data file", err)
 			}
-			err = json.Unmarshal([]byte(bts), r)
+			err = json.Unmarshal(bts, r)
 			if err != nil {
 				t.Fatal("test failed to unmarshal csr data", err)
 			}
@@ -52,7 +52,7 @@ func Test_CSR(t *testing.T) {
 			if err != nil {
 				t.Fatal("error reading test data file", err)
 			}
-			err = json.Unmarshal([]byte(bts), exp)
+			err = json.Unmarshal(bts, exp)
 			if err != nil {
 				t.Fatal("test failed to unmarshal anonymized csr data", err)
 			}

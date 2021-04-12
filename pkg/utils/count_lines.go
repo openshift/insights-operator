@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"io"
 	"bytes"
+	"io"
 )
 
 // CountLines reads the remainder of the reader and counts the number of lines.

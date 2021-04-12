@@ -44,8 +44,6 @@ type InsightsReporter interface {
 }
 
 var (
-	// ErrWaitingForVersion contains an error when the cluster version is not loaded yet
-	ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
 	// insightsStatus contains a metric with the latest report information
 	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{

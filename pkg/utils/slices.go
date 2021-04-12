@@ -27,7 +27,6 @@ func SortAndRemoveDuplicates(slicePtr interface{}, less func(i, j int) bool) {
 	v.SetLen(i)
 }
 
-
 // TakeLastNItemsFromByteArray takes last N items from provided byte array
 // or adds zeros to the beginning if there not enough space
 func TakeLastNItemsFromByteArray(array []byte, desiredLength int) []byte {

@@ -26,8 +26,8 @@ func GatherClusterAuthentication(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherClusterAuthentication(g.ctx, gatherConfigClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherClusterAuthentication(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errs}
 }
 func gatherClusterAuthentication(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {
 	config, err := configClient.Authentications().Get(ctx, "cluster", metav1.GetOptions{})

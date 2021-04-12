@@ -35,8 +35,8 @@ func GatherNetNamespace(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherNetNamespace(g.ctx, gatherNetworkClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherNetNamespace(g.ctx, gatherNetworkClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherNetNamespace(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {
@@ -47,7 +47,7 @@ func gatherNetNamespace(ctx context.Context, networkClient networkv1client.Netwo
 	if err != nil {
 		return nil, []error{err}
 	}
-	namespaces := []*netNamespace{}
+	var namespaces []*netNamespace
 	for _, n := range nsList.Items {
 		netNS := &netNamespace{
 			Name:      n.Name,

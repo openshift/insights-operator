@@ -121,7 +121,7 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 }
 
 // Summary implements summarizer interface to insights uploader
-func (d *DiskRecorder) Summary(ctx context.Context, since time.Time) (io.ReadCloser, bool, error) {
+func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadCloser, bool, error) {
 	files, err := ioutil.ReadDir(d.basePath)
 	if err != nil {
 		return nil, false, err

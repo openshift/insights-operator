@@ -28,10 +28,10 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 	}{
 		{name: "interval too short",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: &corev1.Secret{Data: map[string][]byte{
+				pullSecretKey: {Data: map[string][]byte{
 					".dockerconfigjson": nil,
 				}},
-				supportKey: &corev1.Secret{Data: map[string][]byte{
+				supportKey: {Data: map[string][]byte{
 					"username": []byte("someone"),
 					"password": []byte("secret"),
 					"endpoint": []byte("http://po.rt"),
@@ -42,10 +42,10 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 		},
 		{name: "correct interval",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: &corev1.Secret{Data: map[string][]byte{
+				pullSecretKey: {Data: map[string][]byte{
 					".dockerconfigjson": nil,
 				}},
-				supportKey: &corev1.Secret{Data: map[string][]byte{
+				supportKey: {Data: map[string][]byte{
 					"interval": []byte("1m"),
 				}},
 			},
@@ -95,7 +95,6 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 const (

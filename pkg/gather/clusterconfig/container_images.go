@@ -51,7 +51,7 @@ func GatherContainerImages(g *Gatherer, c chan<- gatherResult) {
 }
 
 func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.Context) ([]record.Record, []error) {
-	records := []record.Record{}
+	var records []record.Record
 
 	// Cache for the temporary image count list.
 	img2month2count := img2Month2CountMap{}
@@ -90,7 +90,7 @@ func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.
 	}
 
 	// Transform map into a list for sorting.
-	imageCounts := []tmpImageCountEntry{}
+	var imageCounts []tmpImageCountEntry
 	for img, countMap := range img2month2count {
 		totalCount := 0
 		for _, count := range countMap {

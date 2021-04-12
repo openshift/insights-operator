@@ -30,8 +30,8 @@ func GatherHostSubnet(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherHostSubnet(g.ctx, gatherNetworkClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherHostSubnet(g.ctx, gatherNetworkClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherHostSubnet(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {

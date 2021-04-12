@@ -1,8 +1,8 @@
 package anonymize
 
 import (
-	"strings"
 	"regexp"
+	"strings"
 )
 
 func AnonymizeURLCSV(s string) string {
@@ -12,7 +12,7 @@ func AnonymizeURLCSV(s string) string {
 }
 
 func AnonymizeURLSlice(in []string) []string {
-	outSlice := []string{}
+	var outSlice []string
 	for _, str := range in {
 		outSlice = append(outSlice, AnonymizeURL(str))
 	}

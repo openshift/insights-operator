@@ -45,8 +45,8 @@ func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := getClusterVersion(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errors}
+	records, errs := getClusterVersion(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errs}
 }
 
 func getClusterVersion(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
@@ -69,7 +69,7 @@ func getClusterVersion(ctx context.Context, configClient configv1client.ConfigV1
 	// TODO: In the future, make this conditional on sad ClusterVersion conditions or ClusterVersionOperatorDown alerting, etc.
 	namespace := "openshift-cluster-version"
 	now := time.Now()
-	unhealthyPods := []*corev1.Pod{}
+	var unhealthyPods []*corev1.Pod
 
 	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {

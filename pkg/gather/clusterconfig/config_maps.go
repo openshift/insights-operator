@@ -105,7 +105,7 @@ func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	c := []byte(anonymizeConfigMap(a.v))
 	if a.encodeBase64 {
 		buff := make([]byte, base64.StdEncoding.EncodedLen(len(c)))
-		base64.StdEncoding.Encode(buff, []byte(c))
+		base64.StdEncoding.Encode(buff, c)
 		c = buff
 	}
 	return c, nil

@@ -10,13 +10,6 @@ type limitReadCloser struct {
 	closer io.ReadCloser
 }
 
-func NewLimitReadCloser(r io.ReadCloser, n int64) io.ReadCloser {
-	return limitReadCloser{
-		Reader: LimitReader(r, n),
-		closer: r,
-	}
-}
-
 func (c limitReadCloser) Close() error {
 	return c.closer.Close()
 }

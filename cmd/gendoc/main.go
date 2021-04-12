@@ -157,7 +157,6 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 					}
 
 					if gatherMethod != "" && fn.Name.IsExported() && strings.HasPrefix(fn.Name.Name, "Example") && len(fn.Name.Name) > len("Example") {
-
 						// Do not execute same method twice
 						_, ok := md[exampleMethodWithSuff].Examples[exampleMethodWithSuff]
 						if !ok {
@@ -173,7 +172,7 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 							if md[exampleMethodWithSuff].Examples == nil {
 								md[exampleMethodWithSuff].Examples = map[string]string{}
 							}
-							md[exampleMethodWithSuff].Examples[exampleMethodWithSuff] = string(output)
+							md[exampleMethodWithSuff].Examples[exampleMethodWithSuff] = output
 						}
 						fmt.Printf(fn.Name.Name + "\n")
 					}
@@ -296,7 +295,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 	import "%s"
 	import "fmt"
 
-	func main() { 
+	func main() {
 		str, _ := %s.%s()
 		fmt.Print(str)
 	}

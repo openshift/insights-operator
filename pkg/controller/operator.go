@@ -177,7 +177,7 @@ func isRunning(ctx context.Context, config *rest.Config) wait.ConditionFunc {
 		if err != nil {
 			return false, err
 		}
-		// check if context hasn't been cancelled or done meanwhile
+		// check if context hasn't been canceled or done meanwhile
 		err = ctx.Err()
 		if err != nil {
 			return false, err

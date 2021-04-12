@@ -90,7 +90,6 @@ func Test_ConfigMap_Anonymizer(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func mustNotFail(t *testing.T, err interface{}, fmtstr string) {
@@ -116,19 +115,20 @@ func readConfigMapsTestData() (*corev1.ConfigMapList, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading test data file %+v ", err)
 	}
+
 	defer f.Close()
+
 	bts, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, fmt.Errorf("error reading test data file %+v ", err)
 	}
-	if err != nil {
-		return nil, fmt.Errorf("error reading test data file %+v ", err)
-	}
+
 	var cml *corev1.ConfigMapList
-	err = json.Unmarshal([]byte(bts), &cml)
+	err = json.Unmarshal(bts, &cml)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshalling json %+v ", err)
 	}
+
 	return cml, nil
 }
 

@@ -23,8 +23,8 @@ func GatherSAPDatahubs(g *Gatherer, c chan<- gatherResult) {
 		return
 	}
 
-	records, errors := gatherSAPDatahubs(g.ctx, gatherDynamicClient)
-	c <- gatherResult{records: records, errors: errors}
+	records, errs := gatherSAPDatahubs(g.ctx, gatherDynamicClient)
+	c <- gatherResult{records: records, errors: errs}
 }
 
 func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -36,7 +36,7 @@ func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]
 		return nil, []error{err}
 	}
 
-	records := []record.Record{}
+	var records []record.Record
 
 	for i, datahub := range datahubsList.Items {
 		records = append(records, record.Record{

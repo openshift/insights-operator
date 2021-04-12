@@ -29,8 +29,8 @@ func GatherMachineConfigPool(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherMachineConfigPool(g.ctx, dynamicClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherMachineConfigPool(g.ctx, dynamicClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -42,7 +42,7 @@ func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interfac
 	if err != nil {
 		return nil, []error{err}
 	}
-	records := []record.Record{}
+	var records []record.Record
 	for _, i := range machineCPs.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/machineconfigpools/%s", i.GetName()),

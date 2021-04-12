@@ -26,8 +26,8 @@ func GatherClusterImagePruner(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherClusterImagePruner(g.ctx, registryClient.ImageregistryV1())
-	c <- gatherResult{records, errors}
+	records, errs := gatherClusterImagePruner(g.ctx, registryClient.ImageregistryV1())
+	c <- gatherResult{records, errs}
 }
 
 func gatherClusterImagePruner(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface) ([]record.Record, []error) {

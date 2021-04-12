@@ -2,8 +2,8 @@ package utils
 
 import (
 	"fmt"
-	"strings"
 	"reflect"
+	"strings"
 )
 
 func ParseJSONQuery(j map[string]interface{}, jq string, o interface{}) error {
