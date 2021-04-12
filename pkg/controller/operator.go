@@ -113,10 +113,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
 		}
 	}
-	// OMC controller periodically checks and pull data from the OCM API
-	// the data is exposed in the OpenShift API
-	ocmController := ocm.New(ctx, gatherKubeClient.CoreV1(), configObserver)
-	go ocmController.Run()
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
