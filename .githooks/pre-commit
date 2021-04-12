@@ -36,7 +36,7 @@ PASS=true
 for FILE in $STAGED_GO_FILES
 do
   m1=$(md5sum $FILE)
-  golangci-lint run --fix --issues-exit-code=1 $FILE
+  golangci-lint run --fast -c ./.golangci.precommit.yml --fix --issues-exit-code=1 $FILE
   if [[ $? == 1 ]]; then
     PASS=false
   fi
