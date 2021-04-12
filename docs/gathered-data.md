@@ -481,6 +481,8 @@ Response see https://docs.openshift.com/container-platform/4.6/rest_api/workload
 
 * Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 * Since versions:
+  * 4.6.25+
+  * 4.7.5+
   * 4.8+
 
 
