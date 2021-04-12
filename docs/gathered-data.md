@@ -448,6 +448,7 @@ collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
 * Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
 * Since versions:
+  * 4.7.5+
   * 4.8+
 
 
@@ -464,6 +465,8 @@ Relevant Kubernetes API docs:
 
 * Location in archive: config/pod/{namespace}/{pod-name}.json
 * Since versions:
+  * 4.6.24+
+  * 4.7.5+
   * 4.8+
 
 
@@ -478,6 +481,8 @@ Response see https://docs.openshift.com/container-platform/4.6/rest_api/workload
 
 * Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 * Since versions:
+  * 4.6.25+
+  * 4.7.5+
   * 4.8+
 
 
@@ -496,5 +501,14 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
   * 4.5.34+
   * 4.6.20+
   * 4.7+
+
+
+## WorkloadInfo
+
+collects summarized info about the workloads on a cluster
+in a generic fashion
+
+Location in archive: config/workload_info
+Id in config: workload_info
 
 

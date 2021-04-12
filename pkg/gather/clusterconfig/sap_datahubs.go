@@ -15,6 +15,7 @@ import (
 //
 // * Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
 // * Since versions:
+//   * 4.7.5+
 //   * 4.8+
 func GatherSAPDatahubs(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

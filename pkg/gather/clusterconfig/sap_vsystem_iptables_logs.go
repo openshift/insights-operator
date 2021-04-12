@@ -22,6 +22,8 @@ import (
 //
 // * Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 // * Since versions:
+//   * 4.6.25+
+//   * 4.7.5+
 //   * 4.8+
 func GatherSAPVsystemIptablesLogs(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
