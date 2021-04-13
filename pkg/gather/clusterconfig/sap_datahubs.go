@@ -26,7 +26,7 @@ func GatherSAPDatahubs(g *Gatherer) func() ([]record.Record, []error) {
 }
 
 func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	datahubsList, err := dynamicClient.Resource(datahubGVR).List(ctx, metav1.ListOptions{})
+	datahubsList, err := dynamicClient.Resource(datahubGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -39,8 +39,8 @@ func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]
 	for i, datahub := range datahubsList.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("customresources/%s/%s/%s/%s",
-				datahubGVR.Group,
-				datahubGVR.Resource,
+				datahubGroupVersionResource.Group,
+				datahubGroupVersionResource.Resource,
 				datahub.GetNamespace(),
 				datahub.GetName(),
 			),
