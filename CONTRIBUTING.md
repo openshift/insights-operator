@@ -34,6 +34,8 @@ This add githooks to the project, in order to run tests
 and liting and prevent bad commits.
 ```
 
+> 🚨 Warning: It requires  `golanglint-ci >= 1.39`
+
 ## Pull Request Formats
 
 Pull Requests should use the template provided, and
