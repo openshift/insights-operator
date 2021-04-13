@@ -34,7 +34,9 @@ import (
 const (
 	// workloadGatherPageSize is 500 (the default for Kube).
 	workloadGatherPageSize = 500
-	podsLimit              = 3000
+	// limit the number of collected Pods in this gatherer. In the worst case, one Pod can add around 600 bytes (before compression)
+	// This limit can be removed in the future.
+	podsLimit = 3000
 )
 
 // workloadPods is the top level description of the workloads on the cluster, primarily
