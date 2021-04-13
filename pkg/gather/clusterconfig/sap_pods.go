@@ -27,6 +27,8 @@ import (
 //
 // * Location in archive: config/pod/{namespace}/{pod-name}.json
 // * Since versions:
+//   * 4.6.24+
+//   * 4.7.5+
 //   * 4.8+
 func GatherSAPPods(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

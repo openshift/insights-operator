@@ -34,6 +34,9 @@ import (
 const (
 	// workloadGatherPageSize is 500 (the default for Kube).
 	workloadGatherPageSize = 500
+	// limit the number of collected Pods in this gatherer. In the worst case, one Pod can add around 600 bytes (before compression)
+	// This limit can be removed in the future.
+	podsLimit = 3000
 )
 
 // workloadPods is the top level description of the workloads on the cluster, primarily
@@ -157,6 +160,7 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 
 	// load pods in order
 	start := time.Now()
+	limitReached := false
 
 	var info workloadPods
 	var namespace string
@@ -188,6 +192,12 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 				namespace = pod.Namespace
 				namespaceHash = workloadHashString(h, namespace)
 				namespacePods = workloadNamespacePods{Shapes: make([]workloadPodShape, 0, 16)}
+			}
+
+			if info.PodCount >= podsLimit {
+				pods.Continue = ""
+				limitReached = true
+				break
 			}
 
 			namespacePods.Count++
@@ -243,7 +253,6 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 		}
 		continueValue = pods.Continue
 	}
-
 	// add the last set of pods
 	if len(namespace) != 0 {
 		if info.Namespaces == nil {
@@ -284,6 +293,9 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 
 	info.Images = imageInfo.images
 	info.ImageCount = imageInfo.count
+	if limitReached {
+		return records, []error{fmt.Errorf("The %d limit for number of pods gathered was reached", podsLimit)}
+	}
 	return records, nil
 }
 
