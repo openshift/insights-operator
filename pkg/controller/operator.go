@@ -77,11 +77,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// TODO: the oauth-proxy and delegating authorizer do not support Impersonate-User,
 	//   so we do not impersonate gather
 	metricsGatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
-	metricsGatherKubeConfig.CAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
+	metricsGatherKubeConfig.CAFile = metricCAFile
 	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
 	metricsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
 	metricsGatherKubeConfig.APIPath = "/"
-	metricsGatherKubeConfig.Host = "https://prometheus-k8s.openshift-monitoring.svc:9091"
+	metricsGatherKubeConfig.Host = metricHost
 
 	// If we fail, it's likely due to the service CA not existing yet. Warn and continue,
 	// and when the service-ca is loaded we will be restarted.
@@ -90,8 +90,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 	// ensure the insight snapshot directory exists
-	if _, err := os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
-		if err := os.MkdirAll(s.StoragePath, 0777); err != nil {
+	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
+		if err = os.MkdirAll(s.StoragePath, 0777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
@@ -117,18 +117,18 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the recorder periodically flushes any recorded data to disk as tar.gz files
 	// in s.StoragePath, and also prunes files above a certain age
 	recdriver := diskrecorder.New(s.StoragePath)
-	recorder := recorder.New(recdriver, s.Interval, anonymizer)
-	go recorder.PeriodicallyPrune(ctx, statusReporter)
+	rec := recorder.New(recdriver, s.Interval, anonymizer)
+	go rec.PeriodicallyPrune(ctx, statusReporter)
 
 	// the gatherers periodically check the state of the cluster and report any
 	// config to the recorder
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
 	)
-	periodic := periodic.New(configObserver, recorder, map[string]gather.Interface{
+	periodicGather := periodic.New(configObserver, rec, map[string]gather.Interface{
 		"clusterconfig": clusterConfigGatherer,
 	})
-	statusReporter.AddSources(periodic.Sources()...)
+	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
 	err = wait.PollImmediate(20*time.Second, wait.Jitter(s.Controller.Interval/24, 0.1), isRunning(ctx, gatherKubeConfig))
@@ -136,7 +136,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		initialDelay = wait.Jitter(s.Controller.Interval/12, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
-	go periodic.Run(ctx.Done(), initialDelay)
+	go periodicGather.Run(ctx.Done(), initialDelay)
 
 	authorizer := clusterauthorizer.New(configObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
@@ -171,13 +171,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	return nil
 }
 
-func isRunning(ctx context.Context, config *rest.Config) wait.ConditionFunc {
+func isRunning(ctx context.Context, kubeConfig *rest.Config) wait.ConditionFunc {
 	return func() (bool, error) {
-		c, err := corev1client.NewForConfig(config)
+		c, err := corev1client.NewForConfig(kubeConfig)
 		if err != nil {
 			return false, err
 		}
-		// check if context hasn't been cancelled or done meanwhile
+		// check if context hasn't been canceled or done meanwhile
 		err = ctx.Err()
 		if err != nil {
 			return false, err
