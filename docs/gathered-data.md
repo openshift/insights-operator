@@ -376,3 +376,9 @@ Relevant Kubernetes API docs:
   - https://pkg.go.dev/k8s.io/client-go/dynamic
 
 Location in archive: config/pod/{namespace}/{pod-name}.json
+
+## SAPDatahubs
+
+collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
+
+Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
