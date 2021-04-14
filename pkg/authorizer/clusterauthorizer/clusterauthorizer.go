@@ -21,6 +21,7 @@ type Authorizer struct {
 	proxyFromEnvironment func(*http.Request) (*url.URL, error)
 }
 
+// Creates a new Authorizer, whose purpose is to auth requests for outgoing traffic.
 func New(configurator Configurator) *Authorizer {
 	return &Authorizer{
 		configurator:         configurator,
@@ -28,6 +29,7 @@ func New(configurator Configurator) *Authorizer {
 	}
 }
 
+// Adds the necessary auth header to the request, depending on the config. (BasicAuth/Token)
 func (a *Authorizer) Authorize(req *http.Request) error {
 	cfg := a.configurator.Config()
 	if len(cfg.Username) > 0 || len(cfg.Password) > 0 {
@@ -51,6 +53,7 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 	return nil
 }
 
+// Creates the proxy URL based on the config. (specific/default proxy)
 func (a *Authorizer) NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error) {
 	// using specific proxy settings
 	if c := a.configurator.Config(); c != nil {
