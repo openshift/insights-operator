@@ -76,7 +76,10 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 			kubeclientsetclient := kubeclientfake.NewSimpleClientset()
 
 			client := configfake.NewSimpleClientset(operators...)
-			ctrl := &Controller{name: "insights", client: client.ConfigV1(), configurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient)}
+			ctrl := &Controller{
+				name:         "insights",
+				client:       client.ConfigV1(),
+				configurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient)}
 
 			err := ctrl.updateStatus(context.Background(), tt.initialRun)
 			if err != tt.expErr {
