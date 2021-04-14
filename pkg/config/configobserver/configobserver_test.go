@@ -98,7 +98,7 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 }
 
 const (
-	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret"
+	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret" //nolint: gosec
 	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
 )
 
