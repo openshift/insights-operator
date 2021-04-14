@@ -58,7 +58,9 @@ type HTTPConfig struct {
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
 
-func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
+// Creates/updates a config Controller according to the Serialized config.
+// Makes sure that the config is correct.
+func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // nolint: gocyclo
 	if cfg == nil {
 		cfg = &Controller{}
 	}
@@ -129,6 +131,8 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
 	return cfg, nil
 }
 
+// Creates/updates a config Controller according to the Serialized config.
+// Makes sure that the config is correct, but only checks fields necessary for disconnected operatotion.
 func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
@@ -158,7 +162,7 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 }
 
 // LoadConfig unmarshalls config from obj and loads it to this Controller struct
-func LoadConfig(controller Controller, obj map[string]interface{}, converter Converter) (Controller, error) {
+func LoadConfig(controller Controller, obj map[string]interface{}, converter Converter) (Controller, error) { //nolint: gocritic
 	var cfg Serialized
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
 		return controller, fmt.Errorf("unable to load config: %v", err)
@@ -169,6 +173,6 @@ func LoadConfig(controller Controller, obj map[string]interface{}, converter Con
 		return controller, err
 	}
 	data, _ := json.Marshal(cfg)
-	klog.V(2).Infof("Current config: %s", string(data))
+	klog.V(2).Infof("Current config: %s", string(data)) //nolint: gomnd
 	return *loadedController, nil
 }
