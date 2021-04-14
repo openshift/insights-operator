@@ -30,14 +30,14 @@ type Controller struct {
 	statuses     map[string]*controllerstatus.Simple
 }
 
-func New(configurator Configurator, recorder recorder.FlushInterface, gatherers map[string]gather.Interface) *Controller {
+func New(configurator Configurator, rec recorder.FlushInterface, gatherers map[string]gather.Interface) *Controller {
 	statuses := make(map[string]*controllerstatus.Simple)
 	for k := range gatherers {
 		statuses[k] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", k)}
 	}
 	c := &Controller{
 		configurator: configurator,
-		recorder:     recorder,
+		recorder:     rec,
 		gatherers:    gatherers,
 		statuses:     statuses,
 	}
@@ -83,7 +83,7 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 // Running the gatherers in parallel should be a future improvement when a new gatherer is introduced.
 func (c *Controller) Gather() {
 	if !c.configurator.Config().Report {
-		klog.V(3).Info("Gather is disabled by configuration.")
+		klog.V(3).Info("Gather is disabled by configuration.") //nolint: gomnd
 		return
 	}
 
@@ -103,12 +103,17 @@ func (c *Controller) Gather() {
 			start := time.Now()
 			err := c.runGatherer(name)
 			if err == nil {
-				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond)) //nolint: gomnd
 				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
 				return true, nil
 			}
 			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-			c.statuses[name].UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.GatheringReport, Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
+			c.statuses[name].UpdateStatus(
+				controllerstatus.Summary{
+					Operation: controllerstatus.GatheringReport,
+					Reason:    "PeriodicGatherFailed",
+					Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+				})
 			return false, nil
 		})
 	}
@@ -118,17 +123,18 @@ func (c *Controller) Gather() {
 func (c *Controller) runGatherer(name string) error {
 	gatherer, ok := c.gatherers[name]
 	if !ok {
-		klog.V(2).Infof("No such gatherer %s", name)
+		klog.V(2).Infof("No such gatherer %s", name) //nolint: gomnd
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+	timeoutDuration := c.configurator.Config().Interval / 2
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	defer func() {
 		if err := c.recorder.Flush(); err != nil {
 			klog.Errorf("Unable to flush recorder: %v", err)
 		}
 	}()
-	klog.V(4).Infof("Running %s", name)
+	klog.V(4).Infof("Running %s", name) //nolint: gomnd
 	return gatherer.Gather(ctx, c.configurator.Config().Gather, c.recorder)
 }
 
