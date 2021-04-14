@@ -17,7 +17,6 @@ import (
 )
 
 func Test_Status_SaveInitialStart(t *testing.T) {
-
 	tests := []struct {
 		name                     string
 		clusterOperator          *configv1.ClusterOperator
@@ -70,7 +69,7 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 			t.Parallel()
 
 			klog.SetOutput(utils.NewTestLog(t).Writer())
-			operators := []runtime.Object{}
+			var operators []runtime.Object
 			if tt.clusterOperator != nil {
 				operators = append(operators, tt.clusterOperator)
 			}

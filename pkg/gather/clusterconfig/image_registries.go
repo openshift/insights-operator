@@ -45,8 +45,8 @@ func GatherClusterImageRegistry(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1(), gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errors}
+	records, errs := gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1(), gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errs}
 }
 
 func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
@@ -57,10 +57,9 @@ func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistr
 	if err != nil {
 		return nil, []error{err}
 	}
-	records := []record.Record{}
+	var records []record.Record
 	// if there is some PVC then try to gather used persistent volume
 	if config.Spec.Storage.PVC != nil {
-
 		pvcName := config.Spec.Storage.PVC.Claim
 		pv, err := findPVByPVCName(ctx, coreClient, pvcName)
 		if err != nil {

@@ -12,24 +12,24 @@ import (
 type testError struct{}
 
 func (e *testError) Error() string {
-	return ("This is a test error")
+	return "This is a test error"
 }
 
-func mockGatherFunction1(g *Gatherer, c chan<- gatherResult) {
+func mockGatherFunction1(_ *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{
 		Name: "config/mock1",
 		Item: marshal.Raw{Str: "mock1"},
 	}}, nil}
 }
 
-func mockGatherFunction2(g *Gatherer, c chan<- gatherResult) {
+func mockGatherFunction2(_ *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{[]record.Record{{
 		Name: "config/mock2",
 		Item: marshal.Raw{Str: "mock2"},
 	}}, nil}
 }
 
-func mockGatherFunctionError(g *Gatherer, c chan<- gatherResult) {
+func mockGatherFunctionError(_ *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{nil, []error{&testError{}}}
 }
 
@@ -44,11 +44,11 @@ func (mr *mockRecorder) Record(r record.Record) error {
 
 type mockFailingRecorder struct{}
 
-func (mr *mockFailingRecorder) Record(r record.Record) error {
+func (mr *mockFailingRecorder) Record(_ record.Record) error {
 	return &testError{}
 }
 
-func init_test() Gatherer {
+func initTest() Gatherer {
 	gatherFunctions = map[string]gathering{
 		"mock1": important(mockGatherFunction1),
 		"mock2": important(mockGatherFunction2),
@@ -57,7 +57,7 @@ func init_test() Gatherer {
 	return Gatherer{ctx: context.Background()}
 }
 
-func clean_up(cases []reflect.SelectCase) {
+func cleanUp(cases []reflect.SelectCase) {
 	remaining := len(cases)
 	for remaining > 0 {
 		chosen, _, _ := reflect.Select(cases)
@@ -67,68 +67,66 @@ func clean_up(cases []reflect.SelectCase) {
 }
 
 func Test_Gather(t *testing.T) {
-	gatherer := init_test()
+	gatherer := initTest()
 	ctx := context.Background()
 	recorder := mockRecorder{}
 	gatherList := []string{gatherAll}
 
 	err := gatherer.Gather(ctx, gatherList, &recorder)
 
-	expected_error := "This is a test error"
-	if err.Error() != expected_error {
-		t.Fatalf("unexpected error returned: Expected %s but got %s", expected_error, err.Error())
+	expectedError := "This is a test error"
+	if err.Error() != expectedError {
+		t.Fatalf("unexpected error returned: Expected %s but got %s", expectedError, err.Error())
 	}
-	expected_record_amount := 3 // 2 successful gather function + 1 io report
-	actual_record_amount := len(recorder.Recorded)
-	if actual_record_amount != expected_record_amount {
-		t.Fatalf("unexpected record amount, Expected %d, but got %d", expected_record_amount, actual_record_amount)
+	expectedRecordAmount := 3 // 2 successful gather function + 1 io report
+	actualRecordAmount := len(recorder.Recorded)
+	if actualRecordAmount != expectedRecordAmount {
+		t.Fatalf("unexpected record amount, Expected %d, but got %d", expectedRecordAmount, actualRecordAmount)
 	}
 }
 
 func Test_Gather_FailingRecorder(t *testing.T) {
-	gatherer := init_test()
+	gatherer := initTest()
 	ctx := context.Background()
 	recorder := mockFailingRecorder{}
 	gatherList := []string{gatherAll}
 
 	err := gatherer.Gather(ctx, gatherList, &recorder)
 
-	expected_error := "This is a test error, unable to record config/mock1: This is a test error, unable to record config/mock2: This is a test error, unable to record io status reports: This is a test error"
-	if err.Error() != expected_error {
-		t.Fatalf("unexpected error returned: Expected %s but got %s", expected_error, err.Error())
+	expectedError := "This is a test error, unable to record config/mock1: This is a test error, unable to record config/mock2: This is a test error, unable to record io status reports: This is a test error"
+	if err.Error() != expectedError {
+		t.Fatalf("unexpected error returned: Expected %s but got %s", expectedError, err.Error())
 	}
 }
 
 func Test_Gather_StartEmpty(t *testing.T) {
 	var gatherList []string
 	var errors []string
-	g := init_test()
+	g := initTest()
 	cases, starts, err := g.startGathering(gatherList, &errors)
 	if cases != nil || starts != nil || err != nil {
 		t.Fatalf("unexpected return values, expected: nil, nil, nil, got: %p, %p, %s", cases, starts, err)
 	}
-
 }
 
 func Test_Gather_StartGathering(t *testing.T) {
 	var errors []string
-	g := init_test()
+	g := initTest()
 	gatherList := fullGatherList()
 	expected := len(gatherList)
 
 	cases, starts, err := g.startGathering(gatherList, &errors)
-	l_starts := len(starts)
-	l_cases := len(cases)
-	clean_up(cases)
+	lStarts := len(starts)
+	lCases := len(cases)
+	cleanUp(cases)
 
-	if l_cases != expected || l_starts != expected || err != nil {
-		t.Fatalf("unexpected return values: \nExpected %d cases got %d \nExpected %d starts got %d \n Err should be nil got %s", expected, l_cases, expected, l_starts, err)
+	if lCases != expected || lStarts != expected || err != nil {
+		t.Fatalf("unexpected return values: \nExpected %d cases got %d \nExpected %d starts got %d \n Err should be nil got %s", expected, lCases, expected, lStarts, err)
 	}
-
 }
 
 func Test_Gather_FullGatherList(t *testing.T) {
-	init_test()
+	initTest()
 	gatherList := fullGatherList()
 	expected := 3
 	if got := len(gatherList); got != expected {
@@ -148,4 +146,3 @@ func Test_Gather_SumErrors(t *testing.T) {
 		t.Fatalf("unexpected error sum returned, expected: %s received: %s", expected, got)
 	}
 }
-

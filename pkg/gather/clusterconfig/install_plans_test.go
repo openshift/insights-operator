@@ -123,6 +123,5 @@ func Test_InstallPlans_Gather(t *testing.T) {
 				t.Fatalf("unexpected installplan exp: %s got: %s", test.exp, sb)
 			}
 		})
-
 	}
 }

@@ -76,9 +76,7 @@ func createNetNamespaces(ctx context.Context, t *testing.T, n *networkfake.Clien
 	for _, ns := range namespaces {
 		_, err := n.NetworkV1().NetNamespaces().Create(ctx, ns, metav1.CreateOptions{})
 		if err != nil {
-			if err != nil {
-				t.Fatal("unable to create fake netnamespace", err)
-			}
+			t.Fatal("unable to create fake netnamespace", err)
 		}
 	}
 }

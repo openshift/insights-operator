@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	authclient "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
+	securityv1client "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	authclient "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
-	securityv1client "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -34,11 +31,6 @@ func GatherSAPConfig(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{errors: []error{err}}
 		return
 	}
-	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
-	}
 	gatherSecurityClient, err := securityv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		c <- gatherResult{errors: []error{err}}
@@ -50,11 +42,11 @@ func GatherSAPConfig(g *Gatherer, c chan<- gatherResult) {
 		return
 	}
 
-	records, errors := gatherSAPConfig(g.ctx, gatherDynamicClient, gatherKubeClient.CoreV1(), gatherSecurityClient, gatherAuthClient)
-	c <- gatherResult{records: records, errors: errors}
+	records, errs := gatherSAPConfig(g.ctx, gatherDynamicClient, gatherSecurityClient, gatherAuthClient)
+	c <- gatherResult{records: records, errors: errs}
 }
 
-func gatherSAPConfig(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface, securityClient securityv1client.SecurityV1Interface, authClient authclient.AuthorizationV1Interface) ([]record.Record, []error) {
+func gatherSAPConfig(ctx context.Context, dynamicClient dynamic.Interface, securityClient securityv1client.SecurityV1Interface, authClient authclient.AuthorizationV1Interface) ([]record.Record, []error) {
 	sccToGather := []string{"anyuid", "privileged"}
 	crbToGather := []string{"system:openshift:scc:anyuid", "system:openshift:scc:privileged"}
 
@@ -71,7 +63,7 @@ func gatherSAPConfig(ctx context.Context, dynamicClient dynamic.Interface, coreC
 		return nil, nil
 	}
 
-	records := []record.Record{}
+	var records []record.Record
 
 	for _, name := range sccToGather {
 		scc, err := securityClient.SecurityContextConstraints().Get(ctx, name, metav1.GetOptions{})

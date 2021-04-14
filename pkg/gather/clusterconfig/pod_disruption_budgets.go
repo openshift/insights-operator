@@ -43,7 +43,7 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 	if err != nil {
 		return nil, []error{err}
 	}
-	records := []record.Record{}
+	var records []record.Record
 	for _, pdb := range pdbs.Items {
 		recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
 		if pdb.GetNamespace() != "" {

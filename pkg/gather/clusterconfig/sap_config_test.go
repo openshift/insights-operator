@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
-	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_SAPConfig(t *testing.T) {
@@ -39,7 +38,6 @@ metadata:
 	}
 
 	// Initialize the remaining K8s/OS fake clients.
-	coreClient := kubefake.NewSimpleClientset()
 	authClient := authfake.NewSimpleClientset()
 	securityClient := securityfake.NewSimpleClientset()
 
@@ -79,7 +77,7 @@ metadata:
 		metav1.CreateOptions{},
 	)
 
-	records, errs := gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
+	records, errs := gatherSAPConfig(context.Background(), datahubsClient, securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -90,7 +88,7 @@ metadata:
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
 	_, _ = datahubsClient.Resource(datahubGroupVersionResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
-	records, errs = gatherSAPConfig(context.Background(), datahubsClient, coreClient.CoreV1(), securityClient.SecurityV1(), authClient.AuthorizationV1())
+	records, errs = gatherSAPConfig(context.Background(), datahubsClient, securityClient.SecurityV1(), authClient.AuthorizationV1())
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}

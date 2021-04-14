@@ -49,7 +49,7 @@ func (d *driverMock) Save(records record.MemoryRecords) (record.MemoryRecords, e
 	return records, args.Error(1)
 }
 
-func (d *driverMock) Prune(olderThan time.Time) error {
+func (d *driverMock) Prune(time.Time) error {
 	args := d.Called()
 	return args.Error(1)
 }

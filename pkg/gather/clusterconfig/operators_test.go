@@ -201,7 +201,7 @@ func Test_Operators_GatherUnhealthyClusterOperator(t *testing.T) {
 				items:      []configv1.ClusterOperator{},
 				coreClient: kubefake.NewSimpleClientset().CoreV1(),
 			},
-			want:  []*v1.Pod{},
+			want:  nil,
 			want1: nil,
 			want2: 0,
 		},
@@ -509,7 +509,7 @@ func Test_Operators_IsPodRestarted(t *testing.T) {
 				pod: &v1.Pod{
 					Status: v1.PodStatus{
 						InitContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{RestartCount: 0},
+							{RestartCount: 0},
 						},
 					},
 				},
@@ -522,7 +522,7 @@ func Test_Operators_IsPodRestarted(t *testing.T) {
 				pod: &v1.Pod{
 					Status: v1.PodStatus{
 						InitContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{RestartCount: 2},
+							{RestartCount: 2},
 						},
 					},
 				},
@@ -535,7 +535,7 @@ func Test_Operators_IsPodRestarted(t *testing.T) {
 				pod: &v1.Pod{
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{RestartCount: 0},
+							{RestartCount: 0},
 						},
 					},
 				},
@@ -548,7 +548,7 @@ func Test_Operators_IsPodRestarted(t *testing.T) {
 				pod: &v1.Pod{
 					Status: v1.PodStatus{
 						ContainerStatuses: []v1.ContainerStatus{
-							v1.ContainerStatus{RestartCount: 2},
+							{RestartCount: 2},
 						},
 					},
 				},

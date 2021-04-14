@@ -29,8 +29,8 @@ func GatherContainerRuntimeConfig(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherContainerRuntimeConfig(g.ctx, dynamicClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherContainerRuntimeConfig(g.ctx, dynamicClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -43,7 +43,7 @@ func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Int
 		return nil, []error{err}
 	}
 
-	records := []record.Record{}
+	var records []record.Record
 	for _, i := range containerRCs.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/containerruntimeconfigs/%s", i.GetName()),

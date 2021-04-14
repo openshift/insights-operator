@@ -46,8 +46,8 @@ func GatherInstallPlans(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errors}
+	records, errs := gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errs}
 }
 
 func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
@@ -100,7 +100,6 @@ func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, co
 	}
 
 	return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{v: recs, total: total}}}, nil
-
 }
 
 func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []error {
@@ -168,7 +167,7 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	if a.limit == 0 {
 		a.limit = InstallPlansTopX
 	}
-	cnts := []int{}
+	var cnts []int
 	for _, v := range a.v {
 		cnts = append(cnts, v.Count)
 	}
@@ -185,7 +184,7 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	st["TOTAL_NONUNIQ_COUNT"] = len(a.v)
 	sr["stats"] = st
 	uls := 0
-	it := []interface{}{}
+	var it []interface{}
 	for _, v := range a.v {
 		if v.Count >= countLimit {
 			kvp := map[string]interface{}{}

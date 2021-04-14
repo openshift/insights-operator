@@ -15,7 +15,7 @@ type Record struct {
 	Item        Marshalable
 }
 
-// Filename with extention, if present
+// Filename with extension, if present
 func (r *Record) Filename() string {
 	extension := r.Item.GetExtension()
 	if len(extension) > 0 {

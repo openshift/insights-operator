@@ -28,8 +28,8 @@ func GatherClusterProxy(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherClusterProxy(g.ctx, gatherConfigClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherClusterProxy(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

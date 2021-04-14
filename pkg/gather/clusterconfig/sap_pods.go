@@ -47,8 +47,8 @@ func GatherSAPPods(g *Gatherer, c chan<- gatherResult) {
 		return
 	}
 
-	records, errors := gatherSAPPods(g.ctx, gatherDynamicClient, gatherKubeClient.CoreV1(), gatherJobsClient)
-	c <- gatherResult{records: records, errors: errors}
+	records, errs := gatherSAPPods(g.ctx, gatherDynamicClient, gatherKubeClient.CoreV1(), gatherJobsClient)
+	c <- gatherResult{records: records, errors: errs}
 }
 
 func gatherSAPPods(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface, jobsClient batchv1client.BatchV1Interface) ([]record.Record, []error) {
@@ -62,7 +62,7 @@ func gatherSAPPods(ctx context.Context, dynamicClient dynamic.Interface, coreCli
 		return nil, []error{err}
 	}
 
-	records := []record.Record{}
+	var records []record.Record
 	collectedNamespaces := map[string]struct{}{}
 	for _, datahub := range datahubsList.Items {
 		datahubNamespace := datahub.GetNamespace()

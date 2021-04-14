@@ -29,8 +29,8 @@ func GatherCRD(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherCRD(g.ctx, crdClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherCRD(g.ctx, crdClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherCRD(ctx context.Context, crdClient apixv1.ApiextensionsV1Interface) ([]record.Record, []error) {
@@ -38,7 +38,7 @@ func gatherCRD(ctx context.Context, crdClient apixv1.ApiextensionsV1Interface) (
 		"volumesnapshots.snapshot.storage.k8s.io",
 		"volumesnapshotcontents.snapshot.storage.k8s.io",
 	}
-	records := []record.Record{}
+	var records []record.Record
 	for _, crdName := range toBeCollected {
 		crd, err := crdClient.CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
 		// Log missing CRDs, but do not return the error.

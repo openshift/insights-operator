@@ -39,8 +39,8 @@ func GatherServiceAccounts(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherServiceAccounts(g.ctx, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errors}
+	records, errs := gatherServiceAccounts(g.ctx, gatherKubeClient.CoreV1())
+	c <- gatherResult{records, errs}
 }
 
 func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
@@ -52,8 +52,8 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 		return nil, []error{err}
 	}
 	totalServiceAccounts := 0
-	serviceAccounts := []corev1.ServiceAccount{}
-	records := []record.Record{}
+	var serviceAccounts []corev1.ServiceAccount
+	var records []record.Record
 	namespaces := defaultNamespaces
 	// collect from all openshift* namespaces + kubernetes defaults
 	for _, item := range config.Items {

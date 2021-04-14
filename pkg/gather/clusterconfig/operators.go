@@ -243,7 +243,7 @@ func gatherUnhealthyClusterOperator(ctx context.Context, items []configv1.Cluste
 	var records []record.Record
 
 	namespaceEventsCollected := sets.NewString()
-	pods := []*corev1.Pod{}
+	var pods []*corev1.Pod
 	totalContainers := 0
 
 	for _, item := range items {
@@ -319,7 +319,6 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 			continue
 		}
 		filteredEventIndex = append(filteredEventIndex, i)
-
 	}
 	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
 	for i, index := range filteredEventIndex {

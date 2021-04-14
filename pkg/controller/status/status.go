@@ -122,7 +122,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	// calculate the current controller state
 	var last time.Time
 	var reason string
-	var errors []string
+	var errs []string
 	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage string
 	allReady := true
 	for i, source := range c.Sources() {
@@ -170,7 +170,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 
 		if degradingFailure {
 			reason = summary.Reason
-			errors = append(errors, summary.Message)
+			errs = append(errs, summary.Message)
 		}
 
 		if last.Before(summary.LastTransitionTime) {
@@ -178,17 +178,17 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		}
 	}
 	var errorMessage string
-	switch len(errors) {
+	switch len(errs) {
 	case 0:
 	case 1:
 		if len(reason) == 0 {
 			reason = "UnknownError"
 		}
-		errorMessage = errors[0]
+		errorMessage = errs[0]
 	default:
 		reason = "MultipleFailures"
-		sort.Strings(errors)
-		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errors, "\n* "))
+		sort.Strings(errs)
+		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
 	}
 	if !c.configurator.Config().Report {
 		disabledReason = "Disabled"
@@ -371,7 +371,6 @@ func (c *Controller) Start(ctx context.Context) error {
 				klog.Errorf("Unable to write cluster operator status: %v", err)
 			}
 		}
-
 	}, time.Second, ctx.Done())
 	return nil
 }
@@ -398,7 +397,6 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 				klog.Info("The initial operator extension status is healthy")
 			}
 		}
-
 	}
 
 	updated := c.merge(existing)
@@ -458,7 +456,7 @@ func removeOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusC
 	if conditions == nil {
 		return
 	}
-	newConditions := []configv1.ClusterOperatorStatusCondition{}
+	var newConditions []configv1.ClusterOperatorStatusCondition
 	for _, condition := range *conditions {
 		if condition.Type != conditionType {
 			newConditions = append(newConditions, condition)

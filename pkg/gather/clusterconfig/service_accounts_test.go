@@ -69,7 +69,7 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			}
 			bts, err := sa[0].Item.Marshal(context.Background())
 			if err != nil {
-				t.Fatalf("error marshalling %s", err)
+				t.Fatalf("error marshaling %s", err)
 			}
 			s := string(bts)
 			if test.exp != s {

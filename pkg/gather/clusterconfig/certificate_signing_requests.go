@@ -45,8 +45,8 @@ func GatherCertificateSigningRequests(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1())
-	c <- gatherResult{records, errors}
+	records, errs := gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1())
+	c <- gatherResult{records, errs}
 }
 
 func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1.CertificateSigningRequestsGetter) ([]record.Record, []error) {
@@ -186,8 +186,9 @@ func anonymizeCSRRequest(r *certificatesv1api.CertificateSigningRequest, c *CSRA
 		klog.V(2).Infof("Invalid certificate signature in CSR Request %s in namespace %s. Error %s", r.Name, r.Namespace, err)
 		return
 	}
+
 	c.Spec.Request = &CsrFeatures{}
-	c.Spec.Request.ValidSignature = err == nil
+	c.Spec.Request.ValidSignature = true
 	c.Spec.Request.Subject = anonymizePkxName(csr.Subject)
 
 	c.Spec.Request.SignatureAlgorithm = csr.SignatureAlgorithm.String()

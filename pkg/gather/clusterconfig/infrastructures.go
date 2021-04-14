@@ -28,8 +28,8 @@ func GatherClusterInfrastructure(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherClusterInfrastructure(g.ctx, gatherConfigClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherClusterInfrastructure(g.ctx, gatherConfigClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherClusterInfrastructure(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {
@@ -41,7 +41,6 @@ func gatherClusterInfrastructure(ctx context.Context, configClient configv1clien
 		return nil, []error{err}
 	}
 	return []record.Record{{Name: "config/infrastructure", Item: record.JSONMarshaller{Object: anonymizeInfrastructure(config)}}}, nil
-
 }
 
 func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastructure {

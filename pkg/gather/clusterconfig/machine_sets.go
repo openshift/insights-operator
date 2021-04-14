@@ -30,8 +30,8 @@ func GatherMachineSet(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherMachineSet(g.ctx, dynamicClient)
-	c <- gatherResult{records, errors}
+	records, errs := gatherMachineSet(g.ctx, dynamicClient)
+	c <- gatherResult{records, errs}
 }
 
 func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -43,7 +43,7 @@ func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]r
 	if err != nil {
 		return nil, []error{err}
 	}
-	records := []record.Record{}
+	var records []record.Record
 	for _, i := range machineSets.Items {
 		recordName := fmt.Sprintf("machinesets/%s", i.GetName())
 		if i.GetNamespace() != "" {
@@ -55,5 +55,4 @@ func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]r
 		})
 	}
 	return records, nil
-
 }
