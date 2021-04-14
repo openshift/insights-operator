@@ -22,6 +22,8 @@ type ConfigReporter interface {
 	SetConfig(*config.Controller)
 }
 
+// Responsible for periodically checking and (if necessary) updating the local configs/tokens
+// according to the configs/tokens present on the cluster.
 type Controller struct {
 	kubeClient kubernetes.Interface
 
@@ -34,7 +36,8 @@ type Controller struct {
 	listeners     []chan struct{}
 }
 
-func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Controller {
+// Creates a new configobsever, the configs/tokens are updated from the configs/tokens present in the cluster if possible.
+func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Controller { //nolint: gocritic
 	c := &Controller{
 		kubeClient:    kubeClient,
 		defaultConfig: defaultConfig,
@@ -62,17 +65,18 @@ func (c *Controller) Start(ctx context.Context) {
 	}, c.checkPeriod, ctx.Done())
 }
 
+// Updates the stored tokens from the secrets in the cluster. (if present)
 func (c *Controller) retrieveToken(ctx context.Context) error {
 	var nextConfig config.Controller
 
-	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
+	klog.V(2).Infof("Refreshing configuration from cluster pull secret") //nolint: gomnd
 	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "pull-secret", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("pull-secret does not exist")
+			klog.V(4).Infof("pull-secret does not exist") //nolint: gomnd
 			err = nil
 		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check pull-secret: %v", err)
+			klog.V(2).Infof("Operator does not have permission to check pull-secret: %v", err) //nolint: gomnd
 			err = nil
 		} else {
 			err = fmt.Errorf("could not check pull-secret: %v", err)
@@ -81,7 +85,7 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 	if secret != nil {
 		if data := secret.Data[".dockerconfigjson"]; len(data) > 0 {
 			var pullSecret serializedAuthMap
-			if err := json.Unmarshal(data, &pullSecret); err != nil {
+			if err := json.Unmarshal(data, &pullSecret); err != nil { //nolint: govet
 				klog.Errorf("Unable to unmarshal cluster pull-secret: %v", err)
 			}
 			if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
@@ -90,7 +94,7 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 					return fmt.Errorf("cluster authorization token is not valid: contains newlines")
 				}
 				if len(token) > 0 {
-					klog.V(4).Info("Found cloud.openshift.com token")
+					klog.V(4).Info("Found cloud.openshift.com token") //nolint: gomnd
 					nextConfig.Token = token
 				}
 			}
@@ -104,17 +108,18 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 	return nil
 }
 
-func (c *Controller) retrieveConfig(ctx context.Context) error {
+// Updates the stored configs from the secrets in the cluster. (if present)
+func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo
 	var nextConfig config.Controller
 
-	klog.V(2).Infof("Refreshing configuration from cluster secret")
+	klog.V(2).Infof("Refreshing configuration from cluster secret") //nolint: gomnd
 	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "support", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("Support secret does not exist")
+			klog.V(4).Infof("Support secret does not exist") //nolint: gomnd
 			err = nil
 		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err)
+			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err) //nolint: gomnd
 			err = nil
 		} else {
 			err = fmt.Errorf("could not check support secret: %v", err)
@@ -143,10 +148,10 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 			nextConfig.ReportEndpoint = string(reportEndpoint)
 		}
 		if enableGlobalObfuscation, ok := secret.Data["enableGlobalObfuscation"]; ok {
-			nextConfig.EnableGlobalObfuscation = strings.ToLower(string(enableGlobalObfuscation)) == "true"
+			nextConfig.EnableGlobalObfuscation = strings.EqualFold(string(enableGlobalObfuscation), "true")
 		}
 		if reportPullingDelay, ok := secret.Data["reportPullingDelay"]; ok {
-			if v, err := time.ParseDuration(string(reportPullingDelay)); err == nil {
+			if v, err := time.ParseDuration(string(reportPullingDelay)); err == nil { //nolint: govet
 				nextConfig.ReportPullingDelay = v
 			} else {
 				klog.Warningf(
@@ -158,7 +163,7 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 			nextConfig.ReportPullingDelay = time.Duration(-1)
 		}
 		if reportPullingTimeout, ok := secret.Data["reportPullingTimeout"]; ok {
-			if v, err := time.ParseDuration(string(reportPullingTimeout)); err == nil {
+			if v, err := time.ParseDuration(string(reportPullingTimeout)); err == nil { //nolint: govet
 				nextConfig.ReportPullingTimeout = v
 			} else {
 				klog.Warningf(
@@ -168,7 +173,7 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 			}
 		}
 		if reportMinRetryTime, ok := secret.Data["reportMinRetryTime"]; ok {
-			if v, err := time.ParseDuration(string(reportMinRetryTime)); err == nil {
+			if v, err := time.ParseDuration(string(reportMinRetryTime)); err == nil { //nolint: govet
 				nextConfig.ReportMinRetryTime = v
 			} else {
 				klog.Warningf(
@@ -200,13 +205,17 @@ func (c *Controller) retrieveConfig(ctx context.Context) error {
 	return nil
 }
 
+// Provides the config in a thread-safe way.
 func (c *Controller) Config() *config.Controller {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.config
 }
 
-func (c *Controller) ConfigChanged() (<-chan struct{}, func()) {
+// Subscribe for config changes
+// 1.Param: A channel where the listener is notified that the config has changed.
+// 2.Param: A func which can be used to unsubscribe from the config changes.
+func (c *Controller) ConfigChanged() (configCh <-chan struct{}, closeFn func()) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	position := -1
@@ -229,17 +238,17 @@ func (c *Controller) ConfigChanged() (<-chan struct{}, func()) {
 	}
 }
 
-func (c *Controller) setTokenConfig(config *config.Controller) {
+func (c *Controller) setTokenConfig(operatorConfig *config.Controller) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.tokenConfig = config
+	c.tokenConfig = operatorConfig
 	c.mergeConfigLocked()
 }
 
-func (c *Controller) setSecretConfig(config *config.Controller) {
+func (c *Controller) setSecretConfig(operatorConfig *config.Controller) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.secretConfig = config
+	c.secretConfig = operatorConfig
 	c.mergeConfigLocked()
 }
 
@@ -276,13 +285,29 @@ func (c *Controller) mergeConfigLocked() {
 	c.setConfigLocked(&cfg)
 }
 
-func (c *Controller) setConfigLocked(config *config.Controller) {
+func (c *Controller) setConfigLocked(operatorConfig *config.Controller) {
 	if c.config != nil {
-		if !reflect.DeepEqual(c.config, config) {
-			klog.V(2).Infof(
-				"Configuration updated: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s minRetryTime=%s pollingTimeout=%s",
-				config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0, config.ReportEndpoint,
-				config.ReportPullingDelay, config.ReportMinRetryTime, config.ReportPullingTimeout)
+		if !reflect.DeepEqual(c.config, operatorConfig) {
+			klog.V(2).Infof( //nolint: gomnd
+				"Configuration updated: "+
+					"enabled=%t "+
+					"endpoint=%s "+
+					"interval=%s "+
+					"username=%t "+
+					"token=%t "+
+					"reportEndpoint=%s "+
+					"initialPollingDelay=%s "+
+					"minRetryTime=%s "+
+					"pollingTimeout=%s",
+				operatorConfig.Report,
+				operatorConfig.Endpoint,
+				operatorConfig.Interval,
+				len(operatorConfig.Username) > 0,
+				len(operatorConfig.Token) > 0,
+				operatorConfig.ReportEndpoint,
+				operatorConfig.ReportPullingDelay,
+				operatorConfig.ReportMinRetryTime,
+				operatorConfig.ReportPullingTimeout)
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -294,12 +319,28 @@ func (c *Controller) setConfigLocked(config *config.Controller) {
 			}
 		}
 	} else {
-		klog.V(2).Infof(
-			"Configuration set: enabled=%t endpoint=%s interval=%s username=%t token=%t reportEndpoint=%s initialPollingDelay=%s minRetryTime=%s pollingTimeout=%s",
-			config.Report, config.Endpoint, config.Interval, len(config.Username) > 0, len(config.Token) > 0, config.ReportEndpoint,
-			config.ReportPullingDelay, config.ReportMinRetryTime, config.ReportPullingTimeout)
+		klog.V(2).Infof( //nolint: gomnd
+			"Configuration updated: "+
+				"enabled=%t "+
+				"endpoint=%s "+
+				"interval=%s "+
+				"username=%t "+
+				"token=%t "+
+				"reportEndpoint=%s "+
+				"initialPollingDelay=%s "+
+				"minRetryTime=%s "+
+				"pollingTimeout=%s",
+			operatorConfig.Report,
+			operatorConfig.Endpoint,
+			operatorConfig.Interval,
+			len(operatorConfig.Username) > 0,
+			len(operatorConfig.Token) > 0,
+			operatorConfig.ReportEndpoint,
+			operatorConfig.ReportPullingDelay,
+			operatorConfig.ReportMinRetryTime,
+			operatorConfig.ReportPullingTimeout)
 	}
-	c.config = config
+	c.config = operatorConfig
 }
 
 type serializedAuthMap struct {
