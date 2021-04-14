@@ -60,6 +60,10 @@ unit-verbose:
 ## Linting
 ## --------------------------------------
 
+.PHONY: precommit
+precommit: ## Executes the pre-commit hook (check the stashed changes)
+	./.githooks/pre-commit
+
 .PHONY: lint
 lint: $(GOLANGCI_LINT) ## Executes the linting tool (vet, sec, and others)
 	$(GOLANGCI_LINT) run
