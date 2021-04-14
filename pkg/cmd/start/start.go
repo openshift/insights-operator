@@ -58,7 +58,7 @@ func NewGather() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gather",
 		Short: "Does a single gather, without uploading it",
-		Run:   runGather(*operator, cfg),
+		Run:   runGather(operator, cfg),
 	}
 	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
 
@@ -66,9 +66,9 @@ func NewGather() *cobra.Command {
 }
 
 // Starts a single gather, main responsibility is loading in the necessary configs.
-func runGather(operator controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
+func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		if config := cmd.Flags().Lookup("config").Value.String(); len(config) == 0 {
+		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
 			klog.Fatalf("error: --config is required")
 		}
 		unstructured, _, _, err := cfg.Config()
@@ -81,32 +81,32 @@ func runGather(operator controller.GatherJob, cfg *controllercmd.ControllerComma
 		}
 		operator.Controller = cont
 
-		var kubeConfig *rest.Config
+		var clientConfig *rest.Config
 		if kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String(); len(kubeConfigPath) > 0 {
-			kubeConfigBytes, err := ioutil.ReadFile(kubeConfigPath)
+			kubeConfigBytes, err := ioutil.ReadFile(kubeConfigPath) //nolint: govet
 			if err != nil {
 				klog.Fatal(err)
 			}
-			config, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
+			kubeConfig, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
 			if err != nil {
 				klog.Fatal(err)
 			}
-			kubeConfig, err = config.ClientConfig()
+			clientConfig, err = kubeConfig.ClientConfig()
 			if err != nil {
 				klog.Fatal(err)
 			}
 		} else {
-			kubeConfig, err = rest.InClusterConfig()
+			clientConfig, err = rest.InClusterConfig()
 			if err != nil {
 				klog.Fatal(err)
 			}
 		}
-		protoConfig := rest.CopyConfig(kubeConfig)
+		protoConfig := rest.CopyConfig(clientConfig)
 		protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 		protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
 
 		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
-		err = operator.Gather(ctx, kubeConfig, protoConfig)
+		err = operator.Gather(ctx, clientConfig, protoConfig)
 		if err != nil {
 			klog.Fatal(err)
 		}
@@ -124,16 +124,16 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
 		serviceability.StartProfiler()
 
-		if config := cmd.Flags().Lookup("config").Value.String(); len(config) == 0 {
+		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
 			klog.Fatalf("error: --config is required")
 		}
 
-		unstructured, config, configBytes, err := cfg.Config()
+		unstructured, operatorConfig, configBytes, err := cfg.Config()
 		if err != nil {
 			klog.Fatal(err)
 		}
 
-		startingFileContent, observedFiles, err := cfg.AddDefaultRotationToConfig(config, configBytes)
+		startingFileContent, observedFiles, err := cfg.AddDefaultRotationToConfig(operatorConfig, configBytes)
 		if err != nil {
 			klog.Fatal(err)
 		}
@@ -142,7 +142,7 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 		if data, err := ioutil.ReadFile(serviceCACertPath); err == nil {
 			startingFileContent[serviceCACertPath] = data
 		} else {
-			klog.V(4).Infof("Unable to read service ca bundle: %v", err)
+			klog.V(4).Infof("Unable to read service ca bundle: %v", err) //nolint: gomnd
 		}
 		observedFiles = append(observedFiles, serviceCACertPath)
 
@@ -160,8 +160,8 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 
 		builder := controllercmd.NewController("openshift-insights-operator", operator.Run).
 			WithKubeConfigFile(cmd.Flags().Lookup("kubeconfig").Value.String(), nil).
-			WithLeaderElection(config.LeaderElection, "", "openshift-insights-operator-lock").
-			WithServer(config.ServingInfo, config.Authentication, config.Authorization).
+			WithLeaderElection(operatorConfig.LeaderElection, "", "openshift-insights-operator-lock").
+			WithServer(operatorConfig.ServingInfo, operatorConfig.Authentication, operatorConfig.Authorization).
 			WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
 		if err := builder.Run(ctx2, unstructured); err != nil {
 			klog.Fatal(err)
