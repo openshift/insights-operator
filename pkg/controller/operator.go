@@ -45,7 +45,7 @@ type Operator struct {
 // 3. Initiates the recorder and starts the periodic record pruneing
 // 4. Starts the periodic gathering
 // 5. Creates the insights-client and starts uploader and reporter
-func (s *Operator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error {
+func (s *Operator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error { //nolint: funlen
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	initialDelay := 0 * time.Second
 	cont, err := config.LoadConfig(s.Controller, controller.ComponentConfig.Object, config.ToController)
@@ -131,9 +131,12 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
-	err = wait.PollImmediate(20*time.Second, wait.Jitter(s.Controller.Interval/24, 0.1), isRunning(ctx, gatherKubeConfig))
+	initialCheckTimeout := s.Controller.Interval / 24
+	initialCheckInterval := 20 * time.Second
+	baseInitialDelay := s.Controller.Interval / 12
+	err = wait.PollImmediate(initialCheckInterval, wait.Jitter(initialCheckTimeout, 0.1), isRunning(ctx, gatherKubeConfig))
 	if err != nil {
-		initialDelay = wait.Jitter(s.Controller.Interval/12, 0.5)
+		initialDelay = wait.Jitter(baseInitialDelay, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
 	go periodicGather.Run(ctx.Done(), initialDelay)
@@ -189,7 +192,7 @@ func isRunning(ctx context.Context, kubeConfig *rest.Config) wait.ConditionFunc 
 			}
 			return false, nil
 		}
-		for _, c := range pod.Status.ContainerStatuses {
+		for _, c := range pod.Status.ContainerStatuses { //nolint: gocritic
 			// all containers has to be in running state to consider them healthy
 			if c.LastTerminationState.Terminated != nil || c.LastTerminationState.Waiting != nil {
 				klog.Info("The last pod state is unhealthy")
