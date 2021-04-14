@@ -24,6 +24,19 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// CompactedEvent holds one Namespace Event
+type CompactedEvent struct {
+	Namespace     string    `json:"namespace"`
+	LastTimestamp time.Time `json:"lastTimestamp"`
+	Reason        string    `json:"reason"`
+	Message       string    `json:"message"`
+}
+
+// CompactedEventList is collection of events
+type CompactedEventList struct {
+	Items []CompactedEvent `json:"items"`
+}
+
 func GatherUnhealthyClusterOperator(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)

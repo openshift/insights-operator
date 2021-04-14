@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,19 +34,6 @@ type clusterOperatorResource struct {
 	Kind       string      `json:"kind"`
 	Name       string      `json:"name"`
 	Spec       interface{} `json:"spec"`
-}
-
-// CompactedEvent holds one Namespace Event
-type CompactedEvent struct {
-	Namespace     string    `json:"namespace"`
-	LastTimestamp time.Time `json:"lastTimestamp"`
-	Reason        string    `json:"reason"`
-	Message       string    `json:"message"`
-}
-
-// CompactedEventList is collection of events
-type CompactedEventList struct {
-	Items []CompactedEvent `json:"items"`
 }
 
 // GatherClusterOperators collects all the ClusterOperators definitions and their resources.
