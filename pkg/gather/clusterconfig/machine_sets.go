@@ -14,6 +14,12 @@ import (
 
 var machineSetSchema = schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinesets"}
 
+// GatherMachineSet collects MachineSet information
+//
+// The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
+// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+//
+// Location in archive: machinesets/
 func GatherMachineSet(g *Gatherer) func() ([]record.Record, []error) {
 	return func() ([]record.Record, []error) {
 		dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
@@ -24,12 +30,6 @@ func GatherMachineSet(g *Gatherer) func() ([]record.Record, []error) {
 	}
 }
 
-//GatherMachineSet collects MachineSet information
-//
-// The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
-//
-// Location in archive: machinesets/
 func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	machineSets, err := dynamicClient.Resource(machineSetSchema).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
