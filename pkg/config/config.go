@@ -58,6 +58,28 @@ type HTTPConfig struct {
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
 
+// Returns the important fields of the config in a string form
+func (c *Controller) ToString() string {
+	return fmt.Sprintf("enabled=%t "+
+		"endpoint=%s "+
+		"interval=%s "+
+		"username=%t "+
+		"token=%t "+
+		"reportEndpoint=%s "+
+		"initialPollingDelay=%s "+
+		"minRetryTime=%s "+
+		"pollingTimeout=%s",
+		c.Report,
+		c.Endpoint,
+		c.Interval,
+		len(c.Username) > 0,
+		len(c.Token) > 0,
+		c.ReportEndpoint,
+		c.ReportPullingDelay,
+		c.ReportMinRetryTime,
+		c.ReportPullingTimeout)
+}
+
 // Creates/updates a config Controller according to the Serialized config.
 // Makes sure that the config is correct.
 func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // nolint: gocyclo

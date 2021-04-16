@@ -288,26 +288,7 @@ func (c *Controller) mergeConfigLocked() {
 func (c *Controller) setConfigLocked(operatorConfig *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, operatorConfig) {
-			klog.V(2).Infof( //nolint: gomnd
-				"Configuration updated: "+
-					"enabled=%t "+
-					"endpoint=%s "+
-					"interval=%s "+
-					"username=%t "+
-					"token=%t "+
-					"reportEndpoint=%s "+
-					"initialPollingDelay=%s "+
-					"minRetryTime=%s "+
-					"pollingTimeout=%s",
-				operatorConfig.Report,
-				operatorConfig.Endpoint,
-				operatorConfig.Interval,
-				len(operatorConfig.Username) > 0,
-				len(operatorConfig.Token) > 0,
-				operatorConfig.ReportEndpoint,
-				operatorConfig.ReportPullingDelay,
-				operatorConfig.ReportMinRetryTime,
-				operatorConfig.ReportPullingTimeout)
+			klog.V(2).Infof("Configuration updated: %s", operatorConfig.ToString()) //nolint: gomnd
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -319,26 +300,7 @@ func (c *Controller) setConfigLocked(operatorConfig *config.Controller) {
 			}
 		}
 	} else {
-		klog.V(2).Infof( //nolint: gomnd
-			"Configuration updated: "+
-				"enabled=%t "+
-				"endpoint=%s "+
-				"interval=%s "+
-				"username=%t "+
-				"token=%t "+
-				"reportEndpoint=%s "+
-				"initialPollingDelay=%s "+
-				"minRetryTime=%s "+
-				"pollingTimeout=%s",
-			operatorConfig.Report,
-			operatorConfig.Endpoint,
-			operatorConfig.Interval,
-			len(operatorConfig.Username) > 0,
-			len(operatorConfig.Token) > 0,
-			operatorConfig.ReportEndpoint,
-			operatorConfig.ReportPullingDelay,
-			operatorConfig.ReportMinRetryTime,
-			operatorConfig.ReportPullingTimeout)
+		klog.V(2).Infof("Configuration set: %s", operatorConfig.ToString()) //nolint: gomnd
 	}
 	c.config = operatorConfig
 }
