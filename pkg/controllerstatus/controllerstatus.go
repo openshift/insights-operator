@@ -22,6 +22,7 @@ const (
 	GatheringReport Operation = "GatheringReport"
 )
 
+// Represents the status summary of an Operation
 type Summary struct {
 	Operation          Operation
 	Healthy            bool
@@ -31,6 +32,7 @@ type Summary struct {
 	Count              int
 }
 
+// Represents the status of a given part of the operator
 type Simple struct {
 	Name string
 
@@ -38,12 +40,13 @@ type Simple struct {
 	summary Summary
 }
 
-func (s *Simple) UpdateStatus(summary Summary) {
+// Updates the status, keeps track how long a status have been in effect
+func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if s.summary.Healthy != summary.Healthy {
-		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
+		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message) //nolint: gomnd
 		if summary.LastTransitionTime.IsZero() {
 			summary.LastTransitionTime = time.Now()
 		}
@@ -58,13 +61,14 @@ func (s *Simple) UpdateStatus(summary Summary) {
 		return
 	}
 	if s.summary.Message != summary.Message || s.summary.Reason != summary.Reason {
-		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
+		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message) //nolint: gomnd
 		s.summary.Reason = summary.Reason
 		s.summary.Message = summary.Message
 		return
 	}
 }
 
+// Retrives the status summary in a thread-safe way
 func (s *Simple) CurrentStatus() (Summary, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
