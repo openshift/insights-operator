@@ -80,12 +80,15 @@ func gatherMonitoringCM(ctx context.Context, coreClient corev1client.CoreV1Inter
 	}
 	records := make([]record.Record, 0)
 	for dk, dv := range monitoringCM.Data {
+		j, err := yaml.YAMLToJSON([]byte(dv))
+		if err != nil {
+			return nil, []error{err}
+		}
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/configmaps/%s/%s/%s", monitoringCM.Namespace, monitoringCM.Name, strings.TrimSuffix(dk, ".yaml")),
-			Item: ConfigMapAnonymizer{v: []byte(dv), encodeBase64: false, yamlToJSON: true},
+			Item: RawJSON(j),
 		})
 	}
-
 	return records, nil
 }
 
@@ -94,14 +97,10 @@ func gatherMonitoringCM(ctx context.Context, coreClient corev1client.CoreV1Inter
 type ConfigMapAnonymizer struct {
 	v            []byte
 	encodeBase64 bool
-	yamlToJSON   bool
 }
 
 // Marshal implements serialization of Node with anonymization
 func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	if a.yamlToJSON {
-		return yaml.YAMLToJSON(a.v)
-	}
 	c := []byte(anonymizeConfigMap(a.v))
 	if a.encodeBase64 {
 		buff := make([]byte, base64.StdEncoding.EncodedLen(len(c)))
@@ -113,9 +112,6 @@ func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized openshift objects
 func (a ConfigMapAnonymizer) GetExtension() string {
-	if a.yamlToJSON {
-		return "json"
-	}
 	return ""
 }
 
@@ -139,4 +135,16 @@ ANONYMIZED
 		}
 	}
 	return sb.String()
+}
+
+type RawJSON []byte
+
+// Marshal just returns bytes
+func (r RawJSON) Marshal(_ context.Context) ([]byte, error) {
+	return r, nil
+}
+
+// GetExtension returns json extension
+func (r RawJSON) GetExtension() string {
+	return "json"
 }

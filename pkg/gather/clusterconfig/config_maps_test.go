@@ -157,3 +157,63 @@ func Test_ConfigMap_Gather(t *testing.T) {
 		}
 	}
 }
+
+func Test_ConfigMap_YAML_Data(t *testing.T) {
+	var cases = []struct {
+		testName      string
+		testCM        corev1.ConfigMap
+		expNumOfRec   int
+		expectedError error
+	}{
+		{
+			"Valid monitoring config map",
+			corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster-monitoring-config",
+					Namespace: "openshift-monitoring",
+				},
+				Data: map[string]string{
+					"config.yaml": "\"valid\"",
+				},
+			},
+			1,
+			nil,
+		},
+		{
+			"Invalid monitoring config map",
+			corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cluster-monitoring-config",
+					Namespace: "openshift-monitoring",
+				},
+				Data: map[string]string{
+					"config.yaml": "invalid: test:",
+				},
+			},
+			0,
+			fmt.Errorf("yaml: mapping values are not allowed in this context"),
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.testName, func(t *testing.T) {
+			coreClient := kubefake.NewSimpleClientset()
+			_, err := coreClient.CoreV1().ConfigMaps(tt.testCM.Namespace).Create(context.Background(), &tt.testCM, metav1.CreateOptions{})
+			if err != nil {
+				t.Fatalf("cannot create %s config map: %v", tt.testCM.Name, err)
+			}
+			records, errs := gatherMonitoringCM(context.Background(), coreClient.CoreV1())
+			if len(errs) > 0 {
+				if errs[0].Error() != tt.expectedError.Error() {
+					t.Fatalf("unexpected errors: %v", errs[0].Error())
+				}
+			}
+			if tt.expNumOfRec > 0 {
+				r := records[0].Item.(RawJSON)
+				if string(r) != tt.testCM.Data["config.yaml"] {
+					t.Fatalf("unexpected value %s", string(r))
+				}
+			}
+		})
+	}
+}
