@@ -3,6 +3,7 @@ package clusterconfig
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	controlplanev1 "github.com/openshift/api/operatorcontrolplane/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,12 +76,14 @@ func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface, coreClient
 		}
 	}
 
-	reasons := map[string]map[string]int{}
+	reasons := map[string]map[string]time.Time{}
 	for _, entry := range unsuccessful {
 		if _, exists := reasons[entry.Reason]; !exists {
-			reasons[entry.Reason] = map[string]int{}
+			reasons[entry.Reason] = map[string]time.Time{}
 		}
-		reasons[entry.Reason][entry.Message]++
+		if oldTime, exists := reasons[entry.Reason][entry.Message]; !exists || entry.Start.After(oldTime) {
+			reasons[entry.Reason][entry.Message] = entry.Start.Time
+		}
 	}
 
 	return []record.Record{{Name: "config/podnetworkconnectivitychecks", Item: record.JSONMarshaller{Object: reasons}}}, nil

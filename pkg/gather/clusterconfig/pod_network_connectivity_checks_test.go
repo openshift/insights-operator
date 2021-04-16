@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +59,7 @@ status:
 	if !ok {
 		t.Fatalf("unexpected type of record item in the first run: %q", rec.Name)
 	}
-	if !reflect.DeepEqual(recItem.Object, map[string]map[string]int{}) {
+	if !reflect.DeepEqual(recItem.Object, map[string]map[string]time.Time{}) {
 		t.Fatalf("unexpected value of record item in the first run: %#v", recItem)
 	}
 
@@ -80,7 +81,7 @@ status:
 	if !ok {
 		t.Fatalf("unexpected type of record item in the second run: %q", rec.Name)
 	}
-	if !reflect.DeepEqual(recItem.Object, map[string]map[string]int{"TestReason": {"TestMessage": 1}}) {
+	if !reflect.DeepEqual(recItem.Object, map[string]map[string]time.Time{"TestReason": {"TestMessage": time.Time{}}}) {
 		t.Fatalf("unexpected value of record item in the second run: %#v", recItem)
 	}
 }
