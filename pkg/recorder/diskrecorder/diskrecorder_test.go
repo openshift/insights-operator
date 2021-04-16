@@ -64,7 +64,6 @@ func Test_Diskrecorder_Summary(t *testing.T) {
 	since := time.Now().Add(time.Duration(-5) * time.Minute)
 	dr := newDiskRecorder()
 	reader, ok, err := dr.Summary(context.TODO(), since)
-	// assert.Implements(t, io.ReadCloser{}, reader)
 	assert.IsType(t, reader, reader)
 	assert.True(t, ok)
 	assert.Nil(t, err)
