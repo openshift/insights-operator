@@ -1,6 +1,7 @@
 [
     {
         "name": "eap.openshift-operators",
+        "displayName": "JBoss EAP",
         "version": "v2.1.1",
         "csv_conditions": [
             {
@@ -42,6 +43,7 @@
     },
     {
         "name": "elasticsearch-operator.openshift-operators-redhat",
+        "displayName": "OpenShift Elasticsearch Operator",
         "version": "4.6.0-202102200141.p0",
         "csv_conditions": [
             {
@@ -83,6 +85,7 @@
     },
     {
         "name": "kiali-ossm.openshift-operators",
+        "displayName": "Kiali Operator",
         "version": "v1.24.5",
         "csv_conditions": [
             {
@@ -124,6 +127,7 @@
     },
     {
         "name": "postgresql-operator-dev4devs-com.psql-test",
+        "displayName": "PostgreSQL Operator by Dev4Ddevs.com",
         "version": "v0.1.1",
         "csv_conditions": [
             {
@@ -165,6 +169,7 @@
     },
     {
         "name": "radanalytics-spark.openshift-operators",
+        "displayName": "Apache Spark Operator",
         "version": "v1.1.0",
         "csv_conditions": [
             {
