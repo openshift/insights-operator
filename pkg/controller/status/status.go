@@ -39,8 +39,8 @@ type Configurator interface {
 	Config() *config.Controller
 }
 
-// Responsible for managing the status of the operator according the status of the sources.
-// Sources come from different major parts of the codebase, representing the status of said part of the codebase.
+// Responsible for managing the status of the operator according to the status of the sources.
+// Sources come from different major parts of the codebase, for the purpose of communicating their status with the controller.
 type Controller struct {
 	name         string
 	namespace    string
@@ -55,7 +55,7 @@ type Controller struct {
 	start    time.Time
 }
 
-// Creates a status conteroller, responsible for monitoring the operators status and updating the it's cluster status accordingly.
+// Creates a status controller, responsible for monitoring the operators status and updating the it's cluster status accordingly.
 func NewController(client configv1client.ConfigV1Interface,
 	coreClient corev1client.CoreV1Interface,
 	configurator Configurator, namespace string) *Controller {
