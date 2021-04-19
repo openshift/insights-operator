@@ -154,7 +154,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 }
 
 // Creates/updates a config Controller according to the Serialized config.
-// Makes sure that the config is correct, but only checks fields necessary for disconnected operatotion.
+// Makes sure that the config is correct, but only checks fields necessary for disconnected operation.
 func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
