@@ -37,7 +37,20 @@ type CompactedEventList struct {
 	Items []CompactedEvent `json:"items"`
 }
 
-func GatherUnhealthyClusterOperator(g *Gatherer, c chan<- gatherResult) {
+// GatherClusterOperatorPodsAndEvents collects all the ClusterOperators degraded Pods
+// for degraded cluster operators or that lives at the Cluster Operator's namespace, to collect:
+//
+// - Pod definitions
+// - Previous and current Pod Container logs (when available)
+// - Namespace Events
+//
+// * Location of pods in archive: config/pod/
+// * Location of events in archive: events/
+// * Id in config: operators_pods_and_events
+// * Spec config for CO resources since versions:
+//   * 4.6.16+
+//   * 4.7+
+func GatherClusterOperatorPodsAndEvents(g *Gatherer, c chan<- gatherResult) {
 	defer close(c)
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -50,7 +63,7 @@ func GatherUnhealthyClusterOperator(g *Gatherer, c chan<- gatherResult) {
 		return
 	}
 
-	records, errs := gatherUnhealthyClusterOperator(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1())
+	records, errs := gatherClusterOperatorPodsAndEvents(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1())
 	if errs != nil {
 		c <- gatherResult{records, []error{errs}}
 		return
@@ -59,7 +72,7 @@ func GatherUnhealthyClusterOperator(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, nil}
 }
 
-func gatherUnhealthyClusterOperator(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, error) {
+func gatherClusterOperatorPodsAndEvents(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, error) {
 	config, err := configClient.ClusterOperators().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil

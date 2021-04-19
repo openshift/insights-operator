@@ -17,23 +17,19 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-func newUnhealthyClusterOperator() configv1.ClusterOperator {
-	return configv1.ClusterOperator{
+func Test_UnhealtyOperators_GatherClusterOperatorPodsAndEvents(t *testing.T) {
+	testOperator := configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-clusteroperator",
 		},
 	}
-}
-
-func Test_UnhealtyOperators_GatherUnhealthyClusterOperator(t *testing.T) {
-	testOperator := newClusterOperator()
 	cfg := configfake.NewSimpleClientset()
 	_, err := cfg.ConfigV1().ClusterOperators().Create(context.Background(), &testOperator, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake clusteroperator", err)
 	}
 
-	_, err = gatherUnhealthyClusterOperator(context.Background(), cfg.ConfigV1(), kubefake.NewSimpleClientset().CoreV1())
+	_, err = gatherClusterOperatorPodsAndEvents(context.Background(), cfg.ConfigV1(), kubefake.NewSimpleClientset().CoreV1())
 	if err != nil {
 		t.Errorf("unexpected errors: %#v", err)
 		return

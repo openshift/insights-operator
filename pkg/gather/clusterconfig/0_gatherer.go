@@ -71,7 +71,7 @@ var gatherFunctions = map[string]gathering{
 	"pdbs":                              important(GatherPodDisruptionBudgets),
 	"metrics":                           failable(GatherMostRecentMetrics),
 	"operators":                         important(GatherClusterOperators),
-	"operators_unhealthy":               important(GatherUnhealthyClusterOperator),
+	"operators_pods_and_events":         important(GatherClusterOperatorPodsAndEvents),
 	"container_images":                  important(GatherContainerImages),
 	"workload_info":                     failable(GatherWorkloadInfo),
 	"nodes":                             important(GatherNodes),
