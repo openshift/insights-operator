@@ -31,7 +31,7 @@ func (d *DiskRecorder) Save(records record.MemoryRecords) (record.MemoryRecords,
 	start := time.Now()
 	defer func() {
 		if wrote > 0 {
-			klog.V(2).Infof("Wrote %d records to disk in %s", wrote, time.Since(start).Truncate(time.Millisecond)) //nolint: gomnd
+			klog.V(2).Infof("Wrote %d records to disk in %s", wrote, time.Since(start).Truncate(time.Millisecond))
 		}
 	}()
 
@@ -54,7 +54,7 @@ func (d *DiskRecorder) Save(records record.MemoryRecords) (record.MemoryRecords,
 		wrote = len(completed)
 	}()
 
-	klog.V(4).Infof("Writing %d records to %s", len(records), path) //nolint: gomnd
+	klog.V(4).Infof("Writing %d records to %s", len(records), path)
 
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
@@ -63,7 +63,7 @@ func (d *DiskRecorder) Save(records record.MemoryRecords) (record.MemoryRecords,
 		if err := tw.WriteHeader(&tar.Header{
 			Name:     record.Name,
 			ModTime:  record.At,
-			Mode:     int64(os.FileMode(0640).Perm()), //nolint: gomnd
+			Mode:     int64(os.FileMode(0640).Perm()),
 			Size:     int64(len(record.Data)),
 			Typeflag: tar.TypeReg,
 		}); err != nil {
@@ -115,7 +115,7 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 		return fmt.Errorf("failed to delete %d expired files: %v", len(errors), errors[0])
 	}
 	if count > 0 {
-		klog.V(4).Infof("Deleted %d files older than %s", count, olderThan.UTC().Format(time.RFC3339)) //nolint: gomnd
+		klog.V(4).Infof("Deleted %d files older than %s", count, olderThan.UTC().Format(time.RFC3339))
 	}
 	return nil
 }
@@ -143,7 +143,7 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadClose
 		return nil, false, nil
 	}
 	lastFile := recentFiles[len(recentFiles)-1]
-	klog.V(4).Infof("Found files to send: %v", lastFile) //nolint: gomnd
+	klog.V(4).Infof("Found files to send: %v", lastFile)
 	f, err := os.Open(filepath.Join(d.basePath, lastFile))
 	if err != nil {
 		return nil, false, nil

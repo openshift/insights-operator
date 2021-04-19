@@ -69,14 +69,14 @@ func (c *Controller) Start(ctx context.Context) {
 func (c *Controller) retrieveToken(ctx context.Context) error {
 	var nextConfig config.Controller
 
-	klog.V(2).Infof("Refreshing configuration from cluster pull secret") //nolint: gomnd
+	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
 	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "pull-secret", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("pull-secret does not exist") //nolint: gomnd
+			klog.V(4).Infof("pull-secret does not exist")
 			err = nil
 		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check pull-secret: %v", err) //nolint: gomnd
+			klog.V(2).Infof("Operator does not have permission to check pull-secret: %v", err)
 			err = nil
 		} else {
 			err = fmt.Errorf("could not check pull-secret: %v", err)
@@ -94,7 +94,7 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 					return fmt.Errorf("cluster authorization token is not valid: contains newlines")
 				}
 				if len(token) > 0 {
-					klog.V(4).Info("Found cloud.openshift.com token") //nolint: gomnd
+					klog.V(4).Info("Found cloud.openshift.com token")
 					nextConfig.Token = token
 				}
 			}
@@ -112,14 +112,14 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo
 	var nextConfig config.Controller
 
-	klog.V(2).Infof("Refreshing configuration from cluster secret") //nolint: gomnd
+	klog.V(2).Infof("Refreshing configuration from cluster secret")
 	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "support", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("Support secret does not exist") //nolint: gomnd
+			klog.V(4).Infof("Support secret does not exist")
 			err = nil
 		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err) //nolint: gomnd
+			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err)
 			err = nil
 		} else {
 			err = fmt.Errorf("could not check support secret: %v", err)
@@ -288,7 +288,7 @@ func (c *Controller) mergeConfigLocked() {
 func (c *Controller) setConfigLocked(operatorConfig *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, operatorConfig) {
-			klog.V(2).Infof("Configuration updated: %s", operatorConfig.ToString()) //nolint: gomnd
+			klog.V(2).Infof("Configuration updated: %s", operatorConfig.ToString())
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -300,7 +300,7 @@ func (c *Controller) setConfigLocked(operatorConfig *config.Controller) {
 			}
 		}
 	} else {
-		klog.V(2).Infof("Configuration set: %s", operatorConfig.ToString()) //nolint: gomnd
+		klog.V(2).Infof("Configuration set: %s", operatorConfig.ToString())
 	}
 	c.config = operatorConfig
 }

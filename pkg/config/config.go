@@ -195,6 +195,6 @@ func LoadConfig(controller Controller, obj map[string]interface{}, converter Con
 		return controller, err
 	}
 	data, _ := json.Marshal(cfg)
-	klog.V(2).Infof("Current config: %s", string(data)) //nolint: gomnd
+	klog.V(2).Infof("Current config: %s", string(data))
 	return *loadedController, nil
 }

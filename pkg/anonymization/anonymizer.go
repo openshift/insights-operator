@@ -257,7 +257,7 @@ func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 	intValue := big.NewInt(0)
 
 	for byteIndex, byteValue := range originalIP {
-		shiftTo := uint((len(originalIP) - byteIndex - 1) * 8) //nolint: gomnd
+		shiftTo := uint((len(originalIP) - byteIndex - 1) * 8)
 		intValue = intValue.Or(
 			intValue, big.NewInt(0).Lsh(big.NewInt(int64(byteValue)), shiftTo),
 		)
@@ -279,7 +279,7 @@ func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 		// we still want networks to be the same
 		var invertedMask net.IPMask
 		for _, maskByte := range mask {
-			invertedMask = append(invertedMask, maskByte^255) //nolint: gomnd
+			invertedMask = append(invertedMask, maskByte^255)
 		}
 
 		resultHostIP := resultIP.Mask(invertedMask)

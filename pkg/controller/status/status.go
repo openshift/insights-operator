@@ -98,7 +98,7 @@ func (c *Controller) SetLastReportedTime(at time.Time) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.reported.LastReportTime.IsZero() {
-		klog.V(2).Infof("Initializing last reported time to %s", at.UTC().Format(time.RFC3339)) //nolint: gomnd
+		klog.V(2).Infof("Initializing last reported time to %s", at.UTC().Format(time.RFC3339))
 	}
 	c.reported.LastReportTime.Time = at
 	c.triggerStatusUpdate()
@@ -139,7 +139,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
 		if !ready {
-			klog.V(4).Infof("Source %d %T is not ready", i, source) //nolint: gomnd
+			klog.V(4).Infof("Source %d %T is not ready", i, source)
 			allReady = false
 			continue
 		}
@@ -155,11 +155,11 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 
 		if summary.Operation == controllerstatus.Uploading {
 			if summary.Count < uploadFailuresCountThreshold {
-				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.", //nolint: gomnd
+				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 				degradingFailure = false
 			} else {
-				klog.V(4).Infof("Number of last upload failures %d exceeded than threshold %d. Marking as degraded.", //nolint: gomnd
+				klog.V(4).Infof("Number of last upload failures %d exceeded than threshold %d. Marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			}
 			uploadErrorReason = summary.Reason
@@ -173,10 +173,10 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		} else if summary.Operation == controllerstatus.GatheringReport {
 			degradingFailure = false
 			if summary.Count < GatherFailuresCountThreshold {
-				klog.V(5).Infof("Number of last gather failures %d lower than threshold %d. Not marking as disabled.", //nolint: gomnd
+				klog.V(5).Infof("Number of last gather failures %d lower than threshold %d. Not marking as disabled.",
 					summary.Count, GatherFailuresCountThreshold)
 			} else {
-				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as disabled.", //nolint: gomnd
+				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as disabled.",
 					summary.Count, GatherFailuresCountThreshold)
 				disabledReason = summary.Reason
 				disabledMessage = summary.Message
@@ -266,7 +266,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		}
 
 		if len(errorMessage) > 0 {
-			klog.V(4).Infof("The operator has some internal errors: %s", errorMessage) //nolint: gomnd
+			klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:               configv1.OperatorDegraded,
 				Status:             configv1.ConditionTrue,
@@ -305,7 +305,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	// update the Progressing condition with a summary of the current state
 	switch {
 	case isInitializing:
-		klog.V(4).Infof("The operator is still being initialized") //nolint: gomnd
+		klog.V(4).Infof("The operator is still being initialized")
 		// if we're still starting up and some sources are not ready, initialize the conditions
 		// but don't update
 		if findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorProgressing) == nil {
@@ -318,7 +318,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		}
 
 	case len(errorMessage) > 0:
-		klog.V(4).Infof("The operator has some internal errors: %s", errorMessage) //nolint: gomnd
+		klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
 		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
@@ -327,7 +327,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		})
 
 	case len(disabledMessage) > 0:
-		klog.V(4).Infof("The operator is marked as disabled") //nolint: gomnd
+		klog.V(4).Infof("The operator is marked as disabled")
 		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:               configv1.OperatorProgressing,
 			Status:             configv1.ConditionFalse,
@@ -337,7 +337,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		})
 
 	default:
-		klog.V(4).Infof("The operator is healthy") //nolint: gomnd
+		klog.V(4).Infof("The operator is healthy")
 		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
@@ -365,9 +365,9 @@ func (c *Controller) Start(ctx context.Context) error {
 	if err := c.updateStatus(ctx, true); err != nil {
 		return err
 	}
-	limiter := rate.NewLimiter(rate.Every(30*time.Second), 2) //nolint: gomnd
+	limiter := rate.NewLimiter(rate.Every(30*time.Second), 2)
 	go wait.Until(func() {
-		timer := time.NewTicker(2 * time.Minute) //nolint: gomnd
+		timer := time.NewTicker(2 * time.Minute)
 		defer timer.Stop()
 		for {
 			select {
@@ -424,7 +424,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 		updated.ObjectMeta = created.ObjectMeta
 		updated.Spec = created.Spec
 	} else if reflect.DeepEqual(updated.Status, existing.Status) {
-		klog.V(4).Infof("No status update necessary, objects are identical") //nolint: gomnd
+		klog.V(4).Infof("No status update necessary, objects are identical")
 		return nil
 	}
 

@@ -83,7 +83,7 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 // Running the gatherers in parallel should be a future improvement when a new gatherer is introduced.
 func (c *Controller) Gather() {
 	if !c.configurator.Config().Report {
-		klog.V(3).Info("Gather is disabled by configuration.") //nolint: gomnd
+		klog.V(3).Info("Gather is disabled by configuration.")
 		return
 	}
 
@@ -103,7 +103,7 @@ func (c *Controller) Gather() {
 			start := time.Now()
 			err := c.runGatherer(name)
 			if err == nil {
-				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond)) //nolint: gomnd
+				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
 				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
 				return true, nil
 			}
@@ -123,7 +123,7 @@ func (c *Controller) Gather() {
 func (c *Controller) runGatherer(name string) error {
 	gatherer, ok := c.gatherers[name]
 	if !ok {
-		klog.V(2).Infof("No such gatherer %s", name) //nolint: gomnd
+		klog.V(2).Infof("No such gatherer %s", name)
 		return nil
 	}
 	timeoutDuration := c.configurator.Config().Interval / 2
@@ -134,7 +134,7 @@ func (c *Controller) runGatherer(name string) error {
 			klog.Errorf("Unable to flush recorder: %v", err)
 		}
 	}()
-	klog.V(4).Infof("Running %s", name) //nolint: gomnd
+	klog.V(4).Infof("Running %s", name)
 	return gatherer.Gather(ctx, c.configurator.Config().Gather, c.recorder)
 }
 
