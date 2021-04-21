@@ -1,3 +1,4 @@
+//nolint: dupl
 package clusterconfig
 
 import (
@@ -14,8 +15,10 @@ import (
 
 // GatherContainerRuntimeConfig collects ContainerRuntimeConfig  information
 //
-// The Kubernetes api https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
-// Response see https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+// The Kubernetes api:
+//    https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+// Response see:
+//    https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 //
 // * Location in archive: config/containerruntimeconfigs/
 // * Id in config: container_runtime_configs
