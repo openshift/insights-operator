@@ -178,7 +178,6 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 		if err != nil {
 			return nil, []error{err}
 		}
-
 		for _, pod := range pods.Items {
 			// initialize the running state, including the namespace hash
 			if pod.Namespace != namespace {
@@ -193,13 +192,13 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 				namespaceHash = workloadHashString(h, namespace)
 				namespacePods = workloadNamespacePods{Shapes: make([]workloadPodShape, 0, 16)}
 			}
-
-			if info.PodCount >= podsLimit {
+			// we also need to check the number of pods in current namespace, because when
+			// there's a namespace with a lot of pods it could exceed the limit a lot
+			if info.PodCount >= podsLimit || info.PodCount+namespacePods.Count >= podsLimit {
 				pods.Continue = ""
 				limitReached = true
 				break
 			}
-
 			namespacePods.Count++
 
 			switch {
