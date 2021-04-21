@@ -132,8 +132,10 @@ func isInArray(o olmOperator, a []olmOperator) bool {
 	return false
 }
 
-//getCSVAndParse gets full CSV definition from csvRef and tries to parse the definition
-func getCSVAndParse(ctx context.Context, dynamicClient dynamic.Interface, csvRef *csvRef) (name string, conditions []interface{}, err error) {
+// getCSVAndParse gets full CSV definition from csvRef and tries to parse the definition
+func getCSVAndParse(ctx context.Context,
+	dynamicClient dynamic.Interface,
+	csvRef *csvRef) (name string, conditions []interface{}, err error) {
 	csv, err := getCsvFromRef(ctx, dynamicClient, csvRef)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to get %s ClusterServiceVersion: %v", csvRef.Name, err)
@@ -147,9 +149,9 @@ func getCSVAndParse(ctx context.Context, dynamicClient dynamic.Interface, csvRef
 	return name, conditions, nil
 }
 
-//findCSVRefInRefs tries to find ClusterServiceVersion reference in the references
-//and parse the ClusterServiceVersion if successful.
-//It can return nil with no error if the CSV was not found
+// findCSVRefInRefs tries to find ClusterServiceVersion reference in the references
+// and parse the ClusterServiceVersion if successful.
+// It can return nil with no error if the CSV was not found
 func findCSVRefInRefs(r interface{}) (*csvRef, error) {
 	refMap, ok := r.(map[string]interface{})
 	if !ok {
@@ -180,12 +182,10 @@ func getCsvFromRef(ctx context.Context, dynamicClient dynamic.Interface, csvRef 
 	return csv.Object, nil
 }
 
-//parseCsv tries to parse "status.conditions" and "spec.displayName" from the input map.
+// parseCsv tries to parse "status.conditions" and "spec.displayName" from the input map.
 // Returns an error if any of the values cannot be parsed.
-func parseCsv(csv map[string]interface{}) (string, []interface{}, error) {
-	var conditions []interface{}
-	var name string
-	err := utils.ParseJSONQuery(csv, "status.conditions", &conditions)
+func parseCsv(csv map[string]interface{}) (name string, conditions []interface{}, err error) {
+	err = utils.ParseJSONQuery(csv, "status.conditions", &conditions)
 	if err != nil {
 		return "", nil, err
 	}
