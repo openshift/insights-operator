@@ -44,7 +44,7 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 		return nil, []error{err}
 	}
 	var records []record.Record
-	for _, pdb := range pdbs.Items {
+	for _, pdb := range pdbs.Items { //nolint: gocritic
 		recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
 		if pdb.GetNamespace() != "" {
 			recordName = fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName())
