@@ -42,7 +42,7 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 					},
 					Secrets: []corev1.ObjectReference{{}},
 				}},
-			exp: `{"serviceAccounts":{"TOTAL_COUNT":2,"namespaces":{"openshift":{"name":"deployer","secrets":1},"openshift-apiserver":{"name":"openshift-apiserver-sa","secrets":1}}}}`,
+			exp: `{"serviceAccounts":{"TOTAL_COUNT":2,"namespaces":{"openshift":{"name":"deployer","secrets":1},"openshift-apiserver":{"name":"openshift-apiserver-sa","secrets":1}}}}`, // nolint: lll
 		},
 	}
 
@@ -52,7 +52,10 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			t.Parallel()
 			coreClient := kubefake.NewSimpleClientset()
 			for _, d := range test.data {
-				_, err := coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: d.Namespace}}, metav1.CreateOptions{})
+				_, err := coreClient.CoreV1().Namespaces().Create(
+					context.Background(),
+					&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: d.Namespace}}, metav1.CreateOptions{},
+				)
 				if err != nil {
 					t.Fatalf("unable to create fake ns %s", err)
 				}
