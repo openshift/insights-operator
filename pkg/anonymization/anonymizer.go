@@ -19,7 +19,6 @@
 //       - 172.30.0.5 -> 172.30.0.1  // new subnet, so we use a new set of fake IPs
 //       - 127.0.0.1 -> 127.0.0.1  // it was the first IP, so the new IP matched the original in this case
 //       - 10.0.134.130 -> 0.0.0.0  // ip doesn't match any subnet, we replace such IPs with 0.0.0.0
-
 package anonymization
 
 import (
@@ -113,18 +112,10 @@ func NewAnonymizerFromConfigClient(
 	for _, network := range networksConfig.Spec.ClusterNetwork {
 		networks = append(networks, network.CIDR)
 	}
-	for _, network := range networksConfig.Spec.ServiceNetwork {
-		networks = append(networks, network)
-	}
-	for _, network := range networksConfig.Spec.ExternalIP.AutoAssignCIDRs {
-		networks = append(networks, network)
-	}
-	for _, network := range networksConfig.Spec.ExternalIP.Policy.AllowedCIDRs {
-		networks = append(networks, network)
-	}
-	for _, network := range networksConfig.Spec.ExternalIP.Policy.RejectedCIDRs {
-		networks = append(networks, network)
-	}
+	networks = append(networks, networksConfig.Spec.ServiceNetwork...)
+	networks = append(networks, networksConfig.Spec.ExternalIP.AutoAssignCIDRs...)
+	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.AllowedCIDRs...)
+	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.RejectedCIDRs...)
 
 	clusterConfigV1, err := kubeClient.CoreV1().ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
@@ -133,9 +124,7 @@ func NewAnonymizerFromConfigClient(
 
 	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
 		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
-		for _, network := range networkRegex.FindAllString(installConfig, -1) {
-			networks = append(networks, network)
-		}
+		networks = append(networks, networkRegex.FindAllString(installConfig, -1)...)
 	}
 
 	// we're sorting by subnet lengths, if they are the same, we use subnet itself

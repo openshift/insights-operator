@@ -39,6 +39,8 @@ type Configurator interface {
 	Config() *config.Controller
 }
 
+// Responsible for managing the status of the operator according to the status of the sources.
+// Sources come from different major parts of the codebase, for the purpose of communicating their status with the controller.
 type Controller struct {
 	name         string
 	namespace    string
@@ -53,7 +55,10 @@ type Controller struct {
 	start    time.Time
 }
 
-func NewController(client configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface, configurator Configurator, namespace string) *Controller {
+// Creates a status controller, responsible for monitoring the operators status and updating the it's cluster status accordingly.
+func NewController(client configv1client.ConfigV1Interface,
+	coreClient corev1client.CoreV1Interface,
+	configurator Configurator, namespace string) *Controller {
 	c := &Controller{
 		name:         "insights",
 		client:       client,
@@ -81,12 +86,14 @@ func (c *Controller) controllerStartTime() time.Time {
 	return c.start
 }
 
+// Provides the last reported time in a thread-safe way.
 func (c *Controller) LastReportedTime() time.Time {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.reported.LastReportTime.Time
 }
 
+// Sets the last reported time in a thread-safe way.
 func (c *Controller) SetLastReportedTime(at time.Time) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -97,19 +104,23 @@ func (c *Controller) SetLastReportedTime(at time.Time) {
 	c.triggerStatusUpdate()
 }
 
+// Adds sources in a thread-safe way.
+// A source is used to monitor parts of the operator.
 func (c *Controller) AddSources(sources ...controllerstatus.Interface) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.sources = append(c.sources, sources...)
 }
 
+// Provides the sources in a thread-safe way.
+// A source is used to monitor parts of the operator.
 func (c *Controller) Sources() []controllerstatus.Interface {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.sources
 }
 
-func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.ClusterOperator {
+func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.ClusterOperator { //nolint: funlen, gocyclo
 	// prime the object if it does not exist
 	if existing == nil {
 		existing = &configv1.ClusterOperator{
@@ -144,10 +155,12 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 
 		if summary.Operation == controllerstatus.Uploading {
 			if summary.Count < uploadFailuresCountThreshold {
-				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.", summary.Count, uploadFailuresCountThreshold)
+				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
+					summary.Count, uploadFailuresCountThreshold)
 				degradingFailure = false
 			} else {
-				klog.V(4).Infof("Number of last upload failures %d exceeded than threshold %d. Marking as degraded.", summary.Count, uploadFailuresCountThreshold)
+				klog.V(4).Infof("Number of last upload failures %d exceeded than threshold %d. Marking as degraded.",
+					summary.Count, uploadFailuresCountThreshold)
 			}
 			uploadErrorReason = summary.Reason
 			uploadErrorMessage = summary.Message
@@ -160,9 +173,11 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		} else if summary.Operation == controllerstatus.GatheringReport {
 			degradingFailure = false
 			if summary.Count < GatherFailuresCountThreshold {
-				klog.V(5).Infof("Number of last gather failures %d lower than threshold %d. Not marking as disabled.", summary.Count, GatherFailuresCountThreshold)
+				klog.V(5).Infof("Number of last gather failures %d lower than threshold %d. Not marking as disabled.",
+					summary.Count, GatherFailuresCountThreshold)
 			} else {
-				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as disabled.", summary.Count, GatherFailuresCountThreshold)
+				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as disabled.",
+					summary.Count, GatherFailuresCountThreshold)
 				disabledReason = summary.Reason
 				disabledMessage = summary.Message
 			}
@@ -345,6 +360,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	return existing
 }
 
+// Starts the periodic checking of sources.
 func (c *Controller) Start(ctx context.Context) error {
 	if err := c.updateStatus(ctx, true); err != nil {
 		return err
@@ -387,7 +403,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 		if existing != nil {
 			var reported Reported
 			if len(existing.Status.Extension.Raw) > 0 {
-				if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil {
+				if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil { //nolint: govet
 					klog.Errorf("The initial operator extension status is invalid: %v", err)
 				}
 			}
@@ -401,17 +417,15 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 
 	updated := c.merge(existing)
 	if existing == nil {
-		created, err := c.client.ClusterOperators().Create(ctx, updated, metav1.CreateOptions{})
+		created, err := c.client.ClusterOperators().Create(ctx, updated, metav1.CreateOptions{}) //nolint: govet
 		if err != nil {
 			return err
 		}
 		updated.ObjectMeta = created.ObjectMeta
 		updated.Spec = created.Spec
-	} else {
-		if reflect.DeepEqual(updated.Status, existing.Status) {
-			klog.V(4).Infof("No status update necessary, objects are identical")
-			return nil
-		}
+	} else if reflect.DeepEqual(updated.Status, existing.Status) {
+		klog.V(4).Infof("No status update necessary, objects are identical")
+		return nil
 	}
 
 	_, err = c.client.ClusterOperators().UpdateStatus(ctx, updated, metav1.UpdateOptions{})
@@ -428,7 +442,8 @@ func isNotAuthorizedReason(reason string) bool {
 	return reason == "NotAuthorized"
 }
 
-func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition, newCondition configv1.ClusterOperatorStatusCondition) {
+func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition,
+	newCondition configv1.ClusterOperatorStatusCondition) { //nolint: gocritic
 	if conditions == nil {
 		conditions = &[]configv1.ClusterOperatorStatusCondition{}
 	}
@@ -452,7 +467,8 @@ func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCond
 	}
 }
 
-func removeOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition, conditionType configv1.ClusterStatusConditionType) {
+func removeOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition,
+	conditionType configv1.ClusterStatusConditionType) {
 	if conditions == nil {
 		return
 	}
@@ -466,7 +482,8 @@ func removeOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusC
 	*conditions = newConditions
 }
 
-func findOperatorStatusCondition(conditions []configv1.ClusterOperatorStatusCondition, conditionType configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
+func findOperatorStatusCondition(conditions []configv1.ClusterOperatorStatusCondition,
+	conditionType configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
 	for i := range conditions {
 		if conditions[i].Type == conditionType {
 			return &conditions[i]

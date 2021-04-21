@@ -24,7 +24,7 @@ func Test_Proxy(tt *testing.T) {
 		Name       string
 		EnvValues  map[string]interface{}
 		RequestURL string
-		HttpConfig config.HTTPConfig
+		HTTPConfig config.HTTPConfig
 		ProxyURL   string
 	}{
 		{
@@ -49,35 +49,35 @@ func Test_Proxy(tt *testing.T) {
 			Name:       "Env not set, specific proxy set",
 			EnvValues:  map[string]interface{}{"HTTP_PROXY": nil},
 			RequestURL: "http://google.com",
-			HttpConfig: config.HTTPConfig{HTTPProxy: "specproxy.to"},
+			HTTPConfig: config.HTTPConfig{HTTPProxy: "specproxy.to"},
 			ProxyURL:   "http://specproxy.to",
 		},
 		{
 			Name:       "Env set, specific proxy set http",
 			EnvValues:  map[string]interface{}{"HTTP_PROXY": "envproxy.to"},
 			RequestURL: "http://google.com",
-			HttpConfig: config.HTTPConfig{HTTPProxy: "specproxy.to"},
+			HTTPConfig: config.HTTPConfig{HTTPProxy: "specproxy.to"},
 			ProxyURL:   "http://specproxy.to",
 		},
 		{
 			Name:       "Env set, specific proxy set https",
 			EnvValues:  map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to"},
 			RequestURL: "https://google.com",
-			HttpConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to"},
+			HTTPConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to"},
 			ProxyURL:   "http://specsecproxy.to",
 		},
 		{
 			Name:       "Env set, specific proxy set noproxy, request without noproxy",
 			EnvValues:  map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to", "NO_PROXY": "envnoproxy.to"},
 			RequestURL: "https://google.com",
-			HttpConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
+			HTTPConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
 			ProxyURL:   "http://specsecproxy.to",
 		},
 		{
 			Name:       "Env set, specific proxy set noproxy, request with noproxy",
 			EnvValues:  map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to", "NO_PROXY": "envnoproxy.to"},
 			RequestURL: "https://specnoproxy.to",
-			HttpConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
+			HTTPConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
 			ProxyURL:   "",
 		},
 	}
@@ -96,18 +96,18 @@ func Test_Proxy(tt *testing.T) {
 				}
 			}
 
-			co2 := &testConfig{config: &config.Controller{HTTPConfig: tc.HttpConfig}}
+			co2 := &testConfig{config: &config.Controller{HTTPConfig: tc.HTTPConfig}}
 			a := Authorizer{proxyFromEnvironment: nonCachedProxyFromEnvironment(), configurator: co2}
 			p := a.NewSystemOrConfiguredProxy()
 			req := httptest.NewRequest("GET", tc.RequestURL, nil)
-			url, err := p(req)
+			urlRec, err := p(req)
 
 			if err != nil {
 				t.Fatalf("unexpected err %s", err)
 			}
-			if (tc.ProxyURL == "" && url != nil) ||
-				(len(tc.ProxyURL) > 0 && (url == nil || tc.ProxyURL != url.String())) {
-				t.Fatalf("Unexpected value of Proxy Url. Test %s Expected Url %s Received Url %s", tc.Name, tc.ProxyURL, url)
+			if (tc.ProxyURL == "" && urlRec != nil) ||
+				(len(tc.ProxyURL) > 0 && (urlRec == nil || tc.ProxyURL != urlRec.String())) {
+				t.Fatalf("Unexpected value of Proxy Url. Test %s Expected Url %s Received Url %s", tc.Name, tc.ProxyURL, urlRec)
 			}
 		})
 	}

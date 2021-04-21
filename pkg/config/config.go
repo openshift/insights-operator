@@ -58,7 +58,31 @@ type HTTPConfig struct {
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
 
-func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
+// Returns the important fields of the config in a string form
+func (c *Controller) ToString() string {
+	return fmt.Sprintf("enabled=%t "+
+		"endpoint=%s "+
+		"interval=%s "+
+		"username=%t "+
+		"token=%t "+
+		"reportEndpoint=%s "+
+		"initialPollingDelay=%s "+
+		"minRetryTime=%s "+
+		"pollingTimeout=%s",
+		c.Report,
+		c.Endpoint,
+		c.Interval,
+		len(c.Username) > 0,
+		len(c.Token) > 0,
+		c.ReportEndpoint,
+		c.ReportPullingDelay,
+		c.ReportMinRetryTime,
+		c.ReportPullingTimeout)
+}
+
+// Creates/updates a config Controller according to the Serialized config.
+// Makes sure that the config is correct.
+func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // nolint: gocyclo
 	if cfg == nil {
 		cfg = &Controller{}
 	}
@@ -129,6 +153,8 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) {
 	return cfg, nil
 }
 
+// Creates/updates a config Controller according to the Serialized config.
+// Makes sure that the config is correct, but only checks fields necessary for disconnected operation.
 func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {
 		cfg = &Controller{}
@@ -158,7 +184,7 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 }
 
 // LoadConfig unmarshalls config from obj and loads it to this Controller struct
-func LoadConfig(controller Controller, obj map[string]interface{}, converter Converter) (Controller, error) {
+func LoadConfig(controller Controller, obj map[string]interface{}, converter Converter) (Controller, error) { //nolint: gocritic
 	var cfg Serialized
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj, &cfg); err != nil {
 		return controller, fmt.Errorf("unable to load config: %v", err)

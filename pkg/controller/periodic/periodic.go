@@ -30,14 +30,14 @@ type Controller struct {
 	statuses     map[string]*controllerstatus.Simple
 }
 
-func New(configurator Configurator, recorder recorder.FlushInterface, gatherers map[string]gather.Interface) *Controller {
+func New(configurator Configurator, rec recorder.FlushInterface, gatherers map[string]gather.Interface) *Controller {
 	statuses := make(map[string]*controllerstatus.Simple)
 	for k := range gatherers {
 		statuses[k] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", k)}
 	}
 	c := &Controller{
 		configurator: configurator,
-		recorder:     recorder,
+		recorder:     rec,
 		gatherers:    gatherers,
 		statuses:     statuses,
 	}
@@ -108,7 +108,12 @@ func (c *Controller) Gather() {
 				return true, nil
 			}
 			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-			c.statuses[name].UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.GatheringReport, Reason: "PeriodicGatherFailed", Message: fmt.Sprintf("Source %s could not be retrieved: %v", name, err)})
+			c.statuses[name].UpdateStatus(
+				controllerstatus.Summary{
+					Operation: controllerstatus.GatheringReport,
+					Reason:    "PeriodicGatherFailed",
+					Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+				})
 			return false, nil
 		})
 	}
@@ -121,7 +126,8 @@ func (c *Controller) runGatherer(name string) error {
 		klog.V(2).Infof("No such gatherer %s", name)
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+	timeoutDuration := c.configurator.Config().Interval / 2
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
 	defer cancel()
 	defer func() {
 		if err := c.recorder.Flush(); err != nil {

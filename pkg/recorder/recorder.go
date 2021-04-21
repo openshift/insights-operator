@@ -115,7 +115,8 @@ func (r *Recorder) Flush() error {
 // PeriodicallyPrune the reports using the recorder driver
 func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReported) {
 	wait.Until(func() {
-		interval := wait.Jitter(r.interval*2, 1.2)
+		basePruneInterval := r.interval * 2
+		interval := wait.Jitter(basePruneInterval, 1.2)
 		klog.V(2).Infof("Pruning old reports every %s, max age is %s", interval.Truncate(time.Second), r.maxAge)
 		timer := time.NewTicker(interval)
 		defer timer.Stop()
@@ -142,10 +143,10 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReport
 	}, time.Second, ctx.Done())
 }
 
-func (r *Recorder) has(record record.Record) bool {
-	existing, ok := r.records[record.Filename()]
+func (r *Recorder) has(re record.Record) bool {
+	existing, ok := r.records[re.Filename()]
 	if ok {
-		if len(record.Fingerprint) > 0 && record.Fingerprint == existing.Fingerprint {
+		if len(re.Fingerprint) > 0 && re.Fingerprint == existing.Fingerprint {
 			return true
 		}
 	}
