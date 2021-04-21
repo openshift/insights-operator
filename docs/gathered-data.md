@@ -128,26 +128,37 @@ See: docs/insights-archive-sample/config/oauth
 Id in config: oauths
 
 
+## ClusterOperatorPodsAndEvents
+
+collects all the ClusterOperators degraded Pods
+for degraded cluster operators or that lives at the Cluster Operator's namespace, to collect:
+
+- Pod definitions
+- Previous and current Pod Container logs (when available)
+- Namespace Events
+
+* Location of pods in archive: config/pod/
+* Location of events in archive: events/
+* Id in config: operators_pods_and_events
+* Spec config for CO resources since versions:
+  * 4.6.16+
+  * 4.7+
+
+
 ## ClusterOperators
 
-collects all ClusterOperators and their resources.
-It finds unhealthy Pods for unhealthy operators
+collects all the ClusterOperators definitions and their resources.
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
 
-Location of operators in archive: config/clusteroperator/
-See: docs/insights-archive-sample/config/clusteroperator
-Location of pods in archive: config/pod/
-Id in config: operators
+* Location of operators in archive: config/clusteroperator/
+* See: docs/insights-archive-sample/config/clusteroperator
+* Id in config: operators
+* Spec config for CO resources since versions:
+  * 4.6.16+
+  * 4.7+
 
-
-Output raw size: 245
-
-### Examples
-
-#### ClusterOperators
-[{"Name":"config/clusteroperator/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Degraded","status":"","lastTransitionTime":null}],"extension":null}}}]
 
 ## ClusterProxy
 
@@ -273,13 +284,6 @@ See: docs/insights-archive-sample/config/metrics
 Id in config: metrics
 
 
-Output raw size: 148
-
-### Examples
-
-#### MostRecentMetrics
-[{"Name":"config/metrics","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":"SGVsbG8sIGNsaWVudAojIEFMRVJUUyAyLzEwMDAKSGVsbG8sIGNsaWVudAo="}]
-
 ## NetNamespace
 
 collects NetNamespaces networking information
@@ -301,13 +305,6 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location in archive: config/node/
 Id in config: nodes
 
-
-Output raw size: 491
-
-### Examples
-
-#### Nodes
-[{"Name":"config/node/","Captured":"0001-01-01T00:00:00Z","Fingerprint":"","Item":{"metadata":{"creationTimestamp":null},"spec":{},"status":{"conditions":[{"type":"Ready","status":"False","lastHeartbeatTime":null,"lastTransitionTime":null}],"daemonEndpoints":{"kubeletEndpoint":{"Port":0}},"nodeInfo":{"machineID":"","systemUUID":"","bootID":"","kernelVersion":"","osImage":"","containerRuntimeVersion":"","kubeletVersion":"","kubeProxyVersion":"","operatingSystem":"","architecture":""}}}}]
 
 ## OLMOperators
 
@@ -403,18 +400,6 @@ Relevant OpenShift API docs:
 Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 
 
-## SAPVsystemIptablesLogs
-
-collects logs from SAP vsystem-iptables containers
-including one from license management pods with the following substring:
-  - "can't initialize iptables table",
-
-The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
-
-
 ## SAPDatahubs
 
 collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
@@ -434,6 +419,18 @@ Relevant Kubernetes API docs:
   - https://pkg.go.dev/k8s.io/client-go/dynamic
 
 Location in archive: config/pod/{namespace}/{pod-name}.json
+
+
+## SAPVsystemIptablesLogs
+
+collects logs from SAP vsystem-iptables containers
+including one from license management pods with the following substring:
+  - "can't initialize iptables table",
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 
 
 ## ServiceAccounts
