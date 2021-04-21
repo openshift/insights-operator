@@ -53,7 +53,10 @@ func GatherSAPPods(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records: records, errors: errs}
 }
 
-func gatherSAPPods(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface, jobsClient batchv1client.BatchV1Interface) ([]record.Record, []error) {
+func gatherSAPPods(ctx context.Context,
+	dynamicClient dynamic.Interface,
+	coreClient corev1client.CoreV1Interface,
+	jobsClient batchv1client.BatchV1Interface) ([]record.Record, []error) {
 	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
 
 	datahubsList, err := dynamicClient.Resource(datahubsResource).List(ctx, metav1.ListOptions{})
@@ -81,7 +84,7 @@ func gatherSAPPods(ctx context.Context, dynamicClient dynamic.Interface, coreCli
 			return nil, []error{err}
 		}
 
-		for iPod, pod := range pods.Items {
+		for iPod, pod := range pods.Items { //nolint: gocritic
 			// Skip pods that are running correctly or those that have already successfully finished.
 			if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodSucceeded {
 				continue
