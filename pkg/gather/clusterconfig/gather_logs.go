@@ -44,6 +44,7 @@ type logMessagesFilter struct {
 //   - logFileName sets the name of the file to save the logs to.
 //
 // Location of the logs is `config/pod/{namespace}/logs/{podName}/{fileName}.log`
+//nolint: gocritic, unparam
 func gatherLogsFromContainers(
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
@@ -137,10 +138,8 @@ func filterLogs(
 				if matches {
 					result += line + "\n"
 				}
-			} else {
-				if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
-					result += line + "\n"
-				}
+			} else if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
+				result += line + "\n"
 			}
 		}
 	}
