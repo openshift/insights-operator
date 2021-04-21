@@ -33,7 +33,12 @@ func Test_Operators_GatherClusterOperators(t *testing.T) {
 		t.Fatal("unable to create fake clusteroperator", err)
 	}
 
-	records, err := gatherClusterOperators(context.Background(), cfg.ConfigV1(), cfg.Discovery(), dynamicfake.NewSimpleDynamicClient(runtime.NewScheme()))
+	records, err := gatherClusterOperators(
+		context.Background(),
+		cfg.ConfigV1(),
+		cfg.Discovery(),
+		dynamicfake.NewSimpleDynamicClient(runtime.NewScheme()),
+	)
 	if err != nil {
 		t.Errorf("unexpected errors: %#v", err)
 		return
@@ -76,7 +81,11 @@ func Test_Operators_ClusterOperatorsRecords(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := clusterOperatorsRecords(tt.args.ctx, tt.args.items, tt.args.dynamicClient, tt.args.discoveryClient); !reflect.DeepEqual(got, tt.want) {
+			if got := clusterOperatorsRecords(
+				tt.args.ctx,
+				tt.args.items,
+				tt.args.dynamicClient,
+				tt.args.discoveryClient); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("clusterOperatorsRecords() = %v, want %v", got, tt.want)
 			}
 		})
@@ -108,7 +117,11 @@ func Test_Operators_CollectClusterOperatorResources(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := collectClusterOperatorResources(tt.args.ctx, tt.args.dynamicClient, tt.args.co, tt.args.resVer); !reflect.DeepEqual(got, tt.want) {
+			if got := collectClusterOperatorResources(
+				tt.args.ctx,
+				tt.args.dynamicClient,
+				tt.args.co,
+				tt.args.resVer); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("collectClusterOperatorResources() = %v, want %v", got, tt.want)
 			}
 		})
