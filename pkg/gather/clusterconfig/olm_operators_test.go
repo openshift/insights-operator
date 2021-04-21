@@ -17,6 +17,7 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
+//nolint: funlen
 func Test_OLMOperators_Gather(t *testing.T) {
 	var cases = []struct {
 		testName            string
