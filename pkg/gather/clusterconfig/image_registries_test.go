@@ -12,6 +12,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
+//nolint: goconst, funlen, gocyclo
 func Test_ImageRegistry_Gather(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -136,7 +137,8 @@ func Test_ImageRegistry_Gather(t *testing.T) {
 				t.Errorf("expected one record, got %d", numRecords)
 				return
 			}
-			if expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/config/cluster"; records[0].Name != expectedRecordName {
+			expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/config/cluster"
+			if records[0].Name != expectedRecordName {
 				t.Errorf("expected %q record name, got %q", expectedRecordName, records[0].Name)
 				return
 			}
