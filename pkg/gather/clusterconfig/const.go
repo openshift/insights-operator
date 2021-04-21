@@ -13,6 +13,8 @@ const (
 	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
 	// TODO: make this dynamic like the reporting window based on configured interval
 	maxEventTimeInterval = 1 * time.Hour
+
+	jsonExtension = "json"
 )
 
 var (
@@ -29,6 +31,6 @@ var (
 	}
 )
 
-func init() {
+func init() { //nolint: gochecknoinits
 	utilruntime.Must(registryv1.AddToScheme(registryScheme))
 }
