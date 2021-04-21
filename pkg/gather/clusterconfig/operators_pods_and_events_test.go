@@ -9,7 +9,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/record"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -40,7 +39,7 @@ func Test_UnhealtyOperators_GatherPodContainersLogs(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		client     corev1client.CoreV1Interface
-		pods       []*corev1.Pod
+		pods       []*v1.Pod
 		bufferSize int64
 	}
 	tests := []struct {
@@ -92,7 +91,7 @@ func Test_UnhealtyOperators_GetContainerLogs(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		client     corev1client.CoreV1Interface
-		pod        *corev1.Pod
+		pod        *v1.Pod
 		isPrevious bool
 		buf        *bytes.Buffer
 		bufferSize int64
@@ -117,7 +116,13 @@ func Test_UnhealtyOperators_GetContainerLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getContainerLogs(tt.args.ctx, tt.args.client, tt.args.pod, tt.args.isPrevious, tt.args.buf, tt.args.bufferSize); !reflect.DeepEqual(got, tt.want) {
+			if got := getContainerLogs(
+				tt.args.ctx,
+				tt.args.client,
+				tt.args.pod,
+				tt.args.isPrevious,
+				tt.args.buf,
+				tt.args.bufferSize); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getContainerLogs() = %v, want %v", got, tt.want)
 			}
 		})
@@ -133,7 +138,7 @@ func Test_UnhealtyOperators_UnhealthyClusterOperator(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  args
-		want  []*corev1.Pod
+		want  []*v1.Pod
 		want1 []record.Record
 		want2 int
 	}{
@@ -144,7 +149,7 @@ func Test_UnhealtyOperators_UnhealthyClusterOperator(t *testing.T) {
 				items:      []configv1.ClusterOperator{},
 				coreClient: kubefake.NewSimpleClientset().CoreV1(),
 			},
-			want:  []*corev1.Pod{},
+			want:  []*v1.Pod{},
 			want1: nil,
 			want2: 0,
 		},
@@ -167,12 +172,12 @@ func Test_UnhealtyOperators_UnhealthyClusterOperator(t *testing.T) {
 
 func Test_UnhealtyOperators_GatherUnhealthyPods(t *testing.T) {
 	type args struct {
-		pods []corev1.Pod
+		pods []v1.Pod
 	}
 	tests := []struct {
 		name  string
 		args  args
-		want  []*corev1.Pod
+		want  []*v1.Pod
 		want1 []record.Record
 		want2 int
 	}{
@@ -245,7 +250,7 @@ func Test_UnhealtyOperators_FetchPodContainerLog(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		coreClient    corev1client.CoreV1Interface
-		pod           *corev1.Pod
+		pod           *v1.Pod
 		buf           *bytes.Buffer
 		containerName string
 		isPrevious    bool
@@ -287,7 +292,14 @@ func Test_UnhealtyOperators_FetchPodContainerLog(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := fetchPodContainerLog(tt.args.ctx, tt.args.coreClient, tt.args.pod, tt.args.buf, tt.args.containerName, tt.args.isPrevious, tt.args.maxBytes); (err != nil) != tt.wantErr {
+			if err := fetchPodContainerLog(
+				tt.args.ctx,
+				tt.args.coreClient,
+				tt.args.pod,
+				tt.args.buf,
+				tt.args.containerName,
+				tt.args.isPrevious,
+				tt.args.maxBytes); (err != nil) != tt.wantErr {
 				t.Errorf("fetchPodContainerLog() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -373,7 +385,7 @@ func Test_UnhealtyOperators_IsHealthyOperator(t *testing.T) {
 
 func Test_UnhealtyOperators_IsPodRestarted(t *testing.T) {
 	type args struct {
-		pod *corev1.Pod
+		pod *v1.Pod
 	}
 	tests := []struct {
 		name string
