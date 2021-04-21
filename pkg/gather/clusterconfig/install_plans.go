@@ -50,7 +50,9 @@ func GatherInstallPlans(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, errs}
 }
 
-func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+func gatherInstallPlans(ctx context.Context,
+	dynamicClient dynamic.Interface,
+	coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	var plansBatchLimit int64 = 500
 	cont := ""
 	recs := map[string]*collectedPlan{}
@@ -64,7 +66,7 @@ func gatherInstallPlans(ctx context.Context, dynamicClient dynamic.Interface, co
 		return nil, []error{err}
 	}
 	// collect from all openshift* namespaces
-	for _, ns := range config.Items {
+	for _, ns := range config.Items { //nolint: gocritic
 		if !strings.HasPrefix(ns.Name, "openshift") {
 			continue
 		}
@@ -208,5 +210,5 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized openshift objects
 func (a InstallPlanAnonymizer) GetExtension() string {
-	return "json"
+	return jsonExtension
 }
