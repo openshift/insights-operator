@@ -69,7 +69,9 @@ func GatherClusterOperatorPodsAndEvents(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, nil}
 }
 
-func gatherClusterOperatorPodsAndEvents(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, error) {
+func gatherClusterOperatorPodsAndEvents(ctx context.Context,
+	configClient configv1client.ConfigV1Interface,
+	coreClient corev1client.CoreV1Interface) ([]record.Record, error) {
 	config, err := configClient.ClusterOperators().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -101,7 +103,10 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context, configClient config
 }
 
 // unhealthyClusterOperator collects unhealthy cluster operator resources
-func unhealthyClusterOperator(ctx context.Context, items []configv1.ClusterOperator, coreClient corev1client.CoreV1Interface) ([]*corev1.Pod, []record.Record, int) {
+// nolint: gocritic, gosec
+func unhealthyClusterOperator(ctx context.Context,
+	items []configv1.ClusterOperator,
+	coreClient corev1client.CoreV1Interface) ([]*corev1.Pod, []record.Record, int) {
 	var records []record.Record
 
 	namespaceEventsCollected := sets.NewString()
@@ -155,7 +160,10 @@ func gatherUnhealthyPods(pods []corev1.Pod) ([]*corev1.Pod, []record.Record, int
 		if check.IsHealthyPod(pod, now) {
 			continue
 		}
-		records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: pod}})
+		records = append(records, record.Record{
+			Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
+			Item: record.JSONMarshaller{Object: pod},
+		})
 		podList = append(podList, pod)
 		total += len(pod.Spec.InitContainers) + len(pod.Spec.Containers)
 	}
@@ -181,7 +189,6 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 			continue
 		}
 		filteredEventIndex = append(filteredEventIndex, i)
-
 	}
 	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
 	for i, index := range filteredEventIndex {
@@ -199,7 +206,10 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 }
 
 // gatherPodContainersLogs collect the pod current and previous containers logs
-func gatherPodContainersLogs(ctx context.Context, client corev1client.CoreV1Interface, pods []*corev1.Pod, bufferSize int64) ([]record.Record, error) {
+func gatherPodContainersLogs(ctx context.Context,
+	client corev1client.CoreV1Interface,
+	pods []*corev1.Pod,
+	bufferSize int64) ([]record.Record, error) {
 	if bufferSize <= 0 {
 		return nil, fmt.Errorf("invalid buffer size %d", bufferSize)
 	}
@@ -224,7 +234,13 @@ func gatherPodContainersLogs(ctx context.Context, client corev1client.CoreV1Inte
 }
 
 // getContainerLogs get previous and current log reports for pod containers using the k8s API response
-func getContainerLogs(ctx context.Context, client corev1client.CoreV1Interface, pod *corev1.Pod, isPrevious bool, buf *bytes.Buffer, bufferSize int64) []record.Record {
+// nolint: gocritic
+func getContainerLogs(ctx context.Context,
+	client corev1client.CoreV1Interface,
+	pod *corev1.Pod,
+	isPrevious bool,
+	buf *bytes.Buffer,
+	bufferSize int64) []record.Record {
 	var records []record.Record
 
 	allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
@@ -252,18 +268,38 @@ func getContainerLogs(ctx context.Context, client corev1client.CoreV1Interface, 
 		if buf.Len() == 0 {
 			continue
 		}
-		records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName), Item: marshal.Raw{Str: buf.String()}})
+		records = append(records, record.Record{
+			Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName),
+			Item: marshal.Raw{Str: buf.String()},
+		})
 	}
 
 	return records
 }
 
 // fetchPodContainerLog fetches log lines from the pod
-func fetchPodContainerLog(ctx context.Context, coreClient corev1client.CoreV1Interface, pod *corev1.Pod, buf *bytes.Buffer, containerName string, isPrevious bool, maxBytes *int64) error {
-	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Previous: isPrevious, Container: containerName, LimitBytes: maxBytes, TailLines: &logTailLines})
+func fetchPodContainerLog(ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
+	pod *corev1.Pod,
+	buf *bytes.Buffer,
+	containerName string,
+	isPrevious bool,
+	maxBytes *int64) error {
+	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name,
+		&corev1.PodLogOptions{
+			Previous:   isPrevious,
+			Container:  containerName,
+			LimitBytes: maxBytes,
+			TailLines:  &logTailLines,
+		})
 	readCloser, err := req.Stream(ctx)
 	if err != nil {
-		klog.V(2).Infof("Failed to fetch log for %s pod in namespace %s for failing operator %s (previous: %v): %q", pod.Name, pod.Namespace, containerName, isPrevious, err)
+		klog.V(2).Infof("Failed to fetch log for %s pod in namespace %s for failing operator %s (previous: %v): %q",
+			pod.Name,
+			pod.Namespace,
+			containerName,
+			isPrevious,
+			err)
 		return err
 	}
 
@@ -271,13 +307,19 @@ func fetchPodContainerLog(ctx context.Context, coreClient corev1client.CoreV1Int
 
 	_, err = io.Copy(buf, readCloser)
 	if err != nil && err != io.ErrShortBuffer {
-		klog.V(2).Infof("Failed to write log for %s pod in namespace %s for failing operator %s (previous: %v): %q", pod.Name, pod.Namespace, containerName, isPrevious, err)
+		klog.V(2).Infof("Failed to write log for %s pod in namespace %s for failing operator %s (previous: %v): %q",
+			pod.Name,
+			pod.Namespace,
+			containerName,
+			isPrevious,
+			err)
 		return err
 	}
 	return nil
 }
 
 // isPodRestarted checks if pod was restarted by testing its container's restart count status is bigger than zero
+// nolint: gocritic
 func isPodRestarted(pod *corev1.Pod) bool {
 	// pods that have containers that have terminated with non-zero exit codes are considered failure
 	for _, status := range pod.Status.InitContainerStatuses {
@@ -296,7 +338,7 @@ func isPodRestarted(pod *corev1.Pod) bool {
 // isHealthyOperator checks if operator ins't degraded or unavailable
 func isHealthyOperator(operator *configv1.ClusterOperator) bool {
 	for _, condition := range operator.Status.Conditions {
-		if isOperatorConditionDegraded(condition) || isOperatorConditionAvailable(condition) {
+		if isOperatorConditionDegraded(&condition) || isOperatorConditionAvailable(&condition) { //nolint: gosec
 			return false
 		}
 	}
@@ -304,12 +346,12 @@ func isHealthyOperator(operator *configv1.ClusterOperator) bool {
 }
 
 // isOperatorConditionDegraded check if the operator status condition degraded is true
-func isOperatorConditionDegraded(c configv1.ClusterOperatorStatusCondition) bool {
+func isOperatorConditionDegraded(c *configv1.ClusterOperatorStatusCondition) bool {
 	return c.Type == configv1.OperatorDegraded && c.Status == configv1.ConditionTrue
 }
 
 // isOperatorConditionAvailable check if the operator status condition available is false
-func isOperatorConditionAvailable(c configv1.ClusterOperatorStatusCondition) bool {
+func isOperatorConditionAvailable(c *configv1.ClusterOperatorStatusCondition) bool {
 	return c.Type == configv1.OperatorAvailable && c.Status == configv1.ConditionFalse
 }
 
