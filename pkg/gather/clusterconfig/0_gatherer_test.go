@@ -9,10 +9,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
+const testErrorMessage = "This is a test error"
+
 type testError struct{}
 
 func (e *testError) Error() string {
-	return "This is a test error"
+	return testErrorMessage
 }
 
 func mockGatherFunction1(_ *Gatherer, c chan<- gatherResult) {
@@ -62,7 +64,7 @@ func cleanUp(cases []reflect.SelectCase) {
 	for remaining > 0 {
 		chosen, _, _ := reflect.Select(cases)
 		cases[chosen].Chan = reflect.ValueOf(nil)
-		remaining -= 1
+		remaining--
 	}
 }
 
@@ -74,7 +76,7 @@ func Test_Gather(t *testing.T) {
 
 	err := gatherer.Gather(ctx, gatherList, &recorder)
 
-	expectedError := "This is a test error"
+	expectedError := testErrorMessage
 	if err.Error() != expectedError {
 		t.Fatalf("unexpected error returned: Expected %s but got %s", expectedError, err.Error())
 	}
@@ -93,7 +95,9 @@ func Test_Gather_FailingRecorder(t *testing.T) {
 
 	err := gatherer.Gather(ctx, gatherList, &recorder)
 
-	expectedError := "This is a test error, unable to record config/mock1: This is a test error, unable to record config/mock2: This is a test error, unable to record io status reports: This is a test error"
+	expectedError := "This is a test error, unable to record config/mock1: " +
+		"This is a test error, unable to record config/mock2: " +
+		"This is a test error, unable to record io status reports: This is a test error"
 	if err.Error() != expectedError {
 		t.Fatalf("unexpected error returned: Expected %s but got %s", expectedError, err.Error())
 	}
@@ -121,7 +125,10 @@ func Test_Gather_StartGathering(t *testing.T) {
 	cleanUp(cases)
 
 	if lCases != expected || lStarts != expected || err != nil {
-		t.Fatalf("unexpected return values: \nExpected %d cases got %d \nExpected %d starts got %d \n Err should be nil got %s", expected, lCases, expected, lStarts, err)
+		t.Fatalf(`unexpected return values:
+		Expected %d cases got %d
+		Expected %d starts got %d
+		Err should be nil got %s`, expected, lCases, expected, lStarts, err)
 	}
 }
 
