@@ -50,16 +50,16 @@ func Test_NetNamespaces_Gather(t *testing.T) {
 	if len(netNamespaces) != 2 {
 		t.Fatalf("unexpected number of namespaces gathered %d", len(netNamespaces))
 	}
-	if !equalNetNamespaceS(*ns1, netNamespaces[0]) {
+	if !equalNetNamespaceS(ns1, netNamespaces[0]) {
 		t.Fatalf("unexpected netnamespace %v ", netNamespaces[0])
 	}
 
-	if !equalNetNamespaceS(*ns2, netNamespaces[1]) {
+	if !equalNetNamespaceS(ns2, netNamespaces[1]) {
 		t.Fatalf("unexpected netnamespace %v ", netNamespaces[1])
 	}
 }
 
-func equalNetNamespaceS(ns1 networkv1.NetNamespace, ns2 netNamespace) bool {
+func equalNetNamespaceS(ns1 *networkv1.NetNamespace, ns2 netNamespace) bool {
 	if ns1.Name != ns2.Name {
 		return false
 	}
