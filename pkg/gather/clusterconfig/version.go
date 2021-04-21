@@ -49,7 +49,9 @@ func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, errs}
 }
 
-func getClusterVersion(ctx context.Context, configClient configv1client.ConfigV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+func getClusterVersion(ctx context.Context,
+	configClient configv1client.ConfigV1Interface,
+	coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	config, err := configClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -80,7 +82,10 @@ func getClusterVersion(ctx context.Context, configClient configv1client.ConfigV1
 		pod := &pods.Items[i]
 
 		// TODO: shift after IsHealthyPod
-		records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: pod}})
+		records = append(records, record.Record{
+			Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
+			Item: record.JSONMarshaller{Object: pod},
+		})
 
 		if check.IsHealthyPod(pod, now) {
 			continue
