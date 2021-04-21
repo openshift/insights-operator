@@ -16,6 +16,7 @@ import (
 	batchv1fake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 )
 
+//nolint: funlen
 func Test_SAPPods(t *testing.T) {
 	// Initialize the fake dynamic client.
 	var datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
@@ -62,7 +63,10 @@ metadata:
 	}
 
 	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
-	_, _ = datahubsClient.Resource(datahubsResource).Namespace("example-namespace").Create(context.Background(), testDatahub, metav1.CreateOptions{})
+	_, _ = datahubsClient.
+		Resource(datahubsResource).
+		Namespace("example-namespace").
+		Create(context.Background(), testDatahub, metav1.CreateOptions{})
 
 	records, errs = gatherSAPPods(context.Background(), datahubsClient, coreClient.CoreV1(), jobsClient)
 	if len(errs) > 0 {
