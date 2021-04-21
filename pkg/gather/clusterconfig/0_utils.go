@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 
@@ -168,32 +167,6 @@ func (a Anonymizer) GetExtension() string {
 	return "json"
 }
 
-// CompactedEvent holds one Namespace Event
-type CompactedEvent struct {
-	Namespace     string    `json:"namespace"`
-	LastTimestamp time.Time `json:"lastTimestamp"`
-	Reason        string    `json:"reason"`
-	Message       string    `json:"message"`
-}
-
-// CompactedEventList is collection of events
-type CompactedEventList struct {
-	Items []CompactedEvent `json:"items"`
-}
-
-// EventAnonymizer implements serializaion of Events with anonymization
-type EventAnonymizer struct{ *CompactedEventList }
-
-// Marshal serializes Events with anonymization
-func (a EventAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return json.Marshal(a.CompactedEventList)
-}
-
-// GetExtension returns extension for anonymized event objects
-func (a EventAnonymizer) GetExtension() string {
-	return "json"
-}
-
 func anonymizeURLCSV(s string) string {
 	strs := strings.Split(s, ",")
 	outSlice := anonymizeURLSlice(strs)
@@ -241,40 +214,6 @@ func anonymizePod(pod *corev1.Pod) *corev1.Pod {
 	// pods gathered from openshift namespaces and cluster operators are expected to be under our control and contain
 	// no sensitive information
 	return pod
-}
-
-func isHealthyPod(pod *corev1.Pod, now time.Time) bool {
-	// pending pods may be unable to schedule or start due to failures, and the info they provide in status is important
-	// for identifying why scheduling has not happened
-	if pod.Status.Phase == corev1.PodPending {
-		if now.Sub(pod.CreationTimestamp.Time) > 2*time.Minute {
-			return false
-		}
-	}
-	// pods that have containers that have terminated with non-zero exit codes are considered failure
-	for _, status := range pod.Status.InitContainerStatuses {
-		if status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0 {
-			return false
-		}
-		if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
-			return false
-		}
-		if status.RestartCount > 0 {
-			return false
-		}
-	}
-	for _, status := range pod.Status.ContainerStatuses {
-		if status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0 {
-			return false
-		}
-		if status.State.Terminated != nil && status.State.Terminated.ExitCode != 0 {
-			return false
-		}
-		if status.RestartCount > 0 {
-			return false
-		}
-	}
-	return true
 }
 
 // MinimalNodeInfo contains the most essential information about a node
