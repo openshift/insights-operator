@@ -73,7 +73,10 @@ func GatherClusterOperators(g *Gatherer, c chan<- gatherResult) {
 }
 
 // gatherClusterOperators collects cluster operators
-func gatherClusterOperators(ctx context.Context, configClient configv1client.ConfigV1Interface, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface) ([]record.Record, error) {
+func gatherClusterOperators(ctx context.Context,
+	configClient configv1client.ConfigV1Interface,
+	discoveryClient discovery.DiscoveryInterface,
+	dynamicClient dynamic.Interface) ([]record.Record, error) {
 	config, err := configClient.ClusterOperators().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -88,11 +91,14 @@ func gatherClusterOperators(ctx context.Context, configClient configv1client.Con
 }
 
 // clusterOperatorsRecords generates the cluster operator records
-func clusterOperatorsRecords(ctx context.Context, items []configv1.ClusterOperator, dynamicClient dynamic.Interface, discoveryClient discovery.DiscoveryInterface) []record.Record {
+func clusterOperatorsRecords(ctx context.Context,
+	items []configv1.ClusterOperator,
+	dynamicClient dynamic.Interface,
+	discoveryClient discovery.DiscoveryInterface) []record.Record {
 	resVer, _ := getOperatorResourcesVersions(discoveryClient)
 	records := make([]record.Record, 0, len(items))
 
-	for idx, co := range items {
+	for idx, co := range items { //nolint: gocritic
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/clusteroperator/%s", items[idx].Name),
 			Item: record.JSONMarshaller{Object: &items[idx]},
@@ -122,7 +128,10 @@ func clusterOperatorsRecords(ctx context.Context, items []configv1.ClusterOperat
 }
 
 // collectClusterOperatorResources list all cluster operator resources
-func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.Interface, co configv1.ClusterOperator, resVer map[string][]string) []clusterOperatorResource {
+func collectClusterOperatorResources(ctx context.Context,
+	dynamicClient dynamic.Interface,
+	co configv1.ClusterOperator, //nolint: gocritic
+	resVer map[string][]string) []clusterOperatorResource {
 	var relObj []configv1.ObjectReference
 	for _, ro := range co.Status.RelatedObjects {
 		if strings.Contains(ro.Group, "operator.openshift.io") {
@@ -177,7 +186,7 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 			if err != nil {
 				continue
 			}
-			for _, ar := range v.APIResources {
+			for _, ar := range v.APIResources { //nolint: gocritic
 				key := fmt.Sprintf("%s-%s", gv.Group, ar.Name)
 				_, ok := resourceVersionMap[key]
 				if !ok {
@@ -201,8 +210,8 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 		return nil, err
 	}
 	resStr := string(bytes)
-	//anonymize URLs
-	re := regexp.MustCompile(`"(https|http)://(.*?)"`)
+	// anonymize URLs
+	re := regexp.MustCompile(`"(https?)://(.*?)"`)
 	urlMatches := re.FindAllString(resStr, -1)
 	for _, m := range urlMatches {
 		m = strings.ReplaceAll(m, "\"", "")
@@ -213,5 +222,5 @@ func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, e
 
 // GetExtension returns extension for anonymized cluster operator objects
 func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
-	return "json"
+	return jsonExtension
 }
