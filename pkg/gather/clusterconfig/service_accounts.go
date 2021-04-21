@@ -43,6 +43,7 @@ func GatherServiceAccounts(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, errs}
 }
 
+//nolint: gocritic
 func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	config, err := utils.GetAllNamespaces(ctx, coreClient)
 	if errors.IsNotFound(err) {
@@ -78,7 +79,10 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 		}
 	}
 
-	records = append(records, record.Record{Name: "config/serviceaccounts", Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
+	records = append(records, record.Record{
+		Name: "config/serviceaccounts",
+		Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts},
+	})
 	return records, nil
 }
 
@@ -97,7 +101,7 @@ func (a ServiceAccountsMarshaller) Marshal(_ context.Context) ([]byte, error) {
 	sr["serviceAccounts"] = st
 	nss := map[string]interface{}{}
 	st["namespaces"] = nss
-	for _, sa := range a.sa {
+	for _, sa := range a.sa { //nolint: gocritic
 		var ns map[string]interface{}
 		var ok bool
 		if _, ok = nss[sa.Namespace]; !ok {
