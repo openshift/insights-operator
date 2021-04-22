@@ -8,8 +8,6 @@ import (
 	controlplanev1 "github.com/openshift/api/operatorcontrolplane/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -31,13 +29,8 @@ func GatherPNCC(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{errors: []error{err}}
 		return
 	}
-	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
-	}
 
-	records, errors := gatherPNCC(g.ctx, gatherDynamicClient, gatherKubeClient.CoreV1())
+	records, errors := gatherPNCC(g.ctx, gatherDynamicClient)
 	c <- gatherResult{records: records, errors: errors}
 }
 
@@ -51,7 +44,7 @@ func getUnsuccessfulChecks(entries []controlplanev1.LogEntry) []controlplanev1.L
 	return unsuccesseful
 }
 
-func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	pnccListUnstruct, err := dynamicClient.Resource(pnccGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
