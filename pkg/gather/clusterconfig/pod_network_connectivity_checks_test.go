@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
-	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_PNCC(t *testing.T) {
@@ -41,10 +40,8 @@ status:
 		t.Fatal("unable to decode PNCC YAML", err)
 	}
 
-	// Initialize the remaining K8s/OS fake clients.
-	coreClient := kubefake.NewSimpleClientset()
-
-	records, errs := gatherPNCC(context.Background(), pnccClient, coreClient.CoreV1())
+	// Check before creating the PNCC.
+	records, errs := gatherPNCC(context.Background(), pnccClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors in the first run: %#v", errs)
 	}
@@ -63,10 +60,11 @@ status:
 		t.Fatalf("unexpected value of record item in the first run: %#v", recItem)
 	}
 
-	// Create the DataHubs resource and now the SCCs and CRBs should be gathered.
+	// Create the PNCC resource.
 	_, _ = pnccClient.Resource(pnccGroupVersionResource).Namespace("example-namespace").Create(context.Background(), testPNCC, metav1.CreateOptions{})
 
-	records, errs = gatherPNCC(context.Background(), pnccClient, coreClient.CoreV1())
+	// Check after creating the PNCC.
+	records, errs = gatherPNCC(context.Background(), pnccClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors in the second run: %#v", errs)
 	}
