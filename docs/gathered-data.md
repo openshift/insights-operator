@@ -424,6 +424,7 @@ Response see https://docs.openshift.com/container-platform/4.6/rest_api/workload
 ## PNCC
 
 collects a summary of failed PodNetworkConnectivityChecks.
+Time of the most recently failed check with each reason and message is recorded.
 The checks are requested via a dynamic client and
 then unmarshaled into the appropriate structure.
 
@@ -432,6 +433,8 @@ Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcon
 
 * Location in archive: config/podnetworkconnectivitychecks.json
 * Id in config: pod_network_connectivity_checks
+* Since versions:
+  * 4.8+
 
 
 ## PodDisruptionBudgets
