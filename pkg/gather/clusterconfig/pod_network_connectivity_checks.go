@@ -13,6 +13,7 @@ import (
 )
 
 // GatherPNCC collects a summary of failed PodNetworkConnectivityChecks.
+// Time of the most recently failed check with each reason and message is recorded.
 // The checks are requested via a dynamic client and
 // then unmarshaled into the appropriate structure.
 //
