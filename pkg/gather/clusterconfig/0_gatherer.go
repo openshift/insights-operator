@@ -104,7 +104,7 @@ var gatherFunctions = map[string]gathering{
 	"sap_pods":                          failable(GatherSAPPods),
 	"sap_datahubs":                      failable(GatherSAPDatahubs),
 	"olm_operators":                     failable(GatherOLMOperators),
-	"pod_network_connectivity_checks":   important(GatherPNCC),
+	"pod_network_connectivity_checks":   failable(GatherPNCC),
 }
 
 // New creates new Gatherer
