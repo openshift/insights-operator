@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"hash"
 	"os"
@@ -15,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -155,7 +153,10 @@ func GatherWorkloadInfo(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{result, errs}
 }
 
-func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Interface, imageClient imageclient.ImageV1Interface) ([]record.Record, []error) {
+//nolint: funlen, gocyclo, gocritic
+func gatherWorkloadInfo(ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
+	imageClient imageclient.ImageV1Interface) ([]record.Record, []error) {
 	// load images as we find them
 	imageCh := make(chan string, workloadGatherPageSize)
 	imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images(), imageCh)
@@ -212,7 +213,8 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 				// only consider pods that are in a known state
 				namespacePods.IgnoredCount++
 				continue
-			case len(pod.Status.InitContainerStatuses) != len(pod.Spec.InitContainers), len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers):
+			case len(pod.Status.InitContainerStatuses) != len(pod.Spec.InitContainers),
+				len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers):
 				// pods without filled out status are invalid
 				namespacePods.IgnoredCount++
 				continue
@@ -276,7 +278,9 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 	var imageInfo workloadImageInfo
 	// wait proportional to the number of pods + a floor
 	waitDuration := time.Second*time.Duration(info.PodCount)/10 + 15*time.Second
-	klog.V(2).Infof("Loaded pods in %s, will wait %s for image data", time.Now().Sub(start).Round(time.Second).String(), waitDuration.Round(time.Second).String())
+	klog.V(2).Infof("Loaded pods in %s, will wait %s for image data",
+		time.Since(start).Round(time.Second).String(),
+		waitDuration.Round(time.Second).String())
 	close(imageCh)
 	select {
 	case <-ctx.Done():
@@ -295,7 +299,7 @@ func gatherWorkloadInfo(ctx context.Context, coreClient corev1client.CoreV1Inter
 	info.Images = imageInfo.images
 	info.ImageCount = imageInfo.count
 	if limitReached {
-		return records, []error{fmt.Errorf("The %d limit for number of pods gathered was reached", podsLimit)}
+		return records, []error{fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit)}
 	}
 	return records, nil
 }
@@ -305,7 +309,10 @@ type workloadImageInfo struct {
 	images map[string]workloadImage
 }
 
-func gatherWorkloadImageInfo(ctx context.Context, imageClient imageclient.ImageInterface, imageCh <-chan string) <-chan workloadImageInfo {
+//nolint: gocyclo
+func gatherWorkloadImageInfo(ctx context.Context,
+	imageClient imageclient.ImageInterface,
+	imageCh <-chan string) <-chan workloadImageInfo {
 	images := make(map[string]workloadImage)
 	imagesDoneCh := make(chan workloadImageInfo)
 
@@ -364,7 +371,7 @@ func gatherWorkloadImageInfo(ctx context.Context, imageClient imageclient.ImageI
 					start := time.Now()
 					image, err := imageClient.Get(ctx, imageID, metav1.GetOptions{})
 					if errors.IsNotFound(err) {
-						klog.V(4).Infof("No image %s (%s)", imageID, time.Now().Sub(start).Round(time.Millisecond).String())
+						klog.V(4).Infof("No image %s (%s)", imageID, time.Since(start).Round(time.Millisecond).String())
 						continue
 					}
 					if err == context.Canceled {
@@ -374,7 +381,7 @@ func gatherWorkloadImageInfo(ctx context.Context, imageClient imageclient.ImageI
 						klog.Errorf("Unable to retrieve image %s", imageID)
 						continue
 					}
-					klog.V(4).Infof("Found image %s (%s)", imageID, time.Now().Sub(start).Round(time.Millisecond).String())
+					klog.V(4).Infof("Found image %s (%s)", imageID, time.Since(start).Round(time.Millisecond).String())
 					info := calculateWorkloadInfo(h, image)
 					images[imageID] = info
 					workloadImageAdd(imageID, info)
@@ -395,10 +402,10 @@ func workloadPodShapeIndex(shapes []workloadPodShape, shape workloadPodShape) in
 	for i := len(shapes) - 1; i >= 0; i-- {
 		existing := shapes[i]
 		if !workloadContainerShapesEqual(existing.InitContainers, shape.InitContainers) {
-			return -1
+			continue
 		}
 		if !workloadContainerShapesEqual(existing.Containers, shape.Containers) {
-			return -1
+			continue
 		}
 		return i
 	}
@@ -449,10 +456,8 @@ func workloadArgumentString(s string) string {
 	s = strings.Trim(s, "/\\")
 	if i := strings.LastIndex(s, "/"); i != -1 {
 		s = s[i+1:]
-	} else {
-		if i := strings.LastIndex(s, "\\"); i != -1 {
-			s = s[i+1:]
-		}
+	} else if i := strings.LastIndex(s, "\\"); i != -1 {
+		s = s[i+1:]
 	}
 	return s
 }
@@ -475,23 +480,15 @@ func idForImageReference(s string) string {
 	return ref.ID
 }
 
-func shorterImageID(s string) string {
-	if strings.HasPrefix(s, "sha256:") {
-		b, err := hex.DecodeString(s[7:])
-		if err != nil {
-			return s
-		}
-		return base64.RawURLEncoding.EncodeToString(b)
-	}
-	return s
-}
-
 // calculateWorkloadContainerShapes takes a spec and status slice and attempts
 // to calculate an array of container shapes. If the preconditions of the shape
 // can't be met (invalid status, no imageID) false is returned.
-func calculateWorkloadContainerShapes(h hash.Hash, spec []corev1.Container, status []corev1.ContainerStatus) ([]workloadContainerShape, bool) {
+func calculateWorkloadContainerShapes(
+	h hash.Hash,
+	spec []corev1.Container,
+	status []corev1.ContainerStatus) ([]workloadContainerShape, bool) {
 	shapes := make([]workloadContainerShape, 0, len(status))
-	for i, container := range status {
+	for i, container := range status { //nolint: gocritic
 		specIndex := matchingSpecIndex(container.Name, spec, i)
 		if specIndex == -1 {
 			// no matching spec, skip
@@ -512,14 +509,11 @@ func calculateWorkloadContainerShapes(h hash.Hash, spec []corev1.Container, stat
 			short := workloadArgumentString(spec[specIndex].Command[0])
 			shortHash := workloadHashString(h, short)
 			firstCommand = shortHash
-			// TODO: create an example that shows these in unhashed form
-			//fmt.Fprintf(os.Stderr, "info: Convert command[0] %q to %q to %q\n", spec[specIndex].Command[0], short, shortHash)
 		}
 		if len(spec[specIndex].Args) > 0 {
 			short := workloadArgumentString(spec[specIndex].Args[0])
 			shortHash := workloadHashString(h, short)
 			firstArg = shortHash
-			//fmt.Fprintf(os.Stderr, "info: Convert arg[0] %q to %q to %q\n", spec[specIndex].Args[0], short, shortHash)
 		}
 
 		shapes = append(shapes, workloadContainerShape{
