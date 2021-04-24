@@ -102,6 +102,7 @@ github.com/openshift/api/imageregistry/v1
 github.com/openshift/api/network/v1
 github.com/openshift/api/operator/v1
 github.com/openshift/api/operator/v1alpha1
+github.com/openshift/api/operatorcontrolplane/v1alpha1
 github.com/openshift/api/pkg/serialization
 github.com/openshift/api/security/v1
 # github.com/openshift/client-go v0.0.0-20210409155308-a8e62c60e930 => github.com/openshift/client-go v0.0.0-20210409155308-a8e62c60e930
