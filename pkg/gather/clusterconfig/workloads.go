@@ -395,10 +395,10 @@ func workloadPodShapeIndex(shapes []workloadPodShape, shape workloadPodShape) in
 	for i := len(shapes) - 1; i >= 0; i-- {
 		existing := shapes[i]
 		if !workloadContainerShapesEqual(existing.InitContainers, shape.InitContainers) {
-			return -1
+			continue
 		}
 		if !workloadContainerShapesEqual(existing.Containers, shape.Containers) {
-			return -1
+			continue
 		}
 		return i
 	}
