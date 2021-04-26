@@ -459,6 +459,8 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 collects selected security context constraints
 and cluster role bindings from clusters running a SAP payload.
 
+**Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+
 Relevant OpenShift API docs:
   - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
@@ -485,6 +487,8 @@ collects information about pods running in SAP/SDI namespaces.
 Only pods with a failing status are collected.
 Failed pods belonging to a job that has later succeeded are ignored.
 
+**Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+
 Relevant Kubernetes API docs:
   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
@@ -502,6 +506,8 @@ Relevant Kubernetes API docs:
 collects logs from SAP vsystem-iptables containers
 including one from license management pods with the following substring:
   - "can't initialize iptables table",
+
+**Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
 
 The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
@@ -535,7 +541,9 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 collects summarized info about the workloads on a cluster
 in a generic fashion
 
-Location in archive: config/workload_info
-Id in config: workload_info
+* Location in archive: config/workload_info
+* Id in config: workload_info
+* Since versions:
+  * 4.8+
 
 

@@ -133,8 +133,10 @@ type workloadContainerShape struct {
 // GatherWorkloadInfo collects summarized info about the workloads on a cluster
 // in a generic fashion
 //
-// Location in archive: config/workload_info
-// Id in config: workload_info
+// * Location in archive: config/workload_info
+// * Id in config: workload_info
+// * Since versions:
+//   * 4.8+
 func GatherWorkloadInfo(g *Gatherer, c chan<- gatherResult) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
