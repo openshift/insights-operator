@@ -140,9 +140,6 @@ for degraded cluster operators or that lives at the Cluster Operator's namespace
 * Location of pods in archive: config/pod/
 * Location of events in archive: events/
 * Id in config: operators_pods_and_events
-* Spec config for CO resources since versions:
-  * 4.6.16+
-  * 4.7+
 
 
 ## ClusterOperators
