@@ -17,6 +17,8 @@ import (
 // including one from license management pods with the following substring:
 //   - "can't initialize iptables table",
 //
+// **Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+//
 // The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 // Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //

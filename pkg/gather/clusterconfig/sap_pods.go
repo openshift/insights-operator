@@ -20,6 +20,8 @@ import (
 // Only pods with a failing status are collected.
 // Failed pods belonging to a job that has later succeeded are ignored.
 //
+// **Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+//
 // Relevant Kubernetes API docs:
 //   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
 //   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1

@@ -17,6 +17,8 @@ import (
 // GatherSAPConfig collects selected security context constraints
 // and cluster role bindings from clusters running a SAP payload.
 //
+// **Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+//
 // Relevant OpenShift API docs:
 //   - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
 //   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
