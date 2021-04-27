@@ -16,7 +16,9 @@
                         "//localhost(:|$)"
                     ],
                     "etcd-servers": [
-                        "xxxxxxxxxxxxxxxxxxxxxxx"
+                        "https://10.0.0.3:2379",
+                        "https://10.0.0.4:2379",
+                        "https://10.0.0.5:2379"
                     ],
                     "tls-cipher-suites": [
                         "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
@@ -35,8 +37,8 @@
                     "//localhost(:|$)"
                 ],
                 "oauthConfig": {
-                    "assetPublicURL": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                    "loginURL": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "assetPublicURL": "https://console-openshift-console.apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com",
+                    "loginURL": "https://api.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com:6443",
                     "templates": {
                         "error": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/errors.html",
                         "login": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/login.html",
@@ -59,10 +61,10 @@
                     "minTLSVersion": "VersionTLS12",
                     "namedCertificates": [
                         {
-                            "certFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.tremes.lab.upshift.rdu2.redhat.com",
-                            "keyFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.tremes.lab.upshift.rdu2.redhat.com",
+                            "certFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com",
+                            "keyFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com",
                             "names": [
-                                "*.apps.tremes.lab.upshift.rdu2.redhat.com"
+                                "*.apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com"
                             ]
                         }
                     ]
@@ -73,8 +75,6 @@
             }
         },
         "operatorLogLevel": "Normal",
-        "unsupportedConfigOverrides": {
-            "useUnsupportedUnsafeNonHANonProductionUnstableOAuthServer": true
-        }
+        "unsupportedConfigOverrides": null
     }
 }

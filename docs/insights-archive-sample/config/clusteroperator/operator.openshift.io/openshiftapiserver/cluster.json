@@ -18,7 +18,7 @@
                 "projectRequestMessage": ""
             },
             "routingConfig": {
-                "subdomain": "apps.tremes.lab.upshift.rdu2.redhat.com"
+                "subdomain": "apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com"
             },
             "servingInfo": {
                 "cipherSuites": [
@@ -33,7 +33,9 @@
             },
             "storageConfig": {
                 "urls": [
-                    "xxxxxxxxxxxxxxxxxxxxxxx"
+                    "https://10.0.0.3:2379",
+                    "https://10.0.0.4:2379",
+                    "https://10.0.0.5:2379"
                 ]
             }
         },

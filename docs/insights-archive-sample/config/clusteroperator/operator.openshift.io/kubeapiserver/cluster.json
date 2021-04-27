@@ -31,6 +31,12 @@
                 "audit-policy-file": [
                     "/etc/kubernetes/static-pod-resources/configmaps/kube-apiserver-audit-policies/default.yaml"
                 ],
+                "authentication-token-webhook-config-file": [
+                    "/etc/kubernetes/static-pod-resources/secrets/webhook-authenticator/kubeConfig"
+                ],
+                "authentication-token-webhook-version": [
+                    "v1"
+                ],
                 "cloud-config": [
                     "/etc/kubernetes/static-pod-resources/configmaps/cloud-config/config"
                 ],
@@ -38,8 +44,10 @@
                     "gce"
                 ],
                 "etcd-servers": [
-                    "xxxxxxxxxxxxxxxxxxxxxxx",
-                    "xxxxxxxxxxxxxxxxxxxxxx"
+                    "https://10.0.0.3:2379",
+                    "https://10.0.0.4:2379",
+                    "https://10.0.0.5:2379",
+                    "https://localhost:2379"
                 ],
                 "feature-gates": [
                     "APIPriorityAndFairness=true",
@@ -47,8 +55,11 @@
                     "SupportPodPidsLimit=true",
                     "NodeDisruptionExclusion=true",
                     "ServiceNodeExclusion=true",
-                    "SCTPSupport=true",
+                    "DownwardAPIHugePages=true",
                     "LegacyNodeRoleBehavior=false"
+                ],
+                "service-account-jwks-uri": [
+                    "https://api-int.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com:6443/openid/v1/jwks"
                 ]
             },
             "authConfig": {
