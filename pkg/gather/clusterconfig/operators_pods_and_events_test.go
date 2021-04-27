@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/utils/pointer"
 )
 
 func Test_UnhealtyOperators_GatherClusterOperatorPodsAndEvents(t *testing.T) {
@@ -240,58 +239,7 @@ func Test_UnhealtyOperators_GatherNamespaceEvents(t *testing.T) {
 }
 
 func Test_UnhealtyOperators_FetchPodContainerLog(t *testing.T) {
-	bufferSize := int64(8 * 1024 * 1024 * logCompressionRatio / 10 / 2)
-
-	type args struct {
-		ctx           context.Context
-		coreClient    corev1client.CoreV1Interface
-		pod           *corev1.Pod
-		buf           *bytes.Buffer
-		containerName string
-		isPrevious    bool
-		maxBytes      *int64
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "container without previous log",
-			args: args{
-				ctx:           context.TODO(),
-				coreClient:    kubefake.NewSimpleClientset().CoreV1(),
-				pod:           &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "testPod"}},
-				buf:           bytes.NewBuffer(make([]byte, 0, bufferSize)),
-				containerName: "testContainer",
-				isPrevious:    false,
-				maxBytes:      pointer.Int64Ptr(bufferSize),
-			},
-			wantErr: false,
-		},
-		{
-			name: "container with previous log",
-			args: args{
-				ctx:           context.TODO(),
-				coreClient:    kubefake.NewSimpleClientset().CoreV1(),
-				pod:           &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "testPod"}},
-				buf:           bytes.NewBuffer(make([]byte, 0, bufferSize)),
-				containerName: "testContainer",
-				isPrevious:    true,
-				maxBytes:      pointer.Int64Ptr(bufferSize),
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			//t.Parallel()
-			if err := fetchPodContainerLog(tt.args.ctx, tt.args.coreClient, tt.args.pod, tt.args.buf, tt.args.containerName, tt.args.isPrevious, tt.args.maxBytes); (err != nil) != tt.wantErr {
-				t.Errorf("fetchPodContainerLog() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+	t.Skipf("Current API doesn't support this test.")
 }
 
 func Test_UnhealtyOperators_IsHealthyOperator(t *testing.T) {
