@@ -3,8 +3,7 @@ kind: ClusterServiceVersion
 metadata:
     name: test-olm-operator.v1.2.3
     namespace: test-olm-operator
-spec:
-    displayName: "Testing operator"    
+spec: {}    
 status:
     conditions:
         - lastTransitionTime: "2021-03-02T08:52:24Z"
