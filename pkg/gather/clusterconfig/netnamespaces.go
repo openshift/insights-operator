@@ -48,11 +48,11 @@ func gatherNetNamespace(ctx context.Context, networkClient networkv1client.Netwo
 		return nil, []error{err}
 	}
 	var namespaces []*netNamespace
-	for _, n := range nsList.Items { //nolint: gocritic
+	for i := range nsList.Items {
 		netNS := &netNamespace{
-			Name:      n.Name,
-			EgressIPs: n.EgressIPs,
-			NetID:     n.NetID,
+			Name:      nsList.Items[i].Name,
+			EgressIPs: nsList.Items[i].EgressIPs,
+			NetID:     nsList.Items[i].NetID,
 		}
 		namespaces = append(namespaces, netNS)
 	}

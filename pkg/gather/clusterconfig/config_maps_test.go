@@ -103,9 +103,9 @@ func mustNotFail(t *testing.T, err interface{}, fmtstr string) {
 }
 
 func findMap(cml *corev1.ConfigMapList, name string) *corev1.ConfigMap {
-	for _, it := range cml.Items { //nolint: gocritic
-		if it.Name == name {
-			return &it
+	for i := range cml.Items {
+		if cml.Items[i].Name == name {
+			return &cml.Items[i]
 		}
 	}
 	return nil

@@ -66,11 +66,11 @@ func gatherInstallPlans(ctx context.Context,
 		return nil, []error{err}
 	}
 	// collect from all openshift* namespaces
-	for _, ns := range config.Items { //nolint: gocritic
-		if !strings.HasPrefix(ns.Name, "openshift") {
+	for i := range config.Items {
+		if !strings.HasPrefix(config.Items[i].Name, "openshift") {
 			continue
 		}
-		resInterface := dynamicClient.Resource(opResource).Namespace(ns.Name)
+		resInterface := dynamicClient.Resource(opResource).Namespace(config.Items[i].Name)
 		for {
 			u, err := resInterface.List(ctx, metav1.ListOptions{Limit: plansBatchLimit, Continue: cont})
 			if errors.IsNotFound(err) {

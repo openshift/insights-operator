@@ -101,8 +101,8 @@ func FromCSRs(requests *certificatesv1api.CertificateSigningRequestList) *CSRs {
 
 func (c *CSRs) Anonymize() *CSRs {
 	res := &CSRs{}
-	for _, r := range c.Requests { //nolint: gocritic
-		af := anonymizeCSR(&r) //nolint: gosec
+	for i := range c.Requests {
+		af := anonymizeCSR(&c.Requests[i])
 		res.Anonymized = append(res.Anonymized, CSRAnonymizer{af})
 	}
 	return res

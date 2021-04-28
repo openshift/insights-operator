@@ -44,14 +44,14 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 		return nil, []error{err}
 	}
 	var records []record.Record
-	for _, pdb := range pdbs.Items { //nolint: gocritic
-		recordName := fmt.Sprintf("config/pdbs/%s", pdb.GetName())
-		if pdb.GetNamespace() != "" {
-			recordName = fmt.Sprintf("config/pdbs/%s/%s", pdb.GetNamespace(), pdb.GetName())
+	for i := range pdbs.Items {
+		recordName := fmt.Sprintf("config/pdbs/%s", pdbs.Items[i].GetName())
+		if pdbs.Items[i].GetNamespace() != "" {
+			recordName = fmt.Sprintf("config/pdbs/%s/%s", pdbs.Items[i].GetNamespace(), pdbs.Items[i].GetName())
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.JSONMarshaller{Object: pdb},
+			Item: record.JSONMarshaller{Object: pdbs.Items[i]},
 		})
 	}
 	return records, nil

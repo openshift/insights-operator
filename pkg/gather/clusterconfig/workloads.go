@@ -488,15 +488,15 @@ func calculateWorkloadContainerShapes(
 	spec []corev1.Container,
 	status []corev1.ContainerStatus) ([]workloadContainerShape, bool) {
 	shapes := make([]workloadContainerShape, 0, len(status))
-	for i, container := range status { //nolint: gocritic
-		specIndex := matchingSpecIndex(container.Name, spec, i)
+	for i := range status {
+		specIndex := matchingSpecIndex(status[i].Name, spec, i)
 		if specIndex == -1 {
 			// no matching spec, skip
-			fmt.Fprintf(os.Stderr, "warning: unable to match %s to a container spec\n", container.Name)
+			fmt.Fprintf(os.Stderr, "warning: unable to match %s to a container spec\n", status[i].Name)
 			return nil, false
 		}
 
-		imageID := idForImageReference(strings.TrimPrefix(container.ImageID, "docker-pullable://"))
+		imageID := idForImageReference(strings.TrimPrefix(status[i].ImageID, "docker-pullable://"))
 		if len(imageID) == 0 {
 			imageID = idForImageReference(spec[specIndex].Image)
 		}

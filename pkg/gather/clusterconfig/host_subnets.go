@@ -43,10 +43,11 @@ func gatherHostSubnet(ctx context.Context, networkClient networkv1client.Network
 		return nil, []error{err}
 	}
 	records := make([]record.Record, 0, len(hostSubnetList.Items))
-	for _, h := range hostSubnetList.Items { //nolint: gocritic
+
+	for i := range hostSubnetList.Items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/hostsubnet/%s", h.Host),
-			Item: record.JSONMarshaller{Object: h},
+			Name: fmt.Sprintf("config/hostsubnet/%s", hostSubnetList.Items[i].Host),
+			Item: record.JSONMarshaller{Object: hostSubnetList.Items[i]},
 		})
 	}
 	return records, nil

@@ -98,7 +98,7 @@ func clusterOperatorsRecords(ctx context.Context,
 	resVer, _ := getOperatorResourcesVersions(discoveryClient)
 	records := make([]record.Record, 0, len(items))
 
-	for idx, co := range items { //nolint: gocritic
+	for idx := range items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/clusteroperator/%s", items[idx].Name),
 			Item: record.JSONMarshaller{Object: &items[idx]},
@@ -107,7 +107,7 @@ func clusterOperatorsRecords(ctx context.Context,
 			continue
 		}
 
-		relRes := collectClusterOperatorResources(ctx, dynamicClient, co, resVer)
+		relRes := collectClusterOperatorResources(ctx, dynamicClient, items[idx], resVer)
 		for _, rr := range relRes {
 			// imageregistry resources (config, pruner) are gathered in image_registries.go, image_pruners.go
 			if strings.Contains(rr.APIVersion, "imageregistry") {
@@ -186,8 +186,8 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 			if err != nil {
 				continue
 			}
-			for _, ar := range v.APIResources { //nolint: gocritic
-				key := fmt.Sprintf("%s-%s", gv.Group, ar.Name)
+			for i := range v.APIResources {
+				key := fmt.Sprintf("%s-%s", gv.Group, v.APIResources[i].Name)
 				_, ok := resourceVersionMap[key]
 				if !ok {
 					resourceVersionMap[key] = []string{gv.Version}

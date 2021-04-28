@@ -94,7 +94,6 @@ func gatherClusterImageRegistry(ctx context.Context,
 }
 
 // findPVByPVCName tries to find *corev1.PersistentVolume used in PersistentVolumeClaim with provided name
-//nolint: gocritic
 func findPVByPVCName(ctx context.Context, coreClient corev1client.CoreV1Interface, name string) (*corev1.PersistentVolume, error) {
 	// unfortunately we can't do "coreClient.PersistentVolumeClaims("").Get(ctx, name, ... )"
 	pvcs, err := coreClient.PersistentVolumeClaims("").List(ctx, metav1.ListOptions{})
@@ -102,9 +101,9 @@ func findPVByPVCName(ctx context.Context, coreClient corev1client.CoreV1Interfac
 		return nil, err
 	}
 	var pvc corev1.PersistentVolumeClaim
-	for _, p := range pvcs.Items {
-		if p.Name == name {
-			pvc = p
+	for i := range pvcs.Items {
+		if pvcs.Items[i].Name == name {
+			pvc = pvcs.Items[i]
 			break
 		}
 	}
