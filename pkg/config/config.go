@@ -37,7 +37,16 @@ type Controller struct {
 	ReportMinRetryTime   time.Duration
 	ReportPullingTimeout time.Duration
 	Impersonate          string
-	Gather               []string
+	// list of gathering functions to enable
+	// if there's a string "ALL", we enable everything
+	// otherwise, each string should consist of 2 parts:
+	// gatherer name and function name split by slash
+	// Example: []{
+	//   "clusterconfig/container_images",
+	//   "clusterconfig/nodes",
+	//   "clusterconfig/authentication",
+	// }
+	Gather []string
 	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
 	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
 	EnableGlobalObfuscation bool

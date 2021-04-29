@@ -22,6 +22,11 @@ type ConfigReporter interface {
 	SetConfig(*config.Controller)
 }
 
+type Configurator interface {
+	Config() *config.Controller
+	ConfigChanged() (<-chan struct{}, func())
+}
+
 // Responsible for periodically checking and (if necessary) updating the local configs/tokens
 // according to the configs/tokens present on the cluster.
 type Controller struct {

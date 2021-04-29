@@ -6,42 +6,50 @@ import (
 	"sort"
 	"time"
 
-	"k8s.io/klog/v2"
-
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog/v2"
 
-	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
-type Configurator interface {
-	Config() *config.Controller
-	ConfigChanged() (<-chan struct{}, func())
-}
-
+// Controller periodically runs gatherers, records their results to the recorder
+// and flushes the recorder to create archives
 type Controller struct {
-	configurator Configurator
+	configurator configobserver.Configurator
 	recorder     recorder.FlushInterface
-	gatherers    map[string]gather.Interface
+	gatherers    []gather.Interface
 	statuses     map[string]*controllerstatus.Simple
+	anonymizer   *anonymization.Anonymizer
 }
 
-func New(configurator Configurator, rec recorder.FlushInterface, gatherers map[string]gather.Interface) *Controller {
+// New creates a new instance of Controller which periodically invokes the gatherers
+// and flushes the recorder to create archives.
+func New(
+	configurator configobserver.Configurator,
+	rec recorder.FlushInterface,
+	gatherers []gather.Interface,
+	anonymizer *anonymization.Anonymizer,
+) *Controller {
 	statuses := make(map[string]*controllerstatus.Simple)
-	for k := range gatherers {
-		statuses[k] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", k)}
+
+	for _, gatherer := range gatherers {
+		gathererName := gatherer.GetName()
+		statuses[gathererName] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", gathererName)}
 	}
-	c := &Controller{
+
+	return &Controller{
 		configurator: configurator,
 		recorder:     rec,
 		gatherers:    gatherers,
 		statuses:     statuses,
+		anonymizer:   anonymizer,
 	}
-	return c
 }
 
 func (c *Controller) Sources() []controllerstatus.Interface {
@@ -98,15 +106,46 @@ func (c *Controller) Gather() {
 		Steps:    threshold,
 		Cap:      interval,
 	}
-	for name := range c.gatherers {
+
+	// flush when all necessary gatherers were processed
+	defer func() {
+		if err := c.recorder.Flush(); err != nil {
+			klog.Errorf("Unable to flush the recorder: %v", err)
+		}
+	}()
+
+	var gatherersToProcess []gather.Interface
+
+	for _, gatherer := range c.gatherers {
+		if g, ok := gatherer.(gather.CustomPeriodGatherer); ok {
+			if g.ShouldBeProcessedNow() {
+				gatherersToProcess = append(gatherersToProcess, g)
+				g.UpdateLastProcessingTime()
+			}
+		} else {
+			gatherersToProcess = append(gatherersToProcess, gatherer)
+		}
+	}
+
+	var allFunctionReports []gather.GathererFunctionReport
+
+	for _, gatherer := range gatherersToProcess {
 		_ = wait.ExponentialBackoff(backoff, func() (bool, error) {
+			name := gatherer.GetName()
 			start := time.Now()
-			err := c.runGatherer(name)
+
+			ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+			defer cancel()
+
+			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
+			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
+			allFunctionReports = append(allFunctionReports, functionReports...)
 			if err == nil {
 				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
 				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
 				return true, nil
 			}
+
 			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
 			c.statuses[name].UpdateStatus(
 				controllerstatus.Summary{
@@ -117,25 +156,11 @@ func (c *Controller) Gather() {
 			return false, nil
 		})
 	}
-}
 
-// Does the prep for running a gatherer then calls gatherer.Gather. (getting the context, cleaning the recorder)
-func (c *Controller) runGatherer(name string) error {
-	gatherer, ok := c.gatherers[name]
-	if !ok {
-		klog.V(2).Infof("No such gatherer %s", name)
-		return nil
+	err := gather.RecordArchiveMetadata(allFunctionReports, c.recorder, c.anonymizer)
+	if err != nil {
+		klog.Errorf("unable to record archive metadata because of error: %v", err)
 	}
-	timeoutDuration := c.configurator.Config().Interval / 2
-	ctx, cancel := context.WithTimeout(context.Background(), timeoutDuration)
-	defer cancel()
-	defer func() {
-		if err := c.recorder.Flush(); err != nil {
-			klog.Errorf("Unable to flush recorder: %v", err)
-		}
-	}()
-	klog.V(4).Infof("Running %s", name)
-	return gatherer.Gather(ctx, c.configurator.Config().Gather, c.recorder)
 }
 
 // Periodically starts the gathering.

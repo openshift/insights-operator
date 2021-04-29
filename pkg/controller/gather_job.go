@@ -16,7 +16,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
-	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
+	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
@@ -69,8 +69,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
-		var configClient *configv1client.ConfigV1Client
-		configClient, err = configv1client.NewForConfig(kubeConfig)
+		configClient, err := configv1client.NewForConfig(kubeConfig)
 		if err != nil {
 			return err
 		}
@@ -86,12 +85,18 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	rec := recorder.New(recdriver, d.Interval, anonymizer)
 	defer rec.Flush()
 
-	// the gatherers check the state of the cluster and report any
-	// config to the recorder
-	clusterConfigGatherer := clusterconfig.New(gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer)
-	err = clusterConfigGatherer.Gather(ctx, configObserver.Config().Gather, rec)
-	if err != nil {
-		return err
+	gatherers := gather.CreateAllGatherers(
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
+	)
+
+	var allFunctionReports []gather.GathererFunctionReport
+	for _, gatherer := range gatherers {
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, configObserver)
+		if err != nil {
+			return err
+		}
+		allFunctionReports = append(allFunctionReports, functionReports...)
 	}
-	return nil
+
+	return gather.RecordArchiveMetadata(allFunctionReports, rec, anonymizer)
 }
