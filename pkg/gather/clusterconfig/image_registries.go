@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"strings"
 
+	registryv1 "github.com/openshift/api/imageregistry/v1"
+	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
+	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
-
-	registryv1 "github.com/openshift/api/imageregistry/v1"
-	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
-	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
@@ -34,20 +33,18 @@ import (
 // * PV definition since versions:
 //   * 4.6.20+
 //   * 4.7+
-func GatherClusterImageRegistry(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherClusterImageRegistry(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
+
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherClusterImageRegistry(g.ctx, registryClient.ImageregistryV1(), gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errs}
+
+	return gatherClusterImageRegistry(ctx, registryClient.ImageregistryV1(), gatherKubeClient.CoreV1())
 }
 
 //nolint: govet
@@ -61,6 +58,7 @@ func gatherClusterImageRegistry(ctx context.Context,
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	var records []record.Record
 	// if there is some PVC then try to gather used persistent volume
 	if config.Spec.Storage.PVC != nil {
@@ -76,6 +74,7 @@ func gatherClusterImageRegistry(ctx context.Context,
 			records = append(records, pvRecord)
 		}
 	}
+
 	// TypeMeta is empty - see https://github.com/kubernetes/kubernetes/issues/3030
 	kinds, _, err := registryScheme.ObjectKinds(config)
 	if err != nil {

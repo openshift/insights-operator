@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
+	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-
-	imageregistryv1client "github.com/openshift/client-go/imageregistry/clientset/versioned"
-	imageregistryv1 "github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -19,15 +18,13 @@ import (
 //
 // * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
 // * Id in config: image_pruners
-func GatherClusterImagePruner(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherClusterImagePruner(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherClusterImagePruner(g.ctx, registryClient.ImageregistryV1())
-	c <- gatherResult{records, errs}
+
+	return gatherClusterImagePruner(ctx, registryClient.ImageregistryV1())
 }
 
 func gatherClusterImagePruner(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface) ([]record.Record, []error) {

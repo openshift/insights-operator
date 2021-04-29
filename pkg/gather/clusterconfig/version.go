@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
-
-	configv1 "github.com/openshift/api/config/v1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
@@ -33,20 +32,18 @@ import (
 // * Location of cluster ID: config/id
 // * See: docs/insights-archive-sample/config/id
 // * Id in config: version
-func GatherClusterVersion(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherClusterVersion(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
+
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := getClusterVersion(g.ctx, gatherConfigClient, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errs}
+
+	return getClusterVersion(ctx, gatherConfigClient, gatherKubeClient.CoreV1())
 }
 
 func getClusterVersion(ctx context.Context,

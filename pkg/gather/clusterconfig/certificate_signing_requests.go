@@ -9,14 +9,12 @@ import (
 	"time"
 
 	certificatesv1api "k8s.io/api/certificates/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog/v2"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	certificatesv1 "k8s.io/client-go/kubernetes/typed/certificates/v1"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
@@ -40,15 +38,13 @@ const csrGatherLimit = 5000
 //   * 4.3.25+
 //   * 4.4.12+
 //   * 4.5+
-func GatherCertificateSigningRequests(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherCertificateSigningRequests(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherCertificateSigningRequests(g.ctx, gatherKubeClient.CertificatesV1())
-	c <- gatherResult{records, errs}
+
+	return gatherCertificateSigningRequests(ctx, gatherKubeClient.CertificatesV1())
 }
 
 func gatherCertificateSigningRequests(ctx context.Context,

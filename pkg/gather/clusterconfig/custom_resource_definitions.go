@@ -22,15 +22,13 @@ import (
 //
 // * Location in archive: config/crd/
 // * Id in config: crds
-func GatherCRD(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherCRD(ctx context.Context) ([]record.Record, []error) {
 	crdClient, err := apixv1.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherCRD(g.ctx, crdClient)
-	c <- gatherResult{records, errs}
+
+	return gatherCRD(ctx, crdClient)
 }
 
 func gatherCRD(ctx context.Context, crdClient apixv1.ApiextensionsV1Interface) ([]record.Record, []error) {
@@ -39,6 +37,7 @@ func gatherCRD(ctx context.Context, crdClient apixv1.ApiextensionsV1Interface) (
 		"volumesnapshotcontents.snapshot.storage.k8s.io",
 	}
 	var records []record.Record
+
 	for _, crdName := range toBeCollected {
 		crd, err := crdClient.CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
 		// Log missing CRDs, but do not return the error.
@@ -55,5 +54,6 @@ func gatherCRD(ctx context.Context, crdClient apixv1.ApiextensionsV1Interface) (
 			Item: record.JSONMarshaller{Object: crd},
 		})
 	}
+
 	return records, []error{}
 }

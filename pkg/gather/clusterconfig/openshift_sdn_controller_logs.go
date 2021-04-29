@@ -2,7 +2,11 @@
 package clusterconfig
 
 import (
+	"context"
+
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherOpenshiftSDNControllerLogs collects logs from sdn-controller pod in openshift-sdn namespace with following substrings:
@@ -26,9 +30,7 @@ import (
 // * Since versions:
 //   * 4.6.21+
 //   * 4.7+
-func GatherOpenshiftSDNControllerLogs(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
-
+func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := logContainersFilter{
 		namespace:     "openshift-sdn",
 		labelSelector: "app=sdn-controller",
@@ -47,23 +49,21 @@ func GatherOpenshiftSDNControllerLogs(g *Gatherer, c chan<- gatherResult) {
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
 
 	coreClient := gatherKubeClient.CoreV1()
 
 	records, err := gatherLogsFromContainers(
-		g.ctx,
+		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
 		"errors",
 	)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	c <- gatherResult{records, nil}
+	return records, nil
 }

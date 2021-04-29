@@ -34,20 +34,18 @@ const InstallPlansTopX = 100
 //   * 4.5.33+
 //   * 4.6.16+
 //   * 4.7+
-func GatherInstallPlans(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherInstallPlans(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
+
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherInstallPlans(g.ctx, dynamicClient, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errs}
+
+	return gatherInstallPlans(ctx, dynamicClient, gatherKubeClient.CoreV1())
 }
 
 func gatherInstallPlans(ctx context.Context,
@@ -169,16 +167,19 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	if a.limit == 0 {
 		a.limit = InstallPlansTopX
 	}
+
 	var cnts []int
 	for _, v := range a.v {
 		cnts = append(cnts, v.Count)
 	}
+
 	sort.Sort(sort.Reverse(sort.IntSlice(cnts)))
 	countLimit := -1
 	if len(cnts) > a.limit && a.limit > 0 {
 		// nth plan is on n-1th position
 		countLimit = cnts[a.limit-1]
 	}
+
 	// Creates map for marshal
 	sr := map[string]interface{}{}
 	st := map[string]int{}
@@ -186,6 +187,7 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	st["TOTAL_NONUNIQ_COUNT"] = len(a.v)
 	sr["stats"] = st
 	uls := 0
+
 	var it []interface{}
 	for _, v := range a.v {
 		if v.Count >= countLimit {
@@ -205,6 +207,7 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 		return it[i].(map[string]interface{})["count"].(int) > it[j].(map[string]interface{})["count"].(int)
 	})
 	sr["items"] = it
+
 	return json.Marshal(sr)
 }
 

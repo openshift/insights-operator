@@ -36,18 +36,18 @@ import (
 // * "cluster-monitoring-config" ConfigMap data since versions:
 //   * 4.6.22+
 //   * 4.7+
-func GatherConfigMaps(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errors := gatherConfigMaps(g.ctx, gatherKubeClient.CoreV1())
-	monitoringRec, monitoringErrs := gatherMonitoringCM(g.ctx, gatherKubeClient.CoreV1())
+
+	records, errors := gatherConfigMaps(ctx, gatherKubeClient.CoreV1())
+	monitoringRec, monitoringErrs := gatherMonitoringCM(ctx, gatherKubeClient.CoreV1())
 	records = append(records, monitoringRec...)
 	errors = append(errors, monitoringErrs...)
-	c <- gatherResult{records, errors}
+
+	return records, errors
 }
 
 func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

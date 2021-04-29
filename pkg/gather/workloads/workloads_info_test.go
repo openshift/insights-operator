@@ -1,4 +1,4 @@
-package clusterconfig
+package workloads
 
 import (
 	"bytes"
@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/record"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 //nolint: funlen, gocyclo, gosec
@@ -31,16 +32,15 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 	config.ContentType = "application/vnd.kubernetes.protobuf"
 
-	g := Gatherer{ctx: context.TODO(), gatherProtoKubeConfig: config}
+	g := New(config)
+	ctx := context.TODO()
 	start := time.Now()
-	ch := make(chan gatherResult, 1)
-	GatherWorkloadInfo(&g, ch)
-	result := <-ch
-	records, errs := result.records, result.errors
+	records, errs := g.GatherWorkloadInfo(ctx)
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
-	t.Logf("Gathered in %s", time.Since(start).Round(time.Second).String())
+
+	t.Logf("Gathered in %s", time.Now().Sub(start).Round(time.Second).String())
 
 	if len(records) != 1 {
 		t.Fatalf("unexpected: %v", records)

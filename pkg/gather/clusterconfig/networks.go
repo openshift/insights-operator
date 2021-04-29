@@ -4,10 +4,9 @@ package clusterconfig
 import (
 	"context"
 
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -20,15 +19,13 @@ import (
 // * Location in archive: config/network/
 // * See: docs/insights-archive-sample/config/network
 // * Id in config: networks
-func GatherClusterNetwork(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherClusterNetwork(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherClusterNetwork(g.ctx, gatherConfigClient)
-	c <- gatherResult{records, errs}
+
+	return gatherClusterNetwork(ctx, gatherConfigClient)
 }
 
 func gatherClusterNetwork(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {
@@ -39,5 +36,6 @@ func gatherClusterNetwork(ctx context.Context, configClient configv1client.Confi
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	return []record.Record{{Name: "config/network", Item: record.JSONMarshaller{Object: config}}}, nil
 }

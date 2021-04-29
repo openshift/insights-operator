@@ -32,15 +32,13 @@ const maxServiceAccountsLimit = 1000
 //   * 4.5.34+
 //   * 4.6.20+
 //   * 4.7+
-func GatherServiceAccounts(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherServiceAccounts(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherServiceAccounts(g.ctx, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errs}
+
+	return gatherServiceAccounts(ctx, gatherKubeClient.CoreV1())
 }
 
 func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

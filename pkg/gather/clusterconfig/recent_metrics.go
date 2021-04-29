@@ -35,21 +35,14 @@ const (
 // * Location in archive: config/metrics/
 // * See: docs/insights-archive-sample/config/metrics
 // * Id in config: metrics
-func GatherMostRecentMetrics(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
-	var metricsClient rest.Interface
+func (g *Gatherer) GatherMostRecentMetrics(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
 		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
-	} else {
-		metricsClient = metricsRESTClient
+		return nil, nil
 	}
-	if metricsClient == nil {
-		c <- gatherResult{nil, nil}
-		return
-	}
-	records, errors := gatherMostRecentMetrics(g.ctx, metricsClient)
-	c <- gatherResult{records, errors}
+
+	return gatherMostRecentMetrics(ctx, metricsRESTClient)
 }
 
 func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) ([]record.Record, []error) {

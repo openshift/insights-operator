@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/klog/v2"
-
-	configv1 "github.com/openshift/api/config/v1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
@@ -44,29 +43,28 @@ type clusterOperatorResource struct {
 // * Spec config for CO resources since versions:
 //   * 4.6.16+
 //   * 4.7+
-func GatherClusterOperators(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherClusterOperators(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
+
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
+
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherClusterOperators(g.ctx, gatherConfigClient, discoveryClient, dynamicClient)
-	if errs != nil {
-		c <- gatherResult{records, []error{errs}}
-		return
+
+	records, err := gatherClusterOperators(ctx, gatherConfigClient, discoveryClient, dynamicClient)
+	if err != nil {
+		return records, []error{err}
 	}
-	c <- gatherResult{records, nil}
+
+	return records, nil
 }
 
 // gatherClusterOperators collects cluster operators

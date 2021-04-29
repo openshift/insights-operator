@@ -17,15 +17,13 @@ import (
 // * Since versions:
 //   * 4.7.5+
 //   * 4.8+
-func GatherSAPDatahubs(g *Gatherer, c chan<- gatherResult) {
+func (g *Gatherer) GatherSAPDatahubs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	records, errs := gatherSAPDatahubs(g.ctx, gatherDynamicClient)
-	c <- gatherResult{records: records, errors: errs}
+	return gatherSAPDatahubs(ctx, gatherDynamicClient)
 }
 
 func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

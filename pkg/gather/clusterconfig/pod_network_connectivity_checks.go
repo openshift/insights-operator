@@ -24,25 +24,23 @@ import (
 // * Id in config: pod_network_connectivity_checks
 // * Since versions:
 //   * 4.8+
-func GatherPNCC(g *Gatherer, c chan<- gatherResult) {
+func (g *Gatherer) GatherPNCC(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	records, errors := gatherPNCC(g.ctx, gatherDynamicClient)
-	c <- gatherResult{records: records, errors: errors}
+	return gatherPNCC(ctx, gatherDynamicClient)
 }
 
 func getUnsuccessfulChecks(entries []controlplanev1.LogEntry) []controlplanev1.LogEntry {
-	unsuccesseful := []controlplanev1.LogEntry{}
+	var unsuccessful []controlplanev1.LogEntry
 	for _, entry := range entries {
 		if !entry.Success {
-			unsuccesseful = append(unsuccesseful, entry)
+			unsuccessful = append(unsuccessful, entry)
 		}
 	}
-	return unsuccesseful
+	return unsuccessful
 }
 
 func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

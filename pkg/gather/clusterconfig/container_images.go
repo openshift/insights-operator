@@ -39,15 +39,12 @@ const (
 //   * 4.5.33+
 //   * 4.6.16+
 //   * 4.7+
-func GatherContainerImages(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherContainerImages(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errors := gatherContainerImages(g.ctx, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errors}
+	return gatherContainerImages(ctx, gatherKubeClient.CoreV1())
 }
 
 func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

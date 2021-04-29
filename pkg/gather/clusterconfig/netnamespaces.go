@@ -3,11 +3,10 @@ package clusterconfig
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	networkv1 "github.com/openshift/api/network/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -28,15 +27,13 @@ type netNamespace struct {
 // * Since versions:
 //   * 4.6.20+
 //   * 4.7+
-func GatherNetNamespace(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherNetNamespace(ctx context.Context) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherNetNamespace(g.ctx, gatherNetworkClient)
-	c <- gatherResult{records, errs}
+
+	return gatherNetNamespace(ctx, gatherNetworkClient)
 }
 
 func gatherNetNamespace(ctx context.Context, networkClient networkv1client.NetworkV1Interface) ([]record.Record, []error) {
@@ -47,6 +44,7 @@ func gatherNetNamespace(ctx context.Context, networkClient networkv1client.Netwo
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	var namespaces []*netNamespace
 	for i := range nsList.Items {
 		netNS := &netNamespace{
@@ -56,9 +54,11 @@ func gatherNetNamespace(ctx context.Context, networkClient networkv1client.Netwo
 		}
 		namespaces = append(namespaces, netNS)
 	}
+
 	r := record.Record{
 		Name: "config/netnamespaces",
 		Item: record.JSONMarshaller{Object: namespaces},
 	}
+
 	return []record.Record{r}, nil
 }

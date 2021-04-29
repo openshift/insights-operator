@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -27,15 +26,13 @@ const (
 //   * 4.4.30+
 //   * 4.5.34+
 //   * 4.6+
-func GatherPodDisruptionBudgets(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errors := gatherPodDisruptionBudgets(g.ctx, gatherPolicyClient)
-	c <- gatherResult{records, errors}
+
+	return gatherPodDisruptionBudgets(ctx, gatherPolicyClient)
 }
 
 func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1Interface) ([]record.Record, []error) {

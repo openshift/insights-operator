@@ -32,25 +32,23 @@ import (
 //   * 4.6.24+
 //   * 4.7.5+
 //   * 4.8+
-func GatherSAPPods(g *Gatherer, c chan<- gatherResult) {
+func (g *Gatherer) GatherSAPPods(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
-	}
-	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
-	}
-	gatherJobsClient, err := batchv1client.NewForConfig(g.gatherKubeConfig)
-	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	records, errs := gatherSAPPods(g.ctx, gatherDynamicClient, gatherKubeClient.CoreV1(), gatherJobsClient)
-	c <- gatherResult{records: records, errors: errs}
+	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	gatherJobsClient, err := batchv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	return gatherSAPPods(ctx, gatherDynamicClient, gatherKubeClient.CoreV1(), gatherJobsClient)
 }
 
 func gatherSAPPods(ctx context.Context,

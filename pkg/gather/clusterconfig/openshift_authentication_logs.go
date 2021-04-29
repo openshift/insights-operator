@@ -1,7 +1,11 @@
 package clusterconfig
 
 import (
+	"context"
+
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherOpenshiftAuthenticationLogs collects logs from pods in openshift-authentication namespace with following substring:
@@ -15,9 +19,7 @@ import (
 // * Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
 // * Since versions:
 //   * 4.7+
-func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
-
+func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := logContainersFilter{
 		namespace:     "openshift-authentication",
 		labelSelector: "app=oauth-openshift",
@@ -33,23 +35,21 @@ func GatherOpenshiftAuthenticationLogs(g *Gatherer, c chan<- gatherResult) {
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
 
 	coreClient := gatherKubeClient.CoreV1()
 
 	records, err := gatherLogsFromContainers(
-		g.ctx,
+		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
 		"errors",
 	)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	c <- gatherResult{records, nil}
+	return records, nil
 }

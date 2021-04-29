@@ -3,11 +3,10 @@ package clusterconfig
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
@@ -21,15 +20,13 @@ import (
 // * Location in archive: config/infrastructure/
 // * See: docs/insights-archive-sample/config/infrastructure
 // * Id in config: infrastructures
-func GatherClusterInfrastructure(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherClusterInfrastructure(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherClusterInfrastructure(g.ctx, gatherConfigClient)
-	c <- gatherResult{records, errs}
+
+	return gatherClusterInfrastructure(ctx, gatherConfigClient)
 }
 
 func gatherClusterInfrastructure(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

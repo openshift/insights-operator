@@ -9,6 +9,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -29,41 +30,36 @@ import (
 //   * 4.6.25+
 //   * 4.7.5+
 //   * 4.8+
-func GatherSAPVsystemIptablesLogs(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
-
+func (g *Gatherer) GatherSAPVsystemIptablesLogs(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
+		return nil, []error{err}
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	datahubsList, err := dynamicClient.Resource(datahubGroupVersionResource).List(g.ctx, metav1.ListOptions{})
+	datahubsList, err := dynamicClient.Resource(datahubGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
-		c <- gatherResult{nil, nil}
-		return
+		klog.Info("SAP resources weren't found")
+		return nil, nil
 	}
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
+
 	// If no DataHubs resource exists on the cluster, skip this gathering.
 	// This may already be handled by the IsNotFound check, but it's better to be sure.
 	if len(datahubsList.Items) == 0 {
-		c <- gatherResult{nil, nil}
-		return
+		klog.Info("SAP resources weren't found")
+		return nil, nil
 	}
 
 	coreClient := kubeClient.CoreV1()
 
-	records, errs := gatherSAPLicenseManagementLogs(g.ctx, coreClient, datahubsList.Items)
-	c <- gatherResult{records, errs}
+	return gatherSAPLicenseManagementLogs(ctx, coreClient, datahubsList.Items)
 }
 
 func gatherSAPLicenseManagementLogs(

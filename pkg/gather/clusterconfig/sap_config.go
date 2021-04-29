@@ -27,25 +27,23 @@ import (
 // * Since versions:
 //   * 4.6.20+
 //   * 4.7+
-func GatherSAPConfig(g *Gatherer, c chan<- gatherResult) {
+func (g *Gatherer) GatherSAPConfig(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
-	}
-	gatherSecurityClient, err := securityv1client.NewForConfig(g.gatherKubeConfig)
-	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
-	}
-	gatherAuthClient, err := authclient.NewForConfig(g.gatherKubeConfig)
-	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	records, errs := gatherSAPConfig(g.ctx, gatherDynamicClient, gatherSecurityClient, gatherAuthClient)
-	c <- gatherResult{records: records, errors: errs}
+	gatherSecurityClient, err := securityv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	gatherAuthClient, err := authclient.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	return gatherSAPConfig(ctx, gatherDynamicClient, gatherSecurityClient, gatherAuthClient)
 }
 
 func gatherSAPConfig(ctx context.Context,

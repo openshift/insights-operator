@@ -25,15 +25,13 @@ import (
 //   * 4.4.29+
 //   * 4.5.15+
 //   * 4.6+
-func GatherMachineSet(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherMachineSet(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherMachineSet(g.ctx, dynamicClient)
-	c <- gatherResult{records, errs}
+
+	return gatherMachineSet(ctx, dynamicClient)
 }
 
 func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -45,6 +43,7 @@ func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]r
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	var records []record.Record
 	for _, i := range machineSets.Items {
 		recordName := fmt.Sprintf("machinesets/%s", i.GetName())
@@ -56,5 +55,6 @@ func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]r
 			Item: record.JSONMarshaller{Object: i.Object},
 		})
 	}
+
 	return records, nil
 }

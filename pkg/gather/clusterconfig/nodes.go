@@ -21,15 +21,12 @@ import (
 //
 // * Location in archive: config/node/
 // * Id in config: nodes
-func GatherNodes(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherNodes(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errors := gatherNodes(g.ctx, gatherKubeClient.CoreV1())
-	c <- gatherResult{records, errors}
+	return gatherNodes(ctx, gatherKubeClient.CoreV1())
 }
 
 func gatherNodes(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

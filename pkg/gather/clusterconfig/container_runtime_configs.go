@@ -25,15 +25,13 @@ import (
 // * Since versions:
 //   * 4.6.18+
 //   * 4.7+
-func GatherContainerRuntimeConfig(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherContainerRuntimeConfig(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherContainerRuntimeConfig(g.ctx, dynamicClient)
-	c <- gatherResult{records, errs}
+
+	return gatherContainerRuntimeConfig(ctx, dynamicClient)
 }
 
 func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

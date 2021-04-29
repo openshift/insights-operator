@@ -1,7 +1,11 @@
 package clusterconfig
 
 import (
+	"context"
+
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherOpenShiftAPIServerOperatorLogs collects logs from openshift-apiserver-operator with following substrings:
@@ -14,8 +18,7 @@ import (
 //       https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
-func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
 
 	containersFilter := logContainersFilter{
 		namespace:     "openshift-apiserver-operator",
@@ -33,23 +36,21 @@ func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
 
 	coreClient := gatherKubeClient.CoreV1()
 
 	records, err := gatherLogsFromContainers(
-		g.ctx,
+		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
 		"errors",
 	)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	c <- gatherResult{records, nil}
+	return records, nil
 }

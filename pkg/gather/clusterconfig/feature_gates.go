@@ -19,15 +19,13 @@ import (
 // * Location in archive: config/featuregate/
 // * See: docs/insights-archive-sample/config/featuregate
 // * Id in config: feature_gates
-func GatherClusterFeatureGates(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherClusterFeatureGates(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherClusterFeatureGates(g.ctx, gatherConfigClient)
-	c <- gatherResult{records, errs}
+
+	return gatherClusterFeatureGates(ctx, gatherConfigClient)
 }
 
 func gatherClusterFeatureGates(ctx context.Context, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {

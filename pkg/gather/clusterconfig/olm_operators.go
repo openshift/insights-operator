@@ -7,7 +7,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
@@ -48,15 +47,13 @@ type csvRef struct {
 // * Id in config: olm_operators
 // * Since versions:
 //   * 4.7+
-func GatherOLMOperators(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherOLMOperators(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherOLMOperators(g.ctx, dynamicClient)
-	c <- gatherResult{records, errs}
+
+	return gatherOLMOperators(ctx, dynamicClient)
 }
 
 func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

@@ -25,15 +25,13 @@ import (
 // * Since versions:
 //   * 4.5.33+
 //   * 4.6+
-func GatherMachineConfigPool(g *Gatherer, c chan<- gatherResult) {
-	defer close(c)
+func (g *Gatherer) GatherMachineConfigPool(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{nil, []error{err}}
-		return
+		return nil, []error{err}
 	}
-	records, errs := gatherMachineConfigPool(g.ctx, dynamicClient)
-	c <- gatherResult{records, errs}
+
+	return gatherMachineConfigPool(ctx, dynamicClient)
 }
 
 func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
@@ -45,6 +43,7 @@ func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interfac
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	var records []record.Record
 	for _, i := range machineCPs.Items {
 		records = append(records, record.Record{
@@ -52,5 +51,6 @@ func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interfac
 			Item: record.JSONMarshaller{Object: i.Object},
 		})
 	}
+
 	return records, nil
 }
