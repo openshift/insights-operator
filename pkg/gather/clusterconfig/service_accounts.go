@@ -56,9 +56,9 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 	var records []record.Record
 	namespaces := defaultNamespaces
 	// collect from all openshift* namespaces + kubernetes defaults
-	for _, item := range config.Items {
-		if strings.HasPrefix(item.Name, "openshift") {
-			namespaces = append(namespaces, item.Name)
+	for i := range config.Items {
+		if strings.HasPrefix(config.Items[i].Name, "openshift") {
+			namespaces = append(namespaces, config.Items[i].Name)
 		}
 	}
 	for _, namespace := range namespaces {
@@ -70,15 +70,18 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 		}
 
 		totalServiceAccounts += len(svca.Items)
-		for _, j := range svca.Items {
+		for j := range svca.Items {
 			if len(serviceAccounts) > maxServiceAccountsLimit {
 				break
 			}
-			serviceAccounts = append(serviceAccounts, j)
+			serviceAccounts = append(serviceAccounts, svca.Items[j])
 		}
 	}
 
-	records = append(records, record.Record{Name: "config/serviceaccounts", Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts}})
+	records = append(records, record.Record{
+		Name: "config/serviceaccounts",
+		Item: ServiceAccountsMarshaller{serviceAccounts, totalServiceAccounts},
+	})
 	return records, nil
 }
 
@@ -97,17 +100,17 @@ func (a ServiceAccountsMarshaller) Marshal(_ context.Context) ([]byte, error) {
 	sr["serviceAccounts"] = st
 	nss := map[string]interface{}{}
 	st["namespaces"] = nss
-	for _, sa := range a.sa {
+	for i := range a.sa {
 		var ns map[string]interface{}
 		var ok bool
-		if _, ok = nss[sa.Namespace]; !ok {
+		if _, ok = nss[a.sa[i].Namespace]; !ok {
 			ns = map[string]interface{}{}
-			nss[sa.Namespace] = ns
+			nss[a.sa[i].Namespace] = ns
 		} else {
-			ns = nss[sa.Namespace].(map[string]interface{})
+			ns = nss[a.sa[i].Namespace].(map[string]interface{})
 		}
-		ns["name"] = sa.Name
-		ns["secrets"] = len(sa.Secrets)
+		ns["name"] = a.sa[i].Name
+		ns["secrets"] = len(a.sa[i].Secrets)
 	}
 	return json.Marshal(sr)
 }

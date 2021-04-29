@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-func Test_ContainerImages_Gather(t *testing.T) {
+func Test_ContainerImages_Gather(t *testing.T) { //nolint: funlen,gocyclo
 	const fakeNamespace = "fake-namespace"
 	const fakeOpenshiftNamespace = "openshift-fake-namespace"
 
@@ -86,7 +86,7 @@ func Test_ContainerImages_Gather(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	records, errs := gatherContainerImages(coreClient.CoreV1(), ctx)
+	records, errs := gatherContainerImages(ctx, coreClient.CoreV1())
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return
@@ -94,19 +94,20 @@ func Test_ContainerImages_Gather(t *testing.T) {
 
 	var containerInfo *ContainerInfo = nil
 	for _, rec := range records {
-		if rec.Name == "config/running_containers" {
-			anonymizer, ok := rec.Item.(record.JSONMarshaller)
-			if !ok {
-				t.Fatal("reported running containers item has invalid type")
-			}
-
-			containers, ok := anonymizer.Object.(ContainerInfo)
-			if !ok {
-				t.Fatal("anonymized running containers data have wrong type")
-			}
-
-			containerInfo = &containers
+		if rec.Name != "config/running_containers" {
+			continue
 		}
+		anonymizer, ok := rec.Item.(record.JSONMarshaller)
+		if !ok {
+			t.Fatal("reported running containers item has invalid type")
+		}
+
+		containers, ok := anonymizer.Object.(ContainerInfo)
+		if !ok {
+			t.Fatal("anonymized running containers data have wrong type")
+		}
+
+		containerInfo = &containers
 	}
 
 	if containerInfo == nil {

@@ -29,8 +29,10 @@ const csrGatherLimit = 5000
 // GatherCertificateSigningRequests collects anonymized CertificateSigningRequests.
 // Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAfter
 //
-// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+// The Kubernetes api:
+//     https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+// Response see:
+//     https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
 // * Location in archive: config/certificatesigningrequests/
 // * Id in config: certificate_signing_requests
@@ -49,7 +51,8 @@ func GatherCertificateSigningRequests(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, errs}
 }
 
-func gatherCertificateSigningRequests(ctx context.Context, certClient certificatesv1.CertificateSigningRequestsGetter) ([]record.Record, []error) {
+func gatherCertificateSigningRequests(ctx context.Context,
+	certClient certificatesv1.CertificateSigningRequestsGetter) ([]record.Record, []error) {
 	requests, err := certClient.CertificateSigningRequests().List(ctx, metav1.ListOptions{
 		Limit: csrGatherLimit,
 	})
@@ -84,7 +87,7 @@ func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for CSR objects
 func (a CSRAnonymizer) GetExtension() string {
-	return "json"
+	return jsonExtension
 }
 
 type CSRs struct {
@@ -98,8 +101,8 @@ func FromCSRs(requests *certificatesv1api.CertificateSigningRequestList) *CSRs {
 
 func (c *CSRs) Anonymize() *CSRs {
 	res := &CSRs{}
-	for _, r := range c.Requests {
-		af := anonymizeCSR(&r)
+	for i := range c.Requests {
+		af := anonymizeCSR(&c.Requests[i])
 		res.Anonymized = append(res.Anonymized, CSRAnonymizer{af})
 	}
 	return res
@@ -189,7 +192,7 @@ func anonymizeCSRRequest(r *certificatesv1api.CertificateSigningRequest, c *CSRA
 
 	c.Spec.Request = &CsrFeatures{}
 	c.Spec.Request.ValidSignature = true
-	c.Spec.Request.Subject = anonymizePkxName(csr.Subject)
+	c.Spec.Request.Subject = anonymizePkxName(&csr.Subject)
 
 	c.Spec.Request.SignatureAlgorithm = csr.SignatureAlgorithm.String()
 	c.Spec.Request.PublicKeyAlgorithm = csr.PublicKeyAlgorithm.String()
@@ -207,7 +210,7 @@ func anonymizeCSRRequest(r *certificatesv1api.CertificateSigningRequest, c *CSRA
 	c.Spec.Request.URIs = Map(urlsl, anonymize.AnonymizeURL)
 }
 
-func anonymizePkxName(s pkix.Name) (a pkix.Name) {
+func anonymizePkxName(s *pkix.Name) (a pkix.Name) {
 	its := func(n *pkix.Name) []interface{} {
 		return []interface{}{
 			&n.CommonName,
@@ -222,7 +225,7 @@ func anonymizePkxName(s pkix.Name) (a pkix.Name) {
 		}
 	}
 
-	src := its(&s)
+	src := its(s)
 	dst := its(&a)
 	for i := range src {
 		switch s := src[i].(type) {
@@ -262,8 +265,8 @@ func anonymizeCSRCert(r *certificatesv1api.CertificateSigningRequest, c *CSRAnon
 	if cert == nil {
 		return
 	}
-	c.Status.Cert.Issuer = anonymizePkxName(cert.Issuer)
-	c.Status.Cert.Subject = anonymizePkxName(cert.Subject)
+	c.Status.Cert.Issuer = anonymizePkxName(&cert.Issuer)
+	c.Status.Cert.Subject = anonymizePkxName(&cert.Subject)
 	c.Status.Cert.NotBefore = cert.NotBefore.Format(time.RFC3339)
 	c.Status.Cert.NotAfter = cert.NotAfter.Format(time.RFC3339)
 }

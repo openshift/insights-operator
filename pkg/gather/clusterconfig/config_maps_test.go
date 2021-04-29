@@ -18,6 +18,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
+//nolint: lll
 func Test_ConfigMap_Anonymizer(t *testing.T) {
 	klog.SetOutput(utils.NewTestLog(t).Writer())
 
@@ -102,9 +103,9 @@ func mustNotFail(t *testing.T, err interface{}, fmtstr string) {
 }
 
 func findMap(cml *corev1.ConfigMapList, name string) *corev1.ConfigMap {
-	for _, it := range cml.Items {
-		if it.Name == name {
-			return &it
+	for i := range cml.Items {
+		if cml.Items[i].Name == name {
+			return &cml.Items[i]
 		}
 	}
 	return nil
@@ -138,7 +139,7 @@ func Test_ConfigMap_Gather(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset()
 
 	for _, cm := range cml.Items {
-		_, err := coreClient.CoreV1().ConfigMaps(cm.Namespace).Create(context.Background(), &cm, metav1.CreateOptions{})
+		_, err := coreClient.CoreV1().ConfigMaps(cm.Namespace).Create(context.Background(), &cm, metav1.CreateOptions{}) //nolint: gosec
 		if err != nil {
 			t.Fatalf("error creating configmap %s", cm.Name)
 		}

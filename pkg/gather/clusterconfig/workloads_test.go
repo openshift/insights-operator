@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+//nolint: funlen, gocyclo, gosec
 func Test_gatherWorkloadInfo(t *testing.T) {
 	if len(os.Getenv("TEST_INTEGRATION")) == 0 {
 		t.Skip("will not run unless TEST_INTEGRATION is set, and requires KUBECONFIG to point to a real cluster")
@@ -39,14 +40,7 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
-	t.Logf("Gathered in %s", time.Now().Sub(start).Round(time.Second).String())
-
-	// start = time.Now()
-	// records, errs = GatherWorkloadInfo(&g)
-	// if len(errs) > 0 {
-	// 	t.Fatal(errs)
-	// }
-	// t.Logf("Gathered second time in %s", time.Now().Sub(start).Round(time.Second).String())
+	t.Logf("Gathered in %s", time.Since(start).Round(time.Second).String())
 
 	if len(records) != 1 {
 		t.Fatalf("unexpected: %v", records)
@@ -56,7 +50,7 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := ioutil.WriteFile("../../../docs/insights-archive-sample/config/workload_info.json", out, 0750); err != nil {
+		if err = ioutil.WriteFile("../../../docs/insights-archive-sample/config/workload_info.json", out, 0750); err != nil {
 			t.Fatal(err)
 		}
 

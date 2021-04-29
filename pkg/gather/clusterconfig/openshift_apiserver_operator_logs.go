@@ -8,8 +8,10 @@ import (
 //   - "the server has received too many requests and has asked us"
 //   - "because serving request timed out and response had been started"
 //
-// The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-// Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+// The Kubernetes API:
+//       https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// Response see:
+//       https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 func GatherOpenShiftAPIServerOperatorLogs(g *Gatherer, c chan<- gatherResult) {

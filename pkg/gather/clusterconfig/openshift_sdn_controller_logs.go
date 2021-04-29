@@ -1,3 +1,4 @@
+//nolint: dupl
 package clusterconfig
 
 import (
@@ -16,8 +17,10 @@ import (
 //       Useful just in case that previous “Node %s is offline” messages are lost,
 //       so that we have a clue that there was failure previously.
 //
-// The Kubernetes API https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-// Response see https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+// The Kubernetes API:
+//        https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// Response see:
+//        https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
 // * Since versions:

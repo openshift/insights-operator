@@ -56,7 +56,10 @@ metadata:
 	}
 
 	// Create first datahubs resource.
-	datahubsClient.Resource(datahubsResource).Namespace("example-namespace1").Create(context.Background(), testDatahub1, metav1.CreateOptions{})
+	_, _ = datahubsClient.
+		Resource(datahubsResource).
+		Namespace("example-namespace1").
+		Create(context.Background(), testDatahub1, metav1.CreateOptions{})
 
 	records, errs = gatherSAPDatahubs(context.Background(), datahubsClient)
 	if len(errs) > 0 {
@@ -68,7 +71,10 @@ metadata:
 	}
 
 	// Create second datahubs resource.
-	datahubsClient.Resource(datahubsResource).Namespace("example-namespace2").Create(context.Background(), testDatahub2, metav1.CreateOptions{})
+	_, _ = datahubsClient.
+		Resource(datahubsResource).
+		Namespace("example-namespace2").
+		Create(context.Background(), testDatahub2, metav1.CreateOptions{})
 
 	records, errs = gatherSAPDatahubs(context.Background(), datahubsClient)
 	if len(errs) > 0 {

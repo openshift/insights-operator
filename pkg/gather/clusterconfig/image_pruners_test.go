@@ -67,7 +67,8 @@ func Test_ImagePruner_Gather(t *testing.T) {
 			if test.expectedRecords == 0 {
 				return
 			}
-			if expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster"; records[0].Name != expectedRecordName {
+			expectedRecordName := "config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster"
+			if records[0].Name != expectedRecordName {
 				t.Errorf("expected %q record name, got %q", expectedRecordName, records[0].Name)
 				return
 			}

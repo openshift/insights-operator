@@ -44,6 +44,7 @@ type logMessagesFilter struct {
 //   - logFileName sets the name of the file to save the logs to.
 //
 // Location of the logs is `config/pod/{namespace}/logs/{podName}/{fileName}.log`
+//nolint: unparam
 func gatherLogsFromContainers(
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
@@ -60,13 +61,13 @@ func gatherLogsFromContainers(
 
 	var records []record.Record
 
-	for _, pod := range pods.Items {
+	for i := range pods.Items {
 		var containers []string
-		for _, container := range pod.Spec.Containers {
-			containers = append(containers, container.Name)
+		for j := range pods.Items[i].Spec.Containers {
+			containers = append(containers, pods.Items[i].Spec.Containers[j].Name)
 		}
-		for _, container := range pod.Spec.InitContainers {
-			containers = append(containers, container.Name)
+		for j := range pods.Items[i].Spec.InitContainers {
+			containers = append(containers, pods.Items[i].Spec.InitContainers[j].Name)
 		}
 
 		for _, container := range containers {
@@ -80,7 +81,7 @@ func gatherLogsFromContainers(
 				}
 			}
 
-			request := coreClient.Pods(containersFilter.namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+			request := coreClient.Pods(containersFilter.namespace).GetLogs(pods.Items[i].Name, &corev1.PodLogOptions{
 				Container:    container,
 				SinceSeconds: &messagesFilter.sinceSeconds,
 				LimitBytes:   &messagesFilter.limitBytes,
@@ -93,7 +94,7 @@ func gatherLogsFromContainers(
 
 			if len(strings.TrimSpace(logs)) != 0 {
 				records = append(records, record.Record{
-					Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pod.Namespace, pod.Name, logFileName),
+					Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pods.Items[i].Namespace, pods.Items[i].Name, logFileName),
 					Item: marshal.Raw{Str: logs},
 				})
 			}
@@ -137,10 +138,8 @@ func filterLogs(
 				if matches {
 					result += line + "\n"
 				}
-			} else {
-				if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
-					result += line + "\n"
-				}
+			} else if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
+				result += line + "\n"
 			}
 		}
 	}

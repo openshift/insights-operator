@@ -48,7 +48,10 @@ func GatherSAPConfig(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records: records, errors: errs}
 }
 
-func gatherSAPConfig(ctx context.Context, dynamicClient dynamic.Interface, securityClient securityv1client.SecurityV1Interface, authClient authclient.AuthorizationV1Interface) ([]record.Record, []error) {
+func gatherSAPConfig(ctx context.Context,
+	dynamicClient dynamic.Interface,
+	securityClient securityv1client.SecurityV1Interface,
+	authClient authclient.AuthorizationV1Interface) ([]record.Record, []error) {
 	sccToGather := []string{"anyuid", "privileged"}
 	crbToGather := []string{"system:openshift:scc:anyuid", "system:openshift:scc:privileged"}
 

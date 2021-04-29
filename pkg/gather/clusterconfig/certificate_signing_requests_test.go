@@ -75,7 +75,7 @@ func Test_CSR_Filters(t *testing.T) {
 		{"Verified shoudln't be included", &CSRAnonymizedFeatures{Status: &StatusFeatures{Cert: &CertFeatures{Verified: true}}}, false},
 		{"Non verified (empty) will be included", &CSRAnonymizedFeatures{}, true},
 		{"Non verified will be included", &CSRAnonymizedFeatures{Status: &StatusFeatures{Cert: &CertFeatures{Verified: false}}}, true},
-		//NotAfter/NotBefore should be in time.RFC3339
+		// NotAfter/NotBefore should be in time.RFC3339
 		{"Verified, but not valid yet will be included", &CSRAnonymizedFeatures{Status: &StatusFeatures{Cert: &CertFeatures{Verified: true,
 			NotBefore: "2020-02-20T09:38:42+01:00"}}}, true},
 		{"Verified, but already not valid will be included", &CSRAnonymizedFeatures{Status: &StatusFeatures{Cert: &CertFeatures{Verified: true,

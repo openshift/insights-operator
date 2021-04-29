@@ -46,11 +46,11 @@ func GatherContainerImages(g *Gatherer, c chan<- gatherResult) {
 		c <- gatherResult{nil, []error{err}}
 		return
 	}
-	records, errors := gatherContainerImages(gatherKubeClient.CoreV1(), g.ctx)
+	records, errors := gatherContainerImages(g.ctx, gatherKubeClient.CoreV1())
 	c <- gatherResult{records, errors}
 }
 
-func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.Context) ([]record.Record, []error) {
+func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	var records []record.Record
 
 	// Cache for the temporary image count list.
@@ -68,10 +68,13 @@ func gatherContainerImages(coreClient corev1client.CoreV1Interface, ctx context.
 			return nil, []error{err}
 		}
 
-		for podIndex, pod := range pods.Items {
+		for podIndex, pod := range pods.Items { //nolint:gocritic
 			podPtr := &pods.Items[podIndex]
 			if strings.HasPrefix(pod.Namespace, "openshift") && check.HasContainerInCrashloop(podPtr) {
-				records = append(records, record.Record{Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name), Item: record.JSONMarshaller{Object: podPtr}})
+				records = append(records, record.Record{
+					Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
+					Item: record.JSONMarshaller{Object: podPtr},
+				})
 			} else if pod.Status.Phase == corev1.PodRunning {
 				startMonth := pod.CreationTimestamp.Time.UTC().Format(yyyyMmDateFormat)
 
@@ -140,7 +143,7 @@ type RunningImages map[int]int
 type PodsWithAge map[string]RunningImages
 
 // Add inserts the specified container information into the data structure.
-func (p PodsWithAge) Add(startMonth string, image int, count int) {
+func (p PodsWithAge) Add(startMonth string, image, count int) {
 	if imageMap, exists := p[startMonth]; exists {
 		imageMap[image] += count
 	} else {
@@ -176,7 +179,7 @@ type tmpImageCountEntry struct {
 }
 
 func gatherImages(startMonth string, img2month2count img2Month2CountMap, containers []corev1.ContainerStatus) {
-	for _, container := range containers {
+	for _, container := range containers { //nolint:gocritic
 		dockerRef, err := reference.Parse(container.Image)
 		if err != nil {
 			klog.Warningf("Unable to parse container image specification: %v", err)

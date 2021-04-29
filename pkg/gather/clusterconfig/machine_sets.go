@@ -12,10 +12,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-//GatherMachineSet collects MachineSet information
+// GatherMachineSet collects MachineSet information
 //
-// The Kubernetes api https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+// The Kubernetes api:
+//       https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
+// Response see:
+//       https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 //
 // * Location in archive: machinesets/
 // * Id in config: machine_sets

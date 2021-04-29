@@ -19,6 +19,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
+//nolint: funlen, lll, gocyclo
 func Test_InstallPlans_Gather(t *testing.T) {
 	tests := []struct {
 		name      string

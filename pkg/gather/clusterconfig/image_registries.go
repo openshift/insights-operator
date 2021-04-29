@@ -50,7 +50,10 @@ func GatherClusterImageRegistry(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, errs}
 }
 
-func gatherClusterImageRegistry(ctx context.Context, registryClient imageregistryv1.ImageregistryV1Interface, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+//nolint: govet
+func gatherClusterImageRegistry(ctx context.Context,
+	registryClient imageregistryv1.ImageregistryV1Interface,
+	coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	config, err := registryClient.Configs().Get(ctx, "cluster", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -97,14 +100,14 @@ func findPVByPVCName(ctx context.Context, coreClient corev1client.CoreV1Interfac
 	if err != nil {
 		return nil, err
 	}
-	var pvc *corev1.PersistentVolumeClaim
-	for _, p := range pvcs.Items {
-		if p.Name == name {
-			pvc = &p
+	var pvc corev1.PersistentVolumeClaim
+	for i := range pvcs.Items {
+		if pvcs.Items[i].Name == name {
+			pvc = pvcs.Items[i]
 			break
 		}
 	}
-	if pvc == nil {
+	if pvc.Name == "" {
 		return nil, fmt.Errorf("can't find any %s persistentvolumeclaim", name)
 	}
 	pvName := pvc.Spec.VolumeName

@@ -53,7 +53,10 @@ func GatherSAPPods(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records: records, errors: errs}
 }
 
-func gatherSAPPods(ctx context.Context, dynamicClient dynamic.Interface, coreClient corev1client.CoreV1Interface, jobsClient batchv1client.BatchV1Interface) ([]record.Record, []error) {
+func gatherSAPPods(ctx context.Context,
+	dynamicClient dynamic.Interface,
+	coreClient corev1client.CoreV1Interface,
+	jobsClient batchv1client.BatchV1Interface) ([]record.Record, []error) {
 	datahubsResource := schema.GroupVersionResource{Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs"}
 
 	datahubsList, err := dynamicClient.Resource(datahubsResource).List(ctx, metav1.ListOptions{})
@@ -81,20 +84,20 @@ func gatherSAPPods(ctx context.Context, dynamicClient dynamic.Interface, coreCli
 			return nil, []error{err}
 		}
 
-		for iPod, pod := range pods.Items {
+		for i := range pods.Items {
 			// Skip pods that are running correctly or those that have already successfully finished.
-			if pod.Status.Phase == v1.PodRunning || pod.Status.Phase == v1.PodSucceeded {
+			if pods.Items[i].Status.Phase == v1.PodRunning || pods.Items[i].Status.Phase == v1.PodSucceeded {
 				continue
 			}
 
 			// Indicates if the pod belongs to a successful job.
 			successfulJob := false
-			for _, owner := range pod.ObjectMeta.OwnerReferences {
+			for _, owner := range pods.Items[i].ObjectMeta.OwnerReferences {
 				if owner.Kind != "Job" {
 					continue
 				}
 
-				ownerJob, err := jobsClient.Jobs(pod.Namespace).Get(ctx, owner.Name, metav1.GetOptions{})
+				ownerJob, err := jobsClient.Jobs(pods.Items[i].Namespace).Get(ctx, owner.Name, metav1.GetOptions{})
 				if err != nil {
 					return nil, []error{err}
 				}
@@ -112,10 +115,10 @@ func gatherSAPPods(ctx context.Context, dynamicClient dynamic.Interface, coreCli
 
 			records = append(records, record.Record{
 				// There are already some (OpenShift/OCP) pods in `/config/pod/**`
-				Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
+				Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name),
 				// It is impossible to use `&pod` here because it would end up being
 				// the last returned pod as the reference keeps changing with each iteration.
-				Item: record.JSONMarshaller{Object: &pods.Items[iPod]},
+				Item: record.JSONMarshaller{Object: &pods.Items[i]},
 			})
 		}
 	}
