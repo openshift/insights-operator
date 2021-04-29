@@ -57,6 +57,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "cluster_installer").
 		Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
 		Param("match[]", "namespace:container_memory_usage_bytes:sum").
+		Param("match[]", "vsphere_node_hw_version_total").
 		DoRaw(ctx)
 	if err != nil {
 		klog.Errorf("Unable to retrieve most recent metrics: %v", err)
