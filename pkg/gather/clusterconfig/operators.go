@@ -2,9 +2,7 @@ package clusterconfig
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -19,7 +17,6 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 const (
@@ -119,7 +116,7 @@ func clusterOperatorsRecords(ctx context.Context,
 			}
 			records = append(records, record.Record{
 				Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name),
-				Item: ClusterOperatorResourceAnonymizer{rr},
+				Item: record.JSONMarshaller{Object: rr},
 			})
 		}
 	}
@@ -198,29 +195,4 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 		}
 	}
 	return resourceVersionMap, nil
-}
-
-// ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
-type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
-
-// Marshal serializes clusterOperatorResource with IP address anonymization
-func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	bytes, err := json.Marshal(a.resource)
-	if err != nil {
-		return nil, err
-	}
-	resStr := string(bytes)
-	// anonymize URLs
-	re := regexp.MustCompile(`"(https?)://(.*?)"`)
-	urlMatches := re.FindAllString(resStr, -1)
-	for _, m := range urlMatches {
-		m = strings.ReplaceAll(m, "\"", "")
-		resStr = strings.ReplaceAll(resStr, m, anonymize.AnonymizeString(m))
-	}
-	return []byte(resStr), nil
-}
-
-// GetExtension returns extension for anonymized cluster operator objects
-func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
-	return jsonExtension
 }
