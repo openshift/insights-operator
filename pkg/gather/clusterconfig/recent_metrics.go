@@ -26,6 +26,7 @@ const (
 // Gathered metrics:
 //   etcd_object_counts
 //   cluster_installer
+//   vsphere_node_hw_version_total
 //   namespace CPU and memory usage
 //   followed by at most 1000 lines of ALERTS metric
 //
@@ -55,6 +56,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "cluster_installer").
 		Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
 		Param("match[]", "namespace:container_memory_usage_bytes:sum").
+		Param("match[]", "vsphere_node_hw_version_total").
 		DoRaw(ctx)
 	if err != nil {
 		// write metrics errors to the file format as a comment
