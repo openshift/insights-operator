@@ -2,6 +2,8 @@
 ALERTS{alertname="AlertmanagerReceiversNotConfigured",alertstate="firing",severity="warning",instance="",prometheus="openshift-monitoring/k8s",prometheus_replica="prometheus-k8s-1"} 1 1592829366662
 ALERTS{alertname="ImagePruningDisabled",alertstate="firing",endpoint="60000",instance="10.129.0.33:60000",job="image-registry-operator",namespace="openshift-image-registry",pod="cluster-image-registry-operator-5b4d9c55f-jlrdf",service="image-registry-operator",severity="warning",prometheus="openshift-monitoring/k8s",prometheus_replica="prometheus-k8s-1"} 1 1592829368020
 ALERTS{alertname="Watchdog",alertstate="firing",severity="none",instance="",prometheus="openshift-monitoring/k8s",prometheus_replica="prometheus-k8s-1"} 1 1592829360163
+# TYPE vsphere_node_hw_version_total untyped
+vsphere_node_hw_version_total{container="vsphere-problem-detector-operator",endpoint="vsphere-metrics",hw_version="vmx-13",instance="10.128.0.25:8444",job="vsphere-problem-detector-metrics",namespace="openshift-cluster-storage-operator",pod="vsphere-problem-detector-operator-7f746856d4-78lnn",service="vsphere-problem-detector-metrics",prometheus="openshift-monitoring/k8s",prometheus_replica="prometheus-k8s-0"} 6 1619708403480
 # TYPE cluster_installer untyped
 cluster_installer{endpoint="metrics",instance="10.0.0.4:9099",invoker="openshift-internal-ci/release-openshift-origin-installer-launch-gcp/1275022284997791744",job="cluster-version-operator",namespace="openshift-cluster-version",pod="cluster-version-operator-5f7b8d89b5-t9cdr",service="cluster-version-operator",type="openshift-install",version="v4.4.0",prometheus="openshift-monitoring/k8s",prometheus_replica="prometheus-k8s-1"} 1 1592829361218
 # TYPE etcd_object_counts untyped
