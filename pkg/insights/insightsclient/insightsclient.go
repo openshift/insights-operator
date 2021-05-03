@@ -59,6 +59,25 @@ type Source struct {
 	Contents io.Reader
 }
 
+// InsightsError is helper error type to have HTTP error status code
+type InsightsError struct {
+	Err        error
+	StatusCode int
+}
+
+func (e InsightsError) Error() string {
+	return e.Err.Error()
+}
+
+func IsInsightsError(err error) bool {
+	switch err.(type) {
+	case InsightsError:
+		return true
+	default:
+		return false
+	}
+}
+
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
 // New creates a Client
@@ -313,6 +332,17 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 			body = body[:1024]
 		}
 		return nil, fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		body, _ := ioutil.ReadAll(resp.Body)
+		if len(body) > 1024 {
+			body = body[:1024]
+		}
+		notFoundErr := InsightsError{
+			StatusCode: resp.StatusCode,
+			Err:        fmt.Errorf("insights report not found: %s (request=%s): %s", resp.Request.URL, requestID, string(body)),
+		}
+		return nil, notFoundErr
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
