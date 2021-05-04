@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -23,14 +23,14 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 		"pdb-ten":   "10",
 	}
 	for name, minAvailable := range fakePDBs {
-		_, err := coreClient.PolicyV1beta1().
+		_, err := coreClient.PolicyV1().
 			PodDisruptionBudgets(fakeNamespace).
-			Create(context.Background(), &policyv1beta1.PodDisruptionBudget{
+			Create(context.Background(), &policyv1.PodDisruptionBudget{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: fakeNamespace,
 					Name:      name,
 				},
-				Spec: policyv1beta1.PodDisruptionBudgetSpec{
+				Spec: policyv1.PodDisruptionBudgetSpec{
 					MinAvailable: &intstr.IntOrString{StrVal: minAvailable},
 				},
 			}, metav1.CreateOptions{})
@@ -39,7 +39,7 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 		}
 	}
 	ctx := context.Background()
-	records, errs := gatherPodDisruptionBudgets(ctx, coreClient.PolicyV1beta1())
+	records, errs := gatherPodDisruptionBudgets(ctx, coreClient.PolicyV1())
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 		return
@@ -47,7 +47,7 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 	if len(records) != len(fakePDBs) {
 		t.Fatalf("unexpected number of records gathered: %d (expected %d)", len(records), len(fakePDBs))
 	}
-	pdba, ok := records[0].Item.(record.JSONMarshaller).Object.(policyv1beta1.PodDisruptionBudget)
+	pdba, ok := records[0].Item.(record.JSONMarshaller).Object.(policyv1.PodDisruptionBudget)
 	if !ok {
 		t.Fatal("pdb item has invalid type")
 	}
