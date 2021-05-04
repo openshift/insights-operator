@@ -165,14 +165,13 @@ func (r *Gatherer) RetrieveReport() {
 			}
 
 			firstPullDone = true
-			if retryCounter < retryThreshold {
-				t := wait.Jitter(config.ReportMinRetryTime, 0.1)
-				klog.Infof("Reseting the delay timer to retry in %s again", t)
-				delayTimer.Reset(t)
-				retryCounter++
-			} else {
+			if retryCounter >= retryThreshold {
 				return
 			}
+			t := wait.Jitter(config.ReportMinRetryTime, 0.1)
+			klog.Infof("Reseting the delay timer to retry in %s again", t)
+			delayTimer.Reset(t)
+			retryCounter++
 		case <-timeoutTimer.C:
 			// timeout, ends
 			if !delayTimer.Stop() {
