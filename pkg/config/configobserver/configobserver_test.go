@@ -19,6 +19,17 @@ import (
 	clienttesting "k8s.io/client-go/testing"
 )
 
+type kubeClientResponder struct {
+	clsetfake.Clientset
+}
+
+var _ kubernetes.Interface = (*kubeClientResponder)(nil)
+
+const (
+	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret" //nolint: gosec
+	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
+)
+
 //nolint: lll, funlen
 func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 	var cases = []struct {
@@ -74,13 +85,13 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 			},
 			expConfig: &config.Controller{}, // it only produces a warning in the log
 		},
-		{name: "reportPullingDelay incorrect format",
+		{name: "reportPullingTimeout incorrect format",
 			config: map[string]*corev1.Secret{
 				pullSecretKey: {Data: map[string][]byte{
 					".dockerconfigjson": nil,
 				}},
 				supportKey: {Data: map[string][]byte{
-					"reportPullingDelay": []byte("every second"),
+					"reportPullingTimeout": []byte("every second"),
 				}},
 			},
 			expConfig: &config.Controller{}, // it only produces a warning in the log
@@ -236,11 +247,6 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 	}
 }
 
-const (
-	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret" //nolint: gosec
-	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
-)
-
 func provideSecretMock(kube kubernetes.Interface, secs map[string]*corev1.Secret) {
 	kube.CoreV1().(*corefake.FakeCoreV1).Fake.AddReactor("get", "secrets",
 		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -258,9 +264,3 @@ func provideSecretMock(kube kubernetes.Interface, secs map[string]*corev1.Secret
 			return true, sv, nil
 		})
 }
-
-type kubeClientResponder struct {
-	clsetfake.Clientset
-}
-
-var _ kubernetes.Interface = (*kubeClientResponder)(nil)
