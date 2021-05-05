@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -108,7 +109,7 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		"192.168.0.0/16",
 	}
 
-	anonymizer, err := NewAnonymizer(clusterBaseDomain, networks)
+	anonymizer, err := NewAnonymizer(clusterBaseDomain, networks, kubefake.NewSimpleClientset().CoreV1().Secrets("test"))
 	assert.NoError(t, err)
 
 	return anonymizer
