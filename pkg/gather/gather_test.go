@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -257,24 +256,24 @@ func Test_CollectAndRecord(t *testing.T) {
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)
 	assert.NoError(t, err)
 
-	err = RecordArchiveMetadata(gatherFuncArrayToMap(functionReports), mockRecorder, anonymizer)
+	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
 	assert.NoError(t, err)
 
 	assert.Len(t, mockRecorder.Records, 6)
-	assertMetadataOneGatherer(t, mockRecorder.Records, true, map[string]GathererFunctionReport{
-		"mock_gatherer/name": {
+	assertMetadataOneGatherer(t, mockRecorder.Records, true, []GathererFunctionReport{
+		{
 			FuncName:     "mock_gatherer/name",
 			RecordsCount: 1,
 		},
-		"mock_gatherer/some_field": {
+		{
 			FuncName:     "mock_gatherer/some_field",
 			RecordsCount: 1,
 		},
-		"mock_gatherer/3_records": {
+		{
 			FuncName:     "mock_gatherer/3_records",
 			RecordsCount: 3,
 		},
-		"mock_gatherer/errors": {
+		{
 			FuncName: "mock_gatherer/errors",
 			Errors: []string{
 				"error1",
@@ -282,7 +281,7 @@ func Test_CollectAndRecord(t *testing.T) {
 				"error3",
 			},
 		},
-		"mock_gatherer/panic": {
+		{
 			FuncName: "mock_gatherer/panic",
 			Errors:   []string{"test panic"},
 			Panic:    "test panic",
@@ -331,12 +330,12 @@ func Test_CollectAndRecord_Error(t *testing.T) {
 			"gatherer mock_gatherer's function errors failed with error: error3",
 	)
 
-	err = RecordArchiveMetadata(gatherFuncArrayToMap(functionReports), mockRecorder, nil)
+	err = RecordArchiveMetadata(functionReports, mockRecorder, nil)
 	assert.NoError(t, err)
 
 	assert.Len(t, mockRecorder.Records, 1)
-	assertMetadataOneGatherer(t, mockRecorder.Records, false, map[string]GathererFunctionReport{
-		"mock_gatherer/errors": {
+	assertMetadataOneGatherer(t, mockRecorder.Records, false, []GathererFunctionReport{
+		{
 			FuncName:     "mock_gatherer/errors",
 			RecordsCount: 0,
 			Errors: []string{
@@ -374,7 +373,7 @@ func assertMetadataOneGatherer(
 	t testing.TB,
 	records []record.Record,
 	isGlobalObfuscationEnabled bool,
-	statusReports map[string]GathererFunctionReport,
+	statusReports []GathererFunctionReport,
 ) {
 	assert.GreaterOrEqual(t, len(records), 1)
 
@@ -394,12 +393,12 @@ func assertMetadataOneGatherer(
 	err := json.Unmarshal(metadataBytes, &archiveMetadata)
 	assert.NoError(t, err)
 
-	for _, v := range archiveMetadata.StatusReports {
-		v.Duration = 0
+	for i := range archiveMetadata.StatusReports {
+		archiveMetadata.StatusReports[i].Duration = 0
 	}
 
 	assert.Equal(t, isGlobalObfuscationEnabled, archiveMetadata.IsGlobalObfuscationEnabled)
-	assert.True(t, reflect.DeepEqual(statusReports, archiveMetadata.StatusReports))
+	assert.ElementsMatch(t, statusReports, archiveMetadata.StatusReports)
 }
 
 func assertRecordsOneGatherer(t testing.TB, records []record.Record, expectedRecords []record.Record) {
@@ -420,12 +419,4 @@ func gatherResultsFromChannel(resultsChan chan GatheringFunctionResult) []Gather
 	}
 
 	return results
-}
-
-func gatherFuncArrayToMap(a []GathererFunctionReport) map[string]GathererFunctionReport {
-	m := make(map[string]GathererFunctionReport)
-	for i := range a {
-		m[a[i].FuncName] = a[i]
-	}
-	return m
 }

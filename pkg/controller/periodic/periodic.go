@@ -160,7 +160,7 @@ func (c *Controller) Gather() {
 		})
 	}
 
-	err := gather.RecordArchiveMetadata(allFunctionReports, c.recorder, c.anonymizer)
+	err := gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)
 	if err != nil {
 		klog.Errorf("unable to record archive metadata because of error: %v", err)
 	}
@@ -191,4 +191,12 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			c.Gather()
 		}
 	}
+}
+
+func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
+	a := make([]gather.GathererFunctionReport, 0, len(m))
+	for _, v := range m {
+		a = append(a, v)
+	}
+	return a
 }

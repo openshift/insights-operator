@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 )
 
@@ -21,9 +20,7 @@ import (
 // * Location in archive: config/machinehealthchecks
 // * Id in config: machine_healthchecks
 // * Since versions:
-//   * 4.4.29+
-//   * 4.5.15+
-//   * 4.6+
+//   * 4.8+
 func (g *Gatherer) GatherMachineHealthCheck(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -34,8 +31,7 @@ func (g *Gatherer) GatherMachineHealthCheck(ctx context.Context) ([]record.Recor
 }
 
 func gatherMachineHealthCheck(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinehealthchecks"}
-	machineHealthcheck, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
+	machineHealthcheck, err := dynamicClient.Resource(machineHeatlhCheckGVR).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}

@@ -44,9 +44,8 @@ type GathererFunctionReport struct {
 
 // ArchiveMetadata contains the information about the archive and all its' gatherers
 type ArchiveMetadata struct {
-	// info about gathering functions. We need to use map, because functions will repeat
-	// in case of any gathering error
-	StatusReports map[string]GathererFunctionReport `json:"status_reports"`
+	// info about gathering functions.
+	StatusReports []GathererFunctionReport `json:"status_reports"`
 	// MemoryAlloc is the amount of memory taken by heap objects after processing the records
 	MemoryAlloc uint64 `json:"memory_alloc_bytes"`
 	// Uptime is the number of seconds from the program start till the point when metadata was created
@@ -109,7 +108,7 @@ func CollectAndRecordGatherer(
 				errs = append(errs, fmt.Errorf(errStr))
 			}
 		}
-		var recordedRecs []record.Record
+		recordedRecs := 0
 		for _, r := range result.Records {
 			if err := rec.Record(r); err != nil {
 				recErr := fmt.Errorf(
@@ -119,7 +118,7 @@ func CollectAndRecordGatherer(
 				result.Errs = append(result.Errs, recErr)
 				continue
 			}
-			recordedRecs = append(recordedRecs, r)
+			recordedRecs++
 		}
 
 		klog.Infof(
@@ -130,7 +129,7 @@ func CollectAndRecordGatherer(
 		functionReports = append(functionReports, GathererFunctionReport{
 			FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
 			Duration:     result.TimeElapsed.Milliseconds(),
-			RecordsCount: len(recordedRecs),
+			RecordsCount: recordedRecs,
 			Errors:       errorsToStrings(result.Errs),
 			Panic:        result.Panic,
 		})
@@ -140,7 +139,7 @@ func CollectAndRecordGatherer(
 
 // RecordArchiveMetadata records info about archive and gatherers' reports
 func RecordArchiveMetadata(
-	functionReports map[string]GathererFunctionReport,
+	functionReports []GathererFunctionReport,
 	rec recorder.Interface,
 	anonymizer *anonymization.Anonymizer,
 ) error {

@@ -95,5 +95,13 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		}
 	}
 
-	return gather.RecordArchiveMetadata(allFunctionReports, rec, anonymizer)
+	return gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
+}
+
+func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
+	a := make([]gather.GathererFunctionReport, len(m))
+	for _, v := range m {
+		a = append(a, v)
+	}
+	return a
 }

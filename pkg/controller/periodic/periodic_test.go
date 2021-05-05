@@ -68,7 +68,7 @@ func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 //Test_Controller_FailingGatherer tests that metadata file doesn't grow with failing gatherer functions
 func Test_Controller_FailingGatherer(t *testing.T) {
 	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
-		&gather.MockFailingdGatherer{},
+		&gather.MockFailingGatherer{},
 	}, 3*time.Second)
 
 	c.Gather()
@@ -84,7 +84,7 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 			metaData := make(map[string]interface{})
 			err = json.Unmarshal(b, &metaData)
 			assert.NoError(t, err)
-			assert.Equal(t, 1, len(metaData["status_reports"].(map[string]interface{})),
+			assert.Len(t, metaData["status_reports"].([]interface{}), 1,
 				fmt.Sprintf("Only one fucntion for %s expected ", c.gatherers[0].GetName()))
 		}
 	}
