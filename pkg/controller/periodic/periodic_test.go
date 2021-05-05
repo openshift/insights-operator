@@ -8,11 +8,12 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gather"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
 )
 
 func Test_Controller_CustomPeriodGatherer(t *testing.T) {
-	c, mockRecorder := getMocksForPeriodicTest([]gather.Interface{
+	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockGatherer{CanFail: true},
 		&gather.MockCustomPeriodGatherer{Period: 999 * time.Hour},
 	})
@@ -30,7 +31,7 @@ func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 
 func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	mockGatherer := gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true}
-	c, mockRecorder := getMocksForPeriodicTest([]gather.Interface{
+	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockGatherer{CanFail: true},
 		&mockGatherer,
 	})
@@ -63,7 +64,7 @@ func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 
 // TODO: cover more things
 
-func getMocksForPeriodicTest(gatherers []gather.Interface) (*Controller, *recorder.MockRecorder) {
+func getMocksForPeriodicTest(gatherers []gatherers.Interface) (*Controller, *recorder.MockRecorder) {
 	mockConfigurator := config.MockConfigurator{Conf: &config.Controller{
 		Report:   true,
 		Interval: time.Hour,

@@ -6,7 +6,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/openshift/insights-operator/pkg/gather/common"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -28,8 +28,8 @@ func (g *Gatherer) GetName() string {
 	return "workloads"
 }
 
-func (g *Gatherer) GetGatheringFunctions() map[string]common.GatheringClosure {
-	return map[string]common.GatheringClosure{
+func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+	return map[string]gatherers.GatheringClosure{
 		"workload_info": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherWorkloadInfo(ctx)

@@ -6,7 +6,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
-	"github.com/openshift/insights-operator/pkg/gather/common"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -98,13 +98,13 @@ func (g *Gatherer) GetName() string {
 	return "clusterconfig"
 }
 
-func (g *Gatherer) GetGatheringFunctions() map[string]common.GatheringClosure {
-	result := make(map[string]common.GatheringClosure)
+func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+	result := make(map[string]gatherers.GatheringClosure)
 
 	for funcName, function := range gatheringFunctions {
 		function := function
 
-		result[funcName] = common.GatheringClosure{
+		result[funcName] = gatherers.GatheringClosure{
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return function.Function(g, ctx)
 			},

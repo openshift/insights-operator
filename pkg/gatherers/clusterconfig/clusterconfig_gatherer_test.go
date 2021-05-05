@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/openshift/insights-operator/pkg/gather"
-	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
+	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/gatherers/clusterconfig"
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
@@ -15,9 +15,9 @@ func Test_Gatherer_Basic(t *testing.T) {
 	gatheringFunctions := gatherer.GetGatheringFunctions()
 	assert.Greater(t, len(gatheringFunctions), 0)
 
-	assert.Implements(t, (*gather.Interface)(nil), gatherer)
+	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
 
 	var g interface{} = gatherer
-	_, ok := g.(gather.CustomPeriodGatherer)
+	_, ok := g.(gatherers.CustomPeriodGatherer)
 	assert.False(t, ok, "should NOT implement gather.CustomPeriodGatherer")
 }

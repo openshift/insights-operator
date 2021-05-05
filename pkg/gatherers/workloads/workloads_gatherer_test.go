@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/openshift/insights-operator/pkg/gather"
-	"github.com/openshift/insights-operator/pkg/gather/workloads"
+	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/gatherers/workloads"
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
@@ -15,6 +15,6 @@ func Test_Gatherer_Basic(t *testing.T) {
 	gatheringFunctions := gatherer.GetGatheringFunctions()
 	assert.Greater(t, len(gatheringFunctions), 0)
 
-	assert.Implements(t, (*gather.Interface)(nil), gatherer)
-	assert.Implements(t, (*gather.CustomPeriodGatherer)(nil), gatherer)
+	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
+	assert.Implements(t, (*gatherers.CustomPeriodGatherer)(nil), gatherer)
 }

@@ -1,3 +1,4 @@
+// gather package contains common gathering logic for all gatherers
 package gather
 
 import (
@@ -13,8 +14,9 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
-	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
-	"github.com/openshift/insights-operator/pkg/gather/workloads"
+	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/gatherers/clusterconfig"
+	"github.com/openshift/insights-operator/pkg/gatherers/workloads"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils"
@@ -56,13 +58,13 @@ type ArchiveMetadata struct {
 func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config,
 	anonymizer *anonymization.Anonymizer,
-) []Interface {
+) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
 	)
 	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
 
-	return []Interface{clusterConfigGatherer, workloadsGatherer}
+	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer}
 }
 
 // CollectAndRecord gathers enabled functions of the provided gatherer and records the results to the recorder
@@ -71,7 +73,7 @@ func CreateAllGatherers(
 // to the resulting array (to the archive metadata)
 func CollectAndRecordGatherer(
 	ctx context.Context,
-	gatherer Interface,
+	gatherer gatherers.Interface,
 	rec recorder.Interface,
 	configurator configobserver.Configurator,
 ) ([]GathererFunctionReport, error) {
@@ -161,7 +163,7 @@ func RecordArchiveMetadata(
 // startGatheringConcurrently starts gathering of enabled functions of the provided gatherer and returns a channel
 // with results which will be closed when processing is done
 func startGatheringConcurrently(
-	ctx context.Context, gatherer Interface, enabledFunctions []string,
+	ctx context.Context, gatherer gatherers.Interface, enabledFunctions []string,
 ) (chan GatheringFunctionResult, error) {
 	gathererName := gatherer.GetName()
 

@@ -5,14 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/gather/common"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // Task represents gathering task where name is the name of a function and F is the function itself
 type Task struct {
 	Name string
-	F    common.GatheringClosure
+	F    gatherers.GatheringClosure
 }
 
 // GatheringFunctionResult represents the result of a function including results, errors

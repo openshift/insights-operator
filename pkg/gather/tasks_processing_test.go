@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/openshift/insights-operator/pkg/gather/common"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -21,7 +21,7 @@ func Test_HandleTasksConcurrently(t *testing.T) {
 		i := i
 		tasks = append(tasks, Task{
 			Name: fmt.Sprintf("task_%v", i),
-			F: common.GatheringClosure{
+			F: gatherers.GatheringClosure{
 				Run: func(context.Context) ([]record.Record, []error) {
 					var records []record.Record
 
@@ -79,7 +79,7 @@ func Test_HandleTasksConcurrently_Sleep(t *testing.T) {
 
 	for i := 0; i < N; i++ {
 		tasks = append(tasks, Task{
-			F: common.GatheringClosure{
+			F: gatherers.GatheringClosure{
 				Run: func(context.Context) ([]record.Record, []error) {
 					time.Sleep(10 * time.Millisecond)
 					return nil, nil
@@ -102,7 +102,7 @@ func Test_HandleTasksConcurrently_Sleep(t *testing.T) {
 
 func Test_HandleTasksConcurrently_CannotFail_Error(t *testing.T) {
 	results := handleTasksConcurrentlyGatherTasks([]Task{{
-		F: common.GatheringClosure{
+		F: gatherers.GatheringClosure{
 			Run: func(context.Context) ([]record.Record, []error) {
 				panic("test panic")
 			},
@@ -122,7 +122,7 @@ func Test_HandleTasksConcurrently_CannotFail_Error(t *testing.T) {
 
 func Test_HandleTasksConcurrently_CannotFail_Panic(t *testing.T) {
 	results := handleTasksConcurrentlyGatherTasks([]Task{{
-		F: common.GatheringClosure{
+		F: gatherers.GatheringClosure{
 			Run: func(context.Context) ([]record.Record, []error) {
 				return nil, []error{
 					fmt.Errorf("test error"),
@@ -146,7 +146,7 @@ func Test_HandleTasksConcurrently_CannotFail_Panic(t *testing.T) {
 
 func Test_HandleTasksConcurrently_CanFail_Error(t *testing.T) {
 	results := handleTasksConcurrentlyGatherTasks([]Task{{
-		F: common.GatheringClosure{
+		F: gatherers.GatheringClosure{
 			Run: func(context.Context) ([]record.Record, []error) {
 				return nil, []error{
 					fmt.Errorf("test error"),
@@ -170,7 +170,7 @@ func Test_HandleTasksConcurrently_CanFail_Error(t *testing.T) {
 
 func Test_HandleTasksConcurrently_CanFail_Panic(t *testing.T) {
 	results := handleTasksConcurrentlyGatherTasks([]Task{{
-		F: common.GatheringClosure{
+		F: gatherers.GatheringClosure{
 			Run: func(context.Context) ([]record.Record, []error) {
 				panic("test panic")
 			},

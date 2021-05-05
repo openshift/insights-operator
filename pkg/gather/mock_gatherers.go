@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/gather/common"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -17,8 +17,8 @@ type MockGatherer struct {
 
 func (*MockGatherer) GetName() string { return "mock_gatherer" }
 
-func (g *MockGatherer) GetGatheringFunctions() map[string]common.GatheringClosure {
-	return map[string]common.GatheringClosure{
+func (g *MockGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+	return map[string]gatherers.GatheringClosure{
 		"name": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherName(ctx)
@@ -108,8 +108,8 @@ type MockCustomPeriodGatherer struct {
 
 func (*MockCustomPeriodGatherer) GetName() string { return "mock_custom_period_gatherer" }
 
-func (g *MockCustomPeriodGatherer) GetGatheringFunctions() map[string]common.GatheringClosure {
-	return map[string]common.GatheringClosure{
+func (g *MockCustomPeriodGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+	return map[string]gatherers.GatheringClosure{
 		"period": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherPeriod(ctx)
@@ -150,8 +150,8 @@ func (*MockCustomPeriodGathererNoPeriod) GetName() string {
 	return "mock_custom_period_gatherer_no_period"
 }
 
-func (g *MockCustomPeriodGathererNoPeriod) GetGatheringFunctions() map[string]common.GatheringClosure {
-	return map[string]common.GatheringClosure{
+func (g *MockCustomPeriodGathererNoPeriod) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+	return map[string]gatherers.GatheringClosure{
 		"should_be_processed": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherShouldBeProcessed(ctx)
