@@ -99,7 +99,7 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 	}
 
 	// gather pods containers logs
-	bufferSize := int64(recorder.MaxLogSize * logCompressionRatio / totalContainers / 2)
+	bufferSize := int64(recorder.MaxArchiveSize * logCompressionRatio / totalContainers / 2)
 	clogs, err := gatherPodContainersLogs(ctx, coreClient, pods, bufferSize)
 	if err != nil {
 		klog.V(2).Infof("Unable to gather pod containers logs: %v", err)

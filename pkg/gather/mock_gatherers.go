@@ -97,7 +97,6 @@ func (g *MockGatherer) GatherErrors(context.Context) ([]record.Record, []error) 
 
 func (g *MockGatherer) GatherPanic(context.Context) ([]record.Record, []error) {
 	panic("test panic")
-	return nil, nil
 }
 
 // MockCustomPeriodGatherer is a mock for a gatherer with custom period
@@ -177,4 +176,31 @@ func (g *MockCustomPeriodGathererNoPeriod) GatherShouldBeProcessed(context.Conte
 			Item: record.JSONMarshaller{Object: g.ShouldBeProcessed},
 		},
 	}, nil
+}
+
+type MockFailingdGatherer struct {
+}
+
+func (*MockFailingdGatherer) GetName() string {
+	return "mock_failing_gatherer"
+}
+
+func (g *MockFailingdGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+	return map[string]gatherers.GatheringClosure{
+		"failing": {
+			Run: func(ctx context.Context) ([]record.Record, []error) {
+				return g.FailingGatherer(ctx)
+			},
+			CanFail: false,
+		},
+	}
+}
+
+func (g *MockFailingdGatherer) FailingGatherer(context.Context) ([]record.Record, []error) {
+	return []record.Record{
+		{
+			Name: "record_1",
+			Item: record.JSONMarshaller{Object: "empty"},
+		},
+	}, []error{fmt.Errorf("gather error")}
 }

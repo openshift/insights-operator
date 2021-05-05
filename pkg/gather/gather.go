@@ -44,8 +44,9 @@ type GathererFunctionReport struct {
 
 // ArchiveMetadata contains the information about the archive and all its' gatherers
 type ArchiveMetadata struct {
-	// info about gathering functions
-	StatusReports []GathererFunctionReport `json:"status_reports"`
+	// info about gathering functions. We need to use map, because functions will repeat
+	// in case of any gathering error
+	StatusReports map[string]GathererFunctionReport `json:"status_reports"`
 	// MemoryAlloc is the amount of memory taken by heap objects after processing the records
 	MemoryAlloc uint64 `json:"memory_alloc_bytes"`
 	// Uptime is the number of seconds from the program start till the point when metadata was created
@@ -108,14 +109,17 @@ func CollectAndRecordGatherer(
 				errs = append(errs, fmt.Errorf(errStr))
 			}
 		}
-
+		var recordedRecs []record.Record
 		for _, r := range result.Records {
 			if err := rec.Record(r); err != nil {
-				errs = append(errs, fmt.Errorf(
+				recErr := fmt.Errorf(
 					"unable to record gatherer %v function %v' result %v because of error: %v",
 					gathererName, result.FunctionName, r.Name, err,
-				))
+				)
+				result.Errs = append(result.Errs, recErr)
+				continue
 			}
+			recordedRecs = append(recordedRecs, r)
 		}
 
 		klog.Infof(
@@ -126,18 +130,17 @@ func CollectAndRecordGatherer(
 		functionReports = append(functionReports, GathererFunctionReport{
 			FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
 			Duration:     result.TimeElapsed.Milliseconds(),
-			RecordsCount: len(result.Records),
+			RecordsCount: len(recordedRecs),
 			Errors:       errorsToStrings(result.Errs),
 			Panic:        result.Panic,
 		})
 	}
-
 	return functionReports, sumErrors(errs)
 }
 
 // RecordArchiveMetadata records info about archive and gatherers' reports
 func RecordArchiveMetadata(
-	functionReports []GathererFunctionReport,
+	functionReports map[string]GathererFunctionReport,
 	rec recorder.Interface,
 	anonymizer *anonymization.Anonymizer,
 ) error {
@@ -145,7 +148,7 @@ func RecordArchiveMetadata(
 	runtime.ReadMemStats(&m)
 
 	archiveMetadata := record.Record{
-		Name: archiveMetadataFilename,
+		Name: recorder.MetadataRecordName,
 		Item: record.JSONMarshaller{Object: ArchiveMetadata{
 			StatusReports:              functionReports,
 			MemoryAlloc:                m.HeapAlloc,

@@ -14,6 +14,10 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+var (
+	mock1Name = "config/mock1"
+)
+
 // RawReport implements Marshable interface
 type RawReport struct{ Data string }
 
@@ -54,7 +58,7 @@ func (d *driverMock) Prune(time.Time) error {
 	return args.Error(1)
 }
 
-func newRecorder() Recorder {
+func newRecorder(maxArchiveSize int64) Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 
@@ -62,20 +66,19 @@ func newRecorder() Recorder {
 
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{
-		driver:     &driver,
-		interval:   interval,
-		maxAge:     interval * 6 * 24,
-		records:    make(map[string]*record.MemoryRecord),
-		flushCh:    make(chan struct{}, 1),
-		flushSize:  8 * 1024 * 1024,
-		anonymizer: anonymizer,
+		driver:         &driver,
+		interval:       interval,
+		maxAge:         interval * 6 * 24,
+		maxArchiveSize: maxArchiveSize,
+		records:        make(map[string]*record.MemoryRecord),
+		anonymizer:     anonymizer,
 	}
 }
 
 func Test_Record(t *testing.T) {
-	rec := newRecorder()
+	rec := newRecorder(MaxArchiveSize)
 	err := rec.Record(record.Record{
-		Name: "config/mock1",
+		Name: mock1Name,
 		Item: RawReport{Data: "mock1"},
 	})
 	assert.Nil(t, err)
@@ -83,14 +86,14 @@ func Test_Record(t *testing.T) {
 }
 
 func Test_Record_Duplicated(t *testing.T) {
-	rec := newRecorder()
+	rec := newRecorder(MaxArchiveSize)
 	_ = rec.Record(record.Record{
-		Name:        "config/mock1",
+		Name:        mock1Name,
 		Item:        RawReport{Data: "mock1"},
 		Fingerprint: "abc",
 	})
 	err := rec.Record(record.Record{
-		Name:        "config/mock1",
+		Name:        mock1Name,
 		Item:        RawReport{Data: "mock1"},
 		Fingerprint: "abc",
 	})
@@ -99,16 +102,16 @@ func Test_Record_Duplicated(t *testing.T) {
 }
 
 func Test_Record_CantBeSerialized(t *testing.T) {
-	rec := newRecorder()
+	rec := newRecorder(MaxArchiveSize)
 	err := rec.Record(record.Record{
-		Name: "config/mock1",
+		Name: mock1Name,
 		Item: RawInvalidReport{},
 	})
 	assert.Error(t, err)
 }
 
 func Test_Record_Flush(t *testing.T) {
-	rec := newRecorder()
+	rec := newRecorder(MaxArchiveSize)
 	for i := range []int{1, 2, 3} {
 		_ = rec.Record(record.Record{
 			Name: fmt.Sprintf("config/mock%d", i),
@@ -121,7 +124,20 @@ func Test_Record_Flush(t *testing.T) {
 }
 
 func Test_Record_FlushEmptyRecorder(t *testing.T) {
-	rec := newRecorder()
+	rec := newRecorder(MaxArchiveSize)
 	err := rec.Flush()
 	assert.Nil(t, err)
+}
+
+func Test_Record_ArchiveSizeExceeded(t *testing.T) {
+	data := "data bigger than 4 bytes"
+	maxArchiveSize := int64(4)
+	rec := newRecorder(maxArchiveSize)
+	err := rec.Record(record.Record{
+		Name: mock1Name,
+		Item: RawReport{
+			Data: data,
+		},
+	})
+	assert.Equal(t, err, fmt.Errorf("Record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive", mock1Name, len([]byte(data)), maxArchiveSize))
 }

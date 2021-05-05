@@ -2,6 +2,7 @@ package recorder
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -13,8 +14,11 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// MaxLogSize defines maximum allowed tarball size
-const MaxLogSize = 8 * 1024 * 1024
+// MaxArchiveSize defines maximum allowed tarball size
+const MaxArchiveSize = 8 * 1024 * 1024
+
+// Metadata record name
+const MetadataRecordName = "insights-operator/gathers"
 
 type alreadyReported interface {
 	LastReportedTime() time.Time
@@ -22,27 +26,25 @@ type alreadyReported interface {
 
 // Recorder struct
 type Recorder struct {
-	driver     Driver
-	flushCh    chan struct{}
-	flushSize  int64 // defines maximum allowed report size
-	interval   time.Duration
-	maxAge     time.Duration
-	lock       sync.Mutex
-	size       int64
-	records    map[string]*record.MemoryRecord
-	anonymizer *anonymization.Anonymizer
+	driver         Driver
+	interval       time.Duration
+	maxAge         time.Duration
+	lock           sync.Mutex
+	size           int64
+	maxArchiveSize int64
+	records        map[string]*record.MemoryRecord
+	anonymizer     *anonymization.Anonymizer
 }
 
 // New recorder
 func New(driver Driver, interval time.Duration, anonymizer *anonymization.Anonymizer) *Recorder {
 	return &Recorder{
-		driver:     driver,
-		interval:   interval,
-		maxAge:     interval * 6 * 24,
-		records:    make(map[string]*record.MemoryRecord),
-		flushCh:    make(chan struct{}, 1),
-		flushSize:  MaxLogSize,
-		anonymizer: anonymizer,
+		driver:         driver,
+		interval:       interval,
+		maxArchiveSize: MaxArchiveSize,
+		maxAge:         interval * 6 * 24,
+		records:        make(map[string]*record.MemoryRecord),
+		anonymizer:     anonymizer,
 	}
 }
 
@@ -67,6 +69,7 @@ func (r *Recorder) Record(rec record.Record) error {
 	}
 
 	recordName := rec.Filename()
+	recordSize := int64(len(data))
 
 	memoryRecord := &record.MemoryRecord{
 		Name:        recordName,
@@ -77,18 +80,13 @@ func (r *Recorder) Record(rec record.Record) error {
 	if r.anonymizer != nil {
 		memoryRecord = r.anonymizer.AnonymizeMemoryRecord(memoryRecord)
 	}
-
-	r.records[recordName] = memoryRecord
-	r.size += int64(len(data))
-
-	// trigger a flush if we're above our threshold
-	if r.size > r.flushSize {
-		select {
-		case r.flushCh <- struct{}{}:
-		default:
-		}
+	// we want to record our metadata file anyway
+	if r.size+recordSize > r.maxArchiveSize && rec.Name != MetadataRecordName {
+		return fmt.Errorf("Record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive",
+			recordName, recordSize, r.maxArchiveSize)
 	}
-
+	r.records[recordName] = memoryRecord
+	r.size += recordSize
 	return nil
 }
 
@@ -100,7 +98,6 @@ func (r *Recorder) Flush() error {
 	}
 
 	sort.Sort(records)
-
 	saved, err := r.driver.Save(records)
 	defer func() {
 		r.clear(saved)
