@@ -54,7 +54,11 @@ const (
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
 )
 
-var TranslationTableSecretName = "IO-trTable"
+var (
+	TranslationTableSecretName = "translation"
+	secretAPIVersion           = "v1"
+	secretKind                 = "Secret"
+)
 
 type subnetInformation struct {
 	network net.IPNet
@@ -266,6 +270,10 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	defer anonymizer.ResetTranslationTable()
 
 	secret := &applycorev1.SecretApplyConfiguration{
+		TypeMetaApplyConfiguration: applymetav1.TypeMetaApplyConfiguration{
+			Kind:       &secretKind,
+			APIVersion: &secretAPIVersion,
+		},
 		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
 			Name: &TranslationTableSecretName,
 		},
