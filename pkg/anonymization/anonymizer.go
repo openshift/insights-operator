@@ -55,7 +55,7 @@ const (
 )
 
 var (
-	TranslationTableSecretName = "translation"
+	TranslationTableSecretName = "obfuscation-translation-table" //nolint: gosec
 	secretAPIVersion           = "v1"
 	secretKind                 = "Secret"
 )
@@ -288,6 +288,7 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	result, err := anonymizer.secretsClient.Apply(context.TODO(), secret, applyOptions)
 	if err != nil {
 		klog.Errorf("Failed to create/update the translation table secret. err: %s", err)
+		return nil
 	}
 	return result
 }
