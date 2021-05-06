@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -69,38 +68,7 @@ func Test_HandleTasksConcurrently(t *testing.T) {
 	})
 }
 
-// TODO: consider removing. The idea of the test is to check that execution is not sequential,
-// but the problem is that it's not guaranteed that it will take some specific time.
-// Maybe it should be an integration test
-func Test_HandleTasksConcurrently_Sleep(t *testing.T) {
-	const N = 100
-
-	var tasks []Task
-
-	for i := 0; i < N; i++ {
-		tasks = append(tasks, Task{
-			F: gatherers.GatheringClosure{
-				Run: func(context.Context) ([]record.Record, []error) {
-					time.Sleep(10 * time.Millisecond)
-					return nil, nil
-				},
-				CanFail: false,
-			},
-		})
-	}
-
-	startTime := time.Now()
-
-	results := handleTasksConcurrentlyGatherTasks(tasks)
-
-	elapsedTime := time.Since(startTime)
-	assert.Len(t, results, N)
-
-	assert.Less(t, elapsedTime, 100*time.Millisecond)
-	assert.Greater(t, elapsedTime, 10*time.Millisecond)
-}
-
-func Test_HandleTasksConcurrently_CannotFail_Error(t *testing.T) {
+func Test_HandleTasksConcurrently_CannotFail_Panic(t *testing.T) {
 	results := handleTasksConcurrentlyGatherTasks([]Task{{
 		F: gatherers.GatheringClosure{
 			Run: func(context.Context) ([]record.Record, []error) {
@@ -120,7 +88,7 @@ func Test_HandleTasksConcurrently_CannotFail_Error(t *testing.T) {
 	})
 }
 
-func Test_HandleTasksConcurrently_CannotFail_Panic(t *testing.T) {
+func Test_HandleTasksConcurrently_CannotFail_Error(t *testing.T) {
 	results := handleTasksConcurrentlyGatherTasks([]Task{{
 		F: gatherers.GatheringClosure{
 			Run: func(context.Context) ([]record.Record, []error) {
@@ -188,6 +156,9 @@ func Test_HandleTasksConcurrently_CanFail_Panic(t *testing.T) {
 	})
 }
 
+// TODO: write a test testing that handleTasksConcurrently is actually concurrent.
+// We can employ some threads syncronization magic which would cause execution to timeout when run sequentially
+// and work just fine when run in parallel.
 // TODO: more tests?
 
 func handleTasksConcurrentlyGatherTasks(tasks []Task) []GatheringFunctionResult {
