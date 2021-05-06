@@ -23,8 +23,6 @@ type kubeClientResponder struct {
 	clsetfake.Clientset
 }
 
-var _ kubernetes.Interface = (*kubeClientResponder)(nil)
-
 const (
 	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret" //nolint: gosec
 	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
