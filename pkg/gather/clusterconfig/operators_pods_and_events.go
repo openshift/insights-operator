@@ -37,14 +37,19 @@ type CompactedEventList struct {
 	Items []CompactedEvent `json:"items"`
 }
 
-// GatherClusterOperatorPodsAndEvents collects all the ClusterOperators degraded Pods
-// for degraded cluster operators or that lives at the Cluster Operator's namespace, to collect:
+// GatherClusterOperatorPodsAndEvents collects information about all pods
+// and events from namespaces of degraded cluster operators. The collected
+// information includes:
 //
 // - Pod definitions
-// - Previous and current Pod Container logs (when available)
-// - Namespace Events
+// - Previous and current logs of pod containers (when available)
+// - Namespace events
 //
-// * Location of pods in archive: config/pod/
+// * Location of pod definitions: config/pod/{namespace}/{pod}.json
+// * Location of pod container current logs:
+//   config/pod/{namespace}/logs/{pod}/{container}_current.log
+// * Location of pod container previous logs:
+//   config/pod/{namespace}/logs/{pod}/{container}_previous.log
 // * Location of events in archive: events/
 // * Id in config: operators_pods_and_events
 func GatherClusterOperatorPodsAndEvents(g *Gatherer, c chan<- gatherResult) {
