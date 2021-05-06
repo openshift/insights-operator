@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
 
@@ -117,32 +116,6 @@ func (a Anonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized openshift objects
 func (a Anonymizer) GetExtension() string {
-	return "json"
-}
-
-// CompactedEvent holds one Namespace Event
-type CompactedEvent struct {
-	Namespace     string    `json:"namespace"`
-	LastTimestamp time.Time `json:"lastTimestamp"`
-	Reason        string    `json:"reason"`
-	Message       string    `json:"message"`
-}
-
-// CompactedEventList is collection of events
-type CompactedEventList struct {
-	Items []CompactedEvent `json:"items"`
-}
-
-// EventAnonymizer implements serializaion of Events with anonymization
-type EventAnonymizer struct{ *CompactedEventList }
-
-// Marshal serializes Events with anonymization
-func (a EventAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return json.Marshal(a.CompactedEventList)
-}
-
-// GetExtension returns extension for anonymized event objects
-func (a EventAnonymizer) GetExtension() string {
 	return "json"
 }
 
