@@ -2,8 +2,10 @@ package clusterconfig
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -15,47 +17,112 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func TestOLMOperatorsGather(t *testing.T) {
-	olmOpContent, err := readFromFile("testdata/olm_operator_1.yaml")
-	if err != nil {
-		t.Fatal("test failed to read OLM operator data", err)
+func Test_OLMOperators_Gather(t *testing.T) {
+	var cases = []struct {
+		testName            string
+		olmOperatorFileName string
+		csvFileName         string
+		expectedError       error
+		expecteOlmOperator  olmOperator
+	}{
+		{
+			"All OLM operator data is available",
+			"testdata/olm_operator_1.yaml",
+			"testdata/csv_1.yaml",
+			nil,
+			olmOperator{
+				Name:        "test-olm-operator",
+				DisplayName: "Testing operator",
+				Version:     "v1.2.3",
+				Conditions: []interface{}{
+					map[string]interface{}{
+						"lastTransitionTime": "2021-03-02T08:52:24Z",
+						"lastUpdateTime":     "2021-03-02T08:52:24Z",
+						"message":            "requirements not yet checked",
+						"phase":              "Pending",
+						"reason":             "RequirementsUnknown",
+					},
+					map[string]interface{}{
+						"lastTransitionTime": "2021-03-02T08:52:24Z",
+						"lastUpdateTime":     "2021-03-02T08:52:24Z",
+						"message":            "all requirements found, attempting install",
+						"phase":              "InstallReady",
+						"reason":             "AllRequirementsMet",
+					},
+				},
+			},
+		},
+		{
+			"Operator doesn't have CSV reference",
+			"testdata/olm_operator_2.yaml",
+			"testdata/csv_1.yaml",
+			fmt.Errorf("cannot find \"status.components.refs\" in test-olm-operator-with-no-ref definition: key refs wasn't found in map[] "),
+			olmOperator{
+				Name: "test-olm-operator-with-no-ref",
+			},
+		},
+		{
+			"Operator CSV doesn't have the displayName",
+			"testdata/olm_operator_1.yaml",
+			"testdata/csv_2.yaml",
+			fmt.Errorf("cannot read test-olm-operator.v1.2.3 ClusterServiceVersion attributes: key displayName wasn't found in map[] "),
+			olmOperator{
+				Name:    "test-olm-operator",
+				Version: "v1.2.3",
+			},
+		},
+		{
+			"Operator with unrecognizable CSV version",
+			"testdata/olm_operator_3.yaml",
+			"testdata/csv_1.yaml",
+			fmt.Errorf("clusterserviceversion \"name-without-version\" probably doesn't include version"),
+			olmOperator{
+				Name: "test-olm-operator-no-version",
+			},
+		},
 	}
 
-	csvContent, err := readFromFile("testdata/csv_1.yaml")
-	if err != nil {
-		t.Fatal("test failed to read CSV ", err)
-	}
-	client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
-	err = createUnstructuredResource(olmOpContent, client, operatorGVR)
-	if err != nil {
-		t.Fatal("cannot create OLM operator ", err)
-	}
-	err = createUnstructuredResource(csvContent, client, clusterServiceVersionGVR)
-	if err != nil {
-		t.Fatal("cannot create ClusterServiceVersion ", err)
-	}
+	for _, tt := range cases {
+		tt := tt
+		t.Run(tt.testName, func(t *testing.T) {
+			olmOpContent, err := readFromFile(tt.olmOperatorFileName)
+			if err != nil {
+				t.Fatal("test failed to read OLM operator data", err)
+			}
 
-	ctx := context.Background()
-	records, errs := gatherOLMOperators(ctx, client)
-	if len(errs) > 0 {
-		t.Errorf("unexpected errors: %#v", errs)
-		return
-	}
-	if len(records) != 1 {
-		t.Fatalf("unexpected number or records %d", len(records))
-	}
-	ooa, ok := records[0].Item.(record.JSONMarshaller).Object.([]olmOperator)
-	if !ok {
-		t.Fatalf("returned item is not of type []olmOperator")
-	}
-	if ooa[0].Name != "test-olm-operator" {
-		t.Fatalf("unexpected name of gathered OLM operator %s", ooa[0].Name)
-	}
-	if ooa[0].Version != "v1.2.3" {
-		t.Fatalf("unexpected version of gathered OLM operator %s", ooa[0].Version)
-	}
-	if len(ooa[0].Conditions) != 2 {
-		t.Fatalf("unexpected number of conditions %s", ooa[0].Conditions...)
+			csvContent, err := readFromFile(tt.csvFileName)
+			if err != nil {
+				t.Fatal("test failed to read CSV ", err)
+			}
+			client := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
+			err = createUnstructuredResource(olmOpContent, client, operatorGVR)
+			if err != nil {
+				t.Fatal("cannot create OLM operator ", err)
+			}
+			err = createUnstructuredResource(csvContent, client, clusterServiceVersionGVR)
+			if err != nil {
+				t.Fatal("cannot create ClusterServiceVersion ", err)
+			}
+
+			ctx := context.Background()
+			records, errs := gatherOLMOperators(ctx, client)
+			if len(errs) > 0 {
+				if errs[0].Error() != tt.expectedError.Error() {
+					t.Fatalf("unexpected errors: %v", errs[0].Error())
+				}
+			}
+			if len(records) != 1 {
+				t.Fatalf("unexpected number or records %d", len(records))
+			}
+			ooa, ok := records[0].Item.(record.JSONMarshaller).Object.([]olmOperator)
+			if !ok {
+				t.Fatalf("returned item is not of type []olmOperator")
+			}
+			sameOp := reflect.DeepEqual(ooa[0], tt.expecteOlmOperator)
+			if !sameOp {
+				t.Fatalf("Gathered %s operator is not equal to expected %s ", ooa[0], tt.expecteOlmOperator)
+			}
+		})
 	}
 }
 
