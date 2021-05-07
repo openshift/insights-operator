@@ -1,12 +1,18 @@
 package anonymization
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/stretchr/testify/assert"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	clienttesting "k8s.io/client-go/testing"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -108,8 +114,7 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		"127.0.0.0/8",
 		"192.168.0.0/16",
 	}
-
-	anonymizer, err := NewAnonymizer(clusterBaseDomain, networks, kubefake.NewSimpleClientset().CoreV1().Secrets("test"))
+	anonymizer, err := NewAnonymizer(clusterBaseDomain, networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
 	assert.NoError(t, err)
 
 	return anonymizer
@@ -191,4 +196,50 @@ func Test_Anonymizer_TranslationTableTest(t *testing.T) {
 	}).Data)
 
 	assert.Equal(t, "192.168.1.1", obfuscatedData)
+
+	assert.Equal(t, 257, len(anonymizer.translationTable))
+	anonymizer.ResetTranslationTable()
+	assert.Equal(t, 0, len(anonymizer.translationTable))
+}
+
+func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
+	anonymizer := getAnonymizer(t)
+
+	// Empty translation table == No call made to
+	assert.Nil(t, anonymizer.StoreTranslationTable())
+
+	// Mock the client to react/check Apply calls
+	kube := kubefake.Clientset{}
+	client := kube.CoreV1().Secrets(secretNamespace)
+	client.(*corefake.FakeSecrets).Fake.AddReactor("patch", "secrets",
+		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+			if patchAction, ok := action.(clienttesting.PatchAction); ok {
+				assert.Equal(t, secretNamespace, patchAction.GetNamespace())
+				assert.Contains(t, patchAction.GetPatchType(), "apply")
+				assert.Equal(t, secretAPIVersion, patchAction.GetResource().Version)
+				var secret corev1.Secret
+				err := json.Unmarshal(patchAction.GetPatch(), &secret)
+				if err != nil {
+					t.Errorf("Failed to unmarshal sent Secret, err: %s", err)
+				}
+				return true, &secret, nil
+			}
+			t.Errorf("Incorrect action, expected patch got %s", action)
+			return false, nil, nil
+		})
+	anonymizer.secretsClient = client
+
+	// Fill translation table
+	for i := 0; i < 10; i++ {
+		obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+			Data: []byte(fmt.Sprintf("192.168.0.%v", 255-i)),
+		}).Data)
+
+		assert.Equal(t, fmt.Sprintf("192.168.0.%v", i+1), obfuscatedData)
+	}
+	// Store translation table, then check
+	secret := anonymizer.StoreTranslationTable()
+	for i := 0; i < 10; i++ {
+		assert.Equal(t, secret.StringData[fmt.Sprintf("192.168.0.%v", 255-i)], fmt.Sprintf("192.168.0.%v", i+1))
+	}
 }

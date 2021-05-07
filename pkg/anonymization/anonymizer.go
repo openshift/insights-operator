@@ -58,6 +58,7 @@ var (
 	TranslationTableSecretName = "obfuscation-translation-table" //nolint: gosec
 	secretAPIVersion           = "v1"
 	secretKind                 = "Secret"
+	secretNamespace            = "openshift-insights"
 )
 
 type subnetInformation struct {
@@ -135,7 +136,7 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 
-	secretsClient := kubeClient.CoreV1().Secrets("openshift-insights")
+	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
 
 	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
 		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
@@ -263,6 +264,9 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 	return "::"
 }
 
+// Stores the translation table in a Secret in the openshift-insights namespace.
+// The actual data is stored in the StringData protion of the Secret.
+// Uses the Apply mechanism so it creates the secret if not present or updates it when present.
 func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	if len(anonymizer.translationTable) == 0 {
 		return nil
@@ -290,9 +294,11 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 		klog.Errorf("Failed to create/update the translation table secret. err: %s", err)
 		return nil
 	}
+	klog.V(3).Infof("Created/Updated %s secret in %s namespace", TranslationTableSecretName, secretNamespace)
 	return result
 }
 
+// Resets the translation table, so that the translation table of multiple gathers wont mix toghater.
 func (anonymizer *Anonymizer) ResetTranslationTable() {
 	anonymizer.translationTable = make(map[string]string)
 }
