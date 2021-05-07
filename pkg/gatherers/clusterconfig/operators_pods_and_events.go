@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -37,6 +38,9 @@ type CompactedEvent struct {
 type CompactedEventList struct {
 	Items []CompactedEvent `json:"items"`
 }
+
+// Used to detect the possible stack trace on logs
+var stackTraceRegex = regexp.MustCompile(`.*/[^/]*:\d+.*0[xX][0-9a-fA-F]+`)
 
 // GatherClusterOperatorPodsAndEvents collects information about all pods
 // and events from namespaces of degraded cluster operators. The collected
@@ -101,6 +105,7 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 		klog.V(2).Infof("Unable to gather pod containers logs: %v", err)
 		return records, nil
 	}
+
 	if len(clogs) > 0 {
 		records = append(records, clogs...)
 	}
@@ -229,7 +234,7 @@ func gatherPodContainersLogs(ctx context.Context,
 	var records []record.Record
 	for _, isPrevious := range []bool{true, false} {
 		for _, pod := range pods {
-			clog := getContainerLogs(ctx, client, pod, isPrevious, buf, bufferSize)
+			clog := getContainerLogs(ctx, client, pod, isPrevious, buf)
 			if len(clog) > 0 {
 				records = append(records, clog...)
 			}
@@ -245,8 +250,7 @@ func getContainerLogs(ctx context.Context,
 	client corev1client.CoreV1Interface,
 	pod *corev1.Pod,
 	isPrevious bool,
-	buf *bytes.Buffer,
-	bufferSize int64) []record.Record {
+	buf *bytes.Buffer) []record.Record {
 	var records []record.Record
 
 	allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
@@ -256,31 +260,66 @@ func getContainerLogs(ctx context.Context,
 			continue
 		}
 
-		logName := fmt.Sprintf("%s_current.log", c.Name)
-		if isPrevious {
-			logName = fmt.Sprintf("%s_previous.log", c.Name)
-		}
+		logName := logFilename(c.Name, isPrevious)
 
-		buf.Reset()
-		klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v).", c.Name, pod.Name, pod.Namespace, isPrevious)
 		// Fetch container logs and continue on error
-		err := fetchPodContainerLog(ctx, client, pod, buf, c.Name, isPrevious, &bufferSize)
+		logString, err := getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logTailLines)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			continue
 		}
 
-		// Do not record empty records
-		if buf.Len() == 0 {
-			continue
+		// check for stack tracer
+		if found := stackTraceRegex.MatchString(logString); found {
+			klog.V(2).Infof("Stack trace found in log for %s container %s pod in namespace %s (previous: %v).", c.Name, pod.Name, pod.Namespace, isPrevious)
+			logString, err = getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logTailLinesLong)
+			if err != nil {
+				klog.V(2).Infof("Error: %q", err)
+				continue
+			}
 		}
+
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName),
-			Item: marshal.Raw{Str: buf.String()},
+			Item: marshal.Raw{Str: logString},
 		})
 	}
 
 	return records
+}
+
+// getContainerLogString fetch the container log from API and return it as String
+func getContainerLogString(
+	ctx context.Context,
+	client corev1client.CoreV1Interface,
+	pod *corev1.Pod,
+	name string,
+	isPrevious bool,
+	buf *bytes.Buffer,
+	tailLines *int64) (string, error) {
+	// Reset the given buffer
+	buf.Reset()
+
+	klog.V(2).Infof("Fetching logs for %s container %s pod in namespace %s (previous: %v).", name, pod.Name, pod.Namespace, isPrevious)
+	err := fetchPodContainerLog(ctx, client, pod, buf, name, isPrevious, tailLines)
+	if err != nil {
+		return "", err
+	}
+
+	if buf.Len() == 0 {
+		return "", fmt.Errorf("Log buffer is empty")
+	}
+
+	return buf.String(), nil
+}
+
+// logFilename creates the filename to Pod logs
+func logFilename(name string, prev bool) string {
+	filename := fmt.Sprintf("%s_current.log", name)
+	if prev {
+		filename = fmt.Sprintf("%s_previous.log", name)
+	}
+	return filename
 }
 
 // fetchPodContainerLog fetches log lines from the pod
@@ -290,14 +329,18 @@ func fetchPodContainerLog(ctx context.Context,
 	buf *bytes.Buffer,
 	containerName string,
 	isPrevious bool,
-	maxBytes *int64) error {
-	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name,
-		&corev1.PodLogOptions{
-			Previous:   isPrevious,
-			Container:  containerName,
-			LimitBytes: maxBytes,
-			TailLines:  &logTailLines,
-		})
+	tailLines *int64) error {
+
+	var limitBytes *int64
+	bufCap := int64(buf.Cap())
+	limitBytes = &bufCap
+
+	req := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+		Previous:   isPrevious,
+		Container:  containerName,
+		TailLines:  tailLines,
+		LimitBytes: limitBytes,
+	})
 	readCloser, err := req.Stream(ctx)
 	if err != nil {
 		klog.V(2).Infof("Failed to fetch log for %s pod in namespace %s for failing operator %s (previous: %v): %q",

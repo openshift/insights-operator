@@ -121,8 +121,7 @@ func Test_UnhealtyOperators_GetContainerLogs(t *testing.T) {
 				tt.args.client,
 				tt.args.pod,
 				tt.args.isPrevious,
-				tt.args.buf,
-				tt.args.bufferSize); !reflect.DeepEqual(got, tt.want) {
+				tt.args.buf); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getContainerLogs() = %v, want %v", got, tt.want)
 			}
 		})
