@@ -6,13 +6,32 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+var (
+	sapMachineConfigNameList = map[string]struct{}{
+		"75-worker-sap-data-intelligence": {},
+		"75-master-sap-data-intelligence": {},
+	}
+)
+
+// GatherSAPMachineConfig collects a subset of MachineConfigs related to SDI by applying a set of filtering rules.
+//
+// Gathered MachineConfigs at the time of implementation of the gatherer:
+// * `75-worker-sap-data-intelligence`
+// * `75-master-sap-data-intelligence`
+// * `99-sdi-generated-containerruntime`
+//
+// Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
+//
+// * Location in archive: config/machineconfigs/<name>.json
+// * Id in config: sap_machine_configs
+// * Since versions:
+//   * 4.9+
 func GatherSAPMachineConfig(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -24,11 +43,28 @@ func GatherSAPMachineConfig(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records: records, errors: errs}
 }
 
+func isSAPMachineConfig(mc unstructured.Unstructured) bool {
+	if _, exists := sapMachineConfigNameList[mc.GetName()]; exists {
+		return true
+	}
+
+	for labelName, labelValue := range mc.GetLabels() {
+		if labelName == "workload" && labelValue == "sap-data-intelligence" {
+			return true
+		}
+	}
+
+	for _, ownerRef := range mc.GetOwnerReferences() {
+		if ownerRef.Kind == "ContainerRuntimeConfig" && ownerRef.Name == "sdi-pids-limit" {
+			return true
+		}
+	}
+
+	return false
+}
+
 func gatherSAPMachineConfig(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	gvrMC := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigs"}
-	// gvrMCP := schema.GroupVersionResource{Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigpools"}
-	mcList, err := dynamicClient.Resource(gvrMC).List(ctx, metav1.ListOptions{})
-	klog.Warningf("------------------>>>>>> %#v", err)
+	mcList, err := dynamicClient.Resource(machineConfigGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -38,16 +74,7 @@ func gatherSAPMachineConfig(ctx context.Context, dynamicClient dynamic.Interface
 
 	records := []record.Record{}
 	for _, mc := range mcList.Items {
-		shouldBeGathered := mc.GetName() == "75-worker-sap-data-intelligence"
-
-		for _, ownerRef := range mc.GetOwnerReferences() {
-			if ownerRef.Kind == "ContainerRuntimeConfig" && ownerRef.Name == "sdi-pids-limit" {
-				shouldBeGathered = true
-				break
-			}
-		}
-
-		if shouldBeGathered {
+		if isSAPMachineConfig(mc) {
 			records = append(records, record.Record{
 				Name: fmt.Sprintf("config/machineconfigs/%s", mc.GetName()),
 				Item: record.JSONMarshaller{Object: mc.Object},
