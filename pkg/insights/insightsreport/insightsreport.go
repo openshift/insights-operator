@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -52,6 +53,8 @@ var (
 		Name:      "insights",
 		Help:      "Information about the cluster health status as detected by Insights tooling.",
 	}, []string{"metric"})
+	// number of pulling report retries
+	retryThreshold = 2
 )
 
 // New initializes and returns a Gatherer
@@ -90,6 +93,15 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 	} else if err == insightsclient.ErrWaitingForVersion {
 		klog.Error(err)
 		return false, err
+	} else if insightsclient.IsInsightsError(err) {
+
+		ie := err.(insightsclient.InsightsError)
+		klog.Errorf("Unexpected error retrieving the report: %s", ie)
+		// if there's a 404 response then retry
+		if ie.StatusCode == http.StatusNotFound {
+			return false, ie
+		}
+		return true, ie
 	} else if err != nil {
 		klog.Errorf("Unexpected error retrieving the report: %s", err)
 		return true, err
@@ -134,6 +146,7 @@ func (r *Gatherer) RetrieveReport() {
 	delayTimer := time.NewTimer(wait.Jitter(delay, 0.1))
 	timeoutTimer := time.NewTimer(config.ReportPullingTimeout)
 	firstPullDone := false
+	retryCounter := 0
 
 	// select for initial delay
 	for {
@@ -152,11 +165,13 @@ func (r *Gatherer) RetrieveReport() {
 			}
 
 			firstPullDone = true
-			if !delayTimer.Stop() {
-				<-delayTimer.C
+			if retryCounter >= retryThreshold {
+				return
 			}
-			delayTimer.Reset(wait.Jitter(config.ReportMinRetryTime, 0.3))
-
+			t := wait.Jitter(config.ReportMinRetryTime, 0.1)
+			klog.Infof("Reseting the delay timer to retry in %s again", t)
+			delayTimer.Reset(t)
+			retryCounter++
 		case <-timeoutTimer.C:
 			// timeout, ends
 			if !delayTimer.Stop() {

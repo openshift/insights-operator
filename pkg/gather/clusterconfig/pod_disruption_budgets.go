@@ -6,7 +6,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
+	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -38,7 +38,7 @@ func GatherPodDisruptionBudgets(g *Gatherer, c chan<- gatherResult) {
 	c <- gatherResult{records, errors}
 }
 
-func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1beta1Interface) ([]record.Record, []error) {
+func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1Interface) ([]record.Record, []error) {
 	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
 	if err != nil {
 		return nil, []error{err}
