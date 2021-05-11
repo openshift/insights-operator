@@ -19,7 +19,7 @@ var (
 	}
 )
 
-// GatherSAPMachineConfig collects a subset of MachineConfigs related to SDI by applying a set of filtering rules.
+// GatherSAPMachineConfigs collects a subset of MachineConfigs related to SDI by applying a set of filtering rules.
 //
 // Gathered MachineConfigs at the time of implementation of the gatherer:
 // * `75-worker-sap-data-intelligence`
@@ -32,14 +32,14 @@ var (
 // * Id in config: sap_machine_configs
 // * Since versions:
 //   * 4.9+
-func GatherSAPMachineConfig(g *Gatherer, c chan<- gatherResult) {
+func GatherSAPMachineConfigs(g *Gatherer, c chan<- gatherResult) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		c <- gatherResult{errors: []error{err}}
 		return
 	}
 
-	records, errs := gatherSAPMachineConfig(g.ctx, gatherDynamicClient)
+	records, errs := gatherSAPMachineConfigs(g.ctx, gatherDynamicClient)
 	c <- gatherResult{records: records, errors: errs}
 }
 
@@ -63,7 +63,7 @@ func isSAPMachineConfig(mc unstructured.Unstructured) bool {
 	return false
 }
 
-func gatherSAPMachineConfig(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
+func gatherSAPMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	mcList, err := dynamicClient.Resource(machineConfigGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil

@@ -12,7 +12,7 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func Test_SAPMachineConfig(t *testing.T) {
+func Test_SAPMachineConfigs(t *testing.T) {
 	// Initialize the fake dynamic client.
 	machineConfigYAML1 := `apiVersion: machineconfiguration.openshift.io/v1
 kind: MachineConfig
@@ -72,7 +72,7 @@ metadata:
 		t.Fatal("unable to decode MachineConfig 4 YAML", err)
 	}
 
-	records, errs := gatherSAPMachineConfig(context.Background(), machineConfigClient)
+	records, errs := gatherSAPMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -86,7 +86,7 @@ metadata:
 		Resource(machineConfigGroupVersionResource).
 		Create(context.Background(), testMachineConfig1, metav1.CreateOptions{})
 
-	records, errs = gatherSAPMachineConfig(context.Background(), machineConfigClient)
+	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -100,7 +100,7 @@ metadata:
 		Resource(machineConfigGroupVersionResource).
 		Create(context.Background(), testMachineConfig2, metav1.CreateOptions{})
 
-	records, errs = gatherSAPMachineConfig(context.Background(), machineConfigClient)
+	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -114,7 +114,7 @@ metadata:
 		Resource(machineConfigGroupVersionResource).
 		Create(context.Background(), testMachineConfig3, metav1.CreateOptions{})
 
-	records, errs = gatherSAPMachineConfig(context.Background(), machineConfigClient)
+	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -128,7 +128,7 @@ metadata:
 		Resource(machineConfigGroupVersionResource).
 		Create(context.Background(), testMachineConfig4, metav1.CreateOptions{})
 
-	records, errs = gatherSAPMachineConfig(context.Background(), machineConfigClient)
+	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}

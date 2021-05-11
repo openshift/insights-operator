@@ -479,7 +479,7 @@ collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
   * 4.8+
 
 
-## SAPMachineConfig
+## SAPMachineConfigs
 
 collects a subset of MachineConfigs related to SDI by applying a set of filtering rules.
 
