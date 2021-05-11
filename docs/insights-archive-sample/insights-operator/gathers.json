@@ -1,231 +1,273 @@
 {
   "status_reports": [
     {
-      "name": "clusterconfig.GatherMostRecentMetrics",
-      "duration_in_ms": 5,
+      "name": "clusterconfig/metrics",
+      "duration_in_ms": 6,
       "records_count": 0,
       "errors": [
-        "Get \"https://prometheus-k8s.openshift-monitoring.svc:9091/federate?match%5B%5D=etcd_object_counts&match%5B%5D=cluster_installer&match%5B%5D=namespace%3Acontainer_cpu_usage_seconds_total%3Asum_rate&match%5B%5D=namespace%3Acontainer_memory_usage_bytes%3Asum\": dial tcp 127.1.27.1:9091: connect: connection refused"
-      ]
+        "Get \"https://prometheus-k8s.openshift-monitoring.svc:9091/federate?match%5B%5D=etcd_object_counts&match%5B%5D=cluster_installer&match%5B%5D=namespace%3Acontainer_cpu_usage_seconds_total%3Asum_rate&match%5B%5D=namespace%3Acontainer_memory_usage_bytes%3Asum\": dial tcp 127.0.0.2:9091: connect: connection refused"
+      ],
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherClusterIngress",
-      "duration_in_ms": 189,
+      "name": "clusterconfig/networks",
+      "duration_in_ms": 215,
       "records_count": 1,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherClusterNetwork",
-      "duration_in_ms": 393,
-      "records_count": 1,
-      "errors": null
+      "name": "clusterconfig/container_runtime_configs",
+      "duration_in_ms": 214,
+      "records_count": 0,
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherSAPDatahubs",
-      "duration_in_ms": 394,
+      "name": "clusterconfig/sap_datahubs",
+      "duration_in_ms": 215,
       "records_count": 0,
       "errors": [
         "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ]
+      ],
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherClusterFeatureGates",
-      "duration_in_ms": 395,
+      "name": "clusterconfig/sap_config",
+      "duration_in_ms": 216,
+      "records_count": 0,
+      "errors": [
+        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
+      ],
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/ingress",
+      "duration_in_ms": 216,
       "records_count": 1,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherOLMOperators",
-      "duration_in_ms": 395,
+      "name": "clusterconfig/sap_pods",
+      "duration_in_ms": 422,
+      "records_count": 0,
+      "errors": [
+        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
+      ],
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/olm_operators",
+      "duration_in_ms": 422,
       "records_count": 0,
       "errors": [
         "operators.operators.coreos.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"operators\" in API group \"operators.coreos.com\" at the cluster scope"
-      ]
+      ],
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherClusterProxy",
-      "duration_in_ms": 395,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherClusterAuthentication",
-      "duration_in_ms": 395,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherClusterVersion",
-      "duration_in_ms": 396,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherMachineConfigPool",
-      "duration_in_ms": 397,
-      "records_count": 2,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherClusterOAuth",
-      "duration_in_ms": 399,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherClusterInfrastructure",
-      "duration_in_ms": 400,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherContainerRuntimeConfig",
-      "duration_in_ms": 598,
+      "name": "clusterconfig/sap_license_management_logs",
+      "duration_in_ms": 424,
       "records_count": 0,
-      "errors": null
+      "errors": [
+        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
+      ],
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherClusterID",
-      "duration_in_ms": 598,
+      "name": "clusterconfig/authentication",
+      "duration_in_ms": 730,
       "records_count": 1,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherPodDisruptionBudgets",
-      "duration_in_ms": 599,
+      "name": "clusterconfig/netnamespaces",
+      "duration_in_ms": 733,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/image_pruners",
+      "duration_in_ms": 734,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/oauths",
+      "duration_in_ms": 734,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/infrastructures",
+      "duration_in_ms": 735,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/certificate_signing_requests",
+      "duration_in_ms": 932,
+      "records_count": 0,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/proxies",
+      "duration_in_ms": 934,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/image_registries",
+      "duration_in_ms": 940,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/pdbs",
+      "duration_in_ms": 1548,
       "records_count": 2,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherMachineSet",
-      "duration_in_ms": 601,
+      "name": "clusterconfig/feature_gates",
+      "duration_in_ms": 2163,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/machine_config_pools",
+      "duration_in_ms": 2782,
+      "records_count": 2,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/machine_sets",
+      "duration_in_ms": 3188,
       "records_count": 3,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherHostSubnet",
-      "duration_in_ms": 805,
-      "records_count": 6,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherClusterImagePruner",
-      "duration_in_ms": 806,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherSAPConfig",
-      "duration_in_ms": 1008,
-      "records_count": 0,
-      "errors": [
-        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ]
-    },
-    {
-      "name": "clusterconfig.GatherSAPPods",
-      "duration_in_ms": 1008,
-      "records_count": 0,
-      "errors": [
-        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ]
-    },
-    {
-      "name": "clusterconfig.GatherNetNamespace",
-      "duration_in_ms": 1011,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherSAPVsystemIptablesLogs",
-      "duration_in_ms": 1212,
-      "records_count": 0,
-      "errors": [
-        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ]
-    },
-    {
-      "name": "clusterconfig.GatherCertificateSigningRequests",
-      "duration_in_ms": 1800,
-      "records_count": 0,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherClusterImageRegistry",
-      "duration_in_ms": 2446,
-      "records_count": 1,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherOpenShiftAPIServerOperatorLogs",
-      "duration_in_ms": 3336,
-      "records_count": 0,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherNodes",
-      "duration_in_ms": 3339,
-      "records_count": 6,
-      "errors": null
-    },
-    {
-      "name": "clusterconfig.GatherCRD",
-      "duration_in_ms": 3342,
+      "name": "clusterconfig/crds",
+      "duration_in_ms": 3596,
       "records_count": 2,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherConfigMaps",
-      "duration_in_ms": 3347,
+      "name": "clusterconfig/host_subnets",
+      "duration_in_ms": 3596,
+      "records_count": 6,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/config_maps",
+      "duration_in_ms": 3804,
       "records_count": 10,
       "errors": [
         "configmaps \"cluster-monitoring-config\" not found"
-      ]
+      ],
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherOpenshiftAuthenticationLogs",
-      "duration_in_ms": 3727,
+      "name": "clusterconfig/operators_pods_and_events",
+      "duration_in_ms": 3808,
       "records_count": 0,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherContainerImages",
-      "duration_in_ms": 3877,
-      "records_count": 9,
-      "errors": null
+      "name": "clusterconfig/version",
+      "duration_in_ms": 4006,
+      "records_count": 3,
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherOpenshiftSDNControllerLogs",
-      "duration_in_ms": 3899,
+      "name": "clusterconfig/nodes",
+      "duration_in_ms": 4006,
+      "records_count": 6,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_apiserver_operator_logs",
+      "duration_in_ms": 4418,
       "records_count": 0,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherOpenshiftSDNLogs",
-      "duration_in_ms": 5437,
+      "name": "clusterconfig/openshift_sdn_controller_logs",
+      "duration_in_ms": 4547,
       "records_count": 0,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherClusterOperators",
-      "duration_in_ms": 7763,
+      "name": "clusterconfig/container_images",
+      "duration_in_ms": 4684,
+      "records_count": 8,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_authentication_logs",
+      "duration_in_ms": 4831,
+      "records_count": 0,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_sdn_logs",
+      "duration_in_ms": 6768,
+      "records_count": 0,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/operators",
+      "duration_in_ms": 8815,
       "records_count": 31,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherInstallPlans",
-      "duration_in_ms": 13395,
+      "name": "clusterconfig/install_plans",
+      "duration_in_ms": 14242,
       "records_count": 1,
-      "errors": null
+      "errors": null,
+      "panic": null
     },
     {
-      "name": "clusterconfig.GatherServiceAccounts",
-      "duration_in_ms": 13805,
+      "name": "clusterconfig/service_accounts",
+      "duration_in_ms": 14854,
       "records_count": 1,
-      "errors": null
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "workloads/workload_info",
+      "duration_in_ms": 16074,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
     }
   ],
-  "memory_alloc_bytes": 11979440,
-  "uptime_seconds": 59.876,
+  "memory_alloc_bytes": 17411816,
+  "uptime_seconds": 74.851,
   "is_global_obfuscation_enabled": false
 }

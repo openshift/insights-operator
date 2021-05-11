@@ -26,7 +26,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
-	"github.com/openshift/insights-operator/pkg/gather/clusterconfig"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
@@ -120,14 +119,12 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	rec := recorder.New(recdriver, s.Interval, anonymizer)
 	go rec.PeriodicallyPrune(ctx, statusReporter)
 
-	// the gatherers periodically check the state of the cluster and report any
-	// config to the recorder
-	clusterConfigGatherer := clusterconfig.New(
+	// the gatherers are periodically called to collect the data from the cluster
+	// and provide the results for the recorder
+	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
 	)
-	periodicGather := periodic.New(configObserver, rec, map[string]gather.Interface{
-		"clusterconfig": clusterConfigGatherer,
-	})
+	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer)
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
@@ -168,9 +165,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader)
 	go reportGatherer.Run(ctx)
 
-	klog.Warning("stopped")
+	klog.Warning("started")
 
 	<-ctx.Done()
+
 	return nil
 }
 
