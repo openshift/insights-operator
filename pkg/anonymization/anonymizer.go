@@ -32,6 +32,7 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	k8snet "k8s.io/utils/net"
 
@@ -68,7 +69,7 @@ type ConfigProvider interface {
 	Config() *config.Controller
 }
 
-// NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
+// NewAnonymizer creates a new instance of anonymizer
 func NewAnonymizer(clusterBaseDomain string, networks []string) (*Anonymizer, error) {
 	networks = append(networks, "127.0.0.1/8")
 
@@ -94,7 +95,7 @@ func NewAnonymizer(clusterBaseDomain string, networks []string) (*Anonymizer, er
 	}, nil
 }
 
-// NewAnonymizer creates a new instance of anonymizer with a provided config observer and openshift config client
+// NewAnonymizerFromConfigClient creates a new instance of anonymizer with a provided openshift config client
 func NewAnonymizerFromConfigClient(
 	ctx context.Context, kubeClient kubernetes.Interface, configClient configv1client.ConfigV1Interface,
 ) (*Anonymizer, error) {
@@ -145,6 +146,23 @@ func NewAnonymizerFromConfigClient(
 	})
 
 	return NewAnonymizer(baseDomain, networks)
+}
+
+// NewAnonymizerFromConfig creates a new instance of anonymizer with a provided kubeconfig
+func NewAnonymizerFromConfig(
+	ctx context.Context, kubeConfig *rest.Config, protoKubeConfig *rest.Config,
+) (*Anonymizer, error) {
+	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	configClient, err := configv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAnonymizerFromConfigClient(ctx, kubeClient, configClient)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
