@@ -31,16 +31,14 @@ var (
 // * Location in archive: config/machineconfigs/<name>.json
 // * Id in config: sap_machine_configs
 // * Since versions:
-//   * 4.9+
-func GatherSAPMachineConfigs(g *Gatherer, c chan<- gatherResult) {
+//   * 4.8+
+func (g *Gatherer) GatherSAPMachineConfigs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		c <- gatherResult{errors: []error{err}}
-		return
+		return nil, []error{err}
 	}
 
-	records, errs := gatherSAPMachineConfigs(g.ctx, gatherDynamicClient)
-	c <- gatherResult{records: records, errors: errs}
+	return gatherSAPMachineConfigs(ctx, gatherDynamicClient)
 }
 
 func isSAPMachineConfig(mc unstructured.Unstructured) bool {
