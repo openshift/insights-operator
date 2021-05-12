@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/clusterconfig"
+	"github.com/openshift/insights-operator/pkg/gatherers/profiling"
 	"github.com/openshift/insights-operator/pkg/gatherers/workloads"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
@@ -63,8 +64,9 @@ func CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
 	)
 	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
+	profilingGatherer := profiling.New(gatherProtoKubeConfig)
 
-	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer}
+	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer, profilingGatherer}
 }
 
 // CollectAndRecord gathers enabled functions of the provided gatherer and records the results to the recorder
