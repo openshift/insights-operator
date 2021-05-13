@@ -9,7 +9,7 @@ This PR implements a new data enhancement to...
 - [ ] Backporting
 - [ ] Others (CI, Infrastructure, Documentation)
 
-## Sample archive
+## Sample Archive
 <!-- Are these changes reflected in sample archive? -->
 
 - `path/to/sample_data.json`
@@ -32,6 +32,11 @@ Yes. There are no sensitive data in the newly collected information.
 ## Changelog
 <!-- Was changelog updated? -->
 
+## Breaking Changes
+<!-- Does this PR contain breaking changes? Changes in archive file names or structure for example.
+     If so, we should notify other teams using operator's data. -->
+
+Yes/No
 
 ## References
 <!-- What are related references for this PR? -->
