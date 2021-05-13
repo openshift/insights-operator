@@ -35,7 +35,11 @@ var (
 		Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigs",
 	}
 	machineHeatlhCheckGVR = schema.GroupVersionResource{
-		Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinehealthchecks"}
+		Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinehealthchecks",
+	}
+	machineAutoScalerGvr = schema.GroupVersionResource{
+		Group: "autoscaling.openshift.io", Version: "v1beta1", Resource: "machineautoscalers",
+	}
 )
 
 func init() { //nolint: gochecknoinits
