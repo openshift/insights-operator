@@ -32,8 +32,6 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	applycorev1 "k8s.io/client-go/applyconfigurations/core/v1"
-	applymetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -273,25 +271,29 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	}
 	defer anonymizer.ResetTranslationTable()
 
-	secret := &applycorev1.SecretApplyConfiguration{
-		TypeMetaApplyConfiguration: applymetav1.TypeMetaApplyConfiguration{
-			Kind:       &secretKind,
-			APIVersion: &secretAPIVersion,
+	err := anonymizer.secretsClient.Delete(context.TODO(), TranslationTableSecretName, metav1.DeleteOptions{})
+	if err != nil {
+		klog.V(4).Infof("Failed to delete translation table secret. err: %s", err)
+	}
+
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       secretKind,
+			APIVersion: secretAPIVersion,
 		},
-		ObjectMetaApplyConfiguration: &applymetav1.ObjectMetaApplyConfiguration{
-			Name: &TranslationTableSecretName,
+		ObjectMeta: metav1.ObjectMeta{
+			Name: TranslationTableSecretName,
 		},
 		StringData: anonymizer.translationTable,
 	}
 
-	applyOptions := metav1.ApplyOptions{
-		Force:        true,
+	createOptions := metav1.CreateOptions{
 		FieldManager: "insights-operator",
 	}
 
-	result, err := anonymizer.secretsClient.Apply(context.TODO(), secret, applyOptions)
+	result, err := anonymizer.secretsClient.Create(context.TODO(), &secret, createOptions)
 	if err != nil {
-		klog.Errorf("Failed to create/update the translation table secret. err: %s", err)
+		klog.Errorf("Failed to create the translation table secret. err: %s", err)
 		return nil
 	}
 	klog.V(3).Infof("Created/Updated %s secret in %s namespace", TranslationTableSecretName, secretNamespace)

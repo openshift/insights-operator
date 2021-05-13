@@ -1,7 +1,6 @@
 package anonymization
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"testing"
@@ -211,18 +210,17 @@ func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
 	// Mock the client to react/check Apply calls
 	kube := kubefake.Clientset{}
 	client := kube.CoreV1().Secrets(secretNamespace)
-	client.(*corefake.FakeSecrets).Fake.AddReactor("patch", "secrets",
+	client.(*corefake.FakeSecrets).Fake.AddReactor("create", "secrets",
 		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-			if patchAction, ok := action.(clienttesting.PatchAction); ok {
-				assert.Equal(t, secretNamespace, patchAction.GetNamespace())
-				assert.Contains(t, patchAction.GetPatchType(), "apply")
-				assert.Equal(t, secretAPIVersion, patchAction.GetResource().Version)
-				var secret corev1.Secret
-				err := json.Unmarshal(patchAction.GetPatch(), &secret)
-				if err != nil {
-					t.Errorf("Failed to unmarshal sent Secret, err: %s", err)
+			if createAction, ok := action.(clienttesting.CreateAction); ok {
+				assert.Equal(t, secretNamespace, createAction.GetNamespace())
+				assert.Equal(t, secretAPIVersion, createAction.GetResource().Version)
+				var secret *corev1.Secret
+				secret, ok = createAction.GetObject().(*corev1.Secret)
+				if !ok {
+					t.Errorf("Failed to convert sent Secret.")
 				}
-				return true, &secret, nil
+				return true, secret, nil
 			}
 			t.Errorf("Incorrect action, expected patch got %s", action)
 			return false, nil, nil
