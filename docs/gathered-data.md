@@ -304,6 +304,7 @@ gathers cluster Federated Monitoring metrics.
 
 The GET REST query to URL /federate
 Gathered metrics:
+  virt_platform
   etcd_object_counts
   cluster_installer
   vsphere_node_hw_version_total
