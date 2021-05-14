@@ -23,7 +23,7 @@ echo -e "\n${GREEN}Success!${NC}\n"
 
 echo -e "\nExecuting the linting...\n\n"
 
-STAGED_GO_FILES=$(git diff --cached --name-only | grep ".go$")
+STAGED_GO_FILES=$(git diff --cached --name-only | grep ".go$" | grep -v "^vendor/")
 
 if [[ "$STAGED_GO_FILES" = "" ]]; then
   exit 0
