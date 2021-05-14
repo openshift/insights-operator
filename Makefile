@@ -96,7 +96,7 @@ build-debug: ## Compiles the insights operator in debug mode
 
 .PHONY build-debug-container:
 build-debug-container: ## Compiles the insights operator and its container image for debug
-	$(CONTAINER_RUNTIME) build -t insights-operator -f ./Dockerfile.debug ../.
+	$(CONTAINER_RUNTIME) build -t insights-operator -f ./Dockerfile.debug .
 
 ## --------------------------------------
 ## Tools

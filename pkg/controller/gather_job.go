@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -69,12 +68,8 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
-		configClient, err := configv1client.NewForConfig(kubeConfig)
-		if err != nil {
-			return err
-		}
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-		anonymizer, err = anonymization.NewAnonymizerFromConfigClient(ctx, kubeClient, configClient)
+		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig)
 		if err != nil {
 			return err
 		}
