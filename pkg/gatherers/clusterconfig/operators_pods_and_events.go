@@ -188,12 +188,13 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 		return nil, err
 	}
 	// filter the event list to only recent events
-	oldestEventTime := time.Now().Add(-maxEventTimeInterval)
+	oldestEventTime := time.Now().Add(-maxEventTimeInterval * 2)
 	var filteredEventIndex []int
 	for i := range events.Items {
 		if events.Items[i].LastTimestamp.Time.Before(oldestEventTime) {
 			continue
 		}
+
 		filteredEventIndex = append(filteredEventIndex, i)
 	}
 	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
