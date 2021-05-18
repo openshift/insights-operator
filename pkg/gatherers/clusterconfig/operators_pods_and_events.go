@@ -209,6 +209,10 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 	sort.Slice(compactedEvents.Items, func(i, j int) bool {
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
+
+	if len(compactedEvents.Items) == 0 {
+		return nil, nil
+	}
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
 
