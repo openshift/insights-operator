@@ -522,6 +522,23 @@ collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
   * 4.8+
 
 
+## SAPMachineConfigs
+
+collects a subset of MachineConfigs related to SDI by applying a set of filtering rules.
+
+Gathered MachineConfigs at the time of implementation of the gatherer:
+* `75-worker-sap-data-intelligence`
+* `75-master-sap-data-intelligence`
+* `99-sdi-generated-containerruntime`
+
+Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
+
+* Location in archive: config/machineconfigs/<name>.json
+* Id in config: sap_machine_configs
+* Since versions:
+  * 4.9+
+
+
 ## SAPPods
 
 collects information about pods running in SAP/SDI namespaces.

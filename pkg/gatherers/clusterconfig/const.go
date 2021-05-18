@@ -29,6 +29,9 @@ var (
 	pnccGroupVersionResource = schema.GroupVersionResource{
 		Group: "controlplane.operator.openshift.io", Version: "v1alpha1", Resource: "podnetworkconnectivitychecks",
 	}
+	machineConfigGroupVersionResource = schema.GroupVersionResource{
+		Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigs",
+	}
 )
 
 func init() { //nolint: gochecknoinits

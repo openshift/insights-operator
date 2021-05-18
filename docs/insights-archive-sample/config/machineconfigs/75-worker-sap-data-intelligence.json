@@ -1,0 +1,63 @@
+{
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "creationTimestamp": "2021-01-21T09:39:02Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "sdi"
+    },
+    "managedFields": [
+      {
+        "apiVersion": "machineconfiguration.openshift.io/v1",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:labels": {
+              ".": {},
+              "f:machineconfiguration.openshift.io/role": {}
+            }
+          },
+          "f:spec": {
+            ".": {},
+            "f:config": {
+              ".": {},
+              "f:ignition": {
+                ".": {},
+                "f:version": {}
+              },
+              "f:storage": {
+                ".": {},
+                "f:files": {}
+              },
+              "f:systemd": {
+                ".": {},
+                "f:units": {}
+              }
+            }
+          }
+        },
+        "manager": "oc",
+        "operation": "Update",
+        "time": "2021-01-21T09:39:02Z"
+      }
+    ],
+    "name": "75-worker-sap-data-intelligence",
+    "resourceVersion": "488484",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/75-worker-sap-data-intelligence",
+    "uid": "ea83db83-39d3-4919-a1fd-d2b432db7117"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "2.2.0"
+      },
+      "storage": {
+        "files": []
+      },
+      "systemd": {
+        "units": []
+      }
+    }
+  }
+}
