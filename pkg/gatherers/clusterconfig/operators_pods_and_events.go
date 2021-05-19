@@ -193,12 +193,13 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 		return nil, err
 	}
 	// filter the event list to only recent events
-	oldestEventTime := time.Now().Add(-maxEventTimeInterval)
+	oldestEventTime := time.Now().Add(-maxEventTimeInterval * 2)
 	var filteredEventIndex []int
 	for i := range events.Items {
 		if events.Items[i].LastTimestamp.Time.Before(oldestEventTime) {
 			continue
 		}
+
 		filteredEventIndex = append(filteredEventIndex, i)
 	}
 	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
@@ -213,6 +214,10 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 	sort.Slice(compactedEvents.Items, func(i, j int) bool {
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
+
+	if len(compactedEvents.Items) == 0 {
+		return nil, nil
+	}
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
 
