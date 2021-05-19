@@ -5,7 +5,7 @@ metadata:
   annotations:
     config.openshift.io/inject-proxy: insights-operator
 spec:
-  backoffLimit: 3
+  backoffLimit: 6
   ttlSecondsAfterFinished: 600
   template:
     spec:
@@ -56,7 +56,7 @@ spec:
         - --config=/etc/insights-operator/server.yaml
       containers:
         - name: sleepy
-          image: busybox
+          image: quay.io/openshift/origin-base:latest
           args:
             - /bin/sh
             - -c
