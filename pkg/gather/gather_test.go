@@ -184,7 +184,7 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 		},
 	})
 
-	resultsChan, _ = startGatheringConcurrently(context.Background(), gatherer, []string{
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []string{
 		"mock_gatherer/name",
 		"mock_gatherer/3_records",
 	})
