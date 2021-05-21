@@ -74,6 +74,13 @@ rules:
   - namespaces
   verbs:
   - get
+# allow the operator to retrieve replicasets
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  verbs:
+  - get
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -179,7 +186,7 @@ rules:
   verbs:
     - get
     - list
-    - watch 
+    - watch
 - apiGroups:
     - operators.coreos.com
   resources:
