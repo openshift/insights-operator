@@ -26,6 +26,7 @@ import (
 	"github.com/openshift/library-go/pkg/image/imageutil"
 	"github.com/openshift/library-go/pkg/image/reference"
 
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -51,8 +52,8 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 	}
 
 	imageConfig := rest.CopyConfig(g.gatherProtoKubeConfig)
-	imageConfig.QPS = 10
-	imageConfig.Burst = 10
+	imageConfig.QPS = common.ImageConfigQPS
+	imageConfig.Burst = common.ImageConfigBurst
 
 	gatherOpenShiftClient, err := imageclient.NewForConfig(imageConfig)
 	if err != nil {

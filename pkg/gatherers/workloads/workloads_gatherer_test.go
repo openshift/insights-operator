@@ -1,6 +1,7 @@
 package workloads_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,8 @@ import (
 func Test_Gatherer_Basic(t *testing.T) {
 	gatherer := workloads.New(nil)
 	assert.Equal(t, "workloads", gatherer.GetName())
-	gatheringFunctions := gatherer.GetGatheringFunctions()
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
 	assert.Greater(t, len(gatheringFunctions), 0)
 
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)

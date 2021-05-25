@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -19,18 +20,19 @@ import (
 //
 // * Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := logContainersFilter{
-		namespace:     "openshift-apiserver-operator",
-		labelSelector: "app=openshift-apiserver-operator",
+
+	containersFilter := common.LogContainersFilter{
+		Namespace:     "openshift-apiserver-operator",
+		LabelSelector: "app=openshift-apiserver-operator",
 	}
-	messagesFilter := logMessagesFilter{
-		messagesToSearch: []string{
+	messagesFilter := common.LogMessagesFilter{
+		MessagesToSearch: []string{
 			"the server has received too many requests and has asked us",
 			"because serving request timed out and response had been started",
 		},
-		isRegexSearch: false,
-		sinceSeconds:  86400,     // last day
-		limitBytes:    1024 * 64, // maximum 64 kb of logs
+		IsRegexSearch: false,
+		SinceSeconds:  86400,     // last day
+		LimitBytes:    1024 * 64, // maximum 64 kb of logs
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -40,12 +42,12 @@ func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := gatherLogsFromContainers(
+	records, err := common.GatherLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
-		"errors",
+		nil,
 	)
 	if err != nil {
 		return nil, []error{err}

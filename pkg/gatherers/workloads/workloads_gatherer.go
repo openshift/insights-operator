@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 var workloadsGathererPeriod = time.Hour * 12
@@ -28,7 +29,7 @@ func (g *Gatherer) GetName() string {
 	return "workloads"
 }
 
-func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	return map[string]gatherers.GatheringClosure{
 		"workload_info": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
@@ -36,12 +37,11 @@ func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure
 			},
 			CanFail: true,
 		},
-	}
+	}, nil
 }
 
 func (g *Gatherer) ShouldBeProcessedNow() bool {
-	timeToProcess := g.lastProcessingTime.Add(workloadsGathererPeriod)
-	return time.Now().Equal(timeToProcess) || time.Now().After(timeToProcess)
+	return utils.ShouldBeProcessedNow(g.lastProcessingTime, workloadsGathererPeriod)
 }
 
 func (g *Gatherer) UpdateLastProcessingTime() {

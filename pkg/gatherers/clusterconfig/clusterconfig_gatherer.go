@@ -46,7 +46,7 @@ func failableFunc(function gathererFuncPtr) gatheringFunction {
 }
 
 var gatheringFunctions = map[string]gatheringFunction{
-	"pdbs":                              importantFunc((*Gatherer).GatherPodDisruptionBudgets),
+	"pdbs":                              failableFunc((*Gatherer).GatherPodDisruptionBudgets),
 	"metrics":                           failableFunc((*Gatherer).GatherMostRecentMetrics),
 	"operators":                         importantFunc((*Gatherer).GatherClusterOperators),
 	"operators_pods_and_events":         importantFunc((*Gatherer).GatherClusterOperatorPodsAndEvents),
@@ -103,7 +103,7 @@ func (g *Gatherer) GetName() string {
 	return "clusterconfig"
 }
 
-func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	result := make(map[string]gatherers.GatheringClosure)
 
 	for funcName, function := range gatheringFunctions {
@@ -117,5 +117,5 @@ func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure
 		}
 	}
 
-	return result
+	return result, nil
 }

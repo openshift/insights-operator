@@ -11,6 +11,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -71,25 +72,25 @@ func gatherSAPLicenseManagementLogs(
 	var errs []error
 
 	for _, item := range datahubs {
-		containersFilter := logContainersFilter{
-			namespace:                item.GetNamespace(),
-			containerNameRegexFilter: "^vsystem-iptables$",
+		containersFilter := common.LogContainersFilter{
+			Namespace:                item.GetNamespace(),
+			ContainerNameRegexFilter: "^vsystem-iptables$",
 		}
-		messagesFilter := logMessagesFilter{
-			messagesToSearch: []string{
+		messagesFilter := common.LogMessagesFilter{
+			MessagesToSearch: []string{
 				"can't initialize iptables table",
 			},
-			isRegexSearch: false,
-			sinceSeconds:  86400,
-			limitBytes:    1024 * 64,
+			IsRegexSearch: false,
+			SinceSeconds:  86400,
+			LimitBytes:    1024 * 64,
 		}
 
-		namespaceRecords, err := gatherLogsFromContainers(
+		namespaceRecords, err := common.GatherLogsFromContainers(
 			ctx,
 			coreClient,
 			containersFilter,
 			messagesFilter,
-			"errors",
+			nil,
 		)
 		if err != nil {
 			errs = append(errs, err)

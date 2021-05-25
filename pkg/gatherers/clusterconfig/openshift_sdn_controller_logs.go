@@ -6,6 +6,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -31,20 +32,20 @@ import (
 //   * 4.6.21+
 //   * 4.7+
 func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := logContainersFilter{
-		namespace:     "openshift-sdn",
-		labelSelector: "app=sdn-controller",
+	containersFilter := common.LogContainersFilter{
+		Namespace:     "openshift-sdn",
+		LabelSelector: "app=sdn-controller",
 	}
-	messagesFilter := logMessagesFilter{
-		messagesToSearch: []string{
+	messagesFilter := common.LogMessagesFilter{
+		MessagesToSearch: []string{
 			"Node.+is not Ready",
 			"Node.+may be offline\\.\\.\\. retrying",
 			"Node.+is offline",
 			"Node.+is back online",
 		},
-		isRegexSearch: true,
-		sinceSeconds:  86400,     // last day
-		limitBytes:    1024 * 64, // maximum 64 kb of logs
+		IsRegexSearch: true,
+		SinceSeconds:  86400,     // last day
+		LimitBytes:    1024 * 64, // maximum 64 kb of logs
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -54,12 +55,12 @@ func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]reco
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := gatherLogsFromContainers(
+	records, err := common.GatherLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
-		"errors",
+		nil,
 	)
 	if err != nil {
 		return nil, []error{err}

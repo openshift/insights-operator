@@ -13,7 +13,7 @@ type Interface interface {
 	GetName() string
 
 	// GetGatheringFunctions returns all the gathering function implemented by current gatherer
-	GetGatheringFunctions() map[string]GatheringClosure
+	GetGatheringFunctions(context.Context) (map[string]GatheringClosure, error)
 }
 
 // CustomPeriodGatherer gatherers implementing this interface may not get to each archive
