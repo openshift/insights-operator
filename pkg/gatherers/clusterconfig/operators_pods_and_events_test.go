@@ -5,6 +5,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
@@ -28,7 +29,7 @@ func Test_UnhealtyOperators_GatherClusterOperatorPodsAndEvents(t *testing.T) {
 		t.Fatal("unable to create fake clusteroperator", err)
 	}
 
-	_, err = gatherClusterOperatorPodsAndEvents(context.Background(), cfg.ConfigV1(), kubefake.NewSimpleClientset().CoreV1())
+	_, err = gatherClusterOperatorPodsAndEvents(context.Background(), cfg.ConfigV1(), kubefake.NewSimpleClientset().CoreV1(), 1*time.Minute)
 	if err != nil {
 		t.Errorf("unexpected errors: %#v", err)
 		return
@@ -155,7 +156,7 @@ func Test_UnhealtyOperators_UnhealthyClusterOperator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2 := unhealthyClusterOperator(tt.args.ctx, tt.args.items, tt.args.coreClient)
+			got, got1, got2 := unhealthyClusterOperator(tt.args.ctx, tt.args.items, tt.args.coreClient, 1*time.Minute)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("unhealthyClusterOperator() got = %v, want %v", got, tt.want)
 			}
@@ -231,7 +232,7 @@ func Test_UnhealtyOperators_GatherNamespaceEvents(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := gatherNamespaceEvents(tt.args.ctx, tt.args.coreClient, tt.args.namespace)
+			got, err := gatherNamespaceEvents(tt.args.ctx, tt.args.coreClient, tt.args.namespace, 1*time.Minute)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("gatherNamespaceEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
