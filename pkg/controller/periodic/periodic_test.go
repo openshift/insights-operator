@@ -32,6 +32,84 @@ func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 	mockRecorder.Reset()
 }
 
+func Test_Controller_Run(t *testing.T) {
+	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
+		&gather.MockGatherer{CanFail: true},
+	}, 1*time.Hour)
+
+	// No delay, 5 gatherers + metadata
+	stopCh := make(chan struct{})
+	go c.Run(stopCh, 0)
+	time.Sleep(100 * time.Millisecond)
+	stopCh <- struct{}{}
+	assert.Len(t, mockRecorder.Records, 6)
+	mockRecorder.Reset()
+
+	// 2 sec delay, 5 gatherers + metadata
+	stopCh = make(chan struct{})
+	go c.Run(stopCh, 2*time.Second)
+	time.Sleep(100 * time.Millisecond)
+	assert.Len(t, mockRecorder.Records, 0)
+	time.Sleep(2 * time.Second)
+	stopCh <- struct{}{}
+	assert.Len(t, mockRecorder.Records, 6)
+	mockRecorder.Reset()
+
+	// 2 hour delay, stop before delay ends
+	stopCh = make(chan struct{})
+	go c.Run(stopCh, 2*time.Hour)
+	time.Sleep(100 * time.Millisecond)
+	assert.Len(t, mockRecorder.Records, 0)
+	stopCh <- struct{}{}
+	assert.Len(t, mockRecorder.Records, 0)
+	mockRecorder.Reset()
+}
+
+func Test_Controller_periodicTrigger(t *testing.T) {
+	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
+		&gather.MockGatherer{CanFail: true},
+	}, 1*time.Hour)
+
+	// 1 sec interval, 5 gatherers + metadata
+	c.configurator.Config().Interval = 1 * time.Second
+	stopCh := make(chan struct{})
+	go c.periodicTrigger(stopCh)
+	time.Sleep(1100 * time.Millisecond)
+	assert.Len(t, mockRecorder.Records, 6)
+	// 2. interval
+	time.Sleep(1100 * time.Millisecond)
+	stopCh <- struct{}{}
+	assert.Len(t, mockRecorder.Records, 12)
+	mockRecorder.Reset()
+
+	// 2 hour interval, stop before delay ends
+	c.configurator.Config().Interval = 2 * time.Hour
+	stopCh = make(chan struct{})
+	go c.periodicTrigger(stopCh)
+	time.Sleep(100 * time.Millisecond)
+	assert.Len(t, mockRecorder.Records, 0)
+	stopCh <- struct{}{}
+	assert.Len(t, mockRecorder.Records, 0)
+	mockRecorder.Reset()
+}
+
+func Test_Controller_Sources(t *testing.T) {
+	mockGatherer := gather.MockGatherer{CanFail: true}
+	mockCustomPeriodGatherer := gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true}
+	// 1 Gatherer ==> 1 source
+	c, _ := getMocksForPeriodicTest([]gatherers.Interface{
+		&mockGatherer,
+	}, 1*time.Hour)
+	assert.Len(t, c.Sources(), 1)
+
+	// 2 Gatherer ==> 2 source
+	c, _ = getMocksForPeriodicTest([]gatherers.Interface{
+		&mockGatherer,
+		&mockCustomPeriodGatherer,
+	}, 1*time.Hour)
+	assert.Len(t, c.Sources(), 2)
+}
+
 func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	mockGatherer := gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true}
 	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
@@ -92,8 +170,6 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 	assert.Truef(t, metadataFound, fmt.Sprintf("%s not found in records", recorder.MetadataRecordName))
 	mockRecorder.Reset()
 }
-
-// TODO: cover more things
 
 func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder) {
 	mockConfigurator := config.MockConfigurator{Conf: &config.Controller{
