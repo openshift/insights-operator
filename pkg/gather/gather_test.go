@@ -42,6 +42,7 @@ func Test_GetListOfEnabledFunctionForGatherer(t *testing.T) {
 	assert.Empty(t, functions)
 
 	all, functions = getListOfEnabledFunctionForGatherer("", list)
+	assert.False(t, all)
 	assert.Empty(t, functions)
 
 	list = []string{
@@ -186,7 +187,7 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 		"mock_gatherer/name",
 		"mock_gatherer/3_records",
 	})
-
+	assert.NoError(t, err)
 	results = gatherResultsFromChannel(resultsChan)
 	assert.Len(t, results, 2)
 	for i := range results {
@@ -379,7 +380,7 @@ func assertMetadataOneGatherer(
 	var metadataBytes []byte
 
 	for _, rec := range records {
-		if strings.HasSuffix(rec.Name, "insights-operator/gathers") {
+		if strings.HasSuffix(rec.Name, recorder.MetadataRecordName) {
 			bytes, err := rec.Item.Marshal(context.Background())
 			assert.NoError(t, err)
 
@@ -403,7 +404,7 @@ func assertMetadataOneGatherer(
 func assertRecordsOneGatherer(t testing.TB, records []record.Record, expectedRecords []record.Record) {
 	var recordsWithoutMetadata []record.Record
 	for _, r := range records {
-		if !strings.HasSuffix(r.Name, "insights-operator/gathers") {
+		if !strings.HasSuffix(r.Name, recorder.MetadataRecordName) {
 			recordsWithoutMetadata = append(recordsWithoutMetadata, r)
 		}
 	}

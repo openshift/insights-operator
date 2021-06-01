@@ -128,7 +128,7 @@ func (c *Controller) Gather() {
 		}
 	}
 
-	var allFunctionReports []gather.GathererFunctionReport
+	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 
 	for _, gatherer := range gatherersToProcess {
 		_ = wait.ExponentialBackoff(backoff, func() (bool, error) {
@@ -140,7 +140,9 @@ func (c *Controller) Gather() {
 
 			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
 			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
-			allFunctionReports = append(allFunctionReports, functionReports...)
+			for i := range functionReports {
+				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+			}
 			if err == nil {
 				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
 				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
@@ -158,7 +160,7 @@ func (c *Controller) Gather() {
 		})
 	}
 
-	err := gather.RecordArchiveMetadata(allFunctionReports, c.recorder, c.anonymizer)
+	err := gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)
 	if err != nil {
 		klog.Errorf("unable to record archive metadata because of error: %v", err)
 	}
@@ -189,4 +191,12 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			c.Gather()
 		}
 	}
+}
+
+func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
+	a := make([]gather.GathererFunctionReport, 0, len(m))
+	for _, v := range m {
+		a = append(a, v)
+	}
+	return a
 }

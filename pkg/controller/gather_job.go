@@ -84,14 +84,24 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
 	)
 
-	var allFunctionReports []gather.GathererFunctionReport
+	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, configObserver)
 		if err != nil {
 			return err
 		}
-		allFunctionReports = append(allFunctionReports, functionReports...)
+		for i := range functionReports {
+			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+		}
 	}
 
-	return gather.RecordArchiveMetadata(allFunctionReports, rec, anonymizer)
+	return gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
+}
+
+func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
+	a := make([]gather.GathererFunctionReport, len(m))
+	for _, v := range m {
+		a = append(a, v)
+	}
+	return a
 }
