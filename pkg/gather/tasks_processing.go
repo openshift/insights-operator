@@ -29,31 +29,42 @@ type GatheringFunctionResult struct {
 // HandleTasksConcurrently processes tasks concurrently and returns iterator like channel with the results
 // current implementation runs N goroutines where N is the number of tasks
 func HandleTasksConcurrently(ctx context.Context, tasks []Task) chan GatheringFunctionResult {
-	// TODO: consider using tasks pool with limited number of tasks run at the same time
-	// so that memory usage doesn't grow linearly with the number of added gatherers
-
 	resultsChan := make(chan GatheringFunctionResult)
 
 	// run all the tasks in the background and close the channel when they are finished
 	go func() {
 		var wg sync.WaitGroup
+		workerNum := 5 // TODO: Get this from config
+		tasksChan := make(chan Task)
 
-		for _, task := range tasks {
+		// create workers
+		for i := 0; i < workerNum; i++ {
 			wg.Add(1)
-			go handleTask(ctx, task, &wg, resultsChan)
+			go worker(ctx, &wg, tasksChan, resultsChan)
 		}
 
-		wg.Wait()
+		// supply workers with tasks
+		for _, task := range tasks {
+			tasksChan <- task
+		}
+		close(tasksChan)
 
+		// wait for finish
+		wg.Wait()
 		close(resultsChan)
 	}()
 
 	return resultsChan
 }
 
-func handleTask(ctx context.Context, task Task, wg *sync.WaitGroup, resultsChan chan GatheringFunctionResult) {
+func worker(ctx context.Context, wg *sync.WaitGroup, tasksChan <-chan Task, resultsChan chan<- GatheringFunctionResult) {
 	defer wg.Done()
+	for task := range tasksChan {
+		handleTask(ctx, task, resultsChan)
+	}
+}
 
+func handleTask(ctx context.Context, task Task, resultsChan chan<- GatheringFunctionResult) {
 	startTime := time.Now()
 	var panicked interface{}
 	var records []record.Record
