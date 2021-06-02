@@ -15,7 +15,8 @@ func IsHealthyPod(pod *corev1.Pod, now time.Time) bool {
 		}
 	}
 	// pods that have containers that have terminated with non-zero exit codes are considered failure
-	for _, status := range pod.Status.InitContainerStatuses {
+	for idx := range pod.Status.InitContainerStatuses {
+		status := pod.Status.InitContainerStatuses[idx]
 		if status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0 {
 			return false
 		}
@@ -26,7 +27,8 @@ func IsHealthyPod(pod *corev1.Pod, now time.Time) bool {
 			return false
 		}
 	}
-	for _, status := range pod.Status.ContainerStatuses {
+	for idx := range pod.Status.ContainerStatuses {
+		status := pod.Status.ContainerStatuses[idx]
 		if status.LastTerminationState.Terminated != nil && status.LastTerminationState.Terminated.ExitCode != 0 {
 			return false
 		}

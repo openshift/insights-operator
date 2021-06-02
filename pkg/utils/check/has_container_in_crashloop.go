@@ -10,13 +10,13 @@ func IsContainerInCrashloop(status *corev1.ContainerStatus) bool {
 }
 
 func HasContainerInCrashloop(pod *corev1.Pod) bool {
-	for _, status := range pod.Status.InitContainerStatuses {
-		if IsContainerInCrashloop(&status) {
+	for idx := range pod.Status.InitContainerStatuses {
+		if IsContainerInCrashloop(&pod.Status.InitContainerStatuses[idx]) {
 			return true
 		}
 	}
-	for _, status := range pod.Status.ContainerStatuses {
-		if IsContainerInCrashloop(&status) {
+	for idx := range pod.Status.ContainerStatuses {
+		if IsContainerInCrashloop(&pod.Status.ContainerStatuses[idx]) {
 			return true
 		}
 	}
