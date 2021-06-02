@@ -36,9 +36,14 @@ func HandleTasksConcurrently(ctx context.Context, tasks []Task) chan GatheringFu
 	// run all the tasks in the background and close the channel when they are finished
 	go func() {
 		var wg sync.WaitGroup
-		workerNum := 4 * runtime.NumCPU()
-		klog.V(4).Infof("number of workers: %d", workerNum)
 		tasksChan := make(chan Task)
+
+		// set number of workers according to the CPU, 1 worker per task max
+		workerNum := 4 * runtime.NumCPU()
+		if len(tasks) < workerNum {
+			workerNum = len(tasks)
+		}
+		klog.V(4).Infof("number of workers: %d", workerNum)
 
 		// create workers
 		for i := 0; i < workerNum; i++ {
