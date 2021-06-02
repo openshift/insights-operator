@@ -2,11 +2,13 @@ package gather
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
+	"k8s.io/klog/v2"
 )
 
 // Task represents gathering task where name is the name of a function and F is the function itself
@@ -34,13 +36,14 @@ func HandleTasksConcurrently(ctx context.Context, tasks []Task) chan GatheringFu
 	// run all the tasks in the background and close the channel when they are finished
 	go func() {
 		var wg sync.WaitGroup
-		workerNum := 5 // TODO: Get this from config
+		workerNum := 4 * runtime.NumCPU()
+		klog.V(4).Infof("number of workers: %d", workerNum)
 		tasksChan := make(chan Task)
 
 		// create workers
 		for i := 0; i < workerNum; i++ {
 			wg.Add(1)
-			go worker(ctx, &wg, tasksChan, resultsChan)
+			go worker(ctx, i, &wg, tasksChan, resultsChan)
 		}
 
 		// supply workers with tasks
@@ -57,11 +60,14 @@ func HandleTasksConcurrently(ctx context.Context, tasks []Task) chan GatheringFu
 	return resultsChan
 }
 
-func worker(ctx context.Context, wg *sync.WaitGroup, tasksChan <-chan Task, resultsChan chan<- GatheringFunctionResult) {
+func worker(ctx context.Context, id int, wg *sync.WaitGroup, tasksChan <-chan Task, resultsChan chan<- GatheringFunctionResult) {
 	defer wg.Done()
+	klog.V(4).Infof("worker %d listening for tasks.", id)
 	for task := range tasksChan {
+		klog.V(4).Infof("worker %d working on %s task.", id, task.Name)
 		handleTask(ctx, task, resultsChan)
 	}
+	klog.V(4).Infof("worker %d stopped.", id)
 }
 
 func handleTask(ctx context.Context, task Task, resultsChan chan<- GatheringFunctionResult) {
