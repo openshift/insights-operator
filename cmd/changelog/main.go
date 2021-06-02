@@ -154,7 +154,7 @@ func readCHANGELOG() map[string]MarkdownReleaseBlock {
 	return releaseBlocks
 }
 
-func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock, changes []Change) map[string]MarkdownReleaseBlock {
+func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock, changes []*Change) map[string]MarkdownReleaseBlock {
 	for _, ch := range changes {
 		tmp := releaseBlocks[ch.release]
 		if ch.category == BUGFIX {
@@ -215,8 +215,8 @@ func createReleaseBlock(file *os.File, release, title string) {
 	}
 }
 
-func getChanges(pullRequestIds, pullRequestHashes []string) []Change {
-	var changes []Change
+func getChanges(pullRequestIds, pullRequestHashes []string) []*Change {
+	var changes []*Change
 	for i, id := range pullRequestIds {
 		change := getPullRequestFromGitHub(id)
 		change.hash = pullRequestHashes[i]
@@ -226,7 +226,7 @@ func getChanges(pullRequestIds, pullRequestHashes []string) []Change {
 	return changes
 }
 
-func getPullRequestFromGitHub(id string) Change {
+func getPullRequestFromGitHub(id string) *Change {
 	// There is a limit for the GitHub API, if you use auth then its 5000/hour
 	var bearer = "token " + gitHubToken
 
@@ -243,7 +243,8 @@ func getPullRequestFromGitHub(id string) Change {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf(err.Error())
+		defer log.Fatalf(err.Error())
+		return nil
 	}
 	var jsonMap map[string]json.RawMessage
 	_ = json.Unmarshal(body, &jsonMap)
@@ -269,10 +270,10 @@ func getPullRequestFromGitHub(id string) Change {
 			break
 		}
 	}
-	return ch
+	return &ch
 }
 
-func determineReleases(change Change) Change {
+func determineReleases(change *Change) *Change {
 	releases := releaseBranchesContain(change.hash)
 	earliestRelease := findEarliestRelease(releases)
 	change.release = strings.Trim(earliestRelease, " \n*")
