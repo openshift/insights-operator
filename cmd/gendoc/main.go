@@ -27,17 +27,15 @@ var (
 	reExample  = regexp.MustCompile(`^(Example)(.*)`)
 )
 
-func init() {
-	flag.StringVar(&inPath, "in", "gatherers", "Package where to find Gather methods")
-	flag.StringVar(&outPath, "out", "gathered-data.md", "File to which MD doc will be generated")
-}
-
 type DocBlock struct {
 	Doc      string
 	Examples map[string]string
 }
 
 func main() {
+	flag.StringVar(&inPath, "in", "gatherers", "Package where to find Gather methods")
+	flag.StringVar(&outPath, "out", "gathered-data.md", "File to which MD doc will be generated")
+
 	flag.Parse()
 	var err error
 	mdf, err = os.Create(outPath)
@@ -100,6 +98,7 @@ func main() {
 	fmt.Println("Done")
 }
 
+// nolint: gocyclo
 func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 	expPath := ""
 	fset := token.NewFileSet() // positions are relative to fset

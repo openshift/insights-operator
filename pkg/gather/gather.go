@@ -26,11 +26,7 @@ const (
 	AllGatherersConst = "ALL"
 )
 
-var programStartTime time.Time
-
-func init() {
-	programStartTime = time.Now()
-}
+var programStartTime = time.Now()
 
 // GathererFunctionReport contains the information about a specific gathering function
 type GathererFunctionReport struct {
