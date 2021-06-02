@@ -28,7 +28,7 @@ func main() {
 	command := NewOperatorCommand()
 	if err := command.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		defer os.Exit(1)
 	}
 }
 

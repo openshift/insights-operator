@@ -40,7 +40,7 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 		t.Fatal(errs)
 	}
 
-	t.Logf("Gathered in %s", time.Now().Sub(start).Round(time.Second).String())
+	t.Logf("Gathered in %s", time.Since(start).Round(time.Second).String())
 
 	if len(records) != 1 {
 		t.Fatalf("unexpected: %v", records)

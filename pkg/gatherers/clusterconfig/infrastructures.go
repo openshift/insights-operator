@@ -41,6 +41,6 @@ func gatherClusterInfrastructure(ctx context.Context, configClient configv1clien
 }
 
 func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastructure {
-	config.Status.InfrastructureName = anonymize.AnonymizeURL(config.Status.InfrastructureName)
+	config.Status.InfrastructureName = anonymize.URL(config.Status.InfrastructureName)
 	return config
 }

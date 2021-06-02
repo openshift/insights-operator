@@ -41,12 +41,12 @@ func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV
 }
 
 func anonymizeProxy(proxy *configv1.Proxy) *configv1.Proxy {
-	proxy.Spec.HTTPProxy = anonymize.AnonymizeURLCSV(proxy.Spec.HTTPProxy)
-	proxy.Spec.HTTPSProxy = anonymize.AnonymizeURLCSV(proxy.Spec.HTTPSProxy)
-	proxy.Spec.NoProxy = anonymize.AnonymizeURLCSV(proxy.Spec.NoProxy)
-	proxy.Spec.ReadinessEndpoints = anonymize.AnonymizeURLSlice(proxy.Spec.ReadinessEndpoints)
-	proxy.Status.HTTPProxy = anonymize.AnonymizeURLCSV(proxy.Status.HTTPProxy)
-	proxy.Status.HTTPSProxy = anonymize.AnonymizeURLCSV(proxy.Status.HTTPSProxy)
-	proxy.Status.NoProxy = anonymize.AnonymizeURLCSV(proxy.Status.NoProxy)
+	proxy.Spec.HTTPProxy = anonymize.URLCSV(proxy.Spec.HTTPProxy)
+	proxy.Spec.HTTPSProxy = anonymize.URLCSV(proxy.Spec.HTTPSProxy)
+	proxy.Spec.NoProxy = anonymize.URLCSV(proxy.Spec.NoProxy)
+	proxy.Spec.ReadinessEndpoints = anonymize.URLSlice(proxy.Spec.ReadinessEndpoints)
+	proxy.Status.HTTPProxy = anonymize.URLCSV(proxy.Status.HTTPProxy)
+	proxy.Status.HTTPSProxy = anonymize.URLCSV(proxy.Status.HTTPSProxy)
+	proxy.Status.NoProxy = anonymize.URLCSV(proxy.Status.NoProxy)
 	return proxy
 }

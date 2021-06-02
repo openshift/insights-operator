@@ -276,7 +276,12 @@ func getContainerLogs(ctx context.Context,
 
 		// check for stack tracer
 		if found := stackTraceRegex.MatchString(logString); found {
-			klog.V(2).Infof("Stack trace found in log for %s container %s pod in namespace %s (previous: %v).", c.Name, pod.Name, pod.Namespace, isPrevious)
+			klog.V(2).Infof(
+				"Stack trace found in log for %s container %s pod in namespace %s (previous: %v).",
+				c.Name,
+				pod.Name,
+				pod.Namespace,
+				isPrevious)
 			logString, err = getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logTailLinesLong)
 			if err != nil {
 				klog.V(2).Infof("Error: %q", err)
@@ -312,7 +317,7 @@ func getContainerLogString(
 	}
 
 	if buf.Len() == 0 {
-		return "", fmt.Errorf("Log buffer is empty")
+		return "", fmt.Errorf("log buffer is empty")
 	}
 
 	return buf.String(), nil
@@ -335,7 +340,6 @@ func fetchPodContainerLog(ctx context.Context,
 	containerName string,
 	isPrevious bool,
 	tailLines *int64) error {
-
 	var limitBytes *int64
 	bufCap := int64(buf.Cap())
 	limitBytes = &bufCap

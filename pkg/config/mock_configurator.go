@@ -8,6 +8,8 @@ type MockConfigurator struct {
 func (mc *MockConfigurator) Config() *Controller {
 	return mc.Conf
 }
+
+// nolint: gocritic
 func (mc *MockConfigurator) ConfigChanged() (<-chan struct{}, func()) {
 	return nil, nil
 }

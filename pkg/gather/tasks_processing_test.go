@@ -38,7 +38,7 @@ func Test_HandleTasksConcurrently(t *testing.T) {
 	}
 
 	results := handleTasksConcurrentlyGatherTasks(tasks)
-	for i, _ := range results {
+	for i := range results {
 		results[i].TimeElapsed = 0
 	}
 
@@ -157,7 +157,7 @@ func Test_HandleTasksConcurrently_CanFail_Panic(t *testing.T) {
 }
 
 // TODO: write a test testing that handleTasksConcurrently is actually concurrent.
-// We can employ some threads syncronization magic which would cause execution to timeout when run sequentially
+// We can employ some threads synchronization magic which would cause execution to timeout when run sequentially
 // and work just fine when run in parallel.
 // TODO: more tests?
 

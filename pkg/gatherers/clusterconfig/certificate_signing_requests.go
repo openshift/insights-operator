@@ -192,18 +192,18 @@ func anonymizeCSRRequest(r *certificatesv1api.CertificateSigningRequest, c *CSRA
 
 	c.Spec.Request.SignatureAlgorithm = csr.SignatureAlgorithm.String()
 	c.Spec.Request.PublicKeyAlgorithm = csr.PublicKeyAlgorithm.String()
-	c.Spec.Request.DNSNames = Map(csr.DNSNames, anonymize.AnonymizeURL)
-	c.Spec.Request.EmailAddresses = Map(csr.EmailAddresses, anonymize.AnonymizeURL)
+	c.Spec.Request.DNSNames = Map(csr.DNSNames, anonymize.URL)
+	c.Spec.Request.EmailAddresses = Map(csr.EmailAddresses, anonymize.URL)
 	ipsl := make([]string, len(csr.IPAddresses))
 	for i, ip := range csr.IPAddresses {
 		ipsl[i] = ip.String()
 	}
-	c.Spec.Request.IPAddresses = Map(ipsl, anonymize.AnonymizeURL)
+	c.Spec.Request.IPAddresses = Map(ipsl, anonymize.URL)
 	urlsl := make([]string, len(csr.URIs))
 	for i, u := range csr.URIs {
 		urlsl[i] = u.String()
 	}
-	c.Spec.Request.URIs = Map(urlsl, anonymize.AnonymizeURL)
+	c.Spec.Request.URIs = Map(urlsl, anonymize.URL)
 }
 
 func anonymizePkxName(s *pkix.Name) (a pkix.Name) {
@@ -226,9 +226,9 @@ func anonymizePkxName(s *pkix.Name) (a pkix.Name) {
 	for i := range src {
 		switch s := src[i].(type) {
 		case *string:
-			*(dst[i].(*string)) = anonymize.AnonymizeString(*s)
+			*(dst[i].(*string)) = anonymize.String(*s)
 		case *[]string:
-			*(dst[i].(*[]string)) = Map(*s, anonymize.AnonymizeString)
+			*(dst[i].(*[]string)) = Map(*s, anonymize.String)
 		default:
 			panic(fmt.Sprintf("unknown type %T", s))
 		}

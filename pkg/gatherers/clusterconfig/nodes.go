@@ -54,11 +54,11 @@ func anonymizeNode(node *corev1.Node) *corev1.Node {
 		if isProductNamespacedKey(k) {
 			continue
 		}
-		node.Labels[k] = anonymize.AnonymizeString(v)
+		node.Labels[k] = anonymize.String(v)
 	}
-	node.Status.NodeInfo.BootID = anonymize.AnonymizeString(node.Status.NodeInfo.BootID)
-	node.Status.NodeInfo.SystemUUID = anonymize.AnonymizeString(node.Status.NodeInfo.SystemUUID)
-	node.Status.NodeInfo.MachineID = anonymize.AnonymizeString(node.Status.NodeInfo.MachineID)
+	node.Status.NodeInfo.BootID = anonymize.String(node.Status.NodeInfo.BootID)
+	node.Status.NodeInfo.SystemUUID = anonymize.String(node.Status.NodeInfo.SystemUUID)
+	node.Status.NodeInfo.MachineID = anonymize.String(node.Status.NodeInfo.MachineID)
 	node.Status.Images = nil
 	return node
 }

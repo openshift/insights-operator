@@ -139,5 +139,12 @@ func Test_Record_ArchiveSizeExceeded(t *testing.T) {
 			Data: data,
 		},
 	})
-	assert.Equal(t, err, fmt.Errorf("Record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive", mock1Name, len([]byte(data)), maxArchiveSize))
+	assert.Equal(
+		t,
+		err,
+		fmt.Errorf(
+			"record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive",
+			mock1Name,
+			len([]byte(data)),
+			maxArchiveSize))
 }

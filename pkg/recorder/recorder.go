@@ -82,7 +82,7 @@ func (r *Recorder) Record(rec record.Record) error {
 	}
 	// we want to record our metadata file anyway
 	if r.size+recordSize > r.maxArchiveSize && rec.Name != MetadataRecordName {
-		return fmt.Errorf("Record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive",
+		return fmt.Errorf("record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive",
 			recordName, recordSize, r.maxArchiveSize)
 	}
 	r.records[recordName] = memoryRecord

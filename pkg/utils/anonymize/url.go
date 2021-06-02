@@ -5,20 +5,20 @@ import (
 	"strings"
 )
 
-func AnonymizeURLCSV(s string) string {
+func URLCSV(s string) string {
 	strs := strings.Split(s, ",")
-	outSlice := AnonymizeURLSlice(strs)
+	outSlice := URLSlice(strs)
 	return strings.Join(outSlice, ",")
 }
 
-func AnonymizeURLSlice(in []string) []string {
+func URLSlice(in []string) []string {
 	var outSlice []string
 	for _, str := range in {
-		outSlice = append(outSlice, AnonymizeURL(str))
+		outSlice = append(outSlice, URL(str))
 	}
 	return outSlice
 }
 
-var reURL = regexp.MustCompile(`[^\.\-/\:]`)
+var reURL = regexp.MustCompile(`[^.\-/:]`)
 
-func AnonymizeURL(s string) string { return reURL.ReplaceAllString(s, "x") }
+func URL(s string) string { return reURL.ReplaceAllString(s, "x") }
