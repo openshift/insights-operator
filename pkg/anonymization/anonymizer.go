@@ -263,8 +263,7 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 }
 
 // Stores the translation table in a Secret in the openshift-insights namespace.
-// The actual data is stored in the StringData protion of the Secret.
-// Uses the Apply mechanism so it creates the secret if not present or updates it when present.
+// The actual data is stored in the StringData portion of the Secret.
 func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	if len(anonymizer.translationTable) == 0 {
 		return nil
