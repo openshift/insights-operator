@@ -195,7 +195,7 @@ func findGoMod(pkgFilePath string) (goModPath, relPkgPath string, err error) {
 	dirPath := absPkgFilePath
 	for {
 		goModPath = filepath.Join(dirPath, "go.mod")
-		if _, err := os.Stat(goModPath); os.IsNotExist(err) {
+		if _, err = os.Stat(goModPath); os.IsNotExist(err) {
 			// This directory does not contain a go.mod file. Go to the parent directory.
 			parentDir := filepath.Dir(dirPath)
 			if parentDir == dirPath {
@@ -281,7 +281,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 	}
 
 	defer func() {
-		err := os.Remove(f)
+		err = os.Remove(f)
 		if err != nil {
 			fmt.Print(err)
 		}
