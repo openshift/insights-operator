@@ -235,6 +235,7 @@ gathers cluster Federated Monitoring metrics.
 
 The GET REST query to URL /federate
 Gathered metrics:
+  virt_platform
   etcd_object_counts
   cluster_installer
   namespace CPU and memory usage

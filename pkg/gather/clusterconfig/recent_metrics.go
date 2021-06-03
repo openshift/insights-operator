@@ -24,6 +24,7 @@ const (
 //
 // The GET REST query to URL /federate
 // Gathered metrics:
+//   virt_platform
 //   etcd_object_counts
 //   cluster_installer
 //   namespace CPU and memory usage
@@ -52,6 +53,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "cluster_installer").
 		Param("match[]", "namespace:container_cpu_usage_seconds_total:sum_rate").
 		Param("match[]", "namespace:container_memory_usage_bytes:sum").
+		Param("match[]", "virt_platform").
 		DoRaw(ctx)
 	if err != nil {
 		// write metrics errors to the file format as a comment
