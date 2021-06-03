@@ -37,7 +37,7 @@ type logMessagesFilter struct {
 //     - containerNameRegexFilter to filter containers in the pod (keep empty to not filter)
 //   - logMessagesFilter allows you to specify
 //     - messagesToSearch to filter the logs by substrings (case-insensitive)
-//       or regex (add `(?i)` in the beginning to make search case-insensitive)
+//       or regex (add `(?i)` in the beginning to make search case-insensitive). Leave nil to not filter.
 //     - regexSearch which makes messagesToSearch regex patterns, so you can accomplish more complicated search
 //     - sinceSeconds which sets the moment to fetch the logs from (current time - sinceSeconds)
 //     - limitBytes which sets the maximum amount of logs that can be fetched
@@ -85,6 +85,7 @@ func gatherLogsFromContainers(
 				Container:    container,
 				SinceSeconds: &messagesFilter.sinceSeconds,
 				LimitBytes:   &messagesFilter.limitBytes,
+				Timestamps:   true,
 			})
 
 			logs, err := filterLogs(ctx, request, messagesFilter.messagesToSearch, messagesFilter.isRegexSearch)
@@ -129,6 +130,10 @@ func filterLogs(
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		if messagesToSearch == nil {
+			result += line + "\n"
+		}
+
 		for _, messageToSearch := range messagesToSearch {
 			if regexSearch {
 				matches, err := regexp.MatchString(messageToSearch, line)

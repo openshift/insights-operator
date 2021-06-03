@@ -345,6 +345,7 @@ func fetchPodContainerLog(ctx context.Context,
 		Container:  containerName,
 		TailLines:  tailLines,
 		LimitBytes: limitBytes,
+		Timestamps: true,
 	})
 	readCloser, err := req.Stream(ctx)
 	if err != nil {
