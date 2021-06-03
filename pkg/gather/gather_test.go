@@ -97,6 +97,7 @@ func Test_sumErrors(t *testing.T) {
 	assert.EqualError(t, err, "error 1, error 2, error 3, error 5")
 }
 
+// nolint: funlen
 func Test_StartGatheringConcurrently(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
@@ -401,7 +402,7 @@ func assertMetadataOneGatherer(
 	assert.ElementsMatch(t, statusReports, archiveMetadata.StatusReports)
 }
 
-func assertRecordsOneGatherer(t testing.TB, records []record.Record, expectedRecords []record.Record) {
+func assertRecordsOneGatherer(t testing.TB, records, expectedRecords []record.Record) {
 	var recordsWithoutMetadata []record.Record
 	for _, r := range records {
 		if !strings.HasSuffix(r.Name, recorder.MetadataRecordName) {

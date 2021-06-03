@@ -65,7 +65,7 @@ func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	mockRecorder.Reset()
 }
 
-//Test_Controller_FailingGatherer tests that metadata file doesn't grow with failing gatherer functions
+// Test_Controller_FailingGatherer tests that metadata file doesn't grow with failing gatherer functions
 func Test_Controller_FailingGatherer(t *testing.T) {
 	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockFailingGatherer{},
@@ -77,16 +77,17 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 	assert.Len(t, mockRecorder.Records, 6)
 	for i := range mockRecorder.Records {
 		// find metadata record
-		if mockRecorder.Records[i].Name == recorder.MetadataRecordName {
-			metadataFound = true
-			b, err := mockRecorder.Records[i].Item.Marshal(context.Background())
-			assert.NoError(t, err)
-			metaData := make(map[string]interface{})
-			err = json.Unmarshal(b, &metaData)
-			assert.NoError(t, err)
-			assert.Len(t, metaData["status_reports"].([]interface{}), 1,
-				fmt.Sprintf("Only one fucntion for %s expected ", c.gatherers[0].GetName()))
+		if mockRecorder.Records[i].Name != recorder.MetadataRecordName {
+			continue
 		}
+		metadataFound = true
+		b, err := mockRecorder.Records[i].Item.Marshal(context.Background())
+		assert.NoError(t, err)
+		metaData := make(map[string]interface{})
+		err = json.Unmarshal(b, &metaData)
+		assert.NoError(t, err)
+		assert.Len(t, metaData["status_reports"].([]interface{}), 1,
+			fmt.Sprintf("Only one function for %s expected ", c.gatherers[0].GetName()))
 	}
 	assert.Truef(t, metadataFound, fmt.Sprintf("%s not found in records", recorder.MetadataRecordName))
 	mockRecorder.Reset()
@@ -94,7 +95,7 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 
 // TODO: cover more things
 
-func getMocksForPeriodicTest(gatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder) {
+func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder) {
 	mockConfigurator := config.MockConfigurator{Conf: &config.Controller{
 		Report:   true,
 		Interval: interval,
@@ -102,5 +103,5 @@ func getMocksForPeriodicTest(gatherers []gatherers.Interface, interval time.Dura
 	}}
 	mockRecorder := recorder.MockRecorder{}
 
-	return New(&mockConfigurator, &mockRecorder, gatherers, nil), &mockRecorder
+	return New(&mockConfigurator, &mockRecorder, listGatherers, nil), &mockRecorder
 }

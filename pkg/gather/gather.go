@@ -23,15 +23,10 @@ import (
 )
 
 const (
-	AllGatherersConst       = "ALL"
-	archiveMetadataFilename = "insights-operator/gathers"
+	AllGatherersConst = "ALL"
 )
 
-var programStartTime time.Time
-
-func init() {
-	programStartTime = time.Now()
-}
+var programStartTime = time.Now()
 
 // GathererFunctionReport contains the information about a specific gathering function
 type GathererFunctionReport struct {
@@ -201,7 +196,7 @@ func startGatheringConcurrently(
 // } where each item consists of a gatherer name and a function name split by a slash.
 // If there's a string "ALL", we enable everything and return the first parameter as true,
 // otherwise it will be false and the second parameter will contain function names
-func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList []string) (bool, []string) {
+func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList []string) (ok bool, list []string) {
 	if utils.StringInSlice(AllGatherersConst, allFunctionsList) {
 		return true, nil
 	}

@@ -15,6 +15,8 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
+const podnetworkconnectivitychecksPath = "config/podnetworkconnectivitychecks"
+
 func Test_PNCC(t *testing.T) {
 	var pnccYAML = `apiVersion: controlplane.operator.openshift.io/v1alpha1
 kind: PodNetworkConnectivityCheck
@@ -49,7 +51,7 @@ status:
 		t.Fatalf("unexpected number or records in the first run: %d", len(records))
 	}
 	rec := records[0]
-	if rec.Name != "config/podnetworkconnectivitychecks" {
+	if rec.Name != podnetworkconnectivitychecksPath {
 		t.Fatalf("unexpected name of record in the first run: %q", rec.Name)
 	}
 	recItem, ok := rec.Item.(record.JSONMarshaller)
@@ -61,7 +63,10 @@ status:
 	}
 
 	// Create the PNCC resource.
-	_, _ = pnccClient.Resource(pnccGroupVersionResource).Namespace("example-namespace").Create(context.Background(), testPNCC, metav1.CreateOptions{})
+	_, _ = pnccClient.
+		Resource(pnccGroupVersionResource).
+		Namespace("example-namespace").
+		Create(context.Background(), testPNCC, metav1.CreateOptions{})
 
 	// Check after creating the PNCC.
 	records, errs = gatherPNCC(context.Background(), pnccClient)
@@ -72,7 +77,7 @@ status:
 		t.Fatalf("unexpected number or records in the second run: %d", len(records))
 	}
 	rec = records[0]
-	if rec.Name != "config/podnetworkconnectivitychecks" {
+	if rec.Name != podnetworkconnectivitychecksPath {
 		t.Fatalf("unexpected name of record in the second run: %q", rec.Name)
 	}
 	recItem, ok = rec.Item.(record.JSONMarshaller)

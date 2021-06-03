@@ -60,7 +60,8 @@ func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface) ([]record.
 	}
 
 	unsuccessful := []controlplanev1.LogEntry{}
-	for _, pncc := range pnccListStruct.Items {
+	for idx := range pnccListStruct.Items {
+		pncc := pnccListStruct.Items[idx]
 		unsuccessful = append(unsuccessful, getUnsuccessfulChecks(pncc.Status.Failures)...)
 		for _, outage := range pncc.Status.Outages {
 			unsuccessful = append(unsuccessful, getUnsuccessfulChecks(outage.StartLogs)...)

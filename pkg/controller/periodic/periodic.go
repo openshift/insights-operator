@@ -34,12 +34,12 @@ type Controller struct {
 func New(
 	configurator configobserver.Configurator,
 	rec recorder.FlushInterface,
-	gatherers []gatherers.Interface,
+	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 ) *Controller {
 	statuses := make(map[string]*controllerstatus.Simple)
 
-	for _, gatherer := range gatherers {
+	for _, gatherer := range listGatherers {
 		gathererName := gatherer.GetName()
 		statuses[gathererName] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", gathererName)}
 	}
@@ -47,7 +47,7 @@ func New(
 	return &Controller{
 		configurator: configurator,
 		recorder:     rec,
-		gatherers:    gatherers,
+		gatherers:    listGatherers,
 		statuses:     statuses,
 		anonymizer:   anonymizer,
 	}

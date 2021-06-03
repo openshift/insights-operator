@@ -49,7 +49,6 @@ func gatherMachineHealthCheck(ctx context.Context, dynamicClient dynamic.Interfa
 			Name: recordName,
 			Item: record.JSONMarshaller{Object: i.Object},
 		})
-
 	}
 
 	return records, nil

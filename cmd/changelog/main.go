@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,7 +25,7 @@ const (
 
 var (
 	squashRegexp       = regexp.MustCompile(`(.*)-(\d+)`)
-	mergeRequestRegexp = regexp.MustCompile(`Merge-pull-request-([\d]+)`)
+	mergeRequestRegexp = regexp.MustCompile(`Merge-pull-request-(\d+)`)
 	prefixRegexp       = regexp.MustCompile(`^.+: (.+)`)
 	releaseRegexp      = regexp.MustCompile(`(release-\d\.\d)`)
 	latestHashRegexp   = regexp.MustCompile(`<!--Latest hash: (.+)-->`)
@@ -53,10 +54,10 @@ const gitHubRepoOwner = "openshift"
 const gitHubPath = "https://github.com/openshift/insights-operator"
 
 // API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
-const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" //owner, repo, pull-number
+const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" // owner, repo, pull-number
 
 type Change struct {
-	pullId      string
+	pullID      string
 	hash        string
 	title       string
 	description string
@@ -64,8 +65,8 @@ type Change struct {
 	release     string
 }
 
-func (c Change) toMarkdown() string {
-	return fmt.Sprintf("- [#%s](%s) %s\n", c.pullId, createPullRequestLink(c.pullId), c.title)
+func (c *Change) toMarkdown() string {
+	return fmt.Sprintf("- [#%s](%s) %s\n", c.pullID, createPullRequestLink(c.pullID), c.title)
 }
 
 func createPullRequestLink(id string) string {
@@ -75,7 +76,9 @@ func createPullRequestLink(id string) string {
 func main() {
 	log.SetFlags(0)
 	if len(os.Args) != 1 && len(os.Args) != 3 {
-		log.Fatalf("Either specify two date arguments, AFTER and UNTIL, to create a brand new CHANGELOG, or call it without arguments to update the current one with new changes.")
+		log.Fatalf(`Either specify two date arguments, AFTER and UNTIL, 
+		to create a brand new CHANGELOG, or call it without arguments to 
+		update the current one with new changes.`)
 	}
 	gitHubToken = os.Getenv("GITHUB_TOKEN")
 	if len(gitHubToken) == 0 {
@@ -151,7 +154,7 @@ func readCHANGELOG() map[string]MarkdownReleaseBlock {
 	return releaseBlocks
 }
 
-func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock, changes []Change) map[string]MarkdownReleaseBlock {
+func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock, changes []*Change) map[string]MarkdownReleaseBlock {
 	for _, ch := range changes {
 		tmp := releaseBlocks[ch.release]
 		if ch.category == BUGFIX {
@@ -177,7 +180,8 @@ func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock,
 func createCHANGELOG(releaseBlocks map[string]MarkdownReleaseBlock) {
 	file, _ := os.Create("CHANGELOG.md")
 	defer file.Close()
-	_, _ = file.WriteString("# Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes\n")
+	_, _ = file.WriteString(`# Note: This CHANGELOG is only for the changes in insights operator. 
+	Please see OpenShift release notes for official changes\n`)
 	_, _ = file.WriteString(fmt.Sprintf("<!--Latest hash: %s-->\n", latestHash))
 	var releases []string
 	for k := range releaseBlocks {
@@ -204,15 +208,15 @@ func createCHANGELOG(releaseBlocks map[string]MarkdownReleaseBlock) {
 	}
 }
 
-func createReleaseBlock(file *os.File, release string, title string) {
+func createReleaseBlock(file *os.File, release, title string) {
 	if len(release) > 0 {
 		_, _ = file.WriteString(fmt.Sprintf("### %s\n", title))
 		_, _ = file.WriteString(fmt.Sprintf("%s\n", release))
 	}
 }
 
-func getChanges(pullRequestIds []string, pullRequestHashes []string) []Change {
-	var changes []Change
+func getChanges(pullRequestIds, pullRequestHashes []string) []*Change {
+	var changes []*Change
 	for i, id := range pullRequestIds {
 		change := getPullRequestFromGitHub(id)
 		change.hash = pullRequestHashes[i]
@@ -222,11 +226,11 @@ func getChanges(pullRequestIds []string, pullRequestHashes []string) []Change {
 	return changes
 }
 
-func getPullRequestFromGitHub(id string) Change {
+func getPullRequestFromGitHub(id string) *Change {
 	// There is a limit for the GitHub API, if you use auth then its 5000/hour
 	var bearer = "token " + gitHubToken
 
-	req, err := http.NewRequest("GET", fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id), nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id), nil)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -236,15 +240,17 @@ func getPullRequestFromGitHub(id string) Change {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf(err.Error())
+		defer log.Fatalf(err.Error())
+		return nil
 	}
 	var jsonMap map[string]json.RawMessage
 	_ = json.Unmarshal(body, &jsonMap)
 
 	var ch Change
-	ch.pullId = id
+	ch.pullID = id
 	_ = json.Unmarshal(jsonMap["title"], &ch.title)
 	// Remove nosy prefix
 	if match := prefixRegexp.FindStringSubmatch(ch.title); len(match) > 0 {
@@ -264,10 +270,10 @@ func getPullRequestFromGitHub(id string) Change {
 			break
 		}
 	}
-	return ch
+	return &ch
 }
 
-func determineReleases(change Change) Change {
+func determineReleases(change *Change) *Change {
 	releases := releaseBranchesContain(change.hash)
 	earliestRelease := findEarliestRelease(releases)
 	change.release = strings.Trim(earliestRelease, " \n*")
@@ -307,8 +313,16 @@ func findEarliestRelease(releases []string) string {
 	return minStr
 }
 
-func timeFrameReverseGitLog(after string, until string) []string {
-	out, err := exec.Command("git", "log", "--topo-order", "--pretty=tformat:%f|%H", "--reverse", fmt.Sprintf("--after=%s", after), fmt.Sprintf("--until=%s", until)).CombinedOutput()
+func timeFrameReverseGitLog(after, until string) []string {
+	// nolint: gosec
+	out, err := exec.Command(
+		"git",
+		"log",
+		"--topo-order",
+		"--pretty=tformat:%f|%H",
+		"--reverse",
+		fmt.Sprintf("--after=%s", after),
+		fmt.Sprintf("--until=%s", until)).CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -316,14 +330,21 @@ func timeFrameReverseGitLog(after string, until string) []string {
 }
 
 func sinceHashReverseGitLog(hash string) []string {
-	out, err := exec.Command("git", "log", "--topo-order", "--pretty=tformat:%f|%H", "--reverse", fmt.Sprintf("%s..HEAD", hash)).CombinedOutput()
+	// nolint: gosec
+	out, err := exec.Command(
+		"git",
+		"log",
+		"--topo-order",
+		"--pretty=tformat:%f|%H",
+		"--reverse",
+		fmt.Sprintf("%s..HEAD", hash)).CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
 	return strings.Split(string(out), "\n")
 }
 
-func getPullRequestInfo(gitLog []string) ([]string, []string) {
+func getPullRequestInfo(gitLog []string) (ids, hashes []string) {
 	var pullRequestIds []string
 	var pullRequestHashes []string
 	for _, line := range gitLog {

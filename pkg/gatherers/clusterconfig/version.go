@@ -109,6 +109,6 @@ func getClusterVersion(ctx context.Context,
 }
 
 func anonymizeClusterVersion(version *configv1.ClusterVersion) *configv1.ClusterVersion {
-	version.Spec.Upstream = configv1.URL(anonymize.AnonymizeURL(string(version.Spec.Upstream)))
+	version.Spec.Upstream = configv1.URL(anonymize.URL(string(version.Spec.Upstream)))
 	return version
 }

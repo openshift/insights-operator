@@ -27,17 +27,15 @@ var (
 	reExample  = regexp.MustCompile(`^(Example)(.*)`)
 )
 
-func init() {
-	flag.StringVar(&inPath, "in", "gatherers", "Package where to find Gather methods")
-	flag.StringVar(&outPath, "out", "gathered-data.md", "File to which MD doc will be generated")
-}
-
 type DocBlock struct {
 	Doc      string
 	Examples map[string]string
 }
 
 func main() {
+	flag.StringVar(&inPath, "in", "gatherers", "Package where to find Gather methods")
+	flag.StringVar(&outPath, "out", "gathered-data.md", "File to which MD doc will be generated")
+
 	flag.Parse()
 	var err error
 	mdf, err = os.Create(outPath)
@@ -80,7 +78,7 @@ func main() {
 			for _, e := range md[k].Examples {
 				size = len(e)
 			}
-			size = size / len(md[k].Examples)
+			size /= len(md[k].Examples)
 			_, err := mdf.WriteString(fmt.Sprintf(
 				"Output raw size: %d\n\n"+
 					"### Examples\n\n", size))
@@ -100,6 +98,7 @@ func main() {
 	fmt.Println("Done")
 }
 
+// nolint: gocyclo
 func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 	expPath := ""
 	fset := token.NewFileSet() // positions are relative to fset
@@ -195,11 +194,11 @@ func findGoMod(pkgFilePath string) (goModPath, relPkgPath string, err error) {
 	dirPath := absPkgFilePath
 	for {
 		goModPath = filepath.Join(dirPath, "go.mod")
-		if _, err := os.Stat(goModPath); os.IsNotExist(err) {
+		if _, err = os.Stat(goModPath); os.IsNotExist(err) {
 			// This directory does not contain a go.mod file. Go to the parent directory.
 			parentDir := filepath.Dir(dirPath)
 			if parentDir == dirPath {
-				return "", "", fmt.Errorf("There is no go.mod file in the directory tree of %q", pkgFilePath)
+				return "", "", fmt.Errorf("there is no go.mod file in the directory tree of %q", pkgFilePath)
 			}
 			dirPath = parentDir
 			continue
@@ -224,19 +223,15 @@ func getModuleNameFromGoMod(goModPath string) (string, error) {
 		return "", err
 	}
 
-	re, err := regexp.Compile(`module (\S+)`)
-	if err != nil {
-		return "", err
-	}
-
+	re := regexp.MustCompile(`module (\S+)`)
 	matches := re.FindAllSubmatch(goModBytes, -1)
 	if len(matches) != 1 {
-		return "", fmt.Errorf("Invalid go.mod format; contains %d module names instead of 1", len(matches))
+		return "", fmt.Errorf("invalid go.mod format; contains %d module names instead of 1", len(matches))
 	}
 
 	firstMatch := matches[0]
 	if len(firstMatch) != 2 {
-		return "", fmt.Errorf("Unexpected number of groups captured by regular expression: %d (expected 2)", len(firstMatch))
+		return "", fmt.Errorf("unexpected number of groups captured by regular expression: %d (expected 2)", len(firstMatch))
 	}
 
 	return string(firstMatch[1]), nil
@@ -285,7 +280,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 	}
 
 	defer func() {
-		err := os.Remove(f)
+		err = os.Remove(f)
 		if err != nil {
 			fmt.Print(err)
 		}
@@ -304,6 +299,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 		fmt.Print(err)
 	}
 
+	// nolint: gosec
 	cmd := exec.Command("go", "run", "./"+f)
 	output, err := cmd.CombinedOutput()
 

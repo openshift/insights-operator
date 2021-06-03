@@ -121,10 +121,9 @@ linters:
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
-    # https://github.com/go-critic/go-critic/issues/926
     - linters:
-        - gocritic
-      text: "unnecessaryDefer:"
+        - lll      
+      source: "^// "
 
 run:
   skip-dirs:

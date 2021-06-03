@@ -118,30 +118,30 @@ func findPVByPVCName(ctx context.Context, coreClient corev1client.CoreV1Interfac
 }
 
 func anonymizeImageRegistry(config *registryv1.Config) *registryv1.Config {
-	config.Spec.HTTPSecret = anonymize.AnonymizeString(config.Spec.HTTPSecret)
+	config.Spec.HTTPSecret = anonymize.String(config.Spec.HTTPSecret)
 	if config.Spec.Storage.S3 != nil {
-		config.Spec.Storage.S3.Bucket = anonymize.AnonymizeString(config.Spec.Storage.S3.Bucket)
-		config.Spec.Storage.S3.KeyID = anonymize.AnonymizeString(config.Spec.Storage.S3.KeyID)
-		config.Spec.Storage.S3.RegionEndpoint = anonymize.AnonymizeString(config.Spec.Storage.S3.RegionEndpoint)
-		config.Spec.Storage.S3.Region = anonymize.AnonymizeString(config.Spec.Storage.S3.Region)
+		config.Spec.Storage.S3.Bucket = anonymize.String(config.Spec.Storage.S3.Bucket)
+		config.Spec.Storage.S3.KeyID = anonymize.String(config.Spec.Storage.S3.KeyID)
+		config.Spec.Storage.S3.RegionEndpoint = anonymize.String(config.Spec.Storage.S3.RegionEndpoint)
+		config.Spec.Storage.S3.Region = anonymize.String(config.Spec.Storage.S3.Region)
 	}
 	if config.Spec.Storage.Azure != nil {
-		config.Spec.Storage.Azure.AccountName = anonymize.AnonymizeString(config.Spec.Storage.Azure.AccountName)
-		config.Spec.Storage.Azure.Container = anonymize.AnonymizeString(config.Spec.Storage.Azure.Container)
+		config.Spec.Storage.Azure.AccountName = anonymize.String(config.Spec.Storage.Azure.AccountName)
+		config.Spec.Storage.Azure.Container = anonymize.String(config.Spec.Storage.Azure.Container)
 	}
 	if config.Spec.Storage.GCS != nil {
-		config.Spec.Storage.GCS.Bucket = anonymize.AnonymizeString(config.Spec.Storage.GCS.Bucket)
-		config.Spec.Storage.GCS.ProjectID = anonymize.AnonymizeString(config.Spec.Storage.GCS.ProjectID)
-		config.Spec.Storage.GCS.KeyID = anonymize.AnonymizeString(config.Spec.Storage.GCS.KeyID)
+		config.Spec.Storage.GCS.Bucket = anonymize.String(config.Spec.Storage.GCS.Bucket)
+		config.Spec.Storage.GCS.ProjectID = anonymize.String(config.Spec.Storage.GCS.ProjectID)
+		config.Spec.Storage.GCS.KeyID = anonymize.String(config.Spec.Storage.GCS.KeyID)
 	}
 	if config.Spec.Storage.Swift != nil {
-		config.Spec.Storage.Swift.AuthURL = anonymize.AnonymizeString(config.Spec.Storage.Swift.AuthURL)
-		config.Spec.Storage.Swift.Container = anonymize.AnonymizeString(config.Spec.Storage.Swift.Container)
-		config.Spec.Storage.Swift.Domain = anonymize.AnonymizeString(config.Spec.Storage.Swift.Domain)
-		config.Spec.Storage.Swift.DomainID = anonymize.AnonymizeString(config.Spec.Storage.Swift.DomainID)
-		config.Spec.Storage.Swift.Tenant = anonymize.AnonymizeString(config.Spec.Storage.Swift.Tenant)
-		config.Spec.Storage.Swift.TenantID = anonymize.AnonymizeString(config.Spec.Storage.Swift.TenantID)
-		config.Spec.Storage.Swift.RegionName = anonymize.AnonymizeString(config.Spec.Storage.Swift.RegionName)
+		config.Spec.Storage.Swift.AuthURL = anonymize.String(config.Spec.Storage.Swift.AuthURL)
+		config.Spec.Storage.Swift.Container = anonymize.String(config.Spec.Storage.Swift.Container)
+		config.Spec.Storage.Swift.Domain = anonymize.String(config.Spec.Storage.Swift.Domain)
+		config.Spec.Storage.Swift.DomainID = anonymize.String(config.Spec.Storage.Swift.DomainID)
+		config.Spec.Storage.Swift.Tenant = anonymize.String(config.Spec.Storage.Swift.Tenant)
+		config.Spec.Storage.Swift.TenantID = anonymize.String(config.Spec.Storage.Swift.TenantID)
+		config.Spec.Storage.Swift.RegionName = anonymize.String(config.Spec.Storage.Swift.RegionName)
 	}
 	return config
 }

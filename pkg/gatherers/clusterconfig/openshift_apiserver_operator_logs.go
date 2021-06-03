@@ -19,7 +19,6 @@ import (
 //
 // * Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
-
 	containersFilter := logContainersFilter{
 		namespace:     "openshift-apiserver-operator",
 		labelSelector: "app=openshift-apiserver-operator",
