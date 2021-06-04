@@ -132,6 +132,7 @@ func filterLogs(
 		line := scanner.Text()
 		if messagesToSearch == nil {
 			result += line + "\n"
+			continue
 		}
 
 		for _, messageToSearch := range messagesToSearch {
