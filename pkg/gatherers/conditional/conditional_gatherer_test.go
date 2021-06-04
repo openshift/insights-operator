@@ -27,7 +27,10 @@ func Test_Gatherer_Basic(t *testing.T) {
 	assert.Greater(t, len(gatheringFunctions), 0)
 
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
-	assert.Implements(t, (*gatherers.CustomPeriodGatherer)(nil), gatherer)
+
+	var g interface{} = gatherer
+	_, ok := g.(gatherers.CustomPeriodGatherer)
+	assert.False(t, ok, "should NOT implement gather.CustomPeriodGatherer")
 }
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {

@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/prometheus/common/expfmt"
 	"k8s.io/client-go/rest"
@@ -21,7 +20,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // gatheringFunctionBuilders lists all the gatherers which can be run on some condition. Gatherers can have parameters,
@@ -82,17 +80,13 @@ var gatheringRules = []gatheringRule{
 	},
 }
 
-const (
-	canConditionalGathererFail = false
-	conditionalGathererPeriod  = time.Hour * 6
-)
+const canConditionalGathererFail = false
 
 // Gatherer implements the conditional gatherer
 type Gatherer struct {
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
 	imageKubeConfig         *rest.Config
-	lastProcessingTime      time.Time
 	firingAlerts            map[string]bool // golang doesn't have sets :(
 }
 
@@ -160,16 +154,6 @@ func (g *Gatherer) GatherConditionalGathererRules(context.Context) ([]record.Rec
 	}, nil
 }
 
-// ShouldBeProcessedNow returns true when it's time to process this gatherer
-func (g *Gatherer) ShouldBeProcessedNow() bool {
-	return utils.ShouldBeProcessedNow(g.lastProcessingTime, conditionalGathererPeriod)
-}
-
-// UpdateLastProcessingTime updates the time when the gatherer was processed
-func (g *Gatherer) UpdateLastProcessingTime() {
-	g.lastProcessingTime = time.Now()
-}
-
 // areAllConditionsSatisfied returns true if all the conditions are satisfied, for example if the condition is
 // to check if a metric is firing, it will look at that metric and return the result according to that
 func (g *Gatherer) areAllConditionsSatisfied(conditions []conditionWithParams) (bool, error) {
@@ -218,6 +202,9 @@ func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClien
 
 	var parser expfmt.TextParser
 	metricFamilies, err := parser.TextToMetricFamilies(bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
 
 	if len(metricFamilies) > 1 {
 		// just log cuz everything would still work
