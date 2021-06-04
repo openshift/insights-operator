@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -110,7 +111,10 @@ func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient co
 
 // NewAnonymizerFromConfigClient creates a new instance of anonymizer with a provided openshift config client
 func NewAnonymizerFromConfigClient(
-	ctx context.Context, kubeClient kubernetes.Interface, configClient configv1client.ConfigV1Interface,
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	configClient configv1client.ConfigV1Interface,
+	networkClient networkv1client.NetworkV1Interface,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
@@ -141,6 +145,19 @@ func NewAnonymizerFromConfigClient(
 	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
 		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
 		networks = append(networks, networkRegex.FindAllString(installConfig, -1)...)
+	}
+
+	// egress subnets
+
+	hostSubnets, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hostSubnet := range hostSubnets.Items {
+		for _, egressCIDR := range hostSubnet.EgressCIDRs {
+			networks = append(networks, string(egressCIDR))
+		}
 	}
 
 	// we're sorting by subnet lengths, if they are the same, we use subnet itself
@@ -177,7 +194,12 @@ func NewAnonymizerFromConfig(
 		return nil, err
 	}
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, configClient)
+	networkClient, err := networkv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAnonymizerFromConfigClient(ctx, kubeClient, configClient, networkClient)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
