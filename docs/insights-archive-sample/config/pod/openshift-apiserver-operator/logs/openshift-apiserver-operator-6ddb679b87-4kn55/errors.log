@@ -1,2 +1,2 @@
-E0929 06:01:07.495783       1 errors.go:77] the server has received too many requests and has asked us to try again later (post subjectaccessreviews.authorization.k8s.io)
-E0929 06:01:08.387975       1 runtime.go:78] Observed a panic: &errors.errorString{s:"killing connection/stream because serving request timed out and response had been started"} (killing connection/stream because serving request timed out and response had been started)
+2021-06-01T06:01:07.495783 E0929 06:01:07.495783       1 errors.go:77] the server has received too many requests and has asked us to try again later (post subjectaccessreviews.authorization.k8s.io)
+2021-06-01T06:01:08.387975 E0929 06:01:08.387975       1 runtime.go:78] Observed a panic: &errors.errorString{s:"killing connection/stream because serving request timed out and response had been started"} (killing connection/stream because serving request timed out and response had been started)
