@@ -43,6 +43,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
+// norevive
 const (
 	Ipv4Regex                            = `((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
 	Ipv4NetworkRegex                     = Ipv4Regex + "/([0-9]{1,2})"
@@ -53,6 +54,7 @@ const (
 )
 
 var (
+	// TranslationTableSecretName defines the secret name to store the translation table
 	TranslationTableSecretName = "obfuscation-translation-table" //nolint: gosec
 	secretAPIVersion           = "v1"
 	secretKind                 = "Secret"
@@ -262,7 +264,7 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 	return "::"
 }
 
-// Stores the translation table in a Secret in the openshift-insights namespace.
+// StoreTranslationTable stores the translation table in a Secret in the openshift-insights namespace.
 // The actual data is stored in the StringData portion of the Secret.
 func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	if len(anonymizer.translationTable) == 0 {
@@ -299,7 +301,7 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	return result
 }
 
-// Resets the translation table, so that the translation table of multiple gathers wont mix toghater.
+// ResetTranslationTable resets the translation table, so that the translation table of multiple gathers wont mix toghater.
 func (anonymizer *Anonymizer) ResetTranslationTable() {
 	anonymizer.translationTable = make(map[string]string)
 }

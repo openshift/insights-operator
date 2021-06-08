@@ -2,7 +2,7 @@ package record
 
 import "time"
 
-// Represents records stored in memory
+// MemoryRecord Represents records stored in memory
 type MemoryRecord struct {
 	Name        string
 	Fingerprint string

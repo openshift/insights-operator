@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Represents a record that will be stored as a file.
+// Record represents a record that will be stored as a file.
 type Record struct {
 	Name     string
 	Captured time.Time

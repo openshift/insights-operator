@@ -22,7 +22,7 @@ import (
 
 const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 
-// Create the commad for running the Insights Operator.
+// NewOperator create the commad for running the Insights Operator.
 func NewOperator() *cobra.Command {
 	operator := &controller.Operator{
 		Controller: config.Controller{
@@ -46,7 +46,7 @@ func NewOperator() *cobra.Command {
 	return cmd
 }
 
-// Create the commad for running the a single gather.
+// NewGather create the commad for running the a single gather.
 func NewGather() *cobra.Command {
 	operator := &controller.GatherJob{
 		Controller: config.Controller{

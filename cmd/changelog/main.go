@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+// norevive
 const (
 	BUGFIX      = "Bugfix"
 	ENHANCEMENT = "Enhancement"

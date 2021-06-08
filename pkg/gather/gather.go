@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
+// norevive
 const (
 	AllGatherersConst = "ALL"
 )
@@ -62,8 +63,7 @@ func CreateAllGatherers(
 	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer}
 }
 
-// CollectAndRecord gathers enabled functions of the provided gatherer and records the results to the recorder
-// collectAndRecordGatherer gathers enabled functions of the provided gatherer, records the results to the recorder
+// CollectAndRecordGatherer gathers enabled functions of the provided gatherer and records the results to the recorder
 // and returns info about the recorded data. Panics are just logged and written
 // to the resulting array (to the archive metadata)
 func CollectAndRecordGatherer(

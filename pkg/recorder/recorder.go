@@ -17,7 +17,7 @@ import (
 // MaxArchiveSize defines maximum allowed tarball size
 const MaxArchiveSize = 8 * 1024 * 1024
 
-// Metadata record name
+// MetadataRecordName defines the metadata record name
 const MetadataRecordName = "insights-operator/gathers"
 
 type alreadyReported interface {
