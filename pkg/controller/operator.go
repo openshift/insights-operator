@@ -33,12 +33,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
-// Object responsible for controlling the start up of the Insights Operator
+// Operator is the type responsible for controlling the start up of the Insights Operator
 type Operator struct {
 	config.Controller
 }
 
-// Starts the Insights Operator:
+// Run starts the Insights Operator:
 // 1. Gets/Creates the necessary configs/clients
 // 2. Starts the configobserver and status reporter
 // 3. Initiates the recorder and starts the periodic record pruneing

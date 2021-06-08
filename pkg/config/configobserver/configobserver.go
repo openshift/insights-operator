@@ -27,7 +27,7 @@ type Configurator interface {
 	ConfigChanged() (<-chan struct{}, func())
 }
 
-// Responsible for periodically checking and (if necessary) updating the local configs/tokens
+// Controller is responsible for periodically checking and (if necessary) updating the local configs/tokens
 // according to the configs/tokens present on the cluster.
 type Controller struct {
 	kubeClient kubernetes.Interface
@@ -41,7 +41,7 @@ type Controller struct {
 	listeners     []chan struct{}
 }
 
-// Creates a new configobsever, the configs/tokens are updated from the configs/tokens present in the cluster if possible.
+// New creates a new configobsever, the configs/tokens are updated from the configs/tokens present in the cluster if possible.
 func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Controller { //nolint: gocritic
 	c := &Controller{
 		kubeClient:    kubeClient,
@@ -210,14 +210,14 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 	return nil
 }
 
-// Provides the config in a thread-safe way.
+// Config provides the config in a thread-safe way.
 func (c *Controller) Config() *config.Controller {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.config
 }
 
-// Subscribe for config changes
+// ConfigChanged subscribe for config changes
 // 1.Param: A channel where the listener is notified that the config has changed.
 // 2.Param: A func which can be used to unsubscribe from the config changes.
 func (c *Controller) ConfigChanged() (configCh <-chan struct{}, closeFn func()) {

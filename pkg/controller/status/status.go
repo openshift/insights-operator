@@ -28,7 +28,7 @@ import (
 // as UploadDegraded
 const uploadFailuresCountThreshold = 5
 
-// How many gatherings can fail in a row before we report Degraded
+// GatherFailuresCountThreshold defines how many gatherings can fail in a row before we report Degraded
 const GatherFailuresCountThreshold = 5
 
 type Reported struct {
@@ -39,7 +39,7 @@ type Configurator interface {
 	Config() *config.Controller
 }
 
-// Responsible for managing the status of the operator according to the status of the sources.
+// Controller is the type responsible for managing the status of the operator according to the status of the sources.
 // Sources come from different major parts of the codebase, for the purpose of communicating their status with the controller.
 type Controller struct {
 	name         string
@@ -55,7 +55,7 @@ type Controller struct {
 	start    time.Time
 }
 
-// Creates a status controller, responsible for monitoring the operators status and updating the it's cluster status accordingly.
+// NewController creates a status controller, responsible for monitoring the operators status and updating the it's cluster status accordingly.
 func NewController(client configv1client.ConfigV1Interface,
 	coreClient corev1client.CoreV1Interface,
 	configurator Configurator, namespace string) *Controller {
@@ -86,14 +86,14 @@ func (c *Controller) controllerStartTime() time.Time {
 	return c.start
 }
 
-// Provides the last reported time in a thread-safe way.
+// LastReportedTime provides the last reported time in a thread-safe way.
 func (c *Controller) LastReportedTime() time.Time {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.reported.LastReportTime.Time
 }
 
-// Sets the last reported time in a thread-safe way.
+// SetLastReportedTime sets the last reported time in a thread-safe way.
 func (c *Controller) SetLastReportedTime(at time.Time) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -104,7 +104,7 @@ func (c *Controller) SetLastReportedTime(at time.Time) {
 	c.triggerStatusUpdate()
 }
 
-// Adds sources in a thread-safe way.
+// AddSources adds sources in a thread-safe way.
 // A source is used to monitor parts of the operator.
 func (c *Controller) AddSources(sources ...controllerstatus.Interface) {
 	c.lock.Lock()
@@ -112,7 +112,7 @@ func (c *Controller) AddSources(sources ...controllerstatus.Interface) {
 	c.sources = append(c.sources, sources...)
 }
 
-// Provides the sources in a thread-safe way.
+// Sources provides the sources in a thread-safe way.
 // A source is used to monitor parts of the operator.
 func (c *Controller) Sources() []controllerstatus.Interface {
 	c.lock.Lock()
@@ -360,7 +360,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	return existing
 }
 
-// Starts the periodic checking of sources.
+// Start starts the periodic checking of sources.
 func (c *Controller) Start(ctx context.Context) error {
 	if err := c.updateStatus(ctx, true); err != nil {
 		return err
@@ -432,10 +432,10 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 	return err
 }
 
-// OperatorDisabled reports when the primary function of the operator has been disabled.
+// OperatorDisabled defines the condition type when the operator's primary funcion has been disabled
 const OperatorDisabled configv1.ClusterStatusConditionType = "Disabled"
 
-// Uploading reports true when the operator is successfully uploading
+// UploadDegraded defines the condition type when a report is successfully uploaded
 const UploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
 
 func isNotAuthorizedReason(reason string) bool {

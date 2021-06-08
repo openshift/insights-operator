@@ -22,7 +22,7 @@ const (
 	GatheringReport Operation = "GatheringReport"
 )
 
-// Represents the status summary of an Operation
+// Summary represents the status summary of an Operation
 type Summary struct {
 	Operation          Operation
 	Healthy            bool
@@ -32,7 +32,7 @@ type Summary struct {
 	Count              int
 }
 
-// Represents the status of a given part of the operator
+// Simple represents the status of a given part of the operator
 type Simple struct {
 	Name string
 
@@ -40,7 +40,7 @@ type Simple struct {
 	summary Summary
 }
 
-// Updates the status, keeps track how long a status have been in effect
+// UpdateStatus updates the status, keeps track how long a status have been in effect
 func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -68,7 +68,7 @@ func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 	}
 }
 
-// Retrives the status summary in a thread-safe way
+// CurrentStatus retrives the status summary in a thread-safe way
 func (s *Simple) CurrentStatus() (Summary, bool) {
 	s.lock.Lock()
 	defer s.lock.Unlock()

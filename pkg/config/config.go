@@ -67,7 +67,7 @@ type HTTPConfig struct {
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
 
-// Returns the important fields of the config in a string form
+// ToString returns the important fields of the config in a string form
 func (c *Controller) ToString() string {
 	return fmt.Sprintf("enabled=%t "+
 		"endpoint=%s "+
@@ -89,7 +89,7 @@ func (c *Controller) ToString() string {
 		c.ReportPullingTimeout)
 }
 
-// Creates/updates a config Controller according to the Serialized config.
+// ToController creates/updates a config Controller according to the Serialized config.
 // Makes sure that the config is correct.
 func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // nolint: gocyclo
 	if cfg == nil {
@@ -162,7 +162,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	return cfg, nil
 }
 
-// Creates/updates a config Controller according to the Serialized config.
+// ToDisconnectedController creates/updates a config Controller according to the Serialized config.
 // Makes sure that the config is correct, but only checks fields necessary for disconnected operation.
 func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, error) {
 	if cfg == nil {

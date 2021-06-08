@@ -87,7 +87,7 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	<-stopCh
 }
 
-// Runs the gatherers one after the other.
+// Gather Runs the gatherers one after the other.
 // Currently their is only 1 gatherer (clusterconfig) and no new gatherer is on the horizon.
 // Running the gatherers in parallel should be a future improvement when a new gatherer is introduced.
 func (c *Controller) Gather() {

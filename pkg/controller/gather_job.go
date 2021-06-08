@@ -20,12 +20,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
-// Object responsible for controlling a non-periodic Gather execution
+// GatherJob is the type responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
 	config.Controller
 }
 
-// Runs a single gather and stores the generated archive, without uploading it.
+// Gather runs a single gather and stores the generated archive, without uploading it.
 // 1. Creates the necessary configs/clients
 // 2. Creates the configobserver to get more configs
 // 3. Initiates the recorder

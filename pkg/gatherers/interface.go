@@ -16,7 +16,7 @@ type Interface interface {
 	GetGatheringFunctions() map[string]GatheringClosure
 }
 
-// CustomPeriodGatherer. Gatherers implementing this interface may not get to each archive
+// CustomPeriodGatherer gatherers implementing this interface may not get to each archive
 // and their period can be different from interval in the config(equal or higher, but never lower)
 type CustomPeriodGatherer interface {
 	Interface

@@ -92,7 +92,7 @@ func Test_ContainerImages_Gather(t *testing.T) { //nolint: funlen,gocyclo
 		return
 	}
 
-	var containerInfo *ContainerInfo = nil
+	var containerInfo *ContainerInfo
 	for _, rec := range records {
 		if rec.Name != "config/running_containers" {
 			continue
