@@ -92,6 +92,9 @@ func (r *Recorder) Record(rec record.Record) error {
 
 // Flush and save the reports using recorder driver
 func (r *Recorder) Flush() error {
+	if r.anonymizer != nil {
+		defer r.anonymizer.StoreTranslationTable()
+	}
 	records := r.copy()
 	if len(records) == 0 {
 		return nil

@@ -251,7 +251,7 @@ func Test_CollectAndRecord(t *testing.T) {
 		Gather:                  []string{AllGatherersConst},
 		EnableGlobalObfuscation: true,
 	}}
-	anonymizer, err := anonymization.NewAnonymizer("", nil)
+	anonymizer, err := anonymization.NewAnonymizer("", nil, nil)
 	assert.NoError(t, err)
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)

@@ -62,7 +62,7 @@ func newRecorder(maxArchiveSize int64) Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 
-	anonymizer, _ := anonymization.NewAnonymizer("", nil)
+	anonymizer, _ := anonymization.NewAnonymizer("", nil, nil)
 
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{

@@ -30,8 +30,10 @@ import (
 	"strings"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	k8snet "k8s.io/utils/net"
@@ -50,6 +52,13 @@ const (
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
 )
 
+var (
+	TranslationTableSecretName = "obfuscation-translation-table" //nolint: gosec
+	secretAPIVersion           = "v1"
+	secretKind                 = "Secret"
+	secretNamespace            = "openshift-insights"
+)
+
 type subnetInformation struct {
 	network net.IPNet
 	lastIP  net.IP
@@ -63,14 +72,15 @@ type Anonymizer struct {
 	networks          []subnetInformation
 	translationTable  map[string]string
 	ipNetworkRegex    *regexp.Regexp
+	secretsClient     corev1client.SecretInterface
 }
 
 type ConfigProvider interface {
 	Config() *config.Controller
 }
 
-// NewAnonymizer creates a new instance of anonymizer
-func NewAnonymizer(clusterBaseDomain string, networks []string) (*Anonymizer, error) {
+// NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
+func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient corev1client.SecretInterface) (*Anonymizer, error) {
 	networks = append(networks, "127.0.0.1/8")
 
 	cidrs, err := k8snet.ParseCIDRs(networks)
@@ -92,6 +102,7 @@ func NewAnonymizer(clusterBaseDomain string, networks []string) (*Anonymizer, er
 		networks:          networksInformation,
 		translationTable:  make(map[string]string),
 		ipNetworkRegex:    regexp.MustCompile(Ipv4AddressOrNetworkRegex),
+		secretsClient:     secretsClient,
 	}, nil
 }
 
@@ -123,6 +134,8 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 
+	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
+
 	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
 		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
 		networks = append(networks, networkRegex.FindAllString(installConfig, -1)...)
@@ -145,7 +158,7 @@ func NewAnonymizerFromConfigClient(
 		return network1[0] > network2[0]
 	})
 
-	return NewAnonymizer(baseDomain, networks)
+	return NewAnonymizer(baseDomain, networks, secretsClient)
 }
 
 // NewAnonymizerFromConfig creates a new instance of anonymizer with a provided kubeconfig
@@ -247,6 +260,48 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 	}
 	// ipv6
 	return "::"
+}
+
+// Stores the translation table in a Secret in the openshift-insights namespace.
+// The actual data is stored in the StringData portion of the Secret.
+func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
+	if len(anonymizer.translationTable) == 0 {
+		return nil
+	}
+	defer anonymizer.ResetTranslationTable()
+
+	err := anonymizer.secretsClient.Delete(context.TODO(), TranslationTableSecretName, metav1.DeleteOptions{})
+	if err != nil {
+		klog.V(4).Infof("Failed to delete translation table secret. err: %s", err)
+	}
+
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       secretKind,
+			APIVersion: secretAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: TranslationTableSecretName,
+		},
+		StringData: anonymizer.translationTable,
+	}
+
+	createOptions := metav1.CreateOptions{
+		FieldManager: "insights-operator",
+	}
+
+	result, err := anonymizer.secretsClient.Create(context.TODO(), &secret, createOptions)
+	if err != nil {
+		klog.Errorf("Failed to create the translation table secret. err: %s", err)
+		return nil
+	}
+	klog.V(3).Infof("Created/Updated %s secret in %s namespace", TranslationTableSecretName, secretNamespace)
+	return result
+}
+
+// Resets the translation table, so that the translation table of multiple gathers wont mix toghater.
+func (anonymizer *Anonymizer) ResetTranslationTable() {
+	anonymizer.translationTable = make(map[string]string)
 }
 
 // IsObfuscationEnabled returns true if obfuscation(hiding IP and domain names) is enabled and false otherwise
