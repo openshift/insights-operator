@@ -9,7 +9,6 @@ func (mc *MockConfigurator) Config() *Controller {
 	return mc.Conf
 }
 
-// nolint: gocritic
-func (mc *MockConfigurator) ConfigChanged() (<-chan struct{}, func()) {
+func (mc *MockConfigurator) ConfigChanged() (<-chan struct{}, func()) { //nolint: gocritic
 	return nil, func() {}
 }
