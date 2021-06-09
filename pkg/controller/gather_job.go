@@ -81,7 +81,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	defer rec.Flush()
 
 	gatherers := gather.CreateAllGatherers(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, d.Controller,
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, &d.Controller,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
