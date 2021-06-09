@@ -68,23 +68,23 @@ func (g *Gatherer) gatherImageStreamsOfNamespace(ctx context.Context, namespace 
 }
 
 func anonymizeImageStream(imageStream imagev1.ImageStream) imagev1.ImageStream {
-	imageStream.Spec.DockerImageRepository = anonymize.AnonymizeString(imageStream.Spec.DockerImageRepository)
+	imageStream.Spec.DockerImageRepository = anonymize.String(imageStream.Spec.DockerImageRepository)
 
 	specTags := imageStream.Spec.Tags
 	for i, _ := range specTags {
 		tag := &specTags[i]
-		tag.From.Name = anonymize.AnonymizeString(tag.From.Name)
+		tag.From.Name = anonymize.String(tag.From.Name)
 	}
 
-	imageStream.Status.DockerImageRepository = anonymize.AnonymizeString(imageStream.Status.DockerImageRepository)
-	imageStream.Status.PublicDockerImageRepository = anonymize.AnonymizeString(imageStream.Status.PublicDockerImageRepository)
+	imageStream.Status.DockerImageRepository = anonymize.String(imageStream.Status.DockerImageRepository)
+	imageStream.Status.PublicDockerImageRepository = anonymize.String(imageStream.Status.PublicDockerImageRepository)
 
 	statusTags := imageStream.Status.Tags
 	for tagIndex, _ := range statusTags {
 		tag := &statusTags[tagIndex]
 		for itemIndex, _ := range tag.Items {
 			item := &tag.Items[itemIndex]
-			item.DockerImageReference = anonymize.AnonymizeString(item.DockerImageReference)
+			item.DockerImageReference = anonymize.String(item.DockerImageReference)
 		}
 	}
 

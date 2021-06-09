@@ -113,7 +113,8 @@ func (g *Gatherer) GetName() string {
 func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
 	err := g.updateAlertsCache(ctx)
 	if err != nil {
-		return nil, err
+		klog.Errorf("conditional gatherer can't update alerts cache")
+		return nil, nil
 	}
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
