@@ -1,8 +1,6 @@
 package clusterconfig
 
 import (
-	"time"
-
 	registryv1 "github.com/openshift/api/imageregistry/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -10,10 +8,6 @@ import (
 )
 
 const (
-	// maxEventTimeInterval represents the "only keep events that are maximum 1h old"
-	// TODO: make this dynamic like the reporting window based on configured interval
-	maxEventTimeInterval = 1 * time.Hour
-
 	jsonExtension = "json"
 )
 

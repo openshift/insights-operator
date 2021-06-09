@@ -43,12 +43,13 @@ func (g *Gatherer) GatherClusterVersion(ctx context.Context) ([]record.Record, [
 		return nil, []error{err}
 	}
 
-	return getClusterVersion(ctx, gatherConfigClient, gatherKubeClient.CoreV1())
+	return getClusterVersion(ctx, gatherConfigClient, gatherKubeClient.CoreV1(), g.interval)
 }
 
 func getClusterVersion(ctx context.Context,
 	configClient configv1client.ConfigV1Interface,
-	coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	coreClient corev1client.CoreV1Interface,
+	interval time.Duration) ([]record.Record, []error) {
 	config, err := configClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -99,7 +100,7 @@ func getClusterVersion(ctx context.Context,
 	}
 	klog.V(2).Infof("Found %d unhealthy pods in %s", len(unhealthyPods), namespace)
 
-	namespaceRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace)
+	namespaceRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace, interval)
 	if err != nil {
 		klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, err)
 	}

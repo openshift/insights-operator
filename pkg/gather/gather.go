@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/clusterconfig"
@@ -53,10 +54,10 @@ type ArchiveMetadata struct {
 // CreateAllGatherers creates all the gatherers
 func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer,
+	anonymizer *anonymization.Anonymizer, controller *config.Controller,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer,
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, controller.Interval,
 	)
 	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
 

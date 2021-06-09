@@ -71,7 +71,7 @@ func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]re
 		return nil, []error{err}
 	}
 
-	records, err := gatherClusterOperatorPodsAndEvents(ctx, gatherConfigClient, gatherKubeClient.CoreV1())
+	records, err := gatherClusterOperatorPodsAndEvents(ctx, gatherConfigClient, gatherKubeClient.CoreV1(), g.interval)
 	if err != nil {
 		return records, []error{err}
 	}
@@ -81,7 +81,8 @@ func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]re
 
 func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 	configClient configv1client.ConfigV1Interface,
-	coreClient corev1client.CoreV1Interface) ([]record.Record, error) {
+	coreClient corev1client.CoreV1Interface,
+	interval time.Duration) ([]record.Record, error) {
 	config, err := configClient.ClusterOperators().List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -91,7 +92,7 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 	}
 
 	// gather pods from unhealthy operators
-	pods, records, totalContainers := unhealthyClusterOperator(ctx, config.Items, coreClient)
+	pods, records, totalContainers := unhealthyClusterOperator(ctx, config.Items, coreClient, interval)
 	// Exit early if no pods found
 	klog.V(2).Infof("Found %d pods with %d containers", len(pods), totalContainers)
 	if len(pods) == 0 || totalContainers <= 0 {
@@ -117,7 +118,8 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 // nolint: gocritic, gosec
 func unhealthyClusterOperator(ctx context.Context,
 	items []configv1.ClusterOperator,
-	coreClient corev1client.CoreV1Interface) ([]*corev1.Pod, []record.Record, int) {
+	coreClient corev1client.CoreV1Interface,
+	interval time.Duration) ([]*corev1.Pod, []record.Record, int) {
 	var records []record.Record
 
 	namespaceEventsCollected := sets.NewString()
@@ -145,7 +147,7 @@ func unhealthyClusterOperator(ctx context.Context,
 				continue
 			}
 
-			namespaceRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace)
+			namespaceRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace, interval)
 			if err != nil {
 				klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, err)
 				continue
@@ -183,7 +185,10 @@ func gatherUnhealthyPods(pods []corev1.Pod) ([]*corev1.Pod, []record.Record, int
 }
 
 // gatherNamespaceEvents gather all namespace events
-func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1Interface, namespace string) ([]record.Record, error) {
+func gatherNamespaceEvents(ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
+	namespace string,
+	interval time.Duration) ([]record.Record, error) {
 	// do not accidentally collect events for non-openshift namespace
 	if !strings.HasPrefix(namespace, "openshift-") {
 		return []record.Record{}, nil
@@ -193,14 +198,24 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 		return nil, err
 	}
 	// filter the event list to only recent events
-	oldestEventTime := time.Now().Add(-maxEventTimeInterval * 2)
+	oldestEventTime := time.Now().Add(-interval)
 	var filteredEventIndex []int
 	for i := range events.Items {
-		if events.Items[i].LastTimestamp.Time.Before(oldestEventTime) {
-			continue
+		// if LastTimestamp is zero then try to check the event series
+		if events.Items[i].LastTimestamp.IsZero() {
+			if events.Items[i].Series != nil {
+				if events.Items[i].Series.LastObservedTime.Time.After(oldestEventTime) {
+					filteredEventIndex = append(filteredEventIndex, i)
+				}
+			}
+		} else {
+			if events.Items[i].LastTimestamp.Time.After(oldestEventTime) {
+				filteredEventIndex = append(filteredEventIndex, i)
+			}
 		}
-
-		filteredEventIndex = append(filteredEventIndex, i)
+	}
+	if len(filteredEventIndex) == 0 {
+		return nil, nil
 	}
 	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
 	for i, index := range filteredEventIndex {
@@ -210,14 +225,14 @@ func gatherNamespaceEvents(ctx context.Context, coreClient corev1client.CoreV1In
 			Reason:        events.Items[index].Reason,
 			Message:       events.Items[index].Message,
 		}
+		if events.Items[index].LastTimestamp.Time.IsZero() {
+			compactedEvents.Items[i].LastTimestamp = events.Items[index].Series.LastObservedTime.Time
+		}
 	}
 	sort.Slice(compactedEvents.Items, func(i, j int) bool {
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
 
-	if len(compactedEvents.Items) == 0 {
-		return nil, nil
-	}
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
 

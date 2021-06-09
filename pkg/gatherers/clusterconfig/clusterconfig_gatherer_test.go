@@ -2,6 +2,7 @@ package clusterconfig_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
-	gatherer := clusterconfig.New(nil, nil, nil, nil)
+	gatherer := clusterconfig.New(nil, nil, nil, nil, 1*time.Minute)
 	assert.Equal(t, "clusterconfig", gatherer.GetName())
 	gatheringFunctions := gatherer.GetGatheringFunctions()
 	assert.Greater(t, len(gatheringFunctions), 0)

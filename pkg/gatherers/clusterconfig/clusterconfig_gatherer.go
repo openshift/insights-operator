@@ -2,6 +2,7 @@ package clusterconfig
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/client-go/rest"
 
@@ -16,6 +17,7 @@ type Gatherer struct {
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
 	anonymizer              *anonymization.Anonymizer
+	interval                time.Duration
 }
 
 // gathererFuncPtr is a type for pointers to functions of Gatherer
@@ -85,13 +87,14 @@ var gatheringFunctions = map[string]gatheringFunction{
 
 func New(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer,
+	anonymizer *anonymization.Anonymizer, interval time.Duration,
 ) *Gatherer {
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
 		anonymizer:              anonymizer,
+		interval:                interval,
 	}
 }
 
