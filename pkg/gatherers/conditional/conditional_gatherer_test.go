@@ -46,7 +46,7 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	gatherer := newEmptyGatherer()
 
 	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
-		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
+		"ALERTS{alertname=\"SamplesImagestreamImportFailing\",alertstate=\"firing\"} 1 1621618110163\n",
 	))
 	assert.NoError(t, err)
 
@@ -67,7 +67,7 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	assert.True(t, gatherer.isAlertFiring("SamplesImagestreamImportFailing"))
 
 	err = gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
-		`ALERTS{alertname="OtherAlert",alertstate="firing"} 1 1621618110163`,
+		"ALERTS{alertname=\"OtherAlert\",alertstate=\"firing\"} 1 1621618110163\n",
 	))
 	assert.NoError(t, err)
 

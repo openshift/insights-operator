@@ -185,7 +185,7 @@ func (*MockFailingGatherer) GetName() string {
 	return "mock_failing_gatherer"
 }
 
-func (g *MockFailingGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *MockFailingGatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	return map[string]gatherers.GatheringClosure{
 		"failing": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
@@ -193,7 +193,7 @@ func (g *MockFailingGatherer) GetGatheringFunctions() map[string]gatherers.Gathe
 			},
 			CanFail: false,
 		},
-	}
+	}, nil
 }
 
 func (g *MockFailingGatherer) FailingGatherer(context.Context) ([]record.Record, []error) {
