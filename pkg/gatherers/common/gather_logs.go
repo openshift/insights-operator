@@ -50,8 +50,7 @@ type LogMessagesFilter struct {
 //
 // Default location of the logs is `config/pod/{namespace}/logs/{podName}/errors.log`,
 //   you can override it with buildLogFileName
-//nolint: unparam
-func GatherLogsFromContainers(
+func GatherLogsFromContainers( //nolint:gocyclo
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
 	containersFilter LogContainersFilter,

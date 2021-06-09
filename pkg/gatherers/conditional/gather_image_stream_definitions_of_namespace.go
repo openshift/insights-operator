@@ -52,7 +52,7 @@ func (g *Gatherer) gatherImageStreamsOfNamespace(ctx context.Context, namespace 
 
 	var records []record.Record
 
-	for _, imageStream := range imageStreams.Items {
+	for _, imageStream := range imageStreams.Items { //nolint:gocritic
 		imageStream = anonymizeImageStream(imageStream)
 
 		records = append(records, record.Record{
@@ -67,11 +67,11 @@ func (g *Gatherer) gatherImageStreamsOfNamespace(ctx context.Context, namespace 
 	return records, nil
 }
 
-func anonymizeImageStream(imageStream imagev1.ImageStream) imagev1.ImageStream {
+func anonymizeImageStream(imageStream imagev1.ImageStream) imagev1.ImageStream { //nolint:gocritic
 	imageStream.Spec.DockerImageRepository = anonymize.String(imageStream.Spec.DockerImageRepository)
 
 	specTags := imageStream.Spec.Tags
-	for i, _ := range specTags {
+	for i := range specTags {
 		tag := &specTags[i]
 		tag.From.Name = anonymize.String(tag.From.Name)
 	}
@@ -80,9 +80,9 @@ func anonymizeImageStream(imageStream imagev1.ImageStream) imagev1.ImageStream {
 	imageStream.Status.PublicDockerImageRepository = anonymize.String(imageStream.Status.PublicDockerImageRepository)
 
 	statusTags := imageStream.Status.Tags
-	for tagIndex, _ := range statusTags {
+	for tagIndex := range statusTags {
 		tag := &statusTags[tagIndex]
-		for itemIndex, _ := range tag.Items {
+		for itemIndex := range tag.Items {
 			item := &tag.Items[itemIndex]
 			item.DockerImageReference = anonymize.String(item.DockerImageReference)
 		}
