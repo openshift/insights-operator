@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
-	v1 "github.com/openshift/api/config/v1"
 	networkv1 "github.com/openshift/api/network/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -288,9 +287,9 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 	ctx := context.TODO()
 
 	// create fake resources
-	_, err = configClient.DNSes().Create(ctx, &v1.DNS{
+	_, err = configClient.DNSes().Create(ctx, &configv1.DNS{
 		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
-		Spec:       v1.DNSSpec{BaseDomain: testClusterBaseDomain},
+		Spec:       configv1.DNSSpec{BaseDomain: testClusterBaseDomain},
 	}, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
@@ -299,17 +298,20 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 		Spec: configv1.NetworkSpec{
 			ClusterNetwork: []configv1.ClusterNetworkEntry{{CIDR: cidr1}},
 			ServiceNetwork: []string{cidr2},
-			ExternalIP:     &v1.ExternalIPConfig{Policy: &v1.ExternalIPPolicy{}},
+			ExternalIP:     &configv1.ExternalIPConfig{Policy: &configv1.ExternalIPPolicy{}},
 		},
 	}, metav1.CreateOptions{})
+	assert.NoError(t, err)
 
 	_, err = coreClient.ConfigMaps("kube-system").Create(ctx, &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{Name: "cluster-config-v1"},
 	}, metav1.CreateOptions{})
+	assert.NoError(t, err)
 
 	_, err = networkClient.HostSubnets().Create(ctx, &networkv1.HostSubnet{
 		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{networkv1.HostSubnetEgressCIDR(egressCIDR)},
 	}, metav1.CreateOptions{})
+	assert.NoError(t, err)
 
 	// test that everything was initialized correctly
 
