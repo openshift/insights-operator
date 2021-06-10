@@ -83,6 +83,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"sap_datahubs":                      failableFunc((*Gatherer).GatherSAPDatahubs),
 	"olm_operators":                     failableFunc((*Gatherer).GatherOLMOperators),
 	"pod_network_connectivity_checks":   failableFunc((*Gatherer).GatherPNCC),
+	"machine_autoscalers":               failableFunc((*Gatherer).GatherMachineAutoscalers),
 }
 
 func New(
