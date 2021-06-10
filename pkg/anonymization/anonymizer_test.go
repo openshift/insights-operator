@@ -1,14 +1,20 @@
 package anonymization
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
+	configv1 "github.com/openshift/api/config/v1"
+	v1 "github.com/openshift/api/config/v1"
+	networkv1 "github.com/openshift/api/network/v1"
+	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
+	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	clienttesting "k8s.io/client-go/testing"
@@ -239,5 +245,93 @@ func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
 	secret := anonymizer.StoreTranslationTable()
 	for i := 0; i < 10; i++ {
 		assert.Equal(t, secret.StringData[fmt.Sprintf("192.168.0.%v", 255-i)], fmt.Sprintf("192.168.0.%v", i+1))
+	}
+}
+
+func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
+	const testClusterBaseDomain = "example.com"
+	localhostCIDR := "127.0.0.0/8"
+	_, localhostNet, err := net.ParseCIDR(localhostCIDR)
+	assert.NoError(t, err)
+	cidr1 := "55.44.0.0/16"
+	_, net1, err := net.ParseCIDR(cidr1)
+	assert.NoError(t, err)
+	cidr2 := "192.168.0.0/16"
+	_, net2, err := net.ParseCIDR(cidr2)
+	assert.NoError(t, err)
+	egressCIDR := "10.0.0.0/8"
+	_, egressNet, err := net.ParseCIDR(egressCIDR)
+	assert.NoError(t, err)
+	testNetworks := []subnetInformation{
+		{
+			network: *egressNet,
+			lastIP:  net.IPv4(10, 0, 0, 0),
+		},
+		{
+			network: *net1,
+			lastIP:  net.IPv4(55, 44, 0, 0),
+		},
+		{
+			network: *net2,
+			lastIP:  net.IPv4(192, 168, 0, 0),
+		},
+		{
+			network: *localhostNet,
+			lastIP:  net.IPv4(127, 0, 0, 0),
+		},
+	}
+
+	kubeClient := kubefake.NewSimpleClientset()
+	coreClient := kubeClient.CoreV1()
+	networkClient := networkfake.NewSimpleClientset().NetworkV1()
+	configClient := configfake.NewSimpleClientset().ConfigV1()
+	ctx := context.TODO()
+
+	// create fake resources
+	_, err = configClient.DNSes().Create(ctx, &v1.DNS{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+		Spec:       v1.DNSSpec{BaseDomain: testClusterBaseDomain},
+	}, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	_, err = configClient.Networks().Create(context.TODO(), &configv1.Network{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+		Spec: configv1.NetworkSpec{
+			ClusterNetwork: []configv1.ClusterNetworkEntry{{CIDR: cidr1}},
+			ServiceNetwork: []string{cidr2},
+			ExternalIP:     &v1.ExternalIPConfig{Policy: &v1.ExternalIPPolicy{}},
+		},
+	}, metav1.CreateOptions{})
+
+	_, err = coreClient.ConfigMaps("kube-system").Create(ctx, &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster-config-v1"},
+	}, metav1.CreateOptions{})
+
+	_, err = networkClient.HostSubnets().Create(ctx, &networkv1.HostSubnet{
+		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{networkv1.HostSubnetEgressCIDR(egressCIDR)},
+	}, metav1.CreateOptions{})
+
+	// test that everything was initialized correctly
+
+	anonymizer, err := NewAnonymizerFromConfigClient(
+		context.TODO(),
+		kubeClient,
+		configClient,
+		networkClient,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, anonymizer)
+
+	assert.Equal(t, testClusterBaseDomain, anonymizer.clusterBaseDomain)
+	assert.Empty(t, anonymizer.translationTable)
+	assert.NotNil(t, anonymizer.ipNetworkRegex)
+	assert.NotNil(t, anonymizer.secretsClient)
+
+	assert.Equal(t, len(testNetworks), len(anonymizer.networks))
+	// the networks are already sorted in anonymizer
+	for i, subnetInfo := range anonymizer.networks {
+		expectedSubnetInfo := testNetworks[i]
+		assert.Equal(t, expectedSubnetInfo.network.Network(), subnetInfo.network.Network())
+		assert.Equal(t, expectedSubnetInfo.lastIP.String(), subnetInfo.lastIP.String())
 	}
 }

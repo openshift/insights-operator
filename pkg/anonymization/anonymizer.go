@@ -84,7 +84,7 @@ type ConfigProvider interface {
 
 // NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
 func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient corev1client.SecretInterface) (*Anonymizer, error) {
-	networks = append(networks, "127.0.0.1/8")
+	networks = append(networks, "127.0.0.0/8")
 
 	cidrs, err := k8snet.ParseCIDRs(networks)
 	if err != nil {
@@ -140,8 +140,6 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 
-	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-
 	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
 		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
 		networks = append(networks, networkRegex.FindAllString(installConfig, -1)...)
@@ -176,6 +174,8 @@ func NewAnonymizerFromConfigClient(
 
 		return network1[0] > network2[0]
 	})
+
+	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
 
 	return NewAnonymizer(baseDomain, networks, secretsClient)
 }
