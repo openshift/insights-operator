@@ -152,7 +152,8 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 
-	for _, hostSubnet := range hostSubnets.Items {
+	for i := range hostSubnets.Items {
+		hostSubnet := &hostSubnets.Items[i]
 		for _, egressCIDR := range hostSubnet.EgressCIDRs {
 			networks = append(networks, string(egressCIDR))
 		}
