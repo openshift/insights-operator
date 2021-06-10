@@ -32,7 +32,7 @@ func Test_SAPMachineConfigs(t *testing.T) {
 		machineConfigGroupVersionResource: "MachineConfigsList",
 	})
 
-	records, errs := gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs := gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -49,7 +49,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML1)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -66,7 +66,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML2)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -86,7 +86,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML3)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -105,7 +105,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML4)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}

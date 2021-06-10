@@ -67,6 +67,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"crds":                              importantFunc((*Gatherer).GatherCRD),
 	"host_subnets":                      importantFunc((*Gatherer).GatherHostSubnet),
 	"machine_sets":                      importantFunc((*Gatherer).GatherMachineSet),
+	"machine_configs":                   failableFunc((*Gatherer).GatherMachineConfigs),
 	"machine_healthchecks":              importantFunc((*Gatherer).GatherMachineHealthCheck),
 	"install_plans":                     importantFunc((*Gatherer).GatherInstallPlans),
 	"service_accounts":                  importantFunc((*Gatherer).GatherServiceAccounts),
