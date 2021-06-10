@@ -2,11 +2,13 @@ package gather
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
+	"k8s.io/klog/v2"
 )
 
 // Task represents gathering task where name is the name of a function and F is the function itself
@@ -29,31 +31,51 @@ type GatheringFunctionResult struct {
 // HandleTasksConcurrently processes tasks concurrently and returns iterator like channel with the results
 // current implementation runs N goroutines where N is the number of tasks
 func HandleTasksConcurrently(ctx context.Context, tasks []Task) chan GatheringFunctionResult {
-	// TODO: consider using tasks pool with limited number of tasks run at the same time
-	// so that memory usage doesn't grow linearly with the number of added gatherers
-
 	resultsChan := make(chan GatheringFunctionResult)
 
 	// run all the tasks in the background and close the channel when they are finished
 	go func() {
 		var wg sync.WaitGroup
+		tasksChan := make(chan Task)
 
-		for _, task := range tasks {
+		// set number of workers according to the CPU, 1 worker per task max
+		workerNum := 4 * runtime.NumCPU()
+		if len(tasks) < workerNum {
+			workerNum = len(tasks)
+		}
+		klog.V(4).Infof("number of workers: %d", workerNum)
+
+		// create workers
+		for i := 0; i < workerNum; i++ {
 			wg.Add(1)
-			go handleTask(ctx, task, &wg, resultsChan)
+			go worker(ctx, i, &wg, tasksChan, resultsChan)
 		}
 
-		wg.Wait()
+		// supply workers with tasks
+		for _, task := range tasks {
+			tasksChan <- task
+		}
+		close(tasksChan)
 
+		// wait for finish
+		wg.Wait()
 		close(resultsChan)
 	}()
 
 	return resultsChan
 }
 
-func handleTask(ctx context.Context, task Task, wg *sync.WaitGroup, resultsChan chan GatheringFunctionResult) {
+func worker(ctx context.Context, id int, wg *sync.WaitGroup, tasksChan <-chan Task, resultsChan chan<- GatheringFunctionResult) {
 	defer wg.Done()
+	klog.V(4).Infof("worker %d listening for tasks.", id)
+	for task := range tasksChan {
+		klog.V(4).Infof("worker %d working on %s task.", id, task.Name)
+		handleTask(ctx, task, resultsChan)
+	}
+	klog.V(4).Infof("worker %d stopped.", id)
+}
 
+func handleTask(ctx context.Context, task Task, resultsChan chan<- GatheringFunctionResult) {
 	startTime := time.Now()
 	var panicked interface{}
 	var records []record.Record
