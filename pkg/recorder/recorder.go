@@ -169,14 +169,6 @@ func (r *Recorder) copy() record.MemoryRecords {
 func (r *Recorder) clear(records record.MemoryRecords) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	size := int64(0)
-	for _, record := range records {
-		existing, ok := r.records[record.Name]
-		if !ok || existing.Data == nil || existing.At != record.At || existing.Fingerprint != record.Fingerprint {
-			continue
-		}
-		size += int64(len(existing.Data))
-		existing.Data = nil
-	}
-	r.size -= size
+	r.records = make(map[string]*record.MemoryRecord, len(records))
+	r.size = 0
 }
