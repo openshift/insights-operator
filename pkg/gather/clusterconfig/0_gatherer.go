@@ -37,6 +37,7 @@ func (g *Gatherer) Gather(ctx context.Context, recorder record.Interface) error 
 		GatherPodDisruptionBudgets(g),
 		GatherMostRecentMetrics(g),
 		GatherClusterOperators(g),
+		GatherClusterOperatorPodsAndEvents(g),
 		GatherContainerImages(g),
 		GatherNodes(g),
 		GatherConfigMaps(g),

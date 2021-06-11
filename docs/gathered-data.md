@@ -117,10 +117,25 @@ Location in archive: config/oauth/
 See: docs/insights-archive-sample/config/oauth
 
 
+## ClusterOperatorPodsAndEvents
+
+collects all the ClusterOperators degraded Pods
+for degraded cluster operators or that lives at the Cluster Operator's namespace, to collect:
+
+- Pod definitions
+- Previous and current Pod Container logs (when available)
+- Namespace Events
+
+* Location of pods in archive: config/pod/
+* Location of events in archive: events/
+* Id in config: operators_pods_and_events
+
+
 ## ClusterOperators
 
 collects all ClusterOperators and their resource.
 It finds unhealthy Pods for unhealthy operators
+GatherClusterOperators collects all the ClusterOperators definitions and their resources.
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
