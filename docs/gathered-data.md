@@ -195,6 +195,11 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * Id in config: version
 
 
+## ConditionalGathererRules
+
+stores the gathering rules in insights-operator/conditional-gatherer-rules.json
+
+
 ## ConfigMaps
 
 fetches the ConfigMaps from namespace openshift-config
@@ -264,6 +269,20 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
   * 4.6+
 
 
+## ImageStreamsOfNamespace
+
+creates a gathering closure which collects image streams from the provided namespace
+Params:
+  - namespace string - namespace from which to collect image streams
+
+API reference:
+  https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
+
+* Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
+* Since versions:
+  * 4.8+
+
+
 ## InstallPlans
 
 collects Top x InstallPlans from all openshift namespaces.
@@ -292,6 +311,24 @@ Response see:
 
 * Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
 * Id in config: machine_autoscalers
+* Since versions:
+  * 4.8+
+
+
+## LogsOfNamespace
+
+creates a gathering closure which collects logs from pods in the provided namespace
+Params:
+  - namespace string - namespace from which to collect image streams
+  - label_selector string - a label selector to filter some pods (default to all pods)
+  - tail_lines int64 - a number of log lines to keep for each container
+
+The Kubernetes API:
+         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see:
+         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+* Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
 * Since versions:
   * 4.8+
 

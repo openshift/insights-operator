@@ -192,6 +192,8 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context) error {
 }
 
 func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClient rest.Interface) error {
+	const logPrefix = "conditional gatherer: "
+
 	g.firingAlerts = make(map[string]bool)
 
 	data, err := metricsClient.Get().AbsPath("federate").
@@ -209,24 +211,24 @@ func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClien
 
 	if len(metricFamilies) > 1 {
 		// just log cuz everything would still work
-		klog.Warning("unexpected output from prometheus metrics parser")
+		klog.Warning(logPrefix + "unexpected output from prometheus metrics parser")
 	}
 
 	metricFamily, found := metricFamilies["ALERTS"]
 	if !found {
-		klog.Info("no alerts are firing")
+		klog.Info(logPrefix + "no alerts are firing")
 		return nil
 	}
 
 	for _, metric := range metricFamily.GetMetric() {
 		if metric == nil {
-			klog.Info("metric is nil")
+			klog.Info(logPrefix + "metric is nil")
 			continue
 		}
 
 		for _, label := range metric.GetLabel() {
 			if label == nil {
-				klog.Info("label is nil")
+				klog.Info(logPrefix + "label is nil")
 				continue
 			}
 

@@ -45,7 +45,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 		t.Fatal(err)
 	}
 
-	records, err := GatherLogsFromContainers(
+	records, err := CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		LogContainersFilter{

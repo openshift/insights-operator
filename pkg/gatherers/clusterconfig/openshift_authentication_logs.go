@@ -41,7 +41,7 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := common.GatherLogsFromContainers(
+	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,

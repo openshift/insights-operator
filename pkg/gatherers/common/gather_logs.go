@@ -33,7 +33,7 @@ type LogMessagesFilter struct {
 	TailLines        int64
 }
 
-// GatherLogsFromContainers collects logs from containers
+// CollectLogsFromContainers collects logs from containers
 //   - containerFilter allows you to specify
 //     - namespace in which to search for pods
 //     - labelSelector to filter pods by their labels (keep empty to not filter)
@@ -50,7 +50,7 @@ type LogMessagesFilter struct {
 //
 // Default location of the logs is `config/pod/{namespace}/logs/{podName}/errors.log`,
 //   you can override it with buildLogFileName
-func GatherLogsFromContainers( //nolint:gocyclo
+func CollectLogsFromContainers( //nolint:gocyclo
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
 	containersFilter LogContainersFilter,

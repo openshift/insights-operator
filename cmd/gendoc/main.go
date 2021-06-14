@@ -23,7 +23,7 @@ var (
 	outPath    string
 	mdf        *os.File
 	randSource = rand.NewSource(time.Now().UnixNano())
-	reGather   = regexp.MustCompile(`^(Gather)(.*)`)
+	reGather   = regexp.MustCompile(`^((Build)?Gather)(.*)`)
 	reExample  = regexp.MustCompile(`^(Example)(.*)`)
 )
 
@@ -137,9 +137,10 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 				// handle function declarations
 				fn, ok := n.(*ast.FuncDecl)
 				if ok {
-					gatherMethodWithSuff := reGather.ReplaceAllString(fn.Name.Name, "$2")
+					gatherMethodWithSuff := reGather.ReplaceAllString(fn.Name.Name, "$3")
 					_, ok2 := md[gatherMethodWithSuff]
-					if !ok2 && fn.Name.IsExported() && strings.HasPrefix(fn.Name.Name, "Gather") && len(fn.Name.Name) > len("Gather") {
+					startsWithGatherOrBuildGather := strings.HasPrefix(fn.Name.Name, "Gather") || strings.HasPrefix(fn.Name.Name, "BuildGather")
+					if !ok2 && fn.Name.IsExported() && startsWithGatherOrBuildGather && len(fn.Name.Name) > len("Gather") {
 						doc := fn.Doc.Text()
 						md[gatherMethodWithSuff] = parseDoc(fn.Name.Name, doc)
 						fmt.Printf(fn.Name.Name + "\n")

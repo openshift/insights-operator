@@ -21,6 +21,8 @@ import (
 //   https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
 //
 // * Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
+// * Since versions:
+//   * 4.9+
 func (g *Gatherer) BuildGatherImageStreamsOfNamespace(gatherParams GatheringFunctionParams) (gatherers.GatheringClosure, error) {
 	namespace, err := getStringFromMap(gatherParams, "namespace")
 	if err != nil {

@@ -23,6 +23,8 @@ import (
 //          https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
+// * Since versions:
+//   * 4.9+
 func (g *Gatherer) BuildGatherLogsOfNamespace(gatherParams GatheringFunctionParams) (gatherers.GatheringClosure, error) {
 	namespace, err := getStringFromMap(gatherParams, "namespace")
 	if err != nil {
@@ -63,7 +65,7 @@ func (g *Gatherer) gatherLogsOfNamespace(
 
 	fileName := fmt.Sprintf("last-%v-lines.log", tailLines)
 
-	records, err := common.GatherLogsFromContainers(
+	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		common.LogContainersFilter{

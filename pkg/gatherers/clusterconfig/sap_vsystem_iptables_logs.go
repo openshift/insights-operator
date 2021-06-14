@@ -85,7 +85,7 @@ func gatherSAPLicenseManagementLogs(
 			LimitBytes:    1024 * 64,
 		}
 
-		namespaceRecords, err := common.GatherLogsFromContainers(
+		namespaceRecords, err := common.CollectLogsFromContainers(
 			ctx,
 			coreClient,
 			containersFilter,

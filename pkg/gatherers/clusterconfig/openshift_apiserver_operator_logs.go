@@ -41,7 +41,7 @@ func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := common.GatherLogsFromContainers(
+	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,
