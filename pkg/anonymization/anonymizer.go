@@ -9,7 +9,7 @@
 //     `cluster-api.openshift.example.com` will become `cluster-api.<CLUSTER_BASE_DOMAIN>`
 //   - IPv4 addresses. Using a config client, it retrieves cluster networks and uses them to anonymize IP addresses
 //     preserving subnet information. For example, if you have the following networks in your cluster:
-//     "10.128.0.0/14", "172.30.0.0/16", "127.0.0.1/8"(added by default) the anonymization will handle the IPs like this:
+//     "10.128.0.0/14", "172.30.0.0/16", "127.0.0.0/8"(added by default) the anonymization will handle the IPs like this:
 //       - 10.128.0.0 -> 10.128.0.0  // subnetwork itself won't be anonymized
 //       - 10.128.0.55 -> 10.128.0.1
 //       - 10.128.0.56 -> 10.128.0.2
