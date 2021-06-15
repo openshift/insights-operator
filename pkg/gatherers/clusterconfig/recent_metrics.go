@@ -36,6 +36,14 @@ const (
 // * Location in archive: config/metrics/
 // * See: docs/insights-archive-sample/config/metrics
 // * Id in config: metrics
+// * Since version:
+//   - "etcd_object_counts": 4.3+
+//   - "cluster_installer": 4.3+
+//   - "ALERTS": 4.3+
+//   - "namespace:container_cpu_usage_seconds_total:sum_rate": 4.4+
+//   - "namespace:container_memory_usage_bytes:sum": 4.4+
+//   - "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
+//   - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
 func (g *Gatherer) GatherMostRecentMetrics(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {

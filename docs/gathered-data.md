@@ -360,6 +360,14 @@ Gathered metrics:
 * Location in archive: config/metrics/
 * See: docs/insights-archive-sample/config/metrics
 * Id in config: metrics
+* Since version:
+  - "etcd_object_counts": 4.3+
+  - "cluster_installer": 4.3+
+  - "ALERTS": 4.3+
+  - "namespace:container_cpu_usage_seconds_total:sum_rate": 4.4+
+  - "namespace:container_memory_usage_bytes:sum": 4.4+
+  - "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
+  - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
 
 
 ## NetNamespace
@@ -549,6 +557,7 @@ Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_
 * Id in config: sap_machine_configs
 * Since versions:
   * 4.8+
+
 
 ## SAPPods
 
