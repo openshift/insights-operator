@@ -9,7 +9,7 @@
 //     `cluster-api.openshift.example.com` will become `cluster-api.<CLUSTER_BASE_DOMAIN>`
 //   - IPv4 addresses. Using a config client, it retrieves cluster networks and uses them to anonymize IP addresses
 //     preserving subnet information. For example, if you have the following networks in your cluster:
-//     "10.128.0.0/14", "172.30.0.0/16", "127.0.0.1/8"(added by default) the anonymization will handle the IPs like this:
+//     "10.128.0.0/14", "172.30.0.0/16", "127.0.0.0/8"(added by default) the anonymization will handle the IPs like this:
 //       - 10.128.0.0 -> 10.128.0.0  // subnetwork itself won't be anonymized
 //       - 10.128.0.55 -> 10.128.0.1
 //       - 10.128.0.56 -> 10.128.0.2
@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -83,7 +84,7 @@ type ConfigProvider interface {
 
 // NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
 func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient corev1client.SecretInterface) (*Anonymizer, error) {
-	networks = append(networks, "127.0.0.1/8")
+	networks = append(networks, "127.0.0.0/8")
 
 	cidrs, err := k8snet.ParseCIDRs(networks)
 	if err != nil {
@@ -110,7 +111,10 @@ func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient co
 
 // NewAnonymizerFromConfigClient creates a new instance of anonymizer with a provided openshift config client
 func NewAnonymizerFromConfigClient(
-	ctx context.Context, kubeClient kubernetes.Interface, configClient configv1client.ConfigV1Interface,
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	configClient configv1client.ConfigV1Interface,
+	networkClient networkv1client.NetworkV1Interface,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
@@ -136,11 +140,23 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 
-	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-
 	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
 		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
 		networks = append(networks, networkRegex.FindAllString(installConfig, -1)...)
+	}
+
+	// egress subnets
+
+	hostSubnets, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range hostSubnets.Items {
+		hostSubnet := &hostSubnets.Items[i]
+		for _, egressCIDR := range hostSubnet.EgressCIDRs {
+			networks = append(networks, string(egressCIDR))
+		}
 	}
 
 	// we're sorting by subnet lengths, if they are the same, we use subnet itself
@@ -160,6 +176,8 @@ func NewAnonymizerFromConfigClient(
 		return network1[0] > network2[0]
 	})
 
+	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
+
 	return NewAnonymizer(baseDomain, networks, secretsClient)
 }
 
@@ -177,7 +195,12 @@ func NewAnonymizerFromConfig(
 		return nil, err
 	}
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, configClient)
+	networkClient, err := networkv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAnonymizerFromConfigClient(ctx, kubeClient, configClient, networkClient)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
