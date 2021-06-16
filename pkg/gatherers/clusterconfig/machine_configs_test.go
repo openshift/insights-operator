@@ -26,7 +26,7 @@ func createMockConfigMachine(t *testing.T, c dynamic.Interface, data string) {
 		Create(context.Background(), testMachineConfig, metav1.CreateOptions{})
 }
 
-func Test_SAPMachineConfigs(t *testing.T) {
+func Test_MachineConfigs(t *testing.T) {
 	// Initialize the fake dynamic client.
 	machineConfigClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
 		machineConfigGroupVersionResource: "MachineConfigsList",
