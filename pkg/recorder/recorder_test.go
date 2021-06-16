@@ -58,11 +58,11 @@ func (d *driverMock) Prune(time.Time) error {
 	return args.Error(1)
 }
 
-func newRecorder(maxArchiveSize int64) Recorder {
+func newRecorder(maxArchiveSize int64, clusterBaseDomain string) Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 
-	anonymizer, _ := anonymization.NewAnonymizer("", nil, nil)
+	anonymizer, _ := anonymization.NewAnonymizer(clusterBaseDomain, nil, nil)
 
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{
@@ -76,7 +76,7 @@ func newRecorder(maxArchiveSize int64) Recorder {
 }
 
 func Test_Record(t *testing.T) {
-	rec := newRecorder(MaxArchiveSize)
+	rec := newRecorder(MaxArchiveSize, "")
 	err := rec.Record(record.Record{
 		Name: mock1Name,
 		Item: RawReport{Data: "mock1"},
@@ -86,7 +86,7 @@ func Test_Record(t *testing.T) {
 }
 
 func Test_Record_Duplicated(t *testing.T) {
-	rec := newRecorder(MaxArchiveSize)
+	rec := newRecorder(MaxArchiveSize, "")
 	_ = rec.Record(record.Record{
 		Name:        mock1Name,
 		Item:        RawReport{Data: "mock1"},
@@ -102,7 +102,7 @@ func Test_Record_Duplicated(t *testing.T) {
 }
 
 func Test_Record_CantBeSerialized(t *testing.T) {
-	rec := newRecorder(MaxArchiveSize)
+	rec := newRecorder(MaxArchiveSize, "")
 	err := rec.Record(record.Record{
 		Name: mock1Name,
 		Item: RawInvalidReport{},
@@ -111,7 +111,7 @@ func Test_Record_CantBeSerialized(t *testing.T) {
 }
 
 func Test_Record_Flush(t *testing.T) {
-	rec := newRecorder(MaxArchiveSize)
+	rec := newRecorder(MaxArchiveSize, "")
 	for i := range []int{1, 2, 3} {
 		_ = rec.Record(record.Record{
 			Name: fmt.Sprintf("config/mock%d", i),
@@ -124,7 +124,7 @@ func Test_Record_Flush(t *testing.T) {
 }
 
 func Test_Record_FlushEmptyRecorder(t *testing.T) {
-	rec := newRecorder(MaxArchiveSize)
+	rec := newRecorder(MaxArchiveSize, "")
 	err := rec.Flush()
 	assert.Nil(t, err)
 }
@@ -132,7 +132,7 @@ func Test_Record_FlushEmptyRecorder(t *testing.T) {
 func Test_Record_ArchiveSizeExceeded(t *testing.T) {
 	data := "data bigger than 4 bytes"
 	maxArchiveSize := int64(4)
-	rec := newRecorder(maxArchiveSize)
+	rec := newRecorder(maxArchiveSize, "")
 	err := rec.Record(record.Record{
 		Name: mock1Name,
 		Item: RawReport{
@@ -147,4 +147,45 @@ func Test_Record_ArchiveSizeExceeded(t *testing.T) {
 			mock1Name,
 			len([]byte(data)),
 			maxArchiveSize))
+}
+
+func Test_Record_SizeDoesntGrowWithSameRecords(t *testing.T) {
+	data := "testdata"
+	testRec := record.Record{
+		Name: mock1Name,
+		Item: RawReport{
+			Data: data,
+		},
+	}
+	rec := newRecorder(MaxArchiveSize, "")
+	err := rec.Record(testRec)
+	assert.Nil(t, err)
+	// record again the same record
+	err = rec.Record(testRec)
+	assert.Nil(t, err)
+
+	// check that size refers only to one record data
+	assert.Equal(t, rec.size, int64(len(data)))
+	err = rec.Flush()
+	assert.Nil(t, err)
+	assert.Equal(t, rec.size, int64(0))
+}
+
+func Test_ObfuscatedRecord_NameCorrect(t *testing.T) {
+	clusterBaseDomain := "test"
+	testRecordName := fmt.Sprintf("%s/%s-node-1", mock1Name, clusterBaseDomain)
+	obfuscatedRecordName := fmt.Sprintf("%s/%s-node-1", mock1Name, anonymization.ClusterBaseDomainPlaceholder)
+	rec := newRecorder(MaxArchiveSize, clusterBaseDomain)
+	err := rec.Record(record.Record{
+		Name: testRecordName,
+		Item: RawReport{
+			Data: "some data",
+		},
+	})
+	assert.Nil(t, err)
+	_, exists := rec.records[obfuscatedRecordName]
+	assert.True(t, exists, "can't find %s record name", testRecordName)
+	err = rec.Flush()
+	assert.Nil(t, err)
+	assert.Equal(t, rec.size, int64(0))
 }

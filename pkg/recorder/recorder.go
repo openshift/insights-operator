@@ -85,7 +85,7 @@ func (r *Recorder) Record(rec record.Record) error {
 		return fmt.Errorf("record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive",
 			recordName, recordSize, r.maxArchiveSize)
 	}
-	r.records[recordName] = memoryRecord
+	r.records[memoryRecord.Name] = memoryRecord
 	r.size += recordSize
 	return nil
 }
@@ -146,7 +146,7 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReport
 func (r *Recorder) has(re record.Record) bool {
 	existing, ok := r.records[re.Filename()]
 	if ok {
-		if len(re.Fingerprint) > 0 && re.Fingerprint == existing.Fingerprint {
+		if re.Fingerprint == existing.Fingerprint {
 			return true
 		}
 	}
@@ -169,14 +169,6 @@ func (r *Recorder) copy() record.MemoryRecords {
 func (r *Recorder) clear(records record.MemoryRecords) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	size := int64(0)
-	for _, record := range records {
-		existing, ok := r.records[record.Name]
-		if !ok || existing.Data == nil || existing.At != record.At || existing.Fingerprint != record.Fingerprint {
-			continue
-		}
-		size += int64(len(existing.Data))
-		existing.Data = nil
-	}
-	r.size -= size
+	r.records = make(map[string]*record.MemoryRecord, len(records))
+	r.size = 0
 }
