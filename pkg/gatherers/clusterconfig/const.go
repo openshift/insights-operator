@@ -14,9 +14,9 @@ const (
 var (
 	registryScheme = runtime.NewScheme()
 	// logTailLines sets maximum number of lines to fetch from pod logs
-	logTailLines = int64(100)
-	// logTailLinesLong sets the maximum number of lines to fetch from long pod logs
-	logTailLinesLong = int64(400)
+	logTailLines = int64(4000)
+	// logLinesOffset sets the maximum offset if a stacktrace message was found in the logs
+	logLinesOffset = int64(100)
 
 	defaultNamespaces           = []string{"default", "kube-system", "kube-public"}
 	datahubGroupVersionResource = schema.GroupVersionResource{

@@ -1,6 +1,7 @@
 package clusterconfig
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -289,19 +290,14 @@ func getContainerLogs(ctx context.Context,
 			continue
 		}
 
-		// check for stack tracer
-		if found := stackTraceRegex.MatchString(logString); found {
+		logString, found := getLogWithStacktracing(logString)
+		if found {
 			klog.V(2).Infof(
 				"Stack trace found in log for %s container %s pod in namespace %s (previous: %v).",
 				c.Name,
 				pod.Name,
 				pod.Namespace,
 				isPrevious)
-			logString, err = getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logTailLinesLong)
-			if err != nil {
-				klog.V(2).Infof("Error: %q", err)
-				continue
-			}
 		}
 
 		records = append(records, record.Record{
@@ -311,6 +307,37 @@ func getContainerLogs(ctx context.Context,
 	}
 
 	return records
+}
+
+func getLogWithStacktracing(logString string) (string, bool) {
+	reader := strings.NewReader(logString)
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanLines)
+
+	var log []string
+	var found bool
+	for scanner.Scan() {
+		line := scanner.Text()
+		// if it already found the stack we just want to keep add the log till the end
+		if found {
+			log = append(log, line)
+			continue
+		}
+		// tries to find the stack message at the given line and add it to the log
+		if found = stackTraceRegex.MatchString(line); found {
+			log = append(log, line)
+			continue
+		}
+		// if it didn't find the line yet, keep add it as offset limiting by the arbitrary
+		// offset limit value
+		log = append(log, line)
+		if int64(len(log)) > logLinesOffset {
+			log[0] = "" // to avoid memory leaks
+			log = log[1:]
+		}
+	}
+
+	return strings.Join(log, "\n"), found
 }
 
 // getContainerLogString fetch the container log from API and return it as String
