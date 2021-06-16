@@ -34,8 +34,6 @@ func main() {
 	}
 }
 
-// TODO: docs
-
 func obfuscateArchive(path string) error {
 	const suffix = ".tar.gz"
 	if !strings.HasSuffix(path, suffix) {

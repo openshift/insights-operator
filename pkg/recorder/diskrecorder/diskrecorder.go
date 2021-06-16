@@ -37,7 +37,7 @@ func (d *DiskRecorder) Save(records record.MemoryRecords) (record.MemoryRecords,
 	return d.SaveAtPath(records, path)
 }
 
-// Save the records into the archive at `path`
+// SaveAtPath the records into the archive at `path`
 func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (record.MemoryRecords, error) {
 	if !strings.HasSuffix(path, archiveExtension) {
 		return nil, fmt.Errorf(`path should have suffix "%v"`, archiveExtension)
