@@ -99,7 +99,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
-	a := make([]gather.GathererFunctionReport, len(m))
+	a := make([]gather.GathererFunctionReport, 0, len(m))
 	for _, v := range m {
 		a = append(a, v)
 	}

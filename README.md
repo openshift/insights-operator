@@ -17,6 +17,11 @@ This cluster operator gathers anonymized system configuration and reports it to 
 - [Changelog](#changelog)
     - [Updating the changelog](#updating-the-changelog)
 - [Reported data](#reported-data)
+- [Insights Operator Archive](#insights-operator-archive)
+    - [Sample IO archive](#sample-io-archive)
+    - [Generating a sample archive](#generating-a-sample-archive)
+    - [Formatting archive json files](#formatting-archive-json-files)
+    - [Obfuscating an archive](#obfuscating-an-archive)
 - [Contributing](#contributing)
 - [Support](#support)
 - [License](#license)
@@ -128,7 +133,7 @@ Change in `pkg/controller/operator.go` after creating `metricsGatherKubeConfig` 
 metricsGatherKubeConfig.Insecure = true
 metricsGatherKubeConfig.BearerToken = "YOUR-TOKEN-HERE"
 # by default CAFile is /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
-metricsGatherKubeConfig.CAFile = "" 
+metricsGatherKubeConfig.CAFile = ""
 metricsGatherKubeConfig.CAData = []byte{}
 ```
 
@@ -221,7 +226,7 @@ There is a sample IO archive maintained in this repo to use as a quick reference
 To keep it up-to-date it is **required** to update this manually when developing a new data enhancement.
 
 Make sure the `.json` files are in a humanly readable format in the sample archive.
-By doing this its easier to review a data enhancement PR, and rule developers can easily check what data it collects. 
+By doing this its easier to review a data enhancement PR, and rule developers can easily check what data it collects.
 
 ### Generating a sample archive
 
@@ -234,6 +239,17 @@ This formats `.json` files from folder with extracted archive.
 ```sh
 $ find . -type f -name '*.json' -print | while read line; do cat "$line" | jq > "$line.tmp" && mv "$line.tmp" "$line"; done
 ```
+
+### Obfuscating an archive
+
+You can run obfuscation with an archive by running the next command:
+
+```sh
+go run ./cmd/obfuscate-archive/main.go YOUR_ARCHIVE.tar.gz
+```
+
+where `YOUR_ARCHIVE.tar.gz` is the path to the archive.
+The obfuscated version will be created in the same directory and called `YOUR_ARCHIVE-obfuscated.tar.gz`
 
 # Contributing
 

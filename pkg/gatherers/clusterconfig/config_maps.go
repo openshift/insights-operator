@@ -37,18 +37,27 @@ import (
 // * "cluster-monitoring-config" ConfigMap data since versions:
 //   * 4.6.22+
 //   * 4.7+
+// * "cluster-config-v1" ConfigMap since versions:
+//   * 4.9+
 func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	records, errors := gatherConfigMaps(ctx, gatherKubeClient.CoreV1())
-	monitoringRec, monitoringErrs := gatherMonitoringCM(ctx, gatherKubeClient.CoreV1())
-	records = append(records, monitoringRec...)
-	errors = append(errors, monitoringErrs...)
+	coreClient := gatherKubeClient.CoreV1()
 
-	return records, errors
+	records, errs := gatherConfigMaps(ctx, coreClient)
+
+	monitoringRec, monitoringErrs := gatherMonitoringCM(ctx, coreClient)
+	records = append(records, monitoringRec...)
+	errs = append(errs, monitoringErrs...)
+
+	clusterConfigV1Rec, clusterConfigV1Errs := gatherClusterConfigV1(ctx, coreClient)
+	records = append(records, clusterConfigV1Rec)
+	errs = append(errs, clusterConfigV1Errs...)
+
+	return records, errs
 }
 
 func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
@@ -56,7 +65,9 @@ func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interfa
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	records := make([]record.Record, 0, len(cms.Items))
+
 	for i := range cms.Items {
 		for dk, dv := range cms.Items[i].Data {
 			records = append(records, record.Record{
@@ -71,6 +82,7 @@ func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interfa
 			})
 		}
 	}
+
 	return records, nil
 }
 
@@ -79,7 +91,9 @@ func gatherMonitoringCM(ctx context.Context, coreClient corev1client.CoreV1Inter
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	records := make([]record.Record, 0)
+
 	for dk, dv := range monitoringCM.Data {
 		j, err := yaml.YAMLToJSON([]byte(dv))
 		if err != nil {
@@ -90,7 +104,20 @@ func gatherMonitoringCM(ctx context.Context, coreClient corev1client.CoreV1Inter
 			Item: RawJSON(j),
 		})
 	}
+
 	return records, nil
+}
+
+func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1Interface) (record.Record, []error) {
+	configMap, err := coreClient.ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
+	if err != nil {
+		return record.Record{}, []error{err}
+	}
+
+	return record.Record{
+		Name: fmt.Sprintf("config/configmaps/%s/%s", configMap.Namespace, configMap.Name),
+		Item: record.JSONMarshaller{Object: configMap},
+	}, nil
 }
 
 // ConfigMapAnonymizer implements serialization of configmap
