@@ -312,6 +312,20 @@ Response see:
   * 4.6+
 
 
+## MachineConfigs
+
+collects MachineConfigs definitions. Following data is intentionally removed from the definitions:
+* `spec.config.storage.files`
+* `spec.config.passwd.users`
+
+Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
+
+* Location in archive: config/machineconfigs/<name>.json
+* Id in config: machine_configs
+* Since versions:
+  * 4.9+
+
+
 ## MachineHealthCheck
 
 collects MachineHealthCheck information
@@ -539,23 +553,6 @@ collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 * Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
 * Since versions:
   * 4.7.5+
-  * 4.8+
-
-
-## SAPMachineConfigs
-
-collects a subset of MachineConfigs related to SDI by applying a set of filtering rules.
-
-Gathered MachineConfigs at the time of implementation of the gatherer:
-* `75-worker-sap-data-intelligence`
-* `75-master-sap-data-intelligence`
-* `99-sdi-generated-containerruntime`
-
-Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
-
-* Location in archive: config/machineconfigs/<name>.json
-* Id in config: sap_machine_configs
-* Since versions:
   * 4.8+
 
 
