@@ -1,8 +1,31 @@
-# Note: This CHANGELOG is only for the changes in insights operator. Please see OpenShift release notes for official changes
-<!--Latest hash: 2268d255d9ba889978c00ab2c234bfb62259677a-->
+# Note: This CHANGELOG is only for the changes in insights operator. 
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 5dcf37aef015ce79319468000ef178ad97f29416-->
 ## 4.8
 
 ### Enhancement
+- [#438](https://github.com/openshift/insights-operator/pull/438) Gather MachineAutoscalers definitions
+- [#442](https://github.com/openshift/insights-operator/pull/442) include full timestamps in the logs
+- [#432](https://github.com/openshift/insights-operator/pull/432) Replace gather-job image without FQDN
+- [#431](https://github.com/openshift/insights-operator/pull/431) Change event gathering interval
+- [#421](https://github.com/openshift/insights-operator/pull/421) Collect full pod log for stack traces
+- [#422](https://github.com/openshift/insights-operator/pull/422) Gather SDI-related MachineConfigs
+- [#429](https://github.com/openshift/insights-operator/pull/429) Adding GatherMachineHealthCheck
+- [#426](https://github.com/openshift/insights-operator/pull/426) breaking changes in pr template
+- [#427](https://github.com/openshift/insights-operator/pull/427) Adds virt_platform metric to the collected metrics
+- [#399](https://github.com/openshift/insights-operator/pull/399) Support of gatherers with different periods
+- [#414](https://github.com/openshift/insights-operator/pull/414) Add vsphere_node_hw_version_total metric to the collected metrics
+- [#405](https://github.com/openshift/insights-operator/pull/405) Rename workload annotations
+- [#374](https://github.com/openshift/insights-operator/pull/374) Gather summary of PodNetworkConnectivityChecks
+- [#397](https://github.com/openshift/insights-operator/pull/397) Split up the GatherClusterOperators into smaller parts
+- [#400](https://github.com/openshift/insights-operator/pull/400) Extend OLM data with CSV display name
+- [#391](https://github.com/openshift/insights-operator/pull/391) Add management workload annotations
+- [#315](https://github.com/openshift/insights-operator/pull/315) Add a workload fingerprint gatherer
+- [#354](https://github.com/openshift/insights-operator/pull/354) Obfuscate IPv4 addresses and hide cluster base domain
+- [#344](https://github.com/openshift/insights-operator/pull/344) dockerfile for remote debugging
+- [#355](https://github.com/openshift/insights-operator/pull/355) Gather related pod logs when a cluster operator is degraded
+- [#376](https://github.com/openshift/insights-operator/pull/376) Gahter datahubs.installers.datahub.sap.com resources from SAP clusters
+- [#356](https://github.com/openshift/insights-operator/pull/356) Adds memory usage to the metadata
+- [#358](https://github.com/openshift/insights-operator/pull/358)  Extend the OLM operator data with related ClusterServiceVersion conditions
 - [#347](https://github.com/openshift/insights-operator/pull/347) Gather info about unhealthy SAP pods
 - [#342](https://github.com/openshift/insights-operator/pull/342) sap license management logs gatherer
 - [#337](https://github.com/openshift/insights-operator/pull/337) Recorder refactoring that improves maintainability
@@ -10,6 +33,18 @@
 - [#303](https://github.com/openshift/insights-operator/pull/303) Improve code removing some codesmells
 
 ### Bugfix
+- [#445](https://github.com/openshift/insights-operator/pull/445) Fixes one small bug
+- [#425](https://github.com/openshift/insights-operator/pull/425) Do not exceed archive size limit
+- [#424](https://github.com/openshift/insights-operator/pull/424) fixed obfuscation permissions
+- [#418](https://github.com/openshift/insights-operator/pull/418) #417 insights report - add basic retry logic in case of 404
+- [#412](https://github.com/openshift/insights-operator/pull/412) Remove URL anonymization from ClusterOperator resources
+- [#408](https://github.com/openshift/insights-operator/pull/408) Add missing sample archive data
+- [#406](https://github.com/openshift/insights-operator/pull/406) DelegatingAuthenticationOptions TokenReview request timeout
+- [#404](https://github.com/openshift/insights-operator/pull/404) Make the pods limit in the workload gatherer more accurate
+- [#401](https://github.com/openshift/insights-operator/pull/401) Update configmap gatherer to not fail in case of invalid yaml
+- [#386](https://github.com/openshift/insights-operator/pull/386) Remove some unnecessary obfuscation
+- [#368](https://github.com/openshift/insights-operator/pull/368) Include namespace name in binarydata configmap path & test
+- [#365](https://github.com/openshift/insights-operator/pull/365) Do not scan all the pod logs in the "GatherOpenshiftAuthenticationLogs"
 - [#352](https://github.com/openshift/insights-operator/pull/352) Do not use context in the recorder
 - [#336](https://github.com/openshift/insights-operator/pull/336) Disable instead of Degrade in case of gather fails
 - [#334](https://github.com/openshift/insights-operator/pull/334) Do not create the metrics file in case of any error
@@ -17,6 +52,32 @@
 - [#329](https://github.com/openshift/insights-operator/pull/329) Remove StatefulSet gatherer & replace it with gathering "cluster-mon…
 
 ### Others
+- [#439](https://github.com/openshift/insights-operator/pull/439) Adds tasks pool to tasks_processing
+- [#441](https://github.com/openshift/insights-operator/pull/441) Use configured interval as the event time limit & check series if
+- [#436](https://github.com/openshift/insights-operator/pull/436) Adds more tests for periodic.go
+- [#448](https://github.com/openshift/insights-operator/pull/448) Replace golint with revive
+- [#419](https://github.com/openshift/insights-operator/pull/419) Store translation table in a secret
+- [#443](https://github.com/openshift/insights-operator/pull/443) Fixes the remaining lint issues
+- [#440](https://github.com/openshift/insights-operator/pull/440) Workloads gatherer - increase the pods limit
+- [#437](https://github.com/openshift/insights-operator/pull/437) Update K8s & OpenShift API versions
+- [#430](https://github.com/openshift/insights-operator/pull/430) Fixes gendoc
+- [#415](https://github.com/openshift/insights-operator/pull/415) Fix pre-commit script for staged vendor files
+- [#409](https://github.com/openshift/insights-operator/pull/409) Add a few tests to configobserver_test.go
+- [#420](https://github.com/openshift/insights-operator/pull/420) Improves documentation of GatherClusterOperatorPodsAndEvents
+- [#407](https://github.com/openshift/insights-operator/pull/407) Linting fixes in gather package
+- [#398](https://github.com/openshift/insights-operator/pull/398) Docs and lint fixes
+- [#395](https://github.com/openshift/insights-operator/pull/395) style fixes by GoLand and golangci-lint
+- [#396](https://github.com/openshift/insights-operator/pull/396) Workloads - Add limit for the number of pods gathered
+- [#389](https://github.com/openshift/insights-operator/pull/389) One-off gather
+- [#392](https://github.com/openshift/insights-operator/pull/392) Disable emptyStringTest check
+- [#390](https://github.com/openshift/insights-operator/pull/390) Adding githooks, contributing and styleguide
+- [#388](https://github.com/openshift/insights-operator/pull/388) Adding CI Liting and improving Makefile
+- [#387](https://github.com/openshift/insights-operator/pull/387) Integration tests moved to internal Python repo
+- [#385](https://github.com/openshift/insights-operator/pull/385) Add OCP versions to particular gatherers
+- [#377](https://github.com/openshift/insights-operator/pull/377) Fixing code style
+- [#371](https://github.com/openshift/insights-operator/pull/371) Introduce quick gather command
+- [#359](https://github.com/openshift/insights-operator/pull/359) Update documentation
+- [#357](https://github.com/openshift/insights-operator/pull/357) Makes changelog script compatible with squash
 - [#353](https://github.com/openshift/insights-operator/pull/353) Update relatedObjects
 - [#351](https://github.com/openshift/insights-operator/pull/351) Reduce Gatherer's code complexity
 - [#350](https://github.com/openshift/insights-operator/pull/350) Remove code duplication that disable the gather
@@ -28,6 +89,8 @@
 - [#318](https://github.com/openshift/insights-operator/pull/318) Auto changelog
 
 ### Misc
+- [#380](https://github.com/openshift/insights-operator/pull/380) Updating ose-insights-operator builder & base images to be consistent with ART
+- [#381](https://github.com/openshift/insights-operator/pull/381) Gather openshift-cluster-version pods and events
 - [#333](https://github.com/openshift/insights-operator/pull/333) Updating ose-insights-operator builder & base images to be consistent with ART
 
 ## 4.7
@@ -189,4 +252,15 @@
 - [#62](https://github.com/openshift/insights-operator/pull/62) Add Pavel Tisnovsky into list of repo owners
 - [#61](https://github.com/openshift/insights-operator/pull/61) added TestOptOutOptIn and moved some code to functions
 - [#59](https://github.com/openshift/insights-operator/pull/59) Bug 1782151 - override node selector
+
+## 
+
+### Enhancement
+- [#446](https://github.com/openshift/insights-operator/pull/446) add egress ips support to anonymizer
+
+### Bugfix
+- [#444](https://github.com/openshift/insights-operator/pull/444) MemoryRecord name can be obfuscated & fix case of duplicate records
+
+### Others
+- [#452](https://github.com/openshift/insights-operator/pull/452) Update versions in the metrics gather documentation
 
