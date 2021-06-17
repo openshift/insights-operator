@@ -26,6 +26,7 @@ import (
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 //
+// * Previous location in the older archives: config/configmaps/{configmap-name}/
 // * Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
 // * See: docs/insights-archive-sample/config/configmaps
 // * Id in config: config_maps

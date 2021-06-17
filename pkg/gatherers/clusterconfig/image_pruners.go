@@ -16,6 +16,7 @@ import (
 
 // GatherClusterImagePruner fetches the image pruner configuration
 //
+// * Previous location in the older archives: config/imagepruner.json
 // * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
 // * Id in config: image_pruners
 func (g *Gatherer) GatherClusterImagePruner(ctx context.Context) ([]record.Record, []error) {
