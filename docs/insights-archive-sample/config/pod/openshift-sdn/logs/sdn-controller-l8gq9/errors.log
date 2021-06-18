@@ -1,7 +1,7 @@
-W0120 20:07:54.645321       1 egressip.go:199] Node ci-ln-0d402jb-f76d1-hts4b-worker-c-2nwdl is not Ready
-W0120 20:08:29.646400       1 egressip.go:199] Node ci-ln-0d402jb-f76d1-hts4b-worker-c-2nwdl is not Ready
-I0120 20:08:59.649184       1 egressip.go:208] Node 10.0.32.3 is back online
-I0120 20:13:49.656538       1 egressip.go:219] Node 10.0.32.3 may be offline... retrying
-I0120 20:13:57.710028       1 egressip.go:219] Node 10.0.32.3 may be offline... retrying
-W0120 20:14:12.749977       1 egressip.go:214] Node 10.0.32.3 is offline
-I0120 20:15:29.663808       1 egressip.go:208] Node 10.0.32.3 is back online
+2021-06-01T20:07:54.645321 W0120 20:07:54.645321       1 egressip.go:199] Node ci-ln-0d402jb-f76d1-hts4b-worker-c-2nwdl is not Ready
+2021-06-01T20:08:29.646400 W0120 20:08:29.646400       1 egressip.go:199] Node ci-ln-0d402jb-f76d1-hts4b-worker-c-2nwdl is not Ready
+2021-06-01T20:08:59.649184 I0120 20:08:59.649184       1 egressip.go:208] Node 10.0.32.3 is back online
+2021-06-01T20:13:49.656538 I0120 20:13:49.656538       1 egressip.go:219] Node 10.0.32.3 may be offline... retrying
+2021-06-01T20:13:57.710028 I0120 20:13:57.710028       1 egressip.go:219] Node 10.0.32.3 may be offline... retrying
+2021-06-01T20:14:12.749977 W0120 20:14:12.749977       1 egressip.go:214] Node 10.0.32.3 is offline
+2021-06-01T20:15:29.663808 I0120 20:15:29.663808       1 egressip.go:208] Node 10.0.32.3 is back online
