@@ -1,7 +1,6 @@
 package clusterconfig
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -283,22 +282,32 @@ func getContainerLogs(ctx context.Context,
 
 		logName := logFilename(c.Name, isPrevious)
 
-		// Fetch container logs and continue on error
-		logString, err := getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logTailLines)
+		// Fetch full container logs and continue on error
+		logString, err := getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, nil)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			continue
 		}
 
-		logString, found := getLogWithStacktracing(logString)
-		if found {
+		// We need an array to slice the log
+		logArray := strings.Split(logString, "\n")
+
+		if found := stackTraceRegex.MatchString(logString); found {
 			klog.V(2).Infof(
 				"Stack trace found in log for %s container %s pod in namespace %s (previous: %v).",
 				c.Name,
 				pod.Name,
 				pod.Namespace,
 				isPrevious)
+			logArray = getLogWithStacktracing(logArray)
 		}
+
+		// Set the log limits by number of lines
+		maxLines := int(logMaxLines)
+		if len(logArray) < maxLines {
+			maxLines = len(logArray)
+		}
+		logString = strings.Join(logArray[:maxLines], "\n")
 
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName),
@@ -309,15 +318,13 @@ func getContainerLogs(ctx context.Context,
 	return records
 }
 
-func getLogWithStacktracing(logString string) (string, bool) {
-	reader := strings.NewReader(logString)
-	scanner := bufio.NewScanner(reader)
-	scanner.Split(bufio.ScanLines)
-
+// getLogWithStacktracing search for the first stack trace line and offset it
+func getLogWithStacktracing(logArray []string) []string {
 	var log []string
 	var found bool
-	for scanner.Scan() {
-		line := scanner.Text()
+
+	for idx := range logArray {
+		line := logArray[idx]
 		// if it already found the stack we just want to keep add the log till the end
 		if found {
 			log = append(log, line)
@@ -331,13 +338,13 @@ func getLogWithStacktracing(logString string) (string, bool) {
 		// if it didn't find the line yet, keep add it as offset limiting by the arbitrary
 		// offset limit value
 		log = append(log, line)
-		if int64(len(log)) > logLinesOffset {
+		if len(log) > int(logLinesOffset) {
 			log[0] = "" // to avoid memory leaks
 			log = log[1:]
 		}
 	}
 
-	return strings.Join(log, "\n"), found
+	return log
 }
 
 // getContainerLogString fetch the container log from API and return it as String
