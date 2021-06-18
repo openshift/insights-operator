@@ -40,7 +40,7 @@ type CompactedEventList struct {
 }
 
 // Used to detect the possible stack trace on logs
-var stackTraceRegex = regexp.MustCompile(`\.go:[0-9]+\s\+0x`)
+var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 
 // GatherClusterOperatorPodsAndEvents collects information about all pods
 // and events from namespaces of degraded cluster operators. The collected
