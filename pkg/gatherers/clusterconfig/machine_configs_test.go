@@ -26,13 +26,13 @@ func createMockConfigMachine(t *testing.T, c dynamic.Interface, data string) {
 		Create(context.Background(), testMachineConfig, metav1.CreateOptions{})
 }
 
-func Test_SAPMachineConfigs(t *testing.T) {
+func Test_MachineConfigs(t *testing.T) {
 	// Initialize the fake dynamic client.
 	machineConfigClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
 		machineConfigGroupVersionResource: "MachineConfigsList",
 	})
 
-	records, errs := gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs := gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -49,7 +49,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML1)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -66,7 +66,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML2)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -86,7 +86,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML3)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
@@ -105,7 +105,7 @@ metadata:
 `
 
 	createMockConfigMachine(t, machineConfigClient, machineConfigYAML4)
-	records, errs = gatherSAPMachineConfigs(context.Background(), machineConfigClient)
+	records, errs = gatherMachineConfigs(context.Background(), machineConfigClient)
 	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %#v", errs)
 	}
