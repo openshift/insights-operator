@@ -37,9 +37,9 @@ type clusterOperatorResource struct {
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
 //
-// * Previous location of operators related resources in the older archives: config/clusteroperator/{kind}-{name}
 // * Location of operators related resources: config/clusteroperator/{group}/{kind}/{name}
 // * Location of operators in archive: config/clusteroperator/
+// * Location of operators related resources in older versions: config/clusteroperator/{kind}-{name}
 // * See: docs/insights-archive-sample/config/clusteroperator
 // * Id in config: operators
 // * Spec config for CO resources since versions:

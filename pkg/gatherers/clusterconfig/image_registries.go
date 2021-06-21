@@ -24,8 +24,8 @@ import (
 // **Conditional data**: If the Image Registry configuration uses any PersistentVolumeClaim for the storage, the corresponding
 // PersistentVolume definition is gathered
 //
-// * Previous location in the older archives: config/imageregistry.json
 // * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
+// * Location in older versions: config/imageregistry.json
 // * Id in config: image_registries
 // * Since versions:
 //   * 4.3.40+
