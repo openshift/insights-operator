@@ -11,6 +11,9 @@ import (
 	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
+	installertypes "github.com/openshift/installer/pkg/types"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/gather"
@@ -30,8 +33,12 @@ func main() {
 	path := os.Args[1]
 
 	if err := obfuscateArchive(path); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Unable to obfuscate archive: %v\n", err)
+		printlnToStderr("Unable to obfuscate archive: %v", err)
 	}
+}
+
+func printlnToStderr(format string, params ...interface{}) {
+	_, _ = fmt.Fprintln(os.Stderr, fmt.Sprintf(format, params...))
 }
 
 func obfuscateArchive(path string) error {
@@ -97,13 +104,25 @@ func obfuscateArchive(path string) error {
 }
 
 func getClusterBaseDomain(records map[string]*record.MemoryRecord) (string, error) {
+	domain, err := getClusterBaseDomainFromInfrastructureRecord(records)
+	if err == nil {
+		return domain, nil
+	}
+
+	printlnToStderr(
+		"Unable to get base domain from infrastructure record: %v. Trying to get it from install-config...",
+		err,
+	)
+
+	return getClusterBaseDomainFromClusterConfigV1Record(records)
+}
+
+func getClusterBaseDomainFromInfrastructureRecord(records map[string]*record.MemoryRecord) (string, error) {
 	const filePath = "config/infrastructure.json"
 
 	r, found := records[filePath]
 	if !found {
-		return "", fmt.Errorf(
-			"%v record needed to fetch cluster base domain wasn't found", filePath,
-		)
+		return "", fmt.Errorf("%v record needed to fetch cluster base domain wasn't found", filePath)
 	}
 
 	var infrastructure configv1.Infrastructure
@@ -121,16 +140,54 @@ func getClusterBaseDomain(records map[string]*record.MemoryRecord) (string, erro
 	return domain, nil
 }
 
+func getClusterBaseDomainFromClusterConfigV1Record(records map[string]*record.MemoryRecord) (string, error) {
+	const filePath = "config/configmaps/kube-system/cluster-config-v1.json"
+
+	r, found := records[filePath]
+	if !found {
+		return "", fmt.Errorf("%v record needed to fetch cluster base domain wasn't found", filePath)
+	}
+
+	var configMap corev1.ConfigMap
+
+	err := json.Unmarshal(r.Data, &configMap)
+	if err != nil {
+		return "", err
+	}
+
+	installConfigStr, found := configMap.Data["install-config"]
+	if !found {
+		return "", fmt.Errorf("unable to find install-config")
+	}
+
+	var installConfig installertypes.InstallConfig
+
+	err = yaml.Unmarshal([]byte(installConfigStr), &installConfig)
+	if err != nil {
+		return "", err
+	}
+
+	if len(installConfig.BaseDomain) == 0 {
+		return "", fmt.Errorf("installConfig.BaseDomain from %v is empty", filePath)
+	}
+
+	return installConfig.BaseDomain, nil
+}
+
 func readArchive(path string) (map[string]*record.MemoryRecord, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 
+	defer file.Close()
+
 	gzipReader, err := gzip.NewReader(file)
 	if err != nil {
 		return nil, err
 	}
+
+	defer gzipReader.Close()
 
 	tarReader := tar.NewReader(gzipReader)
 

@@ -108,18 +108,6 @@ func gatherMonitoringCM(ctx context.Context, coreClient corev1client.CoreV1Inter
 	return records, nil
 }
 
-func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1Interface) (record.Record, []error) {
-	configMap, err := coreClient.ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
-	if err != nil {
-		return record.Record{}, []error{err}
-	}
-
-	return record.Record{
-		Name: fmt.Sprintf("config/configmaps/%s/%s", configMap.Namespace, configMap.Name),
-		Item: record.JSONMarshaller{Object: configMap},
-	}, nil
-}
-
 // ConfigMapAnonymizer implements serialization of configmap
 // and potentially anonymizes if it is a certificate
 type ConfigMapAnonymizer struct {

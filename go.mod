@@ -9,6 +9,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.11.3 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
+	github.com/openshift/installer v0.16.1
 	github.com/openshift/library-go v0.0.0-20210521084623-7392ea9b02ca
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
