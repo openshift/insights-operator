@@ -224,38 +224,6 @@ subjects:
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: insights-operator-obfuscation-secret
-  namespace: openshift-insights
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: insights-operator-obfuscation-secret
-  namespace: openshift-insights
-roleRef:
-  kind: Role
-  name: insights-operator-obfuscation-secret
-subjects:
-- kind: ServiceAccount
-  name: gather
-  namespace: openshift-insights
-
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: insights-operator-gather-reader
