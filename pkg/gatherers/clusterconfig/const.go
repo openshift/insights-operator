@@ -14,9 +14,11 @@ const (
 var (
 	registryScheme = runtime.NewScheme()
 	// logMaxLines sets maximum number of lines of the log file
-	logMaxLines = int64(100)
+	logMaxTailLines = int64(100)
+	// logMaxLongTailLines sets maximum number of lines of the long log file
+	logMaxLongTailLines = int64(200)
 	// logLinesOffset sets the maximum offset if a stacktrace message was found in the logs
-	logLinesOffset = int64(20)
+	logLinesOffset = int64(10)
 
 	defaultNamespaces           = []string{"default", "kube-system", "kube-public"}
 	datahubGroupVersionResource = schema.GroupVersionResource{

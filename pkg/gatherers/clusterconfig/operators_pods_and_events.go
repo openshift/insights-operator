@@ -282,15 +282,12 @@ func getContainerLogs(ctx context.Context,
 
 		logName := logFilename(c.Name, isPrevious)
 
-		// Fetch full container logs and continue on error
-		logString, err := getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, nil)
+		// Fetch container logs and continue on error
+		logString, err := getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logMaxTailLines)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			continue
 		}
-
-		// We need an array to slice the log
-		logArray := strings.Split(logString, "\n")
 
 		if found := stackTraceRegex.MatchString(logString); found {
 			klog.V(2).Infof(
@@ -299,15 +296,14 @@ func getContainerLogs(ctx context.Context,
 				pod.Name,
 				pod.Namespace,
 				isPrevious)
-			logArray = getLogWithStacktracing(logArray)
+			logString, err = getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logMaxLongTailLines)
+			if err != nil {
+				klog.V(2).Infof("Error: %q", err)
+				continue
+			}
+			// find the stack trace and get its
+			logString = getLogWithStacktracing(strings.Split(logString, "\n"))
 		}
-
-		// Set the log limits by number of lines
-		maxLines := int(logMaxLines)
-		if len(logArray) < maxLines {
-			maxLines = len(logArray)
-		}
-		logString = strings.Join(logArray[:maxLines], "\n")
 
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/pod/%s/logs/%s/%s", pod.Namespace, pod.Name, logName),
@@ -318,8 +314,8 @@ func getContainerLogs(ctx context.Context,
 	return records
 }
 
-// getLogWithStacktracing search for the first stack trace line and offset it
-func getLogWithStacktracing(logArray []string) []string {
+// getLogWithStacktracing search for the first stack trace line and offset it by logLinesOffset
+func getLogWithStacktracing(logArray []string) string {
 	var log []string
 	var found bool
 
@@ -339,12 +335,13 @@ func getLogWithStacktracing(logArray []string) []string {
 		// offset limit value
 		log = append(log, line)
 		if len(log) > int(logLinesOffset) {
-			log[0] = "" // to avoid memory leaks
+			// to avoid memory leaks (https://github.com/golang/go/wiki/SliceTricks#delete-without-preserving-order)
+			log[0] = ""
 			log = log[1:]
 		}
 	}
 
-	return log
+	return strings.Join(log, "\n")
 }
 
 // getContainerLogString fetch the container log from API and return it as String
