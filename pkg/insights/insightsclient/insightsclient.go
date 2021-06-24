@@ -342,7 +342,7 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 			StatusCode: resp.StatusCode,
 			Err:        fmt.Errorf("insights report not found: %s (request=%s): %s", resp.Request.URL, requestID, string(body)),
 		}
-		return nil, notFoundErr
+		return notFoundErr
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
