@@ -44,20 +44,25 @@ func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configura
 // Run periodically queries the OCM API and update corresponding secret accordingly
 func (c *Controller) Run() {
 	cfg := c.configurator.Config()
-	endpoint := cfg.OcmEndpoint
-	interval := cfg.OcmInterval
+	endpoint := cfg.OCMConfig.Endpoint
+	interval := cfg.OCMConfig.Interval
+	disabled := cfg.OCMConfig.Disabled
 	configCh, cancel := c.configurator.ConfigChanged()
 	defer cancel()
-
-	c.requestDataAndCheckSecret(endpoint)
+	if !disabled {
+		c.requestDataAndCheckSecret(endpoint)
+	}
 	for {
 		select {
 		case <-time.After(interval):
-			c.requestDataAndCheckSecret(endpoint)
+			if !disabled {
+				c.requestDataAndCheckSecret(endpoint)
+			}
 		case <-configCh:
 			cfg := c.configurator.Config()
-			interval = cfg.OcmInterval
-			endpoint = cfg.OcmEndpoint
+			interval = cfg.OCMConfig.Interval
+			endpoint = cfg.OCMConfig.Endpoint
+			disabled = cfg.OCMConfig.Disabled
 		}
 	}
 }
@@ -68,8 +73,8 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 		klog.Errorf("errror requesting data from %s: %v", endpoint, err)
 	}
 	// check & update the secret here
-	ok, err := c.checkSecret(data)
-	if !ok {
+	err = c.checkSecret(data)
+	if err != nil {
 		// TODO - change IO status in case of failure ?
 		klog.Errorf("error when checking the %s secret: %v", secretName, err)
 		return
@@ -78,29 +83,29 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 
 }
 
-// checkSecret checks "simple-content-access" secret in the "openshift-config-managed" namespace.
+// checkSecret checks "etc-pki-entitlement" secret in the "openshift-config-managed" namespace.
 // If the secret doesn't exist then it will create a new one.
 // If the secret already exist then it will update the data.
-func (c *Controller) checkSecret(data []byte) (bool, error) {
+func (c *Controller) checkSecret(data []byte) error {
 	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(c.context, secretName, metav1.GetOptions{})
 
 	//if the secret doesn't exist then create one
 	if errors.IsNotFound(err) {
 		_, err = c.createSecret(data)
 		if err != nil {
-			return false, err
+			return err
 		}
-		return true, nil
+		return nil
 	}
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	_, err = c.updateSecret(scaSec, data)
 	if err != nil {
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }
 
 func (o *Controller) createSecret(data []byte) (*v1.Secret, error) {

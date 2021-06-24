@@ -24,9 +24,10 @@ type Serialized struct {
 	Impersonate             string   `json:"impersonate"`
 	Gather                  []string `json:"gather"`
 	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
-	Ocm         struct {
+	Ocm                     struct {
 		Endpoint string `json:"endpoint"`
 		Interval string `json:"interval"`
+		Disabled bool   `json:"disabled"`
 	}
 }
 
@@ -54,14 +55,13 @@ type Controller struct {
 	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
 	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
 	EnableGlobalObfuscation bool
-	OcmEndpoint          string
-	OcmInterval          time.Duration
 
 	Username string
 	Password string
 	Token    string
 
 	HTTPConfig HTTPConfig
+	OCMConfig  OCMConfig
 }
 
 // HTTPConfig configures http proxy and exception settings if they come from config
@@ -69,6 +69,13 @@ type HTTPConfig struct {
 	HTTPProxy  string
 	HTTPSProxy string
 	NoProxy    string
+}
+
+// OCMConfig configures the interval and endpoint for retrieving the data from OCM API
+type OCMConfig struct {
+	Interval time.Duration
+	Endpoint string
+	Disabled bool
 }
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
@@ -166,15 +173,16 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	}
 
 	if len(s.Ocm.Endpoint) > 0 {
-		cfg.OcmEndpoint = s.Ocm.Endpoint
+		cfg.OCMConfig.Endpoint = s.Ocm.Endpoint
 	}
+	cfg.OCMConfig.Disabled = s.Ocm.Disabled
 
 	if len(s.Ocm.Interval) > 0 {
 		i, err := time.ParseDuration(s.Ocm.Interval)
 		if err != nil {
 			return nil, fmt.Errorf("ocm interval must be a valid duration: %v", err)
 		}
-		cfg.OcmInterval = i
+		cfg.OCMConfig.Interval = i
 	}
 	return cfg, nil
 }

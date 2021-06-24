@@ -205,17 +205,20 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 
 		// OCM config
 		if ocmEndpoint, ok := secret.Data["ocmEndpoint"]; ok {
-			nextConfig.OcmEndpoint = string(ocmEndpoint)
+			nextConfig.OCMConfig.Endpoint = string(ocmEndpoint)
 		}
 		if ocmInterval, ok := secret.Data["ocmInterval"]; ok {
 			if oi, err := time.ParseDuration(string(ocmInterval)); err == nil {
-				nextConfig.OcmInterval = oi
+				nextConfig.OCMConfig.Interval = oi
 			} else {
 				klog.Warningf(
 					"secret contains an invalid value (%s) for ocmInterval. Using previous value",
 					ocmInterval,
 				)
 			}
+		}
+		if ocmDisabled, ok := secret.Data["ocmPullDisabled"]; ok {
+			nextConfig.OCMConfig.Disabled = strings.EqualFold(string(ocmDisabled), "true")
 		}
 	}
 	if err != nil {
@@ -296,14 +299,16 @@ func (c *Controller) mergeConfigLocked() {
 			cfg.ReportMinRetryTime = c.secretConfig.ReportMinRetryTime
 		}
 		cfg.EnableGlobalObfuscation = cfg.EnableGlobalObfuscation || c.secretConfig.EnableGlobalObfuscation
-		
+
 		// OCM config
-		if len(c.secretConfig.OcmEndpoint) > 0 {
-			cfg.OcmEndpoint = c.secretConfig.OcmEndpoint
+		if len(c.secretConfig.OCMConfig.Endpoint) > 0 {
+			cfg.OCMConfig.Endpoint = c.secretConfig.OCMConfig.Endpoint
 		}
-		if c.secretConfig.OcmInterval > 0 {
-			cfg.OcmInterval = c.secretConfig.OcmInterval
+		if c.secretConfig.OCMConfig.Interval > 0 {
+			cfg.OCMConfig.Interval = c.secretConfig.OCMConfig.Interval
 		}
+
+		cfg.OCMConfig.Disabled = c.secretConfig.OCMConfig.Disabled
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {
