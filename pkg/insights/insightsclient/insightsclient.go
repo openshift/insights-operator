@@ -1,6 +1,7 @@
 package insightsclient
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -36,6 +37,8 @@ import (
 
 const (
 	responseBodyLogLen = 1024
+	insightsReqId      = "x-rh-insights-request-id"
+	scaArchPayload     = `{"type": "sca","arch": "x86_64"}`
 )
 
 type Client struct {
@@ -51,6 +54,7 @@ type Client struct {
 type Authorizer interface {
 	Authorize(req *http.Request) error
 	NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error)
+	Token() (string, error)
 }
 
 type Source struct {
@@ -244,7 +248,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		return fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
 
-	requestID := resp.Header.Get("x-rh-insights-request-id")
+	requestID := resp.Header.Get(insightsReqId)
 
 	defer func() {
 		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
@@ -258,12 +262,12 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	counterRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		klog.V(2).Infof("gateway server %s returned 401, %s=%s", insightsReqId, resp.Request.URL, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
-		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		klog.V(2).Infof("gateway server %s returned 403, %s=%s", insightsReqId, resp.Request.URL, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	}
 
@@ -276,7 +280,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	}
 
 	if len(requestID) > 0 {
-		klog.V(2).Infof("Successfully reported id=%s x-rh-insights-request-id=%s, wrote=%d", source.ID, requestID, bytesRead)
+		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", insightsReqId, source.ID, requestID, bytesRead)
 	}
 
 	return nil
@@ -340,9 +344,9 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 		}
 		notFoundErr := InsightsError{
 			StatusCode: resp.StatusCode,
-			Err:        fmt.Errorf("insights report not found: %s (request=%s): %s", resp.Request.URL, requestID, string(body)),
+			Err:        fmt.Errorf("not found: %s (request=%s): %s", resp.Request.URL, requestID, string(body)),
 		}
-		return notFoundErr
+		return nil, notFoundErr
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
@@ -361,6 +365,39 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 	return nil, fmt.Errorf("Report response status code: %d", resp.StatusCode)
 }
 
+func (c Client) RecvSCACerts(ctx context.Context, endpoint string) ([]byte, error) {
+	cv, err := c.getClusterVersion()
+	if err != nil {
+		return nil, err
+	}
+	if cv == nil {
+		return nil, ErrWaitingForVersion
+	}
+	token, err := c.authorizer.Token()
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(scaArchPayload)))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	c.client.Transport = clientTransport(c.authorizer)
+	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
+	req.Header.Set("Authorization", authHeader)
+
+	res, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve SCA certs data from %s: %v", endpoint, err)
+	}
+
+	if res.StatusCode >= 300 || res.StatusCode < 200 {
+		return nil, ocmErrorMessage(res.Request.URL, res)
+	}
+
+	return ioutil.ReadAll(res.Body)
+}
+
 func responseBody(r *http.Response) string {
 	if r == nil {
 		return ""
@@ -370,6 +407,16 @@ func responseBody(r *http.Response) string {
 		body = body[:responseBodyLogLen]
 	}
 	return string(body)
+}
+
+// ocmErrorMessage wraps the OCM error states in the error
+func ocmErrorMessage(url *url.URL, r *http.Response) error {
+	errMessage := fmt.Sprintf("OCM API %s returned HTTP %d: %s", url, r.StatusCode, responseBody(r))
+	err := fmt.Errorf(errMessage)
+	if r.StatusCode == http.StatusUnauthorized || r.StatusCode == http.StatusForbidden {
+		return authorizer.Error{Err: err}
+	}
+	return err
 }
 
 var (
