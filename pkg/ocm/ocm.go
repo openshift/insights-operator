@@ -2,11 +2,11 @@ package ocm
 
 import (
 	"context"
-	"io/ioutil"
-	"net/http"
+	"encoding/json"
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,14 +16,15 @@ import (
 
 const (
 	targetNamespaceName = "openshift-config-managed"
-	secretName          = "etc-pki-entitlement"
+	secretName          = "etc-pki-entitlement" //nolint: gosec
 )
 
 // Controller holds all the required resources to be able to communicate with OCM API
 type Controller struct {
 	coreClient   corev1client.CoreV1Interface
-	context      context.Context
+	ctx          context.Context
 	configurator Configurator
+	client       *insightsclient.Client
 }
 
 // Configurator represents the interface to retrieve the configuration for the gatherer
@@ -32,12 +33,22 @@ type Configurator interface {
 	ConfigChanged() (<-chan struct{}, func())
 }
 
+// ScaResponse structure is used to unmarshall the OCM response. It holds the SCA certificate
+type ScaResponse struct {
+	ID    string `json:"id"`
+	OrgID string `json:"organization_id"`
+	Key   string `json:"key"`
+	Cert  string `json:"cert"`
+}
+
 // New creates new instance
-func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator Configurator) *Controller {
+func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator Configurator,
+	insightsClient *insightsclient.Client) *Controller {
 	return &Controller{
 		coreClient:   coreClient,
-		context:      ctx,
+		ctx:          ctx,
 		configurator: configurator,
+		client:       insightsClient,
 	}
 }
 
@@ -68,30 +79,36 @@ func (c *Controller) Run() {
 }
 
 func (c *Controller) requestDataAndCheckSecret(endpoint string) {
-	data, err := requestData(endpoint)
+	data, err := c.client.RecvSCACerts(c.ctx, endpoint)
 	if err != nil {
-		klog.Errorf("errror requesting data from %s: %v", endpoint, err)
-	}
-	// check & update the secret here
-	err = c.checkSecret(data)
-	if err != nil {
-		// TODO - change IO status in case of failure ?
-		klog.Errorf("error when checking the %s secret: %v", secretName, err)
+		klog.Errorf("Failed to retrieve data: %v", err)
 		return
 	}
-	klog.Infof("%s secret successfuly updated", secretName)
+	var ocmRes ScaResponse
+	err = json.Unmarshal(data, &ocmRes)
+	if err != nil {
+		klog.Errorf("Unable to decode response: %v", err)
+		return
+	}
 
+	// check & update the secret here
+	err = c.checkSecret(&ocmRes)
+	if err != nil {
+		klog.Errorf("Error when checking the %s secret: %v", secretName, err)
+		return
+	}
+	klog.Infof("%s secret successfully updated", secretName)
 }
 
 // checkSecret checks "etc-pki-entitlement" secret in the "openshift-config-managed" namespace.
 // If the secret doesn't exist then it will create a new one.
 // If the secret already exist then it will update the data.
-func (c *Controller) checkSecret(data []byte) error {
-	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(c.context, secretName, metav1.GetOptions{})
+func (c *Controller) checkSecret(ocmData *ScaResponse) error {
+	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(c.ctx, secretName, metav1.GetOptions{})
 
-	//if the secret doesn't exist then create one
+	// if the secret doesn't exist then create one
 	if errors.IsNotFound(err) {
-		_, err = c.createSecret(data)
+		_, err = c.createSecret(ocmData)
 		if err != nil {
 			return err
 		}
@@ -101,27 +118,26 @@ func (c *Controller) checkSecret(data []byte) error {
 		return err
 	}
 
-	_, err = c.updateSecret(scaSec, data)
+	_, err = c.updateSecret(scaSec, ocmData)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Controller) createSecret(data []byte) (*v1.Secret, error) {
+func (c *Controller) createSecret(ocmData *ScaResponse) (*v1.Secret, error) {
 	newSCA := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: targetNamespaceName,
 		},
-		// TODO set the data correctly
 		Data: map[string][]byte{
-			v1.TLSCertKey:       data,
-			v1.TLSPrivateKeyKey: data,
+			v1.TLSCertKey:       []byte(ocmData.Cert),
+			v1.TLSPrivateKeyKey: []byte(ocmData.Key),
 		},
 		Type: v1.SecretTypeTLS,
 	}
-	cm, err := o.coreClient.Secrets(targetNamespaceName).Create(o.context, newSCA, metav1.CreateOptions{})
+	cm, err := c.coreClient.Secrets(targetNamespaceName).Create(c.ctx, newSCA, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -129,38 +145,14 @@ func (o *Controller) createSecret(data []byte) (*v1.Secret, error) {
 }
 
 // updateSecret updates provided secret with given data
-func (o *Controller) updateSecret(s *v1.Secret, data []byte) (*v1.Secret, error) {
-
-	// TODO set the data correctly
+func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secret, error) {
 	s.Data = map[string][]byte{
-		v1.TLSCertKey:       data,
-		v1.TLSPrivateKeyKey: data,
+		v1.TLSCertKey:       []byte(ocmData.Cert),
+		v1.TLSPrivateKeyKey: []byte(ocmData.Key),
 	}
-	s, err := o.coreClient.Secrets(s.Namespace).Update(o.context, s, metav1.UpdateOptions{})
+	s, err := c.coreClient.Secrets(s.Namespace).Update(c.ctx, s, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
 	}
 	return s, nil
-}
-
-// TODO
-// - no need to create new HTTP client every time
-// - add authorization
-// - add response status check
-// - move this to insightsclient?
-func requestData(endpoint string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	d, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-	return d, nil
 }

@@ -114,7 +114,7 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 }
 
 // Updates the stored configs from the secrets in the cluster. (if present)
-func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo
+func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo,funlen
 	var nextConfig config.Controller
 
 	klog.V(2).Infof("Refreshing configuration from cluster secret")
@@ -208,8 +208,9 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 			nextConfig.OCMConfig.Endpoint = string(ocmEndpoint)
 		}
 		if ocmInterval, ok := secret.Data["ocmInterval"]; ok {
-			if oi, err := time.ParseDuration(string(ocmInterval)); err == nil {
-				nextConfig.OCMConfig.Interval = oi
+			var newInterval time.Duration
+			if newInterval, err = time.ParseDuration(string(ocmInterval)); err == nil {
+				nextConfig.OCMConfig.Interval = newInterval
 			} else {
 				klog.Warningf(
 					"secret contains an invalid value (%s) for ocmInterval. Using previous value",
