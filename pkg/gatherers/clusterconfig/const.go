@@ -18,7 +18,7 @@ var (
 	// logMaxLongTailLines sets maximum number of lines of the long log file
 	logMaxLongTailLines = int64(2000)
 	// logLinesOffset sets the maximum offset if a stacktrace message was found in the logs
-	logLinesOffset = int64(20)
+	logLinesOffset = 20
 
 	defaultNamespaces           = []string{"default", "kube-system", "kube-public"}
 	datahubGroupVersionResource = schema.GroupVersionResource{

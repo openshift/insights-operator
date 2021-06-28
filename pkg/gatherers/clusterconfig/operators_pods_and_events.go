@@ -334,7 +334,7 @@ func getLogWithStacktracing(logArray []string) string {
 		// if it didn't find the line yet, keep add it as offset limiting by the arbitrary
 		// offset limit value
 		log = append(log, line)
-		if len(log) > int(logLinesOffset) {
+		if len(log) > logLinesOffset {
 			// to avoid memory leaks (https://github.com/golang/go/wiki/SliceTricks#delete-without-preserving-order)
 			log[0] = ""
 			log = log[1:]
