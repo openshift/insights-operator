@@ -1,4 +1,4 @@
-package clusterconfig
+package common
 
 import (
 	"bufio"
@@ -17,20 +17,23 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-type logContainersFilter struct {
-	namespace                string
-	labelSelector            string
-	containerNameRegexFilter string
+// LogContainersFilter allows you to filter containers
+type LogContainersFilter struct {
+	Namespace                string
+	LabelSelector            string
+	ContainerNameRegexFilter string
 }
 
-type logMessagesFilter struct {
-	messagesToSearch []string
-	isRegexSearch    bool
-	sinceSeconds     int64
-	limitBytes       int64
+// LogMessagesFilter allows you to filter messages
+type LogMessagesFilter struct {
+	MessagesToSearch []string
+	IsRegexSearch    bool
+	SinceSeconds     int64
+	LimitBytes       int64
+	TailLines        int64
 }
 
-// gatherLogsFromContainers collects logs from containers
+// CollectLogsFromContainers collects logs from containers
 //   - containerFilter allows you to specify
 //     - namespace in which to search for pods
 //     - labelSelector to filter pods by their labels (keep empty to not filter)
@@ -41,19 +44,27 @@ type logMessagesFilter struct {
 //     - regexSearch which makes messagesToSearch regex patterns, so you can accomplish more complicated search
 //     - sinceSeconds which sets the moment to fetch the logs from (current time - sinceSeconds)
 //     - limitBytes which sets the maximum amount of logs that can be fetched
-//   - logFileName sets the name of the file to save the logs to.
+//     - tailLines which sets the maximum amount of log lines from the end that should be fetched
+//   - buildLogFileName is the function returning filename for the current log,
+//       if nil, the default implementation is used
 //
-// Location of the logs is `config/pod/{namespace}/logs/{podName}/{fileName}.log`
-//nolint: unparam
-func gatherLogsFromContainers(
+// Default location of the logs is `config/pod/{namespace}/logs/{podName}/errors.log`,
+//   you can override it with buildLogFileName
+func CollectLogsFromContainers( //nolint:gocyclo
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
-	containersFilter logContainersFilter,
-	messagesFilter logMessagesFilter,
-	logFileName string,
+	containersFilter LogContainersFilter,
+	messagesFilter LogMessagesFilter,
+	buildLogFileName func(namespace string, podName string, containerName string) string,
 ) ([]record.Record, error) {
-	pods, err := coreClient.Pods(containersFilter.namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: containersFilter.labelSelector,
+	if buildLogFileName == nil {
+		buildLogFileName = func(namespace string, podName string, containerName string) string {
+			return fmt.Sprintf("config/pod/%s/logs/%s/errors.log", namespace, podName)
+		}
+	}
+
+	pods, err := coreClient.Pods(containersFilter.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: containersFilter.LabelSelector,
 	})
 	if err != nil {
 		return nil, err
@@ -62,17 +73,19 @@ func gatherLogsFromContainers(
 	var records []record.Record
 
 	for i := range pods.Items {
-		var containers []string
+		var containerNames []string
 		for j := range pods.Items[i].Spec.Containers {
-			containers = append(containers, pods.Items[i].Spec.Containers[j].Name)
+			containerNames = append(containerNames, pods.Items[i].Spec.Containers[j].Name)
 		}
 		for j := range pods.Items[i].Spec.InitContainers {
-			containers = append(containers, pods.Items[i].Spec.InitContainers[j].Name)
+			containerNames = append(containerNames, pods.Items[i].Spec.InitContainers[j].Name)
 		}
 
-		for _, container := range containers {
-			if len(containersFilter.containerNameRegexFilter) > 0 {
-				match, err := regexp.MatchString(containersFilter.containerNameRegexFilter, container)
+		pod := &pods.Items[i]
+
+		for _, containerName := range containerNames {
+			if len(containersFilter.ContainerNameRegexFilter) > 0 {
+				match, err := regexp.MatchString(containersFilter.ContainerNameRegexFilter, containerName)
 				if err != nil {
 					return nil, err
 				}
@@ -81,21 +94,37 @@ func gatherLogsFromContainers(
 				}
 			}
 
-			request := coreClient.Pods(containersFilter.namespace).GetLogs(pods.Items[i].Name, &corev1.PodLogOptions{
-				Container:    container,
-				SinceSeconds: &messagesFilter.sinceSeconds,
-				LimitBytes:   &messagesFilter.limitBytes,
+			sinceSeconds := &messagesFilter.SinceSeconds
+			if messagesFilter.SinceSeconds == 0 {
+				sinceSeconds = nil
+			}
+
+			limitBytes := &messagesFilter.LimitBytes
+			if messagesFilter.LimitBytes == 0 {
+				limitBytes = nil
+			}
+
+			tailLines := &messagesFilter.TailLines
+			if messagesFilter.TailLines == 0 {
+				tailLines = nil
+			}
+
+			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+				Container:    containerName,
+				SinceSeconds: sinceSeconds,
+				LimitBytes:   limitBytes,
+				TailLines:    tailLines,
 				Timestamps:   true,
 			})
 
-			logs, err := filterLogs(ctx, request, messagesFilter.messagesToSearch, messagesFilter.isRegexSearch)
+			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
 			if err != nil {
 				return nil, err
 			}
 
 			if len(strings.TrimSpace(logs)) != 0 {
 				records = append(records, record.Record{
-					Name: fmt.Sprintf("config/pod/%s/logs/%s/%s.log", pods.Items[i].Namespace, pods.Items[i].Name, logFileName),
+					Name: buildLogFileName(pod.Namespace, pod.Name, containerName),
 					Item: marshal.Raw{Str: logs},
 				})
 			}
@@ -103,7 +132,7 @@ func gatherLogsFromContainers(
 	}
 
 	if len(pods.Items) == 0 {
-		klog.Infof("no pods in %v namespace were found", containersFilter.namespace)
+		klog.Infof("no pods in %v namespace were found", containersFilter.Namespace)
 	}
 
 	return records, nil
@@ -130,7 +159,7 @@ func filterLogs(
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		if messagesToSearch == nil {
+		if len(messagesToSearch) == 0 {
 			result += line + "\n"
 			continue
 		}

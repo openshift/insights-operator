@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -20,17 +21,17 @@ import (
 // * Since versions:
 //   * 4.7+
 func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := logContainersFilter{
-		namespace:     "openshift-authentication",
-		labelSelector: "app=oauth-openshift",
+	containersFilter := common.LogContainersFilter{
+		Namespace:     "openshift-authentication",
+		LabelSelector: "app=oauth-openshift",
 	}
-	messagesFilter := logMessagesFilter{
-		messagesToSearch: []string{
+	messagesFilter := common.LogMessagesFilter{
+		MessagesToSearch: []string{
 			"AuthenticationError: invalid resource name",
 		},
-		isRegexSearch: false,
-		sinceSeconds:  86400,     // last day
-		limitBytes:    1024 * 64, // maximum 64 kb of logs
+		IsRegexSearch: false,
+		SinceSeconds:  86400,     // last day
+		LimitBytes:    1024 * 64, // maximum 64 kb of logs
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -40,12 +41,12 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := gatherLogsFromContainers(
+	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
-		"errors",
+		nil,
 	)
 	if err != nil {
 		return nil, []error{err}

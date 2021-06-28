@@ -1,6 +1,7 @@
 package clusterconfig_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -13,7 +14,8 @@ import (
 func Test_Gatherer_Basic(t *testing.T) {
 	gatherer := clusterconfig.New(nil, nil, nil, nil, 1*time.Minute)
 	assert.Equal(t, "clusterconfig", gatherer.GetName())
-	gatheringFunctions := gatherer.GetGatheringFunctions()
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
 	assert.Greater(t, len(gatheringFunctions), 0)
 
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)

@@ -17,7 +17,7 @@ type MockGatherer struct {
 
 func (*MockGatherer) GetName() string { return "mock_gatherer" }
 
-func (g *MockGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *MockGatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	return map[string]gatherers.GatheringClosure{
 		"name": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
@@ -49,7 +49,7 @@ func (g *MockGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClo
 			},
 			CanFail: g.CanFail,
 		},
-	}
+	}, nil
 }
 
 func (g *MockGatherer) GatherName(context.Context) ([]record.Record, []error) {
@@ -107,7 +107,7 @@ type MockCustomPeriodGatherer struct {
 
 func (*MockCustomPeriodGatherer) GetName() string { return "mock_custom_period_gatherer" }
 
-func (g *MockCustomPeriodGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *MockCustomPeriodGatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	return map[string]gatherers.GatheringClosure{
 		"period": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
@@ -115,7 +115,7 @@ func (g *MockCustomPeriodGatherer) GetGatheringFunctions() map[string]gatherers.
 			},
 			CanFail: false,
 		},
-	}
+	}, nil
 }
 
 func (g *MockCustomPeriodGatherer) ShouldBeProcessedNow() bool {
@@ -149,7 +149,7 @@ func (*MockCustomPeriodGathererNoPeriod) GetName() string {
 	return "mock_custom_period_gatherer_no_period"
 }
 
-func (g *MockCustomPeriodGathererNoPeriod) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *MockCustomPeriodGathererNoPeriod) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	return map[string]gatherers.GatheringClosure{
 		"should_be_processed": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
@@ -157,7 +157,7 @@ func (g *MockCustomPeriodGathererNoPeriod) GetGatheringFunctions() map[string]ga
 			},
 			CanFail: false,
 		},
-	}
+	}, nil
 }
 
 func (g *MockCustomPeriodGathererNoPeriod) ShouldBeProcessedNow() bool {
@@ -185,7 +185,7 @@ func (*MockFailingGatherer) GetName() string {
 	return "mock_failing_gatherer"
 }
 
-func (g *MockFailingGatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *MockFailingGatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	return map[string]gatherers.GatheringClosure{
 		"failing": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
@@ -193,7 +193,7 @@ func (g *MockFailingGatherer) GetGatheringFunctions() map[string]gatherers.Gathe
 			},
 			CanFail: false,
 		},
-	}
+	}, nil
 }
 
 func (g *MockFailingGatherer) FailingGatherer(context.Context) ([]record.Record, []error) {

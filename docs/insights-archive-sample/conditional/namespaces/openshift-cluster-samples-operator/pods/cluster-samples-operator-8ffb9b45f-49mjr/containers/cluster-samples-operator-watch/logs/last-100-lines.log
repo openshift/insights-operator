@@ -1,0 +1,6 @@
+I0524 13:15:17.126969      28 cmd.go:331] Waiting for process with process name "cluster-samples-operator" ...
+I0524 13:15:17.127720      28 cmd.go:341] Watching for changes in: ([]string) (len=2 cap=2) {
+ (string) (len=33) "/proc/14/root/etc/secrets/tls.crt",
+ (string) (len=33) "/proc/14/root/etc/secrets/tls.key"
+}
+I0524 13:15:17.136324      28 observer_polling.go:155] Starting file observer

@@ -6,6 +6,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -25,20 +26,20 @@ import (
 //   * 4.6.19+
 //   * 4.7+
 func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := logContainersFilter{
-		namespace:     "openshift-sdn",
-		labelSelector: "app=sdn",
+	containersFilter := common.LogContainersFilter{
+		Namespace:     "openshift-sdn",
+		LabelSelector: "app=sdn",
 	}
-	messagesFilter := logMessagesFilter{
-		messagesToSearch: []string{
+	messagesFilter := common.LogMessagesFilter{
+		MessagesToSearch: []string{
 			"Got OnEndpointsUpdate for unknown Endpoints",
 			"Got OnEndpointsDelete for unknown Endpoints",
 			"Unable to update proxy firewall for policy",
 			"Failed to update proxy firewall for policy",
 		},
-		isRegexSearch: false,
-		sinceSeconds:  86400,
-		limitBytes:    1024 * 64,
+		IsRegexSearch: false,
+		SinceSeconds:  86400,
+		LimitBytes:    1024 * 64,
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
@@ -48,12 +49,12 @@ func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record,
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	records, err := gatherLogsFromContainers(
+	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
-		"errors",
+		nil,
 	)
 	if err != nil {
 		return nil, []error{err}

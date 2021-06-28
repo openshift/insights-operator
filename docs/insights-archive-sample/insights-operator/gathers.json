@@ -265,6 +265,27 @@
       "records_count": 1,
       "errors": null,
       "panic": null
+    },
+    {
+      "name": "conditional/conditional_gatherer_rules",
+      "duration_in_ms": 0,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "conditional/image_stream_definitions_of_namespace/namespace=openshift-cluster-samples-operator",
+      "duration_in_ms": 135,
+      "records_count": 1,
+      "errors": null,
+      "panic": null
+    },
+    {
+      "name": "conditional/logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100",
+      "duration_in_ms": 498,
+      "records_count": 2,
+      "errors": null,
+      "panic": null
     }
   ],
   "memory_alloc_bytes": 17411816,

@@ -1,4 +1,4 @@
-package clusterconfig
+package common
 
 import (
 	"context"
@@ -45,21 +45,21 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 		t.Fatal(err)
 	}
 
-	records, err := gatherLogsFromContainers(
+	records, err := CollectLogsFromContainers(
 		ctx,
 		coreClient,
-		logContainersFilter{
-			namespace: testPodName,
+		LogContainersFilter{
+			Namespace: testPodName,
 		},
-		logMessagesFilter{
-			messagesToSearch: []string{
+		LogMessagesFilter{
+			MessagesToSearch: []string{
 				stringToSearch,
 			},
-			isRegexSearch: regexSearch,
-			sinceSeconds:  86400,     // last day
-			limitBytes:    1024 * 64, // maximum 64 kb of logs
+			IsRegexSearch: regexSearch,
+			SinceSeconds:  86400,     // last day
+			LimitBytes:    1024 * 64, // maximum 64 kb of logs
 		},
-		testLogFileName,
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -104,7 +104,7 @@ func (g *Gatherer) GetName() string {
 	return "clusterconfig"
 }
 
-func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure {
+func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.GatheringClosure, error) {
 	result := make(map[string]gatherers.GatheringClosure)
 
 	for funcName, function := range gatheringFunctions {
@@ -118,5 +118,5 @@ func (g *Gatherer) GetGatheringFunctions() map[string]gatherers.GatheringClosure
 		}
 	}
 
-	return result
+	return result, nil
 }
