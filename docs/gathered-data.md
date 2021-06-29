@@ -61,6 +61,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 fetches the image pruner configuration
 
 * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
+* Location in older versions: config/imagepruner.json
 * Id in config: image_pruners
 
 
@@ -72,6 +73,7 @@ fetches the cluster Image Registry configuration
 PersistentVolume definition is gathered
 
 * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
+* Location in older versions: config/imageregistry.json
 * Id in config: image_registries
 * Since versions:
   * 4.3.40+
@@ -159,7 +161,9 @@ collects all the ClusterOperators definitions and their resources.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
 
+* Location of operators related resources: config/clusteroperator/{group}/{kind}/{name}
 * Location of operators in archive: config/clusteroperator/
+* Location of operators related resources in older versions: config/clusteroperator/{kind}-{name}
 * See: docs/insights-archive-sample/config/clusteroperator
 * Id in config: operators
 * Spec config for CO resources since versions:
@@ -214,6 +218,7 @@ The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernete
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 
 * Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
+* Location in older versions: config/configmaps/{configmap-name}/
 * See: docs/insights-archive-sample/config/configmaps
 * Id in config: config_maps
 * Since versions:

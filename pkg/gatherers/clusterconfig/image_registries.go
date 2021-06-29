@@ -25,6 +25,7 @@ import (
 // PersistentVolume definition is gathered
 //
 // * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
+// * Location in older versions: config/imageregistry.json
 // * Id in config: image_registries
 // * Since versions:
 //   * 4.3.40+

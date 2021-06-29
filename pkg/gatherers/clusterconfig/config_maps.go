@@ -27,6 +27,7 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 //
 // * Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
+// * Location in older versions: config/configmaps/{configmap-name}/
 // * See: docs/insights-archive-sample/config/configmaps
 // * Id in config: config_maps
 // * Since versions:
