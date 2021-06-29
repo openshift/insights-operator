@@ -51,7 +51,7 @@ func gatherCRD(ctx context.Context, crdClient apixv1.ApiextensionsV1Interface) (
 		}
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/crd/%s", crd.Name),
-			Item: record.JSONMarshaller{Object: crd},
+			Item: record.ResourceMarshaller{Resource: crd},
 		})
 	}
 

@@ -70,7 +70,7 @@ func gatherClusterImageRegistry(ctx context.Context,
 		} else {
 			pvRecord := record.Record{
 				Name: fmt.Sprintf("config/persistentvolumes/%s", pv.Name),
-				Item: record.JSONMarshaller{Object: pv},
+				Item: record.ResourceMarshaller{Resource: pv},
 			}
 			records = append(records, pvRecord)
 		}
@@ -87,7 +87,7 @@ func gatherClusterImageRegistry(ctx context.Context,
 	objKind := kinds[0]
 	coRecord := record.Record{
 		Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), config.Name),
-		Item: record.JSONMarshaller{Object: anonymizeImageRegistry(config)},
+		Item: record.ResourceMarshaller{Resource: anonymizeImageRegistry(config)},
 	}
 	records = append(records, coRecord)
 	return records, nil

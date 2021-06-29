@@ -116,7 +116,7 @@ func gatherSAPPods(ctx context.Context,
 				Name: fmt.Sprintf("config/pod/%s/%s", pods.Items[i].Namespace, pods.Items[i].Name),
 				// It is impossible to use `&pod` here because it would end up being
 				// the last returned pod as the reference keeps changing with each iteration.
-				Item: record.JSONMarshaller{Object: &pods.Items[i]},
+				Item: record.ResourceMarshaller{Resource: &pods.Items[i]},
 			})
 		}
 	}

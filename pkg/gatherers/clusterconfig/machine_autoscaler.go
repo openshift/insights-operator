@@ -48,7 +48,7 @@ func gatherMachineAutoscalers(ctx context.Context, dynamicClient dynamic.Interfa
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.JSONMarshaller{Object: i.Object},
+			Item: record.ResourceMarshaller{Resource: &i},
 		})
 	}
 

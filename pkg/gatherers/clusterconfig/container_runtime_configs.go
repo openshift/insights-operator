@@ -48,7 +48,7 @@ func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Int
 	for _, i := range containerRCs.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/containerruntimeconfigs/%s", i.GetName()),
-			Item: record.JSONMarshaller{Object: i.Object},
+			Item: record.ResourceMarshaller{Resource: &i},
 		})
 	}
 	return records, nil

@@ -36,5 +36,5 @@ func gatherClusterAuthentication(ctx context.Context, configClient configv1clien
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/authentication", Item: record.JSONMarshaller{Object: config}}}, nil
+	return []record.Record{{Name: "config/authentication", Item: record.ResourceMarshaller{Resource: config}}}, nil
 }

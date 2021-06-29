@@ -52,7 +52,7 @@ func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]r
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.JSONMarshaller{Object: i.Object},
+			Item: record.ResourceMarshaller{Resource: &i},
 		})
 	}
 

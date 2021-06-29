@@ -48,7 +48,7 @@ func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interfac
 	for _, i := range machineCPs.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/machineconfigpools/%s", i.GetName()),
-			Item: record.JSONMarshaller{Object: i.Object},
+			Item: record.ResourceMarshaller{Resource: &i},
 		})
 	}
 

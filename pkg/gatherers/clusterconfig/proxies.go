@@ -37,7 +37,7 @@ func gatherClusterProxy(ctx context.Context, configClient configv1client.ConfigV
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/proxy", Item: record.JSONMarshaller{Object: anonymizeProxy(config)}}}, nil
+	return []record.Record{{Name: "config/proxy", Item: record.ResourceMarshaller{Resource: anonymizeProxy(config)}}}, nil
 }
 
 func anonymizeProxy(proxy *configv1.Proxy) *configv1.Proxy {

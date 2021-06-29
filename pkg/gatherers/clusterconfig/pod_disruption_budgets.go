@@ -48,7 +48,7 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.JSONMarshaller{Object: pdbs.Items[i]},
+			Item: record.ResourceMarshaller{Resource: &pdbs.Items[i]},
 		})
 	}
 	return records, nil

@@ -62,7 +62,7 @@ func (g *Gatherer) gatherImageStreamsOfNamespace(ctx context.Context, namespace 
 				"%v/namespaces/%v/imagestreams/%v",
 				g.GetName(), imageStream.GetNamespace(), imageStream.GetName(),
 			),
-			Item: record.JSONMarshaller{Object: imageStream},
+			Item: record.ResourceMarshaller{Resource: &imageStream},
 		})
 	}
 

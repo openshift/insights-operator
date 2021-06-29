@@ -45,7 +45,7 @@ func gatherSAPDatahubs(ctx context.Context, dynamicClient dynamic.Interface) ([]
 				datahub.GetNamespace(),
 				datahub.GetName(),
 			),
-			Item: record.JSONMarshaller{Object: &datahubsList.Items[i]},
+			Item: record.ResourceMarshaller{Resource: &datahubsList.Items[i]},
 		})
 	}
 

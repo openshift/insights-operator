@@ -81,7 +81,7 @@ func gatherSAPConfig(ctx context.Context,
 			// It is not possible to use the generic OpenShift Anonymizer type here
 			// because the SCC and CRB resources returned by their respective clients
 			// are currently missing some properties (kind, apiVersion).
-			Item: record.JSONMarshaller{Object: scc},
+			Item: record.ResourceMarshaller{Resource: scc},
 		})
 	}
 
@@ -96,7 +96,7 @@ func gatherSAPConfig(ctx context.Context,
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/clusterrolebinding/%s", strings.ReplaceAll(crb.Name, ":", "_")),
 			// See the note above on why it is not possible to use the generic Anonymizer type.
-			Item: record.JSONMarshaller{Object: crb},
+			Item: record.ResourceMarshaller{Resource: crb},
 		})
 	}
 

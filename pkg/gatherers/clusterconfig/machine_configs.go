@@ -57,7 +57,7 @@ func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface) 
 		}
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/machineconfigs/%s", mc.GetName()),
-			Item: record.JSONMarshaller{Object: mc.Object},
+			Item: record.ResourceMarshaller{Resource: &mc},
 		})
 	}
 	if len(errs) > 0 {

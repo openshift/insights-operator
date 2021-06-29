@@ -59,7 +59,7 @@ func getClusterVersion(ctx context.Context,
 	}
 
 	records := []record.Record{
-		{Name: "config/version", Item: record.JSONMarshaller{Object: anonymizeClusterVersion(config)}},
+		{Name: "config/version", Item: record.ResourceMarshaller{Resource: anonymizeClusterVersion(config)}},
 	}
 
 	if config.Spec.ClusterID != "" {
@@ -82,7 +82,7 @@ func getClusterVersion(ctx context.Context,
 		// TODO: shift after IsHealthyPod
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
-			Item: record.JSONMarshaller{Object: pod},
+			Item: record.ResourceMarshaller{Resource: pod},
 		})
 
 		if check.IsHealthyPod(pod, now) {

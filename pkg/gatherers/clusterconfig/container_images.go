@@ -70,7 +70,7 @@ func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1In
 			if strings.HasPrefix(pod.Namespace, "openshift-") && check.HasContainerInCrashloop(podPtr) {
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
-					Item: record.JSONMarshaller{Object: podPtr},
+					Item: record.ResourceMarshaller{Resource: podPtr},
 				})
 			} else if pod.Status.Phase == corev1.PodRunning {
 				startMonth := pod.CreationTimestamp.Time.UTC().Format(yyyyMmDateFormat)

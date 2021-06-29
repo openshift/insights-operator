@@ -175,7 +175,7 @@ func gatherUnhealthyPods(pods []corev1.Pod) ([]*corev1.Pod, []record.Record, int
 		}
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
-			Item: record.JSONMarshaller{Object: pod},
+			Item: record.ResourceMarshaller{Resource: pod},
 		})
 		podList = append(podList, pod)
 		total += len(pod.Spec.InitContainers) + len(pod.Spec.Containers)
