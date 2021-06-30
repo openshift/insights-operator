@@ -321,21 +321,12 @@ func getLogWithStacktracing(logArray []string) string {
 
 	for idx := range logArray {
 		line := logArray[idx]
-		// if it already found the stack we just want to keep add the log till the end
-		if found {
-			log = append(log, line)
-			continue
-		}
-		// tries to find the stack message at the given line and add it to the log
-		if found = stackTraceRegex.MatchString(line); found {
-			log = append(log, line)
-			continue
-		}
-		// if it didn't find the line yet, keep add it as offset limiting by the arbitrary
-		// offset limit value
 		log = append(log, line)
-		if len(log) > logLinesOffset {
-			log = log[1:]
+		if !found {
+			if len(log) > logLinesOffset {
+				log = log[1:]
+			}
+			found = stackTraceRegex.MatchString(line)
 		}
 	}
 
