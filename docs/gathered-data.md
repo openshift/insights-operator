@@ -277,7 +277,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 ## ImageStreamsOfNamespace
 
 creates a gathering closure which collects image streams from the provided namespace
-Params:
+Params is of type GatherImageStreamsOfNamespaceParams:
   - namespace string - namespace from which to collect image streams
 
 API reference:
@@ -285,7 +285,7 @@ API reference:
 
 * Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
 * Since versions:
-  * 4.8+
+  * 4.9+
 
 
 ## InstallPlans
@@ -305,6 +305,23 @@ The Operators-Framework api https://github.com/operator-framework/api/blob/maste
   * 4.7+
 
 
+## LogsOfNamespace
+
+creates a gathering closure which collects logs from pods in the provided namespace
+Params is of type GatherLogsOfNamespaceParams:
+  - namespace string - namespace from which to collect logs
+  - tail_lines int64 - a number of log lines to keep for each container
+
+The Kubernetes API:
+         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see:
+         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+* Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
+* Since versions:
+  * 4.9+
+
+
 ## MachineAutoscalers
 
 collects MachineAutoscalers definition
@@ -316,24 +333,6 @@ Response see:
 
 * Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
 * Id in config: machine_autoscalers
-* Since versions:
-  * 4.8+
-
-
-## LogsOfNamespace
-
-creates a gathering closure which collects logs from pods in the provided namespace
-Params:
-  - namespace string - namespace from which to collect image streams
-  - label_selector string - a label selector to filter some pods (default to all pods)
-  - tail_lines int64 - a number of log lines to keep for each container
-
-The Kubernetes API:
-         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-Response see:
-         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-* Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
 * Since versions:
   * 4.8+
 
