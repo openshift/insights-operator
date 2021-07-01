@@ -77,7 +77,7 @@ func Test_ImagePruner_Gather(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unable to marshal config: %v", err)
 			}
-			obj, ok := item.(record.JSONMarshaller).Object.(*imageregistryv1.ImagePruner)
+			obj, ok := item.(record.ResourceMarshaller).Resource.(*imageregistryv1.ImagePruner)
 			if !ok {
 				t.Fatalf("failed to decode object")
 			}

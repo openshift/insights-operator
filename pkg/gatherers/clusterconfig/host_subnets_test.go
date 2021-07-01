@@ -39,7 +39,7 @@ func Test_GatherHostSubnet(t *testing.T) {
 		t.Fatalf("failed to marshal object: %v", err)
 	}
 
-	hs, ok := records[0].Item.(record.JSONMarshaller).Object.(networkv1.HostSubnet)
+	hs, ok := records[0].Item.(record.ResourceMarshaller).Resource.(*networkv1.HostSubnet)
 	if !ok {
 		t.Fatalf("failed to decode object")
 	}

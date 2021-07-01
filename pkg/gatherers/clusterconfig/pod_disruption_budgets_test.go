@@ -47,7 +47,7 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 	if len(records) != len(fakePDBs) {
 		t.Fatalf("unexpected number of records gathered: %d (expected %d)", len(records), len(fakePDBs))
 	}
-	pdba, ok := records[0].Item.(record.JSONMarshaller).Object.(policyv1.PodDisruptionBudget)
+	pdba, ok := records[0].Item.(record.ResourceMarshaller).Resource.(*policyv1.PodDisruptionBudget)
 	if !ok {
 		t.Fatal("pdb item has invalid type")
 	}
