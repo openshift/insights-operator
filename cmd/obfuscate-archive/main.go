@@ -32,41 +32,43 @@ func main() {
 
 	path := os.Args[1]
 
-	if err := obfuscateArchive(path); err != nil {
-		printlnToStderr("Unable to obfuscate archive: %v", err)
+	if newPath, err := obfuscateArchive(path); err != nil {
+		printlnToStderrf("Unable to obfuscate archive: %v", err)
+	} else {
+		fmt.Println("Created", newPath)
 	}
 }
 
-func printlnToStderr(format string, params ...interface{}) {
+func printlnToStderrf(format string, params ...interface{}) {
 	_, _ = fmt.Fprintln(os.Stderr, fmt.Sprintf(format, params...))
 }
 
-func obfuscateArchive(path string) error {
+func obfuscateArchive(path string) (string, error) {
 	const suffix = ".tar.gz"
 	if !strings.HasSuffix(path, suffix) {
-		return fmt.Errorf(`invalid path to the archive: should end with "%v"`, suffix)
+		return "", fmt.Errorf(`invalid path to the archive: should end with "%v"`, suffix)
 	}
 
 	newPath := strings.TrimSuffix(path, suffix) + "-obfuscated" + suffix
 
 	records, err := readArchive(path)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	clusterBaseDomain, err := getClusterBaseDomain(records)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	networks, err := anonymization.GetNetworksForAnonymizerFromRecords(records)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	anonymizer, err := anonymization.NewAnonymizer(clusterBaseDomain, networks, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var anonymizedRecords record.MemoryRecords
@@ -77,14 +79,14 @@ func obfuscateArchive(path string) error {
 
 			err = json.Unmarshal(r.Data, &metadata)
 			if err != nil {
-				return err
+				return "", err
 			}
 
 			metadata.IsGlobalObfuscationEnabled = true
 
 			metadataBytes, err := json.Marshal(metadata) //nolint:govet
 			if err != nil {
-				return err
+				return "", err
 			}
 
 			r.Data = metadataBytes
@@ -97,10 +99,10 @@ func obfuscateArchive(path string) error {
 
 	_, err = diskRecorder.SaveAtPath(anonymizedRecords, newPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return newPath, nil
 }
 
 func getClusterBaseDomain(records map[string]*record.MemoryRecord) (string, error) {
@@ -109,7 +111,7 @@ func getClusterBaseDomain(records map[string]*record.MemoryRecord) (string, erro
 		return domain, nil
 	}
 
-	printlnToStderr(
+	printlnToStderrf(
 		"Unable to get base domain from infrastructure record: %v. Trying to get it from install-config...",
 		err,
 	)
