@@ -134,11 +134,14 @@ github.com/openshift/client-go/security/clientset/versioned/fake
 github.com/openshift/client-go/security/clientset/versioned/scheme
 github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 github.com/openshift/client-go/security/clientset/versioned/typed/security/v1/fake
-# github.com/openshift/installer v0.16.1
+# github.com/openshift/installer v0.9.0-master.0.20191219195746-103098955ced
 ## explicit
 github.com/openshift/installer/pkg/ipnet
 github.com/openshift/installer/pkg/types
 github.com/openshift/installer/pkg/types/aws
+github.com/openshift/installer/pkg/types/azure
+github.com/openshift/installer/pkg/types/baremetal
+github.com/openshift/installer/pkg/types/gcp
 github.com/openshift/installer/pkg/types/libvirt
 github.com/openshift/installer/pkg/types/none
 github.com/openshift/installer/pkg/types/openstack
@@ -176,6 +179,7 @@ github.com/prometheus/client_golang/prometheus/testutil/promlint
 # github.com/prometheus/client_model v0.2.0
 github.com/prometheus/client_model/go
 # github.com/prometheus/common v0.10.0
+## explicit
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model

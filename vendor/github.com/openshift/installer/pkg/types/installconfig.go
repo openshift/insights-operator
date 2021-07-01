@@ -5,6 +5,9 @@ import (
 
 	"github.com/openshift/installer/pkg/ipnet"
 	"github.com/openshift/installer/pkg/types/aws"
+	"github.com/openshift/installer/pkg/types/azure"
+	"github.com/openshift/installer/pkg/types/baremetal"
+	"github.com/openshift/installer/pkg/types/gcp"
 	"github.com/openshift/installer/pkg/types/libvirt"
 	"github.com/openshift/installer/pkg/types/none"
 	"github.com/openshift/installer/pkg/types/openstack"
@@ -15,8 +18,8 @@ import (
 const (
 	// InstallConfigVersion is the version supported by this package.
 	// If you bump this, you must also update the list of convertable values in
-	// pkg/conversion/installconfig.go
-	InstallConfigVersion = "v1beta4"
+	// pkg/types/conversion/installconfig.go
+	InstallConfigVersion = "v1"
 )
 
 var (
@@ -25,15 +28,28 @@ var (
 	// platforms presented to the user in the interactive wizard.
 	PlatformNames = []string{
 		aws.Name,
-		vsphere.Name,
+		azure.Name,
+		gcp.Name,
+		openstack.Name,
 	}
 	// HiddenPlatformNames is a slice with all the
 	// hidden-but-supported platform names. This list isn't presented
 	// to the user in the interactive wizard.
 	HiddenPlatformNames = []string{
+		baremetal.Name,
 		none.Name,
-		openstack.Name,
+		vsphere.Name,
 	}
+)
+
+// PublishingStrategy is a strategy for how various endpoints for the cluster are exposed.
+type PublishingStrategy string
+
+const (
+	// ExternalPublishingStrategy exposes endpoints for the cluster to the Internet.
+	ExternalPublishingStrategy PublishingStrategy = "External"
+	// InternalPublishingStrategy exposes the endpoints for the cluster to the private network only.
+	InternalPublishingStrategy PublishingStrategy = "Internal"
 )
 
 // InstallConfig is the configuration for an OpenShift install.
@@ -43,14 +59,20 @@ type InstallConfig struct {
 
 	metav1.ObjectMeta `json:"metadata"`
 
-	// SSHKey is the public ssh key to provide access to instances.
+	// AdditionalTrustBundle is a PEM-encoded X.509 certificate bundle
+	// that will be added to the nodes' trusted certificate store.
+	// +optional
+	AdditionalTrustBundle string `json:"additionalTrustBundle,omitempty"`
+
+	// SSHKey is the public Secure Shell (SSH) key to provide access to instances.
 	// +optional
 	SSHKey string `json:"sshKey,omitempty"`
 
 	// BaseDomain is the base domain to which the cluster should belong.
 	BaseDomain string `json:"baseDomain"`
 
-	// Networking defines the pod network provider in the cluster.
+	// Networking is the configuration for the pod network provider in
+	// the cluster.
 	*Networking `json:"networking,omitempty"`
 
 	// ControlPlane is the configuration for the machines that comprise the
@@ -58,7 +80,8 @@ type InstallConfig struct {
 	// +optional
 	ControlPlane *MachinePool `json:"controlPlane,omitempty"`
 
-	// Compute is the list of compute MachinePools that need to be installed.
+	// Compute is the configuration for the machines that comprise the
+	// compute nodes.
 	// +optional
 	Compute []MachinePool `json:"compute,omitempty"`
 
@@ -68,6 +91,23 @@ type InstallConfig struct {
 
 	// PullSecret is the secret to use when pulling images.
 	PullSecret string `json:"pullSecret"`
+
+	// Proxy defines the proxy settings for the cluster.
+	// If unset, the cluster will not be configured to use a proxy.
+	// +optional
+	Proxy *Proxy `json:"proxy,omitempty"`
+
+	// ImageContentSources lists sources/repositories for the release-image content.
+	// +optional
+	ImageContentSources []ImageContentSource `json:"imageContentSources,omitempty"`
+
+	// Publish controls how the user facing endpoints of the cluster like the Kubernetes API, OpenShift routes etc. are exposed.
+	// When no strategy is specified, the strategy is `External`.
+	// +optional
+	Publish PublishingStrategy `json:"publish,omitempty"`
+
+	// FIPS configures https://www.nist.gov/itl/fips-general-information
+	FIPS bool `json:"fips,omitempty"`
 }
 
 // ClusterDomain returns the DNS domain that all records for a cluster must belong to.
@@ -81,6 +121,18 @@ type Platform struct {
 	// AWS is the configuration used when installing on AWS.
 	// +optional
 	AWS *aws.Platform `json:"aws,omitempty"`
+
+	// Azure is the configuration used when installing on Azure.
+	// +optional
+	Azure *azure.Platform `json:"azure,omitempty"`
+
+	// BareMetal is the configuration used when installing on bare metal.
+	// +optional
+	BareMetal *baremetal.Platform `json:"baremetal,omitempty"`
+
+	// GCP is the configuration used when installing on Google Cloud Platform.
+	// +optional
+	GCP *gcp.Platform `json:"gcp,omitempty"`
 
 	// Libvirt is the configuration used when installing on libvirt.
 	// +optional
@@ -108,6 +160,12 @@ func (p *Platform) Name() string {
 		return ""
 	case p.AWS != nil:
 		return aws.Name
+	case p.Azure != nil:
+		return azure.Name
+	case p.BareMetal != nil:
+		return baremetal.Name
+	case p.GCP != nil:
+		return gcp.Name
 	case p.Libvirt != nil:
 		return libvirt.Name
 	case p.None != nil:
@@ -123,29 +181,36 @@ func (p *Platform) Name() string {
 
 // Networking defines the pod network provider in the cluster.
 type Networking struct {
-	// MachineCIDR is the IP address space from which to assign machine IPs.
-	// +optional
-	// Default is 10.0.0.0/16 for all platforms other than Libvirt.
-	// For Libvirt, the default is 192.168.126.0/24.
-	MachineCIDR *ipnet.IPNet `json:"machineCIDR,omitempty"`
-
 	// NetworkType is the type of network to install.
 	// +optional
 	// Default is OpenShiftSDN.
 	NetworkType string `json:"networkType,omitempty"`
 
-	// ClusterNetwork is the IP address pool to use for pod IPs.
+	// MachineNetwork is the list of IP address pools for machines.
+	// This field replaces MachineCIDR, and if set MachineCIDR must
+	// be empty or match the first entry in the list.
 	// +optional
-	// Default is 10.128.0.0/14 and a host prefix of /23
+	// Default is 10.0.0.0/16 for all platforms other than libvirt.
+	// For libvirt, the default is 192.168.126.0/24.
+	MachineNetwork []MachineNetworkEntry `json:"machineNetwork,omitempty"`
+
+	// ClusterNetwork is the list of IP address pools for pods.
+	// +optional
+	// Default is 10.128.0.0/14 and a host prefix of /23.
 	ClusterNetwork []ClusterNetworkEntry `json:"clusterNetwork,omitempty"`
 
-	// ServiceNetwork is the IP address pool to use for service IPs.
+	// ServiceNetwork is the list of IP address pools for services.
 	// +optional
-	// Default is 172.30.0.0/16
+	// Default is 172.30.0.0/16.
 	// NOTE: currently only one entry is supported.
 	ServiceNetwork []ipnet.IPNet `json:"serviceNetwork,omitempty"`
 
 	// Deprected types, scheduled to be removed
+
+	// Deprecated name for MachineCIDRs. If set, MachineCIDRs must
+	// be empty or the first index must match.
+	// +optional
+	DeprecatedMachineCIDR *ipnet.IPNet `json:"machineCIDR,omitempty"`
 
 	// Deprecated name for NetworkType
 	// +optional
@@ -160,10 +225,16 @@ type Networking struct {
 	DeprecatedClusterNetworks []ClusterNetworkEntry `json:"clusterNetworks,omitempty"`
 }
 
+// MachineNetworkEntry is a single IP address block for node IP blocks.
+type MachineNetworkEntry struct {
+	// CIDR is the IP block address pool for machines within the cluster.
+	CIDR ipnet.IPNet `json:"cidr"`
+}
+
 // ClusterNetworkEntry is a single IP address block for pod IP blocks. IP blocks
 // are allocated with size 2^HostSubnetLength.
 type ClusterNetworkEntry struct {
-	// The IP block address pool
+	// CIDR is the IP block address pool.
 	CIDR ipnet.IPNet `json:"cidr"`
 
 	// HostPrefix is the prefix size to allocate to each node from the CIDR.
@@ -173,4 +244,30 @@ type ClusterNetworkEntry struct {
 	// The size of blocks to allocate from the larger pool.
 	// This is the length in bits - so a 9 here will allocate a /23.
 	DeprecatedHostSubnetLength int32 `json:"hostSubnetLength,omitempty"`
+}
+
+// Proxy defines the proxy settings for the cluster.
+// At least one of HTTPProxy or HTTPSProxy is required.
+type Proxy struct {
+	// HTTPProxy is the URL of the proxy for HTTP requests.
+	// +optional
+	HTTPProxy string `json:"httpProxy,omitempty"`
+
+	// HTTPSProxy is the URL of the proxy for HTTPS requests.
+	// +optional
+	HTTPSProxy string `json:"httpsProxy,omitempty"`
+
+	// NoProxy is a comma-separated list of domains and CIDRs for which the proxy should not be used.
+	// +optional
+	NoProxy string `json:"noProxy,omitempty"`
+}
+
+// ImageContentSource defines a list of sources/repositories that can be used to pull content.
+type ImageContentSource struct {
+	// Source is the repository that users refer to, e.g. in image pull specifications.
+	Source string `json:"source"`
+
+	// Mirrors is one or more repositories that may also contain the same images.
+	// +optional
+	Mirrors []string `json:"mirrors,omitempty"`
 }
