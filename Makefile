@@ -45,12 +45,11 @@ test: unit ## Run all the tests
 # Run the unit tests
 .PHONY: unit
 unit: ## Run the unit tests
-	go test ./... $(VERBOSE) -coverprofile $(COVER_PROFILE)
+	go test $(GO_TEST_FLAGS) -coverprofile $(COVER_PROFILE) ./...
 
-.PHONY: unit-cover
-unit-cover:
-	go test -coverprofile=$(COVER_PROFILE) $(GO_TEST_FLAGS) ./...
-	go tool cover -func=$(COVER_PROFILE)
+.PHONY: coverage
+coverage:
+	./.openshiftci/check-coverage.sh
 
 .PHONE: unit-verbose
 unit-verbose:
