@@ -64,17 +64,16 @@ func gatherOLMOperators(ctx context.Context, dynamicClient dynamic.Interface) ([
 	if err != nil {
 		return nil, []error{err}
 	}
-	var refs []interface{}
 	olms := []olmOperator{}
 	errs := []error{}
 	for _, i := range olmOperators.Items {
 		newOlm := olmOperator{
 			Name: i.GetName(),
 		}
-		err := utils.ParseJSONQuery(i.Object, "status.components.refs", &refs)
+		refs, err := utils.NestedSliceWrapper(i.Object, "status", "components", "refs")
 		if err != nil {
 			// if no references are found then add an error and OLM operator with only name and continue
-			errs = append(errs, fmt.Errorf("cannot find \"status.components.refs\" in %s definition: %v", i.GetName(), err))
+			errs = append(errs, fmt.Errorf("cannot find \"status.components.refs\" in %s definition", i.GetName()))
 			olms = append(olms, newOlm)
 			continue
 		}
@@ -182,14 +181,13 @@ func getCsvFromRef(ctx context.Context, dynamicClient dynamic.Interface, csvRef 
 // parseCsv tries to parse "status.conditions" and "spec.displayName" from the input map.
 // Returns an error if any of the values cannot be parsed.
 func parseCsv(csv map[string]interface{}) (name string, conditions []interface{}, err error) {
-	err = utils.ParseJSONQuery(csv, "status.conditions", &conditions)
+	conditions, err = utils.NestedSliceWrapper(csv, "status", "conditions")
 	if err != nil {
 		return "", nil, err
 	}
-	err = utils.ParseJSONQuery(csv, "spec.displayName", &name)
+	name, err = utils.NestedStringWrapper(csv, "spec", "displayName")
 	if err != nil {
 		return "", nil, err
 	}
-
-	return name, conditions, nil
+	return
 }

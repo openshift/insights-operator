@@ -8,6 +8,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic"
@@ -20,6 +21,20 @@ import (
 
 // InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
 const InstallPlansTopX = 100
+
+type collectedPlan struct {
+	Namespace string
+	Name      string
+	CSV       string
+	Count     int
+}
+
+// InstallPlanAnonymizer implements serialization of top x installplans
+type InstallPlanAnonymizer struct {
+	v     map[string]*collectedPlan
+	total int
+	limit int
+}
 
 // GatherInstallPlans collects Top x InstallPlans from all openshift namespaces.
 // Because InstallPlans have unique generated names, it groups them by namespace and the "template"
@@ -78,11 +93,12 @@ func gatherInstallPlans(ctx context.Context,
 				return nil, []error{err}
 			}
 			jsonMap := u.UnstructuredContent()
-			var items []interface{}
-			err = failEarly(
-				func() error { return utils.ParseJSONQuery(jsonMap, "metadata.continue?", &cont) },
-				func() error { return utils.ParseJSONQuery(jsonMap, "items", &items) },
-			)
+			// continue will not be always present - we can ignore the return bool value
+			cont, _, err = unstructured.NestedString(jsonMap, "metadata", "continue")
+			if err != nil {
+				return nil, []error{err}
+			}
+			items, err := utils.NestedSliceWrapper(jsonMap, "items")
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -105,21 +121,21 @@ func gatherInstallPlans(ctx context.Context,
 func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []error {
 	// Get common prefix
 	csv := "[NONE]"
-	var clusterServiceVersionNames []interface{}
-	var ns, genName string
 	var itemMap map[string]interface{}
 	var ok bool
 	if itemMap, ok = item.(map[string]interface{}); !ok {
 		return []error{fmt.Errorf("cannot cast item to map %v", item)}
 	}
 
-	err := failEarly(
-		func() error {
-			return utils.ParseJSONQuery(itemMap, "spec.clusterServiceVersionNames", &clusterServiceVersionNames)
-		},
-		func() error { return utils.ParseJSONQuery(itemMap, "metadata.namespace", &ns) },
-		func() error { return utils.ParseJSONQuery(itemMap, "metadata.generateName", &genName) },
-	)
+	clusterServiceVersionNames, err := utils.NestedSliceWrapper(itemMap, "spec", "clusterServiceVersionNames")
+	if err != nil {
+		return []error{err}
+	}
+	ns, err := utils.NestedStringWrapper(itemMap, "metadata", "namespace")
+	if err != nil {
+		return []error{err}
+	}
+	genName, err := utils.NestedStringWrapper(itemMap, "metadata", "generateName")
 	if err != nil {
 		return []error{err}
 	}
@@ -136,30 +152,6 @@ func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []erro
 		m.Count++
 	}
 	return nil
-}
-
-func failEarly(fns ...func() error) error {
-	for _, f := range fns {
-		err := f()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type collectedPlan struct {
-	Namespace string
-	Name      string
-	CSV       string
-	Count     int
-}
-
-// InstallPlanAnonymizer implements serialization of top x installplans
-type InstallPlanAnonymizer struct {
-	v     map[string]*collectedPlan
-	total int
-	limit int
 }
 
 // Marshal implements serialization of InstallPlan
