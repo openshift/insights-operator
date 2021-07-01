@@ -3,6 +3,7 @@ package gather
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -156,11 +157,6 @@ func Test_HandleTasksConcurrently_CanFail_Panic(t *testing.T) {
 	})
 }
 
-// TODO: write a test testing that handleTasksConcurrently is actually concurrent.
-// We can employ some threads synchronization magic which would cause execution to timeout when run sequentially
-// and work just fine when run in parallel.
-// TODO: more tests?
-
 func handleTasksConcurrentlyGatherTasks(tasks []Task) []GatheringFunctionResult {
 	resultsChan := HandleTasksConcurrently(context.Background(), tasks)
 
@@ -170,4 +166,32 @@ func handleTasksConcurrentlyGatherTasks(tasks []Task) []GatheringFunctionResult 
 	}
 
 	return results
+}
+
+func Test_worker(t *testing.T) {
+	var wg sync.WaitGroup
+	tasksChan := make(chan Task)
+	resultsChan := make(chan GatheringFunctionResult)
+
+	wg.Add(1)
+	go worker(context.TODO(), 0, &wg, tasksChan, resultsChan)
+
+	tasksChan <- Task{
+		Name: "",
+		F:    gatherers.GatheringClosure{},
+	}
+	close(tasksChan)
+
+	<-resultsChan
+}
+
+func Test_handleTask(t *testing.T) {
+	resultsChan := make(chan GatheringFunctionResult)
+	go handleTask(context.TODO(), Task{
+		Name: "",
+		F:    gatherers.GatheringClosure{}, // Run is nil so it produces an error
+	}, resultsChan)
+
+	result := <-resultsChan
+	assert.EqualError(t, result.Panic.(error), "runtime error: invalid memory address or nil pointer dereference")
 }
