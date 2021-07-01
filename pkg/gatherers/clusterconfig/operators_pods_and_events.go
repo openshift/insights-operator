@@ -316,21 +316,18 @@ func getContainerLogs(ctx context.Context,
 
 // getLogWithStacktracing search for the first stack trace line and offset it by logLinesOffset
 func getLogWithStacktracing(logArray []string) string {
-	var log []string
-	var found bool
-
+	var limit int
 	for idx := range logArray {
 		line := logArray[idx]
-		log = append(log, line)
-		if !found {
-			if len(log) > logLinesOffset {
-				log = log[1:]
+		if found := stackTraceRegex.MatchString(line); found {
+			limit = idx - logLinesOffset
+			if limit < 0 {
+				limit = 0
 			}
-			found = stackTraceRegex.MatchString(line)
+			break
 		}
 	}
-
-	return strings.Join(log, "\n")
+	return strings.Join(logArray[limit:], "\n")
 }
 
 // getContainerLogString fetch the container log from API and return it as String
