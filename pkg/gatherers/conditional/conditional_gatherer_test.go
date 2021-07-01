@@ -98,62 +98,6 @@ func Test_getConditionalGatheringFunctionName(t *testing.T) {
 	assert.Equal(t, "func/param1=test,param2=5,param3=9", res)
 }
 
-func Test_getInterfaceFromMap(t *testing.T) {
-	i, err := getInterfaceFromMap(map[string]interface{}{}, "key")
-	assert.Nil(t, i)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err := getInterfaceFromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, "val", val)
-}
-
-func Test_getStringFromMap(t *testing.T) {
-	val, err := getStringFromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getStringFromMap(map[string]interface{}{"key": 9}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to convert '9' to string")
-
-	val, err = getStringFromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, "val", val)
-}
-
-func Test_getInt64FromMap(t *testing.T) {
-	val, err := getInt64FromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, `strconv.ParseInt: parsing "val": invalid syntax`)
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": 9}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(9), val)
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": "6"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(6), val)
-}
-
-func Test_getPositiveInt64FromMap(t *testing.T) {
-	val, err := getPositiveInt64FromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getPositiveInt64FromMap(map[string]interface{}{"key": "-6"}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "positive int expected, got '-6'")
-
-	val, err = getPositiveInt64FromMap(map[string]interface{}{"key": "6"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(6), val)
-}
-
 func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
 	gatherer := newEmptyGatherer()
 	records, errs := gatherer.GatherConditionalGathererRules(context.TODO())
@@ -165,7 +109,7 @@ func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
 	item, err := records[0].Item.Marshal(context.TODO())
 	assert.NoError(t, err)
 
-	var gotGatheringRules []gatheringRule
+	var gotGatheringRules []GatheringRule
 	err = json.Unmarshal(item, &gotGatheringRules)
 	assert.NoError(t, err)
 
