@@ -63,9 +63,9 @@ func gatherInstallPlans(ctx context.Context,
 	if err != nil {
 		return nil, []error{err}
 	}
-	// collect from all openshift* namespaces
+	// collect from all openshift-* namespaces
 	for i := range config.Items {
-		if !strings.HasPrefix(config.Items[i].Name, "openshift") {
+		if !strings.HasPrefix(config.Items[i].Name, "openshift-") {
 			continue
 		}
 		resInterface := dynamicClient.Resource(opResource).Namespace(config.Items[i].Name)
