@@ -151,12 +151,15 @@ func collectClusterOperatorResources(ctx context.Context,
 			if clusterResource == nil {
 				continue
 			}
-			var kind, name, apiVersion string
-			err = failEarly(
-				func() error { return utils.ParseJSONQuery(clusterResource.Object, "kind", &kind) },
-				func() error { return utils.ParseJSONQuery(clusterResource.Object, "apiVersion", &apiVersion) },
-				func() error { return utils.ParseJSONQuery(clusterResource.Object, "metadata.name", &name) },
-			)
+			kind, err := utils.NestedStringWrapper(clusterResource.Object, "kind")
+			if err != nil {
+				continue
+			}
+			apiVersion, err := utils.NestedStringWrapper(clusterResource.Object, "apiVersion")
+			if err != nil {
+				continue
+			}
+			name, err := utils.NestedStringWrapper(clusterResource.Object, "metadata", "name")
 			if err != nil {
 				continue
 			}

@@ -57,7 +57,7 @@ func Test_OLMOperators_Gather(t *testing.T) {
 			"Operator doesn't have CSV reference",
 			"testdata/olm_operator_2.yaml",
 			"testdata/csv_1.yaml",
-			fmt.Errorf("cannot find \"status.components.refs\" in test-olm-operator-with-no-ref definition: key refs wasn't found in map[] "),
+			fmt.Errorf("cannot find \"status.components.refs\" in test-olm-operator-with-no-ref definition"),
 			olmOperator{
 				Name: "test-olm-operator-with-no-ref",
 			},
@@ -66,7 +66,7 @@ func Test_OLMOperators_Gather(t *testing.T) {
 			"Operator CSV doesn't have the displayName",
 			"testdata/olm_operator_1.yaml",
 			"testdata/csv_2.yaml",
-			fmt.Errorf("cannot read test-olm-operator.v1.2.3 ClusterServiceVersion attributes: key displayName wasn't found in map[] "),
+			fmt.Errorf("cannot read test-olm-operator.v1.2.3 ClusterServiceVersion attributes: can't find spec.displayName"),
 			olmOperator{
 				Name:    "test-olm-operator",
 				Version: "v1.2.3",
@@ -116,7 +116,7 @@ func Test_OLMOperators_Gather(t *testing.T) {
 				}
 			}
 			if len(records) != 1 {
-				t.Fatalf("unexpected number or records %d", len(records))
+				t.Fatalf("unexpected number of records %d", len(records))
 			}
 			ooa, ok := records[0].Item.(record.JSONMarshaller).Object.([]olmOperator)
 			if !ok {

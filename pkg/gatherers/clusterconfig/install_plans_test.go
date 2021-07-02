@@ -15,8 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-
-	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 //nolint: funlen, lll, gocyclo
@@ -79,8 +77,7 @@ func Test_InstallPlans_Gather(t *testing.T) {
 				}
 				gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
 				gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
-				var ns string
-				err = utils.ParseJSONQuery(installplan.Object, "metadata.namespace", &ns)
+				ns, _, err := unstructured.NestedString(installplan.Object, "metadata", "namespace")
 				if err != nil {
 					t.Fatal("unable to read ns ", err)
 				}
