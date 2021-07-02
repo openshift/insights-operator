@@ -66,7 +66,7 @@ func Test_OLMOperators_Gather(t *testing.T) {
 			"Operator CSV doesn't have the displayName",
 			"testdata/olm_operator_1.yaml",
 			"testdata/csv_2.yaml",
-			fmt.Errorf("cannot read test-olm-operator.v1.2.3 ClusterServiceVersion attributes: can't find [spec displayName]"),
+			fmt.Errorf("cannot read test-olm-operator.v1.2.3 ClusterServiceVersion attributes: can't find spec.displayName"),
 			olmOperator{
 				Name:    "test-olm-operator",
 				Version: "v1.2.3",
