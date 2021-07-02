@@ -155,11 +155,11 @@ func collectClusterOperatorResources(ctx context.Context,
 			if err != nil {
 				continue
 			}
-			name, err := utils.NestedStringWrapper(clusterResource.Object, "apiVersion")
+			apiVersion, err := utils.NestedStringWrapper(clusterResource.Object, "apiVersion")
 			if err != nil {
 				continue
 			}
-			apiVersion, err := utils.NestedStringWrapper(clusterResource.Object, "metadata", "name")
+			name, err := utils.NestedStringWrapper(clusterResource.Object, "metadata", "name")
 			if err != nil {
 				continue
 			}
