@@ -69,7 +69,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig)
+		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig)
 		if err != nil {
 			return err
 		}

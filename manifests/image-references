@@ -3,6 +3,6 @@ apiVersion: image.openshift.io/v1
 spec:
   tags:
   - name: insights-operator
-    from: 
+    from:
       kind: "DockerImage"
       name: "quay.io/openshift/origin-insights-operator:latest"

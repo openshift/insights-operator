@@ -46,7 +46,7 @@ func failableFunc(function gathererFuncPtr) gatheringFunction {
 }
 
 var gatheringFunctions = map[string]gatheringFunction{
-	"pdbs":                              importantFunc((*Gatherer).GatherPodDisruptionBudgets),
+	"pdbs":                              failableFunc((*Gatherer).GatherPodDisruptionBudgets),
 	"metrics":                           failableFunc((*Gatherer).GatherMostRecentMetrics),
 	"operators":                         importantFunc((*Gatherer).GatherClusterOperators),
 	"operators_pods_and_events":         importantFunc((*Gatherer).GatherClusterOperatorPodsAndEvents),
