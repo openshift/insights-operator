@@ -11,10 +11,6 @@ import (
 	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
-	installertypes "github.com/openshift/installer/pkg/types"
-	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/yaml"
-
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -116,7 +112,7 @@ func getClusterBaseDomain(records map[string]*record.MemoryRecord) (string, erro
 		err,
 	)
 
-	return getClusterBaseDomainFromClusterConfigV1Record(records)
+	return getClusterBaseDomainFromIngressRecord(records)
 }
 
 func getClusterBaseDomainFromInfrastructureRecord(records map[string]*record.MemoryRecord) (string, error) {
@@ -142,38 +138,28 @@ func getClusterBaseDomainFromInfrastructureRecord(records map[string]*record.Mem
 	return domain, nil
 }
 
-func getClusterBaseDomainFromClusterConfigV1Record(records map[string]*record.MemoryRecord) (string, error) {
-	const filePath = "config/configmaps/kube-system/cluster-config-v1.json"
+func getClusterBaseDomainFromIngressRecord(records map[string]*record.MemoryRecord) (string, error) {
+	const filePath = "config/ingress.json"
 
 	r, found := records[filePath]
 	if !found {
 		return "", fmt.Errorf("%v record needed to fetch cluster base domain wasn't found", filePath)
 	}
 
-	var configMap corev1.ConfigMap
+	var ingress configv1.Ingress
 
-	err := json.Unmarshal(r.Data, &configMap)
+	err := json.Unmarshal(r.Data, &ingress)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 
-	installConfigStr, found := configMap.Data["install-config"]
-	if !found {
-		return "", fmt.Errorf("unable to find install-config")
+	domain := strings.TrimPrefix(ingress.Spec.Domain, "apps.")
+
+	if len(domain) == 0 {
+		return "", fmt.Errorf("ingress.Spec.Domain from %v is empty", filePath)
 	}
 
-	var installConfig installertypes.InstallConfig
-
-	err = yaml.Unmarshal([]byte(installConfigStr), &installConfig)
-	if err != nil {
-		return "", err
-	}
-
-	if len(installConfig.BaseDomain) == 0 {
-		return "", fmt.Errorf("installConfig.BaseDomain from %v is empty", filePath)
-	}
-
-	return installConfig.BaseDomain, nil
+	return domain, nil
 }
 
 func readArchive(path string) (map[string]*record.MemoryRecord, error) {
