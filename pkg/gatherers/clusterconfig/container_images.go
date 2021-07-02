@@ -67,7 +67,7 @@ func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1In
 
 		for podIndex, pod := range pods.Items { //nolint:gocritic
 			podPtr := &pods.Items[podIndex]
-			if strings.HasPrefix(pod.Namespace, "openshift") && check.HasContainerInCrashloop(podPtr) {
+			if strings.HasPrefix(pod.Namespace, "openshift-") && check.HasContainerInCrashloop(podPtr) {
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
 					Item: record.JSONMarshaller{Object: podPtr},

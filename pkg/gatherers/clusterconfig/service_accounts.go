@@ -53,9 +53,9 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 	var serviceAccounts []corev1.ServiceAccount
 	var records []record.Record
 	namespaces := defaultNamespaces
-	// collect from all openshift* namespaces + kubernetes defaults
+	// collect from all openshift-* namespaces + kubernetes defaults
 	for i := range config.Items {
-		if strings.HasPrefix(config.Items[i].Name, "openshift") {
+		if strings.HasPrefix(config.Items[i].Name, "openshift-") {
 			namespaces = append(namespaces, config.Items[i].Name)
 		}
 	}

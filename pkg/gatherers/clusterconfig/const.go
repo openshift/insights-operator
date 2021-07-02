@@ -18,7 +18,7 @@ var (
 	// logTailLinesLong sets the maximum number of lines to fetch from long pod logs
 	logTailLinesLong = int64(400)
 
-	defaultNamespaces           = []string{"default", "kube-system", "kube-public"}
+	defaultNamespaces           = []string{"default", "kube-system", "kube-public", "openshift"}
 	datahubGroupVersionResource = schema.GroupVersionResource{
 		Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs",
 	}
