@@ -19,7 +19,7 @@ This is a rough outline of what a contributor's workflow looks like:
 - Make sure the tests and liting pass, and add any new tests as appropriate.
 - Submit a pull request to the original repository.
 
-> 🎯 Tip: make sure to install the githook using the command: `$ make githooks`
+> 🎯 Tip: make sure to install the githook using the command: `make githooks`
 
 ## Format of the Commit Message
 
@@ -39,8 +39,8 @@ and liting and prevent bad commits.
 ## Pull Request Formats
 
 Pull Requests should use the template provided, and
-follow the template instructions. For those that implement new 
-enchancements or backporting must have on its own title the reference 
+follow the template instructions. For those that implement new
+enchancements or backporting must have on its own title the reference
 to the Bugzilla bug.
 
 
