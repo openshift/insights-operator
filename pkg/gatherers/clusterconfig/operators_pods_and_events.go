@@ -40,7 +40,7 @@ type CompactedEventList struct {
 }
 
 // Used to detect the possible stack trace on logs
-var stackTraceRegex = regexp.MustCompile(`.*/[^/]*:\d+.*0[xX][0-9a-fA-F]+`)
+var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 
 // GatherClusterOperatorPodsAndEvents collects information about all pods
 // and events from namespaces of degraded cluster operators. The collected
@@ -283,13 +283,12 @@ func getContainerLogs(ctx context.Context,
 		logName := logFilename(c.Name, isPrevious)
 
 		// Fetch container logs and continue on error
-		logString, err := getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logTailLines)
+		logString, err := getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logMaxTailLines)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			continue
 		}
 
-		// check for stack tracer
 		if found := stackTraceRegex.MatchString(logString); found {
 			klog.V(2).Infof(
 				"Stack trace found in log for %s container %s pod in namespace %s (previous: %v).",
@@ -297,11 +296,13 @@ func getContainerLogs(ctx context.Context,
 				pod.Name,
 				pod.Namespace,
 				isPrevious)
-			logString, err = getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logTailLinesLong)
+			logString, err = getContainerLogString(ctx, client, pod, c.Name, isPrevious, buf, &logMaxLongTailLines)
 			if err != nil {
 				klog.V(2).Infof("Error: %q", err)
 				continue
 			}
+			// find the stack trace and get its
+			logString = getLogWithStacktracing(strings.Split(logString, "\n"))
 		}
 
 		records = append(records, record.Record{
@@ -311,6 +312,22 @@ func getContainerLogs(ctx context.Context,
 	}
 
 	return records
+}
+
+// getLogWithStacktracing search for the first stack trace line and offset it by logLinesOffset
+func getLogWithStacktracing(logArray []string) string {
+	var limit int
+	for idx := range logArray {
+		line := logArray[idx]
+		if found := stackTraceRegex.MatchString(line); found {
+			limit = idx - logLinesOffset
+			if limit < 0 {
+				limit = 0
+			}
+			break
+		}
+	}
+	return strings.Join(logArray[limit:], "\n")
 }
 
 // getContainerLogString fetch the container log from API and return it as String
