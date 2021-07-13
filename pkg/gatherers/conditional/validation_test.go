@@ -1,10 +1,11 @@
 package conditional
 
 import (
-	"strings"
+	"sort"
 	"testing"
 
-	"github.com/go-playground/validator"
+	"github.com/openshift/insights-operator/pkg/utils"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/util/rand"
 )
@@ -41,7 +42,7 @@ func Test_Validation(t *testing.T) {
 	assert.Empty(t, errs)
 }
 
-func Test_Validation_InvalidConditions(t *testing.T) {
+func Test_Validation_InvalidConditions(t *testing.T) { //nolint:funlen
 	gatheringRules := []GatheringRule{
 		{
 			Conditions: []ConditionWithParams{
@@ -78,20 +79,90 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 		},
 	}
 	errs := validateGatheringRules(gatheringRules)
-	assert.Len(t, errs, 1)
+	assert.Len(t, errs, 7)
 
-	assertValidationErrors(t, errs[0], []string{
-		"Key: 'GatheringRule.Conditions[3].Params.Name' Error:Field validation for 'Name' failed on the 'alphanum' tag",
-		"Key: 'GatheringRule.Conditions[4].Params.Name' Error:Field validation for 'Name' failed on the 'min' tag",
-		"Key: 'GatheringRule.Conditions[5].Params.Name' Error:Field validation for 'Name' failed on the 'max' tag",
-		"Key: 'GatheringRule.Conditions[].Type' Error:Field validation for 'Conditions[].Type' failed on the 'is_valid' tag",
-		"Key: 'GatheringRule.Conditions[].Type' Error:Field validation for 'Conditions[].Type' failed on the 'is_valid' tag",
-		"Key: 'GatheringRule.Conditions[].Params' Error:Field validation for 'Conditions[].Params' failed on the 'is_valid_type' tag",
-		"Key: 'GatheringRule.GatheringFunctions' Error:Field validation for 'GatheringFunctions' failed on the 'not_empty' tag",
+	assertValidationErrors(t, errs, []string{
+		`{
+			"actual_tag":"alphanum",
+			"field":"Name",
+			"kind":"string",
+			"namespace":"GatheringRule.Conditions[3].Params.Name",
+			"param":"",
+			"struct_field":"Name",
+			"struct_namespace":"GatheringRule.Conditions[3].Params.Name",
+			"tag":"alphanum",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"min",
+			"field":"Name",
+			"kind":"string",
+			"namespace":"GatheringRule.Conditions[4].Params.Name",
+			"param":"1",
+			"struct_field":"Name",
+			"struct_namespace":"GatheringRule.Conditions[4].Params.Name",
+			"tag":"min",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"max",
+			"field":"Name",
+			"kind":"string",
+			"namespace":"GatheringRule.Conditions[5].Params.Name",
+			"param":"128",
+			"struct_field":"Name",
+			"struct_namespace":"GatheringRule.Conditions[5].Params.Name",
+			"tag":"max",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"is_valid",
+			"field":"Conditions[].Type",
+			"kind":"string",
+			"namespace":"GatheringRule.Conditions[].Type",
+			"param":"invalid value for conditional.ConditionType",
+			"struct_field":"Conditions[].Type",
+			"struct_namespace":"GatheringRule.Conditions[].Type",
+			"tag":"is_valid",
+			"type":"conditional.ConditionType"
+		}`,
+		`{
+			"actual_tag":"is_valid",
+			"field":"Conditions[].Type",
+			"kind":"string",
+			"namespace":"GatheringRule.Conditions[].Type",
+			"param":"invalid value for conditional.ConditionType",
+			"struct_field":"Conditions[].Type",
+			"struct_namespace":"GatheringRule.Conditions[].Type",
+			"tag":"is_valid",
+			"type":"conditional.ConditionType"
+		}`,
+		`{
+			"actual_tag":"is_valid_type",
+			"field":"Conditions[].Params",
+			"kind":"string",
+			"namespace":"GatheringRule.Conditions[].Params",
+			"param":"params cannot be string for conditional.ConditionType",
+			"struct_field":"Conditions[].Params",
+			"struct_namespace":"GatheringRule.Conditions[].Params",
+			"tag":"is_valid_type",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"not_empty",
+			"field":"GatheringFunctions",
+			"kind":"map",
+			"namespace":"GatheringRule.GatheringFunctions",
+			"param":"",
+			"struct_field":"GatheringFunctions",
+			"struct_namespace":"GatheringRule.GatheringFunctions",
+			"tag":"not_empty",
+			"type":"map[conditional.GatheringFunctionName]interface {}"
+		}`,
 	})
 }
 
-func Test_Validation_InvalidGatheringFunctions(t *testing.T) {
+func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
 	var emptyStruct struct{}
 
 	gatheringRules := []GatheringRule{
@@ -147,50 +218,169 @@ func Test_Validation_InvalidGatheringFunctions(t *testing.T) {
 			GatheringFunctions: map[GatheringFunctionName]interface{}{},
 		},
 	}
-	expectedErrors := [][]string{
-		{
-			"Key: 'GatheringRule.GatheringFunctions[].Name' Error:Field validation for 'GatheringFunctions[].Name' failed on the 'is_valid' tag",
-			"Key: 'GatheringRule.GatheringFunctions[].Name' Error:Field validation for 'GatheringFunctions[].Name' failed on the 'is_valid' tag",
-		},
-		{
-			"Key: 'GatheringRule.GatheringFunctions[].Params' Error:Field validation for 'GatheringFunctions[].Params' failed on the 'is_valid_type' tag",
-			"Key: 'GatheringRule.GatheringFunctions[].Params' Error:Field validation for 'GatheringFunctions[].Params' failed on the 'is_valid_type' tag",
-		},
-		{
-			"Key: 'GatheringRule.GatheringFunctions[logs_of_namespace].Namespace' Error:Field validation for 'Namespace' failed on the 'openshift_namespace' tag",
-			"Key: 'GatheringRule.GatheringFunctions[logs_of_namespace].TailLines' Error:Field validation for 'TailLines' failed on the 'min' tag",
-			"Key: 'GatheringRule.GatheringFunctions[image_streams_of_namespace].Namespace' Error:Field validation for 'Namespace' failed on the 'openshift_namespace' tag",
-		},
-		{
-			"Key: 'GatheringRule.GatheringFunctions[logs_of_namespace].Namespace' Error:Field validation for 'Namespace' failed on the 'openshift_namespace' tag",
-			"Key: 'GatheringRule.GatheringFunctions[logs_of_namespace].TailLines' Error:Field validation for 'TailLines' failed on the 'max' tag",
-			"Key: 'GatheringRule.GatheringFunctions[image_streams_of_namespace].Namespace' Error:Field validation for 'Namespace' failed on the 'openshift_namespace' tag",
-		},
-		{
-			"Key: 'GatheringRule.GatheringFunctions[logs_of_namespace].Namespace' Error:Field validation for 'Namespace' failed on the 'openshift_namespace' tag",
-		},
-		{
-			"Key: 'GatheringRule.GatheringFunctions' Error:Field validation for 'GatheringFunctions' failed on the 'not_empty' tag",
-		},
-		{
-			"Key: 'GatheringRule.GatheringFunctions' Error:Field validation for 'GatheringFunctions' failed on the 'not_empty' tag",
-		},
+	expectedErrors := []string{
+		`{
+			"actual_tag":"is_valid",
+			"field":"GatheringFunctions[].Name",
+			"kind":"string",
+			"namespace":"GatheringRule.GatheringFunctions[].Name",
+			"param":"invalid value for conditional.GatheringFunctionName",
+			"struct_field":"GatheringFunctions[].Name",
+			"struct_namespace":"GatheringRule.GatheringFunctions[].Name",
+			"tag":"is_valid",
+			"type":"conditional.GatheringFunctionName"
+		}`,
+		`{
+			"actual_tag":"startswith",
+			"field":"Namespace",
+			"kind":"string",
+			"namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].Namespace",
+			"param":"openshift-",
+			"struct_field":"Namespace",
+			"struct_namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].Namespace",
+			"tag":"openshift_namespace",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"is_valid",
+			"field":"GatheringFunctions[].Name",
+			"kind":"string",
+			"namespace":"GatheringRule.GatheringFunctions[].Name",
+			"param":"invalid value for conditional.GatheringFunctionName",
+			"struct_field":"GatheringFunctions[].Name",
+			"struct_namespace":"GatheringRule.GatheringFunctions[].Name",
+			"tag":"is_valid",
+			"type":"conditional.GatheringFunctionName"
+		}`,
+		`{
+			"actual_tag":"is_valid_type",
+			"field":"GatheringFunctions[].Params",
+			"kind":"struct",
+			"namespace":"GatheringRule.GatheringFunctions[].Params",
+			"param":"params cannot be struct {} for conditional.GatheringFunctionName",
+			"struct_field":"GatheringFunctions[].Params",
+			"struct_namespace":"GatheringRule.GatheringFunctions[].Params",
+			"tag":"is_valid_type",
+			"type":"struct {}"
+		}`,
+		`{
+			"actual_tag":"is_valid_type",
+			"field":"GatheringFunctions[].Params",
+			"kind":"struct",
+			"namespace":"GatheringRule.GatheringFunctions[].Params",
+			"param":"params cannot be conditional.GatherLogsOfNamespaceParams for conditional.GatheringFunctionName",
+			"struct_field":"GatheringFunctions[].Params",
+			"struct_namespace":"GatheringRule.GatheringFunctions[].Params",
+			"tag":"is_valid_type",
+			"type":"conditional.GatherLogsOfNamespaceParams"
+		}`,
+		`{
+			"actual_tag":"min",
+			"field":"Namespace",
+			"kind":"string",
+			"namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].Namespace",
+			"param":"1",
+			"struct_field":"Namespace",
+			"struct_namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].Namespace",
+			"tag":"openshift_namespace",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"min",
+			"field":"TailLines",
+			"kind":"int64",
+			"namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].TailLines",
+			"param":"1",
+			"struct_field":"TailLines",
+			"struct_namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].TailLines",
+			"tag":"min",
+			"type":"int64"
+		}`,
+		`{
+			"actual_tag":"min",
+			"field":"Namespace",
+			"kind":"string",
+			"namespace":"GatheringRule.GatheringFunctions[image_streams_of_namespace].Namespace",
+			"param":"1",
+			"struct_field":"Namespace",
+			"struct_namespace":"GatheringRule.GatheringFunctions[image_streams_of_namespace].Namespace",
+			"tag":"openshift_namespace",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"max",
+			"field":"TailLines",
+			"kind":"int64",
+			"namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].TailLines",
+			"param":"4096",
+			"struct_field":"TailLines",
+			"struct_namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].TailLines",
+			"tag":"max",
+			"type":"int64"
+		}`,
+		`{
+			"actual_tag":"hostname",
+			"field":"Namespace",
+			"kind":"string",
+			"namespace":"GatheringRule.GatheringFunctions[image_streams_of_namespace].Namespace",
+			"param":"",
+			"struct_field":"Namespace",
+			"struct_namespace":"GatheringRule.GatheringFunctions[image_streams_of_namespace].Namespace",
+			"tag":"openshift_namespace",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"max",
+			"field":"Namespace",
+			"kind":"string",
+			"namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].Namespace",
+			"param":"128",
+			"struct_field":"Namespace",
+			"struct_namespace":"GatheringRule.GatheringFunctions[logs_of_namespace].Namespace",
+			"tag":"openshift_namespace",
+			"type":"string"
+		}`,
+		`{
+			"actual_tag":"not_empty",
+			"field":"GatheringFunctions",
+			"kind":"map",
+			"namespace":"GatheringRule.GatheringFunctions",
+			"param":"",
+			"struct_field":"GatheringFunctions",
+			"struct_namespace":"GatheringRule.GatheringFunctions",
+			"tag":"not_empty",
+			"type":"map[conditional.GatheringFunctionName]interface {}"
+		}`,
+		`{
+			"actual_tag":"not_empty",
+			"field":"GatheringFunctions",
+			"kind":"map",
+			"namespace":"GatheringRule.GatheringFunctions",
+			"param":"",
+			"struct_field":"GatheringFunctions",
+			"struct_namespace":"GatheringRule.GatheringFunctions",
+			"tag":"not_empty",
+			"type":"map[conditional.GatheringFunctionName]interface {}"
+		}`,
 	}
 
 	errs := validateGatheringRules(gatheringRules)
-	assert.Len(t, errs, len(gatheringRules))
+	assert.Len(t, errs, len(expectedErrors))
 
-	for i := 0; i < len(gatheringRules); i++ {
-		assertValidationErrors(t, errs[i], expectedErrors[i])
-	}
+	assertValidationErrors(t, errs, expectedErrors)
 }
 
-func assertValidationErrors(t *testing.T, err error, expectedErrors []string) {
-	validationErrors, ok := err.(validator.ValidationErrors)
-	assert.True(t, ok)
+func assertValidationErrors(t *testing.T, errs []error, expectedErrors []string) {
+	errsStrings := utils.ErrorsToStrings(errs)
+	sort.Strings(errsStrings)
+	sort.Strings(expectedErrors)
 
-	errs := strings.Split(validationErrors.Error(), "\n")
-	assert.ElementsMatch(t, errs, expectedErrors)
+	assert.Equal(t, len(errsStrings), len(expectedErrors))
+
+	for i, actualErr := range errsStrings {
+		expectedErr := expectedErrors[i]
+		assert.JSONEq(t, expectedErr, actualErr)
+	}
 }
 
 // Test_Validation_Workaround tests a workaround to not panic https://github.com/go-playground/validator/issues/789

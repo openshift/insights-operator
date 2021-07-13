@@ -20,7 +20,7 @@ const AlertIsFiring ConditionType = "alert_is_firing"
 
 // IsValid checks if the value is one of allowed for this "enum"
 func (ct ConditionType) IsValid() error {
-	switch ct {
+	switch ct { //nolint:gocritic
 	case AlertIsFiring:
 		return nil
 	}

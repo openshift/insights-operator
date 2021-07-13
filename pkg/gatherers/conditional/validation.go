@@ -1,6 +1,7 @@
 package conditional
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -9,7 +10,7 @@ import (
 
 var validate *validator.Validate
 
-func init() {
+func init() { //nolint:gochecknoinits
 	validate = validator.New()
 
 	validate.RegisterStructValidation(gatheringRuleValidator, GatheringRule{})
@@ -28,7 +29,8 @@ func validateGatheringRules(gatheringRules []GatheringRule) []error {
 
 		err := validate.Struct(gatheringRule)
 		if err != nil {
-			allErrors = append(allErrors, err)
+			errs = makeValidationErrorPretty(err)
+			allErrors = append(allErrors, errs...)
 			continue
 		}
 	}
@@ -73,16 +75,14 @@ func validateCondition(condition *ConditionWithParams, sl validator.StructLevel)
 			"is_valid",
 			err.Error(),
 		)
-	} else {
-		if reflect.TypeOf(condition.Params) != reflect.TypeOf(ConditionTypeToParamsType[condition.Type]) {
-			sl.ReportError(
-				condition.Params,
-				"Conditions[].Params",
-				"Conditions[].Params",
-				"is_valid_type",
-				fmt.Sprintf("params cannot be %T for %T", condition.Params, condition.Type),
-			)
-		}
+	} else if reflect.TypeOf(condition.Params) != reflect.TypeOf(ConditionTypeToParamsType[condition.Type]) {
+		sl.ReportError(
+			condition.Params,
+			"Conditions[].Params",
+			"Conditions[].Params",
+			"is_valid_type",
+			fmt.Sprintf("params cannot be %T for %T", condition.Params, condition.Type),
+		)
 	}
 }
 
@@ -97,15 +97,51 @@ func validateGatheringFunction(name GatheringFunctionName, params interface{}, s
 			"is_valid",
 			err.Error(),
 		)
-	} else {
-		if reflect.TypeOf(params) != reflect.TypeOf(GatheringFunctionNameToParamsType[name]) {
-			sl.ReportError(
-				params,
-				"GatheringFunctions[].Params",
-				"GatheringFunctions[].Params",
-				"is_valid_type",
-				fmt.Sprintf("params cannot be %T for %T", params, name),
-			)
-		}
+	} else if reflect.TypeOf(params) != reflect.TypeOf(GatheringFunctionNameToParamsType[name]) {
+		sl.ReportError(
+			params,
+			"GatheringFunctions[].Params",
+			"GatheringFunctions[].Params",
+			"is_valid_type",
+			fmt.Sprintf("params cannot be %T for %T", params, name),
+		)
 	}
+}
+
+// makeValidationErrorPretty checks if the error is validator.ValidationErrors and converts it to a pretty form,
+// otherwise just keeps the original one
+func makeValidationErrorPretty(err error) []error {
+	var errs []error
+
+	switch v := err.(type) {
+	case validator.ValidationErrors:
+		for _, validationErr := range v {
+			errData := extractDataFromFieldError(validationErr)
+			prettyErrBytes, err := json.Marshal(errData)
+			if err == nil {
+				errs = append(errs, fmt.Errorf("%v", string(prettyErrBytes)))
+			} else {
+				errs = append(errs, fmt.Errorf("%v", errData))
+			}
+		}
+	default:
+		errs = append(errs, v)
+	}
+
+	return errs
+}
+
+func extractDataFromFieldError(err validator.FieldError) map[string]interface{} {
+	errData := make(map[string]interface{})
+	errData["tag"] = err.Tag()
+	errData["actual_tag"] = err.ActualTag()
+	errData["namespace"] = err.Namespace()
+	errData["struct_namespace"] = err.StructNamespace()
+	errData["field"] = err.Field()
+	errData["struct_field"] = err.StructField()
+	errData["param"] = err.Param()
+	errData["kind"] = err.Kind().String()
+	errData["type"] = err.Type().String()
+
+	return errData
 }

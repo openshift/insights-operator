@@ -9,11 +9,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/prometheus/common/expfmt"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"sort"
-	"strings"
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
