@@ -4,10 +4,15 @@
   "metadata": {
     "name": "openshift-apiserver",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-apiserver",
-    "uid": "57afe58b-63ac-4f14-bb41-090b879776c7",
-    "resourceVersion": "17157",
+    "uid": "0475d85f-e6f1-41eb-8a35-27b19467157b",
+    "resourceVersion": "22730",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:28Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,36 +20,40 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:22Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:28:57Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:50:03Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:43:39Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:35:27Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:44:40Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:29Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "openshift-apiserver",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -75,9 +84,20 @@
       },
       {
         "group": "",
+        "resource": "namespaces",
+        "name": "openshift-etcd-operator"
+      },
+      {
+        "group": "",
         "resource": "endpoints",
         "namespace": "openshift-etcd",
         "name": "host-etcd-2"
+      },
+      {
+        "group": "controlplane.operator.openshift.io",
+        "resource": "podnetworkconnectivitychecks",
+        "namespace": "openshift-apiserver",
+        "name": ""
       },
       {
         "group": "apiregistration.k8s.io",
@@ -98,11 +118,6 @@
         "group": "apiregistration.k8s.io",
         "resource": "apiservices",
         "name": "v1.image.openshift.io"
-      },
-      {
-        "group": "apiregistration.k8s.io",
-        "resource": "apiservices",
-        "name": "v1.oauth.openshift.io"
       },
       {
         "group": "apiregistration.k8s.io",
@@ -128,11 +143,6 @@
         "group": "apiregistration.k8s.io",
         "resource": "apiservices",
         "name": "v1.template.openshift.io"
-      },
-      {
-        "group": "apiregistration.k8s.io",
-        "resource": "apiservices",
-        "name": "v1.user.openshift.io"
       }
     ],
     "extension": null

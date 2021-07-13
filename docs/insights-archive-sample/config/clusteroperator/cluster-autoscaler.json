@@ -4,10 +4,15 @@
   "metadata": {
     "name": "cluster-autoscaler",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/cluster-autoscaler",
-    "uid": "072d2af6-a513-4468-8a11-9d3b82196bc4",
-    "resourceVersion": "17011",
+    "uid": "b5919a11-8c0e-44d8-b30f-577e3d2c737c",
+    "resourceVersion": "9002",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:51:11Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,40 +20,41 @@
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:51:12Z",
-        "message": "at version 4.4.16"
+        "lastTransitionTime": "2021-07-07T11:27:51Z",
+        "reason": "AsExpected",
+        "message": "at version 4.7.16"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:12Z"
+        "lastTransitionTime": "2021-07-07T11:27:51Z"
       },
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:12Z"
+        "lastTransitionTime": "2021-07-07T11:27:51Z"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:51:12Z"
+        "lastTransitionTime": "2021-07-07T11:27:51Z"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
       {
-        "group": "machine.openshift.io",
+        "group": "autoscaling.openshift.io",
         "resource": "machineautoscalers",
         "namespace": "openshift-machine-api",
         "name": ""
       },
       {
-        "group": "machine.openshift.io",
+        "group": "autoscaling.openshift.io",
         "resource": "clusterautoscalers",
         "namespace": "openshift-machine-api",
         "name": ""

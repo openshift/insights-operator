@@ -1,216 +1,160 @@
 {
-    "apiVersion": "machineconfiguration.openshift.io/v1",
-    "kind": "MachineConfig",
-    "metadata": {
-        "annotations": {
-            "machineconfiguration.openshift.io/generated-by-controller-version": "c4b7e3f5118d62fc3aaaa1fed5eb9ba0d12792de"
-        },
-        "creationTimestamp": "2021-06-14T09:51:37Z",
-        "generation": 1,
-        "labels": {
-            "machineconfiguration.openshift.io/role": "worker"
-        },
-        "managedFields": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:annotations": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/generated-by-controller-version": {}
-                        },
-                        "f:labels": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/role": {}
-                        },
-                        "f:ownerReferences": {
-                            ".": {},
-                            "k:{\"uid\":\"68f9cf4f-8c71-4cd5-a82b-a24e8dfa59a4\"}": {
-                                ".": {},
-                                "f:apiVersion": {},
-                                "f:blockOwnerDeletion": {},
-                                "f:controller": {},
-                                "f:kind": {},
-                                "f:name": {},
-                                "f:uid": {}
-                            }
-                        }
-                    },
-                    "f:spec": {
-                        ".": {},
-                        "f:config": {
-                            ".": {},
-                            "f:ignition": {
-                                ".": {},
-                                "f:version": {}
-                            },
-                            "f:storage": {
-                                ".": {},
-                                "f:files": {}
-                            },
-                            "f:systemd": {
-                                ".": {},
-                                "f:units": {}
-                            }
-                        },
-                        "f:extensions": {},
-                        "f:fips": {},
-                        "f:kernelArguments": {},
-                        "f:kernelType": {},
-                        "f:osImageURL": {}
-                    }
-                },
-                "manager": "machine-config-controller",
-                "operation": "Update",
-                "time": "2021-06-14T09:51:37Z"
-            }
-        ],
-        "name": "00-worker",
-        "ownerReferences": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "blockOwnerDeletion": true,
-                "controller": true,
-                "kind": "ControllerConfig",
-                "name": "machine-config-controller",
-                "uid": "68f9cf4f-8c71-4cd5-a82b-a24e8dfa59a4"
-            }
-        ],
-        "resourceVersion": "7526",
-        "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/00-worker",
-        "uid": "3d16328d-2a48-4d77-aa1b-3973a8ac332c"
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "annotations": {
+      "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
     },
-    "spec": {
-        "config": {
-            "ignition": {
-                "version": "3.2.0"
-            },
-            "passwd": {
-                "users": null
-            },
-            "storage": {
-                "files": null
-            },
-            "systemd": {
-                "units": [
-                    {
-                        "dropins": [
-                            {
-                                "contents": "",
-                                "name": "10-mco-default-env.conf"
-                            },
-                            {
-                                "contents": "[Service]\nEnvironment=\"ENABLE_PROFILE_UNIX_SOCKET=true\"\n",
-                                "name": "10-mco-profile-unix-socket.conf"
-                            },
-                            {
-                                "contents": "[Service]\nEnvironment=\"GODEBUG=x509ignoreCN=0,madvdontneed=1\"\n",
-                                "name": "10-mco-default-madv.conf"
-                            }
-                        ],
-                        "name": "crio.service"
-                    },
-                    {
-                        "dropins": [
-                            {
-                                "contents": "[Unit]\nConditionPathExists=/enoent\n",
-                                "name": "mco-disabled.conf"
-                            }
-                        ],
-                        "name": "docker.socket"
-                    },
-                    {
-                        "dropins": [
-                            {
-                                "contents": "",
-                                "name": "10-mco-default-env.conf"
-                            },
-                            {
-                                "contents": "[Service]\nEnvironment=\"GODEBUG=x509ignoreCN=0,madvdontneed=1\"\n",
-                                "name": "10-mco-default-madv.conf"
-                            }
-                        ],
-                        "name": "kubelet.service"
-                    },
-                    {
-                        "contents": "[Unit]\nDescription=Machine Config Daemon Firstboot\n# Make sure it runs only on OSTree booted system\nConditionPathExists=/run/ostree-booted\n# Removal of this file signals firstboot completion\nConditionPathExists=/etc/ignition-machine-config-encapsulated.json\nAfter=machine-config-daemon-pull.service\nBefore=crio.service crio-wipe.service\nBefore=kubelet.service\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\n# Disable existing repos (if any) so that OS extensions would use embedded RPMs only\nExecStartPre=-/usr/bin/sh -c \"sed -i 's/enabled=1/enabled=0/' /etc/yum.repos.d/*.repo\"\nExecStart=/run/bin/machine-config-daemon firstboot-complete-machineconfig\n[Install]\nWantedBy=multi-user.target\nRequiredBy=crio.service kubelet.service\n",
-                        "enabled": true,
-                        "name": "machine-config-daemon-firstboot.service"
-                    },
-                    {
-                        "contents": "[Unit]\nDescription=Machine Config Daemon Pull\n# Make sure it runs only on OSTree booted system\nConditionPathExists=/run/ostree-booted\n# This \"stamp file\" is unlinked when we complete\n# machine-config-daemon-firstboot.service\nConditionPathExists=/etc/ignition-machine-config-encapsulated.json\nWants=network-online.target\nAfter=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\n# See https://github.com/coreos/fedora-coreos-tracker/issues/354\nExecStart=/bin/sh -c '/bin/mkdir -p /run/bin \u0026\u0026 chcon --reference=/usr/bin /run/bin'\nExecStart=/bin/sh -c \"while ! /usr/bin/podman pull --authfile=/var/lib/kubelet/config.json --quiet 'quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4780d931f9287b49fc1125caaa75d6cb92f722b6cc02dc6e562319942a5165a1'; do sleep 1; done\"\nExecStart=/bin/sh -c \"/usr/bin/podman run --rm --quiet --net=host --entrypoint=cat 'quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4780d931f9287b49fc1125caaa75d6cb92f722b6cc02dc6e562319942a5165a1' /usr/bin/machine-config-daemon \u003e /run/bin/machine-config-daemon.tmp\"\nExecStart=/bin/sh -c '/usr/bin/chmod a+x /run/bin/machine-config-daemon.tmp \u0026\u0026 mv /run/bin/machine-config-daemon.tmp /run/bin/machine-config-daemon'\n[Install]\nRequiredBy=machine-config-daemon-firstboot.service\n",
-                        "enabled": true,
-                        "name": "machine-config-daemon-pull.service"
-                    },
-                    {
-                        "contents": "[Unit]\nBefore=NetworkManager.service\nAfter=systemd-tmpfiles-setup.service\n[Mount]\nWhere=/etc/NetworkManager/system-connections-merged\nWhat=overlay\nType=overlay\nOptions=lowerdir=/etc/NetworkManager/system-connections,upperdir=/run/nm-system-connections,workdir=/run/nm-system-connections-work\n[Install]\nWantedBy=multi-user.target\n",
-                        "enabled": true,
-                        "name": "etc-NetworkManager-system\\x2dconnections\\x2dmerged.mount"
-                    },
-                    {
-                        "contents": "[Unit]\nDescription=Ensure the node hostname is valid for the cluster\nBefore=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nUser=root\n\n# SystemD prevents direct execution of the script in /usr/local/sbin,\n# so it is sourced. See the script for functionality.\nExecStart=/bin/bash -c \"source /usr/local/sbin/set-valid-hostname.sh; wait_localhost; set_valid_hostname `hostname`\"\n\n# Wait up to 5min for the node to get a real hostname.\nTimeoutSec=300\n\n[Install]\nWantedBy=multi-user.target\n# Ensure that network-online.target will not complete until the node has a real hostname.\nRequiredBy=network-online.target\n",
-                        "enabled": true,
-                        "name": "node-valid-hostname.service"
-                    },
-                    {
-                        "contents": "[Unit]\nDescription=Writes IP address configuration so that kubelet and crio services select a valid node IP\nWants=network-online.target\nAfter=network-online.target ignition-firstboot-complete.service\nBefore=kubelet.service crio.service\n\n[Service]\n# Need oneshot to delay kubelet\nType=oneshot\n# Would prefer to do Restart=on-failure instead of this bash retry loop, but\n# the version of systemd we have right now doesn't support it. It should be\n# available in systemd v244 and higher.\nExecStart=/bin/bash -c \" \\\n  until \\\n  /usr/bin/podman run --rm \\\n  --authfile /var/lib/kubelet/config.json \\\n  --net=host \\\n  --volume /etc/systemd/system:/etc/systemd/system:z \\\n  quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:eb85ef6d9b93360145b51ecd6e7b5fdc15239272fbcd439eac3b91f88b992501 \\\n  node-ip \\\n  set \\\n  --retry-on-failure; \\\n  do \\\n  sleep 5; \\\n  done\"\nExecStart=/bin/systemctl daemon-reload\n\n[Install]\nRequiredBy=kubelet.service\n",
-                        "enabled": false,
-                        "name": "nodeip-configuration.service"
-                    },
-                    {
-                        "enabled": true,
-                        "name": "openvswitch.service"
-                    },
-                    {
-                        "contents": "[Unit]\nDescription=Configures OVS with proper host networking configuration\n# Removal of this file signals firstboot completion\nConditionPathExists=!/etc/ignition-machine-config-encapsulated.json\n# This service is used to move a physical NIC into OVS and reconfigure OVS to use the host IP\nRequires=openvswitch.service\nWants=NetworkManager-wait-online.service\nAfter=NetworkManager-wait-online.service openvswitch.service network.service\nBefore=network-online.target kubelet.service crio.service node-valid-hostname.service\n\n[Service]\n# Need oneshot to delay kubelet\nType=oneshot\nExecStart=/usr/local/bin/configure-ovs.sh OpenShiftSDN\nStandardOutput=journal+console\nStandardError=journal+console\n\n[Install]\nWantedBy=network-online.target\n",
-                        "enabled": true,
-                        "name": "ovs-configuration.service"
-                    },
-                    {
-                        "dropins": [
-                            {
-                                "contents": "[Service]\nRestart=always\nExecStartPre=-/bin/sh -c '/usr/bin/chown -R :$${OVS_USER_ID##*:} /var/lib/openvswitch'\nExecStartPre=-/bin/sh -c '/usr/bin/chown -R :$${OVS_USER_ID##*:} /etc/openvswitch'\nExecStartPre=-/bin/sh -c '/usr/bin/chown -R :$${OVS_USER_ID##*:} /run/openvswitch'\n",
-                                "name": "10-ovs-vswitchd-restart.conf"
-                            }
-                        ],
-                        "name": "ovs-vswitchd.service"
-                    },
-                    {
-                        "dropins": [
-                            {
-                                "contents": "[Service]\nRestart=always\n",
-                                "name": "10-ovsdb-restart.conf"
-                            }
-                        ],
-                        "enabled": true,
-                        "name": "ovsdb-server.service"
-                    },
-                    {
-                        "dropins": [
-                            {
-                                "contents": "",
-                                "name": "10-mco-default-env.conf"
-                            }
-                        ],
-                        "name": "pivot.service"
-                    },
-                    {
-                        "dropins": [
-                            {
-                                "contents": "[Unit]\nConditionPathExists=/enoent\n",
-                                "name": "mco-disabled.conf"
-                            }
-                        ],
-                        "name": "zincati.service"
-                    }
-                ]
-            }
-        },
-        "extensions": null,
-        "fips": false,
-        "kernelArguments": null,
-        "kernelType": "",
-        "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5649fe979b5ebe2615344d398ee0a841c9ea49d72be9edaf4048ccea5a729c32"
-    }
+    "creationTimestamp": "2021-07-07T11:26:59Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "worker"
+    },
+    "name": "00-worker",
+    "ownerReferences": [
+      {
+        "apiVersion": "machineconfiguration.openshift.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ControllerConfig",
+        "name": "machine-config-controller",
+        "uid": "07498a84-c3bf-4eec-9cc3-8cb0ad1e32c2"
+      }
+    ],
+    "resourceVersion": "7289",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/00-worker",
+    "uid": "e9332f26-63f7-44d4-9ecd-915d12123821"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      },
+      "systemd": {
+        "units": [
+          {
+            "dropins": [
+              {
+                "contents": "",
+                "name": "10-mco-default-env.conf"
+              },
+              {
+                "contents": "[Service]\nEnvironment=\"ENABLE_PROFILE_UNIX_SOCKET=true\"\n",
+                "name": "10-mco-profile-unix-socket.conf"
+              },
+              {
+                "contents": "[Service]\nEnvironment=\"GODEBUG=x509ignoreCN=0,madvdontneed=1\"\n",
+                "name": "10-mco-default-madv.conf"
+              }
+            ],
+            "name": "crio.service"
+          },
+          {
+            "dropins": [
+              {
+                "contents": "[Unit]\nConditionPathExists=/enoent\n",
+                "name": "mco-disabled.conf"
+              }
+            ],
+            "name": "docker.socket"
+          },
+          {
+            "dropins": [
+              {
+                "contents": "",
+                "name": "10-mco-default-env.conf"
+              },
+              {
+                "contents": "[Service]\nEnvironment=\"GODEBUG=x509ignoreCN=0,madvdontneed=1\"\n",
+                "name": "10-mco-default-madv.conf"
+              }
+            ],
+            "name": "kubelet.service"
+          },
+          {
+            "contents": "[Unit]\nDescription=Machine Config Daemon Firstboot\n# Make sure it runs only on OSTree booted system\nConditionPathExists=/run/ostree-booted\n# Removal of this file signals firstboot completion\nConditionPathExists=/etc/ignition-machine-config-encapsulated.json\nAfter=machine-config-daemon-pull.service\nBefore=crio.service crio-wipe.service\nBefore=kubelet.service\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\n# Disable existing repos (if any) so that OS extensions would use embedded RPMs only\nExecStartPre=-/usr/bin/sh -c \"sed -i 's/enabled=1/enabled=0/' /etc/yum.repos.d/*.repo\"\nExecStart=/run/bin/machine-config-daemon firstboot-complete-machineconfig\n[Install]\nWantedBy=multi-user.target\nRequiredBy=crio.service kubelet.service\n",
+            "enabled": true,
+            "name": "machine-config-daemon-firstboot.service"
+          },
+          {
+            "contents": "[Unit]\nDescription=Machine Config Daemon Pull\n# Make sure it runs only on OSTree booted system\nConditionPathExists=/run/ostree-booted\n# This \"stamp file\" is unlinked when we complete\n# machine-config-daemon-firstboot.service\nConditionPathExists=/etc/ignition-machine-config-encapsulated.json\nWants=network-online.target\nAfter=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\n# See https://github.com/coreos/fedora-coreos-tracker/issues/354\nExecStart=/bin/sh -c '/bin/mkdir -p /run/bin && chcon --reference=/usr/bin /run/bin'\nExecStart=/bin/sh -c \"while ! /usr/bin/podman pull --authfile=/var/lib/kubelet/config.json --quiet 'quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa'; do sleep 1; done\"\nExecStart=/bin/sh -c \"/usr/bin/podman run --rm --quiet --net=host --entrypoint=cat 'quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa' /usr/bin/machine-config-daemon > /run/bin/machine-config-daemon.tmp\"\nExecStart=/bin/sh -c '/usr/bin/chmod a+x /run/bin/machine-config-daemon.tmp && mv /run/bin/machine-config-daemon.tmp /run/bin/machine-config-daemon'\n[Install]\nRequiredBy=machine-config-daemon-firstboot.service\n",
+            "enabled": true,
+            "name": "machine-config-daemon-pull.service"
+          },
+          {
+            "contents": "[Unit]\nBefore=NetworkManager.service\nAfter=systemd-tmpfiles-setup.service\n[Mount]\nWhere=/etc/NetworkManager/system-connections-merged\nWhat=overlay\nType=overlay\nOptions=lowerdir=/etc/NetworkManager/system-connections,upperdir=/run/nm-system-connections,workdir=/run/nm-system-connections-work\n[Install]\nWantedBy=multi-user.target\n",
+            "enabled": true,
+            "name": "etc-NetworkManager-system\\x2dconnections\\x2dmerged.mount"
+          },
+          {
+            "contents": "[Unit]\nDescription=Ensure the node hostname is valid for the cluster\nBefore=network-online.target\n\n[Service]\nType=oneshot\nRemainAfterExit=yes\nUser=root\n\n# SystemD prevents direct execution of the script in /usr/local/sbin,\n# so it is sourced. See the script for functionality.\nExecStart=/bin/bash -c \"source /usr/local/sbin/set-valid-hostname.sh; wait_localhost; set_valid_hostname `hostname`\"\n\n# Wait up to 5min for the node to get a real hostname.\nTimeoutSec=300\n\n[Install]\nWantedBy=multi-user.target\n# Ensure that network-online.target will not complete until the node has a real hostname.\nRequiredBy=network-online.target\n",
+            "enabled": true,
+            "name": "node-valid-hostname.service"
+          },
+          {
+            "contents": "[Unit]\nDescription=Writes IP address configuration so that kubelet and crio services select a valid node IP\nWants=network-online.target\nAfter=network-online.target ignition-firstboot-complete.service\nBefore=kubelet.service crio.service\n\n[Service]\n# Need oneshot to delay kubelet\nType=oneshot\n# Would prefer to do Restart=on-failure instead of this bash retry loop, but\n# the version of systemd we have right now doesn't support it. It should be\n# available in systemd v244 and higher.\nExecStart=/bin/bash -c \" \\\n  until \\\n  /usr/bin/podman run --rm \\\n  --authfile /var/lib/kubelet/config.json \\\n  --net=host \\\n  --volume /etc/systemd/system:/etc/systemd/system:z \\\n  quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:8a21ea74995438c48d0c1d04e9919668ae33ee80f756632f6718ccb6ac4ac8bd \\\n  node-ip \\\n  set \\\n  --retry-on-failure; \\\n  do \\\n  sleep 5; \\\n  done\"\nExecStart=/bin/systemctl daemon-reload\n\n[Install]\nRequiredBy=kubelet.service\n",
+            "enabled": true,
+            "name": "nodeip-configuration.service"
+          },
+          {
+            "enabled": true,
+            "name": "openvswitch.service"
+          },
+          {
+            "contents": "[Unit]\nDescription=Configures OVS with proper host networking configuration\n# Removal of this file signals firstboot completion\nConditionPathExists=!/etc/ignition-machine-config-encapsulated.json\n# This service is used to move a physical NIC into OVS and reconfigure OVS to use the host IP\nRequires=openvswitch.service\nWants=NetworkManager-wait-online.service\nAfter=NetworkManager-wait-online.service openvswitch.service network.service\nBefore=network-online.target kubelet.service crio.service node-valid-hostname.service\n\n[Service]\n# Need oneshot to delay kubelet\nType=oneshot\nExecStart=/usr/local/bin/configure-ovs.sh OpenShiftSDN\nStandardOutput=journal+console\nStandardError=journal+console\n\n[Install]\nWantedBy=network-online.target\n",
+            "enabled": true,
+            "name": "ovs-configuration.service"
+          },
+          {
+            "dropins": [
+              {
+                "contents": "[Service]\nRestart=always\nExecStartPre=-/bin/sh -c '/usr/bin/chown -R :$${OVS_USER_ID##*:} /var/lib/openvswitch'\nExecStartPre=-/bin/sh -c '/usr/bin/chown -R :$${OVS_USER_ID##*:} /etc/openvswitch'\nExecStartPre=-/bin/sh -c '/usr/bin/chown -R :$${OVS_USER_ID##*:} /run/openvswitch'\n",
+                "name": "10-ovs-vswitchd-restart.conf"
+              }
+            ],
+            "name": "ovs-vswitchd.service"
+          },
+          {
+            "dropins": [
+              {
+                "contents": "[Service]\nRestart=always\n",
+                "name": "10-ovsdb-restart.conf"
+              }
+            ],
+            "enabled": true,
+            "name": "ovsdb-server.service"
+          },
+          {
+            "dropins": [
+              {
+                "contents": "",
+                "name": "10-mco-default-env.conf"
+              }
+            ],
+            "name": "pivot.service"
+          },
+          {
+            "dropins": [
+              {
+                "contents": "[Unit]\nConditionPathExists=/enoent\n",
+                "name": "mco-disabled.conf"
+              }
+            ],
+            "name": "zincati.service"
+          }
+        ]
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1c91baf8b4498144cfd87383a712639ebe14639c1dfd163c37c423713c935958"
+  }
 }

@@ -1,300 +1,317 @@
 [
-    {
-        "name": "default",
-        "egressIPs": null,
-        "netID": 0
-    },
-    {
-        "name": "kube-node-lease",
-        "egressIPs": null,
-        "netID": 2795067
-    },
-    {
-        "name": "kube-public",
-        "egressIPs": null,
-        "netID": 13073630
-    },
-    {
-        "name": "kube-system",
-        "egressIPs": null,
-        "netID": 16631919
-    },
-    {
-        "name": "openshift",
-        "egressIPs": null,
-        "netID": 14362778
-    },
-    {
-        "name": "openshift-apiserver",
-        "egressIPs": null,
-        "netID": 9577157
-    },
-    {
-        "name": "openshift-apiserver-operator",
-        "egressIPs": null,
-        "netID": 2581983
-    },
-    {
-        "name": "openshift-authentication",
-        "egressIPs": null,
-        "netID": 10774892
-    },
-    {
-        "name": "openshift-authentication-operator",
-        "egressIPs": null,
-        "netID": 3426150
-    },
-    {
-        "name": "openshift-cloud-credential-operator",
-        "egressIPs": null,
-        "netID": 13908726
-    },
-    {
-        "name": "openshift-cluster-csi-drivers",
-        "egressIPs": null,
-        "netID": 6749949
-    },
-    {
-        "name": "openshift-cluster-machine-approver",
-        "egressIPs": null,
-        "netID": 7225590
-    },
-    {
-        "name": "openshift-cluster-node-tuning-operator",
-        "egressIPs": null,
-        "netID": 9123147
-    },
-    {
-        "name": "openshift-cluster-samples-operator",
-        "egressIPs": null,
-        "netID": 10870345
-    },
-    {
-        "name": "openshift-cluster-storage-operator",
-        "egressIPs": null,
-        "netID": 14153285
-    },
-    {
-        "name": "openshift-cluster-version",
-        "egressIPs": null,
-        "netID": 14700582
-    },
-    {
-        "name": "openshift-config",
-        "egressIPs": null,
-        "netID": 3909207
-    },
-    {
-        "name": "openshift-config-managed",
-        "egressIPs": null,
-        "netID": 4698971
-    },
-    {
-        "name": "openshift-config-operator",
-        "egressIPs": null,
-        "netID": 15989555
-    },
-    {
-        "name": "openshift-console",
-        "egressIPs": null,
-        "netID": 15325655
-    },
-    {
-        "name": "openshift-console-operator",
-        "egressIPs": null,
-        "netID": 769593
-    },
-    {
-        "name": "openshift-controller-manager",
-        "egressIPs": null,
-        "netID": 2509272
-    },
-    {
-        "name": "openshift-controller-manager-operator",
-        "egressIPs": null,
-        "netID": 15276924
-    },
-    {
-        "name": "openshift-dns",
-        "egressIPs": null,
-        "netID": 5152056
-    },
-    {
-        "name": "openshift-dns-operator",
-        "egressIPs": null,
-        "netID": 6917210
-    },
-    {
-        "name": "openshift-etcd",
-        "egressIPs": null,
-        "netID": 15057570
-    },
-    {
-        "name": "openshift-etcd-operator",
-        "egressIPs": null,
-        "netID": 9571833
-    },
-    {
-        "name": "openshift-image-registry",
-        "egressIPs": null,
-        "netID": 12058587
-    },
-    {
-        "name": "openshift-infra",
-        "egressIPs": null,
-        "netID": 12805550
-    },
-    {
-        "name": "openshift-ingress",
-        "egressIPs": null,
-        "netID": 3739224
-    },
-    {
-        "name": "openshift-ingress-operator",
-        "egressIPs": null,
-        "netID": 3588270
-    },
-    {
-        "name": "openshift-insights",
-        "egressIPs": null,
-        "netID": 4028556
-    },
-    {
-        "name": "openshift-kni-infra",
-        "egressIPs": null,
-        "netID": 6215975
-    },
-    {
-        "name": "openshift-kube-apiserver",
-        "egressIPs": null,
-        "netID": 1239247
-    },
-    {
-        "name": "openshift-kube-apiserver-operator",
-        "egressIPs": null,
-        "netID": 14163022
-    },
-    {
-        "name": "openshift-kube-controller-manager",
-        "egressIPs": null,
-        "netID": 13084441
-    },
-    {
-        "name": "openshift-kube-controller-manager-operator",
-        "egressIPs": null,
-        "netID": 2024599
-    },
-    {
-        "name": "openshift-kube-scheduler",
-        "egressIPs": null,
-        "netID": 7968492
-    },
-    {
-        "name": "openshift-kube-scheduler-operator",
-        "egressIPs": null,
-        "netID": 14616566
-    },
-    {
-        "name": "openshift-kube-storage-version-migrator",
-        "egressIPs": null,
-        "netID": 8037837
-    },
-    {
-        "name": "openshift-kube-storage-version-migrator-operator",
-        "egressIPs": null,
-        "netID": 10407813
-    },
-    {
-        "name": "openshift-machine-api",
-        "egressIPs": null,
-        "netID": 13163983
-    },
-    {
-        "name": "openshift-machine-config-operator",
-        "egressIPs": null,
-        "netID": 13746264
-    },
-    {
-        "name": "openshift-marketplace",
-        "egressIPs": null,
-        "netID": 90989
-    },
-    {
-        "name": "openshift-monitoring",
-        "egressIPs": null,
-        "netID": 16411305
-    },
-    {
-        "name": "openshift-multus",
-        "egressIPs": null,
-        "netID": 11052026
-    },
-    {
-        "name": "openshift-network-operator",
-        "egressIPs": null,
-        "netID": 8799386
-    },
-    {
-        "name": "openshift-node",
-        "egressIPs": null,
-        "netID": 6691746
-    },
-    {
-        "name": "openshift-oauth-apiserver",
-        "egressIPs": null,
-        "netID": 13420319
-    },
-    {
-        "name": "openshift-openstack-infra",
-        "egressIPs": null,
-        "netID": 10994738
-    },
-    {
-        "name": "openshift-operator-lifecycle-manager",
-        "egressIPs": null,
-        "netID": 6122231
-    },
-    {
-        "name": "openshift-operators",
-        "egressIPs": null,
-        "netID": 1635018
-    },
-    {
-        "name": "openshift-ovirt-infra",
-        "egressIPs": null,
-        "netID": 15628967
-    },
-    {
-        "name": "openshift-sdn",
-        "egressIPs": null,
-        "netID": 7506485
-    },
-    {
-        "name": "openshift-service-ca",
-        "egressIPs": null,
-        "netID": 15247878
-    },
-    {
-        "name": "openshift-service-ca-operator",
-        "egressIPs": null,
-        "netID": 11604380
-    },
-    {
-        "name": "openshift-user-workload-monitoring",
-        "egressIPs": null,
-        "netID": 13785378
-    },
-    {
-        "name": "openshift-vsphere-infra",
-        "egressIPs": null,
-        "netID": 15355316
-    },
-    {
-        "name": "test",
-        "egressIPs": [
-            "10.128.0.0",
-            "127.0.0.1"
-        ],
-        "netID": 16248289
-    }
+  {
+    "name": "default",
+    "egressIPs": null,
+    "netID": 0
+  },
+  {
+    "name": "kube-node-lease",
+    "egressIPs": null,
+    "netID": 14329116
+  },
+  {
+    "name": "kube-public",
+    "egressIPs": null,
+    "netID": 146556
+  },
+  {
+    "name": "kube-system",
+    "egressIPs": null,
+    "netID": 12197669
+  },
+  {
+    "name": "openshift",
+    "egressIPs": null,
+    "netID": 5920059
+  },
+  {
+    "name": "openshift-apiserver",
+    "egressIPs": null,
+    "netID": 10290991
+  },
+  {
+    "name": "openshift-apiserver-operator",
+    "egressIPs": null,
+    "netID": 15789168
+  },
+  {
+    "name": "openshift-authentication",
+    "egressIPs": null,
+    "netID": 11640194
+  },
+  {
+    "name": "openshift-authentication-operator",
+    "egressIPs": null,
+    "netID": 12928683
+  },
+  {
+    "name": "openshift-cloud-credential-operator",
+    "egressIPs": null,
+    "netID": 9063971
+  },
+  {
+    "name": "openshift-cluster-csi-drivers",
+    "egressIPs": null,
+    "netID": 1800598
+  },
+  {
+    "name": "openshift-cluster-machine-approver",
+    "egressIPs": null,
+    "netID": 9772690
+  },
+  {
+    "name": "openshift-cluster-node-tuning-operator",
+    "egressIPs": null,
+    "netID": 13946381
+  },
+  {
+    "name": "openshift-cluster-samples-operator",
+    "egressIPs": null,
+    "netID": 12618716
+  },
+  {
+    "name": "openshift-cluster-storage-operator",
+    "egressIPs": null,
+    "netID": 14283740
+  },
+  {
+    "name": "openshift-cluster-version",
+    "egressIPs": null,
+    "netID": 4121845
+  },
+  {
+    "name": "openshift-config",
+    "egressIPs": null,
+    "netID": 7125546
+  },
+  {
+    "name": "openshift-config-managed",
+    "egressIPs": null,
+    "netID": 9725884
+  },
+  {
+    "name": "openshift-config-operator",
+    "egressIPs": null,
+    "netID": 13939580
+  },
+  {
+    "name": "openshift-console",
+    "egressIPs": null,
+    "netID": 13482456
+  },
+  {
+    "name": "openshift-console-operator",
+    "egressIPs": null,
+    "netID": 1385791
+  },
+  {
+    "name": "openshift-console-user-settings",
+    "egressIPs": null,
+    "netID": 3855101
+  },
+  {
+    "name": "openshift-controller-manager",
+    "egressIPs": null,
+    "netID": 3130848
+  },
+  {
+    "name": "openshift-controller-manager-operator",
+    "egressIPs": null,
+    "netID": 14162311
+  },
+  {
+    "name": "openshift-dns",
+    "egressIPs": null,
+    "netID": 10730294
+  },
+  {
+    "name": "openshift-dns-operator",
+    "egressIPs": null,
+    "netID": 15905317
+  },
+  {
+    "name": "openshift-etcd",
+    "egressIPs": null,
+    "netID": 5062241
+  },
+  {
+    "name": "openshift-etcd-operator",
+    "egressIPs": null,
+    "netID": 16294976
+  },
+  {
+    "name": "openshift-host-network",
+    "egressIPs": null,
+    "netID": 13276767
+  },
+  {
+    "name": "openshift-image-registry",
+    "egressIPs": null,
+    "netID": 8748734
+  },
+  {
+    "name": "openshift-infra",
+    "egressIPs": null,
+    "netID": 8123275
+  },
+  {
+    "name": "openshift-ingress",
+    "egressIPs": null,
+    "netID": 5771782
+  },
+  {
+    "name": "openshift-ingress-canary",
+    "egressIPs": null,
+    "netID": 12761486
+  },
+  {
+    "name": "openshift-ingress-operator",
+    "egressIPs": null,
+    "netID": 16547621
+  },
+  {
+    "name": "openshift-insights",
+    "egressIPs": null,
+    "netID": 15352144
+  },
+  {
+    "name": "openshift-kni-infra",
+    "egressIPs": null,
+    "netID": 14832803
+  },
+  {
+    "name": "openshift-kube-apiserver",
+    "egressIPs": null,
+    "netID": 14207819
+  },
+  {
+    "name": "openshift-kube-apiserver-operator",
+    "egressIPs": null,
+    "netID": 10437809
+  },
+  {
+    "name": "openshift-kube-controller-manager",
+    "egressIPs": null,
+    "netID": 10912579
+  },
+  {
+    "name": "openshift-kube-controller-manager-operator",
+    "egressIPs": null,
+    "netID": 9861794
+  },
+  {
+    "name": "openshift-kube-scheduler",
+    "egressIPs": null,
+    "netID": 16001745
+  },
+  {
+    "name": "openshift-kube-scheduler-operator",
+    "egressIPs": null,
+    "netID": 2548840
+  },
+  {
+    "name": "openshift-kube-storage-version-migrator",
+    "egressIPs": null,
+    "netID": 9974393
+  },
+  {
+    "name": "openshift-kube-storage-version-migrator-operator",
+    "egressIPs": null,
+    "netID": 16538657
+  },
+  {
+    "name": "openshift-kubevirt-infra",
+    "egressIPs": null,
+    "netID": 2818549
+  },
+  {
+    "name": "openshift-machine-api",
+    "egressIPs": null,
+    "netID": 16262607
+  },
+  {
+    "name": "openshift-machine-config-operator",
+    "egressIPs": null,
+    "netID": 3626746
+  },
+  {
+    "name": "openshift-marketplace",
+    "egressIPs": null,
+    "netID": 12589253
+  },
+  {
+    "name": "openshift-monitoring",
+    "egressIPs": null,
+    "netID": 60041
+  },
+  {
+    "name": "openshift-multus",
+    "egressIPs": null,
+    "netID": 12969
+  },
+  {
+    "name": "openshift-network-diagnostics",
+    "egressIPs": null,
+    "netID": 4478336
+  },
+  {
+    "name": "openshift-network-operator",
+    "egressIPs": null,
+    "netID": 2458417
+  },
+  {
+    "name": "openshift-node",
+    "egressIPs": null,
+    "netID": 5240835
+  },
+  {
+    "name": "openshift-oauth-apiserver",
+    "egressIPs": null,
+    "netID": 12564056
+  },
+  {
+    "name": "openshift-openstack-infra",
+    "egressIPs": null,
+    "netID": 3135233
+  },
+  {
+    "name": "openshift-operator-lifecycle-manager",
+    "egressIPs": null,
+    "netID": 15603609
+  },
+  {
+    "name": "openshift-operators",
+    "egressIPs": null,
+    "netID": 4087566
+  },
+  {
+    "name": "openshift-ovirt-infra",
+    "egressIPs": null,
+    "netID": 281144
+  },
+  {
+    "name": "openshift-sdn",
+    "egressIPs": null,
+    "netID": 4074120
+  },
+  {
+    "name": "openshift-service-ca",
+    "egressIPs": null,
+    "netID": 7397877
+  },
+  {
+    "name": "openshift-service-ca-operator",
+    "egressIPs": null,
+    "netID": 12872035
+  },
+  {
+    "name": "openshift-user-workload-monitoring",
+    "egressIPs": null,
+    "netID": 1093487
+  },
+  {
+    "name": "openshift-vsphere-infra",
+    "egressIPs": null,
+    "netID": 5879322
+  }
 ]

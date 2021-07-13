@@ -4,10 +4,15 @@
   "metadata": {
     "name": "insights",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/insights",
-    "uid": "b3d2a6a8-be36-427e-a094-8389f9e0c2f4",
-    "resourceVersion": "26259",
+    "uid": "caddb5c0-b1ba-4b73-9a02-372b22eb64cd",
+    "resourceVersion": "1899841",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:49:37Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,30 +20,33 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:37Z"
+        "lastTransitionTime": "2021-07-07T17:42:54Z",
+        "reason": "AsExpected"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:37Z",
+        "lastTransitionTime": "2021-07-07T11:32:54Z",
         "reason": "AsExpected"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:37Z",
+        "lastTransitionTime": "2021-07-07T11:36:54Z",
+        "reason": "AsExpected",
         "message": "Monitoring the cluster"
       },
       {
         "type": "Disabled",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:37Z"
+        "lastTransitionTime": "2021-07-07T11:36:54Z",
+        "reason": "AsExpected"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -54,6 +62,8 @@
         "name": "insights-operator"
       }
     ],
-    "extension": {}
+    "extension": {
+      "lastReportTime": "2021-07-13T06:01:03Z"
+    }
   }
 }

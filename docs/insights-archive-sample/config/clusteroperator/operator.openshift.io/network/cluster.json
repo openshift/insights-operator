@@ -1,25 +1,25 @@
 {
-    "apiVersion": "operator.openshift.io/v1",
-    "kind": "Network",
-    "name": "cluster",
-    "spec": {
-        "clusterNetwork": [
-            {
-                "cidr": "10.128.0.0/14",
-                "hostPrefix": 23
-            }
-        ],
-        "defaultNetwork": {
-            "type": "OpenShiftSDN"
-        },
-        "disableNetworkDiagnostics": false,
-        "logLevel": "Normal",
-        "managementState": "Managed",
-        "observedConfig": null,
-        "operatorLogLevel": "Normal",
-        "serviceNetwork": [
-            "172.30.0.0/16"
-        ],
-        "unsupportedConfigOverrides": null
-    }
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "Network",
+  "name": "cluster",
+  "spec": {
+    "clusterNetwork": [
+      {
+        "cidr": "10.128.0.0/14",
+        "hostPrefix": 23
+      }
+    ],
+    "defaultNetwork": {
+      "type": "OpenShiftSDN"
+    },
+    "disableNetworkDiagnostics": false,
+    "logLevel": "Normal",
+    "managementState": "Managed",
+    "observedConfig": null,
+    "operatorLogLevel": "Normal",
+    "serviceNetwork": [
+      "172.30.0.0/16"
+    ],
+    "unsupportedConfigOverrides": null
+  }
 }

@@ -1,30 +1,14 @@
 {
-    "metadata": {
-        "name": "cluster",
-        "selfLink": "/apis/config.openshift.io/v1/ingresses/cluster",
-        "uid": "dd9f6c39-e7f5-427f-a495-ec480ad60fae",
-        "resourceVersion": "544",
-        "generation": 1,
-        "creationTimestamp": "2021-03-26T14:19:42Z",
-        "managedFields": [
-            {
-                "manager": "cluster-bootstrap",
-                "operation": "Update",
-                "apiVersion": "config.openshift.io/v1",
-                "time": "2021-03-26T14:19:42Z",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:spec": {
-                        ".": {},
-                        "f:domain": {}
-                    },
-                    "f:status": {}
-                }
-            }
-        ]
-    },
-    "spec": {
-        "domain": "apps.ci-ln-ywdpkbt-f76d1.origin-ci-int-gce.dev.openshift.com"
-    },
-    "status": {}
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/ingresses/cluster",
+    "uid": "1209cc5d-6b63-435c-a94c-fdcc039d01fa",
+    "resourceVersion": "591",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:51Z"
+  },
+  "spec": {
+    "domain": "apps.imeixner20210707.lab.upshift.rdu2.redhat.com"
+  },
+  "status": {}
 }

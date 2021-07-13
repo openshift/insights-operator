@@ -1,187 +1,114 @@
 {
-    "kind": "Config",
-    "apiVersion": "imageregistry.operator.openshift.io/v1",
-    "metadata": {
-        "name": "cluster",
-        "selfLink": "/apis/imageregistry.operator.openshift.io/v1/configs/cluster",
-        "uid": "8351f32e-5524-41f1-8de2-78984e6c0c67",
-        "resourceVersion": "244895",
-        "generation": 5,
-        "creationTimestamp": "2020-11-23T15:55:34Z",
-        "finalizers": [
-            "imageregistry.operator.openshift.io/finalizer"
-        ],
-        "managedFields": [
-            {
-                "manager": "kubectl-patch",
-                "operation": "Update",
-                "apiVersion": "imageregistry.operator.openshift.io/v1",
-                "time": "2020-11-23T16:03:40Z",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:spec": {
-                        "f:managementState": {}
-                    }
-                }
-            },
-            {
-                "manager": "cluster-image-registry-operator",
-                "operation": "Update",
-                "apiVersion": "imageregistry.operator.openshift.io/v1",
-                "time": "2020-11-24T08:00:19Z",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:finalizers": {}
-                    },
-                    "f:spec": {
-                        ".": {},
-                        "f:logLevel": {},
-                        "f:observedConfig": {},
-                        "f:operatorLogLevel": {},
-                        "f:proxy": {},
-                        "f:replicas": {},
-                        "f:requests": {
-                            ".": {},
-                            "f:read": {
-                                ".": {},
-                                "f:maxWaitInQueue": {}
-                            },
-                            "f:write": {
-                                ".": {},
-                                "f:maxWaitInQueue": {}
-                            }
-                        },
-                        "f:rolloutStrategy": {},
-                        "f:storage": {},
-                        "f:unsupportedConfigOverrides": {}
-                    },
-                    "f:status": {
-                        ".": {},
-                        "f:conditions": {},
-                        "f:generations": {},
-                        "f:observedGeneration": {},
-                        "f:readyReplicas": {},
-                        "f:storage": {
-                            ".": {},
-                            "f:emptyDir": {},
-                            "f:managementState": {}
-                        },
-                        "f:storageManaged": {}
-                    }
-                }
-            },
-            {
-                "manager": "oc",
-                "operation": "Update",
-                "apiVersion": "imageregistry.operator.openshift.io/v1",
-                "time": "2020-11-24T08:00:19Z",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:spec": {
-                        "f:storage": {
-                            "f:gcs": {
-                                ".": {},
-                                "f:bucket": {},
-                                "f:projectID": {},
-                                "f:region": {}
-                            }
-                        }
-                    }
-                }
-            }
-        ]
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/imageregistry.operator.openshift.io/v1/configs/cluster",
+    "uid": "4ddaf684-48c8-46aa-95de-5710bd40884c",
+    "resourceVersion": "1782045",
+    "generation": 4,
+    "creationTimestamp": "2021-07-07T11:33:11Z",
+    "finalizers": [
+      "imageregistry.operator.openshift.io/finalizer"
+    ]
+  },
+  "spec": {
+    "logLevel": "Normal",
+    "operatorLogLevel": "Normal",
+    "unsupportedConfigOverrides": null,
+    "observedConfig": null,
+    "managementState": "Managed",
+    "httpSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "proxy": {},
+    "storage": {
+      "emptyDir": {},
+      "managementState": "Managed"
     },
-    "spec": {
-        "managementState": "Managed",
-        "httpSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-        "proxy": {},
-        "storage": {
-            "gcs": {
-                "bucket": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                "region": "us-east1",
-                "projectID": "xxxxxxxxxxxxxxxxxxxxxx"
-            }
-        },
-        "requests": {
-            "read": {
-                "maxWaitInQueue": "0s"
-            },
-            "write": {
-                "maxWaitInQueue": "0s"
-            }
-        },
-        "replicas": 1,
-        "logging": 0,
-        "rolloutStrategy": "RollingUpdate"
+    "requests": {
+      "read": {
+        "maxWaitInQueue": "0s"
+      },
+      "write": {
+        "maxWaitInQueue": "0s"
+      }
     },
-    "status": {
-        "observedGeneration": 5,
-        "conditions": [
-            {
-                "type": "ImageRegistryCertificatesControllerDegraded",
-                "status": "False",
-                "lastTransitionTime": "2020-11-23T15:55:34Z",
-                "reason": "AsExpected"
-            },
-            {
-                "type": "NodeCADaemonControllerDegraded",
-                "status": "False",
-                "lastTransitionTime": "2020-11-23T15:55:34Z",
-                "reason": "AsExpected"
-            },
-            {
-                "type": "ImageConfigControllerDegraded",
-                "status": "False",
-                "lastTransitionTime": "2020-11-23T15:55:34Z",
-                "reason": "AsExpected"
-            },
-            {
-                "type": "Progressing",
-                "status": "True",
-                "lastTransitionTime": "2020-11-24T08:00:19Z",
-                "reason": "Error",
-                "message": "Unable to apply resources: unable to sync storage configuration: unable to get cluster minted credentials \"openshift-image-registry/installer-cloud-credentials\": secret \"installer-cloud-credentials\" not found"
-            },
-            {
-                "type": "Available",
-                "status": "True",
-                "lastTransitionTime": "2020-11-23T16:03:47Z",
-                "reason": "Ready",
-                "message": "The registry is ready"
-            },
-            {
-                "type": "Degraded",
-                "status": "False",
-                "lastTransitionTime": "2020-11-23T15:55:35Z"
-            },
-            {
-                "type": "Removed",
-                "status": "False",
-                "lastTransitionTime": "2020-11-23T16:03:40Z"
-            },
-            {
-                "type": "StorageExists",
-                "status": "Unknown",
-                "lastTransitionTime": "2020-11-24T08:00:19Z",
-                "reason": "GCS Configuration Changed",
-                "message": "GCS storage is in an unknown state"
-            }
-        ],
-        "readyReplicas": 0,
-        "generations": [
-            {
-                "group": "apps",
-                "resource": "deployments",
-                "namespace": "openshift-image-registry",
-                "name": "image-registry",
-                "lastGeneration": 2,
-                "hash": ""
-            }
-        ],
-        "storageManaged": true,
-        "storage": {
-            "emptyDir": {}
-        }
+    "replicas": 1,
+    "rolloutStrategy": "RollingUpdate"
+  },
+  "status": {
+    "observedGeneration": 4,
+    "conditions": [
+      {
+        "type": "ImageConfigControllerDegraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:11Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "ImageRegistryCertificatesControllerDegraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:11Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "NodeCADaemonControllerDegraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:11Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-12T21:20:38Z"
+      },
+      {
+        "type": "Removed",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:42:59Z"
+      },
+      {
+        "type": "StorageExists",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:42:58Z",
+        "reason": "Creation Successful",
+        "message": "EmptyDir storage successfully created"
+      }
+    ],
+    "readyReplicas": 0,
+    "generations": [
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-image-registry",
+        "name": "node-ca",
+        "lastGeneration": 0,
+        "hash": ""
+      },
+      {
+        "group": "apps",
+        "resource": "deployments",
+        "namespace": "openshift-image-registry",
+        "name": "image-registry",
+        "lastGeneration": 2,
+        "hash": ""
+      }
+    ],
+    "storageManaged": true,
+    "storage": {
+      "emptyDir": {},
+      "managementState": "Managed"
     }
+  }
 }

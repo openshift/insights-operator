@@ -1,30 +1,31 @@
 {
-  "kind": "Pod",
-  "apiVersion": "v1",
   "metadata": {
     "name": "prometheus-k8s-0",
     "generateName": "prometheus-k8s-",
     "namespace": "openshift-monitoring",
     "selfLink": "/api/v1/namespaces/openshift-monitoring/pods/prometheus-k8s-0",
-    "uid": "5cf05831-f866-4e2c-a903-ec535c591bb6",
-    "resourceVersion": "22660",
-    "creationTimestamp": "2020-08-12T08:56:07Z",
+    "uid": "4f346c63-4d5b-461b-898c-9c0fca14b797",
+    "resourceVersion": "1782140",
+    "creationTimestamp": "2021-07-07T16:15:18Z",
     "labels": {
       "app": "prometheus",
-      "controller-revision-hash": "prometheus-k8s-698dc47594",
+      "controller-revision-hash": "prometheus-k8s-5cfb75fb9f",
+      "operator.prometheus.io/name": "k8s",
+      "operator.prometheus.io/shard": "0",
       "prometheus": "k8s",
       "statefulset.kubernetes.io/pod-name": "prometheus-k8s-0"
     },
     "annotations": {
-      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.2.11\"\n    ],\n    \"dns\": {},\n    \"default-route\": [\n        \"10.128.2.1\"\n    ]\n}]",
-      "openshift.io/scc": "restricted"
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.129.0.142\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.129.0.142\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "nonroot"
     },
     "ownerReferences": [
       {
         "apiVersion": "apps/v1",
         "kind": "StatefulSet",
         "name": "prometheus-k8s",
-        "uid": "8222cc84-435b-4541-a2f2-0e6ac6e8680d",
+        "uid": "8e2bf3fd-dc62-4904-8023-30ff9809caf9",
         "controller": true,
         "blockOwnerDeletion": true
       }
@@ -86,6 +87,13 @@
         }
       },
       {
+        "name": "secret-prometheus-k8s-thanos-sidecar-tls",
+        "secret": {
+          "secretName": "prometheus-k8s-thanos-sidecar-tls",
+          "defaultMode": 420
+        }
+      },
+      {
         "name": "secret-kube-rbac-proxy",
         "secret": {
           "secretName": "kube-rbac-proxy",
@@ -113,7 +121,7 @@
       {
         "name": "secret-grpc-tls",
         "secret": {
-          "secretName": "prometheus-k8s-grpc-tls-58cle1gkk9qr1",
+          "secretName": "prometheus-k8s-grpc-tls-4djtggr3prgnl",
           "defaultMode": 420
         }
       },
@@ -132,9 +140,9 @@
         }
       },
       {
-        "name": "prometheus-k8s-token-sdq9p",
+        "name": "prometheus-k8s-token-zkhg2",
         "secret": {
-          "secretName": "prometheus-k8s-token-sdq9p",
+          "secretName": "prometheus-k8s-token-zkhg2",
           "defaultMode": 420
         }
       }
@@ -142,16 +150,16 @@
     "containers": [
       {
         "name": "prometheus",
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:dad6d97ba7c89671ddeb55444ee4e33942159db5e5af6d9dd0f11167f3148dc2",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:22c8bf0a554da33f3e135d8e148d7b437f948f0784bba9964266f87046293ca4",
         "args": [
           "--web.console.templates=/etc/prometheus/consoles",
           "--web.console.libraries=/etc/prometheus/console_libraries",
           "--config.file=/etc/prometheus/config_out/prometheus.env.yaml",
           "--storage.tsdb.path=/prometheus",
-          "--storage.tsdb.retention.time=15d",
+          "--storage.tsdb.retention.time=7d",
           "--web.enable-lifecycle",
           "--storage.tsdb.no-lockfile",
-          "--web.external-url=https://prometheus-k8s-openshift-monitoring.apps.ci-ln-d53y532-f76d1.origin-ci-int-gce.dev.openshift.com/",
+          "--web.external-url=https://prometheus-k8s-openshift-monitoring.apps.imeixner20210707.lab.upshift.rdu2.redhat.com/",
           "--web.route-prefix=/",
           "--web.listen-address=127.0.0.1:9090"
         ],
@@ -206,6 +214,11 @@
             "mountPath": "/etc/prometheus/secrets/prometheus-k8s-htpasswd"
           },
           {
+            "name": "secret-prometheus-k8s-thanos-sidecar-tls",
+            "readOnly": true,
+            "mountPath": "/etc/prometheus/secrets/prometheus-k8s-thanos-sidecar-tls"
+          },
+          {
             "name": "secret-kube-rbac-proxy",
             "readOnly": true,
             "mountPath": "/etc/prometheus/secrets/kube-rbac-proxy"
@@ -221,30 +234,17 @@
             "mountPath": "/etc/prometheus/configmaps/kubelet-serving-ca-bundle"
           },
           {
-            "name": "prometheus-k8s-token-sdq9p",
+            "name": "prometheus-k8s-token-zkhg2",
             "readOnly": true,
             "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
           }
         ],
-        "livenessProbe": {
-          "exec": {
-            "command": [
-              "sh",
-              "-c",
-              "if [ -x \"$(command -v curl)\" ]; then curl http://localhost:9090/-/healthy; elif [ -x \"$(command -v wget)\" ]; then wget -q -O /dev/null http://localhost:9090/-/healthy; else exit 1; fi"
-            ]
-          },
-          "timeoutSeconds": 3,
-          "periodSeconds": 5,
-          "successThreshold": 1,
-          "failureThreshold": 6
-        },
         "readinessProbe": {
           "exec": {
             "command": [
               "sh",
               "-c",
-              "if [ -x \"$(command -v curl)\" ]; then curl http://localhost:9090/-/ready; elif [ -x \"$(command -v wget)\" ]; then wget -q -O /dev/null http://localhost:9090/-/ready; else exit 1; fi"
+              "if [ -x \"$(command -v curl)\" ]; then exec curl http://localhost:9090/-/ready; elif [ -x \"$(command -v wget)\" ]; then exec wget -q -O /dev/null http://localhost:9090/-/ready; else exit 1; fi"
             ]
           },
           "timeoutSeconds": 3,
@@ -263,21 +263,21 @@
               "SETGID",
               "SETUID"
             ]
-          },
-          "runAsUser": 1000130000
+          }
         }
       },
       {
-        "name": "prometheus-config-reloader",
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3419753083df39b95b0e857b1254e235e6836a5466bf1f2939f72b1426c72205",
+        "name": "config-reloader",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:98ce5083663a333717bf26620e288e3e097b462146f0dd253eb32c1a14a08722",
         "command": [
           "/bin/prometheus-config-reloader"
         ],
         "args": [
-          "--log-format=logfmt",
+          "--listen-address=localhost:8080",
           "--reload-url=http://localhost:9090/-/reload",
           "--config-file=/etc/prometheus/config/prometheus.yaml.gz",
-          "--config-envsubst-file=/etc/prometheus/config_out/prometheus.env.yaml"
+          "--config-envsubst-file=/etc/prometheus/config_out/prometheus.env.yaml",
+          "--watched-dir=/etc/prometheus/rules/prometheus-k8s-rulefiles-0"
         ],
         "env": [
           {
@@ -288,11 +288,16 @@
                 "fieldPath": "metadata.name"
               }
             }
+          },
+          {
+            "name": "SHARD",
+            "value": "0"
           }
         ],
         "resources": {
           "requests": {
-            "cpu": "1m"
+            "cpu": "1m",
+            "memory": "10Mi"
           }
         },
         "volumeMounts": [
@@ -305,45 +310,11 @@
             "mountPath": "/etc/prometheus/config_out"
           },
           {
-            "name": "prometheus-k8s-token-sdq9p",
-            "readOnly": true,
-            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
-          }
-        ],
-        "terminationMessagePath": "/dev/termination-log",
-        "terminationMessagePolicy": "FallbackToLogsOnError",
-        "imagePullPolicy": "IfNotPresent",
-        "securityContext": {
-          "capabilities": {
-            "drop": [
-              "KILL",
-              "MKNOD",
-              "SETGID",
-              "SETUID"
-            ]
-          },
-          "runAsUser": 1000130000
-        }
-      },
-      {
-        "name": "rules-configmap-reloader",
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6caa1bf8126a2f149e2cca0a003ec591389813aa0874ab2caedccf4514af3fae",
-        "args": [
-          "--webhook-url=http://localhost:9090/-/reload",
-          "--volume-dir=/etc/prometheus/rules/prometheus-k8s-rulefiles-0"
-        ],
-        "resources": {
-          "requests": {
-            "cpu": "1m"
-          }
-        },
-        "volumeMounts": [
-          {
             "name": "prometheus-k8s-rulefiles-0",
             "mountPath": "/etc/prometheus/rules/prometheus-k8s-rulefiles-0"
           },
           {
-            "name": "prometheus-k8s-token-sdq9p",
+            "name": "prometheus-k8s-token-zkhg2",
             "readOnly": true,
             "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
           }
@@ -359,13 +330,12 @@
               "SETGID",
               "SETUID"
             ]
-          },
-          "runAsUser": 1000130000
+          }
         }
       },
       {
         "name": "thanos-sidecar",
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:068be831e6aee328135f86a25f30a91e6faef7b5d42cc1829fb2315f2f045aa8",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:869e72bca1256bad482959b46db947fbc402eaff89049c5f4e237f2090074dc6",
         "args": [
           "sidecar",
           "--prometheus.url=http://localhost:9090/",
@@ -411,11 +381,7 @@
             "mountPath": "/etc/tls/grpc"
           },
           {
-            "name": "prometheus-k8s-db",
-            "mountPath": "/prometheus"
-          },
-          {
-            "name": "prometheus-k8s-token-sdq9p",
+            "name": "prometheus-k8s-token-zkhg2",
             "readOnly": true,
             "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
           }
@@ -431,13 +397,12 @@
               "SETGID",
               "SETUID"
             ]
-          },
-          "runAsUser": 1000130000
+          }
         }
       },
       {
         "name": "prometheus-proxy",
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:9bba7be64b68a904075428960e1a33ea2f5b4d03417d116325765cc03ad49ae0",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3cfb3379dbce10c1088bc8bf2429e72984db656ecee57c359c288f23580a3ab2",
         "args": [
           "-provider=openshift",
           "-https-address=:9091",
@@ -499,7 +464,7 @@
             "mountPath": "/etc/pki/ca-trust/extracted/pem/"
           },
           {
-            "name": "prometheus-k8s-token-sdq9p",
+            "name": "prometheus-k8s-token-zkhg2",
             "readOnly": true,
             "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
           }
@@ -515,20 +480,19 @@
               "SETGID",
               "SETUID"
             ]
-          },
-          "runAsUser": 1000130000
+          }
         }
       },
       {
         "name": "kube-rbac-proxy",
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3edc8ebb433e1aa496023edc2344151cc25a03066fcafc0ca90c9491b88384f5",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
         "args": [
           "--secure-listen-address=0.0.0.0:9092",
           "--upstream=http://127.0.0.1:9095",
           "--config-file=/etc/kube-rbac-proxy/config.yaml",
           "--tls-cert-file=/etc/tls/private/tls.crt",
           "--tls-private-key-file=/etc/tls/private/tls.key",
-          "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+          "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
           "--logtostderr=true",
           "--v=10"
         ],
@@ -555,7 +519,7 @@
             "mountPath": "/etc/kube-rbac-proxy"
           },
           {
-            "name": "prometheus-k8s-token-sdq9p",
+            "name": "prometheus-k8s-token-zkhg2",
             "readOnly": true,
             "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
           }
@@ -571,13 +535,12 @@
               "SETGID",
               "SETUID"
             ]
-          },
-          "runAsUser": 1000130000
+          }
         }
       },
       {
         "name": "prom-label-proxy",
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c85a2cd96911fac24f8475af2a2b24ab6b8acaca996edb4d472ce0c1c9459d08",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2173536432a116be7975619d17c61d676b099f59e111afb0a0a704f436ec552c",
         "args": [
           "--insecure-listen-address=127.0.0.1:9095",
           "--upstream=http://127.0.0.1:9090",
@@ -591,7 +554,7 @@
         },
         "volumeMounts": [
           {
-            "name": "prometheus-k8s-token-sdq9p",
+            "name": "prometheus-k8s-token-zkhg2",
             "readOnly": true,
             "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
           }
@@ -607,8 +570,68 @@
               "SETGID",
               "SETUID"
             ]
+          }
+        }
+      },
+      {
+        "name": "kube-rbac-proxy-thanos",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "args": [
+          "--secure-listen-address=[$(POD_IP)]:10902",
+          "--upstream=http://127.0.0.1:10902",
+          "--tls-cert-file=/etc/tls/private/tls.crt",
+          "--tls-private-key-file=/etc/tls/private/tls.key",
+          "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+          "--allow-paths=/metrics",
+          "--logtostderr=true"
+        ],
+        "ports": [
+          {
+            "name": "thanos-proxy",
+            "containerPort": 10902,
+            "protocol": "TCP"
+          }
+        ],
+        "env": [
+          {
+            "name": "POD_IP",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "status.podIP"
+              }
+            }
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "1m",
+            "memory": "10Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "secret-prometheus-k8s-thanos-sidecar-tls",
+            "mountPath": "/etc/tls/private"
           },
-          "runAsUser": 1000130000
+          {
+            "name": "prometheus-k8s-token-zkhg2",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "KILL",
+              "MKNOD",
+              "SETGID",
+              "SETUID"
+            ]
+          }
         }
       }
     ],
@@ -620,16 +643,18 @@
     },
     "serviceAccountName": "prometheus-k8s",
     "serviceAccount": "prometheus-k8s",
-    "nodeName": "ci-ln-d53y532-f76d1-2btqq-worker-c-nmnbz",
+    "nodeName": "worker-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
     "securityContext": {
       "seLinuxOptions": {
-        "level": "s0:c11,c10"
+        "level": "s0:c21,c0"
       },
-      "fsGroup": 1000130000
+      "runAsUser": 65534,
+      "runAsNonRoot": true,
+      "fsGroup": 65534
     },
     "imagePullSecrets": [
       {
-        "name": "prometheus-k8s-dockercfg-8mzvv"
+        "name": "prometheus-k8s-dockercfg-w6k4v"
       }
     ],
     "hostname": "prometheus-k8s-0",
@@ -682,7 +707,8 @@
     ],
     "priorityClassName": "system-cluster-critical",
     "priority": 2000000000,
-    "enableServiceLinks": true
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
   },
   "status": {
     "phase": "Running",
@@ -691,148 +717,148 @@
         "type": "Initialized",
         "status": "True",
         "lastProbeTime": null,
-        "lastTransitionTime": "2020-08-12T08:56:07Z"
+        "lastTransitionTime": "2021-07-07T16:15:18Z"
       },
       {
         "type": "Ready",
         "status": "True",
         "lastProbeTime": null,
-        "lastTransitionTime": "2020-08-12T08:56:18Z"
+        "lastTransitionTime": "2021-07-07T16:15:28Z"
       },
       {
         "type": "ContainersReady",
         "status": "True",
         "lastProbeTime": null,
-        "lastTransitionTime": "2020-08-12T08:56:18Z"
+        "lastTransitionTime": "2021-07-07T16:15:28Z"
       },
       {
         "type": "PodScheduled",
         "status": "True",
         "lastProbeTime": null,
-        "lastTransitionTime": "2020-08-12T08:56:07Z"
+        "lastTransitionTime": "2021-07-07T16:15:18Z"
       }
     ],
-    "hostIP": "10.0.32.3",
-    "podIP": "10.128.2.11",
+    "hostIP": "10.0.89.93",
+    "podIP": "10.129.0.142",
     "podIPs": [
       {
-        "ip": "10.128.2.11"
+        "ip": "10.129.0.142"
       }
     ],
-    "startTime": "2020-08-12T08:56:07Z",
+    "startTime": "2021-07-07T16:15:18Z",
     "containerStatuses": [
       {
-        "name": "kube-rbac-proxy",
+        "name": "config-reloader",
         "state": {
           "running": {
-            "startedAt": "2020-08-12T08:56:12Z"
+            "startedAt": "2021-07-07T16:15:21Z"
           }
         },
         "lastState": {},
         "ready": true,
         "restartCount": 0,
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3edc8ebb433e1aa496023edc2344151cc25a03066fcafc0ca90c9491b88384f5",
-        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3edc8ebb433e1aa496023edc2344151cc25a03066fcafc0ca90c9491b88384f5",
-        "containerID": "cri-o://aad4b3572a5468e7485154ce1ad6793a91d9f65680f2f8dd20783b88164f4264",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:98ce5083663a333717bf26620e288e3e097b462146f0dd253eb32c1a14a08722",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:98ce5083663a333717bf26620e288e3e097b462146f0dd253eb32c1a14a08722",
+        "containerID": "cri-o://6c626c6ca6ccf3ffe08484328f8d9f796dd791d53d04970d53c1f132b291b0f7",
+        "started": true
+      },
+      {
+        "name": "kube-rbac-proxy",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T16:15:22Z"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "containerID": "cri-o://c566e316d3a2befbe68f9649680b48e61b50a623eb16efe7cebc8faf9fa4bbe2",
+        "started": true
+      },
+      {
+        "name": "kube-rbac-proxy-thanos",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T16:15:23Z"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "containerID": "cri-o://37d1c2238ca772f97101dc4b1bb1631f0de20e8b2a798a770e4f975cce9f0ea3",
         "started": true
       },
       {
         "name": "prom-label-proxy",
         "state": {
           "running": {
-            "startedAt": "2020-08-12T08:56:12Z"
+            "startedAt": "2021-07-07T16:15:22Z"
           }
         },
         "lastState": {},
         "ready": true,
         "restartCount": 0,
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c85a2cd96911fac24f8475af2a2b24ab6b8acaca996edb4d472ce0c1c9459d08",
-        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c85a2cd96911fac24f8475af2a2b24ab6b8acaca996edb4d472ce0c1c9459d08",
-        "containerID": "cri-o://5c91937a60285d973373098a5d410368fcd157af4604abf2a240538fc6429aab",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2173536432a116be7975619d17c61d676b099f59e111afb0a0a704f436ec552c",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2173536432a116be7975619d17c61d676b099f59e111afb0a0a704f436ec552c",
+        "containerID": "cri-o://4bc2431741b0ab1195cc202735262c23f1a53a1119d2dd1018477c7a3335c56a",
         "started": true
       },
       {
         "name": "prometheus",
         "state": {
           "running": {
-            "startedAt": "2020-08-12T08:56:13Z"
+            "startedAt": "2021-07-07T16:15:23Z"
           }
         },
         "lastState": {
           "terminated": {
-            "exitCode": 1,
+            "exitCode": 2,
             "reason": "Error",
-            "message": "caller=main.go:648 msg=\"Starting TSDB ...\"\nlevel=info ts=2020-08-12T08:56:10.905Z caller=head.go:584 component=tsdb msg=\"replaying WAL, this may take awhile\"\nlevel=info ts=2020-08-12T08:56:10.906Z caller=web.go:506 component=web msg=\"Start listening for connections\" address=127.0.0.1:9090\nlevel=info ts=2020-08-12T08:56:10.908Z caller=head.go:632 component=tsdb msg=\"WAL segment loaded\" segment=0 maxSegment=0\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:663 fs_type=XFS_SUPER_MAGIC\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:664 msg=\"TSDB started\"\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:734 msg=\"Loading configuration file\" filename=/etc/prometheus/config_out/prometheus.env.yaml\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:517 msg=\"Stopping scrape discovery manager...\"\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:531 msg=\"Stopping notify discovery manager...\"\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:553 msg=\"Stopping scrape manager...\"\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:527 msg=\"Notify discovery manager stopped\"\nlevel=info ts=2020-08-12T08:56:10.909Z caller=main.go:513 msg=\"Scrape discovery manager stopped\"\nlevel=info ts=2020-08-12T08:56:10.910Z caller=manager.go:814 component=\"rule manager\" msg=\"Stopping rule manager...\"\nlevel=info ts=2020-08-12T08:56:10.910Z caller=manager.go:820 component=\"rule manager\" msg=\"Rule manager stopped\"\nlevel=info ts=2020-08-12T08:56:10.914Z caller=main.go:547 msg=\"Scrape manager stopped\"\nlevel=info ts=2020-08-12T08:56:10.914Z caller=notifier.go:598 component=notifier msg=\"Stopping notification manager...\"\nlevel=info ts=2020-08-12T08:56:10.914Z caller=main.go:718 msg=\"Notifier manager stopped\"\nlevel=error ts=2020-08-12",
-            "startedAt": "2020-08-12T08:56:10Z",
-            "finishedAt": "2020-08-12T08:56:10Z",
-            "containerID": "cri-o://5817f3c4a02a97c347f7f9b90eecaf44cf3d6cc67638b9b2197797cfe772e5cb"
+            "message": "level=error ts=2021-07-07T16:15:21.472Z caller=main.go:289 msg=\"Error loading config (--config.file=/etc/prometheus/config_out/prometheus.env.yaml)\" err=\"open /etc/prometheus/config_out/prometheus.env.yaml: no such file or directory\"\n",
+            "startedAt": "2021-07-07T16:15:21Z",
+            "finishedAt": "2021-07-07T16:15:21Z",
+            "containerID": "cri-o://180f91c2572d80279c1f972846b96f87f8e4a27f6494088b88bb4dce5176285f"
           }
         },
         "ready": true,
         "restartCount": 1,
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:dad6d97ba7c89671ddeb55444ee4e33942159db5e5af6d9dd0f11167f3148dc2",
-        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:dad6d97ba7c89671ddeb55444ee4e33942159db5e5af6d9dd0f11167f3148dc2",
-        "containerID": "cri-o://da1989c0b4555a1eb857ef909ead3edcabd9e612690e3330e9b0e10e3c1aecb1",
-        "started": true
-      },
-      {
-        "name": "prometheus-config-reloader",
-        "state": {
-          "running": {
-            "startedAt": "2020-08-12T08:56:11Z"
-          }
-        },
-        "lastState": {},
-        "ready": true,
-        "restartCount": 0,
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3419753083df39b95b0e857b1254e235e6836a5466bf1f2939f72b1426c72205",
-        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3419753083df39b95b0e857b1254e235e6836a5466bf1f2939f72b1426c72205",
-        "containerID": "cri-o://9fad6097f6b5136ea31b4c8114913dfa36c17a7e4f0c8a9f0ea2ba71326f006f",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:22c8bf0a554da33f3e135d8e148d7b437f948f0784bba9964266f87046293ca4",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:22c8bf0a554da33f3e135d8e148d7b437f948f0784bba9964266f87046293ca4",
+        "containerID": "cri-o://24bd6a01994feaec82a3adf4ec92da1b4cab6fe2f90d978d4f5d2f7cb7376914",
         "started": true
       },
       {
         "name": "prometheus-proxy",
         "state": {
           "running": {
-            "startedAt": "2020-08-12T08:56:11Z"
+            "startedAt": "2021-07-07T16:15:22Z"
           }
         },
         "lastState": {},
         "ready": true,
         "restartCount": 0,
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:9bba7be64b68a904075428960e1a33ea2f5b4d03417d116325765cc03ad49ae0",
-        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:9bba7be64b68a904075428960e1a33ea2f5b4d03417d116325765cc03ad49ae0",
-        "containerID": "cri-o://21fd08ffb39702fa5cfd768e84892dc0883e02807409cee30f9eb5e41ee8b07d",
-        "started": true
-      },
-      {
-        "name": "rules-configmap-reloader",
-        "state": {
-          "running": {
-            "startedAt": "2020-08-12T08:56:11Z"
-          }
-        },
-        "lastState": {},
-        "ready": true,
-        "restartCount": 0,
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6caa1bf8126a2f149e2cca0a003ec591389813aa0874ab2caedccf4514af3fae",
-        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6caa1bf8126a2f149e2cca0a003ec591389813aa0874ab2caedccf4514af3fae",
-        "containerID": "cri-o://e987614c21fac041ca4e02ab9dc654cd987e4d796f6c7cad950d3476a20f022f",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3cfb3379dbce10c1088bc8bf2429e72984db656ecee57c359c288f23580a3ab2",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:3cfb3379dbce10c1088bc8bf2429e72984db656ecee57c359c288f23580a3ab2",
+        "containerID": "cri-o://0170d67156f7df5e25ec24d790fe92ea6c03d5f5515791439dfe5fd4db9b9f79",
         "started": true
       },
       {
         "name": "thanos-sidecar",
         "state": {
           "running": {
-            "startedAt": "2020-08-12T08:56:11Z"
+            "startedAt": "2021-07-07T16:15:21Z"
           }
         },
         "lastState": {},
         "ready": true,
         "restartCount": 0,
-        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:068be831e6aee328135f86a25f30a91e6faef7b5d42cc1829fb2315f2f045aa8",
-        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:068be831e6aee328135f86a25f30a91e6faef7b5d42cc1829fb2315f2f045aa8",
-        "containerID": "cri-o://2babb0946e6932e65b05b5beee1780a13cd73a561bd53c5ef25c33a5a57c3b5e",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:869e72bca1256bad482959b46db947fbc402eaff89049c5f4e237f2090074dc6",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:869e72bca1256bad482959b46db947fbc402eaff89049c5f4e237f2090074dc6",
+        "containerID": "cri-o://68fb3900e7d8b9f34fa1b6fc9a6591f4c9d39dc5ef71aeac3d940481de85afda",
         "started": true
       }
     ],

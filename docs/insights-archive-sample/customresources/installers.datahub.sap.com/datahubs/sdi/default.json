@@ -1,1446 +1,862 @@
 {
-    "apiVersion": "installers.datahub.sap.com/v1alpha1",
-    "kind": "DataHub",
-    "metadata": {
-        "annotations": {
-            "com.sap.datahub.installers.dependency.runlevel-mark": "preRunLevelStarted"
-        },
-        "creationTimestamp": "2021-01-25T16:47:32Z",
-        "finalizers": [
-            "com.sap.datahub.installers.dependency",
-            "datahub-controller.datahub.sap.com"
-        ],
-        "generation": 1,
-        "managedFields": [
-            {
-                "apiVersion": "installers.datahub.sap.com/v1alpha1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:spec": {
-                        ".": {},
-                        "f:auditlog": {
-                            ".": {},
-                            "f:mode": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {}
-                        },
-                        "f:backupCleanupCronSchedule": {},
-                        "f:backupCronSchedule": {},
-                        "f:backupRetentionPeriod": {},
-                        "f:clusterID": {},
-                        "f:consul": {
-                            ".": {},
-                            "f:UiService": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:overrides": {},
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:replicas": {},
-                            "f:resources": {
-                                ".": {},
-                                "f:limits": {},
-                                "f:requests": {}
-                            }
-                        },
-                        "f:deploymentType": {},
-                        "f:deployments": {},
-                        "f:diagnostic": {
-                            ".": {},
-                            "f:docker": {},
-                            "f:elasticsearch": {
-                                ".": {},
-                                "f:enabled": {},
-                                "f:watermark": {}
-                            },
-                            "f:fluentd": {
-                                ".": {},
-                                "f:elasticsearchExporter": {},
-                                "f:enabled": {},
-                                "f:varlibdockercontainers": {}
-                            },
-                            "f:grafana": {
-                                ".": {},
-                                "f:enabled": {},
-                                "f:urlBasePath": {}
-                            },
-                            "f:images": {
-                                ".": {},
-                                "f:authProxy": {},
-                                "f:debian": {},
-                                "f:elasticsearch": {},
-                                "f:fluentd": {},
-                                "f:grafana": {},
-                                "f:kibana": {},
-                                "f:kubeStateMetrics": {},
-                                "f:nodeExporter": {},
-                                "f:prometheus": {},
-                                "f:prometheusPushgateway": {}
-                            },
-                            "f:kibana": {
-                                ".": {},
-                                "f:enabled": {},
-                                "f:urlBasePath": {}
-                            },
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:nodeExporter": {},
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:prometheusKubeStateMetrics": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:prometheusNodeExporter": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:prometheusPushgateway": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:prometheusServer": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:proxy": {},
-                            "f:rbac": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:resources": {
-                                ".": {},
-                                "f:authProxy": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:dockerBase": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:elasticsearch": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:fluentd": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:grafana": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:kibana": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:prometheusKubeStateMetrics": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:prometheusNodeExporter": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:prometheusPushgateway": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:prometheusServer": {
-                                    ".": {},
-                                    "f:resources": {}
-                                }
-                            },
-                            "f:secop": {
-                                ".": {},
-                                "f:docker": {}
-                            },
-                            "f:version": {},
-                            "f:volumes": {
-                                ".": {},
-                                "f:elasticsearch": {},
-                                "f:prometheusServer": {}
-                            }
-                        },
-                        "f:hana": {
-                            ".": {},
-                            "f:memoryRequest": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:syncSleepTimeInSeconds": {}
-                        },
-                        "f:networkPolicies": {
-                            ".": {},
-                            "f:enabled": {}
-                        },
-                        "f:package": {},
-                        "f:podSecurityPolicies": {
-                            ".": {},
-                            "f:release": {}
-                        },
-                        "f:proxy": {},
-                        "f:spark": {
-                            ".": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:resources": {
-                                ".": {},
-                                "f:limits": {},
-                                "f:requests": {}
-                            }
-                        },
-                        "f:storageGateway": {
-                            ".": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:replicas": {},
-                            "f:resources": {
-                                ".": {},
-                                "f:limits": {},
-                                "f:requests": {}
-                            },
-                            "f:ssl": {}
-                        },
-                        "f:textAnalysis": {
-                            ".": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:resources": {
-                                ".": {},
-                                "f:limits": {},
-                                "f:requests": {}
-                            },
-                            "f:serviceType": {}
-                        },
-                        "f:timeout": {},
-                        "f:uaa": {
-                            ".": {},
-                            "f:configuration": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:passwordPolicy": {},
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {}
-                        },
-                        "f:voraCluster": {
-                            ".": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:template": {
-                                ".": {},
-                                "f:components": {
-                                    ".": {},
-                                    "f:catalog": {
-                                        ".": {},
-                                        "f:replicas": {},
-                                        "f:traceLevel": {}
-                                    },
-                                    "f:disk": {
-                                        ".": {},
-                                        "f:antiAffinity": {
-                                            ".": {},
-                                            "f:replica": {
-                                                ".": {},
-                                                "f:enable": {}
-                                            },
-                                            "f:resource": {
-                                                ".": {},
-                                                "f:enable": {},
-                                                "f:selectors": {
-                                                    ".": {},
-                                                    "f:vora-component": {}
-                                                }
-                                            }
-                                        },
-                                        "f:dbSpaceSize": {},
-                                        "f:initialDelaySeconds": {},
-                                        "f:largeMemoryLimit": {},
-                                        "f:mainCacheMemoryLimit": {},
-                                        "f:networkDriversList": {},
-                                        "f:passwordSecretName": {},
-                                        "f:pv": {
-                                            ".": {},
-                                            "f:storageClassName": {}
-                                        },
-                                        "f:replicas": {},
-                                        "f:storageSize": {},
-                                        "f:temporaryCacheMemoryLimit": {},
-                                        "f:terminationGracePeriodSeconds": {},
-                                        "f:traceLevel": {}
-                                    },
-                                    "f:dlog": {
-                                        ".": {},
-                                        "f:antiAffinity": {
-                                            ".": {},
-                                            "f:replica": {
-                                                ".": {},
-                                                "f:enable": {}
-                                            },
-                                            "f:resource": {
-                                                ".": {},
-                                                "f:enable": {},
-                                                "f:selectors": {
-                                                    ".": {},
-                                                    "f:vora-component": {}
-                                                }
-                                            }
-                                        },
-                                        "f:bufferSize": {},
-                                        "f:pv": {
-                                            ".": {},
-                                            "f:storageClassName": {}
-                                        },
-                                        "f:raftPort": {},
-                                        "f:rdsHTTPPort": {},
-                                        "f:replicationFactor": {},
-                                        "f:restore": {},
-                                        "f:standbyFactor": {},
-                                        "f:storageSize": {},
-                                        "f:traceLevel": {}
-                                    },
-                                    "f:globalParameters": {
-                                        ".": {},
-                                        "f:checkpoint": {
-                                            ".": {},
-                                            "f:active": {},
-                                            "f:afsiConnectionSecret": {},
-                                            "f:afsiPath": {},
-                                            "f:afsiType": {},
-                                            "f:clientIncrementalRecordLimit": {},
-                                            "f:clientIncrementalSizeLimit": {},
-                                            "f:clientWriteMinDelay": {},
-                                            "f:maxStreamCheckpoints": {},
-                                            "f:pathSuffix": {}
-                                        },
-                                        "f:fsGroup": {},
-                                        "f:healthCheck": {
-                                            ".": {},
-                                            "f:deregisterTimeout": {},
-                                            "f:initialDelaySeconds": {},
-                                            "f:periodSeconds": {},
-                                            "f:statefulsetEvictionTimeoutMinutes": {},
-                                            "f:terminationGracePeriodSeconds": {}
-                                        },
-                                        "f:input": {
-                                            ".": {},
-                                            "f:path": {}
-                                        },
-                                        "f:rbac": {},
-                                        "f:runAsUser": {},
-                                        "f:security": {
-                                            ".": {},
-                                            "f:context": {},
-                                            "f:contextRoot": {},
-                                            "f:image": {}
-                                        },
-                                        "f:traceLevel": {},
-                                        "f:useK8sDiscovery": {}
-                                    },
-                                    "f:landscape": {
-                                        ".": {},
-                                        "f:bootstrapMode": {},
-                                        "f:replicas": {},
-                                        "f:traceLevel": {}
-                                    },
-                                    "f:relational": {
-                                        ".": {},
-                                        "f:replicas": {},
-                                        "f:traceLevel": {}
-                                    },
-                                    "f:txBroker": {
-                                        ".": {},
-                                        "f:replicas": {},
-                                        "f:traceLevel": {}
-                                    },
-                                    "f:txCoordinator": {
-                                        ".": {},
-                                        "f:replicas": {},
-                                        "f:traceLevel": {}
-                                    }
-                                },
-                                "f:docker": {
-                                    ".": {},
-                                    "f:image": {},
-                                    "f:imagePullSecret": {}
-                                },
-                                "f:name": {},
-                                "f:version": {
-                                    ".": {},
-                                    "f:component": {},
-                                    "f:package": {}
-                                }
-                            }
-                        },
-                        "f:voraSecurityOperator": {
-                            ".": {},
-                            "f:caKeyStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:caTrustStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:dhKeySize": {},
-                            "f:interCaKeyStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:interCaTrustStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:jwtSecretCaBundle": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:jwtSecretKeyStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:jwtSecretTrustStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:securityContexts": {
-                                ".": {},
-                                "f:contexts": {},
-                                "f:secop": {
-                                    ".": {},
-                                    "f:issuerURI": {}
-                                }
-                            },
-                            "f:tlsSecretCaBundle": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:tlsSecretKeyStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            },
-                            "f:tlsSecretTrustStore": {
-                                ".": {},
-                                "f:key": {},
-                                "f:name": {}
-                            }
-                        },
-                        "f:vsystem": {
-                            ".": {},
-                            "f:UAA": {
-                                ".": {},
-                                "f:clientId": {},
-                                "f:deploy": {},
-                                "f:endpoint": {}
-                            },
-                            "f:auditlog": {
-                                ".": {},
-                                "f:deploy": {},
-                                "f:endpoint": {},
-                                "f:use": {}
-                            },
-                            "f:deploymentInfo": {},
-                            "f:deploymentType": {},
-                            "f:hana": {
-                                ".": {},
-                                "f:tls": {}
-                            },
-                            "f:initialUserCreation": {
-                                ".": {},
-                                "f:secretName": {}
-                            },
-                            "f:internalComm": {
-                                ".": {},
-                                "f:authClientID": {},
-                                "f:filename": {},
-                                "f:vrepClientID": {},
-                                "f:vsystemClientID": {}
-                            },
-                            "f:layerStrategies": {},
-                            "f:loadNFSModules": {},
-                            "f:networkPolicies": {
-                                ".": {},
-                                "f:enabled": {}
-                            },
-                            "f:podSecurityPolicies": {
-                                ".": {},
-                                "f:release": {}
-                            },
-                            "f:proxy": {},
-                            "f:removePolicy": {},
-                            "f:runlevel": {},
-                            "f:securityDevelopment": {
-                                ".": {},
-                                "f:deploy": {}
-                            },
-                            "f:solutions": {},
-                            "f:tenants": {},
-                            "f:vRep": {},
-                            "f:vSystem": {
-                                ".": {},
-                                "f:auditlogAddress": {},
-                                "f:clusterAdminHostnames": {},
-                                "f:features": {
-                                    ".": {},
-                                    "f:apiGateway": {}
-                                },
-                                "f:serviceType": {}
-                            },
-                            "f:vflow": {
-                                ".": {},
-                                "f:enabled": {}
-                            }
-                        }
-                    }
-                },
-                "manager": "dhinstaller",
-                "operation": "Update",
-                "time": "2021-01-25T16:47:32Z"
-            },
-            {
-                "apiVersion": "installers.datahub.sap.com/v1alpha1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:annotations": {
-                            ".": {},
-                            "f:com.sap.datahub.installers.dependency.runlevel-mark": {}
-                        },
-                        "f:finalizers": {}
-                    },
-                    "f:status": {
-                        ".": {},
-                        "f:conditions": {},
-                        "f:expiresAt": {},
-                        "f:reason": {},
-                        "f:startedAt": {},
-                        "f:state": {}
-                    }
-                },
-                "manager": "datahub-operator",
-                "operation": "Update",
-                "time": "2021-03-12T14:43:14Z"
-            }
-        ],
-        "name": "default",
-        "namespace": "sdi",
-        "resourceVersion": "38971794",
-        "selfLink": "/apis/installers.datahub.sap.com/v1alpha1/namespaces/sdi/datahubs/default",
-        "uid": "1efff0e0-d012-45da-810d-5df6c841da35"
+  "apiVersion": "installers.datahub.sap.com/v1alpha1",
+  "kind": "DataHub",
+  "metadata": {
+    "annotations": {
+      "com.sap.datahub.installers.dependency.runlevel-mark": "preRunLevelStarted"
     },
-    "spec": {
-        "auditlog": {
-            "mode": "production",
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {}
+    "creationTimestamp": "2021-01-25T16:47:32Z",
+    "finalizers": [
+      "com.sap.datahub.installers.dependency",
+      "datahub-controller.datahub.sap.com"
+    ],
+    "generation": 1,
+    "name": "default",
+    "namespace": "sdi",
+    "resourceVersion": "82765951",
+    "selfLink": "/apis/installers.datahub.sap.com/v1alpha1/namespaces/sdi/datahubs/default",
+    "uid": "1efff0e0-d012-45da-810d-5df6c841da35"
+  },
+  "spec": {
+    "auditlog": {
+      "mode": "production",
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {}
+    },
+    "backupCleanupCronSchedule": "0 0 * * *",
+    "backupCronSchedule": "0 0 * * *",
+    "backupRetentionPeriod": 1296000,
+    "clusterID": "11bw3dz",
+    "consul": {
+      "UiService": {},
+      "networkPolicies": {
+        "enabled": false
+      },
+      "overrides": "Storage: 2Gi",
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "replicas": 3,
+      "resources": {
+        "limits": {},
+        "requests": {}
+      }
+    },
+    "deploymentType": "on-prem",
+    "deployments": [
+      "vsystem",
+      "storage-gateway",
+      "diagnostic",
+      "vora-cluster"
+    ],
+    "diagnostic": {
+      "docker": {},
+      "elasticsearch": {
+        "enabled": true,
+        "watermark": {}
+      },
+      "fluentd": {
+        "elasticsearchExporter": {},
+        "enabled": true,
+        "varlibdockercontainers": "/var/lib/docker/containers"
+      },
+      "grafana": {
+        "enabled": true,
+        "urlBasePath": "/app/diagnostics-grafana"
+      },
+      "images": {
+        "authProxy": {},
+        "debian": {},
+        "elasticsearch": {},
+        "fluentd": {},
+        "grafana": {},
+        "kibana": {},
+        "kubeStateMetrics": {},
+        "nodeExporter": {},
+        "prometheus": {},
+        "prometheusPushgateway": {}
+      },
+      "kibana": {
+        "enabled": true,
+        "urlBasePath": "/app/diagnostics-kibana"
+      },
+      "networkPolicies": {
+        "enabled": false
+      },
+      "nodeExporter": {},
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "prometheusKubeStateMetrics": {
+        "enabled": true
+      },
+      "prometheusNodeExporter": {
+        "enabled": true
+      },
+      "prometheusPushgateway": {
+        "enabled": true
+      },
+      "prometheusServer": {
+        "enabled": true
+      },
+      "proxy": {},
+      "rbac": {
+        "enabled": false
+      },
+      "resources": {
+        "authProxy": {
+          "resources": {}
         },
-        "backupCleanupCronSchedule": "0 0 * * *",
-        "backupCronSchedule": "0 0 * * *",
-        "backupRetentionPeriod": 1296000,
-        "clusterID": "11bw3dz",
-        "consul": {
-            "UiService": {},
-            "networkPolicies": {
-                "enabled": false
-            },
-            "overrides": "Storage: 2Gi",
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "replicas": 3,
-            "resources": {
-                "limits": {},
-                "requests": {}
-            }
+        "dockerBase": {
+          "resources": {}
         },
-        "deploymentType": "on-prem",
-        "deployments": [
-            "vsystem",
-            "storage-gateway",
-            "diagnostic",
-            "vora-cluster"
-        ],
-        "diagnostic": {
-            "docker": {},
-            "elasticsearch": {
-                "enabled": true,
-                "watermark": {}
-            },
-            "fluentd": {
-                "elasticsearchExporter": {},
-                "enabled": true,
-                "varlibdockercontainers": "/var/lib/docker/containers"
-            },
-            "grafana": {
-                "enabled": true,
-                "urlBasePath": "/app/diagnostics-grafana"
-            },
-            "images": {
-                "authProxy": {},
-                "debian": {},
-                "elasticsearch": {},
-                "fluentd": {},
-                "grafana": {},
-                "kibana": {},
-                "kubeStateMetrics": {},
-                "nodeExporter": {},
-                "prometheus": {},
-                "prometheusPushgateway": {}
-            },
-            "kibana": {
-                "enabled": true,
-                "urlBasePath": "/app/diagnostics-kibana"
-            },
-            "networkPolicies": {
-                "enabled": false
-            },
-            "nodeExporter": {},
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "prometheusKubeStateMetrics": {
-                "enabled": true
-            },
-            "prometheusNodeExporter": {
-                "enabled": true
-            },
-            "prometheusPushgateway": {
-                "enabled": true
-            },
-            "prometheusServer": {
-                "enabled": true
-            },
-            "proxy": {},
-            "rbac": {
-                "enabled": false
-            },
-            "resources": {
-                "authProxy": {
-                    "resources": {}
-                },
-                "dockerBase": {
-                    "resources": {}
-                },
-                "elasticsearch": {
-                    "resources": {}
-                },
-                "fluentd": {
-                    "resources": {}
-                },
-                "grafana": {
-                    "resources": {}
-                },
-                "kibana": {
-                    "resources": {}
-                },
-                "prometheusKubeStateMetrics": {
-                    "resources": {}
-                },
-                "prometheusNodeExporter": {
-                    "resources": {}
-                },
-                "prometheusPushgateway": {
-                    "resources": {}
-                },
-                "prometheusServer": {
-                    "resources": {}
-                }
-            },
-            "secop": {
-                "docker": {}
-            },
-            "version": {},
-            "volumes": {
-                "elasticsearch": {},
-                "prometheusServer": {}
-            }
+        "elasticsearch": {
+          "resources": {}
         },
-        "hana": {
-            "memoryRequest": "6Gi",
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "syncSleepTimeInSeconds": 30
+        "fluentd": {
+          "resources": {}
         },
-        "networkPolicies": {
-            "enabled": false
+        "grafana": {
+          "resources": {}
         },
-        "package": "3.1.13",
-        "podSecurityPolicies": {
-            "release": {}
+        "kibana": {
+          "resources": {}
         },
-        "proxy": {},
-        "spark": {
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "resources": {
-                "limits": {},
-                "requests": {}
-            }
+        "prometheusKubeStateMetrics": {
+          "resources": {}
         },
-        "storageGateway": {
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "replicas": 1,
-            "resources": {
-                "limits": {},
-                "requests": {}
-            },
-            "ssl": {}
+        "prometheusNodeExporter": {
+          "resources": {}
         },
-        "textAnalysis": {
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "resources": {
-                "limits": {},
-                "requests": {}
-            },
-            "serviceType": "ClusterIP"
+        "prometheusPushgateway": {
+          "resources": {}
         },
-        "timeout": 3600,
-        "uaa": {
-            "configuration": {},
-            "networkPolicies": {
-                "enabled": false
-            },
-            "passwordPolicy": {},
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {}
-        },
-        "voraCluster": {
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "template": {
-                "components": {
-                    "catalog": {
-                        "replicas": "1",
-                        "traceLevel": ""
-                    },
-                    "disk": {
-                        "antiAffinity": {
-                            "replica": {
-                                "enable": true
-                            },
-                            "resource": {
-                                "enable": true,
-                                "selectors": {
-                                    "vora-component": "tx-coordinator"
-                                }
-                            }
-                        },
-                        "dbSpaceSize": 10240,
-                        "initialDelaySeconds": 180,
-                        "largeMemoryLimit": 3000,
-                        "mainCacheMemoryLimit": 3000,
-                        "networkDriversList": "",
-                        "passwordSecretName": "vora.conf.disk-password",
-                        "pv": {
-                            "storageClassName": ""
-                        },
-                        "replicas": "1",
-                        "storageSize": "50Gi",
-                        "temporaryCacheMemoryLimit": 3000,
-                        "terminationGracePeriodSeconds": 300,
-                        "traceLevel": ""
-                    },
-                    "dlog": {
-                        "antiAffinity": {
-                            "replica": {
-                                "enable": true
-                            },
-                            "resource": {
-                                "enable": true,
-                                "selectors": {
-                                    "vora-component": "disk"
-                                }
-                            }
-                        },
-                        "bufferSize": "4g",
-                        "pv": {
-                            "storageClassName": ""
-                        },
-                        "raftPort": "49876",
-                        "rdsHTTPPort": "8700",
-                        "replicationFactor": "1",
-                        "restore": false,
-                        "standbyFactor": "0",
-                        "storageSize": "50Gi",
-                        "traceLevel": ""
-                    },
-                    "globalParameters": {
-                        "checkpoint": {
-                            "active": true,
-                            "afsiConnectionSecret": "vora.conf.checkpoint-connection",
-                            "afsiPath": "/dqp/lib",
-                            "afsiType": "v2afsi_s3",
-                            "clientIncrementalRecordLimit": "16384",
-                            "clientIncrementalSizeLimit": "16777216",
-                            "clientWriteMinDelay": "300000",
-                            "maxStreamCheckpoints": "2",
-                            "pathSuffix": "checkpoints-11bw3dz"
-                        },
-                        "fsGroup": 999,
-                        "healthCheck": {
-                            "deregisterTimeout": "2m",
-                            "initialDelaySeconds": 60,
-                            "periodSeconds": 60,
-                            "statefulsetEvictionTimeoutMinutes": 0,
-                            "terminationGracePeriodSeconds": 60
-                        },
-                        "input": {
-                            "path": "/mnt/input"
-                        },
-                        "rbac": false,
-                        "runAsUser": 999,
-                        "security": {
-                            "context": "consumer",
-                            "contextRoot": "/tmp/vora-security",
-                            "image": ""
-                        },
-                        "traceLevel": "info",
-                        "useK8sDiscovery": true
-                    },
-                    "landscape": {
-                        "bootstrapMode": "auto",
-                        "replicas": "1",
-                        "traceLevel": ""
-                    },
-                    "relational": {
-                        "replicas": "1",
-                        "traceLevel": ""
-                    },
-                    "txBroker": {
-                        "replicas": "1",
-                        "traceLevel": ""
-                    },
-                    "txCoordinator": {
-                        "replicas": "1",
-                        "traceLevel": ""
-                    }
-                },
-                "docker": {
-                    "image": "sap-p-and-i-big-data-vora/com.sap.datahub.linuxx86_64/vora-dqp",
-                    "imagePullSecret": ""
-                },
-                "name": "vora",
-                "version": {
-                    "component": "2.5.15",
-                    "package": ""
-                }
-            }
-        },
-        "voraSecurityOperator": {
-            "caKeyStore": {
-                "key": "",
-                "name": ""
-            },
-            "caTrustStore": {
-                "key": "",
-                "name": ""
-            },
-            "dhKeySize": 256,
-            "interCaKeyStore": {
-                "key": "",
-                "name": ""
-            },
-            "interCaTrustStore": {
-                "key": "",
-                "name": ""
-            },
-            "jwtSecretCaBundle": {
-                "key": "",
-                "name": ""
-            },
-            "jwtSecretKeyStore": {
-                "key": "",
-                "name": ""
-            },
-            "jwtSecretTrustStore": {
-                "key": "",
-                "name": ""
-            },
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "securityContexts": {
-                "contexts": [
-                    {
-                        "consumer": {
-                            "initializers": [
-                                {
-                                    "generate-certificates.sh": "generate-certificates.sh"
-                                },
-                                {
-                                    "generate-dummy-secret.py": "generate-dummy-secret.py"
-                                }
-                            ],
-                            "periodics": [
-                                {
-                                    "renew-certificates.sh": "10368000 renew-certificates.sh"
-                                }
-                            ],
-                            "secrets": [
-                                {
-                                    "vora.conf.secop.jwtiss.truststore": "truststore"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.ca-bundle": "ca_bundle"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.keystore-dh": "keystore_dh"
-                                },
-                                {
-                                    "vora.conf.secop.v2auth": "v2auth.conf"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.inter-ca": "inter_ca"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.inter-ca-keystore": "inter_ca_keystore"
-                                }
-                            ],
-                            "template": "Vora Userstore Consumer"
-                        }
-                    },
-                    {
-                        "changeowner": {
-                            "initializers": [
-                                {
-                                    "change-owner.sh": "change-owner.sh"
-                                }
-                            ],
-                            "template": "Change Owner"
-                        }
-                    },
-                    {
-                        "default": {
-                            "secrets": [
-                                {
-                                    "vora.conf.secop.tlsconfig.keystore": "keystore"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.truststore": "truststore"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.ca-bundle": "ca_bundle"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.keystore-dh": "keystore_dh"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.inter-ca": "inter_ca"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.inter-ca-keystore": "inter_ca_keystore"
-                                }
-                            ],
-                            "template": "Vora Default TLS Configuration NI",
-                            "type": "tlsconfig"
-                        }
-                    },
-                    {
-                        "default": {
-                            "configmaps": [
-                                {
-                                    "uaa.jinja2": "uaa.jinja2"
-                                }
-                            ],
-                            "initializers": [
-                                {
-                                    "generate-certificates.sh": "generate-certificates.sh uaa"
-                                },
-                                {
-                                    "configure-uaa.py": "configure-uaa.py"
-                                },
-                                {
-                                    "sync-zone-userstores.py": "sync-zone-userstores.py --restore"
-                                }
-                            ],
-                            "periodics": [
-                                {
-                                    "sync-zone-userstores.py": "10 sync-zone-userstores.py"
-                                },
-                                {
-                                    "renew-certificates.sh": "10368000 renew-certificates.sh"
-                                }
-                            ],
-                            "secrets": [
-                                {
-                                    "vora.conf.secop.tlsconfig.ca-bundle": "ca_bundle"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.inter-ca": "inter_ca"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.inter-ca-keystore": "inter_ca_keystore"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.truststore": "service_provider_cert"
-                                },
-                                {
-                                    "vora.conf.secop.tlsconfig.keystore": "service_provider_key"
-                                }
-                            ],
-                            "template": "UAA Service",
-                            "type": "uaaservice"
-                        }
-                    },
-                    {
-                        "default": {
-                            "secrets": [
-                                {
-                                    "vora.conf.secop.jwtiss.keystore": "keystore"
-                                },
-                                {
-                                    "vora.conf.secop.jwtiss.truststore": "truststore"
-                                }
-                            ],
-                            "template": "Vora JWT Issuer NI",
-                            "type": "jwtiss"
-                        }
-                    },
-                    {
-                        "default": {
-                            "configmaps": [
-                                {
-                                    "vora.conf.secop.htpasswd": "htpasswd"
-                                }
-                            ],
-                            "periodics": [
-                                {
-                                    "push-userstore.sh": "10 push_userstore.sh"
-                                }
-                            ],
-                            "template": "Vora Userstore Producer",
-                            "type": "userstore-producer"
-                        }
-                    },
-                    {
-                        "default": {
-                            "secrets": [
-                                {
-                                    "vora.conf.secop.encryption-key": "encryption_key"
-                                }
-                            ],
-                            "template": "Encryption Key",
-                            "type": "encryptionkey"
-                        }
-                    },
-                    {
-                        "default": {
-                            "initializers": [
-                                {
-                                    "prepare-validation-context.py": "prepare-validation-context.py vora.conf.secop.validation.cred"
-                                }
-                            ],
-                            "template": "Validation Context",
-                            "type": "validation"
-                        }
-                    },
-                    {
-                        "htpasswd": {
-                            "initializers": [
-                                {
-                                    "pull-userstore.sh": "pull_userstore.sh"
-                                }
-                            ],
-                            "periodics": [
-                                {
-                                    "pull-userstore.sh": "10 pull_userstore.sh"
-                                }
-                            ],
-                            "template": "Htpasswd"
-                        }
-                    }
-                ],
-                "secop": {
-                    "issuerURI": "https://uaa:8080"
-                }
-            },
-            "tlsSecretCaBundle": {
-                "key": "",
-                "name": ""
-            },
-            "tlsSecretKeyStore": {
-                "key": "",
-                "name": ""
-            },
-            "tlsSecretTrustStore": {
-                "key": "",
-                "name": ""
-            }
-        },
-        "vsystem": {
-            "UAA": {
-                "clientId": "",
-                "deploy": false,
-                "endpoint": ""
-            },
-            "auditlog": {
-                "deploy": false,
-                "endpoint": "https://auditlog:3030",
-                "use": true
-            },
-            "deploymentInfo": {},
-            "deploymentType": "on-prem",
-            "hana": {
-                "tls": {}
-            },
-            "initialUserCreation": {
-                "secretName": "vora.conf.initial.user"
-            },
-            "internalComm": {
-                "authClientID": "",
-                "filename": "",
-                "vrepClientID": "",
-                "vsystemClientID": ""
-            },
-            "layerStrategies": [
-                {
-                    "name": "sdi-system-extension-strategy",
-                    "parentStrategy": "strat-system-3.1.13"
-                },
-                {
-                    "name": "sdi-default-extension-strategy",
-                    "parentStrategy": "strat-default-3.1.13"
-                },
-                {
-                    "layers": [
-                        "installer-certificates",
-                        "vrelease-diagnostics",
-                        "vrelease-appmanagement",
-                        "vora-tools",
-                        "vsolution-vsystem-ui",
-                        "vsolution-shared-ui",
-                        "vsolution-app-base-db",
-                        "data-tools-ui",
-                        "license-manager",
-                        "dsp-release-onprem-system"
-                    ],
-                    "name": "strat-system-3.1.13"
-                },
-                {
-                    "layers": [
-                        "installer-certificates",
-                        "installer-configuration",
-                        "vrelease-delivery-di",
-                        "vsolution-app-base",
-                        "vsolution-dh-flowagent",
-                        "vrelease-appmanagement",
-                        "vora-tools",
-                        "vsolution-vsystem-ui",
-                        "vsolution-shared-ui",
-                        "vsolution-app-data",
-                        "data-tools-ui",
-                        "license-manager",
-                        "dsp-release-onprem"
-                    ],
-                    "name": "strat-default-3.1.13"
-                }
-            ],
-            "loadNFSModules": true,
-            "networkPolicies": {
-                "enabled": false
-            },
-            "podSecurityPolicies": {
-                "release": {}
-            },
-            "proxy": {},
-            "removePolicy": "keep",
-            "runlevel": {},
-            "securityDevelopment": {
-                "deploy": false
-            },
-            "solutions": [
-                {
-                    "name": "installer-certificates",
-                    "solutionFromContent": {
-                        "name": "certificates",
-                        "secretSources": [
-                            {
-                                "secretKey": "vora.conf.secop.tlsconfig.ca-bundle",
-                                "secretName": "vora.conf.secop.tlsconfig.ca-bundle",
-                                "vrepPath": "ca/ca.crt"
-                            }
-                        ],
-                        "version": "3.1.13"
-                    }
-                },
-                {
-                    "name": "installer-configuration",
-                    "solutionFromContent": {
-                        "name": "installer_config",
-                        "stringSources": [
-                            {
-                                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.registry\",\n  \"description\": \"Modeler: Docker registry for Modeler images\",\n  \"type\": \"string\",\n  \"defaultValue\": \"container-image-registry-sdi-observer.apps.lab.hpecloud.org\"\n}\n",
-                                "vrepPath": "vsystem/parameters/vflow.registry.json"
-                            },
-                            {
-                                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.aws.iamRole\",\n  \"description\": \"Modeler: AWS IAM role for package version\",\n  \"type\": \"string\",\n  \"defaultValue\": \"\"\n}\n",
-                                "vrepPath": "vsystem/parameters/vflow.aws.iamRole.json"
-                            },
-                            {
-                                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.registrySecret\",\n  \"description\": \"Modeler: Name of the vSystem secret containing the credentials for Docker registry\",\n  \"type\": \"string\",\n  \"defaultValue\": \"vflow-secret\"\n}\n",
-                                "vrepPath": "vsystem/parameters/vflow.registrySecret.json"
-                            },
-                            {
-                                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.imagePullSecret\",\n  \"description\": \"Modeler: Docker image pull secret for Modeler\",\n  \"type\": \"string\",\n  \"defaultValue\": \"slp-docker-registry-pull-secret\"\n}\n",
-                                "vrepPath": "vsystem/parameters/vflow.imagePullSecret.json"
-                            },
-                            {
-                                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.kanikoImage\",\n  \"description\": \"Modeler: Kaniko build container image\",\n  \"type\": \"string\",\n  \"defaultValue\": \"container-image-registry-sdi-observer.apps.lab.hpecloud.org/kaniko-project/executor:v0.23.0\"\n}\n",
-                                "vrepPath": "vsystem/parameters/vflow.kanikoImage.json"
-                            },
-                            {
-                                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.baseRegistry\",\n  \"description\": \"Modeler: Base registry for pulling images\",\n  \"type\": \"string\",\n  \"defaultValue\": \"container-image-registry-sdi-observer.apps.lab.hpecloud.org\"\n}\n",
-                                "vrepPath": "vsystem/parameters/vflow.baseRegistry.json"
-                            }
-                        ],
-                        "version": "3.1.13-ovmhx"
-                    }
-                },
-                {
-                    "name": "data-tools-ui"
-                },
-                {
-                    "name": "license-manager"
-                },
-                {
-                    "name": "vora-tools"
-                },
-                {
-                    "name": "vrelease-appmanagement"
-                },
-                {
-                    "name": "vrelease-delivery-di"
-                },
-                {
-                    "name": "vrelease-diagnostics"
-                },
-                {
-                    "name": "vsolution-app-base"
-                },
-                {
-                    "name": "vsolution-app-base-db"
-                },
-                {
-                    "name": "vsolution-app-data"
-                },
-                {
-                    "name": "vsolution-dh-flowagent"
-                },
-                {
-                    "name": "vsolution-shared-ui"
-                },
-                {
-                    "name": "vsolution-vsystem-ui"
-                },
-                {
-                    "name": "dsp-release-onprem"
-                },
-                {
-                    "name": "dsp-release-onprem-system"
-                }
-            ],
-            "tenants": [
-                {
-                    "name": "system",
-                    "strategyName": "sdi-system-extension-strategy",
-                    "tenantAdminCreds": "vora.conf.initial.user",
-                    "vsystemObjects": [
-                        "{\n  \"kind\": \"Route\",\n  \"apiVersion\": \"v1\",\n  \"metadata\": {\n    \"name\": \"diagnostics-grafana\"\n  },\n  \"status\": {\n    \"ingress\": [\n      {\n        \"host\": \"diagnostics-grafana\",\n        \"port\": 443,\n        \"tls\": true\n      }\n    ]\n  }\n}\n",
-                        "{\n  \"kind\": \"Route\",\n  \"apiVersion\": \"v1\",\n  \"metadata\": {\n    \"name\": \"diagnostics-kibana\"\n  },\n  \"status\": {\n    \"ingress\": [\n      {\n        \"host\": \"diagnostics-kibana\",\n        \"port\": 443,\n        \"tls\": true\n      }\n    ]\n  }\n}\n"
-                    ]
-                },
-                {
-                    "name": "default",
-                    "strategyName": "sdi-default-extension-strategy",
-                    "tenantAdminCreds": "vora.conf.tenants.defaultadmin",
-                    "vsystemSecrets": [
-                        "vflow-secret"
-                    ]
-                }
-            ],
-            "vRep": {},
-            "vSystem": {
-                "auditlogAddress": "https://auditlog:3030",
-                "clusterAdminHostnames": "vora-tx-coordinator,diagnostics-prometheus-server,storagegateway",
-                "features": {
-                    "apiGateway": {}
-                },
-                "serviceType": "ClusterIP"
-            },
-            "vflow": {
-                "enabled": true
-            }
+        "prometheusServer": {
+          "resources": {}
         }
+      },
+      "secop": {
+        "docker": {}
+      },
+      "version": {},
+      "volumes": {
+        "elasticsearch": {},
+        "prometheusServer": {}
+      }
     },
-    "status": {
-        "conditions": [
-            {
-                "message": "Operation in progress",
-                "operationId": "3a248d",
-                "package": "3.1.13",
-                "reason": "preInstall",
-                "status": "False",
-                "timestamp": "2021-01-25T16:47:32Z",
-                "type": "inProgress"
+    "hana": {
+      "memoryRequest": "6Gi",
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "syncSleepTimeInSeconds": 30
+    },
+    "networkPolicies": {
+      "enabled": false
+    },
+    "package": "3.1.13",
+    "podSecurityPolicies": {
+      "release": {}
+    },
+    "proxy": {},
+    "spark": {
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "resources": {
+        "limits": {},
+        "requests": {}
+      }
+    },
+    "storageGateway": {
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "replicas": 1,
+      "resources": {
+        "limits": {},
+        "requests": {}
+      },
+      "ssl": {}
+    },
+    "textAnalysis": {
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "resources": {
+        "limits": {},
+        "requests": {}
+      },
+      "serviceType": "ClusterIP"
+    },
+    "timeout": 3600,
+    "uaa": {
+      "configuration": {},
+      "networkPolicies": {
+        "enabled": false
+      },
+      "passwordPolicy": {},
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {}
+    },
+    "voraCluster": {
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "template": {
+        "components": {
+          "catalog": {
+            "replicas": "1",
+            "traceLevel": ""
+          },
+          "disk": {
+            "antiAffinity": {
+              "replica": {
+                "enable": true
+              },
+              "resource": {
+                "enable": true,
+                "selectors": {
+                  "vora-component": "tx-coordinator"
+                }
+              }
             },
-            {
-                "message": "preInstall hooks successfully executed",
-                "operationId": "3a248d",
-                "package": "3.1.13",
-                "status": "True",
-                "timestamp": "2021-01-25T16:47:36Z",
-                "type": "preInstall"
+            "dbSpaceSize": 10240,
+            "initialDelaySeconds": 180,
+            "largeMemoryLimit": 3000,
+            "mainCacheMemoryLimit": 3000,
+            "networkDriversList": "",
+            "passwordSecretName": "vora.conf.disk-password",
+            "pv": {
+              "storageClassName": ""
             },
-            {
-                "message": "postInstall hooks successfully executed",
-                "operationId": "3a248d",
-                "package": "3.1.13",
-                "status": "True",
-                "timestamp": "2021-01-25T16:47:39Z",
-                "type": "postInstall"
+            "replicas": "1",
+            "storageSize": "50Gi",
+            "temporaryCacheMemoryLimit": 3000,
+            "terminationGracePeriodSeconds": 300,
+            "traceLevel": ""
+          },
+          "dlog": {
+            "antiAffinity": {
+              "replica": {
+                "enable": true
+              },
+              "resource": {
+                "enable": true,
+                "selectors": {
+                  "vora-component": "disk"
+                }
+              }
             },
-            {
-                "message": "Operation in progress",
-                "operationId": "c03db8",
-                "package": "3.1.13",
-                "previousPackage": "3.1.13",
-                "reason": "preRunLevelStarted",
-                "status": "False",
-                "timestamp": "2021-01-25T16:47:43Z",
-                "type": "inProgress"
+            "bufferSize": "4g",
+            "pv": {
+              "storageClassName": ""
             },
-            {
-                "message": "preRunLevelStarted hooks successfully executed",
-                "operationId": "c03db8",
-                "package": "3.1.13",
-                "status": "True",
-                "timestamp": "2021-01-25T16:47:44Z",
-                "type": "preRunLevelStarted"
+            "raftPort": "49876",
+            "rdsHTTPPort": "8700",
+            "replicationFactor": "1",
+            "restore": false,
+            "standbyFactor": "0",
+            "storageSize": "50Gi",
+            "traceLevel": ""
+          },
+          "globalParameters": {
+            "checkpoint": {
+              "active": true,
+              "afsiConnectionSecret": "vora.conf.checkpoint-connection",
+              "afsiPath": "/dqp/lib",
+              "afsiType": "v2afsi_s3",
+              "clientIncrementalRecordLimit": "16384",
+              "clientIncrementalSizeLimit": "16777216",
+              "clientWriteMinDelay": "300000",
+              "maxStreamCheckpoints": "2",
+              "pathSuffix": "checkpoints-11bw3dz"
             },
-            {
-                "message": "postRunLevelStarted hooks successfully executed",
-                "operationId": "c03db8",
-                "package": "3.1.13",
-                "status": "True",
-                "timestamp": "2021-01-25T16:47:48Z",
-                "type": "postRunLevelStarted"
+            "fsGroup": 999,
+            "healthCheck": {
+              "deregisterTimeout": "2m",
+              "initialDelaySeconds": 60,
+              "periodSeconds": 60,
+              "statefulsetEvictionTimeoutMinutes": 0,
+              "terminationGracePeriodSeconds": 60
+            },
+            "input": {
+              "path": "/mnt/input"
+            },
+            "rbac": false,
+            "runAsUser": 999,
+            "security": {
+              "context": "consumer",
+              "contextRoot": "/tmp/vora-security",
+              "image": ""
+            },
+            "traceLevel": "info",
+            "useK8sDiscovery": true
+          },
+          "landscape": {
+            "bootstrapMode": "auto",
+            "replicas": "1",
+            "traceLevel": ""
+          },
+          "relational": {
+            "replicas": "1",
+            "traceLevel": ""
+          },
+          "txBroker": {
+            "replicas": "1",
+            "traceLevel": ""
+          },
+          "txCoordinator": {
+            "replicas": "1",
+            "traceLevel": ""
+          }
+        },
+        "docker": {
+          "image": "sap-p-and-i-big-data-vora/com.sap.datahub.linuxx86_64/vora-dqp",
+          "imagePullSecret": ""
+        },
+        "name": "vora",
+        "version": {
+          "component": "2.5.15",
+          "package": ""
+        }
+      }
+    },
+    "voraSecurityOperator": {
+      "caKeyStore": {
+        "key": "",
+        "name": ""
+      },
+      "caTrustStore": {
+        "key": "",
+        "name": ""
+      },
+      "dhKeySize": 256,
+      "interCaKeyStore": {
+        "key": "",
+        "name": ""
+      },
+      "interCaTrustStore": {
+        "key": "",
+        "name": ""
+      },
+      "jwtSecretCaBundle": {
+        "key": "",
+        "name": ""
+      },
+      "jwtSecretKeyStore": {
+        "key": "",
+        "name": ""
+      },
+      "jwtSecretTrustStore": {
+        "key": "",
+        "name": ""
+      },
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "securityContexts": {
+        "contexts": [
+          {
+            "consumer": {
+              "initializers": [
+                {
+                  "generate-certificates.sh": "generate-certificates.sh"
+                },
+                {
+                  "generate-dummy-secret.py": "generate-dummy-secret.py"
+                }
+              ],
+              "periodics": [
+                {
+                  "renew-certificates.sh": "10368000 renew-certificates.sh"
+                }
+              ],
+              "secrets": [
+                {
+                  "vora.conf.secop.jwtiss.truststore": "truststore"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.ca-bundle": "ca_bundle"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.keystore-dh": "keystore_dh"
+                },
+                {
+                  "vora.conf.secop.v2auth": "v2auth.conf"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.inter-ca": "inter_ca"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.inter-ca-keystore": "inter_ca_keystore"
+                }
+              ],
+              "template": "Vora Userstore Consumer"
             }
+          },
+          {
+            "changeowner": {
+              "initializers": [
+                {
+                  "change-owner.sh": "change-owner.sh"
+                }
+              ],
+              "template": "Change Owner"
+            }
+          },
+          {
+            "default": {
+              "secrets": [
+                {
+                  "vora.conf.secop.tlsconfig.keystore": "keystore"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.truststore": "truststore"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.ca-bundle": "ca_bundle"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.keystore-dh": "keystore_dh"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.inter-ca": "inter_ca"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.inter-ca-keystore": "inter_ca_keystore"
+                }
+              ],
+              "template": "Vora Default TLS Configuration NI",
+              "type": "tlsconfig"
+            }
+          },
+          {
+            "default": {
+              "configmaps": [
+                {
+                  "uaa.jinja2": "uaa.jinja2"
+                }
+              ],
+              "initializers": [
+                {
+                  "generate-certificates.sh": "generate-certificates.sh uaa"
+                },
+                {
+                  "configure-uaa.py": "configure-uaa.py"
+                },
+                {
+                  "sync-zone-userstores.py": "sync-zone-userstores.py --restore"
+                }
+              ],
+              "periodics": [
+                {
+                  "sync-zone-userstores.py": "10 sync-zone-userstores.py"
+                },
+                {
+                  "renew-certificates.sh": "10368000 renew-certificates.sh"
+                }
+              ],
+              "secrets": [
+                {
+                  "vora.conf.secop.tlsconfig.ca-bundle": "ca_bundle"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.inter-ca": "inter_ca"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.inter-ca-keystore": "inter_ca_keystore"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.truststore": "service_provider_cert"
+                },
+                {
+                  "vora.conf.secop.tlsconfig.keystore": "service_provider_key"
+                }
+              ],
+              "template": "UAA Service",
+              "type": "uaaservice"
+            }
+          },
+          {
+            "default": {
+              "secrets": [
+                {
+                  "vora.conf.secop.jwtiss.keystore": "keystore"
+                },
+                {
+                  "vora.conf.secop.jwtiss.truststore": "truststore"
+                }
+              ],
+              "template": "Vora JWT Issuer NI",
+              "type": "jwtiss"
+            }
+          },
+          {
+            "default": {
+              "configmaps": [
+                {
+                  "vora.conf.secop.htpasswd": "htpasswd"
+                }
+              ],
+              "periodics": [
+                {
+                  "push-userstore.sh": "10 push_userstore.sh"
+                }
+              ],
+              "template": "Vora Userstore Producer",
+              "type": "userstore-producer"
+            }
+          },
+          {
+            "default": {
+              "secrets": [
+                {
+                  "vora.conf.secop.encryption-key": "encryption_key"
+                }
+              ],
+              "template": "Encryption Key",
+              "type": "encryptionkey"
+            }
+          },
+          {
+            "default": {
+              "initializers": [
+                {
+                  "prepare-validation-context.py": "prepare-validation-context.py vora.conf.secop.validation.cred"
+                }
+              ],
+              "template": "Validation Context",
+              "type": "validation"
+            }
+          },
+          {
+            "htpasswd": {
+              "initializers": [
+                {
+                  "pull-userstore.sh": "pull_userstore.sh"
+                }
+              ],
+              "periodics": [
+                {
+                  "pull-userstore.sh": "10 pull_userstore.sh"
+                }
+              ],
+              "template": "Htpasswd"
+            }
+          }
         ],
-        "expiresAt": "2021-01-25T17:47:51Z",
-        "reason": "Expired",
-        "startedAt": "2021-01-25T16:47:51Z",
-        "state": "Failed"
+        "secop": {
+          "issuerURI": "https://uaa:8080"
+        }
+      },
+      "tlsSecretCaBundle": {
+        "key": "",
+        "name": ""
+      },
+      "tlsSecretKeyStore": {
+        "key": "",
+        "name": ""
+      },
+      "tlsSecretTrustStore": {
+        "key": "",
+        "name": ""
+      }
+    },
+    "vsystem": {
+      "UAA": {
+        "clientId": "",
+        "deploy": false,
+        "endpoint": ""
+      },
+      "auditlog": {
+        "deploy": false,
+        "endpoint": "https://auditlog:3030",
+        "use": true
+      },
+      "deploymentInfo": {},
+      "deploymentType": "on-prem",
+      "hana": {
+        "tls": {}
+      },
+      "initialUserCreation": {
+        "secretName": "vora.conf.initial.user"
+      },
+      "internalComm": {
+        "authClientID": "",
+        "filename": "",
+        "vrepClientID": "",
+        "vsystemClientID": ""
+      },
+      "layerStrategies": [
+        {
+          "name": "sdi-system-extension-strategy",
+          "parentStrategy": "strat-system-3.1.13"
+        },
+        {
+          "name": "sdi-default-extension-strategy",
+          "parentStrategy": "strat-default-3.1.13"
+        },
+        {
+          "layers": [
+            "installer-certificates",
+            "vrelease-diagnostics",
+            "vrelease-appmanagement",
+            "vora-tools",
+            "vsolution-vsystem-ui",
+            "vsolution-shared-ui",
+            "vsolution-app-base-db",
+            "data-tools-ui",
+            "license-manager",
+            "dsp-release-onprem-system"
+          ],
+          "name": "strat-system-3.1.13"
+        },
+        {
+          "layers": [
+            "installer-certificates",
+            "installer-configuration",
+            "vrelease-delivery-di",
+            "vsolution-app-base",
+            "vsolution-dh-flowagent",
+            "vrelease-appmanagement",
+            "vora-tools",
+            "vsolution-vsystem-ui",
+            "vsolution-shared-ui",
+            "vsolution-app-data",
+            "data-tools-ui",
+            "license-manager",
+            "dsp-release-onprem"
+          ],
+          "name": "strat-default-3.1.13"
+        }
+      ],
+      "loadNFSModules": true,
+      "networkPolicies": {
+        "enabled": false
+      },
+      "podSecurityPolicies": {
+        "release": {}
+      },
+      "proxy": {},
+      "removePolicy": "keep",
+      "runlevel": {},
+      "securityDevelopment": {
+        "deploy": false
+      },
+      "solutions": [
+        {
+          "name": "installer-certificates",
+          "solutionFromContent": {
+            "name": "certificates",
+            "secretSources": [
+              {
+                "secretKey": "vora.conf.secop.tlsconfig.ca-bundle",
+                "secretName": "vora.conf.secop.tlsconfig.ca-bundle",
+                "vrepPath": "ca/ca.crt"
+              }
+            ],
+            "version": "3.1.13"
+          }
+        },
+        {
+          "name": "installer-configuration",
+          "solutionFromContent": {
+            "name": "installer_config",
+            "stringSources": [
+              {
+                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.registry\",\n  \"description\": \"Modeler: Docker registry for Modeler images\",\n  \"type\": \"string\",\n  \"defaultValue\": \"container-image-registry-sdi-observer.apps.lab.hpecloud.org\"\n}\n",
+                "vrepPath": "vsystem/parameters/vflow.registry.json"
+              },
+              {
+                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.aws.iamRole\",\n  \"description\": \"Modeler: AWS IAM role for package version\",\n  \"type\": \"string\",\n  \"defaultValue\": \"\"\n}\n",
+                "vrepPath": "vsystem/parameters/vflow.aws.iamRole.json"
+              },
+              {
+                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.registrySecret\",\n  \"description\": \"Modeler: Name of the vSystem secret containing the credentials for Docker registry\",\n  \"type\": \"string\",\n  \"defaultValue\": \"vflow-secret\"\n}\n",
+                "vrepPath": "vsystem/parameters/vflow.registrySecret.json"
+              },
+              {
+                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.imagePullSecret\",\n  \"description\": \"Modeler: Docker image pull secret for Modeler\",\n  \"type\": \"string\",\n  \"defaultValue\": \"slp-docker-registry-pull-secret\"\n}\n",
+                "vrepPath": "vsystem/parameters/vflow.imagePullSecret.json"
+              },
+              {
+                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.kanikoImage\",\n  \"description\": \"Modeler: Kaniko build container image\",\n  \"type\": \"string\",\n  \"defaultValue\": \"container-image-registry-sdi-observer.apps.lab.hpecloud.org/kaniko-project/executor:v0.23.0\"\n}\n",
+                "vrepPath": "vsystem/parameters/vflow.kanikoImage.json"
+              },
+              {
+                "contentString": "{\n  \"apiVersion\": \"v2\",\n  \"id\": \"vflow.baseRegistry\",\n  \"description\": \"Modeler: Base registry for pulling images\",\n  \"type\": \"string\",\n  \"defaultValue\": \"container-image-registry-sdi-observer.apps.lab.hpecloud.org\"\n}\n",
+                "vrepPath": "vsystem/parameters/vflow.baseRegistry.json"
+              }
+            ],
+            "version": "3.1.13-ovmhx"
+          }
+        },
+        {
+          "name": "data-tools-ui"
+        },
+        {
+          "name": "license-manager"
+        },
+        {
+          "name": "vora-tools"
+        },
+        {
+          "name": "vrelease-appmanagement"
+        },
+        {
+          "name": "vrelease-delivery-di"
+        },
+        {
+          "name": "vrelease-diagnostics"
+        },
+        {
+          "name": "vsolution-app-base"
+        },
+        {
+          "name": "vsolution-app-base-db"
+        },
+        {
+          "name": "vsolution-app-data"
+        },
+        {
+          "name": "vsolution-dh-flowagent"
+        },
+        {
+          "name": "vsolution-shared-ui"
+        },
+        {
+          "name": "vsolution-vsystem-ui"
+        },
+        {
+          "name": "dsp-release-onprem"
+        },
+        {
+          "name": "dsp-release-onprem-system"
+        }
+      ],
+      "tenants": [
+        {
+          "name": "system",
+          "strategyName": "sdi-system-extension-strategy",
+          "tenantAdminCreds": "vora.conf.initial.user",
+          "vsystemObjects": [
+            "{\n  \"kind\": \"Route\",\n  \"apiVersion\": \"v1\",\n  \"metadata\": {\n    \"name\": \"diagnostics-grafana\"\n  },\n  \"status\": {\n    \"ingress\": [\n      {\n        \"host\": \"diagnostics-grafana\",\n        \"port\": 443,\n        \"tls\": true\n      }\n    ]\n  }\n}\n",
+            "{\n  \"kind\": \"Route\",\n  \"apiVersion\": \"v1\",\n  \"metadata\": {\n    \"name\": \"diagnostics-kibana\"\n  },\n  \"status\": {\n    \"ingress\": [\n      {\n        \"host\": \"diagnostics-kibana\",\n        \"port\": 443,\n        \"tls\": true\n      }\n    ]\n  }\n}\n"
+          ]
+        },
+        {
+          "name": "default",
+          "strategyName": "sdi-default-extension-strategy",
+          "tenantAdminCreds": "vora.conf.tenants.defaultadmin",
+          "vsystemSecrets": [
+            "vflow-secret"
+          ]
+        }
+      ],
+      "vRep": {},
+      "vSystem": {
+        "auditlogAddress": "https://auditlog:3030",
+        "clusterAdminHostnames": "vora-tx-coordinator,diagnostics-prometheus-server,storagegateway",
+        "features": {
+          "apiGateway": {}
+        },
+        "serviceType": "ClusterIP"
+      },
+      "vflow": {
+        "enabled": true
+      }
     }
+  },
+  "status": {
+    "conditions": [
+      {
+        "message": "Operation in progress",
+        "operationId": "3a248d",
+        "package": "3.1.13",
+        "reason": "preInstall",
+        "status": "False",
+        "timestamp": "2021-01-25T16:47:32Z",
+        "type": "inProgress"
+      },
+      {
+        "message": "preInstall hooks successfully executed",
+        "operationId": "3a248d",
+        "package": "3.1.13",
+        "status": "True",
+        "timestamp": "2021-01-25T16:47:36Z",
+        "type": "preInstall"
+      },
+      {
+        "message": "postInstall hooks successfully executed",
+        "operationId": "3a248d",
+        "package": "3.1.13",
+        "status": "True",
+        "timestamp": "2021-01-25T16:47:39Z",
+        "type": "postInstall"
+      },
+      {
+        "message": "Operation in progress",
+        "operationId": "c03db8",
+        "package": "3.1.13",
+        "previousPackage": "3.1.13",
+        "reason": "preRunLevelStarted",
+        "status": "False",
+        "timestamp": "2021-01-25T16:47:43Z",
+        "type": "inProgress"
+      },
+      {
+        "message": "preRunLevelStarted hooks successfully executed",
+        "operationId": "c03db8",
+        "package": "3.1.13",
+        "status": "True",
+        "timestamp": "2021-01-25T16:47:44Z",
+        "type": "preRunLevelStarted"
+      },
+      {
+        "message": "postRunLevelStarted hooks successfully executed",
+        "operationId": "c03db8",
+        "package": "3.1.13",
+        "status": "True",
+        "timestamp": "2021-01-25T16:47:48Z",
+        "type": "postRunLevelStarted"
+      }
+    ],
+    "expiresAt": "2021-01-25T17:47:51Z",
+    "reason": "Expired",
+    "startedAt": "2021-01-25T16:47:51Z",
+    "state": "Failed"
+  }
 }

@@ -1,43 +1,37 @@
 {
-    "apiVersion": "operator.openshift.io/v1",
-    "kind": "KubeControllerManager",
-    "name": "cluster",
-    "spec": {
-        "logLevel": "Normal",
-        "managementState": "Managed",
-        "observedConfig": {
-            "extendedArguments": {
-                "cloud-config": [
-                    "/etc/kubernetes/static-pod-resources/configmaps/cloud-config/cloud.conf"
-                ],
-                "cloud-provider": [
-                    "gce"
-                ],
-                "cluster-cidr": [
-                    "10.128.0.0/14"
-                ],
-                "cluster-name": [
-                    "tremes-5f2nt"
-                ],
-                "feature-gates": [
-                    "APIPriorityAndFairness=true",
-                    "RotateKubeletServerCertificate=true",
-                    "SupportPodPidsLimit=true",
-                    "NodeDisruptionExclusion=true",
-                    "ServiceNodeExclusion=true",
-                    "SCTPSupport=true",
-                    "LegacyNodeRoleBehavior=false",
-                    "RemoveSelfLink=false"
-                ],
-                "service-cluster-ip-range": [
-                    "172.30.0.0/16"
-                ]
-            },
-            "serviceServingCert": {
-                "certFile": "/etc/kubernetes/static-pod-resources/configmaps/service-ca/ca-bundle.crt"
-            }
-        },
-        "operatorLogLevel": "Normal",
-        "unsupportedConfigOverrides": null
-    }
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "KubeControllerManager",
+  "name": "cluster",
+  "spec": {
+    "logLevel": "Normal",
+    "managementState": "Managed",
+    "observedConfig": {
+      "extendedArguments": {
+        "cluster-cidr": [
+          "10.128.0.0/14"
+        ],
+        "cluster-name": [
+          "imeixner20210707-wnrhq"
+        ],
+        "feature-gates": [
+          "APIPriorityAndFairness=true",
+          "RotateKubeletServerCertificate=true",
+          "SupportPodPidsLimit=true",
+          "NodeDisruptionExclusion=true",
+          "ServiceNodeExclusion=true",
+          "SCTPSupport=true",
+          "LegacyNodeRoleBehavior=false",
+          "RemoveSelfLink=false"
+        ],
+        "service-cluster-ip-range": [
+          "172.30.0.0/16"
+        ]
+      },
+      "serviceServingCert": {
+        "certFile": "/etc/kubernetes/static-pod-resources/configmaps/service-ca/ca-bundle.crt"
+      }
+    },
+    "operatorLogLevel": "Normal",
+    "unsupportedConfigOverrides": null
+  }
 }

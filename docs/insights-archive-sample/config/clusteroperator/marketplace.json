@@ -4,10 +4,13 @@
   "metadata": {
     "name": "marketplace",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/marketplace",
-    "uid": "4bb3202c-7797-41b8-ad53-4f1d97848dc8",
-    "resourceVersion": "16005",
+    "uid": "cf897354-d422-400e-a6e5-d0373bc80aa8",
+    "resourceVersion": "9868",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:49:36Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,36 +18,36 @@
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:57Z",
+        "lastTransitionTime": "2021-07-07T11:28:34Z",
         "reason": "OperatorAvailable",
-        "message": "Successfully progressed to release version: 4.4.16"
+        "message": "Successfully progressed to release version: 4.7.16"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:57Z",
+        "lastTransitionTime": "2021-07-07T11:28:34Z",
         "reason": "OperatorAvailable",
-        "message": "Available release version: 4.4.16"
+        "message": "Available release version: 4.7.16"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:57Z",
+        "lastTransitionTime": "2021-07-07T11:28:34Z",
         "reason": "OperatorAvailable",
         "message": "Marketplace is upgradeable"
       },
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:36Z",
-        "reason": "OperandTransitionsSucceeding",
-        "message": "Current CR sync ratio (1) meets the expected success ratio (0.3)"
+        "lastTransitionTime": "2021-07-07T11:27:45Z",
+        "reason": "OperatorAvailable",
+        "message": "Successfully progressed to release version: 4.7.16"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -55,19 +58,7 @@
       },
       {
         "group": "operators.coreos.com",
-        "resource": "OperatorSource",
-        "namespace": "openshift-marketplace",
-        "name": ""
-      },
-      {
-        "group": "operators.coreos.com",
-        "resource": "CatalogSourceConfig",
-        "namespace": "openshift-marketplace",
-        "name": ""
-      },
-      {
-        "group": "operators.coreos.com",
-        "resource": "CatalogSource",
+        "resource": "catalogsources",
         "namespace": "openshift-marketplace",
         "name": ""
       }

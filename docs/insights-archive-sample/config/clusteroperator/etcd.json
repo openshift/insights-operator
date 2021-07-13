@@ -4,10 +4,15 @@
   "metadata": {
     "name": "etcd",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/etcd",
-    "uid": "621dc480-c3f0-446b-b03f-42ad69590439",
-    "resourceVersion": "6563",
+    "uid": "b417f6c6-2380-4d6d-8ee5-79052d85f1d4",
+    "resourceVersion": "340350",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:30Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,43 +20,44 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:31:55Z",
+        "lastTransitionTime": "2021-07-07T11:26:28Z",
         "reason": "AsExpected",
         "message": "NodeControllerDegraded: All master nodes are ready\nEtcdMembersDegraded: No unhealthy members found"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:32:08Z",
+        "lastTransitionTime": "2021-07-07T11:28:21Z",
         "reason": "AsExpected",
-        "message": "NodeInstallerProgressing: 3 nodes are at revision 2\nEtcdMembersProgressing: No unstarted etcd members found"
+        "message": "NodeInstallerProgressing: 1 nodes are at revision 2\nEtcdMembersProgressing: No unstarted etcd members found"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:31:17Z",
+        "lastTransitionTime": "2021-07-07T11:28:21Z",
         "reason": "AsExpected",
-        "message": "StaticPodsAvailable: 3 nodes are active; 3 nodes are at revision 2\nEtcdMembersAvailable: 3 members are available"
+        "message": "StaticPodsAvailable: 1 nodes are active; 1 nodes are at revision 2\nEtcdMembersAvailable: 1 members are available"
       },
       {
         "type": "Upgradeable",
-        "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:30Z",
-        "reason": "AsExpected"
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:26:28Z",
+        "reason": "UnsupportedConfigOverrides_UnsupportedConfigOverridesSet",
+        "message": "UnsupportedConfigOverridesUpgradeable: setting: [useUnsupportedUnsafeNonHANonProductionUnstableEtcd]"
       }
     ],
     "versions": [
       {
-        "name": "operator",
-        "version": "4.4.16"
+        "name": "raw-internal",
+        "version": "4.7.16"
       },
       {
-        "name": "raw-internal",
-        "version": "4.4.16"
+        "name": "operator",
+        "version": "4.7.16"
       },
       {
         "name": "etcd",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [

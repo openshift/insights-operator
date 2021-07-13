@@ -1,0 +1,344 @@
+{
+  "metadata": {
+    "name": "cluster-autoscaler-operator-76d8fccc8-wh9q5",
+    "generateName": "cluster-autoscaler-operator-76d8fccc8-",
+    "namespace": "openshift-machine-api",
+    "selfLink": "/api/v1/namespaces/openshift-machine-api/pods/cluster-autoscaler-operator-76d8fccc8-wh9q5",
+    "uid": "d79b41c3-6e0e-4a7c-8ee8-da98888c1d9e",
+    "resourceVersion": "11412",
+    "creationTimestamp": "2021-07-07T11:03:41Z",
+    "labels": {
+      "k8s-app": "cluster-autoscaler-operator",
+      "pod-template-hash": "76d8fccc8"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.35\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.35\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "restricted"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "cluster-autoscaler-operator-76d8fccc8",
+        "uid": "b9f744e2-8e1e-4f28-b4ea-3b86f388da90",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "cert",
+        "secret": {
+          "secretName": "cluster-autoscaler-operator-cert",
+          "items": [
+            {
+              "key": "tls.crt",
+              "path": "tls.crt"
+            },
+            {
+              "key": "tls.key",
+              "path": "tls.key"
+            }
+          ],
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "auth-proxy-config",
+        "configMap": {
+          "name": "kube-rbac-proxy-cluster-autoscaler-operator",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "cluster-autoscaler-operator-token-zcqz4",
+        "secret": {
+          "secretName": "cluster-autoscaler-operator-token-zcqz4",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "kube-rbac-proxy",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "args": [
+          "--secure-listen-address=0.0.0.0:9192",
+          "--upstream=http://127.0.0.1:9191/",
+          "--tls-cert-file=/etc/tls/private/tls.crt",
+          "--tls-private-key-file=/etc/tls/private/tls.key",
+          "--config-file=/etc/kube-rbac-proxy/config-file.yaml",
+          "--logtostderr=true",
+          "--v=3"
+        ],
+        "ports": [
+          {
+            "name": "metrics",
+            "containerPort": 9192,
+            "protocol": "TCP"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "20Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "auth-proxy-config",
+            "readOnly": true,
+            "mountPath": "/etc/kube-rbac-proxy"
+          },
+          {
+            "name": "cert",
+            "readOnly": true,
+            "mountPath": "/etc/tls/private"
+          },
+          {
+            "name": "cluster-autoscaler-operator-token-zcqz4",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "KILL",
+              "MKNOD",
+              "SETGID",
+              "SETUID"
+            ]
+          },
+          "runAsUser": 1000440000
+        }
+      },
+      {
+        "name": "cluster-autoscaler-operator",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:9bfbebeccb10cf5d3bd1b8a11232bd128871c4b84b86d6464d4b1144186cd471",
+        "command": [
+          "cluster-autoscaler-operator"
+        ],
+        "args": [
+          "-alsologtostderr"
+        ],
+        "ports": [
+          {
+            "containerPort": 8443,
+            "protocol": "TCP"
+          }
+        ],
+        "env": [
+          {
+            "name": "RELEASE_VERSION",
+            "value": "4.7.16"
+          },
+          {
+            "name": "WATCH_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          },
+          {
+            "name": "CLUSTER_AUTOSCALER_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          },
+          {
+            "name": "LEADER_ELECTION_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          },
+          {
+            "name": "CLUSTER_AUTOSCALER_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:78f9fbd15fadda42897ab45cdf0c311734f6044960de02c0ae64a396ea179b25"
+          },
+          {
+            "name": "WEBHOOKS_CERT_DIR",
+            "value": "/etc/cluster-autoscaler-operator/tls"
+          },
+          {
+            "name": "WEBHOOKS_PORT",
+            "value": "8443"
+          },
+          {
+            "name": "METRICS_PORT",
+            "value": "9191"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "20m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "cert",
+            "readOnly": true,
+            "mountPath": "/etc/cluster-autoscaler-operator/tls"
+          },
+          {
+            "name": "cluster-autoscaler-operator-token-zcqz4",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "KILL",
+              "MKNOD",
+              "SETGID",
+              "SETUID"
+            ]
+          },
+          "runAsUser": 1000440000
+        }
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "cluster-autoscaler-operator",
+    "serviceAccount": "cluster-autoscaler-operator",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {
+      "seLinuxOptions": {
+        "level": "s0:c21,c10"
+      },
+      "fsGroup": 1000440000
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 300
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 300
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-node-critical",
+    "priority": 2000001000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:32:00Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:32:00Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.35",
+    "podIPs": [
+      {
+        "ip": "10.128.0.35"
+      }
+    ],
+    "startTime": "2021-07-07T11:26:11Z",
+    "containerStatuses": [
+      {
+        "name": "cluster-autoscaler-operator",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T11:32:00Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "message": "5 +0x19b\nk8s.io/klog/v2.(*loggingT).printf(0x23af820, 0xc000000003, 0x0, 0x0, 0x0, 0x0, 0x18058a8, 0x1d, 0xc000387940, 0x1, ...)\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/klog/v2/klog.go:750 +0x191\nk8s.io/klog/v2.Fatalf(...)\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/klog/v2/klog.go:1502\nmain.main()\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/cmd/manager/main.go:33 +0x2d4\n\ngoroutine 8 [chan receive]:\nk8s.io/klog/v2.(*loggingT).flushDaemon(0x23af820)\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/klog/v2/klog.go:1169 +0x8b\ncreated by k8s.io/klog/v2.init.0\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/klog/v2/klog.go:417 +0xdf\n\ngoroutine 45 [chan receive]:\nk8s.io/apimachinery/pkg/watch.(*Broadcaster).loop(0xc000282f00)\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/apimachinery/pkg/watch/mux.go:219 +0x66\ncreated by k8s.io/apimachinery/pkg/watch.NewBroadcaster\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/apimachinery/pkg/watch/mux.go:73 +0xf7\n\ngoroutine 649 [chan receive]:\nk8s.io/client-go/tools/record.(*eventBroadcasterImpl).StartEventWatcher.func1(0x19c0620, 0xc000983530, 0xc00043ea10)\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/client-go/tools/record/event.go:301 +0xaa\ncreated by k8s.io/client-go/tools/record.(*eventBroadcasterImpl).StartEventWatcher\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/client-go/tools/record/event.go:299 +0x6e\n\ngoroutine 648 [chan receive]:\nk8s.io/client-go/tools/record.(*eventBroadcasterImpl).StartEventWatcher.func1(0x19c0620, 0xc000983500, 0xc0009834d0)\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/client-go/tools/record/event.go:301 +0xaa\ncreated by k8s.io/client-go/tools/record.(*eventBroadcasterImpl).StartEventWatcher\n\t/go/src/github.com/openshift/cluster-autoscaler-operator/vendor/k8s.io/client-go/tools/record/event.go:299 +0x6e\n",
+            "startedAt": "2021-07-07T11:31:34Z",
+            "finishedAt": "2021-07-07T11:31:45Z",
+            "containerID": "cri-o://a4377e1b4ebe9452eac4f8ed47b7c7f41f450479e792ab68f90bd6d26a521254"
+          }
+        },
+        "ready": true,
+        "restartCount": 2,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:9bfbebeccb10cf5d3bd1b8a11232bd128871c4b84b86d6464d4b1144186cd471",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:9bfbebeccb10cf5d3bd1b8a11232bd128871c4b84b86d6464d4b1144186cd471",
+        "containerID": "cri-o://7b39356dd44c91f1fdb52af3ed2aa6deaba6f8dea57cbfbdd25ff418e59f3312",
+        "started": true
+      },
+      {
+        "name": "kube-rbac-proxy",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T11:27:18Z"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2",
+        "containerID": "cri-o://55140d4b3e3464bca79c85dba69de2a24eb0155b2f1667cf8a2c87e9046ea3ad",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

@@ -4,10 +4,16 @@
   "metadata": {
     "name": "node-tuning",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/node-tuning",
-    "uid": "23485cae-0c68-4cdd-84b3-aaf57ed0faf4",
-    "resourceVersion": "18757",
+    "uid": "a4bf7e95-4b56-4bb6-8982-09524aeab21d",
+    "resourceVersion": "11814",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:19Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true",
+      "include.release.openshift.io/single-node-production-edge": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,21 +21,21 @@
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:24Z",
+        "lastTransitionTime": "2021-07-07T11:26:54Z",
         "reason": "AsExpected",
-        "message": "Cluster has deployed \"4.4.16\""
+        "message": "Cluster has deployed \"4.7.16\""
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:52:30Z",
+        "lastTransitionTime": "2021-07-07T11:32:20Z",
         "reason": "AsExpected",
-        "message": "Cluster version is \"4.4.16\""
+        "message": "Cluster version is \"4.7.16\""
       },
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:29:19Z",
+        "lastTransitionTime": "2021-07-07T11:26:49Z",
         "reason": "AsExpected",
         "message": "DaemonSet \"tuned\" available"
       }
@@ -37,7 +43,7 @@
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -48,13 +54,13 @@
       },
       {
         "group": "tuned.openshift.io",
-        "resource": "Tuned",
+        "resource": "tuneds",
         "namespace": "openshift-cluster-node-tuning-operator",
         "name": "default"
       },
       {
         "group": "apps",
-        "resource": "DaemonSet",
+        "resource": "daemonsets",
         "namespace": "openshift-cluster-node-tuning-operator",
         "name": "tuned"
       }

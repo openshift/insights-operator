@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "name": "csi-snapshot-controller-fc56779c7-lbsmx",
+    "generateName": "csi-snapshot-controller-fc56779c7-",
+    "namespace": "openshift-cluster-storage-operator",
+    "selfLink": "/api/v1/namespaces/openshift-cluster-storage-operator/pods/csi-snapshot-controller-fc56779c7-lbsmx",
+    "uid": "e85a54d0-49ae-4e61-93e3-fa9660502ad3",
+    "resourceVersion": "339742",
+    "creationTimestamp": "2021-07-07T11:26:32Z",
+    "labels": {
+      "app": "csi-snapshot-controller",
+      "pod-template-hash": "fc56779c7"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.20\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.20\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "restricted"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "csi-snapshot-controller-fc56779c7",
+        "uid": "8b271771-6a6d-4a6e-bc14-ee015efbddd9",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "csi-snapshot-controller-token-vf4mf",
+        "secret": {
+          "secretName": "csi-snapshot-controller-token-vf4mf",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "snapshot-controller",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:98578c4e81ec2da96f1de6bb114410fa7b5f2b71c68eed8b6152d918f0610bd5",
+        "args": [
+          "--v=2",
+          "--leader-election=true"
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "csi-snapshot-controller-token-vf4mf",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "File",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "KILL",
+              "MKNOD",
+              "SETGID",
+              "SETUID"
+            ]
+          },
+          "runAsUser": 1000160000
+        }
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "csi-snapshot-controller",
+    "serviceAccount": "csi-snapshot-controller",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {
+      "seLinuxOptions": {
+        "level": "s0:c13,c2"
+      },
+      "fsGroup": 1000160000
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-cluster-critical",
+    "priority": 2000000000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:32Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T10:59:07Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T10:59:07Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:32Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.20",
+    "podIPs": [
+      {
+        "ip": "10.128.0.20"
+      }
+    ],
+    "startTime": "2021-07-07T11:26:32Z",
+    "containerStatuses": [
+      {
+        "name": "snapshot-controller",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T10:59:06Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "startedAt": "2021-07-08T06:17:17Z",
+            "finishedAt": "2021-07-08T10:59:05Z",
+            "containerID": "cri-o://4770a0fb7aecf76ca22141556df6dd9c1624f85e840d465325fb3c06e3e2ffab"
+          }
+        },
+        "ready": true,
+        "restartCount": 8,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:98578c4e81ec2da96f1de6bb114410fa7b5f2b71c68eed8b6152d918f0610bd5",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:98578c4e81ec2da96f1de6bb114410fa7b5f2b71c68eed8b6152d918f0610bd5",
+        "containerID": "cri-o://ef019fb79001cb5b2a9df62c060b8526ddd0e7230065875567a591f1b25fa233",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

@@ -4,10 +4,15 @@
   "metadata": {
     "name": "kube-controller-manager",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-controller-manager",
-    "uid": "0d734da7-e69c-4310-9fe2-9d113bc6d709",
-    "resourceVersion": "24378",
+    "uid": "eb652a6e-8a88-4bac-a6fd-dee4095d2f06",
+    "resourceVersion": "339072",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:21Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,43 +20,44 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:32Z",
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
         "reason": "AsExpected",
         "message": "NodeControllerDegraded: All master nodes are ready"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:54:29Z",
+        "lastTransitionTime": "2021-07-07T11:42:53Z",
         "reason": "AsExpected",
-        "message": "NodeInstallerProgressing: 3 nodes are at revision 9"
+        "message": "NodeInstallerProgressing: 1 nodes are at revision 7"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:34:52Z",
+        "lastTransitionTime": "2021-07-07T11:28:18Z",
         "reason": "AsExpected",
-        "message": "StaticPodsAvailable: 3 nodes are active; 3 nodes are at revision 9"
+        "message": "StaticPodsAvailable: 1 nodes are active; 1 nodes are at revision 7"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:22Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       }
     ],
     "versions": [
       {
         "name": "raw-internal",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "kube-controller-manager",
-        "version": "1.17.1"
+        "version": "1.20.0-beta.2"
       },
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -79,6 +85,16 @@
         "group": "",
         "resource": "namespaces",
         "name": "openshift-kube-controller-manager-operator"
+      },
+      {
+        "group": "certificates.k8s.io",
+        "resource": "certificatesigningrequests",
+        "name": ""
+      },
+      {
+        "group": "",
+        "resource": "nodes",
+        "name": ""
       }
     ],
     "extension": null

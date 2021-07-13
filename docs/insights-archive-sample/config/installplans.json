@@ -1,20 +1,7 @@
 {
-    "items": [
-        {
-            "count": 1,
-            "csv": "awss3operator.1.0.1",
-            "name": "install-",
-            "ns": "openshift-operators"
-        },
-        {
-            "count": 1,
-            "csv": "lib-bucket-provisioner.v2.0.0",
-            "name": "install-",
-            "ns": "openshift-operators"
-        }
-    ],
-    "stats": {
-        "TOTAL_COUNT": 2,
-        "TOTAL_NONUNIQ_COUNT": 2
-    }
+  "items": null,
+  "stats": {
+    "TOTAL_COUNT": 0,
+    "TOTAL_NONUNIQ_COUNT": 0
+  }
 }

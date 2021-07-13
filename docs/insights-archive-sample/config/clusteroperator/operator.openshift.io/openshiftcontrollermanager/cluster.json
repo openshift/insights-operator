@@ -1,32 +1,32 @@
 {
-    "apiVersion": "operator.openshift.io/v1",
-    "kind": "OpenShiftControllerManager",
-    "name": "cluster",
-    "spec": {
-        "logLevel": "Normal",
-        "managementState": "Managed",
-        "observedConfig": {
-            "build": {
-                "buildDefaults": {
-                    "resources": {}
-                },
-                "imageTemplateFormat": {
-                    "format": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2986a09ed686a571312bcb20d648baac46b422efa072f8b68eb41c7996e94610"
-                }
-            },
-            "deployer": {
-                "imageTemplateFormat": {
-                    "format": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:f42509c18cf5e41201d64cf3a9c1994ffa5318f8d7cee5de45fa2da914e68bbc"
-                }
-            },
-            "dockerPullSecret": {
-                "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
-            },
-            "ingress": {
-                "ingressIPNetworkCIDR": ""
-            }
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "OpenShiftControllerManager",
+  "name": "cluster",
+  "spec": {
+    "logLevel": "Normal",
+    "managementState": "Managed",
+    "observedConfig": {
+      "build": {
+        "buildDefaults": {
+          "resources": {}
         },
-        "operatorLogLevel": "Normal",
-        "unsupportedConfigOverrides": null
-    }
+        "imageTemplateFormat": {
+          "format": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:16564804f8a13796eb7b730c42b00ec2cc1c44aea41cc46de5e180be0b358163"
+        }
+      },
+      "deployer": {
+        "imageTemplateFormat": {
+          "format": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c88e172185957a75ab055ed2a80b787ff86b71ecc5e076efef851529c500313e"
+        }
+      },
+      "dockerPullSecret": {
+        "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
+      },
+      "ingress": {
+        "ingressIPNetworkCIDR": ""
+      }
+    },
+    "operatorLogLevel": "Normal",
+    "unsupportedConfigOverrides": null
+  }
 }

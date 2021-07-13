@@ -1,45 +1,43 @@
 {
-    "apiVersion": "operator.openshift.io/v1",
-    "kind": "OpenShiftAPIServer",
-    "name": "cluster",
-    "spec": {
-        "logLevel": "Normal",
-        "managementState": "Managed",
-        "observedConfig": {
-            "apiServerArguments": {
-                "audit-policy-file": [
-                    "/var/run/configmaps/audit/secure-oauth-storage-default.yaml"
-                ]
-            },
-            "imagePolicyConfig": {
-                "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
-            },
-            "projectConfig": {
-                "projectRequestMessage": ""
-            },
-            "routingConfig": {
-                "subdomain": "apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com"
-            },
-            "servingInfo": {
-                "cipherSuites": [
-                    "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-                    "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
-                ],
-                "minTLSVersion": "VersionTLS12"
-            },
-            "storageConfig": {
-                "urls": [
-                    "https://10.0.0.3:2379",
-                    "https://10.0.0.4:2379",
-                    "https://10.0.0.5:2379"
-                ]
-            }
-        },
-        "operatorLogLevel": "Normal",
-        "unsupportedConfigOverrides": null
-    }
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "OpenShiftAPIServer",
+  "name": "cluster",
+  "spec": {
+    "logLevel": "Normal",
+    "managementState": "Managed",
+    "observedConfig": {
+      "apiServerArguments": {
+        "audit-policy-file": [
+          "/var/run/configmaps/audit/secure-oauth-storage-default.yaml"
+        ]
+      },
+      "imagePolicyConfig": {
+        "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
+      },
+      "projectConfig": {
+        "projectRequestMessage": ""
+      },
+      "routingConfig": {
+        "subdomain": "apps.imeixner20210707.lab.upshift.rdu2.redhat.com"
+      },
+      "servingInfo": {
+        "cipherSuites": [
+          "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+          "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+          "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+          "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+          "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+          "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+        ],
+        "minTLSVersion": "VersionTLS12"
+      },
+      "storageConfig": {
+        "urls": [
+          "https://10.0.88.27:2379"
+        ]
+      }
+    },
+    "operatorLogLevel": "Normal",
+    "unsupportedConfigOverrides": null
+  }
 }

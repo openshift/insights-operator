@@ -1,80 +1,80 @@
 {
-    "apiVersion": "operator.openshift.io/v1",
-    "kind": "Authentication",
-    "name": "cluster",
-    "spec": {
-        "logLevel": "Normal",
-        "managementState": "Managed",
-        "observedConfig": {
-            "oauthAPIServer": {
-                "apiServerArguments": {
-                    "audit-policy-file": [
-                        "/var/run/configmaps/audit/secure-oauth-storage-default.yaml"
-                    ],
-                    "cors-allowed-origins": [
-                        "//127\\.0\\.0\\.1(:|$)",
-                        "//localhost(:|$)"
-                    ],
-                    "etcd-servers": [
-                        "https://10.0.0.3:2379",
-                        "https://10.0.0.4:2379",
-                        "https://10.0.0.5:2379"
-                    ],
-                    "tls-cipher-suites": [
-                        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-                        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-                        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-                        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
-                    ],
-                    "tls-min-version": "VersionTLS12"
-                }
-            },
-            "oauthServer": {
-                "corsAllowedOrigins": [
-                    "//127\\.0\\.0\\.1(:|$)",
-                    "//localhost(:|$)"
-                ],
-                "oauthConfig": {
-                    "assetPublicURL": "https://console-openshift-console.apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com",
-                    "loginURL": "https://api.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com:6443",
-                    "templates": {
-                        "error": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/errors.html",
-                        "login": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/login.html",
-                        "providerSelection": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/providers.html"
-                    },
-                    "tokenConfig": {
-                        "accessTokenMaxAgeSeconds": 86400,
-                        "authorizeTokenMaxAgeSeconds": 300
-                    }
-                },
-                "servingInfo": {
-                    "cipherSuites": [
-                        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-                        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-                        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-                        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
-                    ],
-                    "minTLSVersion": "VersionTLS12",
-                    "namedCertificates": [
-                        {
-                            "certFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com",
-                            "keyFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com",
-                            "names": [
-                                "*.apps.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com"
-                            ]
-                        }
-                    ]
-                },
-                "volumesToMount": {
-                    "identityProviders": "{}"
-                }
-            }
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "Authentication",
+  "name": "cluster",
+  "spec": {
+    "logLevel": "Normal",
+    "managementState": "Managed",
+    "observedConfig": {
+      "oauthAPIServer": {
+        "apiServerArguments": {
+          "audit-policy-file": [
+            "/var/run/configmaps/audit/secure-oauth-storage-default.yaml"
+          ],
+          "cors-allowed-origins": [
+            "//127\\.0\\.0\\.1(:|$)",
+            "//localhost(:|$)"
+          ],
+          "etcd-servers": [
+            "https://10.0.88.27:2379"
+          ],
+          "tls-cipher-suites": [
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+          ],
+          "tls-min-version": "VersionTLS12"
+        }
+      },
+      "oauthServer": {
+        "corsAllowedOrigins": [
+          "//127\\.0\\.0\\.1(:|$)",
+          "//localhost(:|$)"
+        ],
+        "oauthConfig": {
+          "assetPublicURL": "https://console-openshift-console.apps.imeixner20210707.lab.upshift.rdu2.redhat.com",
+          "loginURL": "https://api.imeixner20210707.lab.upshift.rdu2.redhat.com:6443",
+          "templates": {
+            "error": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/errors.html",
+            "login": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/login.html",
+            "providerSelection": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template/providers.html"
+          },
+          "tokenConfig": {
+            "accessTokenMaxAgeSeconds": 86400,
+            "authorizeTokenMaxAgeSeconds": 300
+          }
         },
-        "operatorLogLevel": "Normal",
-        "unsupportedConfigOverrides": null
+        "servingInfo": {
+          "cipherSuites": [
+            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+            "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+          ],
+          "minTLSVersion": "VersionTLS12",
+          "namedCertificates": [
+            {
+              "certFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.imeixner20210707.lab.upshift.rdu2.redhat.com",
+              "keyFile": "/var/config/system/secrets/v4-0-config-system-router-certs/apps.imeixner20210707.lab.upshift.rdu2.redhat.com",
+              "names": [
+                "*.apps.imeixner20210707.lab.upshift.rdu2.redhat.com"
+              ]
+            }
+          ]
+        },
+        "volumesToMount": {
+          "identityProviders": "{}"
+        }
+      }
+    },
+    "operatorLogLevel": "Normal",
+    "unsupportedConfigOverrides": {
+      "useUnsupportedUnsafeNonHANonProductionUnstableOAuthServer": true
     }
+  }
 }

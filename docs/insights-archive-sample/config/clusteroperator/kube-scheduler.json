@@ -4,10 +4,15 @@
   "metadata": {
     "name": "kube-scheduler",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-scheduler",
-    "uid": "04b7821e-5e3e-429c-8fe0-12f5cf88cd57",
-    "resourceVersion": "22396",
+    "uid": "7c340a26-0a9e-4d1d-8965-9e46eac39198",
+    "resourceVersion": "340478",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:28Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,43 +20,44 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:33Z",
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
         "reason": "AsExpected",
         "message": "NodeControllerDegraded: All master nodes are ready"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:55:57Z",
+        "lastTransitionTime": "2021-07-07T11:37:42Z",
         "reason": "AsExpected",
-        "message": "NodeInstallerProgressing: 3 nodes are at revision 9"
+        "message": "NodeInstallerProgressing: 1 nodes are at revision 7"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:31:55Z",
+        "lastTransitionTime": "2021-07-07T11:33:16Z",
         "reason": "AsExpected",
-        "message": "StaticPodsAvailable: 3 nodes are active; 3 nodes are at revision 9"
+        "message": "StaticPodsAvailable: 1 nodes are active; 1 nodes are at revision 7"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:28Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       }
     ],
     "versions": [
       {
         "name": "raw-internal",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "kube-scheduler",
-        "version": "1.17.1"
+        "version": "1.20.0-beta.2"
       },
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -61,9 +67,19 @@
         "name": "cluster"
       },
       {
+        "group": "config.openshift.io",
+        "resource": "schedulers",
+        "name": ""
+      },
+      {
         "group": "",
         "resource": "namespaces",
         "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
       },
       {
         "group": "",
@@ -74,6 +90,12 @@
         "group": "",
         "resource": "namespaces",
         "name": "openshift-kube-scheduler-operator"
+      },
+      {
+        "group": "controlplane.operator.openshift.io",
+        "resource": "podnetworkconnectivitychecks",
+        "namespace": "openshift-kube-apiserver",
+        "name": ""
       }
     ],
     "extension": null

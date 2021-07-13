@@ -1,115 +1,102 @@
 {
-    "apiVersion": "operator.openshift.io/v1",
-    "kind": "KubeAPIServer",
-    "name": "cluster",
-    "spec": {
-        "logLevel": "Normal",
-        "managementState": "Managed",
-        "observedConfig": {
-            "admission": {
-                "pluginConfig": {
-                    "network.openshift.io/ExternalIPRanger": {
-                        "configuration": {
-                            "allowIngressIP": false,
-                            "apiVersion": "network.openshift.io/v1",
-                            "kind": "ExternalIPRangerAdmissionConfig"
-                        }
-                    },
-                    "network.openshift.io/RestrictedEndpointsAdmission": {
-                        "configuration": {
-                            "apiVersion": "network.openshift.io/v1",
-                            "kind": "RestrictedEndpointsAdmissionConfig",
-                            "restrictedCIDRs": [
-                                "10.128.0.0/14",
-                                "172.30.0.0/16"
-                            ]
-                        }
-                    }
-                }
-            },
-            "apiServerArguments": {
-                "audit-policy-file": [
-                    "/etc/kubernetes/static-pod-resources/configmaps/kube-apiserver-audit-policies/default.yaml"
-                ],
-                "authentication-token-webhook-config-file": [
-                    "/etc/kubernetes/static-pod-resources/secrets/webhook-authenticator/kubeConfig"
-                ],
-                "authentication-token-webhook-version": [
-                    "v1"
-                ],
-                "cloud-config": [
-                    "/etc/kubernetes/static-pod-resources/configmaps/cloud-config/config"
-                ],
-                "cloud-provider": [
-                    "gce"
-                ],
-                "etcd-servers": [
-                    "https://10.0.0.3:2379",
-                    "https://10.0.0.4:2379",
-                    "https://10.0.0.5:2379",
-                    "https://localhost:2379"
-                ],
-                "feature-gates": [
-                    "APIPriorityAndFairness=true",
-                    "RotateKubeletServerCertificate=true",
-                    "SupportPodPidsLimit=true",
-                    "NodeDisruptionExclusion=true",
-                    "ServiceNodeExclusion=true",
-                    "DownwardAPIHugePages=true",
-                    "LegacyNodeRoleBehavior=false"
-                ],
-                "service-account-jwks-uri": [
-                    "https://api-int.ci-ln-qwj5ixk-f76d1.origin-ci-int-gce.dev.openshift.com:6443/openid/v1/jwks"
-                ]
-            },
-            "authConfig": {
-                "oauthMetadataFile": "/etc/kubernetes/static-pod-resources/configmaps/oauth-metadata/oauthMetadata"
-            },
-            "corsAllowedOrigins": [
-                "//127\\.0\\.0\\.1(:|$)",
-                "//localhost(:|$)"
-            ],
-            "imagePolicyConfig": {
-                "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
-            },
-            "servicesSubnet": "172.30.0.0/16",
-            "servingInfo": {
-                "bindAddress": "0.0.0.0:6443",
-                "bindNetwork": "tcp4",
-                "cipherSuites": [
-                    "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-                    "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-                    "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-                    "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
-                ],
-                "minTLSVersion": "VersionTLS12",
-                "namedCertificates": [
-                    {
-                        "certFile": "/etc/kubernetes/static-pod-certs/secrets/localhost-serving-cert-certkey/tls.crt",
-                        "keyFile": "/etc/kubernetes/static-pod-certs/secrets/localhost-serving-cert-certkey/tls.key"
-                    },
-                    {
-                        "certFile": "/etc/kubernetes/static-pod-certs/secrets/service-network-serving-certkey/tls.crt",
-                        "keyFile": "/etc/kubernetes/static-pod-certs/secrets/service-network-serving-certkey/tls.key"
-                    },
-                    {
-                        "certFile": "/etc/kubernetes/static-pod-certs/secrets/external-loadbalancer-serving-certkey/tls.crt",
-                        "keyFile": "/etc/kubernetes/static-pod-certs/secrets/external-loadbalancer-serving-certkey/tls.key"
-                    },
-                    {
-                        "certFile": "/etc/kubernetes/static-pod-certs/secrets/internal-loadbalancer-serving-certkey/tls.crt",
-                        "keyFile": "/etc/kubernetes/static-pod-certs/secrets/internal-loadbalancer-serving-certkey/tls.key"
-                    },
-                    {
-                        "certFile": "/etc/kubernetes/static-pod-resources/secrets/localhost-recovery-serving-certkey/tls.crt",
-                        "keyFile": "/etc/kubernetes/static-pod-resources/secrets/localhost-recovery-serving-certkey/tls.key"
-                    }
-                ]
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "KubeAPIServer",
+  "name": "cluster",
+  "spec": {
+    "logLevel": "Normal",
+    "managementState": "Managed",
+    "observedConfig": {
+      "admission": {
+        "pluginConfig": {
+          "network.openshift.io/ExternalIPRanger": {
+            "configuration": {
+              "allowIngressIP": false,
+              "apiVersion": "network.openshift.io/v1",
+              "kind": "ExternalIPRangerAdmissionConfig"
             }
-        },
-        "operatorLogLevel": "Normal",
-        "unsupportedConfigOverrides": null
-    }
+          },
+          "network.openshift.io/RestrictedEndpointsAdmission": {
+            "configuration": {
+              "apiVersion": "network.openshift.io/v1",
+              "kind": "RestrictedEndpointsAdmissionConfig",
+              "restrictedCIDRs": [
+                "10.128.0.0/14",
+                "172.30.0.0/16"
+              ]
+            }
+          }
+        }
+      },
+      "apiServerArguments": {
+        "audit-policy-file": [
+          "/etc/kubernetes/static-pod-resources/configmaps/kube-apiserver-audit-policies/default.yaml"
+        ],
+        "etcd-servers": [
+          "https://10.0.88.27:2379",
+          "https://localhost:2379"
+        ],
+        "feature-gates": [
+          "APIPriorityAndFairness=true",
+          "RotateKubeletServerCertificate=true",
+          "SupportPodPidsLimit=true",
+          "NodeDisruptionExclusion=true",
+          "ServiceNodeExclusion=true",
+          "SCTPSupport=true",
+          "LegacyNodeRoleBehavior=false",
+          "RemoveSelfLink=false"
+        ],
+        "service-account-jwks-uri": [
+          "https://api-int.imeixner20210707.lab.upshift.rdu2.redhat.com:6443/openid/v1/jwks"
+        ]
+      },
+      "authConfig": {
+        "oauthMetadataFile": "/etc/kubernetes/static-pod-resources/configmaps/oauth-metadata/oauthMetadata"
+      },
+      "corsAllowedOrigins": [
+        "//127\\.0\\.0\\.1(:|$)",
+        "//localhost(:|$)"
+      ],
+      "imagePolicyConfig": {
+        "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
+      },
+      "servicesSubnet": "172.30.0.0/16",
+      "servingInfo": {
+        "bindAddress": "0.0.0.0:6443",
+        "bindNetwork": "tcp4",
+        "cipherSuites": [
+          "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+          "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+          "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+          "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+          "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+          "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+        ],
+        "minTLSVersion": "VersionTLS12",
+        "namedCertificates": [
+          {
+            "certFile": "/etc/kubernetes/static-pod-certs/secrets/localhost-serving-cert-certkey/tls.crt",
+            "keyFile": "/etc/kubernetes/static-pod-certs/secrets/localhost-serving-cert-certkey/tls.key"
+          },
+          {
+            "certFile": "/etc/kubernetes/static-pod-certs/secrets/service-network-serving-certkey/tls.crt",
+            "keyFile": "/etc/kubernetes/static-pod-certs/secrets/service-network-serving-certkey/tls.key"
+          },
+          {
+            "certFile": "/etc/kubernetes/static-pod-certs/secrets/external-loadbalancer-serving-certkey/tls.crt",
+            "keyFile": "/etc/kubernetes/static-pod-certs/secrets/external-loadbalancer-serving-certkey/tls.key"
+          },
+          {
+            "certFile": "/etc/kubernetes/static-pod-certs/secrets/internal-loadbalancer-serving-certkey/tls.crt",
+            "keyFile": "/etc/kubernetes/static-pod-certs/secrets/internal-loadbalancer-serving-certkey/tls.key"
+          },
+          {
+            "certFile": "/etc/kubernetes/static-pod-resources/secrets/localhost-recovery-serving-certkey/tls.crt",
+            "keyFile": "/etc/kubernetes/static-pod-resources/secrets/localhost-recovery-serving-certkey/tls.key"
+          }
+        ]
+      }
+    },
+    "operatorLogLevel": "Normal",
+    "unsupportedConfigOverrides": null
+  }
 }

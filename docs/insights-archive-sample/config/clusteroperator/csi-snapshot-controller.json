@@ -4,10 +4,15 @@
   "metadata": {
     "name": "csi-snapshot-controller",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/csi-snapshot-controller",
-    "uid": "d5fbeac0-a4f7-4caa-85a3-5bbbbe61b2e6",
-    "resourceVersion": "20696",
+    "uid": "6a83f2a2-6e5b-415d-a935-9eec7f9212d6",
+    "resourceVersion": "6498",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:53:35Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,36 +20,40 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:53:35Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:53:51Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:37Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:53:51Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:43Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:53:38Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:32Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       }
     ],
     "versions": [
       {
-        "name": "csi-snapshot-controller",
-        "version": "4.4.16"
+        "name": "operator",
+        "version": "4.7.16"
       },
       {
-        "name": "operator",
-        "version": "4.4.16"
+        "name": "csi-snapshot-controller",
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [

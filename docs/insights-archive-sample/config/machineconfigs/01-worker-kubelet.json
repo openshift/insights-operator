@@ -1,111 +1,55 @@
 {
-    "apiVersion": "machineconfiguration.openshift.io/v1",
-    "kind": "MachineConfig",
-    "metadata": {
-        "annotations": {
-            "machineconfiguration.openshift.io/generated-by-controller-version": "c4b7e3f5118d62fc3aaaa1fed5eb9ba0d12792de"
-        },
-        "creationTimestamp": "2021-06-14T09:51:38Z",
-        "generation": 1,
-        "labels": {
-            "machineconfiguration.openshift.io/role": "worker"
-        },
-        "managedFields": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:annotations": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/generated-by-controller-version": {}
-                        },
-                        "f:labels": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/role": {}
-                        },
-                        "f:ownerReferences": {
-                            ".": {},
-                            "k:{\"uid\":\"68f9cf4f-8c71-4cd5-a82b-a24e8dfa59a4\"}": {
-                                ".": {},
-                                "f:apiVersion": {},
-                                "f:blockOwnerDeletion": {},
-                                "f:controller": {},
-                                "f:kind": {},
-                                "f:name": {},
-                                "f:uid": {}
-                            }
-                        }
-                    },
-                    "f:spec": {
-                        ".": {},
-                        "f:config": {
-                            ".": {},
-                            "f:ignition": {
-                                ".": {},
-                                "f:version": {}
-                            },
-                            "f:storage": {
-                                ".": {},
-                                "f:files": {}
-                            },
-                            "f:systemd": {
-                                ".": {},
-                                "f:units": {}
-                            }
-                        },
-                        "f:extensions": {},
-                        "f:fips": {},
-                        "f:kernelArguments": {},
-                        "f:kernelType": {},
-                        "f:osImageURL": {}
-                    }
-                },
-                "manager": "machine-config-controller",
-                "operation": "Update",
-                "time": "2021-06-14T09:51:38Z"
-            }
-        ],
-        "name": "01-worker-kubelet",
-        "ownerReferences": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "blockOwnerDeletion": true,
-                "controller": true,
-                "kind": "ControllerConfig",
-                "name": "machine-config-controller",
-                "uid": "68f9cf4f-8c71-4cd5-a82b-a24e8dfa59a4"
-            }
-        ],
-        "resourceVersion": "7551",
-        "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/01-worker-kubelet",
-        "uid": "e971f0a5-5399-4455-8847-0bd29bc4264b"
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "annotations": {
+      "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
     },
-    "spec": {
-        "config": {
-            "ignition": {
-                "version": "3.2.0"
-            },
-            "passwd": {
-                "users": null
-            },
-            "storage": {
-                "files": null
-            },
-            "systemd": {
-                "units": [
-                    {
-                        "contents": "[Unit]\nDescription=Kubernetes Kubelet\nWants=rpc-statd.service network-online.target crio.service\nAfter=network-online.target crio.service\nAfter=ostree-finalize-staged.service\n\n[Service]\nType=notify\nExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests\nExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state\nEnvironmentFile=/etc/os-release\nEnvironmentFile=-/etc/kubernetes/kubelet-workaround\nEnvironmentFile=-/etc/kubernetes/kubelet-env\n\nExecStart=/usr/bin/hyperkube \\\n    kubelet \\\n      --config=/etc/kubernetes/kubelet.conf \\\n      --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig \\\n      --kubeconfig=/var/lib/kubelet/kubeconfig \\\n      --container-runtime=remote \\\n      --container-runtime-endpoint=/var/run/crio/crio.sock \\\n      --runtime-cgroups=/system.slice/crio.service \\\n      --node-labels=node-role.kubernetes.io/worker,node.openshift.io/os_id=${ID} \\\n      --node-ip=${KUBELET_NODE_IP} \\\n      --minimum-container-ttl-duration=6m0s \\\n      --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec \\\n      --cloud-provider=aws \\\n       \\\n      --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:fae531c9a94b12f41c6fcaaecd99e6b40de3e550d1ce86ed110ffd71ccff128d \\\n      --v=${KUBELET_LOG_LEVEL}\n\nRestart=always\nRestartSec=10\n\n[Install]\nWantedBy=multi-user.target\n",
-                        "enabled": true,
-                        "name": "kubelet.service"
-                    }
-                ]
-            }
-        },
-        "extensions": null,
-        "fips": false,
-        "kernelArguments": null,
-        "kernelType": "",
-        "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5649fe979b5ebe2615344d398ee0a841c9ea49d72be9edaf4048ccea5a729c32"
-    }
+    "creationTimestamp": "2021-07-07T11:26:59Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "worker"
+    },
+    "name": "01-worker-kubelet",
+    "ownerReferences": [
+      {
+        "apiVersion": "machineconfiguration.openshift.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ControllerConfig",
+        "name": "machine-config-controller",
+        "uid": "07498a84-c3bf-4eec-9cc3-8cb0ad1e32c2"
+      }
+    ],
+    "resourceVersion": "7317",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/01-worker-kubelet",
+    "uid": "05c84894-7f6b-4b8f-ae41-a7a76282e5e3"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      },
+      "systemd": {
+        "units": [
+          {
+            "contents": "[Unit]\nDescription=Kubernetes Kubelet\nWants=rpc-statd.service network-online.target crio.service\nAfter=network-online.target crio.service\nAfter=ostree-finalize-staged.service\n\n[Service]\nType=notify\nExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests\nExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state\nEnvironmentFile=/etc/os-release\nEnvironmentFile=-/etc/kubernetes/kubelet-workaround\nEnvironmentFile=-/etc/kubernetes/kubelet-env\n\nExecStart=/usr/bin/hyperkube \\\n    kubelet \\\n      --config=/etc/kubernetes/kubelet.conf \\\n      --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig \\\n      --kubeconfig=/var/lib/kubelet/kubeconfig \\\n      --container-runtime=remote \\\n      --container-runtime-endpoint=/var/run/crio/crio.sock \\\n      --runtime-cgroups=/system.slice/crio.service \\\n      --node-labels=node-role.kubernetes.io/worker,node.openshift.io/os_id=${ID} \\\n      --node-ip=${KUBELET_NODE_IP} \\\n      --minimum-container-ttl-duration=6m0s \\\n      --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec \\\n      --cloud-provider= \\\n       \\\n      --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:f2cd141d802e4be7d223f16b810522921e8e1ecf020b6b6d6591fcd68617df40 \\\n      --v=${KUBELET_LOG_LEVEL}\n\nRestart=always\nRestartSec=10\n\n[Install]\nWantedBy=multi-user.target\n",
+            "enabled": true,
+            "name": "kubelet.service"
+          }
+        ]
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1c91baf8b4498144cfd87383a712639ebe14639c1dfd163c37c423713c935958"
+  }
 }

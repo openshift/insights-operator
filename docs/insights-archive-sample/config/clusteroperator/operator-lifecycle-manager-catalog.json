@@ -4,10 +4,13 @@
   "metadata": {
     "name": "operator-lifecycle-manager-catalog",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/operator-lifecycle-manager-catalog",
-    "uid": "65908fa6-043e-4b39-bb2c-ddf9102230f5",
-    "resourceVersion": "10244",
+    "uid": "e4f812fb-b49b-47f2-b352-2ea2bf5b7e8e",
+    "resourceVersion": "11400",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:58Z"
+    "creationTimestamp": "2021-07-07T11:02:55Z",
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,33 +18,33 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:29:58Z"
+        "lastTransitionTime": "2021-07-07T11:26:53Z"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:35:03Z",
-        "message": "Deployed 0.14.2"
+        "lastTransitionTime": "2021-07-07T11:31:58Z",
+        "message": "Deployed 0.17.0"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:58Z"
+        "lastTransitionTime": "2021-07-07T11:26:53Z"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:58Z"
+        "lastTransitionTime": "2021-07-07T11:26:53Z"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "operator-lifecycle-manager",
-        "version": "0.14.2"
+        "version": "0.17.0"
       }
     ],
     "relatedObjects": [

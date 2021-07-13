@@ -1,0 +1,18 @@
+{
+  "kind": "HostSubnet",
+  "apiVersion": "network.openshift.io/v1",
+  "metadata": {
+    "name": "worker-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "selfLink": "/apis/network.openshift.io/v1/hostsubnets/worker-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "uid": "9749efb0-7bdd-47c6-a271-0b336675aed2",
+    "resourceVersion": "11745",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:32:20Z",
+    "annotations": {
+      "pod.network.openshift.io/node-uid": "c60afb88-bd0b-464d-af1e-e1465bf90f84"
+    }
+  },
+  "host": "worker-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+  "hostIP": "10.0.89.93",
+  "subnet": "10.129.0.0/23"
+}

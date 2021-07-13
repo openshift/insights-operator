@@ -4,10 +4,15 @@
   "metadata": {
     "name": "openshift-controller-manager",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-controller-manager",
-    "uid": "58b18a5f-2aae-4009-ad62-dd1eb8874c8a",
-    "resourceVersion": "17098",
+    "uid": "89c61713-bb7c-4665-a8dc-fb857557b71e",
+    "resourceVersion": "339527",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:23Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,32 +20,35 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:29:23Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:27Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:17Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-08T10:58:23Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:51:17Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-08T10:58:23Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Upgradeable",
         "status": "Unknown",
-        "lastTransitionTime": "2020-08-12T08:29:23Z",
+        "lastTransitionTime": "2021-07-07T11:26:27Z",
         "reason": "NoData"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [

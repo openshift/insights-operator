@@ -4,43 +4,52 @@
   "metadata": {
     "name": "storage",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/storage",
-    "uid": "1763b45e-b455-4b0d-b2b4-9566956c43b1",
-    "resourceVersion": "14392",
+    "uid": "301a5173-42f5-4c6c-8436-32cb8fe89bb2",
+    "resourceVersion": "5378",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:49:33Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
     "conditions": [
       {
-        "type": "Available",
-        "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:33Z",
-        "reason": "AsExpected"
-      },
-      {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:33Z",
-        "reason": "AsExpected"
-      },
-      {
-        "type": "Upgradeable",
-        "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:33Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:28Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:33Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:30Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:26:30Z",
+        "reason": "AsExpected",
+        "message": "DefaultStorageClassControllerAvailable: No default StorageClass for this platform"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -50,14 +59,14 @@
         "name": "openshift-cluster-storage-operator"
       },
       {
-        "group": "config.openshift.io",
-        "resource": "infrastructures",
-        "name": "cluster"
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-csi-drivers"
       },
       {
-        "group": "storage.k8s.io",
-        "resource": "storageclasses",
-        "name": "standard"
+        "group": "operator.openshift.io",
+        "resource": "storages",
+        "name": "cluster"
       }
     ],
     "extension": null

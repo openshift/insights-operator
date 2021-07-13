@@ -4,48 +4,55 @@
   "metadata": {
     "name": "dns",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/dns",
-    "uid": "9e12ef60-797c-4b15-894d-9ed69376b28d",
-    "resourceVersion": "20760",
+    "uid": "99fc991a-1bb0-45bb-bb5d-836e74258581",
+    "resourceVersion": "8825",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:53Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true"
+    }
   },
   "spec": {},
   "status": {
     "conditions": [
       {
-        "type": "Degraded",
-        "status": "False",
-        "lastTransitionTime": "2020-08-12T08:53:43Z",
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:27:45Z",
         "reason": "AsExpected",
-        "message": "All desired DNS DaemonSets available and operand Namespace exists"
+        "message": "DNS default is available"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:53:55Z",
+        "lastTransitionTime": "2021-07-07T11:27:45Z",
         "reason": "AsExpected",
-        "message": "Desired and available number of DNS DaemonSets are equal"
+        "message": "desired and current number of DNSes are equal"
       },
       {
-        "type": "Available",
-        "status": "True",
-        "lastTransitionTime": "2020-08-12T08:30:13Z",
-        "reason": "AsExpected",
-        "message": "At least 1 DNS DaemonSet available"
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:27:45Z",
+        "reason": "DNSNotDegraded"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "coredns",
-        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47287ccd6a1c1f2054bb9275d66c2800fbf96057750dc5fd83c076acc1ce108b"
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:ad08b23717af078a89f93a097f32abe9262daf9e32d124f8b1c6437efddb82e7"
       },
       {
         "name": "openshift-cli",
-        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1390e9392cdd38fc3d1d557088fba68855f4dacd3a9b4b2ccac730f28c86f134"
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:7c6d0a0fed7ddb95550623aa23c434446fb99abef18e6d57b8b12add606efde8"
+      },
+      {
+        "name": "kube-rbac-proxy",
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:37ee4cf8184666792caa983611ab8d58dfd533c7cc7abe9f81a22a81876d9cd2"
       }
     ],
     "relatedObjects": [
@@ -55,14 +62,14 @@
         "name": "openshift-dns-operator"
       },
       {
+        "group": "operator.openshift.io",
+        "resource": "dnses",
+        "name": "default"
+      },
+      {
         "group": "",
         "resource": "namespaces",
         "name": "openshift-dns"
-      },
-      {
-        "group": "operator.openshift.io",
-        "resource": "DNS",
-        "name": ""
       }
     ],
     "extension": null

@@ -1,73 +1,37 @@
 {
-    "apiVersion": "machine.openshift.io/v1beta1",
-    "kind": "MachineHealthCheck",
-    "metadata": {
-        "annotations": {
-            "exclude.release.openshift.io/internal-openshift-hosted": "true",
-            "include.release.openshift.io/self-managed-high-availability": "true"
-        },
-        "creationTimestamp": "2021-05-06T14:22:08Z",
-        "generation": 1,
-        "labels": {
-            "api": "clsuterapi",
-            "k8s-app": "termination-handler"
-        },
-        "managedFields": [
-            {
-                "apiVersion": "machine.openshift.io/v1beta1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:annotations": {
-                            ".": {},
-                            "f:exclude.release.openshift.io/internal-openshift-hosted": {},
-                            "f:include.release.openshift.io/self-managed-high-availability": {}
-                        },
-                        "f:labels": {
-                            ".": {},
-                            "f:api": {},
-                            "f:k8s-app": {}
-                        }
-                    },
-                    "f:spec": {
-                        ".": {},
-                        "f:maxUnhealthy": {},
-                        "f:nodeStartupTimeout": {},
-                        "f:selector": {
-                            ".": {},
-                            "f:matchLabels": {
-                                ".": {},
-                                "f:machine.openshift.io/interruptible-instance": {}
-                            }
-                        },
-                        "f:unhealthyConditions": {}
-                    }
-                },
-                "manager": "cluster-version-operator",
-                "operation": "Update",
-                "time": "2021-05-06T14:22:08Z"
-            }
-        ],
-        "name": "machine-api-termination-handler",
-        "namespace": "openshift-machine-api",
-        "resourceVersion": "7446",
-        "selfLink": "/apis/machine.openshift.io/v1beta1/namespaces/openshift-machine-api/machinehealthchecks/machine-api-termination-handler",
-        "uid": "7892d287-be94-4ae7-a65b-29dd78057e32"
+  "apiVersion": "machine.openshift.io/v1beta1",
+  "kind": "MachineHealthCheck",
+  "metadata": {
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true"
     },
-    "spec": {
-        "maxUnhealthy": "100%",
-        "nodeStartupTimeout": "10m",
-        "selector": {
-            "matchLabels": {
-                "machine.openshift.io/interruptible-instance": ""
-            }
-        },
-        "unhealthyConditions": [
-            {
-                "status": "True",
-                "timeout": "0s",
-                "type": "Terminating"
-            }
-        ]
-    }
+    "creationTimestamp": "2021-07-07T11:27:29Z",
+    "generation": 1,
+    "labels": {
+      "api": "clsuterapi",
+      "k8s-app": "termination-handler"
+    },
+    "name": "machine-api-termination-handler",
+    "namespace": "openshift-machine-api",
+    "resourceVersion": "8415",
+    "selfLink": "/apis/machine.openshift.io/v1beta1/namespaces/openshift-machine-api/machinehealthchecks/machine-api-termination-handler",
+    "uid": "b2408d9a-014f-4027-8cb4-20688fbf90da"
+  },
+  "spec": {
+    "maxUnhealthy": "100%",
+    "nodeStartupTimeout": "10m",
+    "selector": {
+      "matchLabels": {
+        "machine.openshift.io/interruptible-instance": ""
+      }
+    },
+    "unhealthyConditions": [
+      {
+        "status": "True",
+        "timeout": "0s",
+        "type": "Terminating"
+      }
+    ]
+  }
 }

@@ -4,10 +4,15 @@
   "metadata": {
     "name": "machine-api",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/machine-api",
-    "uid": "94f3c3b9-70f2-4793-b8b2-e524cea43afa",
-    "resourceVersion": "24080",
+    "uid": "d6500bfd-8a8d-40e7-a649-f9acd87afe33",
+    "resourceVersion": "8409",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:49:36Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,29 +20,32 @@
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:50:15Z"
-      },
-      {
-        "type": "Available",
-        "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:39Z",
-        "message": "Cluster Machine API Operator is available at operator: 4.4.16"
+        "lastTransitionTime": "2021-07-07T11:27:29Z",
+        "reason": "AsExpected"
       },
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:39Z"
+        "lastTransitionTime": "2021-07-07T11:27:29Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:27:29Z",
+        "reason": "AsExpected",
+        "message": "Cluster Machine API Operator is available at operator: 4.7.16"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:39Z"
+        "lastTransitionTime": "2021-07-07T11:27:29Z"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -59,6 +67,12 @@
         "name": ""
       },
       {
+        "group": "machine.openshift.io",
+        "resource": "machinehealthchecks",
+        "namespace": "openshift-machine-api",
+        "name": ""
+      },
+      {
         "group": "rbac.authorization.k8s.io",
         "resource": "roles",
         "namespace": "openshift-machine-api",
@@ -75,10 +89,10 @@
         "name": "machine-api-controllers"
       },
       {
-        "group": "rbac.authorization.k8s.io",
-        "resource": "roles",
-        "namespace": "openshift-config",
-        "name": "cloud-provider-config-reader"
+        "group": "metal3.io",
+        "resource": "baremetalhosts",
+        "namespace": "openshift-machine-api",
+        "name": ""
       }
     ],
     "extension": null
