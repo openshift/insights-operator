@@ -51,6 +51,8 @@ func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1In
 func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *installertypes.InstallConfig {
 	installConfig.SSHKey = anonymize.String(installConfig.SSHKey)
 	installConfig.PullSecret = anonymize.String(installConfig.PullSecret)
+	// we don't use it
+	installConfig.BaseDomain = anonymize.String(installConfig.BaseDomain)
 
 	return installConfig
 }
