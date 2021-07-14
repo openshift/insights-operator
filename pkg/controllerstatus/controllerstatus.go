@@ -61,6 +61,7 @@ func (s *Simple) UpdateStatus(summary Summary) {
 		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
 		s.summary.Reason = summary.Reason
 		s.summary.Message = summary.Message
+		s.summary.Operation = summary.Operation
 		return
 	}
 }
