@@ -2,16 +2,15 @@
   "metadata": {
     "name": "cluster-config-v1",
     "namespace": "kube-system",
-    "selfLink": "/api/v1/namespaces/kube-system/configmaps/cluster-config-v1",
-    "uid": "f64b1104-65ea-4b93-9fac-113fcd0cd0ef",
-    "resourceVersion": "216",
-    "creationTimestamp": "2021-06-14T14:29:27Z",
+    "uid": "f1162de2-aed6-4100-bb69-bef918e3abfc",
+    "resourceVersion": "231",
+    "creationTimestamp": "2021-07-12T12:31:18Z",
     "managedFields": [
       {
         "manager": "cluster-bootstrap",
         "operation": "Update",
         "apiVersion": "v1",
-        "time": "2021-06-14T14:29:27Z",
+        "time": "2021-07-12T12:31:18Z",
         "fieldsType": "FieldsV1",
         "fieldsV1": {
           "f:data": {
@@ -23,6 +22,6 @@
     ]
   },
   "data": {
-    "install-config": "apiVersion: v1\nbaseDomain: ccxdev.devshift.net\ncompute:\n- architecture: amd64\n  hyperthreading: Enabled\n  name: worker\n  platform: {}\n  replicas: 3\ncontrolPlane:\n  architecture: amd64\n  hyperthreading: Enabled\n  name: master\n  platform:\n    aws:\n      amiID: ami-0a1f868ad58ea59a7\n      rootVolume:\n        iops: 0\n        size: 120\n        type: gp2\n      type: m5.xlarge\n      zones:\n      - us-east-2a\n      - us-east-2b\n      - us-east-2c\n  replicas: 3\nmetadata:\n  creationTimestamp: null\n  name: cluster.szakharo.14.06.2021\nnetworking:\n  clusterNetwork:\n  - cidr: 10.128.0.0/14\n    hostPrefix: 23\n  machineNetwork:\n  - cidr: 10.0.0.0/16\n  networkType: OpenShiftSDN\n  serviceNetwork:\n  - 172.30.0.0/16\nplatform:\n  aws:\n    region: us-east-2\npublish: External\npullSecret: \"\"\n"
+    "install-config": "apiVersion: v1\nbaseDomain: xxxxxxxxxxxxxxxxxxx\ncompute:\n- hyperthreading: Enabled\n  name: worker\n  platform: {}\n  replicas: 3\ncontrolPlane:\n  hyperthreading: Enabled\n  name: master\n  platform: {}\n  replicas: 3\nmetadata:\n  creationTimestamp: null\n  name: tremes-testing.tremes.2021.07.12.ccxdev.devshift.net\nnetworking:\n  clusterNetwork:\n  - cidr: 10.128.0.0/14\n    hostPrefix: 23\n  machineNetwork:\n  - cidr: 10.0.0.0/16\n  networkType: OpenShiftSDN\n  serviceNetwork:\n  - 172.30.0.0/16\nplatform:\n  aws:\n    region: us-east-2\npublish: External\npullSecret: \"\"\n"
   }
 }
