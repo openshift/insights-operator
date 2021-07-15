@@ -24,11 +24,15 @@ package anonymization
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"net"
 	"regexp"
 	"strings"
 
+	configv1 "github.com/openshift/api/config/v1"
+	networkv1 "github.com/openshift/api/network/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -52,6 +56,9 @@ const (
 	ClusterBaseDomainPlaceholder         = "<CLUSTER_BASE_DOMAIN>"
 	UnableToCreateAnonymizerErrorMessage = "Unable to create anonymizer, " +
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
+	clusterNetworksRecordName = "config/network.json"
+	clusterConfigV1RecordName = "config/configmaps/kube-system/cluster-config-v1.json"
+	hostSubnetRecordPrefix    = "config/hostsubnet/"
 )
 
 var (
@@ -84,8 +91,6 @@ type ConfigProvider interface {
 
 // NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
 func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient corev1client.SecretInterface) (*Anonymizer, error) {
-	networks = append(networks, "127.0.0.0/8")
-
 	cidrs, err := k8snet.ParseCIDRs(networks)
 	if err != nil {
 		return nil, err
@@ -127,7 +132,108 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 
+	clusterConfigV1, err := gatherKubeClient.CoreV1().ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// for egress subnets
+	hostSubnets, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	networks := getNetworksForAnonymizer(networksConfig, clusterConfigV1, hostSubnets.Items)
+
+	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
+
+	return NewAnonymizer(baseDomain, networks, secretsClient)
+}
+
+func GetNetworksForAnonymizerFromRecords(records map[string]*record.MemoryRecord) ([]string, error) {
+	clusterNetworksRecord, found := records[clusterNetworksRecordName]
+	if !found {
+		return nil, fmt.Errorf(
+			"unable to find the record containing cluster networks required for anonymizer to work correctly",
+		)
+	}
+
+	var clusterNetworks configv1.Network
+	err := json.Unmarshal(clusterNetworksRecord.Data, &clusterNetworks)
+	if err != nil {
+		return nil, err
+	}
+
+	var clusterConfigV1 *corev1.ConfigMap
+
+	clusterConfigV1Record, found := records[clusterConfigV1RecordName]
+	if !found {
+		klog.Warningf("record %v was not found, some networks won't be obfuscated", clusterConfigV1RecordName)
+	} else {
+		err := json.Unmarshal(clusterConfigV1Record.Data, &clusterConfigV1)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// for egress cidrs
+	var hostSubnets []networkv1.HostSubnet
+
+	for name, rec := range records {
+		if !strings.HasPrefix(name, hostSubnetRecordPrefix) {
+			continue
+		}
+
+		var hostSubnet networkv1.HostSubnet
+
+		err := json.Unmarshal(rec.Data, &hostSubnet)
+		if err != nil {
+			return nil, err
+		}
+
+		hostSubnets = append(hostSubnets, hostSubnet)
+	}
+
+	if len(hostSubnets) == 0 {
+		klog.Warningf("no record with prefix %v was found, egress IPs won't be obfuscated", hostSubnetRecordPrefix)
+	}
+
+	return getNetworksForAnonymizer(&clusterNetworks, clusterConfigV1, hostSubnets), nil
+}
+
+func getNetworksForAnonymizer(
+	clusterNetworks *configv1.Network, clusterConfigV1 *corev1.ConfigMap, hostSubnets []networkv1.HostSubnet,
+) []string {
+	networks := append(
+		[]string{"127.0.0.0/8"},
+		getNetworksFromClusterNetworksConfig(clusterNetworks)...,
+	)
+
+	// we just ignore it in case it doesn't exist
+	if clusterConfigV1 != nil {
+		installConfig, found := clusterConfigV1.Data["install-config"]
+		if found {
+			networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
+			networks = append(networks, networkRegex.FindAllString(installConfig, -1)...)
+		}
+	}
+
+	// egress subnets
+	for i := range hostSubnets {
+		hostSubnet := &hostSubnets[i]
+		for _, egressCIDR := range hostSubnet.EgressCIDRs {
+			networks = append(networks, string(egressCIDR))
+		}
+	}
+
+	sortNetworks(networks)
+
+	return networks
+}
+
+func getNetworksFromClusterNetworksConfig(networksConfig *configv1.Network) []string {
 	var networks []string
+
 	for _, network := range networksConfig.Spec.ClusterNetwork {
 		networks = append(networks, network.CIDR)
 	}
@@ -136,30 +242,10 @@ func NewAnonymizerFromConfigClient(
 	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.AllowedCIDRs...)
 	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.RejectedCIDRs...)
 
-	clusterConfigV1, err := gatherKubeClient.CoreV1().ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
+	return networks
+}
 
-	if installConfig, exists := clusterConfigV1.Data["install-config"]; exists {
-		networkRegex := regexp.MustCompile(Ipv4NetworkRegex)
-		networks = append(networks, networkRegex.FindAllString(installConfig, -1)...)
-	}
-
-	// egress subnets
-
-	hostSubnets, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range hostSubnets.Items {
-		hostSubnet := &hostSubnets.Items[i]
-		for _, egressCIDR := range hostSubnet.EgressCIDRs {
-			networks = append(networks, string(egressCIDR))
-		}
-	}
-
+func sortNetworks(networks []string) {
 	// we're sorting by subnet lengths, if they are the same, we use subnet itself
 	utils.SortAndRemoveDuplicates(&networks, func(i, j int) bool {
 		if !strings.Contains(networks[i], "/") || !strings.Contains(networks[j], "/") {
@@ -176,10 +262,6 @@ func NewAnonymizerFromConfigClient(
 
 		return network1[0] > network2[0]
 	})
-
-	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-
-	return NewAnonymizer(baseDomain, networks, secretsClient)
 }
 
 // NewAnonymizerFromConfig creates a new instance of anonymizer with a provided kubeconfig

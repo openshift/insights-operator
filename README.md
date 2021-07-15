@@ -17,6 +17,11 @@ This cluster operator gathers anonymized system configuration and reports it to 
 - [Changelog](#changelog)
     - [Updating the changelog](#updating-the-changelog)
 - [Reported data](#reported-data)
+- [Insights Operator Archive](#insights-operator-archive)
+    - [Sample IO archive](#sample-io-archive)
+    - [Generating a sample archive](#generating-a-sample-archive)
+    - [Formatting archive json files](#formatting-archive-json-files)
+    - [Obfuscating an archive](#obfuscating-an-archive)
 - [Contributing](#contributing)
 - [Support](#support)
 - [License](#license)
@@ -25,14 +30,14 @@ This cluster operator gathers anonymized system configuration and reports it to 
 
 To build the operator, install Go 1.11 or above and run:
 
-```
-$ make build
+```shell script
+make build
 ```
 
 To test the operator against a remote cluster, run:
 
-```sh
-$ bin/insights-operator start --config=config/local.yaml --kubeconfig=$KUBECONFIG
+```shell script
+bin/insights-operator start --config=config/local.yaml --kubeconfig=$KUBECONFIG
 ```
 
 where `$KUBECONFIG` has sufficiently high permissions against the target cluster.
@@ -41,14 +46,14 @@ where `$KUBECONFIG` has sufficiently high permissions against the target cluster
 
 Unit tests can be started by the following command:
 
-```sh
-$ make test
+```shell script
+make test
 ```
 
 It is also possible to specify CLI options for Go test. For example, if you need to disable test results caching, use the following command:
 
-```sh
-$ VERBOSE=-count=1 make test
+```shell script
+VERBOSE=-count=1 make test
 ```
 
 > Integration (e2e) tests are not part of this repository, you can find it [here](https://gitlab.cee.redhat.com/ccx/insights-operator-tests).
@@ -60,8 +65,8 @@ The document [docs/gathered-data](docs/gathered-data.md) contains the list of co
 
 To start generating the document run:
 
-```sh
-$ make docs
+```shell script
+make docs
 ```
 
 # Getting metrics from Prometheus
@@ -72,8 +77,8 @@ Certificate and key are required to access Prometheus metrics (instead 404 Forbi
 
 There's a tool named `gen_cert_key.py` that can be used to automatically generate both files. It is stored in `tools` subdirectory.
 
-```sh
-$ gen_cert_file.py kubeconfig.yaml
+```shell script
+gen_cert_file.py kubeconfig.yaml
 ```
 
 ## Prometheus metrics provided by Insights Operator
@@ -86,22 +91,22 @@ Depending on how or where the IO is running you may have different ways to retri
 
 If the IO runs locally, the following command migth be used:
 
-```sh
-$ curl --cert k8s.crt --key k8s.key -k https://localhost:8443/metrics
+```shell script
+curl --cert k8s.crt --key k8s.key -k https://localhost:8443/metrics
 ```
 
 ### Running IO on K8s
 
 Get the token
 
-```sh
-$ oc whoami -t
+```shell script
+oc whoami -t
 ```
 
 Read metrics from Pod
 
-```sh
-$ oc exec \
+```shell script
+oc exec \
     -it deployment/insights-operator \
     -n openshift-insights -- \
     curl -k -H "Authorization: Bearer YOUR-TOKEN-HERE" 'https://localhost:8443/metrics'
@@ -109,26 +114,26 @@ $ oc exec \
 
 ## Getting the data directly from Prometheus
 
-```sh
-$ sudo kubefwd svc -n openshift-monitoring -d openshift-monitoring.svc -l prometheus=k8s
-$ curl --cert k8s.crt --key k8s.key  -k 'https://prometheus-k8s.openshift-monitoring.svc:9091/metrics'
+```shell script
+sudo kubefwd svc -n openshift-monitoring -d openshift-monitoring.svc -l prometheus=k8s
+curl --cert k8s.crt --key k8s.key  -k 'https://prometheus-k8s.openshift-monitoring.svc:9091/metrics'
 ```
 
 ## Debugging Prometheus metrics without valid CA
 
 Get the token
 
-```sh
-$ oc sa get-token prometheus-k8s -n openshift-monitoring
+```shell script
+oc sa get-token prometheus-k8s -n openshift-monitoring
 ```
 
 Change in `pkg/controller/operator.go` after creating `metricsGatherKubeConfig` (about line #86)
 
-```ini
+```go
 metricsGatherKubeConfig.Insecure = true
 metricsGatherKubeConfig.BearerToken = "YOUR-TOKEN-HERE"
 # by default CAFile is /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
-metricsGatherKubeConfig.CAFile = "" 
+metricsGatherKubeConfig.CAFile = ""
 metricsGatherKubeConfig.CAData = []byte{}
 ```
 
@@ -141,8 +146,8 @@ metricsGatherKubeConfig.CAData = []byte{}
 IO starts a profiler if given the correct environment.
 Set the `OPENSHIFT_PROFILE` env variable to "web".
 
-```sh
-$ export OPENSHIFT_PROFILE=web
+```shell script
+export OPENSHIFT_PROFILE=web
 ```
 
 ### Collect profiling data
@@ -151,14 +156,14 @@ After IO starts the profiling can be accessed at `http://localhost:6060`, you ca
 
 Some profiling examples:
 
-```sh
+```shell script
 # CPU profiling for 30 seconds
-$ go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
+go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
 ```
 
-```sh
+```shell script
 # heap profiling
-$ go tool pprof http://localhost:6060/debug/pprof/heap
+go tool pprof http://localhost:6060/debug/pprof/heap
 ```
 
 These commands will create a compressed file that can be visualized using a variety of tools, one of them is the `pprof` tool.
@@ -167,8 +172,8 @@ These commands will create a compressed file that can be visualized using a vari
 
 Starting a web ui at `localhost:8080` to visualize/analyze the profiling data:
 
-```sh
-$ go tool pprof -http=:8080 /path/to/profiling.out
+```shell script
+go tool pprof -http=:8080 /path/to/profiling.out
 ```
 
 For extra info: [check this link](https://jvns.ca/blog/2017/09/24/profiling-go-with-pprof/)
@@ -192,14 +197,14 @@ It can be used 2 ways:
 
 > 🚨 IMPORTANT: It will only work with changelogs created with this script
 
-```sh
-$ go run cmd/changelog/main.go
+```shell script
+go run cmd/changelog/main.go
 ```
 
 2. Providing 2 command line arguments, `AFTER` and `UNTIL` dates the script will generate a new `CHANGELOG.md` within the provided time frame.
 
-```sh
-$ go run cmd/changelog/main.go 2021-01-10 2021-01-20
+```shell script
+go run cmd/changelog/main.go 2021-01-10 2021-01-20
 ```
 
 # Reported data
@@ -221,7 +226,7 @@ There is a sample IO archive maintained in this repo to use as a quick reference
 To keep it up-to-date it is **required** to update this manually when developing a new data enhancement.
 
 Make sure the `.json` files are in a humanly readable format in the sample archive.
-By doing this its easier to review a data enhancement PR, and rule developers can easily check what data it collects. 
+By doing this its easier to review a data enhancement PR, and rule developers can easily check what data it collects.
 
 ### Generating a sample archive
 
@@ -231,9 +236,20 @@ Run the insights-operator on a test cluster (from `cluster-bot` or `Quicklab` or
 
 This formats `.json` files from folder with extracted archive.
 
-```sh
-$ find . -type f -name '*.json' -print | while read line; do cat "$line" | jq > "$line.tmp" && mv "$line.tmp" "$line"; done
+```shell script
+find . -type f -name '*.json' -print | while read line; do cat "$line" | jq > "$line.tmp" && mv "$line.tmp" "$line"; done
 ```
+
+### Obfuscating an archive
+
+You can run obfuscation with an archive by running the next command:
+
+```shell script
+go run ./cmd/obfuscate-archive/main.go YOUR_ARCHIVE.tar.gz
+```
+
+where `YOUR_ARCHIVE.tar.gz` is the path to the archive.
+The obfuscated version will be created in the same directory and called `YOUR_ARCHIVE-obfuscated.tar.gz`
 
 # Contributing
 

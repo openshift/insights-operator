@@ -28,8 +28,10 @@ The pull-secret has .dockerconfigjson with list of Tokens to various docker repo
 
 
 Content of openshift-config secret support:
+```shell script
+oc get secret support -n openshift-config -o=yaml
 ```
-$ oc get secret support -n openshift-config -o=yaml
+```yaml
 apiVersion: v1
 data:
   endpoint: aHR0cHM6Ly9jbG91ZC5yZWRoYXQuY29tL2FwaS9pbmdyZXNzL3YxL3VwbG9hZA==
@@ -43,18 +45,30 @@ metadata:
   selfLink: /api/v1/namespaces/openshift-config/secrets/support
   uid: 0e522987-4c02-479d-8d10-e4f551e60b65
 type: Opaque
+```
 
-$ oc get secret support -n openshift-config -o=json | jq -r .data.endpoint | base64 -d
+```shell script
+oc get secret support -n openshift-config -o=json | jq -r .data.endpoint | base64 -d
+```
+```
 https://cloud.redhat.com/api/ingress/v1/upload
-$ oc get secret support -n openshift-config -o=json | jq -r .data.interval | base64 -d
+```
+
+```shell script
+oc get secret support -n openshift-config -o=json | jq -r .data.interval | base64 -d
+```
+```
 2h
 ```
+
 The support secret can be also configured for a Insights Operator specific Http Proxy using keys (httpProxy, httpsProxy and noProxy).
 
 To configure authentication to cloud.redhat.com Insights Operator is reading preconfigured token from namespace
 openshift-config and secret pull-secret (where are cluster-wide tokens stored). The token to cloud.redhat.com is stored in .dockerjsonconfig, inside auth section.
-```
+```shell script
 oc get secret/pull-secret -n openshift-config -o json | jq -r ".data | .[]" | base64 --decode | jq
+```
+```json
 {
   "auths": {
     ...
@@ -66,11 +80,13 @@ oc get secret/pull-secret -n openshift-config -o json | jq -r ".data | .[]" | ba
   }
 }
 ```
+
 The configuration secrets are periodically refreshed by [configobserver](pkg/config/configobserver/configobserver.go). Any code can register to
 receive signal through channel by using config.ConfigChanged(), like for example in `insightsuploader.go`. It will then get notified if config changes.
-```
+```go
 configCh, cancelFn := c.configurator.ConfigChanged()
 ```
+
 Internally the configObserver has an array of subscribers, so all of them will get the signal.
 
 
@@ -103,9 +119,10 @@ If no data to upload are found the uploader continues with next cycle.
 The uploader cycle is running `wait.Poll` function which is waiting until config changes or until there is a time to upload. The time to upload is set by initialDelay.
 If this is the first upload (the lastReportedTime from status is not set) the uploader uses `interval/8+random(interval/8*2)` as next upload time. This could be reset though to 0, if it is Safe to upload immediately. If any upload was already reported, the next upload interval is going to be `now - lastReported + interval + 1.2 Jitter`.
 Code: This line sets next interval in regular polling:
-```
+```go
 wait.Jitter(now.Sub(next), 1.2)
 ```
+
 After calculation of initialDelay, `wait.Until` runs regular function, which starts waiting on either config change or until time till initialDelay and then continues. Every event is retriggered by `wait.Until` again every 15 seconds. For example if ClusterVersion is not populated (because Gatherer haven't finished initial Gathering), it will retry in 15 seconds.
 Eventually uploader will use `insightsclient.Send` to run the upload itself. It then reports any errors to its Status reporter.
 
@@ -131,8 +148,10 @@ Internally it calls `diskrecorder.Prune` with `maxAge = interval*6*24` (with 2h 
 ## How is Insights operator setting operator Status
 The operator status is based on K8s [Pod conditions](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions).
 Code: How Insights Operator status conditions looks like:
+```shell script
+oc get co insights -o=json | jq '.status.conditions'
 ```
-$ oc get co insights -o=json | jq '.status.conditions'
+```json
 [
   {
     "lastTransitionTime": "2020-10-03T04:13:50Z",
@@ -157,14 +176,16 @@ $ oc get co insights -o=json | jq '.status.conditions'
   }
 ]
 ```
+
 The status is being updated by `pkg/controller/status/status.go`. Status has a background task, which is periodically updating
 the Operator status from its internal list of Sources. Any component which wants to participate on Operator's status adds a
 SimpleReporter, which is returning its actual Status. The Simple reporter is defined in controllerstatus.
 
 Code: In `operator.go` components are adding their reporters to Status Sources:
-```
+```go
 statusReporter.AddSources(uploader)
 ```
+
 This periodic status updater calls updateStatus which sets the Operator status after calling merge to all the provided Sources.
 The uploader updateStatus determines if it is Safe to upload, if Cluster Operator status and Pod last Exit Code are both healthy.
 It relies on fact that updateStatus is called on Start of status cycle.
@@ -174,8 +195,10 @@ It relies on fact that updateStatus is called on Start of status cycle.
 ## How is Insights Operator using various Api Clients
 Internally Insights operator is talking to Kubernetes Api server over Http Rest queries. Each query is authenticated by a Bearer token,
 To simulate see an actual Rest query being used, you can try:
+```shell script
+oc get pods -A -v=9
 ```
-$ oc get pods -A -v=9
+```
 I1006 12:26:33.972634   66541 loader.go:375] Config loaded from file:  /home/mkunc/.kube/config
 I1006 12:26:33.977546   66541 round_trippers.go:423] curl -k -v -XGET  -H "Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json" -H "User-Agent: oc/4.5.0 (linux/amd64) kubernetes/9933eb9" -H "Authorization: Bearer Xy9HoVzNdsRifGr3oCIl7pfxwkeqE2u058avw6o969w" 'https://api.sharedocp4upi43.lab.upshift.rdu2.redhat.com:6443/api/v1/pods?limit=500'
 I1006 12:26:36.075230   66541 round_trippers.go:443] GET https://api.sharedocp4upi43.lab.upshift.rdu2.redhat.com:6443/api/v1/pods?limit=500 200 OK in 2097 milliseconds
@@ -202,13 +225,16 @@ In IO deployment [manifest](manifests/06-deployment.yaml) is specified service a
 Because Insights Operator needs quite powerful credentials to access cluster-wide resources, it has one more service account called gather. It is created
 in [manifest](manifests/03-clusterrole.yaml).
 Code: To verify if gather account has right permissions to call verb list from apigroup machinesets I can use:
-```
+```shell script
 kubectl auth can-i list machinesets --as=system:serviceaccount:openshift-insights:gather
+```
+```
 yes
 ```
+
 This account is used to impersonate any clients which are being used in Gather Api calls. The impersonated account is set in operator go:
 Code: In Operator.go specific Api client is using impersonated account
-```
+```go
 	gatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
 	if len(s.Impersonate) > 0 {
 		gatherKubeConfig.Impersonate.UserName = s.Impersonate
@@ -218,9 +244,10 @@ Code: In Operator.go specific Api client is using impersonated account
 ```
 
 Code: The impersonated account is specified in config/pod.yaml (or config/local.yaml) using:
-```
+```yaml
 impersonate: system:serviceaccount:openshift-insights:gather
 ```
+
 To test where the client has right permissions, the command mentioned above with verb, api and service account can be used.
 
 Note: I was only able to test missing permissions on OCP 4.3, the versions above seems like always passing fine. Maybe higher versions
@@ -288,7 +315,7 @@ After the successful upload of archive, the progress monitoring task starts. By 
 update (yet), it retries its download of analysis, because we have uploaded the data, but no analysis was provided back yet.
 The successfully downloaded report is then being reported as IO metric health_statuses_insights.
 Code: Example of reported metrics:
-```
+```prometheus
 # HELP health_statuses_insights [ALPHA] Information about the cluster health status as detected by Insights tooling.
 # TYPE health_statuses_insights gauge
 health_statuses_insights{metric="critical"} 0
@@ -306,13 +333,13 @@ There is a special id named `ALL` which if in the list then every gather functio
 The id of each gather function can be found in the `docs/gathered-data.md` beside the `Id in config:` text for each section.
 
 #### Example for using special id `ALL`
-```
+```yaml
 gather:
   - ALL
 ```
 
 #### Example for using individual ids
-```
+```yaml
 gather:
  - pdbs
  - metrics
