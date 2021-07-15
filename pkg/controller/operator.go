@@ -163,6 +163,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	go uploader.Run(ctx)
 
 	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader)
+	statusReporter.AddSources(reportGatherer)
 	go reportGatherer.Run(ctx)
 
 	klog.Warning("started")

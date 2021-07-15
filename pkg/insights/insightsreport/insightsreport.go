@@ -18,8 +18,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
 
-// Gatherer gathers the report from Smart Proxy
-type Gatherer struct {
+// Controller gathers the report from Smart Proxy
+type Controller struct {
 	controllerstatus.Simple
 
 	configurator          Configurator
@@ -58,8 +58,8 @@ var (
 )
 
 // New initializes and returns a Gatherer
-func New(client *insightsclient.Client, configurator Configurator, reporter InsightsReporter) *Gatherer {
-	return &Gatherer{
+func New(client *insightsclient.Client, configurator Configurator, reporter InsightsReporter) *Controller {
+	return &Controller{
 		Simple:                controllerstatus.Simple{Name: "insightsreport"},
 		configurator:          configurator,
 		client:                client,
@@ -68,9 +68,9 @@ func New(client *insightsclient.Client, configurator Configurator, reporter Insi
 }
 
 // PullSmartProxy performs a request to the Smart Proxy and unmarshal the response
-func (r *Gatherer) PullSmartProxy() (bool, error) {
+func (c *Controller) PullSmartProxy() (bool, error) {
 	klog.Info("Pulling report from smart-proxy")
-	config := r.configurator.Config()
+	config := c.configurator.Config()
 	reportEndpoint := config.ReportEndpoint
 
 	if len(reportEndpoint) == 0 {
@@ -82,9 +82,9 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 	defer cancelFunc()
 
 	klog.V(4).Info("Retrieving report")
-	reportBody, err := r.client.RecvReport(ctx, reportEndpoint)
+	reportBody, err := c.client.RecvReport(ctx, reportEndpoint)
 	if authorizer.IsAuthorizationError(err) {
-		r.Simple.UpdateStatus(controllerstatus.Summary{
+		c.Simple.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
 			Reason:    "NotAuthorized",
 			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
@@ -104,6 +104,11 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 		return true, ie
 	} else if err != nil {
 		klog.Errorf("Unexpected error retrieving the report: %s", err)
+		c.Simple.UpdateStatus(controllerstatus.Summary{
+			Operation: controllerstatus.DownloadingReport,
+			Reason:    "UnexpectedError",
+			Message:   fmt.Sprintf("Failed to download the latest report: %v", err),
+		})
 		return true, err
 	}
 
@@ -117,22 +122,22 @@ func (r *Gatherer) PullSmartProxy() (bool, error) {
 
 	klog.V(4).Info("Smart Proxy report correctly parsed")
 
-	if r.LastReport.Meta.LastCheckedAt == reportResponse.Report.Meta.LastCheckedAt {
+	if c.LastReport.Meta.LastCheckedAt == reportResponse.Report.Meta.LastCheckedAt {
 		klog.V(2).Info("Retrieved report is equal to previus one. Retrying...")
-		return true, fmt.Errorf("Report not updated")
+		return true, fmt.Errorf("report not updated")
 	}
 
 	updateInsightsMetrics(reportResponse.Report)
-	r.LastReport = reportResponse.Report
-	// close(r.insightsReport)
+	c.LastReport = reportResponse.Report
+	c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	return true, nil
 }
 
 // RetrieveReport gets the report from Smart Proxy, if possible, handling the delays and timeouts
-func (r *Gatherer) RetrieveReport() {
+func (c *Controller) RetrieveReport() {
 	klog.V(4).Info("Starting retrieving report from Smart Proxy")
-	config := r.configurator.Config()
-	configCh, cancelFn := r.configurator.ConfigChanged()
+	config := c.configurator.Config()
+	configCh, cancelFn := c.configurator.ConfigChanged()
 	defer cancelFn()
 
 	if config.ReportPullingTimeout == 0 {
@@ -154,7 +159,7 @@ func (r *Gatherer) RetrieveReport() {
 		select {
 		case <-delayTimer.C:
 			// Get report and set new timer
-			done, err := r.PullSmartProxy()
+			done, err := c.PullSmartProxy()
 			if done {
 				if err != nil {
 					klog.Errorf("Unrecoverable problem retrieving the report: %v", err)
@@ -166,6 +171,11 @@ func (r *Gatherer) RetrieveReport() {
 
 			firstPullDone = true
 			if retryCounter >= retryThreshold {
+				c.Simple.UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.DownloadingReport,
+					Reason:    "NotAvailable",
+					Message:   fmt.Sprintf("Couldn't download the latest report: %v", err),
+				})
 				return
 			}
 			t := wait.Jitter(config.ReportMinRetryTime, 0.1)
@@ -181,7 +191,7 @@ func (r *Gatherer) RetrieveReport() {
 
 		case <-configCh:
 			// Config change, update initial counter
-			config = r.configurator.Config()
+			config = c.configurator.Config()
 
 			// Update next deadline
 			var nextTick time.Duration
@@ -209,17 +219,17 @@ func (r *Gatherer) RetrieveReport() {
 }
 
 // Run goroutine code for gathering the reports from Smart Proxy
-func (r *Gatherer) Run(ctx context.Context) {
-	r.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
+func (c *Controller) Run(ctx context.Context) {
+	c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
-	klog.V(2).Infof("Initial config: %v", r.configurator.Config())
+	klog.V(2).Infof("Initial config: %v", c.configurator.Config())
 
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
-		case <-r.archiveUploadReporter:
+		case <-c.archiveUploadReporter:
 			klog.V(4).Info("Archive uploaded, starting pulling report...")
-			r.RetrieveReport()
+			c.RetrieveReport()
 
 		case <-ctx.Done():
 			return
