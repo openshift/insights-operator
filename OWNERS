@@ -7,7 +7,6 @@ approvers:
 - natiiix
 - tremes
 - rluders
-- psimovec
 - Sergey1011010
 reviewers:
 - smarterclayton
@@ -18,7 +17,6 @@ reviewers:
 - natiiix
 - tremes
 - rluders
-- psimovec
 - Sergey1011010
 
 component: "Insights operator"
