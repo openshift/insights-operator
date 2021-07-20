@@ -1,6 +1,7 @@
 package conditional
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -26,7 +27,21 @@ func (name GatheringFunctionName) IsValid() error {
 	case GatherLogsOfNamespace, GatherImageStreamsOfNamespace:
 		return nil
 	}
-	return fmt.Errorf("invalid value for %T", name)
+	return fmt.Errorf("invalid value for %T: %v", name, name)
+}
+
+func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
+	switch name {
+	case GatherLogsOfNamespace:
+		var result GatherLogsOfNamespaceParams
+		err := json.Unmarshal(jsonParams, &result)
+		return result, err
+	case GatherImageStreamsOfNamespace:
+		var result GatherImageStreamsOfNamespaceParams
+		err := json.Unmarshal(jsonParams, &result)
+		return result, err
+	}
+	return nil, fmt.Errorf("unable to create params for %T: %v", name, name)
 }
 
 // params:

@@ -1,6 +1,7 @@
 package conditional
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -24,7 +25,18 @@ func (ct ConditionType) IsValid() error {
 	case AlertIsFiring:
 		return nil
 	}
-	return fmt.Errorf("invalid value for %T", ct)
+	return fmt.Errorf("invalid value for %T: %v", ct, ct)
+}
+
+// NewParams creates an instance of params type for this condition type
+func (ct ConditionType) NewParams(jsonParam []byte) (interface{}, error) {
+	switch ct {
+	case AlertIsFiring:
+		var result AlertIsFiringConditionParams
+		err := json.Unmarshal(jsonParam, &result)
+		return result, err
+	}
+	return nil, fmt.Errorf("unable to create params for %T: %v", ct, ct)
 }
 
 // params:

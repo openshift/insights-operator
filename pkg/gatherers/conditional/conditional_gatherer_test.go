@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -31,6 +32,44 @@ func Test_Gatherer_Basic(t *testing.T) {
 	var g interface{} = gatherer
 	_, ok := g.(gatherers.CustomPeriodGatherer)
 	assert.False(t, ok, "should NOT implement gather.CustomPeriodGatherer")
+}
+
+func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+		_, err := rw.Write([]byte(`[{
+			"conditions": [
+				{
+					"type": "` + AlertIsFiring + `",
+					"params": { "name": "SamplesImagestreamImportFailing" }
+				}
+			],
+			"gathering_functions": {
+				"logs_of_namespace": {
+					"namespace": "openshift-cluster-samples-operator",
+					"tail_lines": 100
+				},
+				"image_streams_of_namespace": {
+					"namespace": "openshift-cluster-samples-operator"
+				}
+			}
+		}]`))
+		assert.NoError(t, err)
+	}))
+	defer mockServer.Close()
+
+	gatherer := newEmptyGatherer()
+	gatherer.gatheringRulesEndpoint = mockServer.URL
+	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+		"ALERTS{alertname=\"SamplesImagestreamImportFailing\",alertstate=\"firing\"} 1 1621618110163\n",
+	))
+	assert.NoError(t, err)
+
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
+	assert.Len(t, gatheringFunctions, 3)
+	_, found := gatheringFunctions["conditional_gatherer_rules"]
+	assert.True(t, found)
 }
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
