@@ -69,15 +69,15 @@ func NewGather() *cobra.Command {
 func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
-			klog.Error("error: --config is required")
+			klog.Exit("error: --config is required")
 		}
 		unstructured, _, _, err := cfg.Config()
 		if err != nil {
-			klog.Error(err)
+			klog.Exit(err)
 		}
 		cont, err := config.LoadConfig(operator.Controller, unstructured.Object, config.ToDisconnectedController)
 		if err != nil {
-			klog.Error(err)
+			klog.Exit(err)
 		}
 		operator.Controller = cont
 
@@ -85,20 +85,20 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 		if kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String(); len(kubeConfigPath) > 0 {
 			kubeConfigBytes, err := ioutil.ReadFile(kubeConfigPath) //nolint: govet
 			if err != nil {
-				klog.Error(err)
+				klog.Exit(err)
 			}
 			kubeConfig, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
 			if err != nil {
-				klog.Error(err)
+				klog.Exit(err)
 			}
 			clientConfig, err = kubeConfig.ClientConfig()
 			if err != nil {
-				klog.Error(err)
+				klog.Exit(err)
 			}
 		} else {
 			clientConfig, err = rest.InClusterConfig()
 			if err != nil {
-				klog.Error(err)
+				klog.Exit(err)
 			}
 		}
 		protoConfig := rest.CopyConfig(clientConfig)
@@ -125,17 +125,17 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 		serviceability.StartProfiler()
 
 		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
-			klog.Error("error: --config is required")
+			klog.Exit("error: --config is required")
 		}
 
 		unstructured, operatorConfig, configBytes, err := cfg.Config()
 		if err != nil {
-			klog.Error(err)
+			klog.Exit(err)
 		}
 
 		startingFileContent, observedFiles, err := cfg.AddDefaultRotationToConfig(operatorConfig, configBytes)
 		if err != nil {
-			klog.Error(err)
+			klog.Exit(err)
 		}
 
 		// if the service CA is rotated, we want to restart
