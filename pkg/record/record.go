@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	JSONExtension = "json"
+)
+
 // Record represents a record that will be stored as a file.
 type Record struct {
 	Name     string
@@ -40,5 +44,5 @@ func (m JSONMarshaller) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension return extension for json marshaller
 func (m JSONMarshaller) GetExtension() string {
-	return "json"
+	return JSONExtension
 }

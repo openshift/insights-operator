@@ -7,10 +7,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
-const (
-	jsonExtension = "json"
-)
-
 var (
 	registryScheme = runtime.NewScheme()
 	// logMaxLines sets maximum number of lines of the log file

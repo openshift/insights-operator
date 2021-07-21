@@ -45,14 +45,14 @@ func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]r
 	}
 
 	var records []record.Record
-	for _, i := range machineSets.Items {
-		recordName := fmt.Sprintf("machinesets/%s", i.GetName())
-		if i.GetNamespace() != "" {
-			recordName = fmt.Sprintf("machinesets/%s/%s", i.GetNamespace(), i.GetName())
+	for i, ms := range machineSets.Items {
+		recordName := fmt.Sprintf("machinesets/%s", ms.GetName())
+		if ms.GetNamespace() != "" {
+			recordName = fmt.Sprintf("machinesets/%s/%s", ms.GetNamespace(), ms.GetName())
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.ResourceMarshaller{Resource: &i},
+			Item: record.ResourceMarshaller{Resource: &machineSets.Items[i]},
 		})
 	}
 

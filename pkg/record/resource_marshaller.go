@@ -33,5 +33,5 @@ func (m ResourceMarshaller) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns the file extension that should be used for marshalled resources (json).
 func (m ResourceMarshaller) GetExtension() string {
-	return "json"
+	return JSONExtension
 }

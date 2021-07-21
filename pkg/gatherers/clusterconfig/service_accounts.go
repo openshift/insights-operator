@@ -115,5 +115,5 @@ func (a ServiceAccountsMarshaller) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized openshift objects
 func (a ServiceAccountsMarshaller) GetExtension() string {
-	return "json"
+	return record.JSONExtension
 }

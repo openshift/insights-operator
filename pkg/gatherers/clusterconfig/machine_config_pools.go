@@ -45,10 +45,10 @@ func gatherMachineConfigPool(ctx context.Context, dynamicClient dynamic.Interfac
 	}
 
 	var records []record.Record
-	for _, i := range machineCPs.Items {
+	for i, mcp := range machineCPs.Items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/machineconfigpools/%s", i.GetName()),
-			Item: record.ResourceMarshaller{Resource: &i},
+			Name: fmt.Sprintf("config/machineconfigpools/%s", mcp.GetName()),
+			Item: record.ResourceMarshaller{Resource: &machineCPs.Items[i]},
 		})
 	}
 

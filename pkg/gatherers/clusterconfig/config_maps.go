@@ -162,5 +162,5 @@ func (r RawJSON) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns json extension
 func (r RawJSON) GetExtension() string {
-	return jsonExtension
+	return record.JSONExtension
 }
