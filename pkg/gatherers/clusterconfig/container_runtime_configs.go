@@ -45,10 +45,10 @@ func gatherContainerRuntimeConfig(ctx context.Context, dynamicClient dynamic.Int
 	}
 
 	var records []record.Record
-	for _, i := range containerRCs.Items {
+	for i, crc := range containerRCs.Items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/containerruntimeconfigs/%s", i.GetName()),
-			Item: record.ResourceMarshaller{Resource: &i},
+			Name: fmt.Sprintf("config/containerruntimeconfigs/%s", crc.GetName()),
+			Item: record.ResourceMarshaller{Resource: &containerRCs.Items[i]},
 		})
 	}
 	return records, nil

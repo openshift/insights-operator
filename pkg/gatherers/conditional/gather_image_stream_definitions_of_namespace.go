@@ -54,7 +54,7 @@ func (g *Gatherer) gatherImageStreamsOfNamespace(ctx context.Context, namespace 
 
 	var records []record.Record
 
-	for _, imageStream := range imageStreams.Items { //nolint:gocritic
+	for i, imageStream := range imageStreams.Items { //nolint:gocritic
 		imageStream = anonymizeImageStream(imageStream)
 
 		records = append(records, record.Record{
@@ -62,7 +62,7 @@ func (g *Gatherer) gatherImageStreamsOfNamespace(ctx context.Context, namespace 
 				"%v/namespaces/%v/imagestreams/%v",
 				g.GetName(), imageStream.GetNamespace(), imageStream.GetName(),
 			),
-			Item: record.ResourceMarshaller{Resource: &imageStream},
+			Item: record.ResourceMarshaller{Resource: &imageStreams.Items[i]},
 		})
 	}
 
