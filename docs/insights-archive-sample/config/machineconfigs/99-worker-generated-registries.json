@@ -1,90 +1,44 @@
 {
-    "apiVersion": "machineconfiguration.openshift.io/v1",
-    "kind": "MachineConfig",
-    "metadata": {
-        "annotations": {
-            "machineconfiguration.openshift.io/generated-by-controller-version": "c4b7e3f5118d62fc3aaaa1fed5eb9ba0d12792de"
-        },
-        "creationTimestamp": "2021-06-14T09:51:38Z",
-        "generation": 1,
-        "labels": {
-            "machineconfiguration.openshift.io/role": "worker"
-        },
-        "managedFields": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:annotations": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/generated-by-controller-version": {}
-                        },
-                        "f:labels": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/role": {}
-                        },
-                        "f:ownerReferences": {
-                            ".": {},
-                            "k:{\"uid\":\"7cb1dbc7-71f5-4bda-90ed-b0c1c1bec27f\"}": {
-                                ".": {},
-                                "f:apiVersion": {},
-                                "f:kind": {},
-                                "f:name": {},
-                                "f:uid": {}
-                            }
-                        }
-                    },
-                    "f:spec": {
-                        ".": {},
-                        "f:config": {
-                            ".": {},
-                            "f:ignition": {
-                                ".": {},
-                                "f:version": {}
-                            }
-                        },
-                        "f:extensions": {},
-                        "f:fips": {},
-                        "f:kernelArguments": {},
-                        "f:kernelType": {},
-                        "f:osImageURL": {}
-                    }
-                },
-                "manager": "machine-config-controller",
-                "operation": "Update",
-                "time": "2021-06-14T09:51:38Z"
-            }
-        ],
-        "name": "99-worker-generated-registries",
-        "ownerReferences": [
-            {
-                "apiVersion": "config.openshift.io/v1",
-                "kind": "Image",
-                "name": "cluster",
-                "uid": "7cb1dbc7-71f5-4bda-90ed-b0c1c1bec27f"
-            }
-        ],
-        "resourceVersion": "7543",
-        "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/99-worker-generated-registries",
-        "uid": "65acc4b3-97fe-405f-aefb-5c060ab61d33"
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "annotations": {
+      "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
     },
-    "spec": {
-        "config": {
-            "ignition": {
-                "version": "3.2.0"
-            },
-            "passwd": {
-                "users": null
-            },
-            "storage": {
-                "files": null
-            }
-        },
-        "extensions": null,
-        "fips": false,
-        "kernelArguments": null,
-        "kernelType": "",
-        "osImageURL": ""
-    }
+    "creationTimestamp": "2021-07-07T11:26:59Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "worker"
+    },
+    "name": "99-worker-generated-registries",
+    "ownerReferences": [
+      {
+        "apiVersion": "config.openshift.io/v1",
+        "kind": "Image",
+        "name": "cluster",
+        "uid": "b9bec110-098d-4c5c-9cff-0d23a814e4cb"
+      }
+    ],
+    "resourceVersion": "7307",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/99-worker-generated-registries",
+    "uid": "2452cee7-0883-44ac-a66d-ce090bf0e70c"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": ""
+  }
 }

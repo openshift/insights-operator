@@ -47,6 +47,6 @@ func gatherClusterImagePruner(ctx context.Context, registryClient imageregistryv
 	objKind := kinds[0]
 	return []record.Record{{
 		Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", objKind.Group, strings.ToLower(objKind.Kind), pruner.Name),
-		Item: record.JSONMarshaller{Object: pruner},
+		Item: record.ResourceMarshaller{Resource: pruner},
 	}}, nil
 }

@@ -205,5 +205,5 @@ func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for anonymized openshift objects
 func (a InstallPlanAnonymizer) GetExtension() string {
-	return jsonExtension
+	return record.JSONExtension
 }

@@ -1,0 +1,235 @@
+{
+  "metadata": {
+    "name": "sdn-controller-n94gv",
+    "generateName": "sdn-controller-",
+    "namespace": "openshift-sdn",
+    "selfLink": "/api/v1/namespaces/openshift-sdn/pods/sdn-controller-n94gv",
+    "uid": "da86e3ea-8439-4164-ae1e-eaf3e78aeb6f",
+    "resourceVersion": "643342",
+    "creationTimestamp": "2021-07-07T11:25:33Z",
+    "labels": {
+      "app": "sdn-controller",
+      "controller-revision-hash": "7dff657f6",
+      "pod-template-generation": "1"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "DaemonSet",
+        "name": "sdn-controller",
+        "uid": "2d6d4347-5054-444e-82c1-1dcbb6853ac7",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "env-overrides",
+        "configMap": {
+          "name": "env-overrides",
+          "defaultMode": 420,
+          "optional": true
+        }
+      },
+      {
+        "name": "sdn-controller-token-xzkrd",
+        "secret": {
+          "secretName": "sdn-controller-token-xzkrd",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "sdn-controller",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:b4f8acc9a2370d99c5eb4f30bec668cb2f532ffea487f91e0038bb08911604f9",
+        "command": [
+          "/bin/bash",
+          "-c",
+          "if [[ -f /env/_master ]]; then\n  set -o allexport\n  source /env/_master\n  set +o allexport\nfi\n\nexec openshift-sdn-controller --v=${OPENSHIFT_SDN_LOG_LEVEL:-2}\n"
+        ],
+        "env": [
+          {
+            "name": "KUBERNETES_SERVICE_PORT",
+            "value": "6443"
+          },
+          {
+            "name": "KUBERNETES_SERVICE_HOST",
+            "value": "api-int.imeixner20210707.lab.upshift.rdu2.redhat.com"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "env-overrides",
+            "mountPath": "/env"
+          },
+          {
+            "name": "sdn-controller-token-xzkrd",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "sdn-controller",
+    "serviceAccount": "sdn-controller",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "hostNetwork": true,
+    "securityContext": {
+      "runAsUser": 65534,
+      "runAsNonRoot": true
+    },
+    "affinity": {
+      "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+          "nodeSelectorTerms": [
+            {
+              "matchFields": [
+                {
+                  "key": "metadata.name",
+                  "operator": "In",
+                  "values": [
+                    "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute"
+      },
+      {
+        "key": "node.kubernetes.io/disk-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/pid-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unschedulable",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/network-unavailable",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-cluster-critical",
+    "priority": 2000000000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:25:33Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-09T09:19:57Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-09T09:19:57Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:25:33Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.0.88.27",
+    "podIPs": [
+      {
+        "ip": "10.0.88.27"
+      }
+    ],
+    "startTime": "2021-07-07T11:25:33Z",
+    "containerStatuses": [
+      {
+        "name": "sdn-controller",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-09T09:19:57Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "message": "\n\tk8s.io/client-go@v0.18.6/tools/cache/reflector.go:220 +0x1c5\nk8s.io/apimachinery/pkg/util/wait.(*Group).StartWithChannel.func1()\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:56 +0x2e\nk8s.io/apimachinery/pkg/util/wait.(*Group).Start.func1(0xc00047ea00, 0xc0003668a0)\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:73 +0x51\ncreated by k8s.io/apimachinery/pkg/util/wait.(*Group).Start\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:71 +0x65\n\ngoroutine 253 [chan receive, 1339 minutes]:\nk8s.io/client-go/tools/cache.(*sharedProcessor).run(0xc0001c0540, 0xc0000e14a0)\n\tk8s.io/client-go@v0.18.6/tools/cache/shared_informer.go:628 +0x53\nk8s.io/apimachinery/pkg/util/wait.(*Group).StartWithChannel.func1()\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:56 +0x2e\nk8s.io/apimachinery/pkg/util/wait.(*Group).Start.func1(0xc00047ef40, 0xc000367540)\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:73 +0x51\ncreated by k8s.io/apimachinery/pkg/util/wait.(*Group).Start\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:71 +0x65\n\ngoroutine 254 [chan receive (nil chan), 1339 minutes]:\nk8s.io/client-go/tools/cache.(*controller).Run.func1(0x0, 0xc00041d9e0)\n\tk8s.io/client-go@v0.18.6/tools/cache/controller.go:130 +0x34\ncreated by k8s.io/client-go/tools/cache.(*controller).Run\n\tk8s.io/client-go@v0.18.6/tools/cache/controller.go:129 +0xa5\n\ngoroutine 255 [select]:\nk8s.io/apimachinery/pkg/util/wait.BackoffUntil(0xc0007b5ef0, 0x1d52340, 0xc00007f630, 0x1, 0x0)\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:167 +0x149\nk8s.io/client-go/tools/cache.(*Reflector).Run(0xc0005f2700, 0x0)\n\tk8s.io/client-go@v0.18.6/tools/cache/reflector.go:220 +0x1c5\nk8s.io/apimachinery/pkg/util/wait.(*Group).StartWithChannel.func1()\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:56 +0x2e\nk8s.io/apimachinery/pkg/util/wait.(*Group).Start.func1(0xc00047efa0, 0xc000367640)\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:73 +0x51\ncreated by k8s.io/apimachinery/pkg/util/wait.(*Group).Start\n\tk8s.io/apimachinery@v0.18.6/pkg/util/wait/wait.go:71 +0x65\n",
+            "startedAt": "2021-07-08T10:59:33Z",
+            "finishedAt": "2021-07-09T09:19:56Z",
+            "containerID": "cri-o://6a975e28fccd82b018e8839fbbb346b26e8dcdb154eec5b55328e6723620359d"
+          }
+        },
+        "ready": true,
+        "restartCount": 14,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:b4f8acc9a2370d99c5eb4f30bec668cb2f532ffea487f91e0038bb08911604f9",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:b4f8acc9a2370d99c5eb4f30bec668cb2f532ffea487f91e0038bb08911604f9",
+        "containerID": "cri-o://35fe1a406c6a13c59a8c4585da4f463677ff4bc9bd4bdca0366525eab98832d3",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "machine-approver",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/machine-approver",
+    "uid": "02feb411-2b11-4d19-abba-3d8e91bad3f6",
+    "resourceVersion": "8070",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "AsExpected",
+        "message": "Cluster Machine Approver is available at 4.7.16"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-machine-approver"
+      },
+      {
+        "group": "certificates.k8s.io",
+        "resource": "certificatesigningrequests",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

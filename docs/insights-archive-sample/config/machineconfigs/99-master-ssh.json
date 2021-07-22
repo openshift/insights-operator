@@ -1,69 +1,33 @@
 {
-    "apiVersion": "machineconfiguration.openshift.io/v1",
-    "kind": "MachineConfig",
-    "metadata": {
-        "creationTimestamp": "2021-06-14T09:45:45Z",
-        "generation": 1,
-        "labels": {
-            "machineconfiguration.openshift.io/role": "master"
-        },
-        "managedFields": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:labels": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/role": {}
-                        }
-                    },
-                    "f:spec": {
-                        ".": {},
-                        "f:config": {
-                            ".": {},
-                            "f:ignition": {
-                                ".": {},
-                                "f:version": {}
-                            },
-                            "f:passwd": {
-                                ".": {},
-                                "f:users": {}
-                            }
-                        },
-                        "f:extensions": {},
-                        "f:fips": {},
-                        "f:kernelArguments": {},
-                        "f:kernelType": {},
-                        "f:osImageURL": {}
-                    }
-                },
-                "manager": "cluster-bootstrap",
-                "operation": "Update",
-                "time": "2021-06-14T09:45:45Z"
-            }
-        ],
-        "name": "99-master-ssh",
-        "resourceVersion": "1680",
-        "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/99-master-ssh",
-        "uid": "b03d9af5-4801-4945-b419-481d683eb8dd"
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "creationTimestamp": "2021-07-07T11:03:36Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "master"
     },
-    "spec": {
-        "config": {
-            "ignition": {
-                "version": "3.2.0"
-            },
-            "passwd": {
-                "users": null
-            },
-            "storage": {
-                "files": null
-            }
-        },
-        "extensions": null,
-        "fips": false,
-        "kernelArguments": null,
-        "kernelType": "",
-        "osImageURL": ""
-    }
+    "name": "99-master-ssh",
+    "resourceVersion": "1965",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/99-master-ssh",
+    "uid": "9bf91333-b9c1-4f9d-8e8d-076fead7fb30"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": ""
+  }
 }

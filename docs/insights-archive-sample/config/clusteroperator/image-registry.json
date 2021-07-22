@@ -4,10 +4,15 @@
   "metadata": {
     "name": "image-registry",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/image-registry",
-    "uid": "c422aad7-a0b7-4bdb-863b-ece76eda017b",
-    "resourceVersion": "20485",
+    "uid": "4866d14f-1c27-4e84-973e-c2786edf3d83",
+    "resourceVersion": "1782055",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:49:33Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,27 +20,28 @@
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:53:43Z",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
         "reason": "Ready",
-        "message": "The registry is ready"
+        "message": "Available: The registry is ready\nImagePrunerAvailable: Pruner CronJob has been created"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:53:43Z",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
         "reason": "Ready",
-        "message": "The registry is ready"
+        "message": "Progressing: The registry is ready"
       },
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:38Z"
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "AsExpected"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -45,9 +51,9 @@
         "name": "cluster"
       },
       {
-        "group": "",
-        "resource": "namespaces",
-        "name": "openshift-image-registry"
+        "group": "imageregistry.operator.openshift.io",
+        "resource": "imagepruners",
+        "name": "cluster"
       },
       {
         "group": "rbac.authorization.k8s.io",
@@ -60,51 +66,14 @@
         "name": "registry-registry-role"
       },
       {
-        "group": "",
-        "resource": "serviceaccounts",
-        "namespace": "openshift-image-registry",
-        "name": "registry"
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "openshift-image-registry-pruner"
       },
       {
         "group": "",
-        "resource": "configmaps",
-        "namespace": "openshift-image-registry",
-        "name": "serviceca"
-      },
-      {
-        "group": "",
-        "resource": "configmaps",
-        "namespace": "openshift-image-registry",
-        "name": "image-registry-certificates"
-      },
-      {
-        "group": "",
-        "resource": "secrets",
-        "namespace": "openshift-image-registry",
-        "name": "image-registry-private-configuration"
-      },
-      {
-        "group": "config.openshift.io",
-        "resource": "images",
-        "name": "cluster"
-      },
-      {
-        "group": "apps",
-        "resource": "daemonsets",
-        "namespace": "openshift-image-registry",
-        "name": "node-ca"
-      },
-      {
-        "group": "",
-        "resource": "services",
-        "namespace": "openshift-image-registry",
-        "name": "image-registry"
-      },
-      {
-        "group": "apps",
-        "resource": "deployments",
-        "namespace": "openshift-image-registry",
-        "name": "image-registry"
+        "resource": "namespaces",
+        "name": "openshift-image-registry"
       }
     ],
     "extension": null

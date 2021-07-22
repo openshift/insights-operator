@@ -38,7 +38,7 @@ func gatherNodes(ctx context.Context, coreClient corev1client.CoreV1Interface) (
 	for i := range nodes.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/node/%s", nodes.Items[i].Name),
-			Item: record.JSONMarshaller{Object: anonymizeNode(&nodes.Items[i])}})
+			Item: record.ResourceMarshaller{Resource: anonymizeNode(&nodes.Items[i])}})
 	}
 	return records, nil
 }

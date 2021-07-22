@@ -4,10 +4,13 @@
   "metadata": {
     "name": "operator-lifecycle-manager",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/operator-lifecycle-manager",
-    "uid": "43db3e56-4956-4e52-8e5f-e2a13ad5a309",
-    "resourceVersion": "10505",
+    "uid": "69e898b9-114d-4aba-968d-7e451f9990f4",
+    "resourceVersion": "11902",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:30:21Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,39 +18,39 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:30:21Z"
+        "lastTransitionTime": "2021-07-07T11:27:20Z"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:35:27Z",
-        "message": "Deployed 0.14.2"
+        "lastTransitionTime": "2021-07-07T11:32:25Z",
+        "message": "Deployed 0.17.0"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:30:21Z"
+        "lastTransitionTime": "2021-07-07T11:27:20Z"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:30:21Z"
+        "lastTransitionTime": "2021-07-07T11:27:20Z"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "operator-lifecycle-manager",
-        "version": "0.14.2"
+        "version": "0.17.0"
       }
     ],
     "relatedObjects": [
       {
         "group": "operators.coreos.com",
-        "resource": "ClusterServiceVersion",
+        "resource": "clusterserviceversions",
         "namespace": "openshift-operator-lifecycle-manager",
         "name": "packageserver"
       },

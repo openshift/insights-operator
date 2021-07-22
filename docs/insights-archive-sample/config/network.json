@@ -1,13 +1,11 @@
 {
-  "kind": "Network",
-  "apiVersion": "config.openshift.io/v1",
   "metadata": {
     "name": "cluster",
     "selfLink": "/apis/config.openshift.io/v1/networks/cluster",
-    "uid": "6bb07095-39af-4e56-81d2-c192d155f52b",
-    "resourceVersion": "2237",
+    "uid": "b8d891f1-7e1f-42c8-abba-d2d314a13e01",
+    "resourceVersion": "3955",
     "generation": 2,
-    "creationTimestamp": "2020-08-12T08:27:16Z"
+    "creationTimestamp": "2021-07-07T11:02:52Z"
   },
   "spec": {
     "clusterNetwork": [
@@ -35,6 +33,6 @@
       "172.30.0.0/16"
     ],
     "networkType": "OpenShiftSDN",
-    "clusterNetworkMTU": 1410
+    "clusterNetworkMTU": 1450
   }
 }

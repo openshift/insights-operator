@@ -37,7 +37,7 @@ func gatherClusterInfrastructure(ctx context.Context, configClient configv1clien
 	if err != nil {
 		return nil, []error{err}
 	}
-	return []record.Record{{Name: "config/infrastructure", Item: record.JSONMarshaller{Object: anonymizeInfrastructure(config)}}}, nil
+	return []record.Record{{Name: "config/infrastructure", Item: record.ResourceMarshaller{Resource: anonymizeInfrastructure(config)}}}, nil
 }
 
 func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastructure {

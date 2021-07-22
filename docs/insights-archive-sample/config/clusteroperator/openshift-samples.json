@@ -4,36 +4,42 @@
   "metadata": {
     "name": "openshift-samples",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-samples",
-    "uid": "98f87b0a-bbb6-41da-9fa4-b6d0303fd412",
-    "resourceVersion": "17175",
+    "uid": "7c4976f3-99e8-4244-a538-09c4f990b868",
+    "resourceVersion": "16099",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:51:08Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true",
+      "include.release.openshift.io/single-node-production-edge": "true"
+    }
   },
   "spec": {},
   "status": {
     "conditions": [
       {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:36Z"
+      },
+      {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:51:24Z",
-        "message": "Samples installation successful at 4.4.16"
+        "lastTransitionTime": "2021-07-07T11:33:49Z",
+        "message": "Samples installation successful at 4.7.16"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:24Z",
-        "message": "Samples installation successful at 4.4.16"
-      },
-      {
-        "type": "Degraded",
-        "status": "False",
-        "lastTransitionTime": "2020-08-12T08:51:15Z"
+        "lastTransitionTime": "2021-07-07T11:33:49Z",
+        "message": "Samples installation successful at 4.7.16"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [

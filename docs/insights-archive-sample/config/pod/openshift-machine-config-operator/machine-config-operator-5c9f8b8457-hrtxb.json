@@ -1,0 +1,200 @@
+{
+  "metadata": {
+    "name": "machine-config-operator-5c9f8b8457-hrtxb",
+    "generateName": "machine-config-operator-5c9f8b8457-",
+    "namespace": "openshift-machine-config-operator",
+    "selfLink": "/api/v1/namespaces/openshift-machine-config-operator/pods/machine-config-operator-5c9f8b8457-hrtxb",
+    "uid": "49f91853-e5fe-4af0-93d0-30e4b2f962be",
+    "resourceVersion": "339761",
+    "creationTimestamp": "2021-07-07T11:03:29Z",
+    "labels": {
+      "k8s-app": "machine-config-operator",
+      "pod-template-hash": "5c9f8b8457"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.15\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.15\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "machine-config-operator-5c9f8b8457",
+        "uid": "68e63ca1-2efc-4e7a-b7c4-2fc3d04fa429",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "images",
+        "configMap": {
+          "name": "machine-config-operator-images",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "root-ca",
+        "hostPath": {
+          "path": "/etc/kubernetes/ca.crt",
+          "type": ""
+        }
+      },
+      {
+        "name": "default-token-qdzjz",
+        "secret": {
+          "secretName": "default-token-qdzjz",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "machine-config-operator",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa",
+        "args": [
+          "start",
+          "--images-json=/etc/mco/images/images.json"
+        ],
+        "env": [
+          {
+            "name": "RELEASE_VERSION",
+            "value": "4.7.16"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "20m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "root-ca",
+            "mountPath": "/etc/ssl/kubernetes/ca.crt"
+          },
+          {
+            "name": "images",
+            "mountPath": "/etc/mco/images"
+          },
+          {
+            "name": "default-token-qdzjz",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "default",
+    "serviceAccount": "default",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {
+      "runAsUser": 65534,
+      "runAsNonRoot": true
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-cluster-critical",
+    "priority": 2000000000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:02Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:02Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.15",
+    "podIPs": [
+      {
+        "ip": "10.128.0.15"
+      }
+    ],
+    "startTime": "2021-07-07T11:26:11Z",
+    "containerStatuses": [
+      {
+        "name": "machine-config-operator",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T11:00:02Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "message": "eDefinition is deprecated in v1.16+, unavailable in v1.22+; use apiextensions.k8s.io/v1 CustomResourceDefinition\nI0708 10:54:21.272245       1 sync.go:569] syncing Required MachineConfigPools\nW0708 10:54:23.085098       1 warnings.go:70] apiextensions.k8s.io/v1beta1 CustomResourceDefinition is deprecated in v1.16+, unavailable in v1.22+; use apiextensions.k8s.io/v1 CustomResourceDefinition\nI0708 10:54:28.544190       1 sync.go:569] syncing Required MachineConfigPools\nW0708 10:54:39.154537       1 warnings.go:70] apiextensions.k8s.io/v1beta1 CustomResourceDefinition is deprecated in v1.16+, unavailable in v1.22+; use apiextensions.k8s.io/v1 CustomResourceDefinition\nW0708 10:57:30.023692       1 warnings.go:70] apiextensions.k8s.io/v1beta1 CustomResourceDefinition is deprecated in v1.16+, unavailable in v1.22+; use apiextensions.k8s.io/v1 CustomResourceDefinition\nI0708 10:57:35.101019       1 sync.go:569] syncing Required MachineConfigPools\nW0708 10:57:36.912907       1 warnings.go:70] apiextensions.k8s.io/v1beta1 CustomResourceDefinition is deprecated in v1.16+, unavailable in v1.22+; use apiextensions.k8s.io/v1 CustomResourceDefinition\nI0708 10:57:42.371986       1 sync.go:569] syncing Required MachineConfigPools\nE0708 10:59:00.809337       1 leaderelection.go:325] error retrieving resource lock openshift-machine-config-operator/machine-config: Get \"https://172.30.0.1:443/api/v1/namespaces/openshift-machine-config-operator/configmaps/machine-config\": dial tcp 172.30.0.1:443: connect: connection refused\nE0708 10:59:30.810629       1 leaderelection.go:325] error retrieving resource lock openshift-machine-config-operator/machine-config: Get \"https://172.30.0.1:443/api/v1/namespaces/openshift-machine-config-operator/configmaps/machine-config\": dial tcp 172.30.0.1:443: connect: connection refused\nI0708 11:00:00.808914       1 leaderelection.go:278] failed to renew lease openshift-machine-config-operator/machine-config: timed out waiting for the condition\nF0708 11:00:00.809066       1 start.go:102] leaderelection lost\n",
+            "startedAt": "2021-07-08T06:18:30Z",
+            "finishedAt": "2021-07-08T11:00:00Z",
+            "containerID": "cri-o://9002d56117bad6eac3e28c7c715281d0a2361421f98f7f529aa34cb6495d932e"
+          }
+        },
+        "ready": true,
+        "restartCount": 7,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa",
+        "containerID": "cri-o://4ab0b9f71f8075167fd5c80ecc38e3641b6ae360f47d317dca2e2f5f9fb83720",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

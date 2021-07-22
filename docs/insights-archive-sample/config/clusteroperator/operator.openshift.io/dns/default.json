@@ -1,6 +1,6 @@
 {
-    "apiVersion": "operator.openshift.io/v1",
-    "kind": "DNS",
-    "name": "default",
-    "spec": {}
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "DNS",
+  "name": "default",
+  "spec": {}
 }

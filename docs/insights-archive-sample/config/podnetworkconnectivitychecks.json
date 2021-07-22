@@ -1,8 +1,30 @@
 {
+  "DNSError": {
+    "kubernetes-default-service-cluster: failure looking up host api-int.imeixner20210707.lab.upshift.rdu2.redhat.com: dial tcp: lookup api-int.imeixner20210707.lab.upshift.rdu2.redhat.com on 172.30.0.10:53: server misbehaving": "2021-07-12T23:20:25+02:00",
+    "load-balancer-api-external: failure looking up host api.imeixner20210707.lab.upshift.rdu2.redhat.com: dial tcp: lookup api.imeixner20210707.lab.upshift.rdu2.redhat.com on 172.30.0.10:53: server misbehaving": "2021-07-07T22:54:25+02:00",
+    "load-balancer-api-internal: failure looking up host api-int.imeixner20210707.lab.upshift.rdu2.redhat.com: dial tcp: lookup api-int.imeixner20210707.lab.upshift.rdu2.redhat.com on 172.30.0.10:53: server misbehaving": "2021-07-12T23:20:25+02:00"
+  },
   "TCPConnectError": {
-    "kubernetes-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.0.89.232:6443: dial tcp 10.0.89.232:6443: connect: connection refused": "2021-04-22T13:33:02+02:00",
-    "kubernetes-apiserver-service-cluster: failed to establish a TCP connection to 172.30.254.69:443: dial tcp 172.30.254.69:443: connect: connection refused": "2021-04-22T13:33:02+02:00",
-    "openshift-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.128.0.43:8443: dial tcp 10.128.0.43:8443: connect: connection refused": "2021-04-21T14:09:02+02:00",
-    "openshift-apiserver-service-cluster: failed to establish a TCP connection to 172.30.140.22:443: dial tcp 172.30.140.22:443: i/o timeout": "2021-04-21T14:09:02+02:00"
+    "kubernetes-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.0.88.27:6443: dial tcp 10.0.88.27:6443: connect: connection refused": "2021-07-08T12:59:25+02:00",
+    "kubernetes-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.0.88.27:6443: dial tcp 10.0.88.27:6443: connect: no route to host": "2021-07-07T22:53:25+02:00",
+    "kubernetes-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.0.88.27:6443: dial tcp 10.0.88.27:6443: i/o timeout": "2021-07-12T23:19:25+02:00",
+    "kubernetes-apiserver-service-cluster: failed to establish a TCP connection to 172.30.102.130:443: dial tcp 172.30.102.130:443: connect: connection refused": "2021-07-08T12:59:25+02:00",
+    "kubernetes-apiserver-service-cluster: failed to establish a TCP connection to 172.30.102.130:443: dial tcp 172.30.102.130:443: connect: no route to host": "2021-07-07T22:53:25+02:00",
+    "kubernetes-apiserver-service-cluster: failed to establish a TCP connection to 172.30.102.130:443: dial tcp 172.30.102.130:443: i/o timeout": "2021-07-12T23:19:25+02:00",
+    "kubernetes-default-service-cluster: failed to establish a TCP connection to api-int.imeixner20210707.lab.upshift.rdu2.redhat.com:6443: dial tcp 10.0.92.118:6443: connect: no route to host": "2021-07-12T23:19:29+02:00",
+    "kubernetes-default-service-cluster: failed to establish a TCP connection to api-int.imeixner20210707.lab.upshift.rdu2.redhat.com:6443: dial tcp 10.0.92.118:6443: i/o timeout": "2021-07-07T20:43:25+02:00",
+    "load-balancer-api-external: failed to establish a TCP connection to api.imeixner20210707.lab.upshift.rdu2.redhat.com:6443: dial tcp 10.0.92.118:6443: connect: no route to host": "2021-07-07T18:11:01+02:00",
+    "load-balancer-api-external: failed to establish a TCP connection to api.imeixner20210707.lab.upshift.rdu2.redhat.com:6443: dial tcp 10.0.92.118:6443: i/o timeout": "2021-07-12T23:19:29+02:00",
+    "load-balancer-api-internal: failed to establish a TCP connection to api-int.imeixner20210707.lab.upshift.rdu2.redhat.com:6443: dial tcp 10.0.92.118:6443: connect: no route to host": "2021-07-07T22:48:29+02:00",
+    "load-balancer-api-internal: failed to establish a TCP connection to api-int.imeixner20210707.lab.upshift.rdu2.redhat.com:6443: dial tcp 10.0.92.118:6443: i/o timeout": "2021-07-12T23:19:29+02:00",
+    "network-check-target-master-0: failed to establish a TCP connection to 10.128.0.2:8080: dial tcp 10.128.0.2:8080: connect: no route to host": "2021-07-12T23:19:25+02:00",
+    "network-check-target-master-0: failed to establish a TCP connection to 10.128.0.2:8080: dial tcp 10.128.0.2:8080: i/o timeout": "2021-07-12T23:18:25+02:00",
+    "network-check-target-service-cluster: failed to establish a TCP connection to network-check-target:80: dial tcp 172.30.96.101:80: connect: no route to host": "2021-07-12T23:19:25+02:00",
+    "network-check-target-service-cluster: failed to establish a TCP connection to network-check-target:80: dial tcp 172.30.96.101:80: i/o timeout": "2021-07-12T23:18:25+02:00",
+    "openshift-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.128.0.52:8443: dial tcp 10.128.0.52:8443: connect: connection refused": "2021-07-07T13:43:57+02:00",
+    "openshift-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.128.0.89:8443: dial tcp 10.128.0.89:8443: connect: no route to host": "2021-07-12T23:19:25+02:00",
+    "openshift-apiserver-endpoint-master-0: failed to establish a TCP connection to 10.128.0.89:8443: dial tcp 10.128.0.89:8443: i/o timeout": "2021-07-12T23:18:25+02:00",
+    "openshift-apiserver-service-cluster: failed to establish a TCP connection to 172.30.220.38:443: dial tcp 172.30.220.38:443: connect: no route to host": "2021-07-12T23:19:25+02:00",
+    "openshift-apiserver-service-cluster: failed to establish a TCP connection to 172.30.220.38:443: dial tcp 172.30.220.38:443: i/o timeout": "2021-07-12T23:18:25+02:00"
   }
 }

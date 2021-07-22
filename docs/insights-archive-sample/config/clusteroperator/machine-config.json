@@ -4,42 +4,47 @@
   "metadata": {
     "name": "machine-config",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/machine-config",
-    "uid": "55ca3e12-2a8f-4e51-a9be-4169d9ae59fb",
-    "resourceVersion": "5106",
+    "uid": "53dc75b8-76f9-4629-a82e-dcbb22a6a88c",
+    "resourceVersion": "1782290",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:20Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
     "conditions": [
       {
-        "type": "Available",
-        "status": "True",
-        "lastTransitionTime": "2020-08-12T08:30:32Z",
-        "message": "Cluster has deployed 4.4.16"
-      },
-      {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:30:32Z",
-        "message": "Cluster version is 4.4.16"
-      },
-      {
-        "type": "Degraded",
-        "status": "False",
-        "lastTransitionTime": "2020-08-12T08:29:20Z"
+        "lastTransitionTime": "2021-07-07T11:27:15Z",
+        "message": "Cluster version is 4.7.16"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:30:32Z",
+        "lastTransitionTime": "2021-07-07T11:27:14Z",
         "reason": "AsExpected"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:27:14Z"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:27:14Z",
+        "message": "Cluster has deployed 4.7.16"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -51,19 +56,57 @@
       {
         "group": "machineconfiguration.openshift.io",
         "resource": "machineconfigpools",
-        "name": "master"
-      },
-      {
-        "group": "machineconfiguration.openshift.io",
-        "resource": "machineconfigpools",
-        "name": "worker"
+        "name": ""
       },
       {
         "group": "machineconfiguration.openshift.io",
         "resource": "controllerconfigs",
-        "name": "machine-config-controller"
+        "name": ""
+      },
+      {
+        "group": "machineconfiguration.openshift.io",
+        "resource": "kubeletconfigs",
+        "name": ""
+      },
+      {
+        "group": "machineconfiguration.openshift.io",
+        "resource": "containerruntimeconfigs",
+        "name": ""
+      },
+      {
+        "group": "machineconfiguration.openshift.io",
+        "resource": "machineconfigs",
+        "name": ""
+      },
+      {
+        "group": "",
+        "resource": "nodes",
+        "name": ""
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kni-infra"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-openstack-infra"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-ovirt-infra"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-vsphere-infra"
       }
     ],
-    "extension": {}
+    "extension": {
+      "master": "all 1 nodes are at latest configuration rendered-master-025110333ea44423ccb1052723956671",
+      "worker": "all 1 nodes are at latest configuration rendered-worker-39c9df4a2c026c3149a02abe6f88cfc8"
+    }
   }
 }

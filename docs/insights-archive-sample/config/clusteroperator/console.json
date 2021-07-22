@@ -4,10 +4,15 @@
   "metadata": {
     "name": "console",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/console",
-    "uid": "18b434f0-86fd-4df0-ba86-14b952acd9cd",
-    "resourceVersion": "22857",
+    "uid": "283d2220-5777-4c37-ab43-dbb871912593",
+    "resourceVersion": "643330",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:49:38Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,32 +20,36 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:49:39Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T21:18:54Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:56:41Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:42:53Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:56:41Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:42:53Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:49:39Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:33:08Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -62,6 +71,11 @@
       {
         "group": "config.openshift.io",
         "resource": "proxies",
+        "name": "cluster"
+      },
+      {
+        "group": "config.openshift.io",
+        "resource": "oauths",
         "name": "cluster"
       },
       {

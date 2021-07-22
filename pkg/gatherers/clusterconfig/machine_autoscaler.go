@@ -41,14 +41,14 @@ func gatherMachineAutoscalers(ctx context.Context, dynamicClient dynamic.Interfa
 	}
 
 	var records []record.Record
-	for _, i := range machineAutoscaler.Items {
-		recordName := fmt.Sprintf("config/machineautoscalers/%s", i.GetName())
-		if i.GetNamespace() != "" {
-			recordName = fmt.Sprintf("config/machineautoscalers/%s/%s", i.GetNamespace(), i.GetName())
+	for i, mas := range machineAutoscaler.Items {
+		recordName := fmt.Sprintf("config/machineautoscalers/%s", mas.GetName())
+		if mas.GetNamespace() != "" {
+			recordName = fmt.Sprintf("config/machineautoscalers/%s/%s", mas.GetNamespace(), mas.GetName())
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.JSONMarshaller{Object: i.Object},
+			Item: record.ResourceMarshaller{Resource: &machineAutoscaler.Items[i]},
 		})
 	}
 

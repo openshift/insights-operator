@@ -1,0 +1,173 @@
+{
+  "metadata": {
+    "name": "machine-config-controller-8d486476f-c9qpm",
+    "generateName": "machine-config-controller-8d486476f-",
+    "namespace": "openshift-machine-config-operator",
+    "selfLink": "/api/v1/namespaces/openshift-machine-config-operator/pods/machine-config-controller-8d486476f-c9qpm",
+    "uid": "67f09097-6d47-4c4d-a5fe-b86ceb9ceda3",
+    "resourceVersion": "339772",
+    "creationTimestamp": "2021-07-07T11:26:55Z",
+    "labels": {
+      "k8s-app": "machine-config-controller",
+      "pod-template-hash": "8d486476f"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.26\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.26\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "machine-config-controller-8d486476f",
+        "uid": "febc3136-ee8f-4082-83cf-34153b385b62",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "machine-config-controller-token-brfnl",
+        "secret": {
+          "secretName": "machine-config-controller-token-brfnl",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "machine-config-controller",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa",
+        "command": [
+          "/usr/bin/machine-config-controller"
+        ],
+        "args": [
+          "start",
+          "--resourcelock-namespace=openshift-machine-config-operator",
+          "--v=2"
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "20m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "machine-config-controller-token-brfnl",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "machine-config-controller",
+    "serviceAccount": "machine-config-controller",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {},
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-cluster-critical",
+    "priority": 2000000000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:55Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:23Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:23Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:55Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.26",
+    "podIPs": [
+      {
+        "ip": "10.128.0.26"
+      }
+    ],
+    "startTime": "2021-07-07T11:26:55Z",
+    "containerStatuses": [
+      {
+        "name": "machine-config-controller",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T11:00:23Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "message": " 07:17:53.591692       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nW0708 07:46:38.848676       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nW0708 08:15:24.105738       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nW0708 08:44:09.362946       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nW0708 09:12:54.620220       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nW0708 09:41:39.877157       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nW0708 10:10:25.134336       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nW0708 10:39:10.391487       1 node_controller.go:959] Refusing to honor master pool maxUnavailable 1 to prevent losing etcd quorum, using 0 instead\nE0708 10:59:22.615694       1 leaderelection.go:325] error retrieving resource lock openshift-machine-config-operator/machine-config-controller: Get \"https://172.30.0.1:443/api/v1/namespaces/openshift-machine-config-operator/configmaps/machine-config-controller\": dial tcp 172.30.0.1:443: connect: connection refused\nE0708 10:59:52.616365       1 leaderelection.go:325] error retrieving resource lock openshift-machine-config-operator/machine-config-controller: Get \"https://172.30.0.1:443/api/v1/namespaces/openshift-machine-config-operator/configmaps/machine-config-controller\": dial tcp 172.30.0.1:443: connect: connection refused\nI0708 11:00:22.614967       1 leaderelection.go:278] failed to renew lease openshift-machine-config-operator/machine-config-controller: timed out waiting for the condition\nF0708 11:00:22.615145       1 start.go:85] leaderelection lost\n",
+            "startedAt": "2021-07-08T06:18:22Z",
+            "finishedAt": "2021-07-08T11:00:22Z",
+            "containerID": "cri-o://69bbbc2b0bec9c3ae98b5923533032fb205c54dab6f9ab8222427c476bdc7709"
+          }
+        },
+        "ready": true,
+        "restartCount": 7,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:390e6b5727214f0294c64fb402738de1678cff5cba9204b880f3ea25edc5e2aa",
+        "containerID": "cri-o://c8b71222516f5d34639b878e846fe18dc79ccc005141698df4986e1a8bc8ff21",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

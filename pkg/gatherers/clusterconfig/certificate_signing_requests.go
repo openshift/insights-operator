@@ -83,7 +83,7 @@ func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 
 // GetExtension returns extension for CSR objects
 func (a CSRAnonymizer) GetExtension() string {
-	return jsonExtension
+	return record.JSONExtension
 }
 
 type CSRs struct {

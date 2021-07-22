@@ -1,62 +1,83 @@
 {
-  "kind": "ClusterVersion",
-  "apiVersion": "config.openshift.io/v1",
   "metadata": {
     "name": "version",
     "selfLink": "/apis/config.openshift.io/v1/clusterversions/version",
-    "uid": "95a8c9ca-b2d2-40ce-a13f-42d76dbffd7b",
-    "resourceVersion": "24552",
+    "uid": "4f350610-d4a6-4048-b2bd-3e1583634351",
+    "resourceVersion": "87835",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:27:18Z"
+    "creationTimestamp": "2021-07-07T11:02:53Z"
   },
   "spec": {
-    "clusterID": "d669cb71-8256-4e8b-a8df-333a5e2dd753",
-    "upstream": "xxxxx://xxx.xxxxxxxxx.xxx/xxx/xxxxxxxxxxxxx/xx/xxxxx"
+    "clusterID": "84ef291d-8f1b-4d28-ab34-cfddff941b84",
+    "channel": "stable-4.7"
   },
   "status": {
     "desired": {
-      "version": "4.4.16",
-      "image": "registry.svc.ci.openshift.org/ocp/release@sha256:74b5cefea8c8bac158468458dbcb0fdb213aafdcf5b11c9aaefc75e2f7b9fe96",
-      "force": false
+      "version": "4.7.16",
+      "image": "quay.io/openshift-release-dev/ocp-release@sha256:3e59cff6101b0f0732540d9f2cf1fe9c7ea5ab1e8737df82e789eeb129d1a9af",
+      "url": "https://access.redhat.com/errata/RHSA-2021:2286",
+      "channels": [
+        "candidate-4.7",
+        "candidate-4.8",
+        "fast-4.7",
+        "stable-4.7"
+      ]
     },
     "history": [
       {
         "state": "Completed",
-        "startedTime": "2020-08-12T08:27:28Z",
-        "completionTime": "2020-08-12T09:01:35Z",
-        "version": "4.4.16",
-        "image": "registry.svc.ci.openshift.org/ocp/release@sha256:74b5cefea8c8bac158468458dbcb0fdb213aafdcf5b11c9aaefc75e2f7b9fe96",
+        "startedTime": "2021-07-07T11:02:54Z",
+        "completionTime": "2021-07-07T11:42:56Z",
+        "version": "4.7.16",
+        "image": "quay.io/openshift-release-dev/ocp-release@sha256:3e59cff6101b0f0732540d9f2cf1fe9c7ea5ab1e8737df82e789eeb129d1a9af",
         "verified": false
       }
     ],
     "observedGeneration": 1,
-    "versionHash": "y5Y3uXH22Ww=",
+    "versionHash": "eY5iY9nt7EE=",
     "conditions": [
-      {
-        "type": "RetrievedUpdates",
-        "status": "False",
-        "lastTransitionTime": "2020-08-12T08:27:28Z",
-        "reason": "NoChannel",
-        "message": "The update channel has not been configured."
-      },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T09:01:35Z",
-        "message": "Done applying 4.4.16"
+        "lastTransitionTime": "2021-07-07T11:42:56Z",
+        "message": "Done applying 4.7.16"
       },
       {
         "type": "Failing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:50:46Z"
+        "lastTransitionTime": "2021-07-07T16:20:32Z"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T09:01:35Z",
-        "message": "Cluster version is 4.4.16"
+        "lastTransitionTime": "2021-07-07T11:42:56Z",
+        "message": "Cluster version is 4.7.16"
+      },
+      {
+        "type": "RetrievedUpdates",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:02:54Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:28:15Z",
+        "reason": "ClusterOperatorsNotUpgradeable",
+        "message": "Multiple cluster operators cannot be upgraded between minor versions:\n* Cluster operator etcd cannot be upgraded between minor versions: UnsupportedConfigOverrides_UnsupportedConfigOverridesSet: UnsupportedConfigOverridesUpgradeable: setting: [useUnsupportedUnsafeNonHANonProductionUnstableEtcd]\n* Cluster operator authentication cannot be upgraded between minor versions: UnsupportedConfigOverrides_UnsupportedConfigOverridesSet: UnsupportedConfigOverridesUpgradeable: setting: [useUnsupportedUnsafeNonHANonProductionUnstableOAuthServer]"
       }
     ],
-    "availableUpdates": null
+    "availableUpdates": [
+      {
+        "version": "4.7.18",
+        "image": "quay.io/openshift-release-dev/ocp-release@sha256:afcb309425d45a240de2df8e376f9632e6144052177fd62a0347934657b3573f",
+        "url": "https://access.redhat.com/errata/RHBA-2021:2502",
+        "channels": [
+          "candidate-4.7",
+          "candidate-4.8",
+          "fast-4.7",
+          "stable-4.7"
+        ]
+      }
+    ]
   }
 }

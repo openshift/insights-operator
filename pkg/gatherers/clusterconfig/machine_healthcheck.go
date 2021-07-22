@@ -41,14 +41,14 @@ func gatherMachineHealthCheck(ctx context.Context, dynamicClient dynamic.Interfa
 	}
 
 	var records []record.Record
-	for _, i := range machineHealthcheck.Items {
-		recordName := fmt.Sprintf("config/machinehealthchecks/%s", i.GetName())
-		if i.GetNamespace() != "" {
-			recordName = fmt.Sprintf("config/machinehealthchecks/%s/%s", i.GetNamespace(), i.GetName())
+	for i, mhc := range machineHealthcheck.Items {
+		recordName := fmt.Sprintf("config/machinehealthchecks/%s", mhc.GetName())
+		if mhc.GetNamespace() != "" {
+			recordName = fmt.Sprintf("config/machinehealthchecks/%s/%s", mhc.GetNamespace(), mhc.GetName())
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.JSONMarshaller{Object: i.Object},
+			Item: record.ResourceMarshaller{Resource: &machineHealthcheck.Items[i]},
 		})
 	}
 

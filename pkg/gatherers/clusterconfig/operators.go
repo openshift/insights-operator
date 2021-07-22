@@ -98,7 +98,7 @@ func clusterOperatorsRecords(ctx context.Context,
 	for idx := range items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/clusteroperator/%s", items[idx].Name),
-			Item: record.JSONMarshaller{Object: &items[idx]},
+			Item: record.ResourceMarshaller{Resource: &items[idx]},
 		})
 		if resVer == nil {
 			continue

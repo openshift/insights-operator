@@ -4,10 +4,14 @@
   "metadata": {
     "name": "kube-storage-version-migrator",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-storage-version-migrator",
-    "uid": "f4d98159-e2e4-4499-a030-34c80cae0233",
-    "resourceVersion": "20472",
+    "uid": "3354fd2d-cbe9-4167-ba5f-5be7842a80fa",
+    "resourceVersion": "1782110",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:29:28Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true"
+    }
   },
   "spec": {},
   "status": {
@@ -15,32 +19,35 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:29:28Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:29:29Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-07T11:29:35Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:53:43Z",
-        "reason": "AsExpected"
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "AsExpected",
+        "message": "All is well"
       },
       {
         "type": "Upgradeable",
         "status": "Unknown",
-        "lastTransitionTime": "2020-08-12T08:29:28Z",
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
         "reason": "NoData"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "kube-storage-version-migrator",

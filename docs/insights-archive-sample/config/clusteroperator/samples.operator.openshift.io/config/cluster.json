@@ -1,11 +1,11 @@
 {
-    "apiVersion": "samples.operator.openshift.io/v1",
-    "kind": "Config",
-    "name": "cluster",
-    "spec": {
-        "architectures": [
-            "x86_64"
-        ],
-        "managementState": "Managed"
-    }
+  "apiVersion": "samples.operator.openshift.io/v1",
+  "kind": "Config",
+  "name": "cluster",
+  "spec": {
+    "architectures": [
+      "x86_64"
+    ],
+    "managementState": "Managed"
+  }
 }

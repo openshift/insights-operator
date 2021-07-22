@@ -4,41 +4,49 @@
   "metadata": {
     "name": "ingress",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/ingress",
-    "uid": "cfca2e51-35ee-445c-87e3-a91b639843ca",
-    "resourceVersion": "24056",
+    "uid": "4b5cbaa3-f6ef-49ba-a2b5-eb9608ee4ac5",
+    "resourceVersion": "1795888",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:49:57Z"
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
   },
   "spec": {},
   "status": {
     "conditions": [
       {
-        "type": "Degraded",
-        "status": "False",
-        "lastTransitionTime": "2020-08-12T08:53:50Z",
-        "reason": "NoIngressControllersDegraded"
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "AsExpected",
+        "message": "desired and current number of IngressControllers are equal"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T09:00:20Z",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "AsExpected",
         "message": "desired and current number of IngressControllers are equal"
       },
       {
-        "type": "Available",
+        "type": "Degraded",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:53:50Z",
-        "message": "desired and current number of IngressControllers are equal"
+        "lastTransitionTime": "2021-07-12T22:20:58Z",
+        "reason": "IngressControllersDegraded",
+        "message": "Some ingresscontrollers are degraded: ingresscontroller \"default\" is degraded: DegradedConditions: One or more other status conditions indicate a degraded state: PodsScheduled=False (PodsNotScheduled: Some pods are not scheduled: Pod \"router-default-7bbdcfcf9b-7xdln\" cannot be scheduled: 0/2 nodes are available: 1 node(s) didn't have free ports for the requested pod ports, 1 node(s) had taint {node-role.kubernetes.io/master: }, that the pod didn't tolerate. Make sure you have sufficient worker nodes.), DeploymentReplicasAllAvailable=False (DeploymentReplicasNotAvailable: 1/2 of replicas are available)"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       },
       {
         "name": "ingress-controller",
-        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:92e7ce01fe2db3c45cc57f8fdf302790754be3ac125bb7368ad5638d63d4dbd5"
+        "version": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:cdc05f16135f40d5974e4a827244fb87862219136da7a3d36c8ff2dfc2135a78"
       }
     ],
     "relatedObjects": [
@@ -63,6 +71,11 @@
         "group": "",
         "resource": "namespaces",
         "name": "openshift-ingress"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-ingress-canary"
       }
     ],
     "extension": null

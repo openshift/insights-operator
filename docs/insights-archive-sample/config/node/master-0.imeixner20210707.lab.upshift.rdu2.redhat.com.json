@@ -1,0 +1,112 @@
+{
+  "metadata": {
+    "name": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "selfLink": "/api/v1/nodes/master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "uid": "7b9db4ae-6ec2-45b7-ba44-dd0df8e32466",
+    "resourceVersion": "1917241",
+    "creationTimestamp": "2021-07-07T11:23:18Z",
+    "labels": {
+      "beta.kubernetes.io/arch": "amd64",
+      "beta.kubernetes.io/os": "linux",
+      "kubernetes.io/arch": "amd64",
+      "kubernetes.io/hostname": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+      "kubernetes.io/os": "linux",
+      "node-role.kubernetes.io/master": "",
+      "node.openshift.io/os_id": "rhcos"
+    },
+    "annotations": {
+      "machineconfiguration.openshift.io/currentConfig": "rendered-master-025110333ea44423ccb1052723956671",
+      "machineconfiguration.openshift.io/desiredConfig": "rendered-master-025110333ea44423ccb1052723956671",
+      "machineconfiguration.openshift.io/reason": "",
+      "machineconfiguration.openshift.io/state": "Done",
+      "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+    }
+  },
+  "spec": {
+    "taints": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "effect": "NoSchedule"
+      }
+    ]
+  },
+  "status": {
+    "capacity": {
+      "cpu": "8",
+      "ephemeral-storage": "41407468Ki",
+      "hugepages-1Gi": "0",
+      "hugepages-2Mi": "0",
+      "memory": "16409932Ki",
+      "pods": "250"
+    },
+    "allocatable": {
+      "cpu": "7500m",
+      "ephemeral-storage": "37087380622",
+      "hugepages-1Gi": "0",
+      "hugepages-2Mi": "0",
+      "memory": "15258956Ki",
+      "pods": "250"
+    },
+    "conditions": [
+      {
+        "type": "MemoryPressure",
+        "status": "False",
+        "lastHeartbeatTime": "2021-07-13T07:18:14Z",
+        "lastTransitionTime": "2021-07-07T11:23:18Z",
+        "reason": "KubeletHasSufficientMemory",
+        "message": "kubelet has sufficient memory available"
+      },
+      {
+        "type": "DiskPressure",
+        "status": "False",
+        "lastHeartbeatTime": "2021-07-13T07:18:14Z",
+        "lastTransitionTime": "2021-07-07T11:23:18Z",
+        "reason": "KubeletHasNoDiskPressure",
+        "message": "kubelet has no disk pressure"
+      },
+      {
+        "type": "PIDPressure",
+        "status": "False",
+        "lastHeartbeatTime": "2021-07-13T07:18:14Z",
+        "lastTransitionTime": "2021-07-07T11:23:18Z",
+        "reason": "KubeletHasSufficientPID",
+        "message": "kubelet has sufficient PID available"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastHeartbeatTime": "2021-07-13T07:18:14Z",
+        "lastTransitionTime": "2021-07-07T11:26:08Z",
+        "reason": "KubeletReady",
+        "message": "kubelet is posting ready status"
+      }
+    ],
+    "addresses": [
+      {
+        "type": "InternalIP",
+        "address": "10.0.88.27"
+      },
+      {
+        "type": "Hostname",
+        "address": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com"
+      }
+    ],
+    "daemonEndpoints": {
+      "kubeletEndpoint": {
+        "Port": 10250
+      }
+    },
+    "nodeInfo": {
+      "machineID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "systemUUID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "bootID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "kernelVersion": "4.18.0-240.22.1.el8_3.x86_64",
+      "osImage": "Red Hat Enterprise Linux CoreOS 47.83.202106032343-0 (Ootpa)",
+      "containerRuntimeVersion": "cri-o://1.20.3-2.rhaos4.7.gitb53fa9d.el8",
+      "kubeletVersion": "v1.20.0+2817867",
+      "kubeProxyVersion": "v1.20.0+2817867",
+      "operatingSystem": "linux",
+      "architecture": "amd64"
+    }
+  }
+}

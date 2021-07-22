@@ -44,7 +44,7 @@ func gatherHostSubnet(ctx context.Context, networkClient networkv1client.Network
 	for i := range hostSubnetList.Items {
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/hostsubnet/%s", hostSubnetList.Items[i].Host),
-			Item: record.JSONMarshaller{Object: hostSubnetList.Items[i]},
+			Item: record.ResourceMarshaller{Resource: &hostSubnetList.Items[i]},
 		})
 	}
 	return records, nil

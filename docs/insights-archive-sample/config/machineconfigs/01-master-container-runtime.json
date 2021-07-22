@@ -1,98 +1,46 @@
 {
-    "apiVersion": "machineconfiguration.openshift.io/v1",
-    "kind": "MachineConfig",
-    "metadata": {
-        "annotations": {
-            "machineconfiguration.openshift.io/generated-by-controller-version": "c4b7e3f5118d62fc3aaaa1fed5eb9ba0d12792de"
-        },
-        "creationTimestamp": "2021-06-14T09:51:37Z",
-        "generation": 1,
-        "labels": {
-            "machineconfiguration.openshift.io/role": "master"
-        },
-        "managedFields": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:metadata": {
-                        "f:annotations": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/generated-by-controller-version": {}
-                        },
-                        "f:labels": {
-                            ".": {},
-                            "f:machineconfiguration.openshift.io/role": {}
-                        },
-                        "f:ownerReferences": {
-                            ".": {},
-                            "k:{\"uid\":\"68f9cf4f-8c71-4cd5-a82b-a24e8dfa59a4\"}": {
-                                ".": {},
-                                "f:apiVersion": {},
-                                "f:blockOwnerDeletion": {},
-                                "f:controller": {},
-                                "f:kind": {},
-                                "f:name": {},
-                                "f:uid": {}
-                            }
-                        }
-                    },
-                    "f:spec": {
-                        ".": {},
-                        "f:config": {
-                            ".": {},
-                            "f:ignition": {
-                                ".": {},
-                                "f:version": {}
-                            },
-                            "f:storage": {
-                                ".": {},
-                                "f:files": {}
-                            }
-                        },
-                        "f:extensions": {},
-                        "f:fips": {},
-                        "f:kernelArguments": {},
-                        "f:kernelType": {},
-                        "f:osImageURL": {}
-                    }
-                },
-                "manager": "machine-config-controller",
-                "operation": "Update",
-                "time": "2021-06-14T09:51:37Z"
-            }
-        ],
-        "name": "01-master-container-runtime",
-        "ownerReferences": [
-            {
-                "apiVersion": "machineconfiguration.openshift.io/v1",
-                "blockOwnerDeletion": true,
-                "controller": true,
-                "kind": "ControllerConfig",
-                "name": "machine-config-controller",
-                "uid": "68f9cf4f-8c71-4cd5-a82b-a24e8dfa59a4"
-            }
-        ],
-        "resourceVersion": "7527",
-        "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/01-master-container-runtime",
-        "uid": "881bb4a7-4b5b-4504-b37b-9e10bea47b3b"
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "annotations": {
+      "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
     },
-    "spec": {
-        "config": {
-            "ignition": {
-                "version": "3.2.0"
-            },
-            "passwd": {
-                "users": null
-            },
-            "storage": {
-                "files": null
-            }
-        },
-        "extensions": null,
-        "fips": false,
-        "kernelArguments": null,
-        "kernelType": "",
-        "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5649fe979b5ebe2615344d398ee0a841c9ea49d72be9edaf4048ccea5a729c32"
-    }
+    "creationTimestamp": "2021-07-07T11:26:59Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "master"
+    },
+    "name": "01-master-container-runtime",
+    "ownerReferences": [
+      {
+        "apiVersion": "machineconfiguration.openshift.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ControllerConfig",
+        "name": "machine-config-controller",
+        "uid": "07498a84-c3bf-4eec-9cc3-8cb0ad1e32c2"
+      }
+    ],
+    "resourceVersion": "7292",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/01-master-container-runtime",
+    "uid": "2c5dae71-973b-42fa-a4b3-c4eb6db04e44"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1c91baf8b4498144cfd87383a712639ebe14639c1dfd163c37c423713c935958"
+  }
 }

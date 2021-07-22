@@ -4,11 +4,14 @@
   "metadata": {
     "name": "network",
     "selfLink": "/apis/config.openshift.io/v1/clusteroperators/network",
-    "uid": "5a81d8b8-39a4-496c-85fa-e7cfbb6ef619",
-    "resourceVersion": "20517",
+    "uid": "533e85ab-7feb-4c04-83f5-a9837263a683",
+    "resourceVersion": "1782179",
     "generation": 1,
-    "creationTimestamp": "2020-08-12T08:28:27Z",
+    "creationTimestamp": "2021-07-07T11:02:54Z",
     "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true",
       "network.operator.openshift.io/last-seen-state": "{\"DaemonsetStates\":[],\"DeploymentStates\":[]}"
     }
   },
@@ -18,28 +21,33 @@
       {
         "type": "Degraded",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:28:27Z"
+        "lastTransitionTime": "2021-07-09T09:22:01Z"
+      },
+      {
+        "type": "ManagementStateDegraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:23:26Z"
       },
       {
         "type": "Upgradeable",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:28:27Z"
+        "lastTransitionTime": "2021-07-07T11:23:26Z"
       },
       {
         "type": "Progressing",
         "status": "False",
-        "lastTransitionTime": "2020-08-12T08:53:43Z"
+        "lastTransitionTime": "2021-07-12T21:20:39Z"
       },
       {
         "type": "Available",
         "status": "True",
-        "lastTransitionTime": "2020-08-12T08:29:17Z"
+        "lastTransitionTime": "2021-07-07T11:26:38Z"
       }
     ],
     "versions": [
       {
         "name": "operator",
-        "version": "4.4.16"
+        "version": "4.7.16"
       }
     ],
     "relatedObjects": [
@@ -58,6 +66,11 @@
         "group": "apiextensions.k8s.io",
         "resource": "customresourcedefinitions",
         "name": "ippools.whereabouts.cni.cncf.io"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": "overlappingrangeipreservations.whereabouts.cni.cncf.io"
       },
       {
         "group": "",
@@ -104,6 +117,52 @@
       },
       {
         "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "openshift-multus",
+        "name": "metrics-daemon-sa"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "metrics-daemon-role"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "metrics-daemon-sa-rolebinding"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-multus",
+        "name": "network-metrics-daemon"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "servicemonitors",
+        "namespace": "openshift-multus",
+        "name": "monitor-network"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "namespace": "openshift-multus",
+        "name": "network-metrics-service"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "roles",
+        "namespace": "openshift-multus",
+        "name": "prometheus-k8s"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "rolebindings",
+        "namespace": "openshift-multus",
+        "name": "prometheus-k8s"
+      },
+      {
+        "group": "",
         "resource": "services",
         "namespace": "openshift-multus",
         "name": "multus-admission-controller"
@@ -122,12 +181,6 @@
         "group": "admissionregistration.k8s.io",
         "resource": "validatingwebhookconfigurations",
         "name": "multus.openshift.io"
-      },
-      {
-        "group": "",
-        "resource": "configmaps",
-        "namespace": "openshift-network-operator",
-        "name": "openshift-service-ca"
       },
       {
         "group": "apps",
@@ -234,6 +287,11 @@
         "name": "default"
       },
       {
+        "group": "flowcontrol.apiserver.k8s.io",
+        "resource": "flowschemas",
+        "name": "openshift-sdn"
+      },
+      {
         "group": "monitoring.coreos.com",
         "resource": "prometheusrules",
         "namespace": "openshift-sdn",
@@ -270,10 +328,15 @@
         "name": "prometheus-k8s"
       },
       {
-        "group": "apps",
-        "resource": "daemonsets",
-        "namespace": "openshift-sdn",
-        "name": "ovs"
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-host-network"
+      },
+      {
+        "group": "",
+        "resource": "resourcequotas",
+        "namespace": "openshift-host-network",
+        "name": "host-network-namespace-quotas"
       },
       {
         "group": "",
@@ -290,7 +353,96 @@
       {
         "group": "",
         "resource": "namespaces",
+        "name": "openshift-network-diagnostics"
+      },
+      {
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-diagnostics"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "roles",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-diagnostics"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "rolebindings",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-diagnostics"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "network-diagnostics"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "network-diagnostics"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "rolebindings",
+        "namespace": "kube-system",
+        "name": "network-diagnostics"
+      },
+      {
+        "group": "apps",
+        "resource": "deployments",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-check-source"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-check-source"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "servicemonitors",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-check-source"
+      },
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-check-target"
+      },
+      {
+        "group": "",
+        "resource": "services",
+        "namespace": "openshift-network-diagnostics",
+        "name": "network-check-target"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
         "name": "openshift-network-operator"
+      },
+      {
+        "group": "operator.openshift.io",
+        "resource": "networks",
+        "name": "cluster"
+      },
+      {
+        "group": "networking.k8s.io",
+        "resource": "NetworkPolicy",
+        "name": ""
+      },
+      {
+        "group": "k8s.ovn.org",
+        "resource": "EgressFirewall",
+        "name": ""
+      },
+      {
+        "group": "k8s.ovn.org",
+        "resource": "EgressIP",
+        "name": ""
       }
     ],
     "extension": null

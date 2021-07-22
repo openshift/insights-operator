@@ -2,87 +2,20 @@
   "apiVersion": "machineconfiguration.openshift.io/v1",
   "kind": "MachineConfigPool",
   "metadata": {
-    "creationTimestamp": "2020-10-09T07:37:33Z",
+    "creationTimestamp": "2021-07-07T11:26:15Z",
     "generation": 2,
     "labels": {
       "machineconfiguration.openshift.io/mco-built-in": "",
       "pools.operator.machineconfiguration.openshift.io/worker": ""
     },
-    "managedFields": [
-      {
-        "apiVersion": "machineconfiguration.openshift.io/v1",
-        "fieldsType": "FieldsV1",
-        "fieldsV1": {
-          "f:metadata": {
-            "f:labels": {
-              ".": {},
-              "f:machineconfiguration.openshift.io/mco-built-in": {},
-              "f:pools.operator.machineconfiguration.openshift.io/worker": {}
-            }
-          },
-          "f:spec": {
-            ".": {},
-            "f:configuration": {},
-            "f:machineConfigSelector": {
-              ".": {},
-              "f:matchLabels": {
-                ".": {},
-                "f:machineconfiguration.openshift.io/role": {}
-              }
-            },
-            "f:nodeSelector": {
-              ".": {},
-              "f:matchLabels": {
-                ".": {},
-                "f:node-role.kubernetes.io/worker": {}
-              }
-            },
-            "f:paused": {}
-          }
-        },
-        "manager": "machine-config-operator",
-        "operation": "Update",
-        "time": "2020-10-09T07:37:33Z"
-      },
-      {
-        "apiVersion": "machineconfiguration.openshift.io/v1",
-        "fieldsType": "FieldsV1",
-        "fieldsV1": {
-          "f:spec": {
-            "f:configuration": {
-              "f:name": {},
-              "f:source": {}
-            }
-          },
-          "f:status": {
-            ".": {},
-            "f:conditions": {},
-            "f:configuration": {
-              ".": {},
-              "f:name": {},
-              "f:source": {}
-            },
-            "f:degradedMachineCount": {},
-            "f:machineCount": {},
-            "f:observedGeneration": {},
-            "f:readyMachineCount": {},
-            "f:unavailableMachineCount": {},
-            "f:updatedMachineCount": {}
-          }
-        },
-        "manager": "machine-config-controller",
-        "operation": "Update",
-        "time": "2020-10-09T07:45:32Z"
-      }
-    ],
     "name": "worker",
-    "resourceVersion": "18898",
+    "resourceVersion": "1782281",
     "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigpools/worker",
-    "uid": "e4c53efe-f489-41a6-98c4-786a640659ea"
+    "uid": "f1696051-daa7-4372-ae68-120ae99c92a2"
   },
   "spec": {
     "configuration": {
-      "name": "rendered-worker-39d3c3334fcddefcffe58854bcbbcd0a",
+      "name": "rendered-worker-39c9df4a2c026c3149a02abe6f88cfc8",
       "source": [
         {
           "apiVersion": "machineconfiguration.openshift.io/v1",
@@ -126,35 +59,35 @@
   "status": {
     "conditions": [
       {
-        "lastTransitionTime": "2020-10-09T07:38:03Z",
+        "lastTransitionTime": "2021-07-07T11:27:03Z",
         "message": "",
         "reason": "",
         "status": "False",
         "type": "RenderDegraded"
       },
       {
-        "lastTransitionTime": "2020-10-09T07:38:08Z",
+        "lastTransitionTime": "2021-07-07T11:27:08Z",
         "message": "",
         "reason": "",
         "status": "False",
         "type": "NodeDegraded"
       },
       {
-        "lastTransitionTime": "2020-10-09T07:38:08Z",
+        "lastTransitionTime": "2021-07-07T11:27:08Z",
         "message": "",
         "reason": "",
         "status": "False",
         "type": "Degraded"
       },
       {
-        "lastTransitionTime": "2020-10-09T07:45:32Z",
-        "message": "All nodes are updated with rendered-worker-39d3c3334fcddefcffe58854bcbbcd0a",
+        "lastTransitionTime": "2021-07-12T21:20:49Z",
+        "message": "All nodes are updated with rendered-worker-39c9df4a2c026c3149a02abe6f88cfc8",
         "reason": "",
         "status": "True",
         "type": "Updated"
       },
       {
-        "lastTransitionTime": "2020-10-09T07:45:32Z",
+        "lastTransitionTime": "2021-07-12T21:20:49Z",
         "message": "",
         "reason": "",
         "status": "False",
@@ -162,7 +95,7 @@
       }
     ],
     "configuration": {
-      "name": "rendered-worker-39d3c3334fcddefcffe58854bcbbcd0a",
+      "name": "rendered-worker-39c9df4a2c026c3149a02abe6f88cfc8",
       "source": [
         {
           "apiVersion": "machineconfiguration.openshift.io/v1",
@@ -192,10 +125,10 @@
       ]
     },
     "degradedMachineCount": 0,
-    "machineCount": 3,
+    "machineCount": 1,
     "observedGeneration": 2,
-    "readyMachineCount": 3,
+    "readyMachineCount": 1,
     "unavailableMachineCount": 0,
-    "updatedMachineCount": 3
+    "updatedMachineCount": 1
   }
 }

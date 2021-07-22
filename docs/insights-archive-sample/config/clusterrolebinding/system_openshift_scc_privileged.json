@@ -1,1 +1,59 @@
-{"metadata":{"name":"system:openshift:scc:privileged","selfLink":"/apis/authorization.openshift.io/v1/clusterrolebindings/system%3Aopenshift%3Ascc%3Aprivileged","uid":"6cc7c36c-e401-4c85-9546-55cbfc2d8c90","resourceVersion":"40739306","creationTimestamp":"2020-11-02T13:00:05Z","managedFields":[{"manager":"oc","operation":"Update","apiVersion":"rbac.authorization.k8s.io/v1","time":"2020-11-26T12:54:07Z","fieldsType":"FieldsV1","fieldsV1":{"f:roleRef":{"f:apiGroup":{},"f:kind":{},"f:name":{}},"f:subjects":{}}}]},"userNames":["system:serviceaccount:sdi:sdi-elasticsearch","system:serviceaccount:sdi:sdi-fluentd","system:serviceaccount:sdi:default","system:serviceaccount:sdi:vora-vflow-server","system:serviceaccount:sdi:vora-vsystem-sdi","system:serviceaccount:sdi:vora-vsystem-sdi-vrep","system:serviceaccount:sdi:mlf-deployment-api"],"groupNames":null,"subjects":[{"kind":"ServiceAccount","namespace":"sdi","name":"sdi-elasticsearch"},{"kind":"ServiceAccount","namespace":"sdi","name":"sdi-fluentd"},{"kind":"ServiceAccount","namespace":"sdi","name":"default"},{"kind":"ServiceAccount","namespace":"sdi","name":"vora-vflow-server"},{"kind":"ServiceAccount","namespace":"sdi","name":"vora-vsystem-sdi"},{"kind":"ServiceAccount","namespace":"sdi","name":"vora-vsystem-sdi-vrep"},{"kind":"ServiceAccount","namespace":"sdi","name":"mlf-deployment-api"}],"roleRef":{"name":"system:openshift:scc:privileged"}}
+{
+  "metadata": {
+    "name": "system:openshift:scc:privileged",
+    "selfLink": "/apis/authorization.openshift.io/v1/clusterrolebindings/system%3Aopenshift%3Ascc%3Aprivileged",
+    "uid": "30ac5256-53b5-41d2-8806-16a7fd8861fe",
+    "resourceVersion": "3383204",
+    "creationTimestamp": "2021-01-25T12:25:51Z"
+  },
+  "userNames": [
+    "system:serviceaccount:sdi:sdi-elasticsearch",
+    "system:serviceaccount:sdi:sdi-fluentd",
+    "system:serviceaccount:sdi:default",
+    "system:serviceaccount:sdi:mlf-deployment-api",
+    "system:serviceaccount:sdi:vora-vflow-server",
+    "system:serviceaccount:sdi:vora-vsystem-sdi",
+    "system:serviceaccount:sdi:vora-vsystem-sdi-vrep"
+  ],
+  "groupNames": null,
+  "subjects": [
+    {
+      "kind": "ServiceAccount",
+      "namespace": "sdi",
+      "name": "sdi-elasticsearch"
+    },
+    {
+      "kind": "ServiceAccount",
+      "namespace": "sdi",
+      "name": "sdi-fluentd"
+    },
+    {
+      "kind": "ServiceAccount",
+      "namespace": "sdi",
+      "name": "default"
+    },
+    {
+      "kind": "ServiceAccount",
+      "namespace": "sdi",
+      "name": "mlf-deployment-api"
+    },
+    {
+      "kind": "ServiceAccount",
+      "namespace": "sdi",
+      "name": "vora-vflow-server"
+    },
+    {
+      "kind": "ServiceAccount",
+      "namespace": "sdi",
+      "name": "vora-vsystem-sdi"
+    },
+    {
+      "kind": "ServiceAccount",
+      "namespace": "sdi",
+      "name": "vora-vsystem-sdi-vrep"
+    }
+  ],
+  "roleRef": {
+    "name": "system:openshift:scc:privileged"
+  }
+}
