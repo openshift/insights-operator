@@ -29,6 +29,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
+	"github.com/openshift/insights-operator/pkg/ocm"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
@@ -166,6 +167,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	go reportGatherer.Run(ctx)
 
 	klog.Warning("started")
+
+	// OMC controller periodically checks and pull data from the OCM API
+	// the data is exposed in the OpenShift API
+	ocmController := ocm.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
+	go ocmController.Run()
 
 	<-ctx.Done()
 

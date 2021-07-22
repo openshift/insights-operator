@@ -24,6 +24,11 @@ type Serialized struct {
 	Impersonate             string   `json:"impersonate"`
 	Gather                  []string `json:"gather"`
 	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
+	Ocm                     struct {
+		Endpoint string `json:"endpoint"`
+		Interval string `json:"interval"`
+		Disabled bool   `json:"disabled"`
+	}
 }
 
 // Controller defines the standard config for this operator.
@@ -56,6 +61,7 @@ type Controller struct {
 	Token    string
 
 	HTTPConfig HTTPConfig
+	OCMConfig  OCMConfig
 }
 
 // HTTPConfig configures http proxy and exception settings if they come from config
@@ -63,6 +69,13 @@ type HTTPConfig struct {
 	HTTPProxy  string
 	HTTPSProxy string
 	NoProxy    string
+}
+
+// OCMConfig configures the interval and endpoint for retrieving the data from OCM API
+type OCMConfig struct {
+	Interval time.Duration
+	Endpoint string
+	Disabled bool
 }
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
@@ -159,6 +172,18 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
 	}
 
+	if len(s.Ocm.Endpoint) > 0 {
+		cfg.OCMConfig.Endpoint = s.Ocm.Endpoint
+	}
+	cfg.OCMConfig.Disabled = s.Ocm.Disabled
+
+	if len(s.Ocm.Interval) > 0 {
+		i, err := time.ParseDuration(s.Ocm.Interval)
+		if err != nil {
+			return nil, fmt.Errorf("ocm interval must be a valid duration: %v", err)
+		}
+		cfg.OCMConfig.Interval = i
+	}
 	return cfg, nil
 }
 
