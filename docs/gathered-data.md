@@ -228,6 +228,8 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * "cluster-monitoring-config" ConfigMap data since versions:
   * 4.6.22+
   * 4.7+
+* "cluster-config-v1" ConfigMap since versions:
+  * 4.9+
 
 
 ## ContainerImages
@@ -285,7 +287,7 @@ API reference:
 
 * Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
 * Since versions:
-  * 4.8+
+  * 4.9+
 
 
 ## InstallPlans
@@ -305,21 +307,6 @@ The Operators-Framework api https://github.com/operator-framework/api/blob/maste
   * 4.7+
 
 
-## MachineAutoscalers
-
-collects MachineAutoscalers definition
-
-The Kubernetes api:
-      https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
-Response see:
-      https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
-
-* Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
-* Id in config: machine_autoscalers
-* Since versions:
-  * 4.8+
-
-
 ## LogsOfNamespace
 
 creates a gathering closure which collects logs from pods in the provided namespace
@@ -334,6 +321,21 @@ Response see:
          https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
+* Since versions:
+  * 4.9+
+
+
+## MachineAutoscalers
+
+collects MachineAutoscalers definition
+
+The Kubernetes api:
+      https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
+Response see:
+      https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
+
+* Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
+* Id in config: machine_autoscalers
 * Since versions:
   * 4.8+
 
@@ -493,6 +495,16 @@ Response see:
 * Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
 * Since versions:
   * 4.7+
+
+
+## OpenshiftLogging
+
+collects `logging.openshift.io` resources
+from Openshift Logging Stack.
+
+* Location in archive: config/logging/<namespace>/<name>.json
+* Since versions:
+  * 4.9+
 
 
 ## OpenshiftSDNControllerLogs
