@@ -10,15 +10,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
-	kubefake "k8s.io/client-go/kubernetes/fake"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 func Test_gatherOpenshiftLogging(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		dynamicClient dynamic.Interface
-		coreClient    corev1client.CoreV1Interface
 	}
 
 	clr := schema.GroupVersionResource{
@@ -40,7 +37,6 @@ func Test_gatherOpenshiftLogging(t *testing.T) {
 				dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
 					clr: "ClusterLoggingList",
 				}),
-				coreClient: kubefake.NewSimpleClientset().CoreV1(),
 			},
 			want:          nil,
 			expectedError: nil,
@@ -48,7 +44,7 @@ func Test_gatherOpenshiftLogging(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, errs := gatherOpenshiftLogging(tt.args.ctx, tt.args.dynamicClient, tt.args.coreClient)
+			got, errs := gatherOpenshiftLogging(tt.args.ctx, tt.args.dynamicClient)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("gatherOpenshiftLogging() got = %v, want %v", got, tt.want)
 			}
