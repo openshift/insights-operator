@@ -262,12 +262,12 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	counterRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		klog.V(2).Infof("gateway server %s returned 401, %s=%s", insightsReqId, resp.Request.URL, requestID)
+		klog.V(2).Infof("gateway server %s returned 401, %s=%s", resp.Request.URL, insightsReqId, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
-		klog.V(2).Infof("gateway server %s returned 403, %s=%s", insightsReqId, resp.Request.URL, requestID)
+		klog.V(2).Infof("gateway server %s returned 403, %s=%s", resp.Request.URL, insightsReqId, requestID)
 		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	}
 
@@ -280,7 +280,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	}
 
 	if len(requestID) > 0 {
-		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", insightsReqId, source.ID, requestID, bytesRead)
+		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, bytesRead)
 	}
 
 	return nil
