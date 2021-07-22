@@ -15,6 +15,12 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+// GatherOpenshiftLogging collects `logging.openshift.io` resources
+// from Openshift Logging Stack.
+//
+// * Location in archive: config/logging/<namespace>/<name>.json
+// * Since versions:
+//   * 4.9+
 func (g *Gatherer) GatherOpenshiftLogging(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -45,7 +51,7 @@ func gatherOpenshiftLogging(ctx context.Context,
 	var records []record.Record
 	for _, i := range elasticsearchList.Items {
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/logging/%s", i.GetName()),
+			Name: fmt.Sprintf("config/logging/%s/%s", i.GetNamespace(), i.GetName()),
 			Item: record.JSONMarshaller{Object: i.Object},
 		})
 	}
