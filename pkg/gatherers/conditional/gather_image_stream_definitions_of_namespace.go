@@ -14,7 +14,7 @@ import (
 )
 
 // BuildGatherImageStreamsOfNamespace creates a gathering closure which collects image streams from the provided namespace
-// Params:
+// Params is of type GatherImageStreamsOfNamespaceParams:
 //   - namespace string - namespace from which to collect image streams
 //
 // API reference:
@@ -23,15 +23,18 @@ import (
 // * Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
 // * Since versions:
 //   * 4.9+
-func (g *Gatherer) BuildGatherImageStreamsOfNamespace(gatherParams GatheringFunctionParams) (gatherers.GatheringClosure, error) {
-	namespace, err := getStringFromMap(gatherParams, "namespace")
-	if err != nil {
-		return gatherers.GatheringClosure{}, err
+func (g *Gatherer) BuildGatherImageStreamsOfNamespace(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
+	params, ok := paramsInterface.(GatherImageStreamsOfNamespaceParams)
+	if !ok {
+		return gatherers.GatheringClosure{}, fmt.Errorf(
+			"unexpected type in paramsInterface, expected %T, got %T",
+			GatherImageStreamsOfNamespaceParams{}, paramsInterface,
+		)
 	}
 
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
-			records, err := g.gatherImageStreamsOfNamespace(ctx, namespace)
+			records, err := g.gatherImageStreamsOfNamespace(ctx, params.Namespace)
 			if err != nil {
 				return records, []error{err}
 			}

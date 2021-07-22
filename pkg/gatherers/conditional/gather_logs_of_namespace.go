@@ -12,9 +12,8 @@ import (
 )
 
 // BuildGatherLogsOfNamespace creates a gathering closure which collects logs from pods in the provided namespace
-// Params:
-//   - namespace string - namespace from which to collect image streams
-//   - label_selector string - a label selector to filter some pods (default to all pods)
+// Params is of type GatherLogsOfNamespaceParams:
+//   - namespace string - namespace from which to collect logs
 //   - tail_lines int64 - a number of log lines to keep for each container
 //
 // The Kubernetes API:
@@ -25,25 +24,22 @@ import (
 // * Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
 // * Since versions:
 //   * 4.9+
-func (g *Gatherer) BuildGatherLogsOfNamespace(gatherParams GatheringFunctionParams) (gatherers.GatheringClosure, error) {
-	namespace, err := getStringFromMap(gatherParams, "namespace")
-	if err != nil {
-		return gatherers.GatheringClosure{}, err
-	}
-
-	labelSelector, err := getStringFromMap(gatherParams, "label_selector")
-	if err != nil {
-		return gatherers.GatheringClosure{}, err
-	}
-
-	tailLines, err := getPositiveInt64FromMap(gatherParams, "tail_lines")
-	if err != nil {
-		return gatherers.GatheringClosure{}, err
+func (g *Gatherer) BuildGatherLogsOfNamespace(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
+	params, ok := paramsInterface.(GatherLogsOfNamespaceParams)
+	if !ok {
+		return gatherers.GatheringClosure{}, fmt.Errorf(
+			"unexpected type in paramsInterface, expected %T, got %T",
+			GatherLogsOfNamespaceParams{}, paramsInterface,
+		)
 	}
 
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
-			records, err := g.gatherLogsOfNamespace(ctx, namespace, labelSelector, tailLines)
+			records, err := g.gatherLogsOfNamespace(
+				ctx,
+				params.Namespace,
+				params.TailLines,
+			)
 			if err != nil {
 				return records, []error{err}
 			}
@@ -53,9 +49,7 @@ func (g *Gatherer) BuildGatherLogsOfNamespace(gatherParams GatheringFunctionPara
 	}, nil
 }
 
-func (g *Gatherer) gatherLogsOfNamespace(
-	ctx context.Context, namespace, labelSelector string, tailLines int64,
-) ([]record.Record, error) {
+func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, tailLines int64) ([]record.Record, error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, err
@@ -69,8 +63,7 @@ func (g *Gatherer) gatherLogsOfNamespace(
 		ctx,
 		coreClient,
 		common.LogContainersFilter{
-			Namespace:     namespace,
-			LabelSelector: labelSelector,
+			Namespace: namespace,
 		},
 		common.LogMessagesFilter{
 			TailLines: tailLines,

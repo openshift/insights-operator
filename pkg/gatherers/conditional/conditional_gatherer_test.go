@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -31,6 +32,44 @@ func Test_Gatherer_Basic(t *testing.T) {
 	var g interface{} = gatherer
 	_, ok := g.(gatherers.CustomPeriodGatherer)
 	assert.False(t, ok, "should NOT implement gather.CustomPeriodGatherer")
+}
+
+func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+		_, err := rw.Write([]byte(`[{
+			"conditions": [
+				{
+					"type": "` + AlertIsFiring + `",
+					"params": { "name": "SamplesImagestreamImportFailing" }
+				}
+			],
+			"gathering_functions": {
+				"logs_of_namespace": {
+					"namespace": "openshift-cluster-samples-operator",
+					"tail_lines": 100
+				},
+				"image_streams_of_namespace": {
+					"namespace": "openshift-cluster-samples-operator"
+				}
+			}
+		}]`))
+		assert.NoError(t, err)
+	}))
+	defer mockServer.Close()
+
+	gatherer := newEmptyGatherer()
+	gatherer.gatheringRulesEndpoint = mockServer.URL
+	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+		"ALERTS{alertname=\"SamplesImagestreamImportFailing\",alertstate=\"firing\"} 1 1621618110163\n",
+	))
+	assert.NoError(t, err)
+
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
+	assert.Len(t, gatheringFunctions, 3)
+	_, found := gatheringFunctions["conditional_gatherer_rules"]
+	assert.True(t, found)
 }
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
@@ -98,62 +137,6 @@ func Test_getConditionalGatheringFunctionName(t *testing.T) {
 	assert.Equal(t, "func/param1=test,param2=5,param3=9", res)
 }
 
-func Test_getInterfaceFromMap(t *testing.T) {
-	i, err := getInterfaceFromMap(map[string]interface{}{}, "key")
-	assert.Nil(t, i)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err := getInterfaceFromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, "val", val)
-}
-
-func Test_getStringFromMap(t *testing.T) {
-	val, err := getStringFromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getStringFromMap(map[string]interface{}{"key": 9}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to convert '9' to string")
-
-	val, err = getStringFromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, "val", val)
-}
-
-func Test_getInt64FromMap(t *testing.T) {
-	val, err := getInt64FromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, `strconv.ParseInt: parsing "val": invalid syntax`)
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": 9}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(9), val)
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": "6"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(6), val)
-}
-
-func Test_getPositiveInt64FromMap(t *testing.T) {
-	val, err := getPositiveInt64FromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getPositiveInt64FromMap(map[string]interface{}{"key": "-6"}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "positive int expected, got '-6'")
-
-	val, err = getPositiveInt64FromMap(map[string]interface{}{"key": "6"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(6), val)
-}
-
 func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
 	gatherer := newEmptyGatherer()
 	records, errs := gatherer.GatherConditionalGathererRules(context.TODO())
@@ -165,7 +148,7 @@ func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
 	item, err := records[0].Item.Marshal(context.TODO())
 	assert.NoError(t, err)
 
-	var gotGatheringRules []gatheringRule
+	var gotGatheringRules []GatheringRule
 	err = json.Unmarshal(item, &gotGatheringRules)
 	assert.NoError(t, err)
 

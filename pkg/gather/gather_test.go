@@ -71,32 +71,6 @@ func Test_GetListOfEnabledFunctionForGatherer(t *testing.T) {
 	assert.Empty(t, functions)
 }
 
-func Test_sumErrors(t *testing.T) {
-	err := sumErrors([]error{})
-	assert.NoError(t, err)
-
-	err = sumErrors([]error{
-		fmt.Errorf("test error"),
-	})
-	assert.EqualError(t, err, "test error")
-
-	err = sumErrors([]error{
-		fmt.Errorf("error 1"),
-		fmt.Errorf("error 2"),
-		fmt.Errorf("error 3"),
-	})
-	assert.EqualError(t, err, "error 1, error 2, error 3")
-
-	err = sumErrors([]error{
-		fmt.Errorf("error 3"),
-		fmt.Errorf("error 3"),
-		fmt.Errorf("error 2"),
-		fmt.Errorf("error 1"),
-		fmt.Errorf("error 5"),
-	})
-	assert.EqualError(t, err, "error 1, error 2, error 3, error 5")
-}
-
 // nolint: funlen
 func Test_StartGatheringConcurrently(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
