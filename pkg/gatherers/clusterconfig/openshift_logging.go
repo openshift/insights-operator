@@ -28,7 +28,7 @@ func (g *Gatherer) GatherOpenshiftLogging(ctx context.Context) ([]record.Record,
 }
 
 func gatherOpenshiftLogging(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	elasticsearchList, err := dynamicClient.Resource(openshiftLoggingResource).List(ctx, metav1.ListOptions{})
+	loggingResourceList, err := dynamicClient.Resource(openshiftLoggingResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -38,10 +38,11 @@ func gatherOpenshiftLogging(ctx context.Context, dynamicClient dynamic.Interface
 	}
 
 	var records []record.Record
-	for _, i := range elasticsearchList.Items {
+	for i := range loggingResourceList.Items {
+		item := loggingResourceList.Items[i]
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/logging/%s/%s", i.GetNamespace(), i.GetName()),
-			Item: record.JSONMarshaller{Object: i.Object},
+			Name: fmt.Sprintf("config/logging/%s/%s", item.GetNamespace(), item.GetName()),
+			Item: record.ResourceMarshaller{Resource: &item},
 		})
 	}
 	return records, nil
