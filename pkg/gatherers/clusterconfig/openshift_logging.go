@@ -9,7 +9,6 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/record"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 )
 
@@ -29,14 +28,13 @@ func (g *Gatherer) GatherOpenshiftLogging(ctx context.Context) ([]record.Record,
 }
 
 func gatherOpenshiftLogging(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	elasticsearchResource := schema.GroupVersionResource{Group: "logging.openshift.io", Version: "v1", Resource: "clusterloggings"}
-
-	elasticsearchList, err := dynamicClient.Resource(elasticsearchResource).List(ctx, metav1.ListOptions{})
+	elasticsearchList, err := dynamicClient.Resource(openshiftLoggingResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
 	if err != nil {
-		klog.V(2).Infof("Unable to list %s resource due to: %s", elasticsearchResource, err)
+		klog.V(2).Infof("Unable to list %s resource due to: %s", openshiftLoggingResource, err)
+		return nil, []error{err}
 	}
 
 	var records []record.Record

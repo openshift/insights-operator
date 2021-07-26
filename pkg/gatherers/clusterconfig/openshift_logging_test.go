@@ -12,16 +12,10 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func Test_gatherOpenshiftLogging(t *testing.T) {
+func Test_GatherOpenshiftLogging(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		dynamicClient dynamic.Interface
-	}
-
-	clr := schema.GroupVersionResource{
-		Group:    "logging.openshift.io",
-		Version:  "v1",
-		Resource: "clusterloggings",
 	}
 
 	tests := []struct {
@@ -35,7 +29,7 @@ func Test_gatherOpenshiftLogging(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-					clr: "ClusterLoggingList",
+					openshiftLoggingResource: "ClusterLoggingList",
 				}),
 			},
 			want:          nil,
