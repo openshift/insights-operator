@@ -151,36 +151,19 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			continue
 		}
 
-		degradingFailure := true
+		degradingFailure := false
 
 		if summary.Operation == controllerstatus.Uploading {
 			if summary.Count < uploadFailuresCountThreshold {
 				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
-				degradingFailure = false
 			} else {
+				degradingFailure = true
 				klog.V(4).Infof("Number of last upload failures %d exceeded than threshold %d. Marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			}
 			uploadErrorReason = summary.Reason
 			uploadErrorMessage = summary.Message
-			// NotAuthorized is a special case where we want to disable the operator
-			if isNotAuthorizedReason(summary.Reason) {
-				degradingFailure = false
-				disabledReason = summary.Reason
-				disabledMessage = summary.Message
-			}
-		} else if summary.Operation == controllerstatus.GatheringReport {
-			degradingFailure = false
-			if summary.Count < GatherFailuresCountThreshold {
-				klog.V(5).Infof("Number of last gather failures %d lower than threshold %d. Not marking as disabled.",
-					summary.Count, GatherFailuresCountThreshold)
-			} else {
-				klog.V(3).Infof("Number of last gather failures %d exceeded the threshold %d. Marking as disabled.",
-					summary.Count, GatherFailuresCountThreshold)
-				disabledReason = summary.Reason
-				disabledMessage = summary.Message
-			}
 		}
 
 		if degradingFailure {
@@ -205,6 +188,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		sort.Strings(errs)
 		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
 	}
+	// disabled state only when it's disabled by config. It means that gathering will not happen
 	if !c.configurator.Config().Report {
 		disabledReason = "Disabled"
 		disabledMessage = "Health reporting is disabled"
@@ -437,10 +421,6 @@ const OperatorDisabled configv1.ClusterStatusConditionType = "Disabled"
 
 // UploadDegraded defines the condition type when a report is successfully uploaded
 const UploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
-
-func isNotAuthorizedReason(reason string) bool {
-	return reason == "NotAuthorized"
-}
 
 func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition,
 	newCondition configv1.ClusterOperatorStatusCondition) { //nolint: gocritic
