@@ -59,7 +59,10 @@ metadata:
 			if err != nil {
 				t.Fatal("unable to decode clusterlogging ", err)
 			}
-			_, err = tt.args.dynamicClient.Resource(openshiftLoggingResource).Namespace("openshift-logging").Create(context.Background(), testOpenshiftLoggingResource, metav1.CreateOptions{})
+			_, err = tt.args.dynamicClient.
+				Resource(openshiftLoggingResource).
+				Namespace("openshift-logging").
+				Create(context.Background(), testOpenshiftLoggingResource, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatalf("unable to create fake resource %s", err)
 			}
