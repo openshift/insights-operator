@@ -503,7 +503,7 @@ collects `logging.openshift.io` resources
 from Openshift Logging Stack.
 
 API Reference:
-  https://github.com/openshift/cluster-logging-operator/blob/21ba046939b664c2e7e2640dc20f5d063f4fffc2/pkg/apis/logging/v1/clusterlogging_types.go
+  https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 
 * Location in archive: config/logging/<namespace>/<name>.json
 * Since versions:
