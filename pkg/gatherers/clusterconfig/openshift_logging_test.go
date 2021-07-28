@@ -35,7 +35,7 @@ metadata:
 		expectedError error
 	}{
 		{
-			name: "empty cluster operator resources",
+			name: "check for clusterlogging resource",
 			args: args{
 				ctx: context.TODO(),
 				dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
