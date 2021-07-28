@@ -2,174 +2,13 @@
     "apiVersion": "logging.openshift.io/v1",
     "kind": "ClusterLogging",
     "metadata": {
-        "creationTimestamp": "2021-07-12T12:43:38Z",
-        "generation": 1,
-        "managedFields": [
-            {
-                "apiVersion": "logging.openshift.io/v1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:spec": {
-                        ".": {},
-                        "f:collection": {
-                            ".": {},
-                            "f:logs": {
-                                ".": {},
-                                "f:fluentd": {},
-                                "f:type": {}
-                            }
-                        },
-                        "f:curation": {
-                            ".": {},
-                            "f:curator": {
-                                ".": {},
-                                "f:schedule": {}
-                            },
-                            "f:type": {}
-                        },
-                        "f:logStore": {
-                            ".": {},
-                            "f:elasticsearch": {
-                                ".": {},
-                                "f:nodeCount": {},
-                                "f:proxy": {
-                                    ".": {},
-                                    "f:resources": {
-                                        ".": {},
-                                        "f:limits": {
-                                            ".": {},
-                                            "f:memory": {}
-                                        },
-                                        "f:requests": {
-                                            ".": {},
-                                            "f:memory": {}
-                                        }
-                                    }
-                                },
-                                "f:redundancyPolicy": {},
-                                "f:resources": {
-                                    ".": {},
-                                    "f:requests": {
-                                        ".": {},
-                                        "f:memory": {}
-                                    }
-                                },
-                                "f:storage": {
-                                    ".": {},
-                                    "f:size": {}
-                                }
-                            },
-                            "f:retentionPolicy": {
-                                ".": {},
-                                "f:application": {
-                                    ".": {},
-                                    "f:maxAge": {}
-                                },
-                                "f:audit": {
-                                    ".": {},
-                                    "f:maxAge": {}
-                                },
-                                "f:infra": {
-                                    ".": {},
-                                    "f:maxAge": {}
-                                }
-                            },
-                            "f:type": {}
-                        },
-                        "f:managementState": {},
-                        "f:visualization": {
-                            ".": {},
-                            "f:kibana": {
-                                ".": {},
-                                "f:replicas": {}
-                            },
-                            "f:type": {}
-                        }
-                    }
-                },
-                "manager": "Mozilla",
-                "operation": "Update",
-                "time": "2021-07-12T12:43:38Z"
-            },
-            {
-                "apiVersion": "logging.openshift.io/v1",
-                "fieldsType": "FieldsV1",
-                "fieldsV1": {
-                    "f:spec": {
-                        "f:collection": {
-                            "f:logs": {
-                                "f:fluentd": {
-                                    "f:resources": {}
-                                }
-                            }
-                        },
-                        "f:curation": {
-                            "f:curator": {
-                                "f:resources": {}
-                            }
-                        },
-                        "f:visualization": {
-                            "f:kibana": {
-                                "f:proxy": {
-                                    ".": {},
-                                    "f:resources": {}
-                                },
-                                "f:resources": {}
-                            }
-                        }
-                    },
-                    "f:status": {
-                        ".": {},
-                        "f:clusterConditions": {},
-                        "f:collection": {
-                            ".": {},
-                            "f:logs": {
-                                ".": {},
-                                "f:fluentdStatus": {
-                                    ".": {},
-                                    "f:daemonSet": {},
-                                    "f:nodes": {
-                                        ".": {},
-                                        "f:fluentd-7x8cb": {},
-                                        "f:fluentd-c4dkl": {},
-                                        "f:fluentd-cbbgl": {},
-                                        "f:fluentd-svmrn": {},
-                                        "f:fluentd-sx5cr": {},
-                                        "f:fluentd-txn2q": {}
-                                    },
-                                    "f:pods": {
-                                        ".": {},
-                                        "f:failed": {},
-                                        "f:notReady": {},
-                                        "f:ready": {}
-                                    }
-                                }
-                            }
-                        },
-                        "f:curation": {
-                            ".": {},
-                            "f:curatorStatus": {}
-                        },
-                        "f:logStore": {
-                            ".": {},
-                            "f:elasticsearchStatus": {}
-                        },
-                        "f:visualization": {
-                            ".": {},
-                            "f:kibanaStatus": {}
-                        }
-                    }
-                },
-                "manager": "cluster-logging-operator",
-                "operation": "Update",
-                "time": "2021-07-12T12:46:33Z"
-            }
-        ],
+        "creationTimestamp": "2021-07-28T07:49:15Z",
+        "generation": 2,
         "name": "instance",
         "namespace": "openshift-logging",
-        "resourceVersion": "175388",
+        "resourceVersion": "760730",
         "selfLink": "/apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings/instance",
-        "uid": "fd14dc81-7c5d-4d33-b3e0-6634dc92169b"
+        "uid": "8fcebeca-3ee0-4243-b309-02ffd90f3422"
     },
     "spec": {
         "collection": {
@@ -186,7 +25,7 @@
         },
         "logStore": {
             "elasticsearch": {
-                "nodeCount": 3,
+                "nodeCount": 2,
                 "proxy": {
                     "resources": {
                         "limits": {
@@ -204,7 +43,8 @@
                     }
                 },
                 "storage": {
-                    "size": "1M"
+                    "size": "1G",
+                    "storageClassName": "gp2"
                 }
             },
             "retentionPolicy": {
@@ -231,9 +71,16 @@
     "status": {
         "clusterConditions": [
             {
-                "lastTransitionTime": "2021-07-12T12:43:43Z",
+                "lastTransitionTime": "2021-07-28T07:49:20Z",
                 "status": "False",
                 "type": "CollectorDeadEnd"
+            },
+            {
+                "lastTransitionTime": "2021-07-28T07:49:20Z",
+                "message": "curator is deprecated in favor of defining retention policy",
+                "reason": "ResourceDeprecated",
+                "status": "True",
+                "type": "CuratorRemoved"
             }
         ],
         "collection": {
@@ -241,108 +88,88 @@
                 "fluentdStatus": {
                     "daemonSet": "fluentd",
                     "nodes": {
-                        "fluentd-7x8cb": "ip-10-0-182-155.us-east-2.compute.internal",
-                        "fluentd-c4dkl": "ip-10-0-167-41.us-east-2.compute.internal",
-                        "fluentd-cbbgl": "ip-10-0-221-116.us-east-2.compute.internal",
-                        "fluentd-svmrn": "ip-10-0-135-88.us-east-2.compute.internal",
-                        "fluentd-sx5cr": "ip-10-0-143-159.us-east-2.compute.internal",
-                        "fluentd-txn2q": "ip-10-0-218-65.us-east-2.compute.internal"
+                        "fluentd-5vg2p": "ip-10-0-216-131.us-east-2.compute.internal",
+                        "fluentd-cvc86": "ip-10-0-135-21.us-east-2.compute.internal",
+                        "fluentd-dnhnf": "ip-10-0-167-19.us-east-2.compute.internal",
+                        "fluentd-jdxsk": "ip-10-0-159-230.us-east-2.compute.internal",
+                        "fluentd-jtq56": "ip-10-0-174-55.us-east-2.compute.internal",
+                        "fluentd-tgtrl": "ip-10-0-210-205.us-east-2.compute.internal"
                     },
                     "pods": {
                         "failed": [],
                         "notReady": [],
                         "ready": [
-                            "fluentd-7x8cb",
-                            "fluentd-c4dkl",
-                            "fluentd-cbbgl",
-                            "fluentd-svmrn",
-                            "fluentd-sx5cr",
-                            "fluentd-txn2q"
+                            "fluentd-5vg2p",
+                            "fluentd-cvc86",
+                            "fluentd-dnhnf",
+                            "fluentd-jdxsk",
+                            "fluentd-jtq56",
+                            "fluentd-tgtrl"
                         ]
                     }
                 }
             }
         },
-        "curation": {
-            "curatorStatus": [
-                {
-                    "cronJobs": "curator",
-                    "schedules": "30 3 * * *",
-                    "suspended": false
-                }
-            ]
-        },
+        "curation": {},
         "logStore": {
             "elasticsearchStatus": [
                 {
                     "cluster": {
-                        "activePrimaryShards": 11,
-                        "activeShards": 22,
+                        "activePrimaryShards": 6,
+                        "activeShards": 12,
                         "initializingShards": 0,
-                        "numDataNodes": 3,
-                        "numNodes": 3,
+                        "numDataNodes": 2,
+                        "numNodes": 2,
                         "pendingTasks": 0,
                         "relocatingShards": 0,
-                        "status": "green",
-                        "unassignedShards": 0
+                        "status": "red",
+                        "unassignedShards": 4
                     },
                     "clusterName": "elasticsearch",
                     "nodeConditions": {
-                        "elasticsearch-cdm-q6beohez-1": [
+                        "elasticsearch-cdm-sxgmtsq6-1": [
                             {
-                                "lastTransitionTime": "2021-07-12T14:30:36Z",
-                                "message": "Disk storage usage for node is 920.14Mb (94.28611455789937%). Shards will be relocated from this node.",
+                                "lastTransitionTime": "2021-07-28T08:29:03Z",
+                                "message": "Disk storage usage for node is 975.90Mb (100%). Shards will be relocated from this node.",
                                 "reason": "Disk Watermark High",
                                 "status": "True",
                                 "type": "NodeStorage"
                             }
                         ],
-                        "elasticsearch-cdm-q6beohez-2": [
+                        "elasticsearch-cdm-sxgmtsq6-2": [
                             {
-                                "lastTransitionTime": "2021-07-12T14:30:36Z",
-                                "message": "Disk storage usage for node is 919.66Mb (94.2372813513189%). Shards will be relocated from this node.",
-                                "reason": "Disk Watermark High",
-                                "status": "True",
-                                "type": "NodeStorage"
-                            }
-                        ],
-                        "elasticsearch-cdm-q6beohez-3": [
-                            {
-                                "lastTransitionTime": "2021-07-12T14:30:36Z",
-                                "message": "Disk storage usage for node is 918.78Mb (94.14722010967458%). Shards will be relocated from this node.",
+                                "lastTransitionTime": "2021-07-28T08:29:03Z",
+                                "message": "Disk storage usage for node is 942.08Mb (96.53484369371172%). Shards will be relocated from this node.",
                                 "reason": "Disk Watermark High",
                                 "status": "True",
                                 "type": "NodeStorage"
                             }
                         ]
                     },
-                    "nodeCount": 3,
+                    "nodeCount": 2,
                     "pods": {
                         "client": {
                             "failed": [],
                             "notReady": [],
                             "ready": [
-                                "elasticsearch-cdm-q6beohez-1-56dbc559d6-gw969",
-                                "elasticsearch-cdm-q6beohez-2-6bf66cff8c-vsxpl",
-                                "elasticsearch-cdm-q6beohez-3-6bd54c8488-xtbwv"
+                                "elasticsearch-cdm-sxgmtsq6-1-66bf986cf4-tcc44",
+                                "elasticsearch-cdm-sxgmtsq6-2-68775688f9-nt6df"
                             ]
                         },
                         "data": {
                             "failed": [],
                             "notReady": [],
                             "ready": [
-                                "elasticsearch-cdm-q6beohez-1-56dbc559d6-gw969",
-                                "elasticsearch-cdm-q6beohez-2-6bf66cff8c-vsxpl",
-                                "elasticsearch-cdm-q6beohez-3-6bd54c8488-xtbwv"
+                                "elasticsearch-cdm-sxgmtsq6-1-66bf986cf4-tcc44",
+                                "elasticsearch-cdm-sxgmtsq6-2-68775688f9-nt6df"
                             ]
                         },
                         "master": {
                             "failed": [],
                             "notReady": [],
                             "ready": [
-                                "elasticsearch-cdm-q6beohez-1-56dbc559d6-gw969",
-                                "elasticsearch-cdm-q6beohez-2-6bf66cff8c-vsxpl",
-                                "elasticsearch-cdm-q6beohez-3-6bd54c8488-xtbwv"
+                                "elasticsearch-cdm-sxgmtsq6-1-66bf986cf4-tcc44",
+                                "elasticsearch-cdm-sxgmtsq6-2-68775688f9-nt6df"
                             ]
                         }
                     },
@@ -358,11 +185,11 @@
                         "failed": [],
                         "notReady": [],
                         "ready": [
-                            "kibana-5548b76b78-6kr5m"
+                            "kibana-7f7b4d49dd-b5pr9"
                         ]
                     },
                     "replicaSets": [
-                        "kibana-5548b76b78"
+                        "kibana-7f7b4d49dd"
                     ],
                     "replicas": 1
                 }
