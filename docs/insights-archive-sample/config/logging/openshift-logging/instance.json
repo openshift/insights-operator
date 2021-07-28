@@ -1,0 +1,199 @@
+{
+    "apiVersion": "logging.openshift.io/v1",
+    "kind": "ClusterLogging",
+    "metadata": {
+        "creationTimestamp": "2021-07-28T07:49:15Z",
+        "generation": 2,
+        "name": "instance",
+        "namespace": "openshift-logging",
+        "resourceVersion": "760730",
+        "selfLink": "/apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings/instance",
+        "uid": "8fcebeca-3ee0-4243-b309-02ffd90f3422"
+    },
+    "spec": {
+        "collection": {
+            "logs": {
+                "fluentd": {},
+                "type": "fluentd"
+            }
+        },
+        "curation": {
+            "curator": {
+                "schedule": "30 3 * * *"
+            },
+            "type": "curator"
+        },
+        "logStore": {
+            "elasticsearch": {
+                "nodeCount": 2,
+                "proxy": {
+                    "resources": {
+                        "limits": {
+                            "memory": "256Mi"
+                        },
+                        "requests": {
+                            "memory": "256Mi"
+                        }
+                    }
+                },
+                "redundancyPolicy": "SingleRedundancy",
+                "resources": {
+                    "requests": {
+                        "memory": "2Gi"
+                    }
+                },
+                "storage": {
+                    "size": "1G",
+                    "storageClassName": "gp2"
+                }
+            },
+            "retentionPolicy": {
+                "application": {
+                    "maxAge": "1d"
+                },
+                "audit": {
+                    "maxAge": "7d"
+                },
+                "infra": {
+                    "maxAge": "7d"
+                }
+            },
+            "type": "elasticsearch"
+        },
+        "managementState": "Managed",
+        "visualization": {
+            "kibana": {
+                "replicas": 1
+            },
+            "type": "kibana"
+        }
+    },
+    "status": {
+        "clusterConditions": [
+            {
+                "lastTransitionTime": "2021-07-28T07:49:20Z",
+                "status": "False",
+                "type": "CollectorDeadEnd"
+            },
+            {
+                "lastTransitionTime": "2021-07-28T07:49:20Z",
+                "message": "curator is deprecated in favor of defining retention policy",
+                "reason": "ResourceDeprecated",
+                "status": "True",
+                "type": "CuratorRemoved"
+            }
+        ],
+        "collection": {
+            "logs": {
+                "fluentdStatus": {
+                    "daemonSet": "fluentd",
+                    "nodes": {
+                        "fluentd-5vg2p": "ip-10-0-216-131.us-east-2.compute.internal",
+                        "fluentd-cvc86": "ip-10-0-135-21.us-east-2.compute.internal",
+                        "fluentd-dnhnf": "ip-10-0-167-19.us-east-2.compute.internal",
+                        "fluentd-jdxsk": "ip-10-0-159-230.us-east-2.compute.internal",
+                        "fluentd-jtq56": "ip-10-0-174-55.us-east-2.compute.internal",
+                        "fluentd-tgtrl": "ip-10-0-210-205.us-east-2.compute.internal"
+                    },
+                    "pods": {
+                        "failed": [],
+                        "notReady": [],
+                        "ready": [
+                            "fluentd-5vg2p",
+                            "fluentd-cvc86",
+                            "fluentd-dnhnf",
+                            "fluentd-jdxsk",
+                            "fluentd-jtq56",
+                            "fluentd-tgtrl"
+                        ]
+                    }
+                }
+            }
+        },
+        "curation": {},
+        "logStore": {
+            "elasticsearchStatus": [
+                {
+                    "cluster": {
+                        "activePrimaryShards": 6,
+                        "activeShards": 12,
+                        "initializingShards": 0,
+                        "numDataNodes": 2,
+                        "numNodes": 2,
+                        "pendingTasks": 0,
+                        "relocatingShards": 0,
+                        "status": "red",
+                        "unassignedShards": 4
+                    },
+                    "clusterName": "elasticsearch",
+                    "nodeConditions": {
+                        "elasticsearch-cdm-sxgmtsq6-1": [
+                            {
+                                "lastTransitionTime": "2021-07-28T08:29:03Z",
+                                "message": "Disk storage usage for node is 975.90Mb (100%). Shards will be relocated from this node.",
+                                "reason": "Disk Watermark High",
+                                "status": "True",
+                                "type": "NodeStorage"
+                            }
+                        ],
+                        "elasticsearch-cdm-sxgmtsq6-2": [
+                            {
+                                "lastTransitionTime": "2021-07-28T08:29:03Z",
+                                "message": "Disk storage usage for node is 942.08Mb (96.53484369371172%). Shards will be relocated from this node.",
+                                "reason": "Disk Watermark High",
+                                "status": "True",
+                                "type": "NodeStorage"
+                            }
+                        ]
+                    },
+                    "nodeCount": 2,
+                    "pods": {
+                        "client": {
+                            "failed": [],
+                            "notReady": [],
+                            "ready": [
+                                "elasticsearch-cdm-sxgmtsq6-1-66bf986cf4-tcc44",
+                                "elasticsearch-cdm-sxgmtsq6-2-68775688f9-nt6df"
+                            ]
+                        },
+                        "data": {
+                            "failed": [],
+                            "notReady": [],
+                            "ready": [
+                                "elasticsearch-cdm-sxgmtsq6-1-66bf986cf4-tcc44",
+                                "elasticsearch-cdm-sxgmtsq6-2-68775688f9-nt6df"
+                            ]
+                        },
+                        "master": {
+                            "failed": [],
+                            "notReady": [],
+                            "ready": [
+                                "elasticsearch-cdm-sxgmtsq6-1-66bf986cf4-tcc44",
+                                "elasticsearch-cdm-sxgmtsq6-2-68775688f9-nt6df"
+                            ]
+                        }
+                    },
+                    "shardAllocationEnabled": "all"
+                }
+            ]
+        },
+        "visualization": {
+            "kibanaStatus": [
+                {
+                    "deployment": "kibana",
+                    "pods": {
+                        "failed": [],
+                        "notReady": [],
+                        "ready": [
+                            "kibana-7f7b4d49dd-b5pr9"
+                        ]
+                    },
+                    "replicaSets": [
+                        "kibana-7f7b4d49dd"
+                    ],
+                    "replicas": 1
+                }
+            ]
+        }
+    }
+}
