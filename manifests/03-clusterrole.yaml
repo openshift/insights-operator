@@ -203,6 +203,14 @@ rules:
     verbs:
       - get
       - list
+      - watch    
+  - apiGroups:
+      - logging.openshift.io
+    resources:
+      - "*"
+    verbs:
+      - get
+      - list
       - watch
 
 ---
