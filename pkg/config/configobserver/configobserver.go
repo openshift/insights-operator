@@ -114,7 +114,7 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 }
 
 // Updates the stored configs from the secrets in the cluster. (if present)
-func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo
+func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo,funlen
 	var nextConfig config.Controller
 
 	klog.V(2).Infof("Refreshing configuration from cluster secret")
@@ -202,6 +202,25 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 				nextConfig.Report = false
 			}
 		}
+
+		// OCM config
+		if ocmEndpoint, ok := secret.Data["ocmEndpoint"]; ok {
+			nextConfig.OCMConfig.Endpoint = string(ocmEndpoint)
+		}
+		if ocmInterval, ok := secret.Data["ocmInterval"]; ok {
+			var newInterval time.Duration
+			if newInterval, err = time.ParseDuration(string(ocmInterval)); err == nil {
+				nextConfig.OCMConfig.Interval = newInterval
+			} else {
+				klog.Warningf(
+					"secret contains an invalid value (%s) for ocmInterval. Using previous value",
+					ocmInterval,
+				)
+			}
+		}
+		if ocmDisabled, ok := secret.Data["ocmPullDisabled"]; ok {
+			nextConfig.OCMConfig.Disabled = strings.EqualFold(string(ocmDisabled), "true")
+		}
 	}
 	if err != nil {
 		return err
@@ -281,6 +300,16 @@ func (c *Controller) mergeConfigLocked() {
 			cfg.ReportMinRetryTime = c.secretConfig.ReportMinRetryTime
 		}
 		cfg.EnableGlobalObfuscation = cfg.EnableGlobalObfuscation || c.secretConfig.EnableGlobalObfuscation
+
+		// OCM config
+		if len(c.secretConfig.OCMConfig.Endpoint) > 0 {
+			cfg.OCMConfig.Endpoint = c.secretConfig.OCMConfig.Endpoint
+		}
+		if c.secretConfig.OCMConfig.Interval > 0 {
+			cfg.OCMConfig.Interval = c.secretConfig.OCMConfig.Interval
+		}
+
+		cfg.OCMConfig.Disabled = c.secretConfig.OCMConfig.Disabled
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {

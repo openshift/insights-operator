@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +30,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
+	"github.com/openshift/insights-operator/pkg/ocm"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
@@ -155,7 +157,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	//   a threshold
 
 	// start reporting status now that all controller loops are added as sources
-	if err := statusReporter.Start(ctx); err != nil {
+	if err = statusReporter.Start(ctx); err != nil {
 		return fmt.Errorf("unable to set initial cluster status: %v", err)
 	}
 	// start uploading status, so that we
@@ -165,6 +167,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader)
 	go reportGatherer.Run(ctx)
 
+	runOCMController(ctx, configClient, kubeClient, configObserver, insightsClient)
 	klog.Warning("started")
 
 	<-ctx.Done()
@@ -199,4 +202,50 @@ func isRunning(ctx context.Context, kubeConfig *rest.Config) wait.ConditionFunc 
 		}
 		return true, nil
 	}
+}
+
+// runOCMController checks the "InsightsOperatorPullingSCA" feature and if it's enabled then run the OCM controller
+func runOCMController(ctx context.Context, configClient *configv1client.ConfigV1Client,
+	kubeClient *kubernetes.Clientset, configObserver *configobserver.Controller, insightsClient *insightsclient.Client) {
+	ocmEnabled, err := featureEnabled(ctx, configClient, "InsightsOperatorPullingSCA")
+	if err != nil {
+		klog.Errorf("Pulling of SCA certs from the OCM is disabled. Unable to get cluster FeatureGate: %v", err)
+	}
+	if ocmEnabled {
+		klog.Info("Pulling of SCA certs from the OCM is enabled.")
+		// OMC controller periodically checks and pull data from the OCM API
+		// the data is exposed in the OpenShift API
+		ocmController := ocm.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
+		go ocmController.Run()
+	}
+}
+
+// featureEnabled checks if the feature is enabled in the "cluster" FeatureGate
+func featureEnabled(ctx context.Context, client *configv1client.ConfigV1Client, feature string) (bool, error) {
+	fg, err := client.FeatureGates().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	enabled := getEnabledFeatures(fg)
+	for _, f := range enabled {
+		if f == feature {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// getEnabledFeatures returns a list of enabled features in provided FeatureGate
+func getEnabledFeatures(fg *configv1.FeatureGate) []string {
+	if fg.Spec.FeatureSet == "" {
+		return nil
+	}
+	if fg.Spec.FeatureSet == configv1.CustomNoUpgrade {
+		return fg.Spec.CustomNoUpgrade.Enabled
+	}
+	gates := configv1.FeatureSets[fg.Spec.FeatureSet]
+	if gates == nil {
+		return nil
+	}
+	return gates.Enabled
 }

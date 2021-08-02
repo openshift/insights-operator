@@ -11,5 +11,8 @@ pull_report:
   delay: "60s"
   timeout: "3000s"
   min_retry: "30s"
+ocm:
+  endpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates
+  interval: "8h"
 gather:
   - ALL

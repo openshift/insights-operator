@@ -33,6 +33,10 @@ func NewOperator() *cobra.Command {
 			ReportPullingDelay:   60 * time.Second,
 			ReportMinRetryTime:   10 * time.Second,
 			ReportPullingTimeout: 30 * time.Minute,
+			OCMConfig: config.OCMConfig{
+				Interval: 8 * time.Hour,
+				Endpoint: "https://api.openshift.com/api/accounts_mgmt/v1/certificates",
+			},
 		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), operator.Run)

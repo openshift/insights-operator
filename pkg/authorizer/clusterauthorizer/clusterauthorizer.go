@@ -36,20 +36,14 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 		req.SetBasicAuth(cfg.Username, cfg.Password)
 		return nil
 	}
-	if len(cfg.Token) > 0 {
-		if req.Header == nil {
-			req.Header = make(http.Header)
-		}
-		token := strings.TrimSpace(cfg.Token)
-		if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
-			return fmt.Errorf("cluster authorization token is not valid: contains newlines")
-		}
-		if len(token) == 0 {
-			return fmt.Errorf("cluster authorization token is empty")
-		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		return nil
+	token, err := a.Token()
+	if err != nil {
+		return err
 	}
+	if req.Header == nil {
+		req.Header = make(http.Header)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	return nil
 }
 
@@ -71,4 +65,19 @@ func (a *Authorizer) NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL,
 	}
 	// defautl system proxy
 	return knet.NewProxierWithNoProxyCIDR(a.proxyFromEnvironment)
+}
+
+func (a *Authorizer) Token() (string, error) {
+	cfg := a.configurator.Config()
+	if len(cfg.Token) > 0 {
+		token := strings.TrimSpace(cfg.Token)
+		if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
+			return "", fmt.Errorf("cluster authorization token is not valid: contains newlines")
+		}
+		if len(token) == 0 {
+			return "", fmt.Errorf("cluster authorization token is empty")
+		}
+		return token, nil
+	}
+	return "", fmt.Errorf("cluster authorization token is not configured")
 }
