@@ -24,12 +24,19 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// How many upload failures in a row we tolerate before starting reporting
-// as UploadDegraded
-const uploadFailuresCountThreshold = 5
-
-// GatherFailuresCountThreshold defines how many gatherings can fail in a row before we report Degraded
-const GatherFailuresCountThreshold = 5
+const (
+	// OperatorDisabled defines the condition type when the operator's primary funcion has been disabled
+	OperatorDisabled configv1.ClusterStatusConditionType = "Disabled"
+	// UploadDegraded defines the condition type (when set to True) when an archive can't be successfully uploaded
+	UploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
+	// InsightsDownloadDegraded defines the condition type (when set to True) when a Insights report can't be successfully downloaded
+	InsightsDownloadDegraded configv1.ClusterStatusConditionType = "InsightsDownloadDegraded"
+	// How many upload failures in a row we tolerate before starting reporting
+	// as UploadDegraded
+	uploadFailuresCountThreshold = 5
+	// GatherFailuresCountThreshold defines how many gatherings can fail in a row before we report Degraded
+	GatherFailuresCountThreshold = 5
+)
 
 type Reported struct {
 	LastReportTime metav1.Time `json:"lastReportTime"`
@@ -134,7 +141,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	var last time.Time
 	var reason string
 	var errs []string
-	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage string
+	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage, downloadReason, downloadMessage string
 	allReady := true
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
@@ -164,6 +171,10 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			}
 			uploadErrorReason = summary.Reason
 			uploadErrorMessage = summary.Message
+		} else if summary.Operation == controllerstatus.DownloadingReport {
+			klog.V(4).Info("Failed to download Insights report")
+			downloadReason = summary.Reason
+			downloadMessage = summary.Message
 		}
 
 		if degradingFailure {
@@ -276,6 +287,18 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		} else {
 			removeOperatorStatusCondition(&existing.Status.Conditions, UploadDegraded)
+		}
+
+		if len(downloadReason) > 0 {
+			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+				Type:               InsightsDownloadDegraded,
+				Status:             configv1.ConditionTrue,
+				LastTransitionTime: metav1.Time{Time: last},
+				Reason:             downloadReason,
+				Message:            downloadMessage,
+			})
+		} else {
+			removeOperatorStatusCondition(&existing.Status.Conditions, InsightsDownloadDegraded)
 		}
 	}
 
@@ -415,12 +438,6 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 	_, err = c.client.ClusterOperators().UpdateStatus(ctx, updated, metav1.UpdateOptions{})
 	return err
 }
-
-// OperatorDisabled defines the condition type when the operator's primary funcion has been disabled
-const OperatorDisabled configv1.ClusterStatusConditionType = "Disabled"
-
-// UploadDegraded defines the condition type when a report is successfully uploaded
-const UploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
 
 func setOperatorStatusCondition(conditions *[]configv1.ClusterOperatorStatusCondition,
 	newCondition configv1.ClusterOperatorStatusCondition) { //nolint: gocritic
