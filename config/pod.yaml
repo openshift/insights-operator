@@ -4,10 +4,10 @@ leaderElection:
   disable: true
 interval: "2h"
 storagePath: /var/lib/insights-operator
-endpoint: https://cloud.redhat.com/api/ingress/v1/upload
+endpoint: https://console.redhat.com/api/ingress/v1/upload
 impersonate: system:serviceaccount:openshift-insights:gather
 pull_report:
-  endpoint: https://cloud.redhat.com/api/insights-results-aggregator/v1/clusters/%s/report
+  endpoint: https://console.redhat.com/api/insights-results-aggregator/v1/clusters/%s/report
   delay: "60s"
   timeout: "3000s"
   min_retry: "30s"
