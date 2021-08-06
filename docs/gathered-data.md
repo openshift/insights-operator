@@ -279,7 +279,7 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 ## ImageStreamsOfNamespace
 
 creates a gathering closure which collects image streams from the provided namespace
-Params:
+Params is of type GatherImageStreamsOfNamespaceParams:
   - namespace string - namespace from which to collect image streams
 
 API reference:
@@ -310,9 +310,8 @@ The Operators-Framework api https://github.com/operator-framework/api/blob/maste
 ## LogsOfNamespace
 
 creates a gathering closure which collects logs from pods in the provided namespace
-Params:
-  - namespace string - namespace from which to collect image streams
-  - label_selector string - a label selector to filter some pods (default to all pods)
+Params is of type GatherLogsOfNamespaceParams:
+  - namespace string - namespace from which to collect logs
   - tail_lines int64 - a number of log lines to keep for each container
 
 The Kubernetes API:
