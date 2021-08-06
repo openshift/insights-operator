@@ -221,6 +221,10 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 		if ocmDisabled, ok := secret.Data["ocmPullDisabled"]; ok {
 			nextConfig.OCMConfig.Disabled = strings.EqualFold(string(ocmDisabled), "true")
 		}
+
+		if conditionalGathererRulesEndpoint, ok := secret.Data["conditionalGathererRulesEndpoint"]; ok {
+			nextConfig.ConditionalGathererRulesEndpoint = string(conditionalGathererRulesEndpoint)
+		}
 	}
 	if err != nil {
 		return err
@@ -311,6 +315,10 @@ func (c *Controller) mergeConfigLocked() {
 
 		cfg.OCMConfig.Disabled = c.secretConfig.OCMConfig.Disabled
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
+
+		if len(c.secretConfig.ConditionalGathererRulesEndpoint) > 0 {
+			cfg.ConditionalGathererRulesEndpoint = c.secretConfig.ConditionalGathererRulesEndpoint
+		}
 	}
 	if c.tokenConfig != nil {
 		cfg.Token = c.tokenConfig.Token

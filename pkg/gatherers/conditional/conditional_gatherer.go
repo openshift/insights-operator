@@ -9,10 +9,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"sort"
-	"strconv"
 	"strings"
+	"time"
 
+	"github.com/gregjones/httpcache"
 	"github.com/prometheus/common/expfmt"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -20,64 +23,14 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // gatheringFunctionBuilders lists all the gatherers which can be run on some condition. Gatherers can have parameters,
 // like namespace or number of log lines to fetch, see the docs of the functions.
-var gatheringFunctionBuilders = map[gatheringFunctionName]gathererFunctionBuilderPtr{
-	gatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
-	gatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
-}
-
-// gatheringRules contains all the rules used to run conditional gatherings.
-// Right now they are declared here in the code, but later they can be fetched from an external source.
-// An example of the future json version of this is:
-//   [{
-//     "conditions": [
-//       {
-//         "type": "alert_is_firing",
-//         "params": {
-//           "name": "ClusterVersionOperatorIsDown"
-//         }
-//       },
-//       {
-//         "type": "cluster_version_equals",
-//         "params": {
-//           "version": "4.8"
-//         }
-//       }
-//     ],
-//     "gathering_functions": {
-//       "gather_logs_of_namespace": {
-//         "namespace": "openshift-cluster-version",
-//         "keep_lines": 100
-//       },
-//     }
-//   }]
-// Which means to collect logs of all containers from all pods in namespace openshift-monitoring keeping last 100 lines
-// per container only if cluster version is 4.8 (not implemented, just an example of possible use) and alert
-// ClusterVersionOperatorIsDown is firing
-var gatheringRules = []gatheringRule{
-	{
-		Conditions: []conditionWithParams{
-			{
-				Type: alertIsFiring,
-				Params: map[string]interface{}{
-					"name": "SamplesImagestreamImportFailing",
-				},
-			},
-		},
-		GatheringFunctions: map[gatheringFunctionName]GatheringFunctionParams{
-			gatherLogsOfNamespace: map[string]interface{}{
-				"namespace":      "openshift-cluster-samples-operator",
-				"tail_lines":     100,
-				"label_selector": "",
-			},
-			gatherImageStreamsOfNamespace: map[string]interface{}{
-				"namespace": "openshift-cluster-samples-operator",
-			},
-		},
-	},
+var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilderPtr{
+	GatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
+	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
 }
 
 const canConditionalGathererFail = false
@@ -88,18 +41,29 @@ type Gatherer struct {
 	metricsGatherKubeConfig *rest.Config
 	imageKubeConfig         *rest.Config
 	firingAlerts            map[string]bool // golang doesn't have sets :(
+	gatheringRulesEndpoint  string
+	gatheringRules          []GatheringRule
+	httpClient              *http.Client
 }
 
 // New creates a new instance of conditional gatherer with the appropriate configs
-func New(gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config) *Gatherer {
-	imageKubeConfig := rest.CopyConfig(gatherProtoKubeConfig)
-	imageKubeConfig.QPS = common.ImageConfigQPS
-	imageKubeConfig.Burst = common.ImageConfigBurst
+func New(gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config, gatheringRulesEndpoint string) *Gatherer {
+	var imageKubeConfig *rest.Config
+	if gatherProtoKubeConfig != nil {
+		imageKubeConfig = rest.CopyConfig(gatherProtoKubeConfig)
+		imageKubeConfig.QPS = common.ImageConfigQPS
+		imageKubeConfig.Burst = common.ImageConfigBurst
+	}
 
 	return &Gatherer{
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
 		imageKubeConfig:         imageKubeConfig,
+		gatheringRulesEndpoint:  gatheringRulesEndpoint,
+		httpClient: &http.Client{
+			Transport: httpcache.NewMemoryCacheTransport(),
+			Timeout:   time.Minute,
+		},
 	}
 }
 
@@ -111,10 +75,24 @@ func (g *Gatherer) GetName() string {
 // GetGatheringFunctions returns gathering functions that should be run considering the conditions
 // + the gathering function producing metadata for the conditional gatherer
 func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
-	err := g.updateAlertsCache(ctx)
+	gatheringRulesJSON, err := g.getGatheringRulesJSON(ctx)
 	if err != nil {
-		klog.Errorf("conditional gatherer can't update alerts cache")
-		return nil, nil
+		return nil, fmt.Errorf("unable to load gathering rules: %v", err)
+	}
+
+	g.gatheringRules, err = parseGatheringRules(gatheringRulesJSON)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse gathering rules: %v", err)
+	}
+
+	errs := validateGatheringRules(g.gatheringRules)
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
+	}
+
+	err = g.updateAlertsCache(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("conditional gatherer can't update alerts cache: %v", err)
 	}
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
@@ -124,7 +102,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		CanFail: canConditionalGathererFail,
 	}
 
-	for _, conditionalGathering := range gatheringRules {
+	for _, conditionalGathering := range g.gatheringRules {
 		allConditionsAreSatisfied, err := g.areAllConditionsSatisfied(conditionalGathering.Conditions)
 		if err != nil {
 			return nil, err
@@ -150,23 +128,26 @@ func (g *Gatherer) GatherConditionalGathererRules(context.Context) ([]record.Rec
 	return []record.Record{
 		{
 			Name: "insights-operator/conditional-gatherer-rules",
-			Item: record.JSONMarshaller{Object: gatheringRules},
+			Item: record.JSONMarshaller{Object: g.gatheringRules},
 		},
 	}, nil
 }
 
 // areAllConditionsSatisfied returns true if all the conditions are satisfied, for example if the condition is
 // to check if a metric is firing, it will look at that metric and return the result according to that
-func (g *Gatherer) areAllConditionsSatisfied(conditions []conditionWithParams) (bool, error) {
+func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (bool, error) {
 	for _, condition := range conditions {
 		switch condition.Type {
-		case alertIsFiring:
-			alertName, err := getStringFromMap(condition.Params, "name")
-			if err != nil {
-				return false, err
+		case AlertIsFiring:
+			params, ok := condition.Params.(AlertIsFiringConditionParams)
+			if !ok {
+				return false, fmt.Errorf(
+					"invalid params type, expected %T, got %T",
+					AlertIsFiringConditionParams{}, condition.Params,
+				)
 			}
 
-			if !g.isAlertFiring(alertName) {
+			if !g.isAlertFiring(params.Name) {
 				return false, nil
 			}
 		default:
@@ -249,7 +230,7 @@ func (g *Gatherer) isAlertFiring(alertName string) bool {
 
 // createGatheringClosures produces gathering closures from the rules
 func (g *Gatherer) createGatheringClosures(
-	gatheringFunctions map[gatheringFunctionName]GatheringFunctionParams,
+	gatheringFunctions map[GatheringFunctionName]interface{},
 ) (map[string]gatherers.GatheringClosure, []error) {
 	resultingClosures := make(map[string]gatherers.GatheringClosure)
 	var errs []error
@@ -273,10 +254,32 @@ func (g *Gatherer) createGatheringClosures(
 	return resultingClosures, errs
 }
 
+func (g *Gatherer) getGatheringRulesJSON(ctx context.Context) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, g.gatheringRulesEndpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := g.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
+}
+
 // getConditionalGatheringFunctionName creates a name of the conditional gathering function adding the parameters
 // after the name. For example:
 //   "conditional/logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100"
-func getConditionalGatheringFunctionName(funcName string, gatherParams map[string]interface{}) string {
+func getConditionalGatheringFunctionName(funcName string, gatherParamsInterface interface{}) string {
+	gatherParams, err := utils.StructToMap(gatherParamsInterface)
+	if err != nil {
+		// will only happen when non a struct is passed which means code is completely broken and panicking is ok
+		panic(err)
+	}
+
 	if len(gatherParams) > 0 {
 		funcName += "/"
 	}
@@ -307,64 +310,4 @@ func getConditionalGatheringFunctionName(funcName string, gatherParams map[strin
 	funcName = strings.TrimSuffix(funcName, ",")
 
 	return funcName
-}
-
-func getInterfaceFromMap(m map[string]interface{}, key string) (interface{}, error) {
-	val, found := m[key]
-	if !found {
-		return nil, fmt.Errorf("unable to find a value with key '%v' in the map '%v'", key, m)
-	}
-
-	return val, nil
-}
-
-func getStringFromMap(m map[string]interface{}, key string) (string, error) {
-	val, err := getInterfaceFromMap(m, key)
-	if err != nil {
-		return "", err
-	}
-
-	res, ok := val.(string)
-	if !ok {
-		return "", fmt.Errorf("unable to convert '%v' to string", val)
-	}
-
-	return res, nil
-}
-
-func getInt64FromMap(m map[string]interface{}, key string) (int64, error) {
-	val, err := getInterfaceFromMap(m, key)
-	if err != nil {
-		return 0, err
-	}
-
-	res64, ok := val.(int64)
-	if ok {
-		return res64, nil
-	}
-
-	res, ok := val.(int)
-	if ok {
-		return int64(res), nil
-	}
-
-	resStr, err := getStringFromMap(m, key)
-	if err != nil {
-		return 0, err
-	}
-
-	return strconv.ParseInt(resStr, 10, 64)
-}
-
-func getPositiveInt64FromMap(m map[string]interface{}, key string) (int64, error) {
-	res, err := getInt64FromMap(m, key)
-	if err != nil {
-		return 0, err
-	}
-
-	if res < 0 {
-		return 0, fmt.Errorf("positive int expected, got '%v'", res)
-	}
-
-	return res, nil
 }

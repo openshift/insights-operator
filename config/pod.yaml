@@ -16,3 +16,4 @@ ocm:
   interval: "8h"
 gather:
   - ALL
+conditionalGathererRulesEndpoint: "http://localhost:8080/conditional-gatherer-rules.json"

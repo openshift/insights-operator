@@ -124,7 +124,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, &s.Controller,
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, &s.Controller, configObserver,
 	)
 	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer)
 	statusReporter.AddSources(periodicGather.Sources()...)

@@ -8,3 +8,4 @@ endpoint: http://[::1]:8081
 impersonate: system:serviceaccount:openshift-insights:gather
 gather:
   - ALL
+conditionalGathererRulesEndpoint: "http://localhost:8080/conditional-gatherer-rules.json"

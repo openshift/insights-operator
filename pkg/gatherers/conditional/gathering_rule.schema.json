@@ -1,0 +1,127 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "gathering_rule.schema.json",
+    "title": "Conditional Gatherer Rule",
+    "descriptions": "A gathering rule for conditional gatherer",
+    "examples": [
+        {
+            "conditions": [
+                {
+                    "type": "alert_is_firing",
+                    "params": {
+                        "name": "SamplesImagestreamImportFailing"
+                    }
+                }
+            ],
+            "gathering_functions": {
+                "gather_logs_of_namespace": {
+                    "namespace": "openshift-cluster-samples-operator",
+                    "keep_lines": 100,
+                    "label_selector": ""
+                },
+                "gather_imagestreams_of_namespace": {
+                    "namespace": "openshift-cluster-samples-operator"
+                }
+            }
+        }
+    ],
+    "type": "object",
+    "required": [
+        "conditions",
+        "gathering_functions"
+    ],
+    "properties": {
+        "conditions": {
+            "type": "array",
+            "description": "The list of conditions on which the rule is triggered",
+            "minItems": 0,
+            "maxItems": 8,
+            "uniqueItems": true,
+            "items": {
+                "type": "object",
+                "title": "ConditionWithParams",
+                "description": "A condition",
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "title": "ConditionWithParams",
+                        "description": "alert_is_firing condition",
+                        "required": [
+                            "type",
+                            "params"
+                        ],
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "title": "Type",
+                                "description": "Type of the condition alert_is_firing",
+                                "const": "alert_is_firing"
+                            },
+                            "params": {
+                                "type": "object",
+                                "title": "AlertIsFiringConditionParams",
+                                "description": "Parameters of the condition alert_is_firing",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "title": "Name",
+                                        "description": "Name of the alert",
+                                        "pattern": "^[a-zA-Z0-9_]{1,128}$"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "gathering_functions": {
+            "type": "object",
+            "title": "GatheringFunctions",
+            "description": "The list of gathering functions to perform if conditions are met",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "maxProperties": 8,
+            "patternProperties": {
+                "^logs_of_namespace$": {
+                    "type": "object",
+                    "title": "GatherLogsOfNamespaceParams",
+                    "required": [
+                        "namespace",
+                        "tail_lines"
+                    ],
+                    "properties": {
+                        "namespace": {
+                            "type": "string",
+                            "title": "Namespace",
+                            "pattern": "^openshift-[a-zA-Z0-9_.-]{1,128}$"
+                        },
+                        "tail_lines": {
+                            "type": "integer",
+                            "title": "TailLines",
+                            "minimum": 1,
+                            "maximum": 4096
+                        }
+                    }
+                },
+                "^image_streams_of_namespace$": {
+                    "type": "object",
+                    "title": "GatherImageStreamsOfNamespaceParams",
+                    "required": [
+                        "namespace"
+                    ],
+                    "properties": {
+                        "namespace": {
+                            "type": "string",
+                            "title": "Namespace",
+                            "pattern": "^openshift-[a-zA-Z0-9_.-]{1,128}$"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -29,6 +29,7 @@ type Serialized struct {
 		Interval string `json:"interval"`
 		Disabled bool   `json:"disabled"`
 	}
+	ConditionalGathererRulesEndpoint string `json:"conditional_gatherer_rules_endpoint"`
 }
 
 // Controller defines the standard config for this operator.
@@ -60,8 +61,9 @@ type Controller struct {
 	Password string
 	Token    string
 
-	HTTPConfig HTTPConfig
-	OCMConfig  OCMConfig
+	HTTPConfig                       HTTPConfig
+	OCMConfig                        OCMConfig
+	ConditionalGathererRulesEndpoint string `json:"conditional_gatherer_rules_endpoint"`
 }
 
 // HTTPConfig configures http proxy and exception settings if they come from config
@@ -115,6 +117,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
+	cfg.ConditionalGathererRulesEndpoint = s.ConditionalGathererRulesEndpoint
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
@@ -198,6 +201,7 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
+	cfg.ConditionalGathererRulesEndpoint = s.ConditionalGathererRulesEndpoint
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)

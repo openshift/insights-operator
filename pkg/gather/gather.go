@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 
@@ -56,12 +55,15 @@ type ArchiveMetadata struct {
 func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config,
 	anonymizer *anonymization.Anonymizer, controller *config.Controller,
+	configurator configobserver.Configurator,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, controller.Interval,
 	)
 	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
-	conditionalGatherer := conditional.New(gatherProtoKubeConfig, metricsGatherKubeConfig)
+	conditionalGatherer := conditional.New(
+		gatherProtoKubeConfig, metricsGatherKubeConfig, configurator.Config().ConditionalGathererRulesEndpoint,
+	)
 
 	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer, conditionalGatherer}
 }
@@ -128,11 +130,11 @@ func CollectAndRecordGatherer(
 			FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
 			Duration:     result.TimeElapsed.Milliseconds(),
 			RecordsCount: recordedRecs,
-			Errors:       errorsToStrings(result.Errs),
+			Errors:       utils.ErrorsToStrings(result.Errs),
 			Panic:        result.Panic,
 		})
 	}
-	return functionReports, sumErrors(errs)
+	return functionReports, utils.SumErrors(errs)
 }
 
 // RecordArchiveMetadata records info about archive and gatherers' reports
@@ -219,31 +221,4 @@ func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList [
 	}
 
 	return false, result
-}
-
-// sumErrors simply sorts the errors and joins them with commas
-func sumErrors(errs []error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-
-	var errStrings []string
-	for _, err := range errs {
-		errStrings = append(errStrings, err.Error())
-	}
-
-	sort.Strings(errStrings)
-	errStrings = utils.UniqueStrings(errStrings)
-
-	return fmt.Errorf("%s", strings.Join(errStrings, ", "))
-}
-
-// errorsToStrings turns error slice to string slice
-func errorsToStrings(errs []error) []string {
-	var result []string
-	for _, err := range errs {
-		result = append(result, err.Error())
-	}
-
-	return result
 }
