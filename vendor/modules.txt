@@ -64,6 +64,9 @@ github.com/google/uuid
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/openapiv2
+# github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
+## explicit
+github.com/gregjones/httpcache
 # github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 ## explicit
 # github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
