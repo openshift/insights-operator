@@ -318,6 +318,7 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 	anonymizer, err := NewAnonymizerFromConfigClient(
 		context.TODO(),
 		kubeClient,
+		kubeClient,
 		configClient,
 		networkClient,
 	)

@@ -113,6 +113,7 @@ func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient co
 func NewAnonymizerFromConfigClient(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
+	gatherKubeClient kubernetes.Interface,
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
 ) (*Anonymizer, error) {
@@ -135,7 +136,7 @@ func NewAnonymizerFromConfigClient(
 	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.AllowedCIDRs...)
 	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.RejectedCIDRs...)
 
-	clusterConfigV1, err := kubeClient.CoreV1().ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
+	clusterConfigV1, err := gatherKubeClient.CoreV1().ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -183,24 +184,29 @@ func NewAnonymizerFromConfigClient(
 
 // NewAnonymizerFromConfig creates a new instance of anonymizer with a provided kubeconfig
 func NewAnonymizerFromConfig(
-	ctx context.Context, kubeConfig *rest.Config, protoKubeConfig *rest.Config,
+	ctx context.Context, gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, protoKubeConfig *rest.Config,
 ) (*Anonymizer, error) {
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	configClient, err := configv1client.NewForConfig(kubeConfig)
+	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	networkClient, err := networkv1client.NewForConfig(kubeConfig)
+	configClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, configClient, networkClient)
+	networkClient, err := networkv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
