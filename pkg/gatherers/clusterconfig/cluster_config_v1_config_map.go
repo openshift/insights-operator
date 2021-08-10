@@ -15,10 +15,10 @@ import (
 
 // gatherClusterConfigV1 gathers "cluster-config-v1" from "kube-system" namespace leaving only "install-config" from data.
 // "install-config" is anonymized.
-func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1Interface) (record.Record, []error) {
+func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	configMap, err := coreClient.ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
-		return record.Record{}, []error{err}
+		return nil, []error{err}
 	}
 
 	newData := make(map[string]string)
@@ -27,14 +27,14 @@ func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1In
 		installConfig := &installertypes.InstallConfig{}
 		err := yaml.Unmarshal([]byte(installConfigStr), installConfig)
 		if err != nil {
-			return record.Record{}, []error{err}
+			return nil, []error{err}
 		}
 
 		installConfig = anonymizeInstallConfig(installConfig)
 
 		installConfigBytes, err := yaml.Marshal(installConfig)
 		if err != nil {
-			return record.Record{}, []error{err}
+			return nil, []error{err}
 		}
 
 		newData["install-config"] = string(installConfigBytes)
@@ -42,10 +42,10 @@ func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1In
 
 	configMap.Data = newData
 
-	return record.Record{
+	return []record.Record{{
 		Name: fmt.Sprintf("config/configmaps/%s/%s", configMap.Namespace, configMap.Name),
 		Item: record.JSONMarshaller{Object: configMap},
-	}, nil
+	}}, nil
 }
 
 func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *installertypes.InstallConfig {
