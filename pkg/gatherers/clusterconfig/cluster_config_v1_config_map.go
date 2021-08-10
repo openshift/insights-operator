@@ -18,7 +18,7 @@ import (
 func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	configMap, err := coreClient.ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
 	if err != nil {
-		return record.Record{}, []error{err}
+		return nil, []error{err}
 	}
 
 	newData := make(map[string]string)
@@ -27,14 +27,14 @@ func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1In
 		installConfig := &installertypes.InstallConfig{}
 		err := yaml.Unmarshal([]byte(installConfigStr), installConfig)
 		if err != nil {
-			return record.Record{}, []error{err}
+			return nil, []error{err}
 		}
 
 		installConfig = anonymizeInstallConfig(installConfig)
 
 		installConfigBytes, err := yaml.Marshal(installConfig)
 		if err != nil {
-			return record.Record{}, []error{err}
+			return nil, []error{err}
 		}
 
 		newData["install-config"] = string(installConfigBytes)
