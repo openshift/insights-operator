@@ -228,31 +228,40 @@ kind: Role
 metadata:
   name: insights-operator-obfuscation-secret
   namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - create
-  - update
-  - delete
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - create
+      - get
+      - watch
+      - list
+      - delete
+      - update
 
 ---
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: insights-operator-obfuscation-secret
   namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+subjects:
+  - kind: ServiceAccount
+    name: operator
+    namespace: openshift-insights
 roleRef:
   kind: Role
   name: insights-operator-obfuscation-secret
-subjects:
-- kind: ServiceAccount
-  name: gather
-  namespace: openshift-insights
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1

@@ -106,7 +106,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig)
+		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig, controller.ProtoKubeConfig)
 		if err != nil {
 			// in case of an error anonymizer will be nil and anonymization will be just skipped
 			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
