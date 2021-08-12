@@ -63,19 +63,19 @@ type Source struct {
 	Contents io.Reader
 }
 
-// InsightsError is helper error type to have HTTP error status code
-type InsightsError struct {
+// HttpError is helper error type to have HTTP error status code
+type HttpError struct {
 	Err        error
 	StatusCode int
 }
 
-func (e InsightsError) Error() string {
+func (e HttpError) Error() string {
 	return e.Err.Error()
 }
 
-func IsInsightsError(err error) bool {
+func IsHttpError(err error) bool {
 	switch err.(type) {
-	case InsightsError:
+	case HttpError:
 		return true
 	default:
 		return false
@@ -342,7 +342,7 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
-		notFoundErr := InsightsError{
+		notFoundErr := HttpError{
 			StatusCode: resp.StatusCode,
 			Err:        fmt.Errorf("not found: %s (request=%s): %s", resp.Request.URL, requestID, string(body)),
 		}
@@ -391,7 +391,7 @@ func (c Client) RecvSCACerts(ctx context.Context, endpoint string) ([]byte, erro
 		return nil, fmt.Errorf("unable to retrieve SCA certs data from %s: %v", endpoint, err)
 	}
 
-	if res.StatusCode >= 300 || res.StatusCode < 200 {
+	if res.StatusCode > 399 || res.StatusCode < 200 {
 		return nil, ocmErrorMessage(res.Request.URL, res)
 	}
 
@@ -416,7 +416,10 @@ func ocmErrorMessage(url *url.URL, r *http.Response) error {
 	if r.StatusCode == http.StatusUnauthorized || r.StatusCode == http.StatusForbidden {
 		return authorizer.Error{Err: err}
 	}
-	return err
+	return HttpError{
+		Err:        err,
+		StatusCode: r.StatusCode,
+	}
 }
 
 var (

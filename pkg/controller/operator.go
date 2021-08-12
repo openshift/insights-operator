@@ -168,7 +168,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	statusReporter.AddSources(reportGatherer)
 	go reportGatherer.Run(ctx)
 
-	runOCMController(ctx, configClient, kubeClient, configObserver, insightsClient)
+	ocmController := initiateOCMController(ctx, gatherKubeConfig, kubeClient, configObserver, insightsClient)
+	if ocmController != nil {
+		statusReporter.AddSources(ocmController)
+		go ocmController.Run()
+	}
 	klog.Warning("started")
 
 	<-ctx.Done()
@@ -205,20 +209,27 @@ func isRunning(ctx context.Context, kubeConfig *rest.Config) wait.ConditionFunc 
 	}
 }
 
-// runOCMController checks the "InsightsOperatorPullingSCA" feature and if it's enabled then run the OCM controller
-func runOCMController(ctx context.Context, configClient *configv1client.ConfigV1Client,
-	kubeClient *kubernetes.Clientset, configObserver *configobserver.Controller, insightsClient *insightsclient.Client) {
+// initiateOCMController checks the "InsightsOperatorPullingSCA" feature and if it's enabled then create and retun the OCM controller
+func initiateOCMController(ctx context.Context, kubeConfig *rest.Config,
+	kubeClient *kubernetes.Clientset, configObserver *configobserver.Controller, insightsClient *insightsclient.Client) *ocm.Controller {
+	configClient, err := configv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		klog.Error(err)
+		return nil
+	}
 	ocmEnabled, err := featureEnabled(ctx, configClient, "InsightsOperatorPullingSCA")
 	if err != nil {
 		klog.Errorf("Pulling of SCA certs from the OCM is disabled. Unable to get cluster FeatureGate: %v", err)
+		return nil
 	}
 	if ocmEnabled {
 		klog.Info("Pulling of SCA certs from the OCM is enabled.")
 		// OMC controller periodically checks and pull data from the OCM API
 		// the data is exposed in the OpenShift API
 		ocmController := ocm.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
-		go ocmController.Run()
+		return ocmController
 	}
+	return nil
 }
 
 // featureEnabled checks if the feature is enabled in the "cluster" FeatureGate

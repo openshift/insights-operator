@@ -141,7 +141,8 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	var last time.Time
 	var reason string
 	var errs []string
-	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage, downloadReason, downloadMessage string
+	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage, downloadReason, downloadMessage,
+		ocmErrorReason, ocmErrorMsg string
 	allReady := true
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
@@ -175,6 +176,11 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			klog.V(4).Info("Failed to download Insights report")
 			downloadReason = summary.Reason
 			downloadMessage = summary.Message
+		} else if summary.Operation == controllerstatus.PullingSCACerts {
+			// summary.Count
+			degradingFailure = true
+			ocmErrorMsg = summary.Message
+			ocmErrorReason = summary.Reason
 		}
 
 		if degradingFailure {
@@ -299,6 +305,21 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		} else {
 			removeOperatorStatusCondition(&existing.Status.Conditions, InsightsDownloadDegraded)
+		}
+		if len(ocmErrorMsg) > 0 {
+			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+				Type:               configv1.OperatorDegraded,
+				Status:             configv1.ConditionTrue,
+				LastTransitionTime: metav1.Time{Time: last},
+				Reason:             ocmErrorReason,
+				Message:            ocmErrorMsg,
+			})
+		} else {
+			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+				Type:   configv1.OperatorDegraded,
+				Status: configv1.ConditionFalse,
+				Reason: "AsExpected",
+			})
 		}
 	}
 

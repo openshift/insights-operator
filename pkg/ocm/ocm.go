@@ -3,9 +3,12 @@ package ocm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -21,6 +24,7 @@ const (
 
 // Controller holds all the required resources to be able to communicate with OCM API
 type Controller struct {
+	controllerstatus.Simple
 	coreClient   corev1client.CoreV1Interface
 	ctx          context.Context
 	configurator Configurator
@@ -45,6 +49,7 @@ type ScaResponse struct {
 func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator Configurator,
 	insightsClient *insightsclient.Client) *Controller {
 	return &Controller{
+		Simple:       controllerstatus.Simple{Name: "ocmcontroller"},
 		coreClient:   coreClient,
 		ctx:          ctx,
 		configurator: configurator,
@@ -81,6 +86,19 @@ func (c *Controller) Run() {
 func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 	data, err := c.client.RecvSCACerts(c.ctx, endpoint)
 	if err != nil {
+		if insightsclient.IsHttpError(err) {
+			httpErr := err.(insightsclient.HttpError)
+			// we don't want to update the status when there's HTTP 404 response from the OCM API, because it means
+			// the SCA certs are not allowed for the given organization
+			if httpErr.StatusCode != http.StatusNotFound {
+				c.Simple.UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.PullingSCACerts,
+					Reason:    "FailedToPullSCACerts",
+					Message:   fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err),
+				})
+				return
+			}
+		}
 		klog.Errorf("Failed to retrieve data: %v", err)
 		return
 	}
@@ -98,6 +116,11 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 		return
 	}
 	klog.Infof("%s secret successfully updated", secretName)
+	c.Simple.UpdateStatus(controllerstatus.Summary{
+		Operation: controllerstatus.PullingSCACerts,
+		Message:   fmt.Sprintf("SCA certs successfully updated in the %s secret", secretName),
+		Healthy:   true,
+	})
 }
 
 // checkSecret checks "etc-pki-entitlement" secret in the "openshift-config-managed" namespace.

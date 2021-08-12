@@ -20,6 +20,8 @@ const (
 	Uploading Operation = "Uploading"
 	// GatheringReport specific for gathering the report from the cluster
 	GatheringReport Operation = "GatheringReport"
+	// PullingSCACerts is specific operation for pulling the SCA certs data from the OCM API
+	PullingSCACerts Operation = "PullingSCACerts"
 )
 
 // Summary represents the status summary of an Operation
