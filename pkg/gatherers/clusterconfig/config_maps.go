@@ -54,7 +54,7 @@ func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []err
 	errs = append(errs, monitoringErrs...)
 
 	clusterConfigV1Rec, clusterConfigV1Errs := gatherClusterConfigV1(ctx, coreClient)
-	records = append(records, clusterConfigV1Rec)
+	records = append(records, clusterConfigV1Rec...)
 	errs = append(errs, clusterConfigV1Errs...)
 
 	return records, errs

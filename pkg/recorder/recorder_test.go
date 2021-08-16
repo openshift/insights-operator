@@ -189,3 +189,13 @@ func Test_ObfuscatedRecord_NameCorrect(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, rec.size, int64(0))
 }
+
+func Test_EmptyItemRecord(t *testing.T) {
+	rec := newRecorder(MaxArchiveSize, "")
+
+	testRec := record.Record{
+		Name: "test/empty",
+	}
+	err := rec.Record(testRec)
+	assert.Equal(t, err, fmt.Errorf("empty %s record data. Nothing will be recorded", testRec.Name))
+}

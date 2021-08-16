@@ -53,6 +53,9 @@ func (r *Recorder) Record(rec record.Record) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	klog.V(4).Infof("Recording %s with fingerprint=%s", rec.Name, rec.Fingerprint)
+	if rec.Item == nil {
+		return fmt.Errorf("empty %s record data. Nothing will be recorded", rec.Name)
+	}
 	if r.has(rec) {
 		return nil
 	}
