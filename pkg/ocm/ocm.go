@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 )
@@ -84,22 +86,25 @@ func (c *Controller) Run() {
 }
 
 func (c *Controller) requestDataAndCheckSecret(endpoint string) {
-	data, err := c.client.RecvSCACerts(c.ctx, endpoint)
+	data, err := c.requestSCAWithExpBackoff(endpoint)
 	if err != nil {
-		if insightsclient.IsHttpError(err) {
-			httpErr := err.(insightsclient.HttpError)
-			// we don't want to update the status when there's HTTP 404 response from the OCM API, because it means
-			// the SCA certs are not allowed for the given organization
-			if httpErr.StatusCode != http.StatusNotFound {
-				c.Simple.UpdateStatus(controllerstatus.Summary{
-					Operation: controllerstatus.PullingSCACerts,
-					Reason:    "FailedToPullSCACerts",
-					Message:   fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err),
-				})
-				return
-			}
-		}
-		klog.Errorf("Failed to retrieve data: %v", err)
+		// in case of any error other than 404 mark the operator as degraded
+		c.Simple.UpdateStatus(controllerstatus.Summary{
+			Operation: controllerstatus.PullingSCACerts,
+			Reason:    "FailedToPullSCACerts",
+			Message:   fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err),
+		})
+		return
+	}
+	// handle the case with HTTP 404
+	if len(data) == 0 {
+		msg := fmt.Sprintf("Received no SCA certs from the %s. Please check if it's enabled for your organization.", endpoint)
+		klog.Info(msg)
+		c.Simple.UpdateStatus(controllerstatus.Summary{
+			Operation: controllerstatus.PullingSCACerts,
+			Message:   msg,
+			Healthy:   true,
+		})
 		return
 	}
 	var ocmRes ScaResponse
@@ -178,4 +183,38 @@ func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secre
 		return nil, err
 	}
 	return s, nil
+}
+
+// requestSCAWithExpBackoff queries OCM API with exponential backoff and returns
+// an error only in case of an HTTP error other than 404 received from the OCM API.
+// Data return value still can be an empty array in case of HTTP 404 error.
+func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
+	bo := wait.Backoff{
+		Duration: 5 * time.Minute,
+		Factor:   2,
+		Jitter:   0,
+		Steps:    status.OCMAPIFailureCountThreshold,
+	}
+	var data []byte
+	err := wait.ExponentialBackoff(bo, func() (bool, error) {
+		var err error
+		data, err = c.client.RecvSCACerts(c.ctx, endpoint)
+		if err != nil {
+			if !insightsclient.IsHttpError(err) {
+				return false, nil
+			}
+			httpErr := err.(insightsclient.HttpError)
+			// don't try again in case of 404
+			if httpErr.StatusCode == http.StatusNotFound {
+				return true, nil
+			}
+			return false, nil
+		}
+		return true, nil
+	})
+	// exp. backoff timeouted -> error
+	if err != nil {
+		return nil, fmt.Errorf("timed out waiting for the successful response from %s", endpoint)
+	}
+	return data, nil
 }
