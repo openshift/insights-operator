@@ -200,14 +200,17 @@ func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 		var err error
 		data, err = c.client.RecvSCACerts(c.ctx, endpoint)
 		if err != nil {
+			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
 			if !insightsclient.IsHttpError(err) {
-				return false, nil
+				klog.Errorf("Failed to request the SCA certs: %v", err)
+				return true, nil
 			}
 			httpErr := err.(insightsclient.HttpError)
 			// don't try again in case of 404
 			if httpErr.StatusCode == http.StatusNotFound {
 				return true, nil
 			}
+			klog.Errorf("%v. Trying again in %s", httpErr, bo.Step())
 			return false, nil
 		}
 		return true, nil
