@@ -181,7 +181,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			downloadMessage = summary.Message
 		} else if summary.Operation == controllerstatus.PullingSCACerts {
 			klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
-				uploadFailuresCountThreshold)
+				OCMAPIFailureCountThreshold)
 			degradingFailure = true
 			ocmErrorMsg = summary.Message
 			ocmErrorReason = summary.Reason
