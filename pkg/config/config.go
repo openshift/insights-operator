@@ -29,7 +29,7 @@ type Serialized struct {
 		Interval string `json:"interval"`
 		Disabled bool   `json:"disabled"`
 	}
-	ConditionalGathererRulesEndpoint string `json:"conditional_gatherer_rules_endpoint"`
+	ConditionalGathererRulesEndpoint string `json:"conditionalGathererRulesEndpoint"`
 }
 
 // Controller defines the standard config for this operator.
@@ -63,7 +63,7 @@ type Controller struct {
 
 	HTTPConfig                       HTTPConfig
 	OCMConfig                        OCMConfig
-	ConditionalGathererRulesEndpoint string `json:"conditional_gatherer_rules_endpoint"`
+	ConditionalGathererRulesEndpoint string
 }
 
 // HTTPConfig configures http proxy and exception settings if they come from config

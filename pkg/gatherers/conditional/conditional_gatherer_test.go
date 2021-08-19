@@ -17,14 +17,19 @@ import (
 )
 
 func newEmptyGatherer() *Gatherer {
-	return New(nil, nil, "")
+	return New(nil, nil, "http://localhost:8080")
 }
 
 func Test_Gatherer_Basic(t *testing.T) {
 	gatherer := newEmptyGatherer()
 	assert.Equal(t, "conditional", gatherer.GetName())
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
-	assert.EqualError(t, err, `unable to load gathering rules: Get "": unsupported protocol scheme ""`)
+	assert.EqualError(
+		t,
+		err,
+		`unable to load gathering rules: Get "http://localhost:8080": `+
+			`dial tcp [::1]:8080: connect: connection refused`,
+	)
 	assert.Empty(t, gatheringFunctions)
 
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
@@ -152,12 +157,13 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 }
 
 func Test_getConditionalGatheringFunctionName(t *testing.T) {
-	res := getConditionalGatheringFunctionName("func", map[string]interface{}{
+	res, err := getConditionalGatheringFunctionName("func", map[string]interface{}{
 		"param1": "test",
 		"param2": 5,
 		"param3": "9",
 		"param4": "",
 	})
+	assert.NoError(t, err)
 	assert.Equal(t, "func/param1=test,param2=5,param3=9", res)
 }
 

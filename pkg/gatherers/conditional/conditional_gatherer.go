@@ -246,7 +246,14 @@ func (g *Gatherer) createGatheringClosures(
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			name := getConditionalGatheringFunctionName(string(functionName), functionParams)
+			name, err := getConditionalGatheringFunctionName(string(functionName), functionParams)
+			if err != nil {
+				errs = append(errs, fmt.Errorf(
+					"unable to get name for the function %v with params %v: %v",
+					functionName, functionParams, err,
+				))
+				continue
+			}
 			resultingClosures[name] = closure
 		}
 	}
@@ -273,11 +280,10 @@ func (g *Gatherer) getGatheringRulesJSON(ctx context.Context) ([]byte, error) {
 // getConditionalGatheringFunctionName creates a name of the conditional gathering function adding the parameters
 // after the name. For example:
 //   "conditional/logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100"
-func getConditionalGatheringFunctionName(funcName string, gatherParamsInterface interface{}) string {
+func getConditionalGatheringFunctionName(funcName string, gatherParamsInterface interface{}) (string, error) {
 	gatherParams, err := utils.StructToMap(gatherParamsInterface)
 	if err != nil {
-		// will only happen when non a struct is passed which means code is completely broken and panicking is ok
-		panic(err)
+		return "", err
 	}
 
 	if len(gatherParams) > 0 {
@@ -309,5 +315,5 @@ func getConditionalGatheringFunctionName(funcName string, gatherParamsInterface 
 
 	funcName = strings.TrimSuffix(funcName, ",")
 
-	return funcName
+	return funcName, nil
 }
