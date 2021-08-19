@@ -190,7 +190,7 @@ func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secre
 // Data return value still can be an empty array in case of HTTP 404 error.
 func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
-		Duration: 10 * time.Minute,
+		Duration: c.configurator.Config().OCMConfig.Interval / 32, // 15 min by default
 		Factor:   2,
 		Jitter:   0,
 		Steps:    status.OCMAPIFailureCountThreshold,

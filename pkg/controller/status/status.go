@@ -144,8 +144,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	var last time.Time
 	var reason string
 	var errs []string
-	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage, downloadReason, downloadMessage,
-		ocmErrorReason, ocmErrorMsg string
+	var uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage, downloadReason, downloadMessage string
 	allReady := true
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
@@ -183,8 +182,6 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
 				OCMAPIFailureCountThreshold)
 			degradingFailure = true
-			ocmErrorMsg = summary.Message
-			ocmErrorReason = summary.Reason
 		}
 
 		if degradingFailure {
@@ -309,21 +306,6 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		} else {
 			removeOperatorStatusCondition(&existing.Status.Conditions, InsightsDownloadDegraded)
-		}
-		if len(ocmErrorMsg) > 0 {
-			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
-				Type:               configv1.OperatorDegraded,
-				Status:             configv1.ConditionTrue,
-				LastTransitionTime: metav1.Time{Time: last},
-				Reason:             ocmErrorReason,
-				Message:            ocmErrorMsg,
-			})
-		} else {
-			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
-				Type:   configv1.OperatorDegraded,
-				Status: configv1.ConditionFalse,
-				Reason: "AsExpected",
-			})
 		}
 	}
 
