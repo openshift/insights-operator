@@ -2,6 +2,8 @@ package conditional
 
 import "encoding/json"
 
+// parseGatheringRules takes json array of gathering rules and returns the array of GatheringRule objects
+// with correct parameters types
 func parseGatheringRules(jsonData []byte) ([]GatheringRule, error) {
 	var unmarshalledRules []GatheringRule
 
@@ -23,6 +25,8 @@ func parseGatheringRules(jsonData []byte) ([]GatheringRule, error) {
 	return result, nil
 }
 
+// convertUnmarshalledRuleToActualTypes converts the interface types (conditions and gathering functions params)
+// in the rule to actual types
 func convertUnmarshalledRuleToActualTypes(rule GatheringRule) (GatheringRule, error) {
 	result := GatheringRule{
 		GatheringFunctions: make(GatheringFunctions),

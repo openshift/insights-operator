@@ -50,6 +50,7 @@ type Gatherer struct {
 func New(gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config, gatheringRulesEndpoint string) *Gatherer {
 	var imageKubeConfig *rest.Config
 	if gatherProtoKubeConfig != nil {
+		// needed for getting image streams
 		imageKubeConfig = rest.CopyConfig(gatherProtoKubeConfig)
 		imageKubeConfig.QPS = common.ImageConfigQPS
 		imageKubeConfig.Burst = common.ImageConfigBurst
