@@ -93,9 +93,9 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	} else if err == insightsclient.ErrWaitingForVersion {
 		klog.Error(err)
 		return false, err
-	} else if insightsclient.IsInsightsError(err) {
+	} else if insightsclient.IsHttpError(err) {
 
-		ie := err.(insightsclient.InsightsError)
+		ie := err.(insightsclient.HttpError)
 		klog.Errorf("Unexpected error retrieving the report: %s", ie)
 		// if there's a 404 response then retry
 		if ie.StatusCode == http.StatusNotFound {

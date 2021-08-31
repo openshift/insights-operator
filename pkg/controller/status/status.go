@@ -36,6 +36,9 @@ const (
 	uploadFailuresCountThreshold = 5
 	// GatherFailuresCountThreshold defines how many gatherings can fail in a row before we report Degraded
 	GatherFailuresCountThreshold = 5
+	// OCMAPIFailureCountThreshold defines how many unsuccessful responses from the OCM API in a row is tolerated
+	// before the operator is marked as Degraded
+	OCMAPIFailureCountThreshold = 5
 )
 
 type Reported struct {
@@ -175,6 +178,10 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			klog.V(4).Info("Failed to download Insights report")
 			downloadReason = summary.Reason
 			downloadMessage = summary.Message
+		} else if summary.Operation == controllerstatus.PullingSCACerts {
+			klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
+				OCMAPIFailureCountThreshold)
+			degradingFailure = true
 		}
 
 		if degradingFailure {
