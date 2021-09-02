@@ -16,7 +16,7 @@ import (
 )
 
 func newEmptyGatherer() *Gatherer {
-	return &Gatherer{}
+	return New(nil, nil)
 }
 
 func Test_Gatherer_Basic(t *testing.T) {
@@ -24,7 +24,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 	assert.Equal(t, "conditional", gatherer.GetName())
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
 	assert.NoError(t, err)
-	assert.Greater(t, len(gatheringFunctions), 0)
+	assert.Len(t, gatheringFunctions, 1)
 
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
 
@@ -33,10 +33,62 @@ func Test_Gatherer_Basic(t *testing.T) {
 	assert.False(t, ok, "should NOT implement gather.CustomPeriodGatherer")
 }
 
-func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
+func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	gatherer := newEmptyGatherer()
+	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
+	))
+	assert.NoError(t, err)
+
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
 	assert.NoError(t, err)
+	assert.Len(t, gatheringFunctions, 3)
+	_, found := gatheringFunctions["conditional_gatherer_rules"]
+	assert.True(t, found)
+}
+
+func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
+	gatherer := newEmptyGatherer()
+	gatherer.gatheringRules = []GatheringRule{
+		{
+			Conditions: []ConditionWithParams{
+				{
+					Type: AlertIsFiring,
+					Params: AlertIsFiringConditionParams{
+						Name: "SamplesImagestreamImportFailing",
+					},
+				},
+			},
+			GatheringFunctions: GatheringFunctions{
+				GatherLogsOfNamespace: GatherLogsOfNamespaceParams{
+					Namespace: "not-openshift-cluster-samples-operator",
+					TailLines: 100,
+				},
+			},
+		},
+	} // invalid namespace (doesn't start with openshift-)
+
+	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
+	))
+	assert.NoError(t, err)
+
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.EqualError(
+		t,
+		err,
+		"got invalid config for conditional gatherer: 0.gathering_functions.logs_of_namespace.namespace: "+
+			"Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'",
+	)
+	assert.Empty(t, gatheringFunctions)
+}
+
+func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
+	gatherer := newEmptyGatherer()
+
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
+
 	assert.Len(t, gatheringFunctions, 1)
 	_, found := gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
@@ -89,69 +141,14 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 }
 
 func Test_getConditionalGatheringFunctionName(t *testing.T) {
-	res := getConditionalGatheringFunctionName("func", map[string]interface{}{
+	res, err := getConditionalGatheringFunctionName("func", map[string]interface{}{
 		"param1": "test",
 		"param2": 5,
 		"param3": "9",
 		"param4": "",
 	})
+	assert.NoError(t, err)
 	assert.Equal(t, "func/param1=test,param2=5,param3=9", res)
-}
-
-func Test_getInterfaceFromMap(t *testing.T) {
-	i, err := getInterfaceFromMap(map[string]interface{}{}, "key")
-	assert.Nil(t, i)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err := getInterfaceFromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, "val", val)
-}
-
-func Test_getStringFromMap(t *testing.T) {
-	val, err := getStringFromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getStringFromMap(map[string]interface{}{"key": 9}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to convert '9' to string")
-
-	val, err = getStringFromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, "val", val)
-}
-
-func Test_getInt64FromMap(t *testing.T) {
-	val, err := getInt64FromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": "val"}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, `strconv.ParseInt: parsing "val": invalid syntax`)
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": 9}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(9), val)
-
-	val, err = getInt64FromMap(map[string]interface{}{"key": "6"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(6), val)
-}
-
-func Test_getPositiveInt64FromMap(t *testing.T) {
-	val, err := getPositiveInt64FromMap(map[string]interface{}{}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "unable to find a value with key 'key' in the map 'map[]'")
-
-	val, err = getPositiveInt64FromMap(map[string]interface{}{"key": "-6"}, "key")
-	assert.Empty(t, val)
-	assert.EqualError(t, err, "positive int expected, got '-6'")
-
-	val, err = getPositiveInt64FromMap(map[string]interface{}{"key": "6"}, "key")
-	assert.NoError(t, err)
-	assert.Equal(t, int64(6), val)
 }
 
 func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
@@ -165,7 +162,7 @@ func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
 	item, err := records[0].Item.Marshal(context.TODO())
 	assert.NoError(t, err)
 
-	var gotGatheringRules []gatheringRule
+	var gotGatheringRules []GatheringRule
 	err = json.Unmarshal(item, &gotGatheringRules)
 	assert.NoError(t, err)
 
@@ -178,7 +175,7 @@ func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
 		Client: fake.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader(metrics)),
+				Body:       ioutil.NopCloser(strings.NewReader(metrics + "\n")),
 			}
 			return resp, nil
 		}),
