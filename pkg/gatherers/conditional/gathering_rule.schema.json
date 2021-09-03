@@ -120,6 +120,20 @@
                             "pattern": "^openshift-[a-zA-Z0-9_.-]{1,128}$"
                         }
                     }
+                },
+                "^api_request_counts$": {
+                    "type": "object",
+                    "title": "GatherApiRequestCountsParams",
+                    "required": [
+                        "alert_name"
+                    ],
+                    "properties": {
+                        "alert_name": {
+                            "type": "string",
+                            "title": "AlertName",
+                            "pattern": "^[a-zA-Z0-9_]{1,128}$"
+                        }
+                    }
                 }
             }
         }

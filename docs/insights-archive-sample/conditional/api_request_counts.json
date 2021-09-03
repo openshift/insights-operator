@@ -1,0 +1,8 @@
+[
+    {
+        "resource": "customresourcedefinitions.v1beta1.apiextensions.k8s.io",
+        "removed_in_release": "1.22",
+        "total_request_count": 46,
+        "last_day_request_count": 0
+    }
+]
