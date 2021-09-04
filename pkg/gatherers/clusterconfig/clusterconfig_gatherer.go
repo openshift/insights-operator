@@ -86,6 +86,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"pod_network_connectivity_checks":   failableFunc((*Gatherer).GatherPNCC),
 	"machine_autoscalers":               failableFunc((*Gatherer).GatherMachineAutoscalers),
 	"openshift_logging":                 failableFunc((*Gatherer).GatherOpenshiftLogging),
+	"psps":                              failableFunc((*Gatherer).GatherPodSecurityPolicies),
 }
 
 func New(
