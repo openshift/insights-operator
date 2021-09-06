@@ -4,24 +4,32 @@ This cluster operator gathers anonymized system configuration and reports it to 
 
 # Table of Contents
 
+- [Insights Operator](#insights-operator)
+- [Table of Contents](#table-of-contents)
 - [Building](#building)
 - [Testing](#testing)
 - [Documentation](#documentation)
 - [Getting metrics from Prometheus](#getting-metrics-from-prometheus)
-    - [Generate the certificate and key](#generate-the-certificate-and-key)
-    - [Prometheus metrics provided by Insights Operator](#prometheus-metrics-provided-by-insights-operator)
-    - [Getting the data directly from Prometheus](#getting-the-data-directly-from-prometheus)
-    - [Debugging Prometheus metrics without valid CA](#debugging-prometheus-metrics-without-valid-ca)
+  - [Generate the certificate and key](#generate-the-certificate-and-key)
+  - [Prometheus metrics provided by Insights Operator](#prometheus-metrics-provided-by-insights-operator)
+    - [Running IO locally](#running-io-locally)
+    - [Running IO on K8s](#running-io-on-k8s)
+  - [Getting the data directly from Prometheus](#getting-the-data-directly-from-prometheus)
+  - [Debugging Prometheus metrics without valid CA](#debugging-prometheus-metrics-without-valid-ca)
 - [Debugging](#debugging)
-    - [Using the profiler](#using-the-profiler)
+  - [Using the profiler](#using-the-profiler)
+    - [Starting IO with the profiler](#starting-io-with-the-profiler)
+    - [Collect profiling data](#collect-profiling-data)
+    - [Analyzing profiling data](#analyzing-profiling-data)
 - [Changelog](#changelog)
-    - [Updating the changelog](#updating-the-changelog)
+  - [Updating the changelog](#updating-the-changelog)
 - [Reported data](#reported-data)
-- [Insights Operator Archive](#insights-operator-archive)
+  - [Insights Operator Archive](#insights-operator-archive)
     - [Sample IO archive](#sample-io-archive)
     - [Generating a sample archive](#generating-a-sample-archive)
     - [Formatting archive json files](#formatting-archive-json-files)
     - [Obfuscating an archive](#obfuscating-an-archive)
+    - [Updating the sample archive](#updating-the-sample-archive)
 - [Contributing](#contributing)
 - [Support](#support)
 - [License](#license)
@@ -250,6 +258,44 @@ go run ./cmd/obfuscate-archive/main.go YOUR_ARCHIVE.tar.gz
 
 where `YOUR_ARCHIVE.tar.gz` is the path to the archive.
 The obfuscated version will be created in the same directory and called `YOUR_ARCHIVE-obfuscated.tar.gz`
+
+### Updating the sample archive
+
+The `docs/insights-archive-sample/` directory contains an example of an Insights
+Operator archive, extracted and with pretty-formatted JSON files.
+In case of any changes that affect multiple files in the archive, it is a good
+idea to regenerate the sample archive to make sure it remains up-to-date.
+
+There are two ways of updating the sample archive directory automatically.
+Both of them require running the Insights Operator, letting it generate an archive
+and extracting the archive into an otherwise empty directory.
+
+The script will automatically replace existing files in the sample archive with
+their respective counterparts from the supplied extracted IO archive.
+In case of files with (partially) randomized names, such as pods or nodes,
+the entire directory is deleted and replaced with a matching directory from
+the new archive if possible.
+Changes made by the script can be checked and reverted using Git.
+The updated JSON files will be automatically pretty-formatted using `jq`,
+which is the only dependency required for running the script.
+
+All existing files in the sample archive can be updated using the following command:
+
+```sh
+./scripts/update_sample_archive.sh <Path of directory with the NEW extracted IO archive>
+```
+
+If you only want to update files containing a certain string pattern,
+you can supply a regular expression as a second optional argument.
+For example, the following command was used to replace JSON files containing
+the `managedFields` field when it was removed from the IO archive to save space:
+
+```sh
+./scripts/update_sample_archive.sh <Path of directory with the NEW extracted IO archive> '"managedFields":'
+```
+
+The path of the sample archive directory should be constant relative to
+the path of the script and therefore does not have to be specified explicitly.
 
 # Contributing
 
