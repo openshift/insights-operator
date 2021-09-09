@@ -121,7 +121,7 @@
                         }
                     }
                 },
-                "^api_request_counts$": {
+                "^api_request_counts_of_resource_from_alert$": {
                     "type": "object",
                     "title": "GatherApiRequestCountsParams",
                     "required": [
