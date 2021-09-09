@@ -26,7 +26,7 @@ type APIRequestCount struct {
 // Params is of type AlertIsFiringConditionParams:
 //   - alert_name string - name of the firing alert
 //
-// * Location in archive: conditional/api_request_counts.json
+// * Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
@@ -54,7 +54,8 @@ func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gat
 	}, nil
 }
 
-func (g *Gatherer) gatherAPIRequestCounts(ctx context.Context, dynamicClient dynamic.Interface, alertName string) ([]record.Record, []error) {
+func (g *Gatherer) gatherAPIRequestCounts(ctx context.Context,
+	dynamicClient dynamic.Interface, alertName string) ([]record.Record, []error) {
 	resources := make(map[string]struct{})
 	for _, a := range g.firingAlerts[alertName] {
 		resourceName := fmt.Sprintf("%s.%s.%s", a.Labels["resource"], a.Labels["version"], a.Labels["group"])

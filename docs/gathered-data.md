@@ -7,7 +7,7 @@ resources mentioned in the alert provided as a string parameter
 Params is of type AlertIsFiringConditionParams:
   - alert_name string - name of the firing alert
 
-* Location in archive: conditional/api_request_counts.json
+* Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
 * Since versions:
   * 4.10+
 
