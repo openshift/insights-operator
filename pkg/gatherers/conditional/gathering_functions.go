@@ -24,7 +24,7 @@ const (
 
 	// GatherAPIRequestCounts is a function collecting api request counts for the resources read
 	// from the corresponding alert
-	GatherAPIRequestCounts GatheringFunctionName = "api_request_counts"
+	GatherAPIRequestCounts GatheringFunctionName = "api_request_counts_of_resource_from_alert"
 )
 
 func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
