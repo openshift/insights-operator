@@ -41,21 +41,19 @@ status:
 
 func Test_GatherAPIRequestCount(t *testing.T) {
 	gatherer := Gatherer{
-		firingAlerts: map[string][]Alert{
+		firingAlerts: map[string][]AlertLabels{
 			"alertA": {
 				{
-					Labels: map[string]string{
-						"resource": "test1",
-						"group":    "testapi.org",
-						"version":  "v1beta2",
-					},
+					"alertname": "alertA",
+					"resource":  "test1",
+					"group":     "testapi.org",
+					"version":   "v1beta2",
 				},
 				{
-					Labels: map[string]string{
-						"resource": "test2",
-						"group":    "testapi.org",
-						"version":  "v1beta1",
-					},
+					"alertname": "alertA",
+					"resource":  "test2",
+					"group":     "testapi.org",
+					"version":   "v1beta1",
 				},
 			},
 		},

@@ -57,8 +57,8 @@ func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gat
 func (g *Gatherer) gatherAPIRequestCounts(ctx context.Context,
 	dynamicClient dynamic.Interface, alertName string) ([]record.Record, []error) {
 	resources := make(map[string]struct{})
-	for _, a := range g.firingAlerts[alertName] {
-		resourceName := fmt.Sprintf("%s.%s.%s", a.Labels["resource"], a.Labels["version"], a.Labels["group"])
+	for _, labels := range g.firingAlerts[alertName] {
+		resourceName := fmt.Sprintf("%s.%s.%s", labels["resource"], labels["version"], labels["group"])
 		resources[resourceName] = struct{}{}
 	}
 

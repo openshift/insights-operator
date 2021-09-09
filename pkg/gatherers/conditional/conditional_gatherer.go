@@ -103,7 +103,7 @@ type Gatherer struct {
 	metricsGatherKubeConfig *rest.Config
 	imageKubeConfig         *rest.Config
 	// there can be multiple instances of the same alert
-	firingAlerts   map[string][]Alert
+	firingAlerts   map[string][]AlertLabels
 	gatheringRules []GatheringRule
 }
 
@@ -222,7 +222,7 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context) error {
 func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClient rest.Interface) error {
 	const logPrefix = "conditional gatherer: "
 
-	g.firingAlerts = make(map[string][]Alert)
+	g.firingAlerts = make(map[string][]AlertLabels)
 
 	data, err := metricsClient.Get().AbsPath("federate").
 		Param("match[]", `ALERTS{alertstate="firing"}`).
@@ -253,21 +253,20 @@ func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClien
 			klog.Info(logPrefix + "metric is nil")
 			continue
 		}
-		alert := Alert{
-			Labels: make(map[string]string),
-		}
+		alertLabels := make(map[string]string)
 		for _, label := range metric.GetLabel() {
 			if label == nil {
 				klog.Info(logPrefix + "label is nil")
 				continue
 			}
-			if label.GetName() == "alertname" {
-				alert.Name = label.GetValue()
-				continue
-			}
-			alert.Labels[label.GetName()] = label.GetValue()
+			alertLabels[label.GetName()] = label.GetValue()
 		}
-		g.firingAlerts[alert.Name] = append(g.firingAlerts[alert.Name], alert)
+		alertName, ok := alertLabels["alertname"]
+		if !ok {
+			klog.Warningf("%s can't find \"alertname\" label in the metric: %v", logPrefix, metric)
+			continue
+		}
+		g.firingAlerts[alertName] = append(g.firingAlerts[alertName], alertLabels)
 	}
 
 	return nil
