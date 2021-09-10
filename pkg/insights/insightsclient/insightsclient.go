@@ -31,6 +31,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
 )
@@ -120,9 +121,9 @@ func getTrustedCABundle() (*x509.CertPool, error) {
 }
 
 // clientTransport creates new http.Transport with either system or configured Proxy
-func clientTransport(authorizer Authorizer) http.RoundTripper {
+func (c *Client) clientTransport() http.RoundTripper {
 	clientTransport := &http.Transport{
-		Proxy: authorizer.NewSystemOrConfiguredProxy(),
+		Proxy: c.authorizer.NewSystemOrConfiguredProxy(),
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -136,6 +137,19 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 	if err != nil {
 		klog.Errorf("Failed to get proxy trusted CA: %v", err)
 	}
+	// check if some proxy is set
+	if isProxySet() {
+		userCAPem, err := c.getUserCABundle()
+		if err != nil {
+			klog.Error(err)
+		}
+		if userCAPem != nil {
+			if ok := rootCAs.AppendCertsFromPEM(userCAPem); !ok {
+				klog.Error("failed to parse CA pem data")
+			}
+		}
+	}
+
 	if rootCAs != nil {
 		clientTransport.TLSClientConfig = &tls.Config{}
 		clientTransport.TLSClientConfig.RootCAs = rootCAs
@@ -237,7 +251,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	req.Body = pr
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = c.clientTransport()
 
 	klog.V(4).Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
@@ -306,7 +320,7 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 	}
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = c.clientTransport()
 
 	klog.V(4).Infof("Retrieving report from %s", req.URL.String())
 	resp, err := c.client.Do(req)
@@ -382,7 +396,7 @@ func (c Client) RecvSCACerts(ctx context.Context, endpoint string) ([]byte, erro
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = c.clientTransport()
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
 
@@ -420,6 +434,36 @@ func ocmErrorMessage(url *url.URL, r *http.Response) error {
 		Err:        err,
 		StatusCode: r.StatusCode,
 	}
+}
+
+func isProxySet() (ok bool) {
+	_, httpProxySet := os.LookupEnv("HTTP_PROXY")
+	_, httpsProxySet := os.LookupEnv("HTTPS_PROXY")
+
+	return httpProxySet || httpsProxySet
+}
+
+func (c *Client) getUserCABundle() ([]byte, error) {
+	//look at the Config Map reference
+	configCli, err := configv1client.NewForConfig(c.gatherKubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	clusterProxy, err := configCli.Proxies().Get(context.Background(), "cluster", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	cmWithCACert := clusterProxy.Spec.TrustedCA.Name
+	coreCli, err := corev1client.NewForConfig(c.gatherKubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	cm, err := coreCli.ConfigMaps("openshift-config").Get(context.Background(), cmWithCACert, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	data := []byte(cm.Data["ca-bundle.crt"])
+	return data, nil
 }
 
 var (
