@@ -521,6 +521,19 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
   * 4.6+
 
 
+## PodSecurityPolicies
+
+gathers the names of installed PodSecurityPolicies
+
+The Kubernetes API https://github.com/kubernetes/client-go/blob/v12.0.0/kubernetes/typed/policy/v1beta1/podsecuritypolicy.go#L76
+
+* Location in archive: config/psp_names.json
+* See: docs/insights-archive-sample/config/psp_names.json
+* Id in config: psps
+* Since versions:
+  * 4.10+
+
+
 ## SAPConfig
 
 collects selected security context constraints
