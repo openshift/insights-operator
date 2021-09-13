@@ -111,11 +111,16 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		})
 		return true, err
 	}
+	defer func() {
+		if err := reportBody.Close(); err != nil {
+			klog.Warningf("Failed to close response body: %v", err)
+		}
+	}()
 
 	klog.V(4).Info("Report retrieved")
 	reportResponse := Response{}
 
-	if err = json.NewDecoder(*reportBody).Decode(&reportResponse); err != nil {
+	if err = json.NewDecoder(reportBody).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
 		return true, err
 	}
