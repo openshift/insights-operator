@@ -27,6 +27,7 @@ import (
 var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilderPtr{
 	GatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
 	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
+	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
 }
 
 // gatheringRules contains all the rules used to run conditional gatherings.
@@ -77,6 +78,21 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Params: AlertIsFiringConditionParams{
+					Name: "APIRemovedInNextEUSReleaseInUse",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherAPIRequestCounts: GatherAPIRequestCountsParams{
+				AlertName: "APIRemovedInNextEUSReleaseInUse",
+			},
+		},
+	},
 }
 
 const canConditionalGathererFail = false
@@ -86,8 +102,9 @@ type Gatherer struct {
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
 	imageKubeConfig         *rest.Config
-	firingAlerts            map[string]bool // golang doesn't have sets :(
-	gatheringRules          []GatheringRule
+	// there can be multiple instances of the same alert
+	firingAlerts   map[string][]AlertLabels
+	gatheringRules []GatheringRule
 }
 
 // New creates a new instance of conditional gatherer with the appropriate configs
@@ -138,7 +155,6 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		if err != nil {
 			return nil, err
 		}
-
 		if allConditionsAreSatisfied {
 			functions, errs := g.createGatheringClosures(conditionalGathering.GatheringFunctions)
 			if len(errs) > 0 {
@@ -206,7 +222,7 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context) error {
 func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClient rest.Interface) error {
 	const logPrefix = "conditional gatherer: "
 
-	g.firingAlerts = make(map[string]bool)
+	g.firingAlerts = make(map[string][]AlertLabels)
 
 	data, err := metricsClient.Get().AbsPath("federate").
 		Param("match[]", `ALERTS{alertstate="firing"}`).
@@ -237,17 +253,20 @@ func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClien
 			klog.Info(logPrefix + "metric is nil")
 			continue
 		}
-
+		alertLabels := make(map[string]string)
 		for _, label := range metric.GetLabel() {
 			if label == nil {
 				klog.Info(logPrefix + "label is nil")
 				continue
 			}
-
-			if label.GetName() == "alertname" {
-				g.firingAlerts[label.GetValue()] = true
-			}
+			alertLabels[label.GetName()] = label.GetValue()
 		}
+		alertName, ok := alertLabels["alertname"]
+		if !ok {
+			klog.Warningf("%s can't find \"alertname\" label in the metric: %v", logPrefix, metric)
+			continue
+		}
+		g.firingAlerts[alertName] = append(g.firingAlerts[alertName], alertLabels)
 	}
 
 	return nil
