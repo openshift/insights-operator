@@ -166,7 +166,7 @@ func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
 	err = json.Unmarshal(item, &gotGatheringRules)
 	assert.NoError(t, err)
 
-	assert.Len(t, gotGatheringRules, 1)
+	assert.Len(t, gotGatheringRules, 2)
 }
 
 func newFakeClientWithMetrics(metrics string) *fake.RESTClient {

@@ -15,3 +15,6 @@ type GatheringRule struct {
 
 // GathererFunctionBuilderPtr defines a pointer to a gatherer function builder
 type GathererFunctionBuilderPtr = func(*Gatherer, interface{}) (gatherers.GatheringClosure, error)
+
+// AlertLabels defines alert labels as a string key/value pairs
+type AlertLabels map[string]string
