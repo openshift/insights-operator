@@ -413,9 +413,6 @@ func responseBody(r *http.Response) string {
 func ocmErrorMessage(url *url.URL, r *http.Response) error {
 	errMessage := fmt.Sprintf("OCM API %s returned HTTP %d: %s", url, r.StatusCode, responseBody(r))
 	err := fmt.Errorf(errMessage)
-	if r.StatusCode == http.StatusUnauthorized || r.StatusCode == http.StatusForbidden {
-		return authorizer.Error{Err: err}
-	}
 	return HttpError{
 		Err:        err,
 		StatusCode: r.StatusCode,
