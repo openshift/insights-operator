@@ -436,6 +436,8 @@ func ocmErrorMessage(url *url.URL, r *http.Response) error {
 	}
 }
 
+// isProxySet looks up "HTTP_PROXY" and "HTTPS_PROXY" environment variables
+// and returns true if at least one is set
 func isProxySet() (ok bool) {
 	_, httpProxySet := os.LookupEnv("HTTP_PROXY")
 	_, httpsProxySet := os.LookupEnv("HTTPS_PROXY")
@@ -443,8 +445,10 @@ func isProxySet() (ok bool) {
 	return httpProxySet || httpsProxySet
 }
 
+// getUserCABundle reads "cluster" proxy resource to get a name of config map with
+// "TrustedCA" certificate and then it tries to read the certificate data from "ca-bundle.crt" key
+// Returns the certificate data or an error in case of failed reading
 func (c *Client) getUserCABundle() ([]byte, error) {
-	//look at the Config Map reference
 	configCli, err := configv1client.NewForConfig(c.gatherKubeConfig)
 	if err != nil {
 		return nil, err
