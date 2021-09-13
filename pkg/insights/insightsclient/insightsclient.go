@@ -146,6 +146,8 @@ func (c *Client) clientTransport() http.RoundTripper {
 		if userCAPem != nil {
 			if ok := rootCAs.AppendCertsFromPEM(userCAPem); !ok {
 				klog.Error("failed to parse CA pem data")
+			} else {
+				klog.Infof("Sucecssfully added CA cert referenced in the clusterProxy.Spec.TrustedCA bundle")
 			}
 		}
 	}
@@ -466,8 +468,11 @@ func (c *Client) getUserCABundle() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := []byte(cm.Data["ca-bundle.crt"])
-	return data, nil
+	data, ok := cm.Data["ca-bundle.crt"]
+	if !ok {
+		return nil, fmt.Errorf("can't find ca-bundle.crt key in %s config map", cmWithCACert)
+	}
+	return []byte(data), nil
 }
 
 var (
