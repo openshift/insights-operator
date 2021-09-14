@@ -201,20 +201,19 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		}
 	}
 
+	// handling errors
 	var errorMessage string
-
-	switch len(errs) {
-	case 0:
-	case 1:
+	if len(errs) > 1 {
+		errorReason = "MultipleFailures"
+		sort.Strings(errs)
+		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
+	} else {
 		if len(errorReason) == 0 {
 			errorReason = "UnknownError"
 		}
 		errorMessage = errs[0]
-	default:
-		errorReason = "MultipleFailures"
-		sort.Strings(errs)
-		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
 	}
+
 	// disabled state only when it's disabled by config. It means that gathering will not happen
 	if !c.configurator.Config().Report {
 		disabledReason = "Disabled"
@@ -239,6 +238,35 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
 
 	// update the disabled and failing conditions
+	c.updateDisabledAndFailingConditions(existing, isInitializing, last, disabledReason, disabledMessage, errorReason, errorMessage, uploadErrorReason, uploadErrorMessage, downloadReason, downloadMessage)
+
+	// once the operator is running it is always considered available
+	setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		Type:   configv1.OperatorAvailable,
+		Status: configv1.ConditionTrue,
+		Reason: "AsExpected",
+	})
+
+	// update the Progressing condition with a summary of the current state
+	c.updateProcessingConditionWithSummary(existing, isInitializing, last, errorMessage, disabledMessage, errorReason)
+
+	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
+		existing.Status.Versions = []configv1.OperandVersion{
+			{Name: "operator", Version: release},
+		}
+	}
+
+	if data, err := json.Marshal(reported); err != nil {
+		klog.Errorf("Unable to marshal status extension: %v", err)
+	} else {
+		existing.Status.Extension.Raw = data
+	}
+	return existing
+}
+
+func (c *Controller) updateDisabledAndFailingConditions(existing *configv1.ClusterOperator, isInitializing bool,
+	last time.Time, disabledReason, disabledMessage, errorReason, errorMessage, uploadErrorReason, uploadErrorMessage,
+	downloadReason, downloadMessage string) {
 	switch {
 	case isInitializing:
 		// the disabled condition is optional, but set it now if we already know we're disabled
@@ -266,15 +294,10 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		setUploadDegradedOperatorStatusCondition(existing, last, uploadErrorReason, uploadErrorMessage)
 		setInsightsDownloadDegradedOperatorStatusCondition(existing, last, downloadReason, downloadMessage)
 	}
+}
 
-	// once the operator is running it is always considered available
-	setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
-		Type:   configv1.OperatorAvailable,
-		Status: configv1.ConditionTrue,
-		Reason: "AsExpected",
-	})
-
-	// update the Progressing condition with a summary of the current state
+func (c *Controller) updateProcessingConditionWithSummary(existing *configv1.ClusterOperator,
+	isInitializing bool, last time.Time, errorMessage, disabledMessage, errorReason string) {
 	switch {
 	case isInitializing:
 		klog.V(4).Infof("The operator is still being initialized")
@@ -317,19 +340,6 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			Message: "Monitoring the cluster",
 		})
 	}
-
-	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
-		existing.Status.Versions = []configv1.OperandVersion{
-			{Name: "operator", Version: release},
-		}
-	}
-
-	if data, err := json.Marshal(reported); err != nil {
-		klog.Errorf("Unable to marshal status extension: %v", err)
-	} else {
-		existing.Status.Extension.Raw = data
-	}
-	return existing
 }
 
 func setInsightsDownloadDegradedOperatorStatusCondition(existing *configv1.ClusterOperator, last time.Time, downloadReason string, downloadMessage string) {
