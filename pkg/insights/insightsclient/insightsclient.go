@@ -287,7 +287,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 }
 
 // RecvReport perform a request to Insights Results Smart Proxy endpoint
-func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser, error) {
+func (c Client) RecvReport(ctx context.Context, endpoint string) (io.ReadCloser, error) {
 	cv, err := c.getClusterVersion()
 	if err != nil {
 		return nil, err
@@ -358,7 +358,7 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 	}
 
 	if resp.StatusCode == http.StatusOK {
-		return &resp.Body, nil
+		return resp.Body, nil
 	}
 
 	klog.Warningf("Report response status code: %d", resp.StatusCode)
@@ -386,16 +386,21 @@ func (c Client) RecvSCACerts(ctx context.Context, endpoint string) ([]byte, erro
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
 
-	res, err := c.client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve SCA certs data from %s: %v", endpoint, err)
 	}
 
-	if res.StatusCode > 399 || res.StatusCode < 200 {
-		return nil, ocmErrorMessage(res.Request.URL, res)
+	if resp.StatusCode > 399 || resp.StatusCode < 200 {
+		return nil, ocmErrorMessage(resp.Request.URL, resp)
 	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			klog.Warningf("Failed to close response body: %v", err)
+		}
+	}()
 
-	return ioutil.ReadAll(res.Body)
+	return ioutil.ReadAll(resp.Body)
 }
 
 func responseBody(r *http.Response) string {
