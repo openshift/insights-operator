@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	tlsSecretCrt = "tls.crt"
-	tlsSecretKey = "tls.key"
-	secTestData  = "secret testing data"
+	entitlementPem    = "entitlement.pem"
+	entitlementKeyPem = "entitlement-key.pem"
+	secTestData       = "secret testing data"
 )
 
 var testRes = &ScaResponse{
@@ -31,10 +31,10 @@ func Test_OCMController_SecretIsCreated(t *testing.T) {
 
 	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
 	assert.NoError(t, err, "can't get secret")
-	assert.Contains(t, testSecret.Data, tlsSecretKey, "can't find %s in the %s secret data", tlsSecretKey, secretName)
-	assert.Contains(t, testSecret.Data, tlsSecretCrt, "can't find %s in the %s secret data", tlsSecretCrt, secretName)
-	assert.Equal(t, "secret key", string(testSecret.Data[tlsSecretKey]), "unexpected data in %s secret", secretName)
-	assert.Equal(t, "secret cert", string(testSecret.Data[tlsSecretCrt]), "unexpected data in %s secret", secretName)
+	assert.Contains(t, testSecret.Data, entitlementKeyPem, "can't find %s in the %s secret data", entitlementKeyPem, secretName)
+	assert.Contains(t, testSecret.Data, entitlementPem, "can't find %s in the %s secret data", entitlementPem, secretName)
+	assert.Equal(t, "secret key", string(testSecret.Data[entitlementKeyPem]), "unexpected data in %s secret", secretName)
+	assert.Equal(t, "secret cert", string(testSecret.Data[entitlementPem]), "unexpected data in %s secret", secretName)
 }
 
 func Test_OCMController_SecretIsUpdated(t *testing.T) {
@@ -62,8 +62,8 @@ func Test_OCMController_SecretIsUpdated(t *testing.T) {
 
 	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
 	assert.NoError(t, err, "can't get secret")
-	assert.Contains(t, testSecret.Data, tlsSecretKey, "can't find %s in the %s secret data", tlsSecretKey, secretName)
-	assert.Contains(t, testSecret.Data, tlsSecretCrt, "can't find %s in the %s secret data", tlsSecretCrt, secretName)
-	assert.Equal(t, "new secret testing key", string(testSecret.Data[tlsSecretKey]), "unexpected data in %s secret", secretName)
-	assert.Equal(t, "new secret testing cert", string(testSecret.Data[tlsSecretCrt]), "unexpected data in %s secret", secretName)
+	assert.Contains(t, testSecret.Data, entitlementKeyPem, "can't find %s in the %s secret data", entitlementKeyPem, secretName)
+	assert.Contains(t, testSecret.Data, entitlementPem, "can't find %s in the %s secret data", entitlementPem, secretName)
+	assert.Equal(t, "new secret testing key", string(testSecret.Data[entitlementKeyPem]), "unexpected data in %s secret", secretName)
+	assert.Equal(t, "new secret testing cert", string(testSecret.Data[entitlementPem]), "unexpected data in %s secret", secretName)
 }
