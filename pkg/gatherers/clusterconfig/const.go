@@ -35,6 +35,10 @@ var (
 	openshiftLoggingResource = schema.GroupVersionResource{
 		Group: "logging.openshift.io", Version: "v1", Resource: "clusterloggings",
 	}
+
+	jaegerResource = schema.GroupVersionResource{
+		Group: "jaegertracing.io", Version: "v1", Resource: "jaegers",
+	}
 )
 
 func init() { //nolint: gochecknoinits

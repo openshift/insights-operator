@@ -319,6 +319,17 @@ The Operators-Framework api https://github.com/operator-framework/api/blob/maste
   * 4.7+
 
 
+## JaegerCR
+
+collects maximum of 5 jaegers.jaegertracing.io custom resources
+installed in the cluster
+
+* Location in archive: config/jaegertracing.io/
+* Id in config: jaegers
+* Since versions:
+  * 4.10+
+
+
 ## LogsOfNamespace
 
 creates a gathering closure which collects logs from pods in the provided namespace
