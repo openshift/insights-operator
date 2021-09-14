@@ -130,10 +130,10 @@ func (c *Controller) Sources() []controllerstatus.Interface {
 	return c.sources
 }
 
-func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.ClusterOperator { //nolint: funlen, gocyclo
+func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.ClusterOperator {
 	// prime the object if it does not exist
-	if existing == nil {
-		existing = &configv1.ClusterOperator{
+	if clusterOperator == nil {
+		clusterOperator = &configv1.ClusterOperator{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: c.name,
 			},
@@ -141,7 +141,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	}
 
 	// calculate the current controller state
-	var last time.Time
+	var lastTransition time.Time
 	var errorReason string
 	var errs []string
 	var uploadErrorReason,
@@ -172,11 +172,11 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 
 		if summary.Operation == controllerstatus.Uploading {
 			if summary.Count < uploadFailuresCountThreshold {
-				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
+				klog.V(4).Infof("Number of lastTransition upload failures %d lower than threshold %d. Not marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			} else {
 				degradingFailure = true
-				klog.V(4).Infof("Number of last upload failures %d exceeded than threshold %d. Marking as degraded.",
+				klog.V(4).Infof("Number of lastTransition upload failures %d exceeded than threshold %d. Marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			}
 			uploadErrorReason = summary.Reason
@@ -196,8 +196,8 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			errs = append(errs, summary.Message)
 		}
 
-		if last.Before(summary.LastTransitionTime) {
-			last = summary.LastTransitionTime
+		if lastTransition.Before(summary.LastTransitionTime) {
+			lastTransition = summary.LastTransitionTime
 		}
 	}
 
@@ -211,7 +211,9 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		if len(errorReason) == 0 {
 			errorReason = "UnknownError"
 		}
-		errorMessage = errs[0]
+		if len(errs) > 0 {
+			errorMessage = errs[0]
+		}
 	}
 
 	// disabled state only when it's disabled by config. It means that gathering will not happen
@@ -220,10 +222,10 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 		disabledMessage = "Health reporting is disabled"
 	}
 
-	existing = existing.DeepCopy()
+	clusterOperator = clusterOperator.DeepCopy()
 	now := time.Now()
 	if len(c.namespace) > 0 {
-		existing.Status.RelatedObjects = []configv1.ObjectReference{
+		clusterOperator.Status.RelatedObjects = []configv1.ObjectReference{
 			{Resource: "namespaces", Name: c.namespace},
 			{Group: "apps", Resource: "deployments", Namespace: c.namespace, Name: "insights-operator"},
 			{Resource: "secrets", Namespace: "openshift-config", Name: "pull-secret"},
@@ -238,20 +240,20 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
 
 	// update the disabled and failing conditions
-	c.updateDisabledAndFailingConditions(existing, isInitializing, last, disabledReason, disabledMessage, errorReason, errorMessage, uploadErrorReason, uploadErrorMessage, downloadReason, downloadMessage)
+	updateDisabledAndFailingConditions(clusterOperator, isInitializing, lastTransition, disabledReason, disabledMessage, errorReason, errorMessage, uploadErrorReason, uploadErrorMessage, downloadReason, downloadMessage)
 
 	// once the operator is running it is always considered available
-	setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+	setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 		Type:   configv1.OperatorAvailable,
 		Status: configv1.ConditionTrue,
 		Reason: "AsExpected",
 	})
 
 	// update the Progressing condition with a summary of the current state
-	c.updateProcessingConditionWithSummary(existing, isInitializing, last, errorMessage, disabledMessage, errorReason)
+	updateProcessingConditionWithSummary(clusterOperator, isInitializing, lastTransition, errorMessage, disabledMessage, errorReason)
 
 	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
-		existing.Status.Versions = []configv1.OperandVersion{
+		clusterOperator.Status.Versions = []configv1.OperandVersion{
 			{Name: "operator", Version: release},
 		}
 	}
@@ -259,19 +261,19 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 	if data, err := json.Marshal(reported); err != nil {
 		klog.Errorf("Unable to marshal status extension: %v", err)
 	} else {
-		existing.Status.Extension.Raw = data
+		clusterOperator.Status.Extension.Raw = data
 	}
-	return existing
+	return clusterOperator
 }
 
-func (c *Controller) updateDisabledAndFailingConditions(existing *configv1.ClusterOperator, isInitializing bool,
+func updateDisabledAndFailingConditions(clusterOperator *configv1.ClusterOperator, isInitializing bool,
 	last time.Time, disabledReason, disabledMessage, errorReason, errorMessage, uploadErrorReason, uploadErrorMessage,
 	downloadReason, downloadMessage string) {
 	switch {
 	case isInitializing:
 		// the disabled condition is optional, but set it now if we already know we're disabled
 		if len(disabledReason) > 0 {
-			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+			setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:    OperatorDisabled,
 				Status:  configv1.ConditionTrue,
 				Reason:  disabledReason,
@@ -279,8 +281,8 @@ func (c *Controller) updateDisabledAndFailingConditions(existing *configv1.Clust
 			})
 		}
 
-		if findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorDegraded) == nil {
-			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		if findOperatorStatusCondition(clusterOperator.Status.Conditions, configv1.OperatorDegraded) == nil {
+			setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:   configv1.OperatorDegraded,
 				Status: configv1.ConditionFalse,
 				Reason: "AsExpected",
@@ -289,22 +291,22 @@ func (c *Controller) updateDisabledAndFailingConditions(existing *configv1.Clust
 
 	default:
 		// once we've initialized set Failing and Disabled as best we know
-		setDisabledOperatorStatusCondition(existing, disabledReason, disabledMessage)
-		setDegradedOperatorStatusCondition(existing, last, errorReason, errorMessage)
-		setUploadDegradedOperatorStatusCondition(existing, last, uploadErrorReason, uploadErrorMessage)
-		setInsightsDownloadDegradedOperatorStatusCondition(existing, last, downloadReason, downloadMessage)
+		setDisabledOperatorStatusCondition(clusterOperator, disabledReason, disabledMessage)
+		setDegradedOperatorStatusCondition(clusterOperator, last, errorReason, errorMessage)
+		setUploadDegradedOperatorStatusCondition(clusterOperator, last, uploadErrorReason, uploadErrorMessage)
+		setInsightsDownloadDegradedOperatorStatusCondition(clusterOperator, last, downloadReason, downloadMessage)
 	}
 }
 
-func (c *Controller) updateProcessingConditionWithSummary(existing *configv1.ClusterOperator,
+func updateProcessingConditionWithSummary(clusterOperator *configv1.ClusterOperator,
 	isInitializing bool, last time.Time, errorMessage, disabledMessage, errorReason string) {
 	switch {
 	case isInitializing:
 		klog.V(4).Infof("The operator is still being initialized")
 		// if we're still starting up and some sources are not ready, initialize the conditions
 		// but don't update
-		if findOperatorStatusCondition(existing.Status.Conditions, configv1.OperatorProgressing) == nil {
-			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		if findOperatorStatusCondition(clusterOperator.Status.Conditions, configv1.OperatorProgressing) == nil {
+			setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:    configv1.OperatorProgressing,
 				Status:  configv1.ConditionTrue,
 				Reason:  "Initializing",
@@ -314,7 +316,7 @@ func (c *Controller) updateProcessingConditionWithSummary(existing *configv1.Clu
 
 	case len(errorMessage) > 0:
 		klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
 			Reason:  "Degraded",
@@ -323,7 +325,7 @@ func (c *Controller) updateProcessingConditionWithSummary(existing *configv1.Clu
 
 	case len(disabledMessage) > 0:
 		klog.V(4).Infof("The operator is marked as disabled")
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:               configv1.OperatorProgressing,
 			Status:             configv1.ConditionFalse,
 			LastTransitionTime: metav1.Time{Time: last},
@@ -333,7 +335,7 @@ func (c *Controller) updateProcessingConditionWithSummary(existing *configv1.Clu
 
 	default:
 		klog.V(4).Infof("The operator is healthy")
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    configv1.OperatorProgressing,
 			Status:  configv1.ConditionFalse,
 			Reason:  "AsExpected",
@@ -342,9 +344,9 @@ func (c *Controller) updateProcessingConditionWithSummary(existing *configv1.Clu
 	}
 }
 
-func setInsightsDownloadDegradedOperatorStatusCondition(existing *configv1.ClusterOperator, last time.Time, downloadReason string, downloadMessage string) {
+func setInsightsDownloadDegradedOperatorStatusCondition(clusterOperator *configv1.ClusterOperator, last time.Time, downloadReason string, downloadMessage string) {
 	if len(downloadReason) > 0 {
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:               InsightsDownloadDegraded,
 			Status:             configv1.ConditionTrue,
 			LastTransitionTime: metav1.Time{Time: last},
@@ -352,13 +354,13 @@ func setInsightsDownloadDegradedOperatorStatusCondition(existing *configv1.Clust
 			Message:            downloadMessage,
 		})
 	} else {
-		removeOperatorStatusCondition(&existing.Status.Conditions, InsightsDownloadDegraded)
+		removeOperatorStatusCondition(&clusterOperator.Status.Conditions, InsightsDownloadDegraded)
 	}
 }
 
-func setUploadDegradedOperatorStatusCondition(existing *configv1.ClusterOperator, last time.Time, uploadErrorReason string, uploadErrorMessage string) {
+func setUploadDegradedOperatorStatusCondition(clusterOperator *configv1.ClusterOperator, last time.Time, uploadErrorReason string, uploadErrorMessage string) {
 	if len(uploadErrorReason) > 0 {
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:               UploadDegraded,
 			Status:             configv1.ConditionTrue,
 			LastTransitionTime: metav1.Time{Time: last},
@@ -366,14 +368,14 @@ func setUploadDegradedOperatorStatusCondition(existing *configv1.ClusterOperator
 			Message:            uploadErrorMessage,
 		})
 	} else {
-		removeOperatorStatusCondition(&existing.Status.Conditions, UploadDegraded)
+		removeOperatorStatusCondition(&clusterOperator.Status.Conditions, UploadDegraded)
 	}
 }
 
-func setDegradedOperatorStatusCondition(existing *configv1.ClusterOperator, last time.Time, errorReason string, errorMessage string,) {
+func setDegradedOperatorStatusCondition(clusterOperator *configv1.ClusterOperator, last time.Time, errorReason string, errorMessage string,) {
 	if len(errorMessage) > 0 {
 		klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:               configv1.OperatorDegraded,
 			Status:             configv1.ConditionTrue,
 			LastTransitionTime: metav1.Time{Time: last},
@@ -381,7 +383,7 @@ func setDegradedOperatorStatusCondition(existing *configv1.ClusterOperator, last
 			Message:            errorMessage,
 		})
 	} else {
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:   configv1.OperatorDegraded,
 			Status: configv1.ConditionFalse,
 			Reason: "AsExpected",
@@ -389,16 +391,16 @@ func setDegradedOperatorStatusCondition(existing *configv1.ClusterOperator, last
 	}
 }
 
-func setDisabledOperatorStatusCondition(existing *configv1.ClusterOperator, disabledMessage string, disabledReason string) {
+func setDisabledOperatorStatusCondition(clusterOperator *configv1.ClusterOperator, disabledMessage string, disabledReason string) {
 	if len(disabledMessage) > 0 {
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:    OperatorDisabled,
 			Status:  configv1.ConditionTrue,
 			Reason:  disabledReason,
 			Message: disabledMessage,
 		})
 	} else {
-		setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
+		setOperatorStatusCondition(&clusterOperator.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 			Type:   OperatorDisabled,
 			Status: configv1.ConditionFalse,
 			Reason: "AsExpected",
