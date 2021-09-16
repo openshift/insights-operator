@@ -43,8 +43,8 @@ type Configurator interface {
 	Config() *config.Controller
 }
 
-// Controller is the type responsible for managing the status of the operator according to the status of the sources.
-// Sources come from different major parts of the codebase, for the purpose of communicating their status with the controller.
+// Controller is the type responsible for managing the statusMessage of the operator according to the statusMessage of the sources.
+// Sources come from different major parts of the codebase, for the purpose of communicating their statusMessage with the controller.
 type Controller struct {
 	name         string
 	namespace    string
@@ -62,7 +62,7 @@ type Controller struct {
 	lock     sync.Mutex
 }
 
-// NewController creates a status controller, responsible for monitoring the operators status and updating its cluster status accordingly.
+// NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
 func NewController(client configv1client.ConfigV1Interface,
 	coreClient corev1client.CoreV1Interface,
 	configurator Configurator, namespace string) *Controller {
@@ -137,26 +137,26 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 		}
 	}
 
+	ctrlStatus := newControllerStatus()
 	// calculate the current controller state
-	lastTransition, errorReason, uploadErrorReason, uploadErrorMessage, disabledReason,
-	disabledMessage, downloadReason, downloadMessage, errorMessage, reported,
-	clusterOperator, isInitializing := c.currentControllerStatus(clusterOperator)
+	allReady, lastTransition := c.currentControllerStatus(ctrlStatus)
 
+	clusterOperator = clusterOperator.DeepCopy()
+	now := time.Now()
+	if len(c.namespace) > 0 {
+		clusterOperator.Status.RelatedObjects = c.relatedObjects()
+	}
+
+	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
+
+	// cluster operator conditions
 	cs := newConditions(clusterOperator.Status)
-
-	// update the disabled and failing conditions
-	updateDisabledAndFailingConditions(cs, isInitializing, lastTransition,
-		disabledReason, disabledMessage,
-		errorReason, errorMessage,
-		uploadErrorReason, uploadErrorMessage,
-		downloadReason, downloadMessage)
+	updateDisabledAndFailingConditions(cs, ctrlStatus, isInitializing, lastTransition)
 
 	// once the operator is running it is always considered available
 	cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", "", metav1.Now())
 
-	// update the Progressing condition with a summary of the current state
-	updateProcessingConditionWithSummary(cs, isInitializing, lastTransition,
-		errorMessage, errorReason, disabledMessage)
+	updateProcessingConditionWithSummary(cs, ctrlStatus, isInitializing, lastTransition)
 
 	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
 		clusterOperator.Status.Versions = []configv1.OperandVersion{
@@ -164,40 +164,33 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 		}
 	}
 
+	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}
 	if data, err := json.Marshal(reported); err != nil {
-		klog.Errorf("Unable to marshal status extension: %v", err)
+		klog.Errorf("Unable to marshal statusMessage extension: %v", err)
 	} else {
 		clusterOperator.Status.Extension.Raw = data
 	}
 	return clusterOperator
 }
 
-func (c *Controller) currentControllerStatus(clusterOperator *configv1.ClusterOperator) (time.Time, string, string, string, string, string, string, string, string, Reported, *configv1.ClusterOperator, bool) {
-	var lastTransition time.Time
-	var errorReason string
+func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allReady bool, lastTransition time.Time) {
+	var errorReason, errorMessage string
 	var errs []string
-	var uploadErrorReason,
-	uploadErrorMessage,
-	disabledReason,
-	disabledMessage,
-	downloadReason,
-	downloadMessage string
 
-	allReady := true
+	allReady = false
 
-	// FIXME: This stuff isn't doing anything related to the ClusterOperator
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
 		if !ready {
 			klog.V(4).Infof("Source %d %T is not ready", i, source)
-			allReady = false
+			allReady = true
 			continue
 		}
 		if summary.Healthy {
 			continue
 		}
 		if len(summary.Message) == 0 {
-			klog.Errorf("Programmer error: status source %d %T reported an empty message: %#v", i, source, summary)
+			klog.Errorf("Programmer error: statusMessage source %d %T reported an empty message: %#v", i, source, summary)
 			continue
 		}
 
@@ -212,12 +205,10 @@ func (c *Controller) currentControllerStatus(clusterOperator *configv1.ClusterOp
 				klog.V(4).Infof("Number of lastTransition upload failures %d exceeded than threshold %d. Marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			}
-			uploadErrorReason = summary.Reason
-			uploadErrorMessage = summary.Message
+			ctrlStatus.setStatus(UploadStatus, summary.Reason, summary.Message)
 		} else if summary.Operation == controllerstatus.DownloadingReport {
 			klog.V(4).Info("Failed to download Insights report")
-			downloadReason = summary.Reason
-			downloadMessage = summary.Message
+			ctrlStatus.setStatus(DownloadStatus, summary.Reason, summary.Message)
 		} else if summary.Operation == controllerstatus.PullingSCACerts {
 			klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
 				OCMAPIFailureCountThreshold)
@@ -235,35 +226,15 @@ func (c *Controller) currentControllerStatus(clusterOperator *configv1.ClusterOp
 	}
 
 	// handling errors
-	var errorMessage string
-	if len(errs) > 1 {
-		errorReason = "MultipleFailures"
-		sort.Strings(errs)
-		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
-	} else {
-		if len(errorReason) == 0 {
-			errorReason = "UnknownError"
-		}
-		if len(errs) > 0 {
-			errorMessage = errs[0]
-		}
-	}
+	errorReason, errorMessage = handleControllerStatusError(errs, errorReason, errorMessage)
+	ctrlStatus.setStatus(ErrorStatus, errorReason, errorMessage)
 
 	// disabled state only when it's disabled by config. It means that gathering will not happen
 	if !c.configurator.Config().Report {
-		disabledReason = "Disabled"
-		disabledMessage = "Health reporting is disabled"
+		ctrlStatus.setStatus(DisabledStatus, "Disabled", "Health reporting is disabled")
 	}
-	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}
 
-	// FIXME: Now we start to do things with the ClusterOperator
-	clusterOperator = clusterOperator.DeepCopy()
-	now := time.Now()
-	if len(c.namespace) > 0 {
-		clusterOperator.Status.RelatedObjects = c.relatedObjects()
-	}
-	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
-	return lastTransition, errorReason, uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage, downloadReason, downloadMessage, errorMessage, reported, clusterOperator, isInitializing
+	return allReady, lastTransition
 }
 
 func (c *Controller) relatedObjects() []configv1.ObjectReference {
@@ -299,11 +270,11 @@ func (c *Controller) Start(ctx context.Context) error {
 			case <-c.statusCh:
 				err := limiter.Wait(ctx)
 				if err != nil {
-					klog.Errorf("Limiter error by status: %v", err)
+					klog.Errorf("Limiter error by statusMessage: %v", err)
 				}
 			}
 			if err := c.updateStatus(ctx, false); err != nil {
-				klog.Errorf("Unable to write cluster operator status: %v", err)
+				klog.Errorf("Unable to write cluster operator statusMessage: %v", err)
 			}
 		}
 	}, time.Second, ctx.Done())
@@ -323,14 +294,14 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 			var reported Reported
 			if len(existing.Status.Extension.Raw) > 0 {
 				if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil { //nolint: govet
-					klog.Errorf("The initial operator extension status is invalid: %v", err)
+					klog.Errorf("The initial operator extension statusMessage is invalid: %v", err)
 				}
 			}
 			c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
 			cs := newConditions(existing.Status)
 			if con := cs.findCondition(configv1.OperatorDegraded); con == nil ||
 				con != nil && con.Status == configv1.ConditionFalse {
-				klog.Info("The initial operator extension status is healthy")
+				klog.Info("The initial operator extension statusMessage is healthy")
 			}
 		}
 	}
@@ -344,7 +315,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 		updated.ObjectMeta = created.ObjectMeta
 		updated.Spec = created.Spec
 	} else if reflect.DeepEqual(updated.Status, existing.Status) {
-		klog.V(4).Infof("No status update necessary, objects are identical")
+		klog.V(4).Infof("No statusMessage update necessary, objects are identical")
 		return nil
 	}
 
@@ -352,55 +323,53 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 	return err
 }
 
-
-func updateDisabledAndFailingConditions(cs *conditions, isInitializing bool,
-	last time.Time, disabledReason, disabledMessage, errorReason, errorMessage, uploadErrorReason, uploadErrorMessage,
-	downloadReason, downloadMessage string) {
+func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerStatus,
+	isInitializing bool, lastTransition time.Time) {
 	switch {
 	case isInitializing:
 		// the disabled condition is optional, but set it now if we already know we're disabled
-		if len(disabledReason) > 0 {
-			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, disabledReason, disabledMessage, metav1.Now())
+		if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
+			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
 		}
-
 		if !cs.hasCondition(configv1.OperatorDegraded) {
 			cs.setCondition(configv1.OperatorDegraded,  configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 		}
 
 	default: // once we've initialized set Failing and Disabled as best we know
 		// handle when disabled
-		if len(disabledMessage) > 0 {
-			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, disabledReason, disabledMessage, metav1.Now())
+		if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
+			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
 		} else {
 			cs.setCondition(OperatorDisabled, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 		}
 
 		// handle when degraded
-		if len(errorMessage) > 0 {
-			klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
-			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, errorReason, errorMessage, metav1.Time{Time: last})
+		if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
+			klog.V(4).Infof("The operator has some internal errors: %s", es.message)
+			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
 		} else {
 			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 		}
 
 		// handle when upload fails
-		if len(uploadErrorReason) > 0 {
-			cs.setCondition(InsightsUploadDegraded, configv1.ConditionTrue, uploadErrorReason, uploadErrorMessage, metav1.Time{Time: last})
+		if ur := ctrlStatus.getStatus(UploadStatus); ur != nil {
+			cs.setCondition(InsightsUploadDegraded, configv1.ConditionTrue, ur.reason, ur.message, metav1.Time{Time: lastTransition})
 		} else {
 			cs.removeCondition(InsightsUploadDegraded)
 		}
 
 		// handle when download fails
-		if len(downloadReason) > 0 {
-			cs.setCondition(InsightsDownloadDegraded, configv1.ConditionTrue, downloadReason, downloadMessage, metav1.Time{Time: last})
+		if ds := ctrlStatus.getStatus(DownloadStatus); ds != nil {
+			cs.setCondition(InsightsDownloadDegraded, configv1.ConditionTrue, ds.reason, ds.message, metav1.Time{Time: lastTransition})
 		} else {
 			cs.removeCondition(InsightsDownloadDegraded)
 		}
 	}
 }
 
-func updateProcessingConditionWithSummary(cs *conditions,
-	isInitializing bool, last time.Time, errorMessage, errorReason, disabledMessage string) {
+func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controllerStatus,
+	isInitializing bool, lastTransition time.Time) {
+
 	switch {
 	case isInitializing:
 		klog.V(4).Infof("The operator is still being initialized")
@@ -410,16 +379,36 @@ func updateProcessingConditionWithSummary(cs *conditions,
 			cs.setCondition(configv1.OperatorProgressing, configv1.ConditionTrue, "Initializing", "Initializing the operator", metav1.Now())
 		}
 
-	case len(errorMessage) > 0:
-		klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
+	case ctrlStatus.hasStatus(ErrorStatus):
+		es := ctrlStatus.getStatus(ErrorStatus)
+		klog.V(4).Infof("The operator has some internal errors: %s", es.reason)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "Degraded", "An error has occurred", metav1.Now())
 
-	case len(disabledMessage) > 0:
+	case ctrlStatus.hasStatus(DisabledStatus):
+		ds := ctrlStatus.getStatus(DisabledStatus)
 		klog.V(4).Infof("The operator is marked as disabled")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, errorReason, disabledMessage, metav1.Time{Time: last})
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Time{Time: lastTransition})
 
 	default:
 		klog.V(4).Infof("The operator is healthy")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
 	}
+}
+
+func handleControllerStatusError(errs []string, errorReason string, errorMessage string) (string, string) {
+	if len(errs) > 1 {
+		errorReason = "MultipleFailures"
+		sort.Strings(errs)
+		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
+	} else {
+		if len(errs) > 0 {
+			errorMessage = errs[0]
+		} else {
+			errorMessage = "Unknown error message"
+		}
+	}
+	if len(errorReason) == 0 {
+		errorReason = "UnknownError"
+	}
+	return errorReason, errorMessage
 }
