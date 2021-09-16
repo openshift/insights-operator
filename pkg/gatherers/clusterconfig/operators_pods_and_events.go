@@ -22,6 +22,7 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
@@ -316,18 +317,46 @@ func getContainerLogs(ctx context.Context,
 
 // getLogWithStacktracing search for the first stack trace line and offset it by logLinesOffset
 func getLogWithStacktracing(logArray []string) string {
-	var limit int
-	for idx := range logArray {
-		line := logArray[idx]
+	var stackTraceStart, stackTraceEnd int
+
+	for index, line := range logArray {
 		if found := stackTraceRegex.MatchString(line); found {
-			limit = idx - logLinesOffset
-			if limit < 0 {
-				limit = 0
-			}
+			stackTraceStart = index
 			break
 		}
 	}
-	return strings.Join(logArray[limit:], "\n")
+
+	for i := range logArray {
+		index := len(logArray) - 1 - i
+		line := logArray[index]
+		if found := stackTraceRegex.MatchString(line); found {
+			stackTraceEnd = index
+			break
+		}
+	}
+
+	if stackTraceEnd < stackTraceStart {
+		stackTraceEnd = stackTraceStart
+	}
+
+	stackTraceLen := stackTraceEnd - stackTraceStart
+
+	var result string
+
+	if stackTraceLen > logStackTraceMaxLines {
+		// add the beginning of the stacktrace
+		from := utils.MaxInt(0, stackTraceStart-logLinesOffset)
+		to := utils.MinInt(len(logArray), from+logStackTraceBeginningLimit)
+		result = strings.Join(logArray[from:to], "\n")
+		// add the message
+		result += fmt.Sprintf("\n... (%v stacktrace lines suppressed) ...\n", stackTraceLen-logStackTraceMaxLines)
+		// add the end of the stacktrace with all the following logs
+		result += strings.Join(logArray[utils.MaxInt(0, stackTraceEnd-logStackTraceEndLimit):], "\n")
+	} else {
+		result = strings.Join(logArray[utils.MaxInt(0, stackTraceStart-logLinesOffset):], "\n")
+	}
+
+	return result
 }
 
 // getContainerLogString fetch the container log from API and return it as String
