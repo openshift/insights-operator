@@ -138,18 +138,54 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	}
 
 	// calculate the current controller state
+	lastTransition, errorReason, uploadErrorReason, uploadErrorMessage, disabledReason,
+	disabledMessage, downloadReason, downloadMessage, errorMessage, reported,
+	clusterOperator, isInitializing := c.currentControllerStatus(clusterOperator)
+
+	cs := newConditions(clusterOperator.Status)
+
+	// update the disabled and failing conditions
+	updateDisabledAndFailingConditions(cs, isInitializing, lastTransition,
+		disabledReason, disabledMessage,
+		errorReason, errorMessage,
+		uploadErrorReason, uploadErrorMessage,
+		downloadReason, downloadMessage)
+
+	// once the operator is running it is always considered available
+	cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", "", metav1.Now())
+
+	// update the Progressing condition with a summary of the current state
+	updateProcessingConditionWithSummary(cs, isInitializing, lastTransition,
+		errorMessage, errorReason, disabledMessage)
+
+	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
+		clusterOperator.Status.Versions = []configv1.OperandVersion{
+			{Name: "operator", Version: release},
+		}
+	}
+
+	if data, err := json.Marshal(reported); err != nil {
+		klog.Errorf("Unable to marshal status extension: %v", err)
+	} else {
+		clusterOperator.Status.Extension.Raw = data
+	}
+	return clusterOperator
+}
+
+func (c *Controller) currentControllerStatus(clusterOperator *configv1.ClusterOperator) (time.Time, string, string, string, string, string, string, string, string, Reported, *configv1.ClusterOperator, bool) {
 	var lastTransition time.Time
 	var errorReason string
 	var errs []string
 	var uploadErrorReason,
-		uploadErrorMessage,
-		disabledReason,
-		disabledMessage,
-		downloadReason,
-		downloadMessage string
+	uploadErrorMessage,
+	disabledReason,
+	disabledMessage,
+	downloadReason,
+	downloadMessage string
 
 	allReady := true
 
+	// FIXME: This stuff isn't doing anything related to the ClusterOperator
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
 		if !ready {
@@ -220,41 +256,14 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	}
 	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}
 
+	// FIXME: Now we start to do things with the ClusterOperator
 	clusterOperator = clusterOperator.DeepCopy()
 	now := time.Now()
 	if len(c.namespace) > 0 {
 		clusterOperator.Status.RelatedObjects = c.relatedObjects()
 	}
 	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
-
-	cs := newConditions(clusterOperator.Status)
-
-	// update the disabled and failing conditions
-	updateDisabledAndFailingConditions(cs, isInitializing, lastTransition,
-		disabledReason, disabledMessage,
-		errorReason, errorMessage,
-		uploadErrorReason, uploadErrorMessage,
-		downloadReason, downloadMessage)
-
-	// once the operator is running it is always considered available
-	cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", "", metav1.Now())
-
-	// update the Progressing condition with a summary of the current state
-	updateProcessingConditionWithSummary(cs, isInitializing, lastTransition,
-		errorMessage, errorReason, disabledMessage)
-
-	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
-		clusterOperator.Status.Versions = []configv1.OperandVersion{
-			{Name: "operator", Version: release},
-		}
-	}
-
-	if data, err := json.Marshal(reported); err != nil {
-		klog.Errorf("Unable to marshal status extension: %v", err)
-	} else {
-		clusterOperator.Status.Extension.Raw = data
-	}
-	return clusterOperator
+	return lastTransition, errorReason, uploadErrorReason, uploadErrorMessage, disabledReason, disabledMessage, downloadReason, downloadMessage, errorMessage, reported, clusterOperator, isInitializing
 }
 
 func (c *Controller) relatedObjects() []configv1.ObjectReference {
