@@ -7,6 +7,7 @@ type Timestamp string
 type ReportResponseMeta struct {
 	Count         int       `json:"count"`
 	LastCheckedAt Timestamp `json:"last_checked_at"`
+	GatheredAt    Timestamp `json:"gathered_at"`
 }
 
 // RuleWithContentResponse represents a single rule in the response of /report endpoint

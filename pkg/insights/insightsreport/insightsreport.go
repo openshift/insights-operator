@@ -49,7 +49,29 @@ var (
 	}, []string{"metric"})
 	// number of pulling report retries
 	retryThreshold = 2
+
+	// insightsAnalysisTime contains time of the last Insights gathering
+	insightsAnalysisTime = metrics.NewGauge(&metrics.GaugeOpts{
+		Name: "insightsclient_analysis_time",
+	})
 )
+
+func init() {
+	err := legacyregistry.Register(insightsStatus)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = legacyregistry.Register(insightsAnalysisTime)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	insightsStatus.WithLabelValues("low").Set(float64(-1))
+	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
+	insightsStatus.WithLabelValues("important").Set(float64(-1))
+	insightsStatus.WithLabelValues("critical").Set(float64(-1))
+	insightsStatus.WithLabelValues("total").Set(float64(-1))
+}
 
 // New initializes and returns a Gatherer
 func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter) *Controller {
@@ -261,17 +283,11 @@ func updateInsightsMetrics(report SmartProxyReport) {
 	insightsStatus.WithLabelValues("important").Set(float64(important))
 	insightsStatus.WithLabelValues("critical").Set(float64(critical))
 	insightsStatus.WithLabelValues("total").Set(float64(total))
-}
 
-func init() {
-	err := legacyregistry.Register(insightsStatus)
+	t, err := time.Parse(time.RFC3339, string(report.Meta.GatheredAt))
 	if err != nil {
-		fmt.Println(err)
+		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsAnalysisTime.Name, err)
+		return
 	}
-
-	insightsStatus.WithLabelValues("low").Set(float64(-1))
-	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
-	insightsStatus.WithLabelValues("important").Set(float64(-1))
-	insightsStatus.WithLabelValues("critical").Set(float64(-1))
-	insightsStatus.WithLabelValues("total").Set(float64(-1))
+	insightsAnalysisTime.Set(float64(t.Unix()))
 }
