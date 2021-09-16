@@ -227,7 +227,9 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 
 	// handling errors
 	errorReason, errorMessage := handleControllerStatusError(errs, errorReason)
-	ctrlStatus.setStatus(ErrorStatus, errorReason, errorMessage)
+	if errorReason != "" || errorMessage != "" {
+		ctrlStatus.setStatus(ErrorStatus, errorReason, errorMessage)
+	}
 
 	// disabled state only when it's disabled by config. It means that gathering will not happen
 	if !c.configurator.Config().Report {
@@ -396,18 +398,14 @@ func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controller
 
 func handleControllerStatusError(errs []string, errorReason string) (reason, message string) {
 	if len(errs) > 1 {
-		errorReason = "MultipleFailures"
+		reason = "MultipleFailures"
 		sort.Strings(errs)
 		message = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
-	} else {
-		if len(errs) > 0 {
-			message = errs[0]
-		} else {
-			message = "Unknown error message"
+	} else if len(errs) == 1 {
+		if len(errorReason) == 0 {
+			reason = "UnknownError"
 		}
+		message = errs[0]
 	}
-	if len(errorReason) == 0 {
-		errorReason = "UnknownError"
-	}
-	return errorReason, message
+	return reason, message
 }

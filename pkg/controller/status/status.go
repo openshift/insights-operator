@@ -18,7 +18,7 @@ type statusMessage struct {
 
 func newControllerStatus() *controllerStatus {
 	return &controllerStatus{
-		statusMap: map[string]statusMessage{},
+		statusMap: make(map[string]statusMessage),
 	}
 }
 
