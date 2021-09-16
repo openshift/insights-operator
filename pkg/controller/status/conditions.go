@@ -20,7 +20,7 @@ type conditions struct {
 	entryMap conditionsMap
 }
 
-func newConditions(cos v1.ClusterOperatorStatus) *conditions {
+func newConditions(cos *v1.ClusterOperatorStatus) *conditions {
 	entries := conditionsMap{}
 	for _, c := range cos.Conditions {
 		entries[c.Type] = c
@@ -43,10 +43,10 @@ func (c *conditions) setCondition(condition v1.ClusterStatusConditionType,
 			lastTime = metav1.Now()
 		}
 		entries[condition] = v1.ClusterOperatorStatusCondition{
-			Type: condition,
-			Status: status,
-			Reason: reason,
-			Message: message,
+			Type:               condition,
+			Status:             status,
+			Reason:             reason,
+			Message:            message,
 			LastTransitionTime: lastTime,
 		}
 	}

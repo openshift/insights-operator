@@ -12,7 +12,7 @@ type controllerStatus struct {
 }
 
 type statusMessage struct {
-	reason string
+	reason  string
 	message string
 }
 
@@ -31,7 +31,7 @@ func (c *controllerStatus) setStatus(id, reason, message string) {
 	existing, ok := c.statusMap[id]
 	if !ok || existing.reason != reason || existing.message != message {
 		entries[id] = statusMessage{
-			reason: reason,
+			reason:  reason,
 			message: message,
 		}
 	}

@@ -46,11 +46,11 @@ type Configurator interface {
 // Controller is the type responsible for managing the statusMessage of the operator according to the statusMessage of the sources.
 // Sources come from different major parts of the codebase, for the purpose of communicating their statusMessage with the controller.
 type Controller struct {
-	name         string
-	namespace    string
+	name      string
+	namespace string
 
-	client       configv1client.ConfigV1Interface
-	coreClient   corev1client.CoreV1Interface
+	client     configv1client.ConfigV1Interface
+	coreClient corev1client.CoreV1Interface
 
 	statusCh     chan struct{}
 	configurator Configurator
@@ -59,7 +59,7 @@ type Controller struct {
 	reported Reported
 	start    time.Time
 
-	lock     sync.Mutex
+	lock sync.Mutex
 }
 
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
@@ -150,7 +150,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
 
 	// cluster operator conditions
-	cs := newConditions(clusterOperator.Status)
+	cs := newConditions(&clusterOperator.Status)
 	updateDisabledAndFailingConditions(cs, ctrlStatus, isInitializing, lastTransition)
 
 	// once the operator is running it is always considered available
@@ -174,7 +174,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 }
 
 func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allReady bool, lastTransition time.Time) {
-	var errorReason, errorMessage string
+	var errorReason string
 	var errs []string
 
 	allReady = false
@@ -226,7 +226,7 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 	}
 
 	// handling errors
-	errorReason, errorMessage = handleControllerStatusError(errs, errorReason, errorMessage)
+	errorReason, errorMessage := handleControllerStatusError(errs, errorReason)
 	ctrlStatus.setStatus(ErrorStatus, errorReason, errorMessage)
 
 	// disabled state only when it's disabled by config. It means that gathering will not happen
@@ -298,7 +298,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 				}
 			}
 			c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
-			cs := newConditions(existing.Status)
+			cs := newConditions(&existing.Status)
 			if con := cs.findCondition(configv1.OperatorDegraded); con == nil ||
 				con != nil && con.Status == configv1.ConditionFalse {
 				klog.Info("The initial operator extension statusMessage is healthy")
@@ -332,7 +332,7 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
 		}
 		if !cs.hasCondition(configv1.OperatorDegraded) {
-			cs.setCondition(configv1.OperatorDegraded,  configv1.ConditionFalse, "AsExpected", "", metav1.Now())
+			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 		}
 
 	default: // once we've initialized set Failing and Disabled as best we know
@@ -369,7 +369,6 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 
 func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
-
 	switch {
 	case isInitializing:
 		klog.V(4).Infof("The operator is still being initialized")
@@ -395,20 +394,20 @@ func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controller
 	}
 }
 
-func handleControllerStatusError(errs []string, errorReason string, errorMessage string) (string, string) {
+func handleControllerStatusError(errs []string, errorReason string) (reason, message string) {
 	if len(errs) > 1 {
 		errorReason = "MultipleFailures"
 		sort.Strings(errs)
-		errorMessage = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
+		message = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
 	} else {
 		if len(errs) > 0 {
-			errorMessage = errs[0]
+			message = errs[0]
 		} else {
-			errorMessage = "Unknown error message"
+			message = "Unknown error message"
 		}
 	}
 	if len(errorReason) == 0 {
 		errorReason = "UnknownError"
 	}
-	return errorReason, errorMessage
+	return errorReason, message
 }
