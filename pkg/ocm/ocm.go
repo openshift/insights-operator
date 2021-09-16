@@ -20,8 +20,10 @@ import (
 )
 
 const (
-	targetNamespaceName = "openshift-config-managed"
-	secretName          = "etc-pki-entitlement" //nolint: gosec
+	targetNamespaceName    = "openshift-config-managed"
+	secretName             = "etc-pki-entitlement" //nolint: gosec
+	entitlementAttrName    = "entitlement.pem"
+	entitlementKeyAttrName = "entitlement-key.pem"
 )
 
 // Controller holds all the required resources to be able to communicate with OCM API
@@ -146,6 +148,18 @@ func (c *Controller) checkSecret(ocmData *ScaResponse) error {
 		return err
 	}
 
+	if scaSec.Type == v1.SecretTypeTLS {
+		err = c.coreClient.Secrets(targetNamespaceName).Delete(c.ctx, scaSec.GetName(), metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+		_, err = c.createSecret(ocmData)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	_, err = c.updateSecret(scaSec, ocmData)
 	if err != nil {
 		return err
@@ -160,10 +174,10 @@ func (c *Controller) createSecret(ocmData *ScaResponse) (*v1.Secret, error) {
 			Namespace: targetNamespaceName,
 		},
 		Data: map[string][]byte{
-			v1.TLSCertKey:       []byte(ocmData.Cert),
-			v1.TLSPrivateKeyKey: []byte(ocmData.Key),
+			entitlementAttrName:    []byte(ocmData.Cert),
+			entitlementKeyAttrName: []byte(ocmData.Key),
 		},
-		Type: v1.SecretTypeTLS,
+		Type: v1.SecretTypeOpaque,
 	}
 	cm, err := c.coreClient.Secrets(targetNamespaceName).Create(c.ctx, newSCA, metav1.CreateOptions{})
 	if err != nil {
@@ -175,8 +189,8 @@ func (c *Controller) createSecret(ocmData *ScaResponse) (*v1.Secret, error) {
 // updateSecret updates provided secret with given data
 func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secret, error) {
 	s.Data = map[string][]byte{
-		v1.TLSCertKey:       []byte(ocmData.Cert),
-		v1.TLSPrivateKeyKey: []byte(ocmData.Key),
+		entitlementAttrName:    []byte(ocmData.Cert),
+		entitlementKeyAttrName: []byte(ocmData.Key),
 	}
 	s, err := c.coreClient.Secrets(s.Namespace).Update(c.ctx, s, metav1.UpdateOptions{})
 	if err != nil {
