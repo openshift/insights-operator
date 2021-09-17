@@ -63,13 +63,9 @@ type Controller struct {
 }
 
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
-func NewController(client configv1client.ConfigV1Interface,
-	coreClient corev1client.CoreV1Interface,
-	configurator Configurator, namespace string) *Controller {
+func NewController(configurator Configurator, namespace string) *Controller {
 	c := &Controller{
 		name:         "insights",
-		client:       client,
-		coreClient:   coreClient,
 		statusCh:     make(chan struct{}, 1),
 		configurator: configurator,
 		namespace:    namespace,
@@ -173,6 +169,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	return clusterOperator
 }
 
+// calculate the current controller status based on its given sources
 func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allReady bool, lastTransition time.Time) {
 	var errorReason string
 	var errs []string
@@ -239,6 +236,7 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 	return allReady, lastTransition
 }
 
+// create the operator's related objects
 func (c *Controller) relatedObjects() []configv1.ObjectReference {
 	return []configv1.ObjectReference{
 		{Resource: "namespaces", Name: c.namespace},
@@ -325,10 +323,11 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 	return err
 }
 
+// update the cluster controller status conditions
 func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
-	switch {
-	case isInitializing:
+
+	if isInitializing {
 		// the disabled condition is optional, but set it now if we already know we're disabled
 		if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
 			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
@@ -336,39 +335,40 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 		if !cs.hasCondition(configv1.OperatorDegraded) {
 			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 		}
+	}
 
-	default: // once we've initialized set Failing and Disabled as best we know
-		// handle when disabled
-		if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
-			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
-		} else {
-			cs.setCondition(OperatorDisabled, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
-		}
+	// once we've initialized set Failing and Disabled as best we know
+	// handle when disabled
+	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
+		cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
+	} else {
+		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
+	}
 
-		// handle when degraded
-		if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
-			klog.V(4).Infof("The operator has some internal errors: %s", es.message)
-			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
-		} else {
-			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
-		}
+	// handle when degraded
+	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
+		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
+		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
+	} else {
+		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
+	}
 
-		// handle when upload fails
-		if ur := ctrlStatus.getStatus(UploadStatus); ur != nil {
-			cs.setCondition(InsightsUploadDegraded, configv1.ConditionTrue, ur.reason, ur.message, metav1.Time{Time: lastTransition})
-		} else {
-			cs.removeCondition(InsightsUploadDegraded)
-		}
+	// handle when upload fails
+	if ur := ctrlStatus.getStatus(UploadStatus); ur != nil {
+		cs.setCondition(InsightsUploadDegraded, configv1.ConditionTrue, ur.reason, ur.message, metav1.Time{Time: lastTransition})
+	} else {
+		cs.removeCondition(InsightsUploadDegraded)
+	}
 
-		// handle when download fails
-		if ds := ctrlStatus.getStatus(DownloadStatus); ds != nil {
-			cs.setCondition(InsightsDownloadDegraded, configv1.ConditionTrue, ds.reason, ds.message, metav1.Time{Time: lastTransition})
-		} else {
-			cs.removeCondition(InsightsDownloadDegraded)
-		}
+	// handle when download fails
+	if ds := ctrlStatus.getStatus(DownloadStatus); ds != nil {
+		cs.setCondition(InsightsDownloadDegraded, configv1.ConditionTrue, ds.reason, ds.message, metav1.Time{Time: lastTransition})
+	} else {
+		cs.removeCondition(InsightsDownloadDegraded)
 	}
 }
 
+// update the current controller state
 func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
 	switch {
@@ -396,6 +396,7 @@ func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controller
 	}
 }
 
+// handle the controller status error by formatting the present errors messages when needed
 func handleControllerStatusError(errs []string, errorReason string) (reason, message string) {
 	if len(errs) > 1 {
 		reason = "MultipleFailures"
