@@ -20,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 )
 
@@ -49,8 +48,7 @@ type Controller struct {
 	name      string
 	namespace string
 
-	client     configv1client.ConfigV1Interface
-	coreClient corev1client.CoreV1Interface
+	client configv1client.ConfigV1Interface
 
 	statusCh     chan struct{}
 	configurator Configurator
@@ -63,11 +61,12 @@ type Controller struct {
 }
 
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
-func NewController(configurator Configurator, namespace string) *Controller {
+func NewController(client configv1client.ConfigV1Interface, configurator Configurator, namespace string) *Controller {
 	c := &Controller{
 		name:         "insights",
 		statusCh:     make(chan struct{}, 1),
 		configurator: configurator,
+		client:       client,
 		namespace:    namespace,
 	}
 	return c
@@ -326,7 +325,6 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 // update the cluster controller status conditions
 func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
-
 	if isInitializing {
 		// the disabled condition is optional, but set it now if we already know we're disabled
 		if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {

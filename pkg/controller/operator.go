@@ -60,6 +60,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
+	configClient, err := configv1client.NewForConfig(controller.KubeConfig)
+	if err != nil {
+		return err
+	}
 	// these are gathering configs
 	gatherProtoKubeConfig := rest.CopyConfig(controller.ProtoKubeConfig)
 	if len(s.Impersonate) > 0 {
@@ -80,6 +84,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// If we fail, it's likely due to the service CA not existing yet. Warn and continue,
 	// and when the service-ca is loaded we will be restarted.
+	_, err = kubernetes.NewForConfig(gatherProtoKubeConfig)
+	if err != nil {
+		return err
+	}
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err = os.MkdirAll(s.StoragePath, 0777); err != nil {
@@ -93,7 +101,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configObserver, os.Getenv("POD_NAMESPACE"))
+	statusReporter := status.NewController(configClient, configObserver, os.Getenv("POD_NAMESPACE"))
 
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
