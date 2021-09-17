@@ -1,5 +1,47 @@
 # Note: This CHANGELOG is only for the changes in insights operator. 
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 5dcf37aef015ce79319468000ef178ad97f29416-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 0deaa57e6088c46fc375402255dc8629d47397a1-->
+## 4.9
+
+### Enhancement
+- [#489](https://github.com/openshift/insights-operator/pull/489) Gather installed PSP names
+- [#487](https://github.com/openshift/insights-operator/pull/487) Conditional data gathering validation & refactoring
+- [#476](https://github.com/openshift/insights-operator/pull/476) Gather Openshift Logging Stack Data
+- [#450](https://github.com/openshift/insights-operator/pull/450) Make obfuscation work with a provided archive
+- [#456](https://github.com/openshift/insights-operator/pull/456) Better pod log gathering with offset for stacktrace messages
+- [#468](https://github.com/openshift/insights-operator/pull/468) Update the gather functions to collect data from the system namespaces only
+- [#433](https://github.com/openshift/insights-operator/pull/433) Conditional gathering
+- [#447](https://github.com/openshift/insights-operator/pull/447) fix logs format in sample archive
+- [#449](https://github.com/openshift/insights-operator/pull/449) Gather all MachineConfig definitions
+
+### Bugfix
+- [#485](https://github.com/openshift/insights-operator/pull/485) Don't try to record an empty Record if gatherClusterConfigV1 fails
+- [#473](https://github.com/openshift/insights-operator/pull/473) Insightsreport set corresponding clusteroperator condition correctly
+- [#478](https://github.com/openshift/insights-operator/pull/478) Set the disabled state only when the token is removed from the
+- [#479](https://github.com/openshift/insights-operator/pull/479) remove the redundant role & rolebinding definition
+- [#477](https://github.com/openshift/insights-operator/pull/477) Do not use klog.Fatal
+- [#472](https://github.com/openshift/insights-operator/pull/472) Set also the summary operation when updating status
+- [#466](https://github.com/openshift/insights-operator/pull/466) fix obfuscation translation table secret manifest
+- [#461](https://github.com/openshift/insights-operator/pull/461) fix obfuscation translation table secret
+
+### Others
+- [#488](https://github.com/openshift/insights-operator/pull/488) Update K8s & OpenShift API versions
+- [#486](https://github.com/openshift/insights-operator/pull/486) Degraded status in the OCM controller
+- [#375](https://github.com/openshift/insights-operator/pull/375) OCM controller - periodically pull the data and update corresponding
+- [#460](https://github.com/openshift/insights-operator/pull/460) Remove managedFields from gathered resources
+- [#474](https://github.com/openshift/insights-operator/pull/474) Bye bye Pavel
+- [#469](https://github.com/openshift/insights-operator/pull/469) Remove ParseJSONQuery function and replace it with unstructured
+- [#471](https://github.com/openshift/insights-operator/pull/471) cover tasks_processing.go better
+- [#465](https://github.com/openshift/insights-operator/pull/465) Fix installplans sample archive filename
+- [#464](https://github.com/openshift/insights-operator/pull/464) Add delete annotation to stale resources
+- [#458](https://github.com/openshift/insights-operator/pull/458) Gathered data doc update - add some known previous locations
+- [#455](https://github.com/openshift/insights-operator/pull/455) Updating the owners list
+- [#463](https://github.com/openshift/insights-operator/pull/463) Enables godox on precommit
+- [#454](https://github.com/openshift/insights-operator/pull/454) Update changelog
+
+### Misc
+- [#457](https://github.com/openshift/insights-operator/pull/457) Updating ose-insights-operator images to be consistent with ART
+- [#451](https://github.com/openshift/insights-operator/pull/451) Updating .ci-operator.yaml `build_root_image` from openshift/release
+
 ## 4.8
 
 ### Enhancement
@@ -256,11 +298,19 @@
 ## 
 
 ### Enhancement
+- [#492](https://github.com/openshift/insights-operator/pull/492) ApiRequestCount conditional gathering
 - [#446](https://github.com/openshift/insights-operator/pull/446) add egress ips support to anonymizer
 
 ### Bugfix
+- [#497](https://github.com/openshift/insights-operator/pull/497) insightsclient - close response body
+- [#494](https://github.com/openshift/insights-operator/pull/494) Fix the error logic in the OCM controller & degrade only…
 - [#444](https://github.com/openshift/insights-operator/pull/444) MemoryRecord name can be obfuscated & fix case of duplicate records
 
 ### Others
+- [#499](https://github.com/openshift/insights-operator/pull/499) Fix the sample archive path for the last conditional gatherer
+- [#481](https://github.com/openshift/insights-operator/pull/481) Add a script for updating files in the sample archive
 - [#452](https://github.com/openshift/insights-operator/pull/452) Update versions in the metrics gather documentation
+
+### Misc
+- [#491](https://github.com/openshift/insights-operator/pull/491) Updating ose-insights-operator images to be consistent with ART
 
