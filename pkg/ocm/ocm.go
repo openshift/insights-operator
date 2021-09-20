@@ -138,7 +138,7 @@ func (c *Controller) checkSecret(ocmData *ScaResponse) error {
 
 	// if the secret doesn't exist then create one
 	if errors.IsNotFound(err) {
-		_, err = c.createSecret(ocmData)
+		err = c.createSecret(ocmData)
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func (c *Controller) checkSecret(ocmData *ScaResponse) error {
 		if err != nil {
 			return err
 		}
-		_, err = c.createSecret(ocmData)
+		err = c.createSecret(ocmData)
 		if err != nil {
 			return err
 		}
@@ -167,7 +167,7 @@ func (c *Controller) checkSecret(ocmData *ScaResponse) error {
 	return nil
 }
 
-func (c *Controller) createSecret(ocmData *ScaResponse) (*v1.Secret, error) {
+func (c *Controller) createSecret(ocmData *ScaResponse) error {
 	newSCA := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -179,11 +179,11 @@ func (c *Controller) createSecret(ocmData *ScaResponse) (*v1.Secret, error) {
 		},
 		Type: v1.SecretTypeOpaque,
 	}
-	cm, err := c.coreClient.Secrets(targetNamespaceName).Create(c.ctx, newSCA, metav1.CreateOptions{})
+	_, err := c.coreClient.Secrets(targetNamespaceName).Create(c.ctx, newSCA, metav1.CreateOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cm, nil
+	return nil
 }
 
 // updateSecret updates provided secret with given data
