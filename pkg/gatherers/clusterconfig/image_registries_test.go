@@ -12,6 +12,41 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
+var (
+	testS3Storage = imageregistryv1.ImageRegistryConfigStorage{
+		S3: &imageregistryv1.ImageRegistryConfigStorageS3{
+			Bucket:         "foo",
+			Region:         "bar",
+			RegionEndpoint: "point",
+			KeyID:          "key",
+		},
+	}
+	testAzureStorage = imageregistryv1.ImageRegistryConfigStorage{
+		Azure: &imageregistryv1.ImageRegistryConfigStorageAzure{
+			AccountName: "account",
+			Container:   "container",
+			CloudName:   "cloud",
+		},
+	}
+	testGCSStorage = imageregistryv1.ImageRegistryConfigStorage{
+		GCS: &imageregistryv1.ImageRegistryConfigStorageGCS{
+			Bucket:    "bucket",
+			Region:    "region",
+			ProjectID: "foo",
+			KeyID:     "bar",
+		},
+	}
+	testIBMCOSStorage = imageregistryv1.ImageRegistryConfigStorage{
+		IBMCOS: &imageregistryv1.ImageRegistryConfigStorageIBMCOS{
+			Bucket:             "bucket",
+			ResourceKeyCRN:     "keyCRN",
+			ServiceInstanceCRN: "instanceCRN",
+			ResourceGroupName:  "groupname",
+			Location:           "location",
+		},
+	}
+)
+
 //nolint: goconst, funlen, gocyclo
 func Test_ImageRegistry_Gather(t *testing.T) {
 	tests := []struct {
@@ -42,27 +77,23 @@ func Test_ImageRegistry_Gather(t *testing.T) {
 					Name: "cluster",
 				},
 				Spec: imageregistryv1.ImageRegistrySpec{
-					Storage: imageregistryv1.ImageRegistryConfigStorage{
-						S3: &imageregistryv1.ImageRegistryConfigStorageS3{
-							Bucket:         "foo",
-							Region:         "bar",
-							RegionEndpoint: "point",
-							KeyID:          "key",
-						},
-					},
+					Storage: testS3Storage,
+				},
+				Status: imageregistryv1.ImageRegistryStatus{
+					Storage: testS3Storage,
 				},
 			},
 			evalOutput: func(t *testing.T, obj *imageregistryv1.Config) {
-				if obj.Spec.Storage.S3.Bucket != "xxx" {
+				if obj.Spec.Storage.S3.Bucket != "xxx" || obj.Status.Storage.S3.Bucket != "xxx" {
 					t.Errorf("expected s3 bucket anonymized, got %q", obj.Spec.Storage.S3.Bucket)
 				}
-				if obj.Spec.Storage.S3.Region != "xxx" {
+				if obj.Spec.Storage.S3.Region != "xxx" || obj.Status.Storage.S3.Region != "xxx" {
 					t.Errorf("expected s3 region anonymized, got %q", obj.Spec.Storage.S3.Region)
 				}
-				if obj.Spec.Storage.S3.RegionEndpoint != "xxxxx" {
+				if obj.Spec.Storage.S3.RegionEndpoint != "xxxxx" || obj.Status.Storage.S3.RegionEndpoint != "xxxxx" {
 					t.Errorf("expected s3 region endpoint anonymized, got %q", obj.Spec.Storage.S3.RegionEndpoint)
 				}
-				if obj.Spec.Storage.S3.KeyID != "xxx" {
+				if obj.Spec.Storage.S3.KeyID != "xxx" || obj.Status.Storage.S3.KeyID != "xxx" {
 					t.Errorf("expected s3 keyID anonymized, got %q", obj.Spec.Storage.S3.KeyID)
 				}
 			},
@@ -74,20 +105,21 @@ func Test_ImageRegistry_Gather(t *testing.T) {
 					Name: "cluster",
 				},
 				Spec: imageregistryv1.ImageRegistrySpec{
-					Storage: imageregistryv1.ImageRegistryConfigStorage{
-						Azure: &imageregistryv1.ImageRegistryConfigStorageAzure{
-							AccountName: "account",
-							Container:   "container",
-						},
-					},
+					Storage: testAzureStorage,
+				},
+				Status: imageregistryv1.ImageRegistryStatus{
+					Storage: testAzureStorage,
 				},
 			},
 			evalOutput: func(t *testing.T, obj *imageregistryv1.Config) {
-				if obj.Spec.Storage.Azure.AccountName != "xxxxxxx" {
+				if obj.Spec.Storage.Azure.AccountName != "xxxxxxx" || obj.Status.Storage.Azure.AccountName != "xxxxxxx" {
 					t.Errorf("expected azure account name anonymized, got %q", obj.Spec.Storage.Azure.AccountName)
 				}
-				if obj.Spec.Storage.Azure.Container == "xxxxxxx" {
+				if obj.Spec.Storage.Azure.Container != "xxxxxxxxx" || obj.Status.Storage.Azure.Container != "xxxxxxxxx" {
 					t.Errorf("expected azure container anonymized, got %q", obj.Spec.Storage.Azure.Container)
+				}
+				if obj.Spec.Storage.Azure.CloudName != "xxxxx" || obj.Status.Storage.Azure.CloudName != "xxxxx" {
+					t.Errorf("expected azure cloud name anonymized, got %q", obj.Spec.Storage.Azure.CloudName)
 				}
 			},
 		},
@@ -98,25 +130,52 @@ func Test_ImageRegistry_Gather(t *testing.T) {
 					Name: "cluster",
 				},
 				Spec: imageregistryv1.ImageRegistrySpec{
-					Storage: imageregistryv1.ImageRegistryConfigStorage{
-						GCS: &imageregistryv1.ImageRegistryConfigStorageGCS{
-							Bucket:    "bucket",
-							Region:    "region",
-							ProjectID: "foo",
-							KeyID:     "bar",
-						},
-					},
+					Storage: testGCSStorage,
+				},
+				Status: imageregistryv1.ImageRegistryStatus{
+					Storage: testGCSStorage,
 				},
 			},
 			evalOutput: func(t *testing.T, obj *imageregistryv1.Config) {
-				if obj.Spec.Storage.GCS.Bucket != "xxxxxx" {
+				if obj.Spec.Storage.GCS.Bucket != "xxxxxx" || obj.Status.Storage.GCS.Bucket != "xxxxxx" {
 					t.Errorf("expected gcs bucket anonymized, got %q", obj.Spec.Storage.GCS.Bucket)
 				}
-				if obj.Spec.Storage.GCS.ProjectID != "xxx" {
+				if obj.Spec.Storage.GCS.ProjectID != "xxx" || obj.Status.Storage.GCS.ProjectID != "xxx" {
 					t.Errorf("expected gcs projectID endpoint anonymized, got %q", obj.Spec.Storage.GCS.ProjectID)
 				}
-				if obj.Spec.Storage.GCS.KeyID != "xxx" {
+				if obj.Spec.Storage.GCS.KeyID != "xxx" || obj.Status.Storage.GCS.KeyID != "xxx" {
 					t.Errorf("expected gcs keyID anonymized, got %q", obj.Spec.Storage.GCS.KeyID)
+				}
+			},
+		},
+		{
+			name: "ibmcos",
+			inputObj: &imageregistryv1.Config{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster",
+				},
+				Spec: imageregistryv1.ImageRegistrySpec{
+					Storage: testIBMCOSStorage,
+				},
+				Status: imageregistryv1.ImageRegistryStatus{
+					Storage: testIBMCOSStorage,
+				},
+			},
+			evalOutput: func(t *testing.T, obj *imageregistryv1.Config) {
+				if obj.Spec.Storage.IBMCOS.Bucket != "xxxxxx" || obj.Status.Storage.IBMCOS.Bucket != "xxxxxx" {
+					t.Errorf("expected IBMCOS bucket anonymized, got %q", obj.Spec.Storage.IBMCOS.Bucket)
+				}
+				if obj.Spec.Storage.IBMCOS.ResourceKeyCRN != "xxxxxx" || obj.Status.Storage.IBMCOS.ResourceKeyCRN != "xxxxxx" {
+					t.Errorf("expected IBMCOS resource key CRN endpoint anonymized, got %q", obj.Spec.Storage.IBMCOS.ResourceKeyCRN)
+				}
+				if obj.Spec.Storage.IBMCOS.ServiceInstanceCRN != "xxxxxxxxxxx" || obj.Status.Storage.IBMCOS.ServiceInstanceCRN != "xxxxxxxxxxx" {
+					t.Errorf("expected IBMCOS service instance CRN anonymized, got %q", obj.Spec.Storage.IBMCOS.ServiceInstanceCRN)
+				}
+				if obj.Spec.Storage.IBMCOS.ResourceGroupName != "xxxxxxxxx" || obj.Status.Storage.IBMCOS.ResourceGroupName != "xxxxxxxxx" {
+					t.Errorf("expected IBMCOS group name anonymized, got %q", obj.Spec.Storage.IBMCOS.ResourceGroupName)
+				}
+				if obj.Spec.Storage.IBMCOS.Location != "xxxxxxxx" || obj.Status.Storage.IBMCOS.Location != "xxxxxxxx" {
+					t.Errorf("expected IBMCOS location anonymized, got %q", obj.Spec.Storage.IBMCOS.ResourceGroupName)
 				}
 			},
 		},
