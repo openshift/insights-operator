@@ -47,7 +47,7 @@ var (
 	}
 )
 
-//nolint: goconst, funlen, gocyclo
+//nolint: goconst, funlen, gocyclo, dupl
 func Test_ImageRegistry_Gather(t *testing.T) {
 	tests := []struct {
 		name       string
