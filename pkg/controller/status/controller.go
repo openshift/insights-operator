@@ -173,13 +173,13 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 	var errorReason string
 	var errs []string
 
-	allReady = false
+	allReady = true
 
 	for i, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
 		if !ready {
 			klog.V(4).Infof("Source %d %T is not ready", i, source)
-			allReady = true
+			allReady = false
 			continue
 		}
 		if summary.Healthy {
