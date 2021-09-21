@@ -153,6 +153,8 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 
 	updateProcessingConditionWithSummary(cs, ctrlStatus, isInitializing, lastTransition)
 
+	clusterOperator.Status.Conditions = cs.entries()
+
 	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
 		clusterOperator.Status.Versions = []configv1.OperandVersion{
 			{Name: "operator", Version: release},

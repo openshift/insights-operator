@@ -82,3 +82,11 @@ func (c *conditions) findCondition(condition v1.ClusterStatusConditionType) *v1.
 	}
 	return nil
 }
+
+func (c *conditions) entries() []v1.ClusterOperatorStatusCondition {
+	var res []v1.ClusterOperatorStatusCondition
+	for _, v := range c.entryMap {
+		res = append(res, v)
+	}
+	return res
+}
