@@ -451,6 +451,17 @@ Gathered metrics:
   - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
 
 
+## MutatingWebhookConfigurations
+
+collects MutatingWebhookConfiguration resources
+Relevant OpenShift API docs:
+  - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/mutatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+
+* Location in archive: config/mutatingwebhookconfigurations
+* Since versions:
+  * 4.10+
+
+
 ## NetNamespace
 
 collects NetNamespaces networking information
@@ -705,6 +716,17 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
   * 4.5.34+
   * 4.6.20+
   * 4.7+
+
+
+## ValidatingWebhookConfigurations
+
+collects ValidatingWebhookConfiguration resources
+Relevant OpenShift API docs:
+  - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/validatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+
+* Location in archive: config/validatingwebhookconfigurations
+* Since versions:
+  * 4.10+
 
 
 ## WorkloadInfo
