@@ -1,3 +1,4 @@
+//nolint:dupl
 package clusterconfig
 
 import (
@@ -38,7 +39,8 @@ func gatherValidatingWebhookConfigurations(
 	}
 
 	var records []record.Record
-	for _, validatingWebhookConfiguration := range validatingWebhookConfigurations.Items {
+	for i := range validatingWebhookConfigurations.Items {
+		validatingWebhookConfiguration := validatingWebhookConfigurations.Items[i]
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/validatingwebhookconfigurations/%v", validatingWebhookConfiguration.Name),
 			Item: record.ResourceMarshaller{

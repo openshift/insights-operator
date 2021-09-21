@@ -1,3 +1,4 @@
+//nolint:dupl
 package clusterconfig
 
 import (
@@ -38,7 +39,8 @@ func gatherMutatingWebhookConfigurations(
 	}
 
 	var records []record.Record
-	for _, mutatingWebhookConfiguration := range mutatingWebhookConfigurations.Items {
+	for i := range mutatingWebhookConfigurations.Items {
+		mutatingWebhookConfiguration := mutatingWebhookConfigurations.Items[i]
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/mutatingwebhookconfigurations/%v", mutatingWebhookConfiguration.Name),
 			Item: record.ResourceMarshaller{
