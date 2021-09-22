@@ -267,6 +267,7 @@ func Test_conditions_removeCondition(t *testing.T) {
 	}
 }
 
+// nolint: funlen
 func Test_conditions_setCondition(t *testing.T) {
 	time := metav1.Now()
 
