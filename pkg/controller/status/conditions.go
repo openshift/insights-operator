@@ -1,37 +1,64 @@
 package status
 
 import (
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	// OperatorDisabled defines the condition type when the operator's primary function has been disabled
-	OperatorDisabled v1.ClusterStatusConditionType = "Disabled"
+	OperatorDisabled configv1.ClusterStatusConditionType = "Disabled"
 	// InsightsUploadDegraded defines the condition type (when set to True) when an archive can't be successfully uploaded
-	InsightsUploadDegraded v1.ClusterStatusConditionType = "UploadDegraded"
+	InsightsUploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
 	// InsightsDownloadDegraded defines the condition type (when set to True) when the Insights report can't be successfully downloaded
-	InsightsDownloadDegraded v1.ClusterStatusConditionType = "InsightsDownloadDegraded"
+	InsightsDownloadDegraded configv1.ClusterStatusConditionType = "InsightsDownloadDegraded"
 )
 
-type conditionsMap map[v1.ClusterStatusConditionType]v1.ClusterOperatorStatusCondition
+type conditionsMap map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition
 
 type conditions struct {
 	entryMap conditionsMap
 }
 
-func newConditions(cos *v1.ClusterOperatorStatus) *conditions {
-	entries := conditionsMap{}
+func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *conditions {
+	entries := map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{
+		configv1.OperatorAvailable: {
+			Type:               configv1.OperatorAvailable,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
+		configv1.OperatorProgressing: {
+			Type:               configv1.OperatorProgressing,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
+		configv1.OperatorDegraded: {
+			Type:               configv1.OperatorDegraded,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
+		configv1.OperatorUpgradeable: {
+			Type:               configv1.OperatorUpgradeable,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
+	}
+
 	for _, c := range cos.Conditions {
 		entries[c.Type] = c
 	}
+
 	return &conditions{
 		entryMap: entries,
 	}
 }
 
-func (c *conditions) setCondition(condition v1.ClusterStatusConditionType,
-	status v1.ConditionStatus, message, reason string, lastTime metav1.Time) {
+func (c *conditions) setCondition(condition configv1.ClusterStatusConditionType,
+	status configv1.ConditionStatus, reason, message string, lastTime metav1.Time) {
 	entries := make(conditionsMap)
 	for k, v := range c.entryMap {
 		entries[k] = v
@@ -42,7 +69,7 @@ func (c *conditions) setCondition(condition v1.ClusterStatusConditionType,
 		if lastTime.IsZero() {
 			lastTime = metav1.Now()
 		}
-		entries[condition] = v1.ClusterOperatorStatusCondition{
+		entries[condition] = configv1.ClusterOperatorStatusCondition{
 			Type:               condition,
 			Status:             status,
 			Reason:             reason,
@@ -54,7 +81,7 @@ func (c *conditions) setCondition(condition v1.ClusterStatusConditionType,
 	c.entryMap = entries
 }
 
-func (c *conditions) removeCondition(condition v1.ClusterStatusConditionType) {
+func (c *conditions) removeCondition(condition configv1.ClusterStatusConditionType) {
 	if !c.hasCondition(condition) {
 		return
 	}
@@ -70,12 +97,12 @@ func (c *conditions) removeCondition(condition v1.ClusterStatusConditionType) {
 	c.entryMap = entries
 }
 
-func (c *conditions) hasCondition(condition v1.ClusterStatusConditionType) bool {
+func (c *conditions) hasCondition(condition configv1.ClusterStatusConditionType) bool {
 	_, ok := c.entryMap[condition]
 	return ok
 }
 
-func (c *conditions) findCondition(condition v1.ClusterStatusConditionType) *v1.ClusterOperatorStatusCondition {
+func (c *conditions) findCondition(condition configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
 	existing, ok := c.entryMap[condition]
 	if ok {
 		return &existing
@@ -83,8 +110,8 @@ func (c *conditions) findCondition(condition v1.ClusterStatusConditionType) *v1.
 	return nil
 }
 
-func (c *conditions) entries() []v1.ClusterOperatorStatusCondition {
-	var res []v1.ClusterOperatorStatusCondition
+func (c *conditions) entries() []configv1.ClusterOperatorStatusCondition {
+	var res []configv1.ClusterOperatorStatusCondition
 	for _, v := range c.entryMap {
 		res = append(res, v)
 	}

@@ -125,11 +125,7 @@ func (c *Controller) Sources() []controllerstatus.Interface {
 func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.ClusterOperator {
 	// prime the object if it does not exist
 	if clusterOperator == nil {
-		clusterOperator = &configv1.ClusterOperator{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: c.name,
-			},
-		}
+		clusterOperator = newClusterOperator(c.name, nil)
 	}
 
 	ctrlStatus := newControllerStatus()
@@ -145,7 +141,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
 
 	// cluster operator conditions
-	cs := newConditions(&clusterOperator.Status)
+	cs := newConditions(&clusterOperator.Status, metav1.Time{Time: now})
 	updateDisabledAndFailingConditions(cs, ctrlStatus, isInitializing, lastTransition)
 
 	// once the operator is running it is always considered available
@@ -299,7 +295,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 				}
 			}
 			c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
-			cs := newConditions(&existing.Status)
+			cs := newConditions(&existing.Status, metav1.Now())
 			if con := cs.findCondition(configv1.OperatorDegraded); con == nil ||
 				con != nil && con.Status == configv1.ConditionFalse {
 				klog.Info("The initial operator extension statusMessage is healthy")
@@ -409,4 +405,18 @@ func handleControllerStatusError(errs []string, errorReason string) (reason, mes
 		message = errs[0]
 	}
 	return reason, message
+}
+
+func newClusterOperator(name string, status *configv1.ClusterOperatorStatus) *configv1.ClusterOperator {
+	co := &configv1.ClusterOperator{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+
+	if status != nil {
+		co.Status = *status
+	}
+
+	return co
 }
