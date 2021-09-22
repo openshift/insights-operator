@@ -28,6 +28,7 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 	GatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
 	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
 	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
+	GatherLogsOfUnhealthyPods:     (*Gatherer).BuildGatherLogsOfUnhealthyPods,
 }
 
 // gatheringRules contains all the rules used to run conditional gatherings.
@@ -90,6 +91,42 @@ var defaultGatheringRules = []GatheringRule{
 		GatheringFunctions: GatheringFunctions{
 			GatherAPIRequestCounts: GatherAPIRequestCountsParams{
 				AlertName: "APIRemovedInNextEUSReleaseInUse",
+			},
+		},
+	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Params: AlertIsFiringConditionParams{
+					Name: "KubePodCrashLooping",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherLogsOfUnhealthyPods: GatherLogsOfUnhealthyPodsParams{
+				AlertsPrevious: []string{
+					"KubePodCrashLooping",
+				},
+				TailLinesPrevious: 20,
+			},
+		},
+	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Params: AlertIsFiringConditionParams{
+					Name: "KubePodNotReady",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherLogsOfUnhealthyPods: GatherLogsOfUnhealthyPodsParams{
+				AlertsCurrent: []string{
+					"KubePodNotReady",
+				},
+				TailLinesCurrent: 100,
 			},
 		},
 	},
@@ -230,24 +267,20 @@ func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClien
 	if err != nil {
 		return err
 	}
-
 	var parser expfmt.TextParser
 	metricFamilies, err := parser.TextToMetricFamilies(bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
-
 	if len(metricFamilies) > 1 {
 		// just log cuz everything would still work
 		klog.Warning(logPrefix + "unexpected output from prometheus metrics parser")
 	}
-
 	metricFamily, found := metricFamilies["ALERTS"]
 	if !found {
 		klog.Info(logPrefix + "no alerts are firing")
 		return nil
 	}
-
 	for _, metric := range metricFamily.GetMetric() {
 		if metric == nil {
 			klog.Info(logPrefix + "metric is nil")

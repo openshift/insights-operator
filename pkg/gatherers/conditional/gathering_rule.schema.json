@@ -134,6 +134,30 @@
                             "pattern": "^[a-zA-Z0-9_]{1,128}$"
                         }
                     }
+                },
+                "^logs_of_unhealthy_pods$": {
+                    "type": "object",
+                    "title": "GatherLogsOfUnhealthyPodsParams",
+                    "required": [
+                        "alerts_current",
+                        "alerts_previous"
+                    ],
+                    "properties": {
+                        "alerts_current": {
+                            "type": "array",
+                            "title": "Alerts to collect current logs for"
+                        },
+                        "alerts_previous": {
+                            "type": "array",
+                            "title": "Alerts to collect previous logs for"
+                        },
+                        "tail_lines": {
+                            "type": "integer",
+                            "title": "TailLines",
+                            "minimum": 1,
+                            "maximum": 4096
+                        }
+                    }
                 }
             }
         }

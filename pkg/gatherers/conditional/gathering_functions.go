@@ -27,6 +27,8 @@ const (
 	GatherAPIRequestCounts GatheringFunctionName = "api_request_counts_of_resource_from_alert"
 )
 
+const GatherLogsOfUnhealthyPods GatheringFunctionName = "logs_of_unhealthy_pods"
+
 func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
 	switch name {
 	case GatherLogsOfNamespace:
@@ -41,6 +43,10 @@ func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, err
 		var params GatherAPIRequestCountsParams
 		err := json.Unmarshal(jsonParams, &params)
 		return params, err
+	case GatherLogsOfUnhealthyPods:
+		var result GatherLogsOfUnhealthyPodsParams
+		err := json.Unmarshal(jsonParams, &result)
+		return result, err
 	}
 	return nil, fmt.Errorf("unable to create params for %T: %v", name, name)
 }
@@ -64,4 +70,11 @@ type GatherImageStreamsOfNamespaceParams struct {
 // GatherAPIRequestCountsParams defines parameters for api_request_counts gatherer
 type GatherAPIRequestCountsParams struct {
 	AlertName string `json:"alert_name"`
+}
+
+type GatherLogsOfUnhealthyPodsParams struct {
+	AlertsCurrent     []string `json:"alerts_current"`
+	AlertsPrevious    []string `json:"alerts_previous"`
+	TailLinesCurrent  int64    `json:"tail_lines_current"`
+	TailLinesPrevious int64    `json:"tail_lines_previous"`
 }
