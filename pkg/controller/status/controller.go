@@ -135,7 +135,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	clusterOperator = clusterOperator.DeepCopy()
 	now := time.Now()
 	if len(c.namespace) > 0 {
-		clusterOperator.Status.RelatedObjects = c.relatedObjects()
+		clusterOperator.Status.RelatedObjects = relatedObjects(c.namespace)
 	}
 
 	isInitializing := !allReady && now.Sub(c.controllerStartTime()) < 3*time.Minute
@@ -149,6 +149,10 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 
 	updateProcessingConditionWithSummary(cs, ctrlStatus, isInitializing, lastTransition)
 
+	klog.V(4).Infof("The operator is healthy")
+	cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
+
+	// all status conditions from conditions to cluster operator
 	clusterOperator.Status.Conditions = cs.entries()
 
 	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
@@ -231,20 +235,6 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 	}
 
 	return allReady, lastTransition
-}
-
-// create the operator's related objects
-func (c *Controller) relatedObjects() []configv1.ObjectReference {
-	return []configv1.ObjectReference{
-		{Resource: "namespaces", Name: c.namespace},
-		{Group: "apps", Resource: "deployments", Namespace: c.namespace, Name: "insights-operator"},
-		{Resource: "secrets", Namespace: "openshift-config", Name: "pull-secret"},
-		{Resource: "secrets", Namespace: "openshift-config", Name: "support"},
-		{Resource: "serviceaccounts", Namespace: c.namespace, Name: "gather"},
-		{Resource: "serviceaccounts", Namespace: c.namespace, Name: "operator"},
-		{Resource: "services", Namespace: c.namespace, Name: "metrics"},
-		{Resource: "configmaps", Namespace: c.namespace, Name: "service-ca-bundle"},
-	}
 }
 
 // Start starts the periodic checking of sources.
@@ -341,7 +331,7 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 	}
 
-	// handle when degraded
+	// handle when has errors
 	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
 		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
@@ -367,28 +357,26 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 // update the current controller state
 func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
-	switch {
-	case isInitializing:
+
+	if isInitializing {
 		klog.V(4).Infof("The operator is still being initialized")
 		// if we're still starting up and some sources are not ready, initialize the conditions
 		// but don't update
 		if !cs.hasCondition(configv1.OperatorProgressing) {
 			cs.setCondition(configv1.OperatorProgressing, configv1.ConditionTrue, "Initializing", "Initializing the operator", metav1.Now())
 		}
+	}
 
-	case ctrlStatus.hasStatus(ErrorStatus):
+	if ctrlStatus.hasStatus(ErrorStatus) {
 		es := ctrlStatus.getStatus(ErrorStatus)
 		klog.V(4).Infof("The operator has some internal errors: %s", es.reason)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "Degraded", "An error has occurred", metav1.Now())
+	}
 
-	case ctrlStatus.hasStatus(DisabledStatus):
+	if ctrlStatus.hasStatus(DisabledStatus) {
 		ds := ctrlStatus.getStatus(DisabledStatus)
 		klog.V(4).Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Time{Time: lastTransition})
-
-	default:
-		klog.V(4).Infof("The operator is healthy")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
 	}
 }
 
@@ -407,6 +395,7 @@ func handleControllerStatusError(errs []string, errorReason string) (reason, mes
 	return reason, message
 }
 
+// create a new cluster operator with defaults values
 func newClusterOperator(name string, status *configv1.ClusterOperatorStatus) *configv1.ClusterOperator {
 	co := &configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
@@ -419,4 +408,18 @@ func newClusterOperator(name string, status *configv1.ClusterOperatorStatus) *co
 	}
 
 	return co
+}
+
+// create the operator's related objects
+func relatedObjects(namespace string) []configv1.ObjectReference {
+	return []configv1.ObjectReference{
+		{Resource: "namespaces", Name: namespace},
+		{Group: "apps", Resource: "deployments", Namespace: namespace, Name: "insights-operator"},
+		{Resource: "secrets", Namespace: "openshift-config", Name: "pull-secret"},
+		{Resource: "secrets", Namespace: "openshift-config", Name: "support"},
+		{Resource: "serviceaccounts", Namespace: namespace, Name: "gather"},
+		{Resource: "serviceaccounts", Namespace: namespace, Name: "operator"},
+		{Resource: "services", Namespace: namespace, Name: "metrics"},
+		{Resource: "configmaps", Namespace: namespace, Name: "service-ca-bundle"},
+	}
 }
