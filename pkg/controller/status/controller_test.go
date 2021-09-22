@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 
@@ -38,27 +37,20 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 		{
 			name:       "Initial run with existing Insights operator which is degraded is delayed",
 			initialRun: true,
-			clusterOperator: &configv1.ClusterOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "insights",
-				},
-				Status: configv1.ClusterOperatorStatus{Conditions: []configv1.ClusterOperatorStatusCondition{
+			clusterOperator: newClusterOperator(
+				"insights",
+				&configv1.ClusterOperatorStatus{Conditions: []configv1.ClusterOperatorStatusCondition{
 					{Type: configv1.OperatorDegraded, Status: configv1.ConditionTrue},
-				}},
-			},
+				}}),
 			expectedSafeInitialStart: false,
 		},
 		{
 			name:       "Initial run with existing Insights operator which is not degraded not delayed",
 			initialRun: true,
-			clusterOperator: &configv1.ClusterOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "insights",
-				},
-				Status: configv1.ClusterOperatorStatus{Conditions: []configv1.ClusterOperatorStatusCondition{
+			clusterOperator: newClusterOperator("insights",
+				&configv1.ClusterOperatorStatus{Conditions: []configv1.ClusterOperatorStatusCondition{
 					{Type: configv1.OperatorDegraded, Status: configv1.ConditionFalse},
-				}},
-			},
+				}}),
 			expectedSafeInitialStart: true,
 		},
 	}
