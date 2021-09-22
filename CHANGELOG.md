@@ -1,5 +1,5 @@
 # Note: This CHANGELOG is only for the changes in insights operator. 
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 0deaa57e6088c46fc375402255dc8629d47397a1-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 66d737fc1e0516222ac73726ee5df667048c1399-->
 ## 4.9
 
 ### Enhancement
@@ -12,6 +12,7 @@
 - [#433](https://github.com/openshift/insights-operator/pull/433) Conditional gathering
 - [#447](https://github.com/openshift/insights-operator/pull/447) fix logs format in sample archive
 - [#449](https://github.com/openshift/insights-operator/pull/449) Gather all MachineConfig definitions
+- [#446](https://github.com/openshift/insights-operator/pull/446) add egress ips support to anonymizer
 
 ### Bugfix
 - [#485](https://github.com/openshift/insights-operator/pull/485) Don't try to record an empty Record if gatherClusterConfigV1 fails
@@ -22,6 +23,7 @@
 - [#472](https://github.com/openshift/insights-operator/pull/472) Set also the summary operation when updating status
 - [#466](https://github.com/openshift/insights-operator/pull/466) fix obfuscation translation table secret manifest
 - [#461](https://github.com/openshift/insights-operator/pull/461) fix obfuscation translation table secret
+- [#444](https://github.com/openshift/insights-operator/pull/444) MemoryRecord name can be obfuscated & fix case of duplicate records
 
 ### Others
 - [#488](https://github.com/openshift/insights-operator/pull/488) Update K8s & OpenShift API versions
@@ -37,6 +39,7 @@
 - [#455](https://github.com/openshift/insights-operator/pull/455) Updating the owners list
 - [#463](https://github.com/openshift/insights-operator/pull/463) Enables godox on precommit
 - [#454](https://github.com/openshift/insights-operator/pull/454) Update changelog
+- [#452](https://github.com/openshift/insights-operator/pull/452) Update versions in the metrics gather documentation
 
 ### Misc
 - [#457](https://github.com/openshift/insights-operator/pull/457) Updating ose-insights-operator images to be consistent with ART
@@ -91,7 +94,6 @@
 - [#336](https://github.com/openshift/insights-operator/pull/336) Disable instead of Degrade in case of gather fails
 - [#334](https://github.com/openshift/insights-operator/pull/334) Do not create the metrics file in case of any error
 - [#332](https://github.com/openshift/insights-operator/pull/332) Relax the recent log gatherers to avoid degrading during…
-- [#329](https://github.com/openshift/insights-operator/pull/329) Remove StatefulSet gatherer & replace it with gathering "cluster-mon…
 
 ### Others
 - [#439](https://github.com/openshift/insights-operator/pull/439) Adds tasks pool to tasks_processing
@@ -148,6 +150,7 @@
 - [#297](https://github.com/openshift/insights-operator/pull/297) Gather netnamespaces network info
 
 ### Bugfix
+- [#329](https://github.com/openshift/insights-operator/pull/329) Remove StatefulSet gatherer & replace it with gathering "cluster-mon…
 - [#325](https://github.com/openshift/insights-operator/pull/325) Fixes error metadata gathering
 - [#320](https://github.com/openshift/insights-operator/pull/320) Monitors how many gatherings failed in a row, and applies degraded status accordingly
 - [#317](https://github.com/openshift/insights-operator/pull/317) Update the sample archive and remove IP anonymization in clusteropera…
@@ -298,19 +301,21 @@
 ## 
 
 ### Enhancement
+- [#504](https://github.com/openshift/insights-operator/pull/504) Reduce stacktrace size in logs
 - [#492](https://github.com/openshift/insights-operator/pull/492) ApiRequestCount conditional gathering
-- [#446](https://github.com/openshift/insights-operator/pull/446) add egress ips support to anonymizer
 
 ### Bugfix
+- [#495](https://github.com/openshift/insights-operator/pull/495)  Respect user defined proxy's CA cert
 - [#497](https://github.com/openshift/insights-operator/pull/497) insightsclient - close response body
 - [#494](https://github.com/openshift/insights-operator/pull/494) Fix the error logic in the OCM controller & degrade only…
-- [#444](https://github.com/openshift/insights-operator/pull/444) MemoryRecord name can be obfuscated & fix case of duplicate records
 
 ### Others
+- [#501](https://github.com/openshift/insights-operator/pull/501) Update changelog
 - [#499](https://github.com/openshift/insights-operator/pull/499) Fix the sample archive path for the last conditional gatherer
 - [#481](https://github.com/openshift/insights-operator/pull/481) Add a script for updating files in the sample archive
-- [#452](https://github.com/openshift/insights-operator/pull/452) Update versions in the metrics gather documentation
 
 ### Misc
+- [#500](https://github.com/openshift/insights-operator/pull/500) OCM controller - change type of the secret
+- [#502](https://github.com/openshift/insights-operator/pull/502) Updating ose-insights-operator images to be consistent with ART
 - [#491](https://github.com/openshift/insights-operator/pull/491) Updating ose-insights-operator images to be consistent with ART
 

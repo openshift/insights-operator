@@ -16,7 +16,8 @@ import (
 // * See: docs/insights-archive-sample/config/psp_names.json
 // * Id in config: psps
 // * Since versions:
-//   * 4.10+
+//   * 4.8.12+
+//   * 4.9+
 func (g *Gatherer) GatherPodSecurityPolicies(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
