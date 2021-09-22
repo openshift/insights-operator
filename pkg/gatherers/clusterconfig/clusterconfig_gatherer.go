@@ -87,6 +87,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"machine_autoscalers":               failableFunc((*Gatherer).GatherMachineAutoscalers),
 	"openshift_logging":                 failableFunc((*Gatherer).GatherOpenshiftLogging),
 	"psps":                              failableFunc((*Gatherer).GatherPodSecurityPolicies),
+	"jaegers":                           failableFunc((*Gatherer).GatherJaegerCR),
 }
 
 func New(
