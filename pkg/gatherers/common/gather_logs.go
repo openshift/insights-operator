@@ -31,6 +31,7 @@ type LogMessagesFilter struct {
 	SinceSeconds     int64
 	LimitBytes       int64
 	TailLines        int64
+	Previous         bool
 }
 
 // CollectLogsFromContainers collects logs from containers
@@ -114,6 +115,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 				SinceSeconds: sinceSeconds,
 				LimitBytes:   limitBytes,
 				TailLines:    tailLines,
+				Previous:     messagesFilter.Previous,
 				Timestamps:   true,
 			})
 

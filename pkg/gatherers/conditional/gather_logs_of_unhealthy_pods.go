@@ -44,13 +44,13 @@ func (g *Gatherer) gatherLogsOfUnhealthyPods(
 	coreClient := kubeClient.CoreV1()
 
 	records := []record.Record{}
-	records = append(records, getLogsForAlerts(g, ctx, coreClient, params.AlertsCurrent, params.TailLinesCurrent)...)
-	records = append(records, getLogsForAlerts(g, ctx, coreClient, params.AlertsPrevious, params.TailLinesPrevious)...)
+	records = append(records, getLogsForAlerts(g, ctx, coreClient, params.AlertsCurrent, params.TailLinesCurrent, false)...)
+	records = append(records, getLogsForAlerts(g, ctx, coreClient, params.AlertsPrevious, params.TailLinesPrevious, true)...)
 
 	return records, nil
 }
 
-func getLogsForAlerts(g *Gatherer, ctx context.Context, coreClient v1.CoreV1Interface, alertNames []string, tailLines int64) []record.Record {
+func getLogsForAlerts(g *Gatherer, ctx context.Context, coreClient v1.CoreV1Interface, alertNames []string, tailLines int64, previous bool) []record.Record {
 	records := []record.Record{}
 
 	for _, alertName := range alertNames {
@@ -83,6 +83,7 @@ func getLogsForAlerts(g *Gatherer, ctx context.Context, coreClient v1.CoreV1Inte
 				},
 				common.LogMessagesFilter{
 					TailLines: tailLines,
+					Previous:  previous,
 				},
 				nil)
 			if err != nil {
