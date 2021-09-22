@@ -357,7 +357,6 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 // update the current controller state
 func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
-
 	if isInitializing {
 		klog.V(4).Infof("The operator is still being initialized")
 		// if we're still starting up and some sources are not ready, initialize the conditions
