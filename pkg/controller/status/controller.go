@@ -196,11 +196,11 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 
 		if summary.Operation == controllerstatus.Uploading {
 			if summary.Count < uploadFailuresCountThreshold {
-				klog.V(4).Infof("Number of lastTransition upload failures %d lower than threshold %d. Not marking as degraded.",
+				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			} else {
 				degradingFailure = true
-				klog.V(4).Infof("Number of lastTransition upload failures %d exceeded than threshold %d. Marking as degraded.",
+				klog.V(4).Infof("Number of last upload failures %d exceeded the threshold %d. Marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			}
 			ctrlStatus.setStatus(UploadStatus, summary.Reason, summary.Message)
@@ -366,14 +366,12 @@ func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controller
 		}
 	}
 
-	if ctrlStatus.hasStatus(ErrorStatus) {
-		es := ctrlStatus.getStatus(ErrorStatus)
+	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
 		klog.V(4).Infof("The operator has some internal errors: %s", es.reason)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "Degraded", "An error has occurred", metav1.Now())
 	}
 
-	if ctrlStatus.hasStatus(DisabledStatus) {
-		ds := ctrlStatus.getStatus(DisabledStatus)
+	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		klog.V(4).Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Time{Time: lastTransition})
 	}
