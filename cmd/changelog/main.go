@@ -25,7 +25,8 @@ const (
 )
 
 var (
-	squashRegexp       = regexp.MustCompile(`(.*)-(\d+)`)
+	// the assumption here is that the PR id is the last number in the string
+	squashRegexp       = regexp.MustCompile(`(.*)-(\d+)$`)
 	mergeRequestRegexp = regexp.MustCompile(`Merge-pull-request-(\d+)`)
 	prefixRegexp       = regexp.MustCompile(`^.+: (.+)`)
 	releaseRegexp      = regexp.MustCompile(`(release-\d\.\d)`)

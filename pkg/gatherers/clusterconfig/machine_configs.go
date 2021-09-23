@@ -22,6 +22,7 @@ import (
 // * Location in archive: config/machineconfigs/<name>.json
 // * Id in config: machine_configs
 // * Since versions:
+//   * 4.8.5+
 //   * 4.9+
 func (g *Gatherer) GatherMachineConfigs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

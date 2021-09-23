@@ -389,6 +389,7 @@ Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_
 * Location in archive: config/machineconfigs/<name>.json
 * Id in config: machine_configs
 * Since versions:
+  * 4.8.5+
   * 4.9+
 
 
@@ -618,7 +619,8 @@ The Kubernetes API https://github.com/kubernetes/client-go/blob/v12.0.0/kubernet
 * See: docs/insights-archive-sample/config/psp_names.json
 * Id in config: psps
 * Since versions:
-  * 4.10+
+  * 4.8.12+
+  * 4.9+
 
 
 ## SAPConfig
