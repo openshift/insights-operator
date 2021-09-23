@@ -24,7 +24,7 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 		expectedSafeInitialStart bool
 	}{
 		{
-			name:                     "Non-initial run is has upload delayed",
+			name:                     "Non-initial run has its upload delayed",
 			initialRun:               false,
 			expectedSafeInitialStart: false,
 		},
