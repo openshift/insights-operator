@@ -40,12 +40,6 @@ func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *condi
 			LastTransitionTime: time,
 			Reason:             "",
 		},
-		configv1.OperatorUpgradeable: {
-			Type:               configv1.OperatorUpgradeable,
-			Status:             configv1.ConditionUnknown,
-			LastTransitionTime: time,
-			Reason:             "",
-		},
 	}
 
 	for _, c := range cos.Conditions {
