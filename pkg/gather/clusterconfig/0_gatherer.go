@@ -115,6 +115,7 @@ var gatherFunctions = map[string]gathering{
 	"sap_pods":                          failable(GatherSAPPods),
 	"sap_datahubs":                      failable(GatherSAPDatahubs),
 	"olm_operators":                     failable(GatherOLMOperators),
+	"psps":                              failable(GatherPodSecurityPolicies),
 }
 
 var startTime time.Time
