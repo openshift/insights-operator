@@ -17,13 +17,13 @@ import (
 // * Id in config: psps
 // * Since versions:
 //   * 4.10+
-func (g *Gatherer) GatherPodSecurityPolicies(ctx context.Context) ([]record.Record, []error) {
+func GatherPodSecurityPolicies(g *Gatherer, c chan<- gatherResult) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return nil, []error{err}
+		c <- gatherResult{errors: []error{err}}
 	}
-
-	return gatherPodSecurityPolicies(ctx, gatherPolicyClient)
+	records, errs := gatherPodSecurityPolicies(g.ctx, gatherPolicyClient)
+	c <- gatherResult{records: records, errors: errs}
 }
 
 func gatherPodSecurityPolicies(ctx context.Context, policyClient policyclient.PolicyV1beta1Interface) ([]record.Record, []error) {
