@@ -121,13 +121,11 @@ func gatherWorkloadInfo(
 				// track terminal pods but do not report their data
 				namespacePods.TerminalCount++
 				continue
-			case pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodPending:
-				// only consider pods that are in a known state
-				namespacePods.IgnoredCount++
-				continue
-			case len(pod.Status.InitContainerStatuses) != len(pod.Spec.InitContainers),
+			case pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodPending,
+				len(pod.Status.InitContainerStatuses) != len(pod.Spec.InitContainers),
 				len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers):
-				// pods without filled out status are invalid
+				// consider pods that are in a known state
+				// or pods without filled out status are invalid
 				namespacePods.IgnoredCount++
 				continue
 			}
@@ -305,8 +303,6 @@ func gatherWorkloadImageInfo(
 // namespace, returning the index of the matching shape or -1. It exploits the
 // property that identical pods tend to have similar name prefixes and searches
 // in reverse order from the most recent shape (since pods appear in name order).
-// TODO: some optimization in very large namespaces with diverse shapes may be
-//   necessary
 func workloadPodShapeIndex(shapes []workloadPodShape, shape workloadPodShape) int {
 	for i := len(shapes) - 1; i >= 0; i-- {
 		existing := shapes[i]
