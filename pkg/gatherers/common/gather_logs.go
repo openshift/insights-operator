@@ -21,6 +21,7 @@ import (
 type LogContainersFilter struct {
 	Namespace                string
 	LabelSelector            string
+	FieldSelector            string
 	ContainerNameRegexFilter string
 }
 
@@ -66,6 +67,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 
 	pods, err := coreClient.Pods(containersFilter.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: containersFilter.LabelSelector,
+		FieldSelector: containersFilter.FieldSelector,
 	})
 	if err != nil {
 		return nil, err
