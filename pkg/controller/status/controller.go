@@ -57,6 +57,8 @@ type Controller struct {
 	reported Reported
 	start    time.Time
 
+	ctrlStatus *controllerStatus
+
 	lock sync.Mutex
 }
 
@@ -68,6 +70,7 @@ func NewController(client configv1client.ConfigV1Interface, configurator Configu
 		configurator: configurator,
 		client:       client,
 		namespace:    namespace,
+		ctrlStatus:   newControllerStatus(),
 	}
 	return c
 }
@@ -128,9 +131,8 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 		clusterOperator = newClusterOperator(c.name, nil)
 	}
 
-	ctrlStatus := newControllerStatus()
 	// calculate the current controller state
-	allReady, lastTransition := c.currentControllerStatus(ctrlStatus)
+	allReady, lastTransition := c.currentControllerStatus()
 
 	clusterOperator = clusterOperator.DeepCopy()
 	now := time.Now()
@@ -142,12 +144,12 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 
 	// cluster operator conditions
 	cs := newConditions(&clusterOperator.Status, metav1.Time{Time: now})
-	updateDisabledAndFailingConditions(cs, ctrlStatus, isInitializing, lastTransition)
+	updateDisabledAndFailingConditions(cs, c.ctrlStatus, isInitializing, lastTransition)
 
 	// once the operator is running it is always considered available
 	cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", "", metav1.Now())
 
-	updateProcessingConditionWithSummary(cs, ctrlStatus, isInitializing, lastTransition)
+	updateProcessingConditionWithSummary(cs, c.ctrlStatus, isInitializing, lastTransition)
 
 	klog.V(4).Infof("The operator is healthy")
 	cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
@@ -171,7 +173,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 }
 
 // calculate the current controller status based on its given sources
-func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allReady bool, lastTransition time.Time) {
+func (c *Controller) currentControllerStatus() (allReady bool, lastTransition time.Time) {
 	var errorReason string
 	var errs []string
 
@@ -203,10 +205,10 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 				klog.V(4).Infof("Number of last upload failures %d exceeded the threshold %d. Marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			}
-			ctrlStatus.setStatus(UploadStatus, summary.Reason, summary.Message)
+			c.ctrlStatus.setStatus(UploadStatus, summary.Reason, summary.Message)
 		} else if summary.Operation == controllerstatus.DownloadingReport {
 			klog.V(4).Info("Failed to download Insights report")
-			ctrlStatus.setStatus(DownloadStatus, summary.Reason, summary.Message)
+			c.ctrlStatus.setStatus(DownloadStatus, summary.Reason, summary.Message)
 		} else if summary.Operation == controllerstatus.PullingSCACerts {
 			klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
 				OCMAPIFailureCountThreshold)
@@ -226,12 +228,12 @@ func (c *Controller) currentControllerStatus(ctrlStatus *controllerStatus) (allR
 	// handling errors
 	errorReason, errorMessage := handleControllerStatusError(errs, errorReason)
 	if errorReason != "" || errorMessage != "" {
-		ctrlStatus.setStatus(ErrorStatus, errorReason, errorMessage)
+		c.ctrlStatus.setStatus(ErrorStatus, errorReason, errorMessage)
 	}
 
 	// disabled state only when it's disabled by config. It means that gathering will not happen
 	if !c.configurator.Config().Report {
-		ctrlStatus.setStatus(DisabledStatus, "Disabled", "Health reporting is disabled")
+		c.ctrlStatus.setStatus(DisabledStatus, "Disabled", "Health reporting is disabled")
 	}
 
 	return allReady, lastTransition

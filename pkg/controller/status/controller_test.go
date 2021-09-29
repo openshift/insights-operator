@@ -71,7 +71,9 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 			ctrl := &Controller{
 				name:         "insights",
 				client:       client.ConfigV1(),
-				configurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient)}
+				configurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient),
+				ctrlStatus:   newControllerStatus(),
+			}
 
 			err := ctrl.updateStatus(context.Background(), tt.initialRun)
 			if err != tt.expErr {
