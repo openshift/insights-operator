@@ -333,7 +333,6 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 
 	// handle when has errors
 	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
-		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
@@ -367,7 +366,7 @@ func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controller
 	}
 
 	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
-		klog.V(4).Infof("The operator has some internal errors: %s", es.reason)
+		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "Degraded", "An error has occurred", metav1.Now())
 	}
 
