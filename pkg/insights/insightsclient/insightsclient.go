@@ -287,7 +287,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 }
 
 // RecvReport perform a request to Insights Results Smart Proxy endpoint
-func (c Client) RecvReport(ctx context.Context, endpoint string) (io.ReadCloser, error) {
+func (c Client) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
 	cv, err := c.getClusterVersion()
 	if err != nil {
 		return nil, err
@@ -317,16 +317,17 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (io.ReadCloser,
 		return nil, err
 	}
 
-	counterRequestRecvReport.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
 	requestID := resp.Header.Get("x-rh-insights-request-id")
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		c.IncrementRecvReportMetric(resp.StatusCode)
 		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
 		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		c.IncrementRecvReportMetric(resp.StatusCode)
 		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	}
 
@@ -335,6 +336,7 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (io.ReadCloser,
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
+		c.IncrementRecvReportMetric(resp.StatusCode)
 		return nil, fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
 	}
 	if resp.StatusCode == http.StatusNotFound {
@@ -346,6 +348,7 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (io.ReadCloser,
 			StatusCode: resp.StatusCode,
 			Err:        fmt.Errorf("not found: %s (request=%s): %s", resp.Request.URL, requestID, string(body)),
 		}
+		c.IncrementRecvReportMetric(resp.StatusCode)
 		return nil, notFoundErr
 	}
 
@@ -354,11 +357,12 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (io.ReadCloser,
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
+		c.IncrementRecvReportMetric(resp.StatusCode)
 		return nil, fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, string(body))
 	}
 
 	if resp.StatusCode == http.StatusOK {
-		return resp.Body, nil
+		return resp, nil
 	}
 
 	klog.Warningf("Report response status code: %d", resp.StatusCode)
@@ -422,6 +426,11 @@ func ocmErrorMessage(url *url.URL, r *http.Response) error {
 		Err:        err,
 		StatusCode: r.StatusCode,
 	}
+}
+
+// IncrementRecvReportMetric increments the "insightsclient_request_recvreport_total" metric for the given HTTP status code
+func (c *Client) IncrementRecvReportMetric(statusCode int) {
+	counterRequestRecvReport.WithLabelValues(c.metricsName, strconv.Itoa(statusCode)).Inc()
 }
 
 var (
