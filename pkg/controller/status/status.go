@@ -52,3 +52,7 @@ func (c *controllerStatus) hasStatus(id string) bool {
 	_, ok := c.statusMap[id]
 	return ok
 }
+
+func (c *controllerStatus) reset() {
+	c.statusMap = make(map[string]statusMessage)
+}

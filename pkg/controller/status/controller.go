@@ -131,6 +131,9 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 		clusterOperator = newClusterOperator(c.name, nil)
 	}
 
+	// make sure to start a clean status controller
+	c.ctrlStatus.reset()
+
 	// calculate the current controller state
 	allReady, lastTransition := c.currentControllerStatus()
 
