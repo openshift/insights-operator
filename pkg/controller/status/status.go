@@ -56,3 +56,7 @@ func (c *controllerStatus) hasStatus(id string) bool {
 func (c *controllerStatus) reset() {
 	c.statusMap = make(map[string]statusMessage)
 }
+
+func (c *controllerStatus) isHealthy() bool {
+	return !(c.hasStatus(ErrorStatus) || c.hasStatus(DisabledStatus))
+}

@@ -147,15 +147,12 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 
 	// cluster operator conditions
 	cs := newConditions(&clusterOperator.Status, metav1.Time{Time: now})
-	updateDisabledAndFailingConditions(cs, c.ctrlStatus, isInitializing, lastTransition)
+	updateControllerConditions(cs, c.ctrlStatus, isInitializing, lastTransition)
 
 	// once the operator is running it is always considered available
 	cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", "", metav1.Now())
 
-	updateProcessingConditionWithSummary(cs, c.ctrlStatus, isInitializing, lastTransition)
-
-	klog.V(4).Infof("The operator is healthy")
-	cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
+	updateControllerConditionsByStatus(cs, c.ctrlStatus, isInitializing, lastTransition)
 
 	// all status conditions from conditions to cluster operator
 	clusterOperator.Status.Conditions = cs.entries()
@@ -316,7 +313,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 }
 
 // update the cluster controller status conditions
-func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerStatus,
+func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
 	if isInitializing {
 		// the disabled condition is optional, but set it now if we already know we're disabled
@@ -358,8 +355,8 @@ func updateDisabledAndFailingConditions(cs *conditions, ctrlStatus *controllerSt
 	}
 }
 
-// update the current controller state
-func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controllerStatus,
+// update the current controller state by it status
+func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerStatus,
 	isInitializing bool, lastTransition time.Time) {
 	if isInitializing {
 		klog.V(4).Infof("The operator is still being initialized")
@@ -378,6 +375,11 @@ func updateProcessingConditionWithSummary(cs *conditions, ctrlStatus *controller
 	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		klog.V(4).Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Time{Time: lastTransition})
+	}
+
+	if ctrlStatus.isHealthy() {
+		klog.V(4).Infof("The operator is healthy")
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
 	}
 }
 
