@@ -58,5 +58,5 @@ func (c *controllerStatus) reset() {
 }
 
 func (c *controllerStatus) isHealthy() bool {
-	return !(c.hasStatus(ErrorStatus) || c.hasStatus(DisabledStatus))
+	return !c.hasStatus(ErrorStatus)
 }

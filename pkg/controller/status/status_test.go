@@ -28,10 +28,10 @@ func Test_controllerStatus_getStatus(t *testing.T) {
 			name: "Can get the status message",
 			fields: fields{
 				statusMap: map[string]statusMessage{
-					"disabled": {reason: "disabled reason", message: "disabled message"},
-					"upload":   {reason: "upload reason", message: "upload message"},
-					"download": {reason: "download reason", message: "download message"},
-					"error":    {reason: "error reason", message: "error message"},
+					DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+					UploadStatus:   {reason: "upload reason", message: "upload message"},
+					DownloadStatus: {reason: "download reason", message: "download message"},
+					ErrorStatus:    {reason: "error reason", message: "error message"},
 				},
 			},
 			args: args{id: DownloadStatus},
@@ -73,10 +73,10 @@ func Test_controllerStatus_hasStatus(t *testing.T) {
 			name: "Must be true if status exists",
 			fields: fields{
 				statusMap: map[string]statusMessage{
-					"disabled": {reason: "disabled reason", message: "disabled message"},
-					"upload":   {reason: "upload reason", message: "upload message"},
-					"download": {reason: "download reason", message: "download message"},
-					"error":    {reason: "error reason", message: "error message"},
+					DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+					UploadStatus:   {reason: "upload reason", message: "upload message"},
+					DownloadStatus: {reason: "download reason", message: "download message"},
+					ErrorStatus:    {reason: "error reason", message: "error message"},
 				},
 			},
 			args: args{id: DownloadStatus},
@@ -116,43 +116,43 @@ func Test_controllerStatus_setStatus(t *testing.T) {
 			fields: fields{statusMap: map[string]statusMessage{}},
 			args:   args{id: DisabledStatus, reason: "disabled reason", message: "disabled message"},
 			want: &controllerStatus{statusMap: map[string]statusMessage{
-				"disabled": {reason: "disabled reason", message: "disabled message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 		},
 		{
 			name: "Update existing status with new reason",
 			fields: fields{statusMap: map[string]statusMessage{
-				"upload":   {reason: "upload reason", message: "upload message"},
-				"disabled": {reason: "disabled reason", message: "disabled message"},
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 			args: args{id: DisabledStatus, reason: "new disabled reason", message: "disabled message"},
 			want: &controllerStatus{statusMap: map[string]statusMessage{
-				"upload":   {reason: "upload reason", message: "upload message"},
-				"disabled": {reason: "new disabled reason", message: "disabled message"},
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "new disabled reason", message: "disabled message"},
 			}},
 		},
 		{
 			name: "Update existing status with new message",
 			fields: fields{statusMap: map[string]statusMessage{
-				"upload":   {reason: "upload reason", message: "upload message"},
-				"disabled": {reason: "disabled reason", message: "disabled message"},
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 			args: args{id: DisabledStatus, reason: "disabled reason", message: "new disabled message"},
 			want: &controllerStatus{statusMap: map[string]statusMessage{
-				"upload":   {reason: "upload reason", message: "upload message"},
-				"disabled": {reason: "disabled reason", message: "new disabled message"},
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "new disabled message"},
 			}},
 		},
 		{
 			name: "Update existing status with same status message",
 			fields: fields{statusMap: map[string]statusMessage{
-				"upload":   {reason: "upload reason", message: "upload message"},
-				"disabled": {reason: "disabled reason", message: "disabled message"},
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 			args: args{id: DisabledStatus, reason: "disabled reason", message: "disabled message"},
 			want: &controllerStatus{statusMap: map[string]statusMessage{
-				"upload":   {reason: "upload reason", message: "upload message"},
-				"disabled": {reason: "disabled reason", message: "disabled message"},
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 		},
 	}

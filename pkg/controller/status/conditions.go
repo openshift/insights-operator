@@ -76,19 +76,7 @@ func (c *conditions) setCondition(condition configv1.ClusterStatusConditionType,
 }
 
 func (c *conditions) removeCondition(condition configv1.ClusterStatusConditionType) {
-	if !c.hasCondition(condition) {
-		return
-	}
-
-	entries := make(conditionsMap)
-	for k, v := range c.entryMap {
-		if k == condition {
-			continue
-		}
-		entries[k] = v
-	}
-
-	c.entryMap = entries
+	delete(c.entryMap, condition)
 }
 
 func (c *conditions) hasCondition(condition configv1.ClusterStatusConditionType) bool {
