@@ -82,7 +82,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	defer cancelFunc()
 
 	klog.V(4).Info("Retrieving report")
-	reportBody, err := c.client.RecvReport(ctx, reportEndpoint)
+	resp, err := c.client.RecvReport(ctx, reportEndpoint)
 	if authorizer.IsAuthorizationError(err) {
 		c.Simple.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
@@ -94,7 +94,6 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		klog.Error(err)
 		return false, err
 	} else if insightsclient.IsHttpError(err) {
-
 		ie := err.(insightsclient.HttpError)
 		klog.Errorf("Unexpected error retrieving the report: %s", ie)
 		// if there's a 404 response then retry
@@ -112,7 +111,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, err
 	}
 	defer func() {
-		if err := reportBody.Close(); err != nil {
+		if err := resp.Body.Close(); err != nil {
 			klog.Warningf("Failed to close response body: %v", err)
 		}
 	}()
@@ -120,7 +119,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	klog.V(4).Info("Report retrieved")
 	reportResponse := Response{}
 
-	if err = json.NewDecoder(reportBody).Decode(&reportResponse); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
 		return true, err
 	}
@@ -133,6 +132,8 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	}
 
 	updateInsightsMetrics(reportResponse.Report)
+	// we want to increment the metric only in case of download of a new report
+	c.client.IncrementRecvReportMetric(resp.StatusCode)
 	c.LastReport = reportResponse.Report
 	c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	return true, nil
