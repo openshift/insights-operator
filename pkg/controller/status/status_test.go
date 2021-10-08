@@ -1,89 +1,185 @@
 package status
 
 import (
-	"context"
+	"reflect"
 	"testing"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/klog/v2"
-
-	configv1 "github.com/openshift/api/config/v1"
-	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
-	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/config/configobserver"
-	"github.com/openshift/insights-operator/pkg/utils"
-	kubeclientfake "k8s.io/client-go/kubernetes/fake"
 )
 
-func Test_Status_SaveInitialStart(t *testing.T) {
+func Test_controllerStatus_getStatus(t *testing.T) {
+	type fields struct {
+		statusMap map[string]statusMessage
+	}
+	type args struct {
+		id string
+	}
 	tests := []struct {
-		name                     string
-		clusterOperator          *configv1.ClusterOperator
-		expErr                   error
-		initialRun               bool
-		expectedSafeInitialStart bool
+		name   string
+		fields fields
+		args   args
+		want   *statusMessage
 	}{
 		{
-			name:                     "Non-initial run is has upload delayed",
-			initialRun:               false,
-			expectedSafeInitialStart: false,
+			name:   "Must get nil if there is no status",
+			fields: fields{statusMap: map[string]statusMessage{}},
+			args:   args{id: DisabledStatus},
+			want:   nil,
 		},
 		{
-			name:                     "Initial run with not existing Insights operator is not delayed",
-			initialRun:               true,
-			clusterOperator:          nil,
-			expectedSafeInitialStart: true,
-		},
-		{
-			name:       "Initial run with existing Insights operator which is degraded is delayed",
-			initialRun: true,
-			clusterOperator: &configv1.ClusterOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "insights",
+			name: "Can get the status message",
+			fields: fields{
+				statusMap: map[string]statusMessage{
+					DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+					UploadStatus:   {reason: "upload reason", message: "upload message"},
+					DownloadStatus: {reason: "download reason", message: "download message"},
+					ErrorStatus:    {reason: "error reason", message: "error message"},
 				},
-				Status: configv1.ClusterOperatorStatus{Conditions: []configv1.ClusterOperatorStatusCondition{
-					{Type: configv1.OperatorDegraded, Status: configv1.ConditionTrue},
-				}},
 			},
-			expectedSafeInitialStart: false,
-		},
-		{
-			name:       "Initial run with existing Insights operator which is not degraded not delayed",
-			initialRun: true,
-			clusterOperator: &configv1.ClusterOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "insights",
-				},
-				Status: configv1.ClusterOperatorStatus{Conditions: []configv1.ClusterOperatorStatusCondition{
-					{Type: configv1.OperatorDegraded, Status: configv1.ConditionFalse},
-				}},
-			},
-			expectedSafeInitialStart: true,
+			args: args{id: DownloadStatus},
+			want: &statusMessage{"download reason", "download message"},
 		},
 	}
-
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			klog.SetOutput(utils.NewTestLog(t).Writer())
-			var operators []runtime.Object
-			if tt.clusterOperator != nil {
-				operators = append(operators, tt.clusterOperator)
+			c := &controllerStatus{
+				statusMap: tt.fields.statusMap,
 			}
-			kubeclientsetclient := kubeclientfake.NewSimpleClientset()
+			if got := c.getStatus(tt.args.id); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getStatus() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
-			client := configfake.NewSimpleClientset(operators...)
-			ctrl := &Controller{
-				name:         "insights",
-				client:       client.ConfigV1(),
-				configurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient)}
+func Test_controllerStatus_hasStatus(t *testing.T) {
+	type fields struct {
+		statusMap map[string]statusMessage
+	}
+	type args struct {
+		id string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name:   "Must be false if status doesn't exist",
+			fields: fields{statusMap: map[string]statusMessage{}},
+			args:   args{id: DisabledStatus},
+			want:   false,
+		},
+		{
+			name: "Must be true if status exists",
+			fields: fields{
+				statusMap: map[string]statusMessage{
+					DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+					UploadStatus:   {reason: "upload reason", message: "upload message"},
+					DownloadStatus: {reason: "download reason", message: "download message"},
+					ErrorStatus:    {reason: "error reason", message: "error message"},
+				},
+			},
+			args: args{id: DownloadStatus},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &controllerStatus{
+				statusMap: tt.fields.statusMap,
+			}
+			if got := c.hasStatus(tt.args.id); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("hasStatus() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
-			err := ctrl.updateStatus(context.Background(), tt.initialRun)
-			if err != tt.expErr {
-				t.Fatalf("updateStatus returned unexpected error: %s Expected %s", err, tt.expErr)
+func Test_controllerStatus_setStatus(t *testing.T) {
+	type fields struct {
+		statusMap map[string]statusMessage
+	}
+	type args struct {
+		id      string
+		reason  string
+		message string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		statusID string
+		want     *controllerStatus
+	}{
+		{
+			name:   "Change not existing status",
+			fields: fields{statusMap: map[string]statusMessage{}},
+			args:   args{id: DisabledStatus, reason: "disabled reason", message: "disabled message"},
+			want: &controllerStatus{statusMap: map[string]statusMessage{
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+			}},
+		},
+		{
+			name: "Update existing status with new reason",
+			fields: fields{statusMap: map[string]statusMessage{
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+			}},
+			args: args{id: DisabledStatus, reason: "new disabled reason", message: "disabled message"},
+			want: &controllerStatus{statusMap: map[string]statusMessage{
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "new disabled reason", message: "disabled message"},
+			}},
+		},
+		{
+			name: "Update existing status with new message",
+			fields: fields{statusMap: map[string]statusMessage{
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+			}},
+			args: args{id: DisabledStatus, reason: "disabled reason", message: "new disabled message"},
+			want: &controllerStatus{statusMap: map[string]statusMessage{
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "new disabled message"},
+			}},
+		},
+		{
+			name: "Update existing status with same status message",
+			fields: fields{statusMap: map[string]statusMessage{
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+			}},
+			args: args{id: DisabledStatus, reason: "disabled reason", message: "disabled message"},
+			want: &controllerStatus{statusMap: map[string]statusMessage{
+				UploadStatus:   {reason: "upload reason", message: "upload message"},
+				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &controllerStatus{
+				statusMap: tt.fields.statusMap,
+			}
+			c.setStatus(tt.args.id, tt.args.reason, tt.args.message)
+			if !reflect.DeepEqual(c, tt.want) {
+				t.Errorf("entries() = %v, want %v", c, tt.want)
+			}
+		})
+	}
+}
+
+func Test_newControllerStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		want *controllerStatus
+	}{
+		{name: "Test statusController constructor", want: &controllerStatus{statusMap: make(map[string]statusMessage)}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := newControllerStatus(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("newControllerStatus() = %v, want %v", got, tt.want)
 			}
 		})
 	}

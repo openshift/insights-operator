@@ -75,8 +75,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 
 	// the metrics client will connect to prometheus and scrape a small set of metrics
-	// TODO: the oauth-proxy and delegating authorizer do not support Impersonate-User,
-	//   so we do not impersonate gather
 	metricsGatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
 	metricsGatherKubeConfig.CAFile = metricCAFile
 	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
@@ -86,7 +84,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// If we fail, it's likely due to the service CA not existing yet. Warn and continue,
 	// and when the service-ca is loaded we will be restarted.
-	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
+	_, err = kubernetes.NewForConfig(gatherProtoKubeConfig)
 	if err != nil {
 		return err
 	}
@@ -103,7 +101,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient, gatherKubeClient.CoreV1(), configObserver, os.Getenv("POD_NAMESPACE"))
+	statusReporter := status.NewController(configClient, configObserver, os.Getenv("POD_NAMESPACE"))
 
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
@@ -147,14 +145,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// is permanently disabled, but if a client does exist the server may still disable reporting
 	uploader := insightsuploader.New(recdriver, insightsClient, configObserver, statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
-
-	// TODO: future ideas
-	//
-	// * poll periodically for new insights commands to run, then delegate
-	// * periodically dump crashlooping pod logs / save their messages
-	// * watch cluster version for an upgrade, go into extra capture mode
-	// * gather heap dumps from core components when master memory is above
-	//   a threshold
 
 	// start reporting status now that all controller loops are added as sources
 	if err = statusReporter.Start(ctx); err != nil {
