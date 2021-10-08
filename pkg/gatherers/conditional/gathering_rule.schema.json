@@ -151,10 +151,16 @@
                             "type": "array",
                             "title": "Alerts to collect previous logs for"
                         },
-                        "tail_lines": {
+                        "tail_lines_current": {
                             "type": "integer",
-                            "title": "TailLines",
-                            "minimum": 1,
+                            "title": "Tail lines for current logs",
+                            "minimum": 0,
+                            "maximum": 4096
+                        },
+                        "tail_lines_previous": {
+                            "type": "integer",
+                            "title": "Tail lines for previous logs",
+                            "minimum": 0,
                             "maximum": 4096
                         }
                     }
