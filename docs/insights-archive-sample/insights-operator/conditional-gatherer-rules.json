@@ -9,13 +9,67 @@
       }
     ],
     "gathering_functions": {
-      "image_stream_definitions_of_namespace": {
+      "image_streams_of_namespace": {
         "namespace": "openshift-cluster-samples-operator"
       },
       "logs_of_namespace": {
-        "label_selector": "",
         "namespace": "openshift-cluster-samples-operator",
         "tail_lines": 100
+      }
+    }
+  },
+  {
+    "conditions": [
+      {
+        "type": "alert_is_firing",
+        "params": {
+          "name": "APIRemovedInNextEUSReleaseInUse"
+        }
+      }
+    ],
+    "gathering_functions": {
+      "api_request_counts_of_resource_from_alert": {
+        "alert_name": "APIRemovedInNextEUSReleaseInUse"
+      }
+    }
+  },
+  {
+    "conditions": [
+      {
+        "type": "alert_is_firing",
+        "params": {
+          "name": "KubePodCrashLooping"
+        }
+      }
+    ],
+    "gathering_functions": {
+      "logs_of_unhealthy_pods": {
+        "alerts_current": [],
+        "alerts_previous": [
+          "KubePodCrashLooping"
+        ],
+        "tail_lines_current": 0,
+        "tail_lines_previous": 20
+      }
+    }
+  },
+  {
+    "conditions": [
+      {
+        "type": "alert_is_firing",
+        "params": {
+          "name": "KubePodNotReady"
+        }
+      }
+    ],
+    "gathering_functions": {
+      "logs_of_unhealthy_pods": {
+        "alerts_current": [
+          "KubePodNotReady"
+        ],
+        "alerts_previous": [],
+        "tail_lines_current": 100,
+        "tail_lines_previous": 0
       }
     }
   }
