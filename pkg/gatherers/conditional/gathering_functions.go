@@ -73,8 +73,7 @@ type GatherAPIRequestCountsParams struct {
 }
 
 type GatherLogsOfUnhealthyPodsParams struct {
-	AlertsCurrent     []string `json:"alerts_current"`
-	AlertsPrevious    []string `json:"alerts_previous"`
-	TailLinesCurrent  int64    `json:"tail_lines_current"`
-	TailLinesPrevious int64    `json:"tail_lines_previous"`
+	AlertName string `json:"alert_name"`
+	TailLines int64  `json:"tail_lines"`
+	Previous  bool   `json:"previous"`
 }

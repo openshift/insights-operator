@@ -46,79 +46,62 @@ func (g *Gatherer) BuildGatherLogsOfUnhealthyPods(paramsInterface interface{}) (
 func (g *Gatherer) gatherLogsOfUnhealthyPods(
 	ctx context.Context, coreClient v1.CoreV1Interface, params GatherLogsOfUnhealthyPodsParams,
 ) ([]record.Record, []error) {
-	recordsCurrent, errsCurrent := getLogsForAlerts(g, ctx, coreClient, params.AlertsCurrent, params.TailLinesCurrent, false)
-	recordsPrevious, errsPrevious := getLogsForAlerts(g, ctx, coreClient, params.AlertsPrevious, params.TailLinesPrevious, true)
-
-	records := []record.Record{}
-	records = append(records, recordsCurrent...)
-	records = append(records, recordsPrevious...)
-
-	errs := []error{}
-	errs = append(errs, errsCurrent...)
-	errs = append(errs, errsPrevious...)
-
-	return records, errs
-}
-
-func getLogsForAlerts(g *Gatherer, ctx context.Context, coreClient v1.CoreV1Interface, alertNames []string, tailLines int64, previous bool) ([]record.Record, []error) {
 	errs := []error{}
 	records := []record.Record{}
 
-	for _, alertName := range alertNames {
-		alertInstances, ok := g.firingAlerts[alertName]
+	alertInstances, ok := g.firingAlerts[params.AlertName]
+	if !ok {
+		return nil, nil
+	}
+	for _, alertLabels := range alertInstances {
+		alertNamespace, ok := alertLabels["namespace"]
 		if !ok {
+			newErr := fmt.Errorf("alert is missing 'namespace' label")
+			klog.Warningln(newErr.Error())
+			errs = append(errs, newErr)
 			continue
 		}
-		for _, alertLabels := range alertInstances {
-			alertNamespace, ok := alertLabels["namespace"]
-			if !ok {
-				newErr := fmt.Errorf("alert is missing 'namespace' label")
-				klog.Warningln(newErr.Error())
-				errs = append(errs, newErr)
-				continue
-			}
-			alertPod, ok := alertLabels["pod"]
-			if !ok {
-				newErr := fmt.Errorf("alert is missing 'pod' label")
-				klog.Warningln(newErr.Error())
-				errs = append(errs, newErr)
-				continue
-			}
-			// The container label may not be present for all alerts (e.g., KubePodNotReady).
-			alertContainer := alertLabels["container"]
-
-			containerFilter := ""
-			if alertContainer != "" {
-				containerFilter = fmt.Sprintf("^%s$", alertContainer)
-			}
-
-			logRecords, err := common.CollectLogsFromContainers(ctx, coreClient,
-				common.LogContainersFilter{
-					Namespace:                alertNamespace,
-					FieldSelector:            fmt.Sprintf("metadata.name=%s", alertPod),
-					ContainerNameRegexFilter: containerFilter,
-				},
-				common.LogMessagesFilter{
-					TailLines: tailLines,
-					Previous:  previous,
-				},
-				func(namespace string, podName string, containerName string) string {
-					logKind := "current"
-					if previous {
-						logKind = "previous"
-					}
-					return fmt.Sprintf("%s/unhealthy_logs/%s/%s/%s/%s.log", g.GetName(), namespace, podName, containerName, logKind)
-				})
-			if err != nil {
-				// This can happen when the pod is destroyed but the alert still exists.
-				newErr := fmt.Errorf("unable to get container logs: %v", err)
-				klog.Warningln(newErr.Error())
-				errs = append(errs, newErr)
-				continue
-			}
-
-			records = append(records, logRecords...)
+		alertPod, ok := alertLabels["pod"]
+		if !ok {
+			newErr := fmt.Errorf("alert is missing 'pod' label")
+			klog.Warningln(newErr.Error())
+			errs = append(errs, newErr)
+			continue
 		}
+		// The container label may not be present for all alerts (e.g., KubePodNotReady).
+		alertContainer := alertLabels["container"]
+
+		containerFilter := ""
+		if alertContainer != "" {
+			containerFilter = fmt.Sprintf("^%s$", alertContainer)
+		}
+
+		logRecords, err := common.CollectLogsFromContainers(ctx, coreClient,
+			common.LogContainersFilter{
+				Namespace:                alertNamespace,
+				FieldSelector:            fmt.Sprintf("metadata.name=%s", alertPod),
+				ContainerNameRegexFilter: containerFilter,
+			},
+			common.LogMessagesFilter{
+				TailLines: params.TailLines,
+				Previous:  params.Previous,
+			},
+			func(namespace string, podName string, containerName string) string {
+				logKind := "current"
+				if params.Previous {
+					logKind = "previous"
+				}
+				return fmt.Sprintf("%s/unhealthy_logs/%s/%s/%s/%s.log", g.GetName(), namespace, podName, containerName, logKind)
+			})
+		if err != nil {
+			// This can happen when the pod is destroyed but the alert still exists.
+			newErr := fmt.Errorf("unable to get container logs: %v", err)
+			klog.Warningln(newErr.Error())
+			errs = append(errs, newErr)
+			continue
+		}
+
+		records = append(records, logRecords...)
 	}
 
 	return records, errs

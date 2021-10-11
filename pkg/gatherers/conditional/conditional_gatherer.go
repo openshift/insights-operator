@@ -105,11 +105,9 @@ var defaultGatheringRules = []GatheringRule{
 		},
 		GatheringFunctions: GatheringFunctions{
 			GatherLogsOfUnhealthyPods: GatherLogsOfUnhealthyPodsParams{
-				AlertsPrevious: []string{
-					"KubePodCrashLooping",
-				},
-				TailLinesPrevious: 20,
-				AlertsCurrent:     []string{},
+				AlertName: "KubePodCrashLooping",
+				TailLines: 20,
+				Previous:  true,
 			},
 		},
 	},
@@ -124,11 +122,9 @@ var defaultGatheringRules = []GatheringRule{
 		},
 		GatheringFunctions: GatheringFunctions{
 			GatherLogsOfUnhealthyPods: GatherLogsOfUnhealthyPodsParams{
-				AlertsCurrent: []string{
-					"KubePodNotReady",
-				},
-				TailLinesCurrent: 100,
-				AlertsPrevious:   []string{},
+				AlertName: "KubePodNotReady",
+				TailLines: 100,
+				Previous:  false,
 			},
 		},
 	},
