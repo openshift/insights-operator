@@ -103,22 +103,17 @@ func nodeLogString(req *rest.Request, buf *bytes.Buffer) (string, error) {
 	if err != nil {
 		// not gzipped stream
 		_, err = io.Copy(buf, in)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return "", err
 		}
+
 		return buf.String(), nil
 	}
 
-	for {
-		// gzipped stream
-		_, err = io.CopyN(buf, gz, 1024)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return "", err
-		}
+	// nolint: gosec
+	_, err = io.Copy(buf, gz)
+	if err != nil && err != io.EOF {
+		return "", err
 	}
-
 	return buf.String(), nil
 }
