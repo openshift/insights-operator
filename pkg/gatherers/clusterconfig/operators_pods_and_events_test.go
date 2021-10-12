@@ -74,7 +74,7 @@ func Test_UnhealtyOperators_GatherPodContainersLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gatherPodContainersLogs(tt.args.ctx, tt.args.client, tt.args.pods, tt.args.bufferSize)
+			got, err := gatherPodsAndTheirContainersLogs(tt.args.ctx, tt.args.client, tt.args.pods, tt.args.bufferSize)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("gatherNamespaceEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -191,15 +191,12 @@ func Test_UnhealtyOperators_GatherUnhealthyPods(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2 := gatherUnhealthyPods(tt.args.pods)
+			got, got2 := getAllRelatedPods(tt.args.pods)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("gatherUnhealthyPods() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("gatherUnhealthyPods() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("getAllRelatedPods() got = %v, want %v", got, tt.want)
 			}
 			if got2 != tt.want2 {
-				t.Errorf("gatherUnhealthyPods() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("getAllRelatedPods() got2 = %v, want %v", got2, tt.want2)
 			}
 		})
 	}
