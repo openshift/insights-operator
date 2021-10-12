@@ -132,12 +132,12 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 ## ClusterOperatorPodsAndEvents
 
-collects information about all pods
+collects information about pods
 and events from namespaces of degraded cluster operators. The collected
 information includes:
 
-- Pod definitions
-- Previous and current logs of pod containers (when available)
+- Definitions for non-running (terminated, pending) Pods
+- Previous (if container was terminated) and current logs of all related pod containers
 - Namespace events
 
 * Location of pod definitions: config/pod/{namespace}/{pod}.json
