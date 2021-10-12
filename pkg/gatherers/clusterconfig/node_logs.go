@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 
 	"github.com/openshift/insights-operator/pkg/recorder"
 
@@ -75,15 +74,10 @@ func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([
 
 // nodeLogResourceURI creates the resource path URI to be fetched
 func nodeLogResourceURI(client rest.Interface, name string) string {
-	uri := client.Get().
+	return client.Get().
 		Name(name).
 		Resource("nodes").SubResource("proxy", "logs").
 		Suffix("journal").URL().Path
-
-	if strings.HasSuffix("journal", "/") {
-		uri += "/"
-	}
-	return uri
 }
 
 // requestNodeLog creates the request to the API to retrieve the resource stream
