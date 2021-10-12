@@ -25,6 +25,13 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+// GatherNodeLogs fetches the node logs from journal unit
+//
+// Response see https://docs.openshift.com/container-platform/4.8/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
+//
+// * Location in archive: config/nodes/logs/
+// * See: docs/insights-archive-sample/config/nodes/logs
+// * Id in config: node_logs
 func (g *Gatherer) GatherNodeLogs(ctx context.Context) ([]record.Record, []error) {
 	clientSet, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -49,8 +56,9 @@ func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([
 	restClient := client.RESTClient()
 
 	for i := range nodes.Items {
-		uri := getNodeResourceURI(restClient, nodes.Items[i].Name)
-		logString, err := getNodeLogString(restClient, uri, logMaxTailLines, buf)
+		uri := nodeLogResourceURI(restClient, nodes.Items[i].Name)
+		req := requestNodeLog(restClient, uri, logNodeMaxTailLines, logNodeUnit)
+		logString, err := nodeLogString(req, buf)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			errs = append(errs, err)
@@ -65,7 +73,8 @@ func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([
 	return records, errs
 }
 
-func getNodeResourceURI(client rest.Interface, name string) string {
+// nodeLogResourceURI creates the resource path URI to be fetched
+func nodeLogResourceURI(client rest.Interface, name string) string {
 	uri := client.Get().
 		Name(name).
 		Resource("nodes").SubResource("proxy", "logs").
@@ -77,13 +86,18 @@ func getNodeResourceURI(client rest.Interface, name string) string {
 	return uri
 }
 
-func getNodeLogString(client rest.Interface, uri string, tail int64, buf *bytes.Buffer) (string, error) {
-	buf.Reset()
-
-	req := client.Get().RequestURI(uri).
+// requestNodeLog creates the request to the API to retrieve the resource stream
+func requestNodeLog(client rest.Interface, uri string, tail int, unit string) *rest.Request {
+	return client.Get().RequestURI(uri).
 		SetHeader("Accept", "text/plain, */*").
 		SetHeader("Accept-Encoding", "gzip").
-		Param("tail", strconv.Itoa(int(tail))) // It will always be 2 times the given value
+		Param("tail", strconv.Itoa(tail)).
+		Param("unit", unit)
+}
+
+// nodeLogString retrieve the data from the stream, decompress it (if necessary) and return the string
+func nodeLogString(req *rest.Request, buf *bytes.Buffer) (string, error) {
+	buf.Reset()
 
 	in, err := req.Stream(context.TODO())
 	if err != nil {
@@ -93,13 +107,23 @@ func getNodeLogString(client rest.Interface, uri string, tail int64, buf *bytes.
 
 	gz, err := gzip.NewReader(in)
 	if err != nil {
-		return "", err
+		// not gzipped stream
+		_, err = io.Copy(buf, in)
+		if err != nil {
+			return "", err
+		}
+		return buf.String(), nil
 	}
-	defer gz.Close()
 
-	_, err = io.Copy(buf, gz)
-	if err != nil {
-		return "", err
+	for {
+		// gzipped stream
+		_, err = io.CopyN(buf, gz, 1024)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", err
+		}
 	}
 
 	return buf.String(), nil

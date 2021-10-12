@@ -18,6 +18,10 @@ var (
 	logStackTraceMaxLines       = 40
 	logStackTraceBeginningLimit = 35
 	logStackTraceEndLimit       = 5
+	// logNodeUnit sets the journal unit to be used to collect the node logs (options: kubelet or crio)
+	logNodeUnit = "kubelet"
+	// logNodeMaxTailLines sets the maximum number of lines of the node log files
+	logNodeMaxTailLines = 1000
 
 	defaultNamespaces           = []string{"default", "kube-system", "kube-public", "openshift"}
 	datahubGroupVersionResource = schema.GroupVersionResource{
