@@ -43,12 +43,12 @@ type CompactedEventList struct {
 // Used to detect the possible stack trace on logs
 var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 
-// GatherClusterOperatorPodsAndEvents collects information about all pods
+// GatherClusterOperatorPodsAndEvents collects information about pods
 // and events from namespaces of degraded cluster operators. The collected
 // information includes:
 //
-// - Pod definitions
-// - Previous and current logs of pod containers (when available)
+// - Definitions for non-running (terminated, pending) Pods
+// - Previous (if container was terminated) and current logs of all related pod containers
 // - Namespace events
 //
 // * Location of pod definitions: config/pod/{namespace}/{pod}.json
@@ -92,7 +92,7 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 		return nil, err
 	}
 
-	// gather pods from unhealthy operators
+	// get all related pods for unhealthy operator
 	pods, records, totalContainers := unhealthyClusterOperator(ctx, config.Items, coreClient, interval)
 	// Exit early if no pods found
 	klog.V(2).Infof("Found %d pods with %d containers", len(pods), totalContainers)
@@ -100,9 +100,8 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 		return records, nil
 	}
 
-	// gather pods containers logs
 	bufferSize := int64(recorder.MaxArchiveSize * logCompressionRatio / totalContainers / 2)
-	clogs, err := gatherPodContainersLogs(ctx, coreClient, pods, bufferSize)
+	clogs, err := gatherPodsAndTheirContainersLogs(ctx, coreClient, pods, bufferSize)
 	if err != nil {
 		klog.V(2).Infof("Unable to gather pod containers logs: %v", err)
 		return records, nil
@@ -139,22 +138,21 @@ func unhealthyClusterOperator(ctx context.Context,
 				continue
 			}
 
-			uhPods, uhRecords, uhTotal := gatherUnhealthyPods(podList.Items)
-			pods = append(pods, uhPods...)
-			records = append(records, uhRecords...)
-			totalContainers += uhTotal
+			nsPods, nsTotal := getAllRelatedPods(podList.Items)
+			pods = append(pods, nsPods...)
+			totalContainers += nsTotal
 
 			if namespaceEventsCollected.Has(namespace) {
 				continue
 			}
 
-			namespaceRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace, interval)
+			eventRecords, err := gatherNamespaceEvents(ctx, coreClient, namespace, interval)
 			if err != nil {
 				klog.V(2).Infof("Unable to collect events for namespace %q: %#v", namespace, err)
 				continue
 			}
 
-			records = append(records, namespaceRecords...)
+			records = append(records, eventRecords...)
 			namespaceEventsCollected.Insert(namespace)
 		}
 	}
@@ -162,27 +160,19 @@ func unhealthyClusterOperator(ctx context.Context,
 	return pods, records, totalContainers
 }
 
-// gatherUnhealthyPods collects cluster operator unhealthy pods
-func gatherUnhealthyPods(pods []corev1.Pod) ([]*corev1.Pod, []record.Record, int) {
-	var records []record.Record
+// getAllRelatedPods collects all the cluster operator's related pods
+// nolint: gocritic
+func getAllRelatedPods(pods []corev1.Pod) ([]*corev1.Pod, int) {
 	var podList []*corev1.Pod
 	total := 0
-	now := time.Now()
 
 	for j := range pods {
 		pod := &pods[j]
-		if check.IsHealthyPod(pod, now) {
-			continue
-		}
-		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
-			Item: record.ResourceMarshaller{Resource: pod},
-		})
 		podList = append(podList, pod)
 		total += len(pod.Spec.InitContainers) + len(pod.Spec.Containers)
 	}
 
-	return podList, records, total
+	return podList, total
 }
 
 // gatherNamespaceEvents gather all namespace events
@@ -237,8 +227,10 @@ func gatherNamespaceEvents(ctx context.Context,
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
 
-// gatherPodContainersLogs collect the pod current and previous containers logs
-func gatherPodContainersLogs(ctx context.Context,
+// gatherPodsAndTheirContainersLogs iterates over all related pods and gets container
+// log for every pod and tries to get previous log for every non-running/unhealthy pod. The definition
+// of non-running/unhealthy pod is added to records as well.
+func gatherPodsAndTheirContainersLogs(ctx context.Context,
 	client corev1client.CoreV1Interface,
 	pods []*corev1.Pod,
 	bufferSize int64) ([]record.Record, error) {
@@ -246,20 +238,23 @@ func gatherPodContainersLogs(ctx context.Context,
 		return nil, fmt.Errorf("invalid buffer size %d", bufferSize)
 	}
 
-	// Fetch a list of containers in pods and calculate a log size quota
-	// Total log size must not exceed maxLogsSize multiplied by logCompressionRatio
 	klog.V(2).Infof("Maximum buffer size: %v bytes", bufferSize)
 	buf := bytes.NewBuffer(make([]byte, 0, bufferSize))
 
 	// Fetch previous and current container logs
 	var records []record.Record
-	for _, isPrevious := range []bool{true, false} {
-		for _, pod := range pods {
-			clog := getContainerLogs(ctx, client, pod, isPrevious, buf)
-			if len(clog) > 0 {
-				records = append(records, clog...)
-			}
+	for _, pod := range pods {
+		// if pod is not healthy then record its definition and try to get previous log
+		if !check.IsHealthyPod(pod, time.Now()) {
+			records = append(records, record.Record{
+				Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
+				Item: record.ResourceMarshaller{Resource: pod},
+			})
+			previousLog := getContainerLogs(ctx, client, pod, true, buf)
+			records = append(records, previousLog...)
 		}
+		currentLog := getContainerLogs(ctx, client, pod, false, buf)
+		records = append(records, currentLog...)
 	}
 
 	return records, nil
