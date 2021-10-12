@@ -44,12 +44,9 @@
     ],
     "gathering_functions": {
       "logs_of_unhealthy_pods": {
-        "alerts_current": [],
-        "alerts_previous": [
-          "KubePodCrashLooping"
-        ],
-        "tail_lines_current": 0,
-        "tail_lines_previous": 20
+        "alert_name": "KubePodCrashLooping",
+        "tail_lines": 20,
+        "previous": true
       }
     }
   },
@@ -64,12 +61,9 @@
     ],
     "gathering_functions": {
       "logs_of_unhealthy_pods": {
-        "alerts_current": [
-          "KubePodNotReady"
-        ],
-        "alerts_previous": [],
-        "tail_lines_current": 100,
-        "tail_lines_previous": 0
+        "alert_name": "KubePodNotReady",
+        "tail_lines": 100,
+        "previous": false
       }
     }
   }
