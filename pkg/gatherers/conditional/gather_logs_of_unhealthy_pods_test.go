@@ -43,34 +43,14 @@ var testPod = corev1.Pod{
 }
 
 func Test_GatherLogsOfUnhealthyPods_Current(t *testing.T) {
-	gatherer := Gatherer{firingAlerts: testFiringAlertsMap}
-	ctx := context.Background()
-
-	coreClient := kubefake.NewSimpleClientset().CoreV1()
-	_, err := coreClient.Pods("test-namespace").Create(ctx, &testPod, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("unable to create fake pod: %v", err)
-	}
-
-	rec, errs := gatherer.gatherLogsOfUnhealthyPods(ctx, coreClient, GatherLogsOfUnhealthyPodsParams{
-		AlertName: "test-alert-current",
-		TailLines: 100,
-		Previous:  false,
-	})
-
-	if len(errs) > 0 {
-		t.Fatalf("unexpected error(s) returned by the log gathering function: %v", errs)
-	}
-	if len(rec) != 1 {
-		t.Fatalf("unexpected number of records (expected: 1, actual: %d)", len(rec))
-	}
-
-	if rec[0].Name != "conditional/unhealthy_logs/test-namespace/test-pod/test-container/current.log" {
-		t.Fatalf("unexpected 'Name' of the first log record: %q", rec[0].Name)
-	}
+	testGatherLogsOfUnhealthyPodsHelper(t, "test-alert-current", false, "conditional/unhealthy_logs/test-namespace/test-pod/test-container/current.log")
 }
 
 func Test_GatherLogsOfUnhealthyPods_Previous(t *testing.T) {
+	testGatherLogsOfUnhealthyPodsHelper(t, "test-alert-previous", true, "conditional/unhealthy_logs/test-namespace/test-pod/test-container/previous.log")
+}
+
+func testGatherLogsOfUnhealthyPodsHelper(t *testing.T, alertName string, previous bool, recordName string) {
 	gatherer := Gatherer{firingAlerts: testFiringAlertsMap}
 	ctx := context.Background()
 
@@ -81,9 +61,9 @@ func Test_GatherLogsOfUnhealthyPods_Previous(t *testing.T) {
 	}
 
 	rec, errs := gatherer.gatherLogsOfUnhealthyPods(ctx, coreClient, GatherLogsOfUnhealthyPodsParams{
-		AlertName: "test-alert-previous",
+		AlertName: alertName,
 		TailLines: 100,
-		Previous:  true,
+		Previous:  previous,
 	})
 
 	if len(errs) > 0 {
@@ -93,7 +73,7 @@ func Test_GatherLogsOfUnhealthyPods_Previous(t *testing.T) {
 		t.Fatalf("unexpected number of records (expected: 1, actual: %d)", len(rec))
 	}
 
-	if rec[0].Name != "conditional/unhealthy_logs/test-namespace/test-pod/test-container/previous.log" {
+	if rec[0].Name != recordName {
 		t.Fatalf("unexpected 'Name' of the second log record: %q", rec[0].Name)
 	}
 }
