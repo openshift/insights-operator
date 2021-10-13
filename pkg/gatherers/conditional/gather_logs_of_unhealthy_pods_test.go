@@ -2,6 +2,7 @@ package conditional
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -79,46 +80,28 @@ func testGatherLogsOfUnhealthyPodsHelper(t *testing.T, alertName string, previou
 }
 
 func Test_GatherLogsOfUnhealthyPods_MissingNamespace(t *testing.T) {
-	gatherer := Gatherer{
-		firingAlerts: map[string][]AlertLabels{
-			"test-alert": {
-				{
-					"pod": "test-pod",
-				},
+	testGatherLogsOfUnhealthyPodsMissingHelper(t, map[string][]AlertLabels{
+		"test-alert": {
+			{
+				"pod": "test-pod",
 			},
 		},
-	}
-
-	ctx := context.Background()
-	coreClient := kubefake.NewSimpleClientset().CoreV1()
-
-	rec, errs := gatherer.gatherLogsOfUnhealthyPods(ctx, coreClient, GatherLogsOfUnhealthyPodsParams{
-		AlertName: "test-alert",
-		TailLines: 100,
-		Previous:  false,
-	})
-
-	if len(rec) != 0 {
-		t.Fatalf("unexpected number of records (expected: 0, actual: %d)", len(rec))
-	}
-	if len(errs) != 1 {
-		t.Fatalf("expected 1 error, actual errors returned: %v", errs)
-	}
-
-	if errs[0].Error() != "alert is missing 'namespace' label" {
-		t.Fatalf("unexpected error message on missing 'namespace' alert label: %q", errs[0].Error())
-	}
+	}, "namespace")
 }
 
 func Test_GatherLogsOfUnhealthyPods_MissingPod(t *testing.T) {
-	gatherer := Gatherer{
-		firingAlerts: map[string][]AlertLabels{
-			"test-alert": {
-				{
-					"namespace": "test-namespace",
-				},
+	testGatherLogsOfUnhealthyPodsMissingHelper(t, map[string][]AlertLabels{
+		"test-alert": {
+			{
+				"namespace": "test-namespace",
 			},
 		},
+	}, "pod")
+}
+
+func testGatherLogsOfUnhealthyPodsMissingHelper(t *testing.T, firingAlertsMap map[string][]AlertLabels, missingLabel string) {
+	gatherer := Gatherer{
+		firingAlerts: firingAlertsMap,
 	}
 
 	ctx := context.Background()
@@ -137,7 +120,7 @@ func Test_GatherLogsOfUnhealthyPods_MissingPod(t *testing.T) {
 		t.Fatalf("expected 1 error, actual errors returned: %v", errs)
 	}
 
-	if errs[0].Error() != "alert is missing 'pod' label" {
-		t.Fatalf("unexpected error message on missing 'pod' alert label: %q", errs[0].Error())
+	if errs[0].Error() != fmt.Sprintf("alert is missing '%s' label", missingLabel) {
+		t.Fatalf("unexpected error message on missing '%s' alert label: %q", missingLabel, errs[0].Error())
 	}
 }
