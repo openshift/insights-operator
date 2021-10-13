@@ -44,14 +44,28 @@ var testPod = corev1.Pod{
 }
 
 func Test_GatherLogsOfUnhealthyPods_Current(t *testing.T) {
-	testGatherLogsOfUnhealthyPodsHelper(t, "test-alert-current", false, "conditional/unhealthy_logs/test-namespace/test-pod/test-container/current.log")
+	testGatherLogsOfUnhealthyPodsHelper(
+		t,
+		"test-alert-current",
+		false,
+		"conditional/unhealthy_logs/test-namespace/test-pod/test-container/current.log",
+	)
 }
 
 func Test_GatherLogsOfUnhealthyPods_Previous(t *testing.T) {
-	testGatherLogsOfUnhealthyPodsHelper(t, "test-alert-previous", true, "conditional/unhealthy_logs/test-namespace/test-pod/test-container/previous.log")
+	testGatherLogsOfUnhealthyPodsHelper(
+		t,
+		"test-alert-previous",
+		true,
+		"conditional/unhealthy_logs/test-namespace/test-pod/test-container/previous.log",
+	)
 }
 
-func testGatherLogsOfUnhealthyPodsHelper(t *testing.T, alertName string, previous bool, recordName string) {
+func testGatherLogsOfUnhealthyPodsHelper(t *testing.T,
+	alertName string,
+	previous bool,
+	recordName string,
+) {
 	gatherer := Gatherer{firingAlerts: testFiringAlertsMap}
 	ctx := context.Background()
 
@@ -99,7 +113,10 @@ func Test_GatherLogsOfUnhealthyPods_MissingPod(t *testing.T) {
 	}, "pod")
 }
 
-func testGatherLogsOfUnhealthyPodsMissingHelper(t *testing.T, firingAlertsMap map[string][]AlertLabels, missingLabel string) {
+func testGatherLogsOfUnhealthyPodsMissingHelper(t *testing.T,
+	firingAlertsMap map[string][]AlertLabels,
+	missingLabel string,
+) {
 	gatherer := Gatherer{
 		firingAlerts: firingAlertsMap,
 	}
