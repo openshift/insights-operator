@@ -38,14 +38,14 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 //     "conditions": [
 //       {
 //         "type": "alert_is_firing",
-//         "params": {
+//         "alert": {
 //           "name": "ClusterVersionOperatorIsDown"
 //         }
 //       },
 //       {
-//         "type": "cluster_version_equals",
-//         "params": {
-//           "version": "4.8"
+//         "type": "cluster_version_matches",
+//         "cluster_version": {
+//           "version": "4.8.x"
 //         }
 //       }
 //     ],
@@ -64,7 +64,7 @@ var defaultGatheringRules = []GatheringRule{
 		Conditions: []ConditionWithParams{
 			{
 				Type: AlertIsFiring,
-				Params: AlertIsFiringConditionParams{
+				Alert: &AlertConditionParams{
 					Name: "SamplesImagestreamImportFailing",
 				},
 			},
@@ -83,7 +83,7 @@ var defaultGatheringRules = []GatheringRule{
 		Conditions: []ConditionWithParams{
 			{
 				Type: AlertIsFiring,
-				Params: AlertIsFiringConditionParams{
+				Alert: &AlertConditionParams{
 					Name: "APIRemovedInNextEUSReleaseInUse",
 				},
 			},
@@ -221,15 +221,11 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 	for _, condition := range conditions {
 		switch condition.Type {
 		case AlertIsFiring:
-			params, ok := condition.Params.(AlertIsFiringConditionParams)
-			if !ok {
-				return false, fmt.Errorf(
-					"invalid params type, expected %T, got %T",
-					AlertIsFiringConditionParams{}, condition.Params,
-				)
+			if condition.Alert == nil {
+				return false, fmt.Errorf("alert field should not be nil")
 			}
 
-			if !g.isAlertFiring(params.Name) {
+			if !g.isAlertFiring(condition.Alert.Name) {
 				return false, nil
 			}
 		default:
