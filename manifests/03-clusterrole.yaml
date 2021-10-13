@@ -102,20 +102,20 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - list
+  # - apiGroups:
+  #     - ""
+  #   resources:
+  #     - nodes
+  #   verbs:
+  #     - get
+  #     - list
+  #     - watch
+  # - apiGroups:
+  #     - ""
+  #   resources:
+  #     - events
+  #   verbs:
+  #     - list
   - apiGroups:
       - imageregistry.operator.openshift.io
     resources:
@@ -148,22 +148,22 @@ rules:
       - get
       - list
       - watch
-  - apiGroups:
-      - policy
-    resources:
-      - poddisruptionbudgets
-    verbs:
-      - list
-      - get
-      - watch
-  - apiGroups:
-      - machine.openshift.io
-    resources:
-      - machinesets
-    verbs:
-      - get
-      - list
-      - watch
+  # - apiGroups:
+  #     - policy
+  #   resources:
+  #     - poddisruptionbudgets
+  #   verbs:
+  #     - list
+  #     - get
+  #     - watch
+  # - apiGroups:
+  #     - machine.openshift.io
+  #   resources:
+  #     - machinesets
+  #   verbs:
+  #     - get
+  #     - list
+  #     - watch
   - apiGroups:
       - operator.openshift.io
     resources:
