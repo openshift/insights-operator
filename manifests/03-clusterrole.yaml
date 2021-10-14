@@ -125,29 +125,29 @@ rules:
       - get
       - list
       - watch
-  - apiGroups:
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - proxy
-  - apiGroups:
-      - ""
-    resources:
-      - nodes/log
-      - nodes/metrics
-      - nodes/proxy
-      - nodes/stats
-    verbs:
-      - get
-  - apiGroups:
-      - config.openshift.io
-    resources:
-      - "*"
-    verbs:
-      - get
-      - list
-      - watch
+  # - apiGroups:
+  #     - ""
+  #   resources:
+  #     - nodes
+  #   verbs:
+  #     - proxy
+  # - apiGroups:
+  #     - ""
+  #   resources:
+  #     - nodes/log
+  #     - nodes/metrics
+  #     - nodes/proxy
+  #     - nodes/stats
+  #   verbs:
+  #     - get
+  # - apiGroups:
+  #     - config.openshift.io
+  #   resources:
+  #     - "*"
+  #   verbs:
+  #     - get
+  #     - list
+  #     - watch
   # - apiGroups:
   #     - policy
   #   resources:
