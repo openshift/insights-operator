@@ -9,6 +9,7 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 const (
@@ -167,6 +169,7 @@ func collectClusterOperatorResources(ctx context.Context,
 			if !ok {
 				klog.Warningf("Can't find spec for cluster operator resource %s", name)
 			}
+			anonymizeIdentityProviders(clusterResource.Object)
 			res = append(res, clusterOperatorResource{Spec: spec, Kind: kind, Name: name, APIVersion: apiVersion})
 		}
 	}
@@ -198,4 +201,29 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 		}
 	}
 	return resourceVersionMap, nil
+}
+
+// anonymizeIdentityProviders tries to get an array of identity providers defined in OAuth config
+// and anonymize potentially sensitive data - e.g LDAP domain, url
+func anonymizeIdentityProviders(obj map[string]interface{}) {
+	ips, err := utils.NestedSliceWrapper(obj, "spec", "observedConfig", "oauthServer", "oauthConfig", "identityProviders")
+
+	// most of the clusteroperator resources will not have any identity provider config so silence the error
+	if err != nil {
+		return
+	}
+	for _, ip := range ips {
+		ip, ok := ip.(map[string]interface{})
+		if !ok {
+			klog.Warningln("Failed to convert %v to map[string]interface{}", ip)
+			continue
+		}
+		if url, err := utils.NestedStringWrapper(ip, "provider", "url"); err == nil {
+			_ = unstructured.SetNestedField(ip, anonymize.String(url), "provider", "url")
+		}
+		if bindDN, err := utils.NestedStringWrapper(ip, "provider", "bindDN"); err == nil {
+			_ = unstructured.SetNestedField(ip, anonymize.String(bindDN), "provider", "bindDN")
+		}
+	}
+	_ = unstructured.SetNestedSlice(obj, ips, "spec", "observedConfig", "oauthServer", "oauthConfig", "identityProviders")
 }
