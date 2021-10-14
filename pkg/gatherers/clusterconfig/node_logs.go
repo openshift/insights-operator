@@ -1,12 +1,15 @@
 package clusterconfig
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
 	"strconv"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/recorder"
 
@@ -45,26 +48,32 @@ func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([
 		return nil, []error{err}
 	}
 
+	records, errs := nodeLogRecords(client.RESTClient(), nodes)
+	return records, errs
+}
+
+// nodeLogRecords generate the records and errors list
+func nodeLogRecords(restClient rest.Interface, nodes *corev1.NodeList) ([]record.Record, []error) {
 	var errs []error
 	records := make([]record.Record, 0)
 
-	bufferSize := int64(recorder.MaxArchiveSize * logCompressionRatio / len(nodes.Items) / 2)
+	bufferSize := recorder.MaxArchiveSize * logCompressionRatio / len(nodes.Items) / 2
 	klog.V(2).Infof("Maximum buffer size: %v bytes", bufferSize)
 	buf := bytes.NewBuffer(make([]byte, 0, bufferSize))
 
-	restClient := client.RESTClient()
-
 	for i := range nodes.Items {
-		uri := nodeLogResourceURI(restClient, nodes.Items[i].Name)
+		name := nodes.Items[i].Name
+		uri := nodeLogResourceURI(restClient, name)
 		req := requestNodeLog(restClient, uri, logNodeMaxTailLines, logNodeUnit)
-		logString, err := nodeLogString(req, buf)
+
+		logString, err := nodeLogString(req, buf, bufferSize)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			errs = append(errs, err)
 		}
 
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/node/logs/%s.log", nodes.Items[i].Name),
+			Name: fmt.Sprintf("config/node/logs/%s.log", name),
 			Item: marshal.Raw{Str: logString},
 		})
 	}
@@ -90,30 +99,34 @@ func requestNodeLog(client rest.Interface, uri string, tail int, unit string) *r
 }
 
 // nodeLogString retrieve the data from the stream, decompress it (if necessary) and return the string
-func nodeLogString(req *rest.Request, buf *bytes.Buffer) (string, error) {
-	buf.Reset()
-
+func nodeLogString(req *rest.Request, out *bytes.Buffer, size int) (string, error) {
 	in, err := req.Stream(context.TODO())
 	if err != nil {
 		return "", err
 	}
 	defer in.Close()
 
-	gz, err := gzip.NewReader(in)
-	if err != nil {
-		// not gzipped stream
-		_, err = io.Copy(buf, in)
-		if err != nil && err != io.EOF {
-			return "", err
-		}
-
-		return buf.String(), nil
-	}
-
-	// nolint: gosec
-	_, err = io.Copy(buf, gz)
+	buf := bufio.NewReaderSize(in, size)
+	head, err := buf.Peek(1024)
 	if err != nil && err != io.EOF {
 		return "", err
 	}
-	return buf.String(), nil
+
+	gz, err := gzip.NewReader(bytes.NewBuffer(head))
+	if err != nil {
+		// not gzipped stream
+		_, err = io.Copy(out, buf)
+		if err != nil {
+			return "", err
+		}
+
+		return out.String(), nil
+	}
+
+	// nolint: gosec
+	_, err = io.Copy(out, gz)
+	if err != nil {
+		return "", err
+	}
+	return out.String(), nil
 }
