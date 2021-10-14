@@ -112,19 +112,24 @@ func nodeLogString(req *rest.Request, out *bytes.Buffer, size int) (string, erro
 		return "", err
 	}
 
-	gz, err := gzip.NewReader(bytes.NewBuffer(head))
+	_, err = gzip.NewReader(bytes.NewBuffer(head))
 	if err != nil {
 		// not gzipped stream
 		_, err = io.Copy(out, buf)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return "", err
 		}
 
 		return out.String(), nil
 	}
 
+	r, err := gzip.NewReader(buf)
+	if err != nil {
+		return "", err
+	}
+
 	// nolint: gosec
-	_, err = io.Copy(out, gz)
+	_, err = io.Copy(out, r)
 	if err != nil {
 		return "", err
 	}
