@@ -212,17 +212,19 @@ func anonymizeIdentityProviders(obj map[string]interface{}) {
 	if err != nil {
 		return
 	}
+	sensittiveProviderAttributes := []string{"url", "bindDN", "hostname", "clientID", "hostedDomain", "issuer", "domainName"}
 	for _, ip := range ips {
 		ip, ok := ip.(map[string]interface{})
 		if !ok {
 			klog.Warningln("Failed to convert %v to map[string]interface{}", ip)
 			continue
 		}
-		if url, err := utils.NestedStringWrapper(ip, "provider", "url"); err == nil {
-			_ = unstructured.SetNestedField(ip, anonymize.String(url), "provider", "url")
-		}
-		if bindDN, err := utils.NestedStringWrapper(ip, "provider", "bindDN"); err == nil {
-			_ = unstructured.SetNestedField(ip, anonymize.String(bindDN), "provider", "bindDN")
+		for _, sensitiveVal := range sensittiveProviderAttributes {
+			// check if the sensitive value is in the provider definition under "provider" attribute
+			// and overwrite only if exists
+			if val, err := utils.NestedStringWrapper(ip, "provider", sensitiveVal); err == nil {
+				_ = unstructured.SetNestedField(ip, anonymize.String(val), "provider", sensitiveVal)
+			}
 		}
 	}
 	_ = unstructured.SetNestedSlice(obj, ips, "spec", "observedConfig", "oauthServer", "oauthConfig", "identityProviders")
