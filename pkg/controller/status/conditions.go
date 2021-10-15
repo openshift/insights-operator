@@ -1,6 +1,8 @@
 package status
 
 import (
+	"sort"
+
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -97,5 +99,8 @@ func (c *conditions) entries() []configv1.ClusterOperatorStatusCondition {
 	for _, v := range c.entryMap {
 		res = append(res, v)
 	}
+	sort.SliceStable(res, func(i, j int) bool {
+		return res[i].Type < res[j].Type
+	})
 	return res
 }
