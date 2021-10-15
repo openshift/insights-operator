@@ -263,6 +263,10 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 	assert.NoError(t, err)
 	testNetworks := []subnetInformation{
 		{
+			network: *localhostNet,
+			lastIP:  net.IPv4(127, 0, 0, 0),
+		},
+		{
 			network: *egressNet,
 			lastIP:  net.IPv4(10, 0, 0, 0),
 		},
@@ -273,10 +277,6 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 		{
 			network: *net2,
 			lastIP:  net.IPv4(192, 168, 0, 0),
-		},
-		{
-			network: *localhostNet,
-			lastIP:  net.IPv4(127, 0, 0, 0),
 		},
 	}
 
