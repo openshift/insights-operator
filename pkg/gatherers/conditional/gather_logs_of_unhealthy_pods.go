@@ -15,7 +15,7 @@ import (
 
 // BuildGatherLogsOfUnhealthyPods collects either current or previous logs for pods firing one of the configured alerts.
 //
-// * Location in archive: conditional/unhealthy_logs/<namespace>/<pod>/<container>/[current|previous].log
+// * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) BuildGatherLogsOfUnhealthyPods(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
@@ -33,11 +33,7 @@ func (g *Gatherer) BuildGatherLogsOfUnhealthyPods(paramsInterface interface{}) (
 			if err != nil {
 				return nil, []error{err}
 			}
-			records, errs := g.gatherLogsOfUnhealthyPods(ctx, kubeClient.CoreV1(), params)
-			if len(errs) > 0 {
-				return records, errs
-			}
-			return records, nil
+			return g.gatherLogsOfUnhealthyPods(ctx, kubeClient.CoreV1(), params)
 		},
 		CanFail: canConditionalGathererFail,
 	}, nil
@@ -51,7 +47,7 @@ func (g *Gatherer) gatherLogsOfUnhealthyPods(
 
 	alertInstances, ok := g.firingAlerts[params.AlertName]
 	if !ok {
-		return nil, nil
+		return nil, []error{fmt.Errorf("conditional gatherer triggered, but specified alert %q is not firing", params.AlertName)}
 	}
 	for _, alertLabels := range alertInstances {
 		alertNamespace, ok := alertLabels["namespace"]
@@ -69,10 +65,8 @@ func (g *Gatherer) gatherLogsOfUnhealthyPods(
 			continue
 		}
 		// The container label may not be present for all alerts (e.g., KubePodNotReady).
-		alertContainer := alertLabels["container"]
-
 		containerFilter := ""
-		if alertContainer != "" {
+		if alertContainer, ok := alertLabels["container"]; ok && alertContainer != "" {
 			containerFilter = fmt.Sprintf("^%s$", alertContainer)
 		}
 
@@ -87,11 +81,19 @@ func (g *Gatherer) gatherLogsOfUnhealthyPods(
 				Previous:  params.Previous,
 			},
 			func(namespace string, podName string, containerName string) string {
-				logKind := "current"
+				logDirName := "logs"
 				if params.Previous {
-					logKind = "previous"
+					logDirName = "logs-previous"
 				}
-				return fmt.Sprintf("%s/unhealthy_logs/%s/%s/%s/%s.log", g.GetName(), namespace, podName, containerName, logKind)
+				return fmt.Sprintf(
+					"%s/namespaces/%s/pods/%s/containers/%s/%s/last-%d-lines.log",
+					g.GetName(),
+					namespace,
+					podName,
+					containerName,
+					logDirName,
+					params.TailLines,
+				)
 			})
 		if err != nil {
 			// This can happen when the pod is destroyed but the alert still exists.
