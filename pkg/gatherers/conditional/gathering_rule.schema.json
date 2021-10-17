@@ -146,7 +146,8 @@
                     "properties": {
                         "alert_name": {
                             "type": "string",
-                            "title": "Name of the alert to gather logs for"
+                            "title": "Name of the alert to gather logs for",
+                            "pattern": "^[a-zA-Z0-9_]{1,128}$"
                         },
                         "tail_lines": {
                             "type": "integer",
