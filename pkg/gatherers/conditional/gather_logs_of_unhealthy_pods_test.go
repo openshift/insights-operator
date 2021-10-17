@@ -48,7 +48,8 @@ func Test_GatherLogsOfUnhealthyPods_Current(t *testing.T) {
 		t,
 		"test-alert-current",
 		false,
-		"conditional/unhealthy_logs/test-namespace/test-pod/test-container/current.log",
+		200,
+		"conditional/namespaces/test-namespace/pods/test-pod/containers/test-container/logs/last-200-lines.log",
 	)
 }
 
@@ -57,13 +58,15 @@ func Test_GatherLogsOfUnhealthyPods_Previous(t *testing.T) {
 		t,
 		"test-alert-previous",
 		true,
-		"conditional/unhealthy_logs/test-namespace/test-pod/test-container/previous.log",
+		20,
+		"conditional/namespaces/test-namespace/pods/test-pod/containers/test-container/logs-previous/last-20-lines.log",
 	)
 }
 
 func testGatherLogsOfUnhealthyPodsHelper(t *testing.T,
 	alertName string,
 	previous bool,
+	tailLines int64,
 	recordName string,
 ) {
 	gatherer := Gatherer{firingAlerts: testFiringAlertsMap}
@@ -77,7 +80,7 @@ func testGatherLogsOfUnhealthyPodsHelper(t *testing.T,
 
 	rec, errs := gatherer.gatherLogsOfUnhealthyPods(ctx, coreClient, GatherLogsOfUnhealthyPodsParams{
 		AlertName: alertName,
-		TailLines: 100,
+		TailLines: tailLines,
 		Previous:  previous,
 	})
 
