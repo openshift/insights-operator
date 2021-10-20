@@ -90,6 +90,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"jaegers":                           failableFunc((*Gatherer).GatherJaegerCR),
 	"validating_webhook_configurations": failableFunc((*Gatherer).GatherValidatingWebhookConfigurations),
 	"mutating_webhook_configurations":   failableFunc((*Gatherer).GatherMutatingWebhookConfigurations),
+	"cost_management_metrics_configs":   failableFunc((*Gatherer).GatherCostManagementMetricsConfigs),
 }
 
 func New(

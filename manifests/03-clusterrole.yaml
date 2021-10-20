@@ -227,6 +227,14 @@ rules:
     verbs:
       - get
       - list
+      - watch
+  - apiGroups:
+      - costmanagement-metrics-cfg.openshift.io
+    resources:
+      - costmanagementmetricsconfig
+    verbs:
+      - get
+      - list
       - watch    
 ---
 apiVersion: rbac.authorization.k8s.io/v1
