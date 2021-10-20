@@ -3,6 +3,10 @@
 // they can be fetched from outside, checked that they make sense (we want to check the parameters, for example if
 // a rule tells to collect logs of a namespace on firing alert, we want to check that the namespace is created
 // by openshift and not by a user). Conditional gathering isn't considered prioritized, so we run it every 6 hours.
+//
+// To add a new condition, follow the next steps:
+// 1. Add structures to conditions.go
+// 2. Change areAllConditionsSatisfied function in conditional_gatherer.go
 package conditional
 
 import (
@@ -12,7 +16,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blang/semver/v4"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/prometheus/common/expfmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
@@ -158,13 +165,15 @@ type Gatherer struct {
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
 	imageKubeConfig         *rest.Config
+	gatherKubeConfig        *rest.Config
 	// there can be multiple instances of the same alert
 	firingAlerts   map[string][]AlertLabels
 	gatheringRules []GatheringRule
+	clusterVersion string
 }
 
 // New creates a new instance of conditional gatherer with the appropriate configs
-func New(gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config) *Gatherer {
+func New(gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.Config) *Gatherer {
 	var imageKubeConfig *rest.Config
 	if gatherProtoKubeConfig != nil {
 		// needed for getting image streams
@@ -177,6 +186,7 @@ func New(gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config) *Gatherer 
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
 		imageKubeConfig:         imageKubeConfig,
+		gatherKubeConfig:        gatherKubeConfig,
 		gatheringRules:          defaultGatheringRules,
 	}
 }
@@ -194,9 +204,9 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
 	}
 
-	err := g.updateAlertsCache(ctx)
+	err := g.updateCache(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("conditional gatherer can't update alerts cache: %v", err)
+		return nil, fmt.Errorf("conditional gatherer can't update the cache: %v", err)
 	}
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
@@ -249,6 +259,18 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 			if !g.isAlertFiring(condition.Alert.Name) {
 				return false, nil
 			}
+		case ClusterVersionMatches:
+			params, ok := condition.Params.(ClusterVersionMatchesConditionParams)
+			if !ok {
+				return false, fmt.Errorf(
+					"invalid params type, expected %T, got %T",
+					ClusterVersionMatchesConditionParams{}, condition.Params,
+				)
+			}
+
+			if doesMatch, err := g.doesClusterVersionMatch(params.Version); !doesMatch || err != nil {
+				return false, err
+			}
 		default:
 			return false, fmt.Errorf("unknown condition type: %v", condition.Type)
 		}
@@ -257,8 +279,8 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 	return true, nil
 }
 
-// updateAlertsCache updates the cache with firing alerts
-func (g *Gatherer) updateAlertsCache(ctx context.Context) error {
+// updateCache updates alerts and version caches
+func (g *Gatherer) updateCache(ctx context.Context) error {
 	if g.metricsGatherKubeConfig == nil {
 		return nil
 	}
@@ -268,10 +290,19 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context) error {
 		return err
 	}
 
-	return g.updateAlertsCacheFromClient(ctx, metricsClient)
+	if err := g.updateAlertsCache(ctx, metricsClient); err != nil { //nolint:govet
+		return err
+	}
+
+	configClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
+	return g.updateVersionCache(ctx, configClient)
 }
 
-func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClient rest.Interface) error {
+func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Interface) error {
 	const logPrefix = "conditional gatherer: "
 
 	g.firingAlerts = make(map[string][]AlertLabels)
@@ -282,20 +313,24 @@ func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClien
 	if err != nil {
 		return err
 	}
+
 	var parser expfmt.TextParser
 	metricFamilies, err := parser.TextToMetricFamilies(bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
+
 	if len(metricFamilies) > 1 {
 		// just log cuz everything would still work
 		klog.Warning(logPrefix + "unexpected output from prometheus metrics parser")
 	}
+
 	metricFamily, found := metricFamilies["ALERTS"]
 	if !found {
 		klog.Info(logPrefix + "no alerts are firing")
 		return nil
 	}
+
 	for _, metric := range metricFamily.GetMetric() {
 		if metric == nil {
 			klog.Info(logPrefix + "metric is nil")
@@ -320,10 +355,39 @@ func (g *Gatherer) updateAlertsCacheFromClient(ctx context.Context, metricsClien
 	return nil
 }
 
+func (g *Gatherer) updateVersionCache(ctx context.Context, configClient configv1client.ConfigV1Interface) error {
+	clusterVersion, err := configClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	g.clusterVersion = clusterVersion.Spec.DesiredUpdate.Version
+
+	return nil
+}
+
 // isAlertFiring using the cache it returns true if the alert is firing
 func (g *Gatherer) isAlertFiring(alertName string) bool {
 	_, alertIsFiring := g.firingAlerts[alertName]
 	return alertIsFiring
+}
+
+func (g *Gatherer) doesClusterVersionMatch(expectedVersionExpression string) (bool, error) {
+	clusterVersion, err := semver.Parse(g.clusterVersion)
+	if err != nil {
+		return false, err
+	}
+
+	expectedRange, err := semver.ParseRange(expectedVersionExpression)
+	if err != nil {
+		return false, err
+	}
+
+	// ignore everything after the first three numbers
+	clusterVersion.Pre = nil
+	clusterVersion.Build = nil
+
+	return expectedRange(clusterVersion), nil
 }
 
 // createGatheringClosures produces gathering closures from the rules

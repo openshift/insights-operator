@@ -16,7 +16,7 @@ import (
 )
 
 func newEmptyGatherer() *Gatherer {
-	return New(nil, nil)
+	return New(nil, nil, nil)
 }
 
 func Test_Gatherer_Basic(t *testing.T) {
@@ -35,7 +35,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 
 func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	gatherer := newEmptyGatherer()
-	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
 	))
 	assert.NoError(t, err)
@@ -68,7 +68,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 		},
 	} // invalid namespace (doesn't start with openshift-)
 
-	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
 	))
 	assert.NoError(t, err)
@@ -97,7 +97,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	gatherer := newEmptyGatherer()
 
-	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		"ALERTS{alertname=\"SamplesImagestreamImportFailing\",alertstate=\"firing\"} 1 1621618110163\n",
 	))
 	assert.NoError(t, err)
@@ -118,7 +118,7 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 
 	assert.True(t, gatherer.isAlertFiring("SamplesImagestreamImportFailing"))
 
-	err = gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err = gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		"ALERTS{alertname=\"OtherAlert\",alertstate=\"firing\"} 1 1621618110163\n",
 	))
 	assert.NoError(t, err)
@@ -181,4 +181,49 @@ func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
 		}),
 	}
 	return fakeClient
+}
+
+func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
+	g := newEmptyGatherer()
+
+	type testCase struct {
+		expectedVersion string
+		shouldMatch     bool
+	}
+
+	g.clusterVersion = "4.8.0-0.nightly-2021-06-13-101614"
+
+	for _, testCase := range []testCase{
+		{
+			expectedVersion: "4.8.x",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: "4.8.0",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: "4.8.1",
+			shouldMatch:     false,
+		},
+		{
+			expectedVersion: ">=4.8.0",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: ">1.0.0 <2.0.0",
+			shouldMatch:     false,
+		},
+		{
+			expectedVersion: ">1.0.0 <2.0.0 || >=3.0.0",
+			shouldMatch:     true,
+		},
+	} {
+		doesMatch, err := g.doesClusterVersionMatch(testCase.expectedVersion)
+		if err != nil {
+			assert.Error(t, err)
+		}
+
+		assert.Equal(t, testCase.shouldMatch, doesMatch)
+	}
 }
