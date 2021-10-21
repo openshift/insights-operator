@@ -25,6 +25,8 @@ linters-settings:
       - emptyStringTest
   gocyclo:
     min-complexity: 15
+  gocognit:
+    min-complexity: 15
   goimports:
     local-prefixes: github.com/golangci/golangci-lint
   gomnd:
@@ -120,7 +122,7 @@ issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     - linters:
-        - lll      
+        - lll
       source: "^// "
 
 run:
