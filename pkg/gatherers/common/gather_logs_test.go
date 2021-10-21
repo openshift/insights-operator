@@ -79,7 +79,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 	if regexSearch {
 		assert.Regexp(t, stringToSearch, records[0].Item)
 	} else {
-		assert.Equal(t, marshal.Raw{Str: stringToSearch + "\n"}, records[0].Item)
+		assert.Equal(t, marshal.Raw{Str: stringToSearch}, records[0].Item)
 	}
 }
 

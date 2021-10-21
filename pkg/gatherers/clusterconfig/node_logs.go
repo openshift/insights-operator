@@ -9,6 +9,8 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/recorder"
@@ -133,5 +135,15 @@ func nodeLogString(req *rest.Request, out *bytes.Buffer, size int) (string, erro
 	if err != nil {
 		return "", err
 	}
-	return out.String(), nil
+
+	scanner := bufio.NewScanner(out)
+	messagesToSearch := []string{
+		"\\[\\d+\\]: E\\d{4,} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
+	}
+	return common.FilterLogFromScanner(scanner, messagesToSearch, true, func(lines []string) []string {
+		if len(lines) > logNodeMaxLines {
+			return lines[len(lines)-logNodeMaxLines:]
+		}
+		return lines
+	})
 }

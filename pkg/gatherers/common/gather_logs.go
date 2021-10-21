@@ -158,13 +158,18 @@ func filterLogs(
 	}()
 
 	scanner := bufio.NewScanner(stream)
+	return FilterLogFromScanner(scanner, messagesToSearch, regexSearch, nil)
+}
 
-	var result string
+// FilterLogFromScanner filters the desired messages from the log
+func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, regexSearch bool,
+	cb func(lines []string) []string) (string, error) {
+	var result []string
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(messagesToSearch) == 0 {
-			result += line + "\n"
+			result = append(result, line)
 			continue
 		}
 
@@ -175,10 +180,10 @@ func filterLogs(
 					return "", err
 				}
 				if matches {
-					result += line + "\n"
+					result = append(result, line)
 				}
 			} else if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
-				result += line + "\n"
+				result = append(result, line)
 			}
 		}
 	}
@@ -187,5 +192,9 @@ func filterLogs(
 		return "", err
 	}
 
-	return result, nil
+	if cb != nil {
+		result = cb(result)
+	}
+
+	return strings.Join(result, "\n"), nil
 }

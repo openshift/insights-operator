@@ -74,18 +74,18 @@ func Test_nodeLogResourceURI(t *testing.T) {
 }
 
 func Test_nodeLogString(t *testing.T) {
-	expectedBody := "expected body"
+	// nolint: lll
+	expectedBody := `Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 kubelet.go:1882] "Skipping pod synchronization" err="[container runtime status check may not have completed yet, PLEG is not healthy: pleg has yet to be successful]"`
+	serverData := `Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: I0826 17:00:14.127974    1445 kubelet.go:1858] "Starting kubelet main sync loop"
+Aug 21 17:00:38 ip-10-57-11-201 hyperkube[1445]: W0826 17:00:38.117634    1445 container.go:586] Failed to update stats for container "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podad87523d_aec6_4fa1_b4f2_d4fca2d08437.slice/
+Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 kubelet.go:1882] "Skipping pod synchronization" err="[container runtime status check may not have completed yet, PLEG is not healthy: pleg has yet to be successful]"`
 
 	// nolint: errcheck
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Accept-Encoding") == "gzip" {
-			gz := testGzipped(expectedBody)
-			out, _ := ioutil.ReadAll(gz)
-			w.Write(out)
-			return
-		}
+		gz := testGzipped(serverData)
+		out, _ := ioutil.ReadAll(gz)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(expectedBody))
+		w.Write(out)
 	}))
 	defer s.Close()
 
@@ -103,21 +103,11 @@ func Test_nodeLogString(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Uncompressed stream",
+			name: "Test content stream",
 			args: args{
-				req:  c.Get().Prefix("/").SetHeader("Accept-Encoding", "identity"),
+				req:  c.Get().Prefix("/"),
 				out:  bytes.NewBuffer(make([]byte, 0)),
-				size: 4096,
-			},
-			want:    expectedBody,
-			wantErr: false,
-		},
-		{
-			name: "Compressed stream",
-			args: args{
-				req:  c.Get().Prefix("/").SetHeader("Accept-Encoding", "gzip"),
-				out:  bytes.NewBuffer(make([]byte, 0)),
-				size: 4096,
+				size: 8096,
 			},
 			want:    expectedBody,
 			wantErr: false,
