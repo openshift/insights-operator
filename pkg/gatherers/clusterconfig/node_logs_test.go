@@ -73,8 +73,8 @@ func Test_nodeLogResourceURI(t *testing.T) {
 	}
 }
 
+// nolint: lll
 func Test_nodeLogString(t *testing.T) {
-	// nolint: lll
 	expectedBody := `Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 kubelet.go:1882] "Skipping pod synchronization" err="[container runtime status check may not have completed yet, PLEG is not healthy: pleg has yet to be successful]"`
 	serverData := `Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: I0826 17:00:14.127974    1445 kubelet.go:1858] "Starting kubelet main sync loop"
 Aug 21 17:00:38 ip-10-57-11-201 hyperkube[1445]: W0826 17:00:38.117634    1445 container.go:586] Failed to update stats for container "/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podad87523d_aec6_4fa1_b4f2_d4fca2d08437.slice/
