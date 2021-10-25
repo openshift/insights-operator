@@ -137,13 +137,16 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 
-	// for egress subnets
+	var networks []string
+
+	// hostsubnets are needed for egress subnets (on SDN clusters only)
 	hostSubnets, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		klog.Infof("unable to find HostSubnets, could be OVN cluster: %v", err)
+		networks = getNetworksForAnonymizer(networksConfig, clusterConfigV1, nil)
+	} else {
+		networks = getNetworksForAnonymizer(networksConfig, clusterConfigV1, hostSubnets.Items)
 	}
-
-	networks := getNetworksForAnonymizer(networksConfig, clusterConfigV1, hostSubnets.Items)
 
 	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
 
@@ -224,6 +227,13 @@ func getNetworksForAnonymizer(
 		for _, egressCIDR := range hostSubnet.EgressCIDRs {
 			networks = append(networks, string(egressCIDR))
 		}
+	}
+
+	// ovn clusters don't have hostsubnet objects and their egress CIDR is 192.168.126.0/18
+	// nolint:lll
+	// https://docs.openshift.com/container-platform/4.8/networking/ovn_kubernetes_network_provider/configuring-egress-ips-ovn.html#configuring-egress-ips-ovn
+	if len(hostSubnets) == 0 {
+		networks = append(networks, "192.168.126.0/18")
 	}
 
 	sortNetworks(networks)
