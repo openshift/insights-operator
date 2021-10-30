@@ -88,25 +88,26 @@ func (c *Controller) Run() {
 func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 	data, err := c.requestSCAWithExpBackoff(endpoint)
 	if err != nil {
-		// in case of any error other than 404 mark the operator as degraded
+		httpErr, ok := err.(insightsclient.HttpError)
+		if ok {
+			// mark as degraded only in case of HTTP 500 and higher
+			if httpErr.StatusCode >= 500 {
+				c.Simple.UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.PullingSCACerts,
+					Reason:    "FailedToPullSCACerts",
+					Message:   fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err),
+				})
+				return
+			}
+		}
+		klog.Warningf("Failed to pull SCA certs: %v", err)
 		c.Simple.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.PullingSCACerts,
-			Reason:    "FailedToPullSCACerts",
-			Message:   fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err),
-		})
-		return
-	}
-	// handle the case with HTTP 404
-	if len(data) == 0 {
-		msg := fmt.Sprintf("Received no SCA certs from the %s. Please check if it's enabled for your organization.", endpoint)
-		klog.Info(msg)
-		c.Simple.UpdateStatus(controllerstatus.Summary{
-			Operation: controllerstatus.PullingSCACerts,
-			Message:   msg,
 			Healthy:   true,
 		})
 		return
 	}
+
 	var ocmRes ScaResponse
 	err = json.Unmarshal(data, &ocmRes)
 	if err != nil {
@@ -185,9 +186,9 @@ func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secre
 	return s, nil
 }
 
-// requestSCAWithExpBackoff queries OCM API with exponential backoff and returns
-// an error only in case of an HTTP error other than 404 received from the OCM API.
-// Data return value still can be an empty array in case of HTTP 404 error.
+// requestSCAWithExpBackoff queries OCM API with exponential backoff.
+// Returns HttpError (see insightsclient.go) in case of any HTTP error response from OCM API.
+// The exponential backoff is applied only for HTTP errors >= 500.
 func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
 		Duration: c.configurator.Config().OCMConfig.Interval / 32, // 15 min by default
@@ -203,22 +204,23 @@ func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 		if err != nil {
 			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
 			if !insightsclient.IsHttpError(err) {
-				klog.Errorf("Failed to request the SCA certs: %v", err)
-				return true, nil
+				return true, err
 			}
 			httpErr := err.(insightsclient.HttpError)
-			// don't try again in case of 404
-			if httpErr.StatusCode == http.StatusNotFound {
-				return true, nil
+			// try again only in case of 500 or higher
+			if httpErr.StatusCode >= http.StatusInternalServerError {
+				// check the number of steps to prevent "timeout waiting for condition" error - we want to propagate the HTTP error
+				if bo.Steps > 1 {
+					klog.Errorf("%v. Trying again in %s", httpErr, bo.Step())
+					return false, nil
+				}
 			}
-			klog.Errorf("%v. Trying again in %s", httpErr, bo.Step())
-			return false, nil
+			return true, httpErr
 		}
 		return true, nil
 	})
-	// exp. backoff timeouted -> error
 	if err != nil {
-		return nil, fmt.Errorf("timed out waiting for the successful response from %s", endpoint)
+		return nil, err
 	}
 	return data, nil
 }
