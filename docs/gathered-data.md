@@ -249,6 +249,15 @@ Response see:
   * 4.7+
 
 
+## CostManagementMetricsConfigs
+
+collects CostManagementMetricsConfigs definitions.
+* Location in archive: config/cost_management_metrics_configs/<name>.json
+* Id in config: cost_management_metrics_configs
+* Since versions:
+  * 4.10+
+
+
 ## HostSubnet
 
 collects HostSubnet information
