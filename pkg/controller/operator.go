@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -158,7 +157,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	statusReporter.AddSources(reportGatherer)
 	go reportGatherer.Run(ctx)
 
-	ocmController := initiateOCMController(ctx, gatherKubeConfig, kubeClient, configObserver, insightsClient)
+	ocmController := initiateOCMController(ctx, kubeClient, configObserver, insightsClient)
 	if ocmController != nil {
 		statusReporter.AddSources(ocmController)
 		go ocmController.Run()
@@ -199,55 +198,11 @@ func isRunning(ctx context.Context, kubeConfig *rest.Config) wait.ConditionFunc 
 	}
 }
 
-// initiateOCMController checks the "InsightsOperatorPullingSCA" feature and if it's enabled then create and retun the OCM controller
-func initiateOCMController(ctx context.Context, kubeConfig *rest.Config,
+// initiateOCMController creates a new ocm.Controller
+func initiateOCMController(ctx context.Context,
 	kubeClient *kubernetes.Clientset, configObserver *configobserver.Controller, insightsClient *insightsclient.Client) *ocm.Controller {
-	configClient, err := configv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		klog.Error(err)
-		return nil
-	}
-	ocmEnabled, err := featureEnabled(ctx, configClient, "InsightsOperatorPullingSCA")
-	if err != nil {
-		klog.Errorf("Pulling of SCA certs from the OCM is disabled. Unable to get cluster FeatureGate: %v", err)
-		return nil
-	}
-	if ocmEnabled {
-		klog.Info("Pulling of SCA certs from the OCM is enabled.")
-		// OMC controller periodically checks and pull data from the OCM API
-		// the data is exposed in the OpenShift API
-		ocmController := ocm.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
-		return ocmController
-	}
-	return nil
-}
-
-// featureEnabled checks if the feature is enabled in the "cluster" FeatureGate
-func featureEnabled(ctx context.Context, client *configv1client.ConfigV1Client, feature string) (bool, error) {
-	fg, err := client.FeatureGates().Get(ctx, "cluster", metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
-	enabled := getEnabledFeatures(fg)
-	for _, f := range enabled {
-		if f == feature {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// getEnabledFeatures returns a list of enabled features in provided FeatureGate
-func getEnabledFeatures(fg *configv1.FeatureGate) []string {
-	if fg.Spec.FeatureSet == "" {
-		return nil
-	}
-	if fg.Spec.FeatureSet == configv1.CustomNoUpgrade {
-		return fg.Spec.CustomNoUpgrade.Enabled
-	}
-	gates := configv1.FeatureSets[fg.Spec.FeatureSet]
-	if gates == nil {
-		return nil
-	}
-	return gates.Enabled
+	// OMC controller periodically checks and pull data from the OCM API
+	// the data is exposed in the OpenShift API
+	ocmController := ocm.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
+	return ocmController
 }

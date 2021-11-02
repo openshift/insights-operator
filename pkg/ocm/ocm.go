@@ -88,6 +88,8 @@ func (c *Controller) Run() {
 }
 
 func (c *Controller) requestDataAndCheckSecret(endpoint string) {
+	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().OCMConfig.Endpoint,
+		c.configurator.Config().OCMConfig.Interval)
 	data, err := c.requestSCAWithExpBackoff(endpoint)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
