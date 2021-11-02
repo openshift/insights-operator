@@ -760,6 +760,17 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
   * 4.7+
 
 
+## TSDBStatus
+
+gathers the Prometheus TSDB status.
+
+* Location in archive: config/tsdb
+* See: docs/insights-archive-sample/config/metrics
+* Id in config: tsdb_status
+* Since version:
+   * 4.10+
+
+
 ## ValidatingWebhookConfigurations
 
 collects ValidatingWebhookConfiguration resources
