@@ -356,6 +356,15 @@ Response see:
   * 4.9+
 
 
+## LogsOfUnhealthyPods
+
+collects either current or previous logs for pods firing one of the configured alerts.
+
+* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
+* Since versions:
+  * 4.10+
+
+
 ## MachineAutoscalers
 
 collects MachineAutoscalers definition
