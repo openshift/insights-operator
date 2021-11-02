@@ -48,6 +48,7 @@ func failableFunc(function gathererFuncPtr) gatheringFunction {
 var gatheringFunctions = map[string]gatheringFunction{
 	"pdbs":                              failableFunc((*Gatherer).GatherPodDisruptionBudgets),
 	"metrics":                           failableFunc((*Gatherer).GatherMostRecentMetrics),
+	"dvo_metrics":                       importantFunc((*Gatherer).GatherDVOMetrics),
 	"operators":                         importantFunc((*Gatherer).GatherClusterOperators),
 	"operators_pods_and_events":         importantFunc((*Gatherer).GatherClusterOperatorPodsAndEvents),
 	"container_images":                  importantFunc((*Gatherer).GatherContainerImages),
