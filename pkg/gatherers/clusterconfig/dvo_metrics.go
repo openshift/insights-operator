@@ -18,15 +18,6 @@ func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []err
 		return nil, []error{err}
 	}
 	metricsRESTClient, err := rest.NewRESTClient(apiURL, "/", rest.ClientContentConfig{}, g.gatherKubeConfig.RateLimiter, http.DefaultClient)
-	// dvoMetricsConfig := rest.CopyConfig(g.gatherKubeConfig)
-	// dvoMetricsConfig.Insecure = true
-	// dvoMetricsConfig.CAData = []byte{}
-	// dvoMetricsConfig.CAFile = ""
-	// dvoMetricsConfig.APIPath = "/"
-	// dvoMetricsConfig.Host = "deployment-validation-operator-metrics:8383"
-	// dvoMetricsConfig.NegotiatedSerializer = scheme.Codecs
-	// dvoMetricsConfig.GroupVersion = &schema.GroupVersion{}
-	// metricsRESTClient, err := rest.RESTClientFor(dvoMetricsConfig)
 	if err != nil {
 		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
 		return nil, nil
