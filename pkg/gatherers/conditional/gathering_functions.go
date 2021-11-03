@@ -25,6 +25,10 @@ const (
 	// GatherAPIRequestCounts is a function collecting api request counts for the resources read
 	// from the corresponding alert
 	GatherAPIRequestCounts GatheringFunctionName = "api_request_counts_of_resource_from_alert"
+
+	// GatherAlertmanagerLogs is the function collection the alertmanager logs from containers
+	// See file alertmanager_logs.go
+	GatherAlertmanagerLogs GatheringFunctionName = "alertmanager_logs"
 )
 
 const GatherLogsOfUnhealthyPods GatheringFunctionName = "logs_of_unhealthy_pods"
@@ -47,6 +51,10 @@ func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, err
 		var result GatherLogsOfUnhealthyPodsParams
 		err := json.Unmarshal(jsonParams, &result)
 		return result, err
+	case GatherAlertmanagerLogs:
+		var params GatherAlertmanagerLogsParams
+		err := json.Unmarshal(jsonParams, &params)
+		return params, err
 	}
 	return nil, fmt.Errorf("unable to create params for %T: %v", name, name)
 }
@@ -76,4 +84,10 @@ type GatherLogsOfUnhealthyPodsParams struct {
 	AlertName string `json:"alert_name"`
 	TailLines int64  `json:"tail_lines"`
 	Previous  bool   `json:"previous"`
+}
+
+// GatherAlertmanagerLogsParams defines parameters for alertmanager_logs gatherer
+type GatherAlertmanagerLogsParams struct {
+	AlertName string `json:"alert_name"`
+	TailLines int64  `json:"tail_lines"`
 }

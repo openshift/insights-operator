@@ -160,6 +160,27 @@
                             "title": "If true, the previous logs will be gathered instead of the current"
                         }
                     }
+                },
+                "^alertmanager_logs$": {
+                    "type": "object",
+                    "title": "GatherAlertmanagerLogsParams",
+                    "required": [
+                        "alert_name",
+                        "tail_lines"
+                    ],
+                    "properties": {
+                        "alert_name": {
+                            "type": "string",
+                            "title": "AlertName",
+                            "pattern": "^[a-zA-Z0-9_]{1,128}$"
+                        },
+                        "tail_lines": {
+                            "type": "integer",
+                            "title": "TailLines",
+                            "minimum": 1,
+                            "maximum": 4096
+                        }
+                    }
                 }
             }
         }
