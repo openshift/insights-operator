@@ -672,6 +672,7 @@ The Kubernetes API https://github.com/kubernetes/client-go/blob/v12.0.0/kubernet
 * See: docs/insights-archive-sample/config/psp_names.json
 * Id in config: psps
 * Since versions:
+  * 4.7.33+
   * 4.8.12+
   * 4.9+
 
