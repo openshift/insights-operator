@@ -3,6 +3,7 @@ package clusterconfig
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,7 +30,7 @@ func Test_nodeLogRecords(t *testing.T) {
 	nodes, err := readNodeTestData()
 	mustNotFail(t, err, "error creating test data %+v")
 
-	records, errs := nodeLogRecords(rc, nodes)
+	records, errs := nodeLogRecords(context.TODO(), rc, nodes)
 	if len(errs) > 0 {
 		t.Errorf("unexpected errors: %#v", errs)
 	}
@@ -125,7 +126,7 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := nodeLogString(tt.args.req, tt.args.out, tt.args.size)
+			got, err := nodeLogString(context.TODO(), tt.args.req, tt.args.out, tt.args.size)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("nodeLogString() error = %v, wantErr %v", err, tt.wantErr)
 				return

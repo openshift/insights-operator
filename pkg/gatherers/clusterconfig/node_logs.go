@@ -50,12 +50,12 @@ func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([
 		return nil, []error{err}
 	}
 
-	records, errs := nodeLogRecords(client.RESTClient(), nodes)
+	records, errs := nodeLogRecords(ctx, client.RESTClient(), nodes)
 	return records, errs
 }
 
 // nodeLogRecords generate the records and errors list
-func nodeLogRecords(restClient rest.Interface, nodes *corev1.NodeList) ([]record.Record, []error) {
+func nodeLogRecords(ctx context.Context, restClient rest.Interface, nodes *corev1.NodeList) ([]record.Record, []error) {
 	var errs []error
 	records := make([]record.Record, 0)
 
@@ -68,7 +68,7 @@ func nodeLogRecords(restClient rest.Interface, nodes *corev1.NodeList) ([]record
 		uri := nodeLogResourceURI(restClient, name)
 		req := requestNodeLog(restClient, uri, logNodeMaxTailLines, logNodeUnit)
 
-		logString, err := nodeLogString(req, buf, bufferSize)
+		logString, err := nodeLogString(ctx, req, buf, bufferSize)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			errs = append(errs, err)
@@ -101,8 +101,8 @@ func requestNodeLog(client rest.Interface, uri string, tail int, unit string) *r
 }
 
 // nodeLogString retrieve the data from the stream, decompress it (if necessary) and return the string
-func nodeLogString(req *rest.Request, out *bytes.Buffer, size int) (string, error) {
-	in, err := req.Stream(context.TODO())
+func nodeLogString(ctx context.Context, req *rest.Request, out *bytes.Buffer, size int) (string, error) {
+	in, err := req.Stream(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -121,24 +121,22 @@ func nodeLogString(req *rest.Request, out *bytes.Buffer, size int) (string, erro
 		if err != nil && err != io.EOF {
 			return "", err
 		}
+	} else {
+		r, err := gzip.NewReader(buf)
+		if err != nil {
+			return "", err
+		}
 
-		return out.String(), nil
-	}
-
-	r, err := gzip.NewReader(buf)
-	if err != nil {
-		return "", err
-	}
-
-	// nolint: gosec
-	_, err = io.Copy(out, r)
-	if err != nil {
-		return "", err
+		// nolint: gosec
+		_, err = io.Copy(out, r)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	scanner := bufio.NewScanner(out)
 	messagesToSearch := []string{
-		"\\[\\d+\\]: E\\d{4,} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
+		"E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
 	}
 	return common.FilterLogFromScanner(scanner, messagesToSearch, true, func(lines []string) []string {
 		if len(lines) > logNodeMaxLines {
