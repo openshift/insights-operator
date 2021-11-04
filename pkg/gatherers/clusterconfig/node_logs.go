@@ -51,9 +51,7 @@ func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	records, errs := nodeLogRecords(ctx, client.RESTClient(), nodes)
-	return records, errs
+	return nodeLogRecords(ctx, client.RESTClient(), nodes)
 }
 
 // nodeLogRecords generate the records and errors list
