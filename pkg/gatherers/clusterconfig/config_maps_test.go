@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -119,7 +119,7 @@ func readConfigMapsTestData() (*corev1.ConfigMapList, error) {
 
 	defer f.Close()
 
-	bts, err := ioutil.ReadAll(f)
+	bts, err := io.ReadAll(f)
 	if err != nil {
 		return nil, fmt.Errorf("error reading test data file %+v ", err)
 	}

@@ -3,7 +3,7 @@ package conditional
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -175,7 +175,7 @@ func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
 		Client: fake.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader(metrics + "\n")),
+				Body:       io.NopCloser(strings.NewReader(metrics + "\n")),
 			}
 			return resp, nil
 		}),

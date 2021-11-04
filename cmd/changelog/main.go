@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -78,8 +78,8 @@ func createPullRequestLink(id string) string {
 func main() {
 	log.SetFlags(0)
 	if len(os.Args) != 1 && len(os.Args) != 3 {
-		log.Fatalf(`Either specify two date arguments, AFTER and UNTIL, 
-		to create a brand new CHANGELOG, or call it without arguments to 
+		log.Fatalf(`Either specify two date arguments, AFTER and UNTIL,
+		to create a brand new CHANGELOG, or call it without arguments to
 		update the current one with new changes.`)
 	}
 	gitHubToken = os.Getenv("GITHUB_TOKEN")
@@ -121,7 +121,7 @@ type MarkdownReleaseBlock struct {
 
 func readCHANGELOG() map[string]MarkdownReleaseBlock {
 	releaseBlocks := make(map[string]MarkdownReleaseBlock)
-	rawBytes, _ := ioutil.ReadFile("./CHANGELOG.md")
+	rawBytes, _ := os.ReadFile("./CHANGELOG.md")
 	rawString := string(rawBytes)
 	if match := latestHashRegexp.FindStringSubmatch(rawString); len(match) > 0 {
 		latestHash = match[1]
@@ -182,7 +182,7 @@ func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock,
 func createCHANGELOG(releaseBlocks map[string]MarkdownReleaseBlock) {
 	file, _ := os.Create("CHANGELOG.md")
 	defer file.Close()
-	_, _ = file.WriteString(`# Note: This CHANGELOG is only for the changes in insights operator. 
+	_, _ = file.WriteString(`# Note: This CHANGELOG is only for the changes in insights operator.
 	Please see OpenShift release notes for official changes\n`)
 	_, _ = file.WriteString(fmt.Sprintf("<!--Latest hash: %s-->\n", latestHash))
 	var releases []string
@@ -243,7 +243,7 @@ func getPullRequestFromGitHub(id string) *Change {
 		log.Fatalf(err.Error())
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		defer log.Fatalf(err.Error())
 		return nil

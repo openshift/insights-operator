@@ -3,7 +3,7 @@ package clusterconfig
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"testing"
@@ -33,7 +33,7 @@ func Test_CSR(t *testing.T) {
 				t.Fatal("test failed to unmarshal csr data", err)
 			}
 			defer f.Close()
-			bts, err := ioutil.ReadAll(f)
+			bts, err := io.ReadAll(f)
 			if err != nil {
 				t.Fatal("error reading test data file", err)
 			}
@@ -48,7 +48,7 @@ func Test_CSR(t *testing.T) {
 				t.Fatal("test failed to unmarshal csr anonymized data", err)
 			}
 			defer f.Close()
-			bts, err = ioutil.ReadAll(f)
+			bts, err = io.ReadAll(f)
 			if err != nil {
 				t.Fatal("error reading test data file", err)
 			}
