@@ -111,7 +111,7 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 	for _, file := range files {
 		fileInfo, err := file.Info()
 		if err != nil {
-			errors = append(errors, err.Error())
+			continue
 		}
 		if isNotArchiveFile(fileInfo) {
 			continue
