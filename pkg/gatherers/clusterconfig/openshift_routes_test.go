@@ -2,12 +2,13 @@ package clusterconfig
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	"k8s.io/client-go/dynamic"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,64 +22,78 @@ kind: Route
 metadata:
     name: some-route
     namespace: openshift-routes
+spec:
+  host: www.example.com
+  to:
+    kind: Service
+    name: frontend
+  tls:
+    certificate: |
+      -----BEGIN CERTIFICATE-----
+      [...]
+      -----END CERTIFICATE-----
+    insecureEdgeTerminationPolicy: Redirect
+    key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      [...]
+      -----END RSA PRIVATE KEY-----
+    termination: reencrypt
 `
-	type args struct {
-		ctx           context.Context
-		dynamicClient dynamic.Interface
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+		openshiftRouteResource: "RouteList",
+	})
+	totalRecords := 1
+	recordName := "config/routes/openshift-routes/some-route"
+	testOpenshiftRouteResource := &unstructured.Unstructured{}
+
+	_, _, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).Decode([]byte(openshiftRouteYAML), nil, testOpenshiftRouteResource)
+	if err != nil {
+		t.Fatal("unable to decode route ", err)
+	}
+	_, err = dynamicClient.
+		Resource(openshiftRouteResource).
+		Namespace("openshift-routes").
+		Create(context.Background(), testOpenshiftRouteResource, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("unable to create fake resource %s", err)
 	}
 
-	tests := []struct {
-		name          string
-		args          args
-		totalRecords  int
-		recordName    string
-		expectedError error
-	}{
-		{
-			name: "check for routes resource",
-			args: args{
-				ctx: context.TODO(),
-				dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-					openshiftRouteResource: "RouteList",
-				}),
-			},
-			totalRecords:  1,
-			recordName:    "config/routes/openshift-routes/some-route",
-			expectedError: nil,
-		},
+	records, errs := gatherOpenshiftRoutes(context.Background(), dynamicClient)
+	if errs != nil && len(errs) > 0 {
+		t.Fatalf("unexpected errors: %v", errs[0].Error())
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 
-			decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-			testOpenshiftRouteResource := &unstructured.Unstructured{}
+	if len(records) != totalRecords {
+		t.Errorf("gatherOpenshiftRoutes() got = %v, want %v", len(records), totalRecords)
+	}
 
-			_, _, err := decUnstructured.Decode([]byte(openshiftRouteYAML), nil, testOpenshiftRouteResource)
-			if err != nil {
-				t.Fatal("unable to decode route ", err)
-			}
-			_, err = tt.args.dynamicClient.
-				Resource(openshiftRouteResource).
-				Namespace("openshift-routes").
-				Create(context.Background(), testOpenshiftRouteResource, metav1.CreateOptions{})
-			if err != nil {
-				t.Fatalf("unable to create fake resource %s", err)
-			}
+	if records[0].Name != recordName {
+		t.Errorf("gatherOpenshiftRoutes() name = %v, want %v ", records[0].Name, recordName)
+	}
 
-			records, errs := gatherOpenshiftRoutes(tt.args.ctx, tt.args.dynamicClient)
-			if len(errs) > 0 {
-				if errs[0].Error() != tt.expectedError.Error() {
-					t.Fatalf("unexpected errors: %v", errs[0].Error())
-				}
-			}
-			if len(records) != tt.totalRecords {
-				t.Errorf("gatherOpenshiftRoutes() got = %v, want %v", len(records), tt.totalRecords)
-			}
-			if records[0].Name != tt.recordName {
-				t.Errorf("gatherOpenshiftRoutes() name = %v, want %v ", records[0].Name, tt.recordName)
-			}
-		})
+	var item map[string]interface{}
+	bytes, err := records[0].Item.Marshal(context.Background())
+	if err != nil {
+		t.Errorf("gatherOpenshiftRoutes() can't marshal record %v", err)
+	}
+
+	err = json.Unmarshal(bytes, &item)
+	if err != nil {
+		t.Errorf("gatherOpenshiftRoutes() can't unmarshal record %v", err)
+	}
+
+	// ensure record only contains non-secret information
+	ensureInformationDoesNotExist(t, item, "spec", "host")
+	ensureInformationDoesNotExist(t, item, "spec", "tls")
+
+}
+
+func ensureInformationDoesNotExist(t *testing.T, item map[string]interface{}, fields ...string) {
+	found, _, err := unstructured.NestedFieldNoCopy(item, fields...)
+	if err != nil {
+		t.Errorf("gatherOpenshiftRoutes() error while searching for NestedFieldNoCopy %s - %v", strings.Join(fields, "."), err)
+	}
+	if found != nil {
+		t.Errorf("gatherOpenshiftRoutes() error found %s - %v", strings.Join(fields, "."), found)
 	}
 }
