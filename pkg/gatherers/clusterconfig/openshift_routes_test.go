@@ -46,7 +46,8 @@ spec:
 	recordName := "config/routes/openshift-routes/some-route"
 	testOpenshiftRouteResource := &unstructured.Unstructured{}
 
-	_, _, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).Decode([]byte(openshiftRouteYAML), nil, testOpenshiftRouteResource)
+	_, _, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).
+		Decode([]byte(openshiftRouteYAML), nil, testOpenshiftRouteResource)
 	if err != nil {
 		t.Fatal("unable to decode route ", err)
 	}
@@ -59,7 +60,7 @@ spec:
 	}
 
 	records, errs := gatherOpenshiftRoutes(context.Background(), dynamicClient)
-	if errs != nil && len(errs) > 0 {
+	if len(errs) > 0 {
 		t.Fatalf("unexpected errors: %v", errs[0].Error())
 	}
 
@@ -85,7 +86,6 @@ spec:
 	// ensure record only contains non-secret information
 	ensureInformationDoesNotExist(t, item, "spec", "host")
 	ensureInformationDoesNotExist(t, item, "spec", "tls")
-
 }
 
 func ensureInformationDoesNotExist(t *testing.T, item map[string]interface{}, fields ...string) {
