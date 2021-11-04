@@ -1,6 +1,7 @@
 package clusterconfig
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -86,7 +87,7 @@ func Test_ConfigMap_Anonymizer(t *testing.T) {
 			mustNotFail(t, err, "unmarshaling of expected failed %+v")
 			exp, err := json.Marshal(d)
 			mustNotFail(t, err, "marshaling of expected failed %+v")
-			if string(exp) != string(md) {
+			if !bytes.Equal(exp, md) {
 				t.Fatalf("The test %s result is unexpected. Result: \n%s \nExpected \n%s", tt.testName, string(md), string(exp))
 			}
 		})
