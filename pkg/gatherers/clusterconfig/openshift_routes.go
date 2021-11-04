@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 
@@ -41,27 +39,10 @@ func gatherOpenshiftRoutes(ctx context.Context, dynamicClient dynamic.Interface)
 		return nil, []error{err}
 	}
 
-	var records []record.Record
-	for i := range routeResources.Items {
-		item := routeResources.Items[i]
-
-		// remove the sensitive content by overwriting the values
-		err := unstructured.SetNestedField(item.Object, nil, "spec", "host")
-		if err != nil {
-			klog.Errorf("unable to set nested field: %v", err)
-			return nil, []error{err}
-		}
-
-		err = unstructured.SetNestedField(item.Object, nil, "spec", "tls")
-		if err != nil {
-			klog.Errorf("unable to set nested field: %v", err)
-			return nil, []error{err}
-		}
-
-		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/routes/%s/%s", item.GetNamespace(), item.GetName()),
-			Item: record.ResourceMarshaller{Resource: &item},
-		})
-	}
-	return records, nil
+	return []record.Record{
+		{
+			Name: "config/routes",
+			Item: RawJSON(fmt.Sprintf("{\"count\": %d}", len(routeResources.Items))),
+		},
+	}, nil
 }

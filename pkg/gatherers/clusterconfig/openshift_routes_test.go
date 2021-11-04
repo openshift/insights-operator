@@ -3,7 +3,6 @@ package clusterconfig
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,7 +42,7 @@ spec:
 		openshiftRouteResource: "RouteList",
 	})
 	totalRecords := 1
-	recordName := "config/routes/openshift-routes/some-route"
+	recordName := "config/routes"
 	testOpenshiftRouteResource := &unstructured.Unstructured{}
 
 	_, _, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).
@@ -83,17 +82,11 @@ spec:
 		t.Errorf("gatherOpenshiftRoutes() can't unmarshal record %v", err)
 	}
 
-	// ensure record only contains non-secret information
-	ensureInformationDoesNotExist(t, item, "spec", "host")
-	ensureInformationDoesNotExist(t, item, "spec", "tls")
-}
-
-func ensureInformationDoesNotExist(t *testing.T, item map[string]interface{}, fields ...string) {
-	found, _, err := unstructured.NestedFieldNoCopy(item, fields...)
-	if err != nil {
-		t.Errorf("gatherOpenshiftRoutes() error while searching for NestedFieldNoCopy %s - %v", strings.Join(fields, "."), err)
-	}
-	if found != nil {
-		t.Errorf("gatherOpenshiftRoutes() error found %s - %v", strings.Join(fields, "."), found)
+	if val, ok := item["count"]; ok {
+		if int(val.(float64)) != 1 {
+			t.Errorf("gatherOpenshiftRoutes() count must be 1, but was: %v", item["count"])
+		}
+	} else {
+		t.Errorf("gatherOpenshiftRoutes() must contain a count entry %v", item)
 	}
 }
