@@ -17,7 +17,7 @@ import (
 // API Reference:
 //   https://github.com/openshift/api/blob/master/route/v1/types.go
 //
-// * Location in archive: config/routes/<namespace>/<name>.json
+// * Location in archive: config/routes.json
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) GatherOpenshiftRoutes(ctx context.Context) ([]record.Record, []error) {

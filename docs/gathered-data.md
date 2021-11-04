@@ -568,7 +568,7 @@ collects `route.openshift.io` resources
 API Reference:
 https://github.com/openshift/api/blob/master/route/v1/types.go
 
-* Location in archive: config/routes/<namespace>/<name>.json
+* Location in archive: config/routes.json
 * Since versions:
     * 4.10+
 
