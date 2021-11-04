@@ -232,7 +232,11 @@ func getPullRequestFromGitHub(id string) *Change {
 	// There is a limit for the GitHub API, if you use auth then its 5000/hour
 	var bearer = "token " + gitHubToken
 
-	req, err := http.NewRequestWithContext(context.Background(), "GET", fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id), http.NoBody)
+	req, err := http.NewRequestWithContext(
+		context.Background(),
+		"GET",
+		fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id),
+		http.NoBody)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

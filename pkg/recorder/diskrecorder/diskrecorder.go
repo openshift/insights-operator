@@ -108,7 +108,10 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 	count := 0
 	var errors []string
 	for _, file := range files {
-		fileInfo, _ := file.Info()
+		fileInfo, err := file.Info()
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
 		if isNotArchiveFile(fileInfo) {
 			continue
 		}
@@ -144,7 +147,10 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadClose
 	}
 	recentFiles := make([]string, 0, len(files))
 	for _, file := range files {
-		fileInfo, _ := file.Info()
+		fileInfo, err := file.Info()
+		if err != nil {
+			return nil, false, err
+		}
 		if isNotArchiveFile(fileInfo) {
 			continue
 		}
