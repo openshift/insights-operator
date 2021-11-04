@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -50,7 +49,7 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err = ioutil.WriteFile("../../../docs/insights-archive-sample/config/workload_info.json", out, 0750); err != nil {
+		if err = os.WriteFile("../../../docs/insights-archive-sample/config/workload_info.json", out, 0750); err != nil {
 			t.Fatal(err)
 		}
 

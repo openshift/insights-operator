@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -76,7 +75,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		return nil, []error{err}
 	}
 	r := utils.NewLineLimitReader(rsp, metricsAlertsLinesLimit)
-	alerts, err := ioutil.ReadAll(r)
+	alerts, err := io.ReadAll(r)
 	if err != nil && err != io.EOF {
 		klog.Errorf("Unable to read most recent alerts from metrics: %v", err)
 		return nil, []error{err}
