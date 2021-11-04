@@ -561,6 +561,17 @@ API Reference:
 * Since versions:
   * 4.9+
 
+## OpenshiftRoutes
+
+collects `route.openshift.io` resources
+
+API Reference:
+https://github.com/openshift/api/blob/master/route/v1/types.go
+
+* Location in archive: config/routes/<namespace>/<name>.json
+* Since versions:
+    * 4.10+
+
 
 ## OpenshiftSDNControllerLogs
 
