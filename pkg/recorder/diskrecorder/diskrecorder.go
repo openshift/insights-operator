@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -146,8 +147,10 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadClose
 		return nil, false, nil
 	}
 	recentFiles := make([]string, 0, len(files))
+
+	var fileInfo fs.FileInfo
 	for _, file := range files {
-		fileInfo, err := file.Info()
+		fileInfo, err = file.Info()
 		if err != nil {
 			return nil, false, err
 		}
