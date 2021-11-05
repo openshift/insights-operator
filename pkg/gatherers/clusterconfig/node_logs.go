@@ -10,23 +10,16 @@ import (
 	"strconv"
 
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
-
-	corev1 "k8s.io/api/core/v1"
-
+	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
-
-	"k8s.io/klog/v2"
-
-	"k8s.io/client-go/rest"
-
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/openshift/insights-operator/pkg/record"
+	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 // GatherNodeLogs fetches the node logs from journal unit
