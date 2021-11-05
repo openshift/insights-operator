@@ -2,16 +2,13 @@ package clusterconfig
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
 	"context"
 	"fmt"
-	"io"
 	"strconv"
 
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 
 	corev1 "k8s.io/api/core/v1"
@@ -52,16 +49,12 @@ func nodeLogRecords(ctx context.Context, restClient rest.Interface, nodes *corev
 	var errs []error
 	records := make([]record.Record, 0)
 
-	bufferSize := recorder.MaxArchiveSize * logCompressionRatio / len(nodes.Items) / 2
-	klog.V(2).Infof("Maximum buffer size: %v bytes", bufferSize)
-	buf := bytes.NewBuffer(make([]byte, 0, bufferSize))
-
 	for i := range nodes.Items {
 		name := nodes.Items[i].Name
 		uri := nodeLogResourceURI(restClient, name)
 		req := requestNodeLog(restClient, uri, logNodeMaxTailLines, logNodeUnit)
 
-		logString, err := nodeLogString(ctx, req, buf, bufferSize)
+		logString, err := nodeLogString(ctx, req)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			errs = append(errs, err)
@@ -94,40 +87,21 @@ func requestNodeLog(client rest.Interface, uri string, tail int, unit string) *r
 }
 
 // nodeLogString retrieve the data from the stream, decompress it (if necessary) and return the string
-func nodeLogString(ctx context.Context, req *rest.Request, out *bytes.Buffer, size int) (string, error) {
+func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
 	in, err := req.Stream(ctx)
 	if err != nil {
 		return "", err
 	}
 	defer in.Close()
 
-	buf := bufio.NewReaderSize(in, size)
-	head, err := buf.Peek(1024)
-	if err != nil && err != io.EOF {
-		return "", err
-	}
-
-	_, err = gzip.NewReader(bytes.NewBuffer(head))
+	r, err := gzip.NewReader(in)
+	var scanner *bufio.Scanner
 	if err != nil {
-		// not gzipped stream
-		_, err = io.Copy(out, buf)
-		if err != nil && err != io.EOF {
-			return "", err
-		}
+		scanner = bufio.NewScanner(in)
 	} else {
-		r, err := gzip.NewReader(buf)
-		if err != nil {
-			return "", err
-		}
-
-		// nolint: gosec
-		_, err = io.Copy(out, r)
-		if err != nil {
-			return "", err
-		}
+		scanner = bufio.NewScanner(r)
 	}
 
-	scanner := bufio.NewScanner(out)
 	messagesToSearch := []string{
 		"E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
 	}

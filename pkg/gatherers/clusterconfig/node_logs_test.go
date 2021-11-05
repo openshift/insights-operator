@@ -93,9 +93,7 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 	c := testRESTClient(t, s)
 
 	type args struct {
-		req  *rest.Request
-		out  *bytes.Buffer
-		size int
+		req *rest.Request
 	}
 	tests := []struct {
 		name    string
@@ -106,27 +104,15 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 		{
 			name: "Test content stream",
 			args: args{
-				req:  c.Get().Prefix("/"),
-				out:  bytes.NewBuffer(make([]byte, 0)),
-				size: 8096,
+				req: c.Get().Prefix("/"),
 			},
 			want:    expectedBody,
 			wantErr: false,
 		},
-		{
-			name: "Buffer is too small",
-			args: args{
-				req:  c.Get().Prefix("/"),
-				out:  bytes.NewBuffer(make([]byte, 0)),
-				size: 1,
-			},
-			want:    "",
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := nodeLogString(context.TODO(), tt.args.req, tt.args.out, tt.args.size)
+			got, err := nodeLogString(context.TODO(), tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("nodeLogString() error = %v, wantErr %v", err, tt.wantErr)
 				return
