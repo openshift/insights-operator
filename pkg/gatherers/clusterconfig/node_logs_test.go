@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -84,7 +83,7 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 	// nolint: errcheck
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gz := testGzipped(serverData)
-		out, _ := ioutil.ReadAll(gz)
+		out, _ := io.ReadAll(gz)
 		w.WriteHeader(http.StatusOK)
 		w.Write(out)
 	}))
@@ -196,7 +195,7 @@ func readNodeTestData() (*corev1.NodeList, error) {
 	}
 	defer f.Close()
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		return nil, fmt.Errorf("error reading test data file %+v ", err)
 	}
