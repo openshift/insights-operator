@@ -231,7 +231,7 @@ rules:
   - apiGroups:
       - costmanagement-metrics-cfg.openshift.io
     resources:
-      - costmanagementmetricsconfig
+      - costmanagementmetricsconfigs
     verbs:
       - get
       - list
