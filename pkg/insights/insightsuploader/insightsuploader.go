@@ -140,7 +140,7 @@ func (c *Controller) Run(ctx context.Context) {
 				if authorizer.IsAuthorizationError(err) {
 					c.Simple.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
 						Reason: "NotAuthorized", Message: fmt.Sprintf("Reporting was not allowed: %v", err)})
-					c.initialDelay = wait.Jitter(interval, 3)
+					c.initialDelay = wait.Jitter(interval/2, 2)
 					return
 				}
 
