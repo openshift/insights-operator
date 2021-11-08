@@ -99,6 +99,7 @@ func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
 	if err != nil {
 		scanner = bufio.NewScanner(in)
 	} else {
+		defer r.Close()
 		scanner = bufio.NewScanner(r)
 	}
 
