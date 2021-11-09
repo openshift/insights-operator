@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -56,9 +58,8 @@ func Test_conditions_entries(t *testing.T) {
 			c := &conditions{
 				entryMap: tt.fields.entryMap,
 			}
-			if got := c.entries(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("entries() = %v, want %v", got, tt.want)
-			}
+			got := c.entries()
+			assert.ElementsMatchf(t, got, tt.want, "entries() = %v, want %v", got, tt.want)
 		})
 	}
 }

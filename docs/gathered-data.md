@@ -505,6 +505,19 @@ Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and
   * 4.7+
 
 
+## NodeLogs
+
+fetches the node logs from journal unit
+
+Response see https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
+
+* Location in archive: config/nodes/logs/
+* See: docs/insights-archive-sample/config/nodes/logs
+* Id in config: node_logs
+* Since versions:
+  * 4.10+
+
+
 ## Nodes
 
 collects all Nodes.
