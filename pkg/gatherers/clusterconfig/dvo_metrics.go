@@ -51,7 +51,7 @@ func gatherDVOMetrics(ctx context.Context, metricsClient rest.Interface) ([]reco
 	}
 
 	records := []record.Record{
-		{Name: "config/dvo_metrics", Item: marshal.RawByte(prefixedLines)},
+		{Name: "config/dvo_metrics_filtered", Item: marshal.RawByte(prefixedLines)},
 	}
 
 	return records, nil

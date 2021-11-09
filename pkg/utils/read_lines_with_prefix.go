@@ -12,7 +12,8 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 	partialLine := []byte{}
 	for {
 		rc, err := reader.Read(tmp)
-		if err != nil {
+		// If nothing was read or if a non-EOF error occurred.
+		if rc <= 0 || err != nil && err != io.EOF {
 			if bytes.HasPrefix(partialLine, prefix) {
 				buff = append(buff, partialLine...)
 			}
@@ -50,6 +51,14 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 			if bytes.HasPrefix(line, prefix) {
 				buff = append(buff, line...)
 			}
+		}
+
+		// If the EOF was reported by the reader.
+		if err == io.EOF {
+			if bytes.HasPrefix(partialLine, prefix) {
+				buff = append(buff, partialLine...)
+			}
+			return buff, err
 		}
 	}
 }
