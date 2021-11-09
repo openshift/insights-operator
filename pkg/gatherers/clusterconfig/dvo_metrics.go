@@ -2,6 +2,7 @@ package clusterconfig
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -9,11 +10,16 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
+const dvo_metrics_endpoint = "http://deployment-validation-operator-metrics.deployment-validation-operator.svc:8383"
+
+var dvo_metrics_prefix = []byte("deployment_validation_operator_")
+
 func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []error) {
-	apiURL, err := url.Parse("http://deployment-validation-operator-metrics.deployment-validation-operator.svc:8383")
+	apiURL, err := url.Parse(dvo_metrics_endpoint)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -27,15 +33,25 @@ func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []err
 }
 
 func gatherDVOMetrics(ctx context.Context, metricsClient rest.Interface) ([]record.Record, []error) {
-	data, err := metricsClient.Get().AbsPath("metrics").
-		DoRaw(ctx)
+	dataReader, err := metricsClient.Get().AbsPath("metrics").Stream(ctx)
+	defer func() {
+		if err := dataReader.Close(); err != nil {
+			klog.Errorf("Unable to close metrics stream: %v", err)
+		}
+	}()
 	if err != nil {
 		klog.Errorf("Unable to retrieve most recent metrics: %v", err)
 		return nil, []error{err}
 	}
 
+	prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvo_metrics_prefix)
+	if err != io.EOF {
+		klog.Errorf("Unable to read metrics lines with DVO prefix: %v", err)
+		return nil, []error{err}
+	}
+
 	records := []record.Record{
-		{Name: "config/dvo_metrics", Item: marshal.RawByte(data)},
+		{Name: "config/dvo_metrics", Item: marshal.RawByte(prefixedLines)},
 	}
 
 	return records, nil
