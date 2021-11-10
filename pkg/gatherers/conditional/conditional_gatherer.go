@@ -98,7 +98,7 @@ var defaultGatheringRules = []GatheringRule{
 		Conditions: []ConditionWithParams{
 			{
 				Type: AlertIsFiring,
-				Params: AlertIsFiringConditionParams{
+				Alert: &AlertConditionParams{
 					Name: "KubePodCrashLooping",
 				},
 			},
@@ -115,7 +115,7 @@ var defaultGatheringRules = []GatheringRule{
 		Conditions: []ConditionWithParams{
 			{
 				Type: AlertIsFiring,
-				Params: AlertIsFiringConditionParams{
+				Alert: &AlertConditionParams{
 					Name: "KubePodNotReady",
 				},
 			},
