@@ -306,7 +306,7 @@ The data from this gatherer is stored in the `/config/workload_info.json` file i
 
 Defined in [conditional_gatherer.go](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is run regularly (2h by default), but it gathers some data only when a corresponding condition is met. The conditions and corresponding gathering functions are defined as [a slice of gathering rules](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/conditional_gatherer.go#L62). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on availability of Prometheus metrics and alerts. 
 
-The data from this gatherer is stored under `/conditional` directory in the archive. 
+The data from this gatherer is stored under the `/conditional` directory in the archive. 
 
 ## Downloading and exposing Archive Analysis
 After the successful upload of archive, the progress monitoring task starts. By default it waits for 1m until it checks if results of analysis of the archive (done by external pipeline in cloud.redhat.com) are available. The report contains LastUpdatedAt timestamp, and verifies if report has changed its state (for this cluster) since the last time. If there was no
