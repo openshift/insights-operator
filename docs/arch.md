@@ -300,7 +300,7 @@ The data from this gatherer is stored under `/config` directory in the archive.
 
 Defined in [workloads_gatherer.go](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/workloads/workloads_gatherer.go). This gatherer runs only each 12 hours and the interval is not configurable. This is because it means significantly more data in the archive, and it is also assumed that this data will not change as often. There's only one gathering function in this gatherer and it gathers workloads fingerprint data (SHA of the images, fingerprints of namespaces as number of pods in namespace, fingerprints of containers as first command and first argument).
 
-The data from this gatherer is stored in `/config/workload_info.json` file in the archive, but please note that not every archive contains this data. 
+The data from this gatherer is stored in the `/config/workload_info.json` file in the archive, but please note that not every archive contains this data. 
 
 ### Conditional gatherer
 
