@@ -8,7 +8,7 @@ import (
 
 func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 	buff := []byte{}
-	tmp := make([]byte, 0, 1024)
+	tmp := make([]byte, 1024)
 	partialLine := []byte{}
 	for {
 		rc, err := reader.Read(tmp)
