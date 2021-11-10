@@ -361,7 +361,7 @@ func (g *Gatherer) updateVersionCache(ctx context.Context, configClient configv1
 		return err
 	}
 
-	g.clusterVersion = clusterVersion.Spec.DesiredUpdate.Version
+	g.clusterVersion = clusterVersion.Status.Desired.Version
 
 	return nil
 }
