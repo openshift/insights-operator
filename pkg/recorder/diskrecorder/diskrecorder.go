@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,17 +89,21 @@ func (d *DiskRecorder) Save(records record.MemoryRecords) (record.MemoryRecords,
 
 // Prune the archives older than given time
 func (d *DiskRecorder) Prune(olderThan time.Time) error {
-	files, err := ioutil.ReadDir(d.basePath)
+	files, err := os.ReadDir(d.basePath)
 	if err != nil {
 		return err
 	}
 	count := 0
 	var errors []string
 	for _, file := range files {
-		if isNotArchiveFile(file) {
+		fileInfo, err := file.Info()
+		if err != nil {
 			continue
 		}
-		if file.ModTime().After(olderThan) {
+		if isNotArchiveFile(fileInfo) {
+			continue
+		}
+		if fileInfo.ModTime().After(olderThan) {
 			continue
 		}
 		if err := os.Remove(filepath.Join(d.basePath, file.Name())); err != nil {
@@ -122,7 +126,7 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 
 // Summary implements summarizer interface to insights uploader
 func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadCloser, bool, error) {
-	files, err := ioutil.ReadDir(d.basePath)
+	files, err := os.ReadDir(d.basePath)
 	if err != nil {
 		return nil, false, err
 	}
@@ -130,11 +134,17 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadClose
 		return nil, false, nil
 	}
 	recentFiles := make([]string, 0, len(files))
+
+	var fileInfo fs.FileInfo
 	for _, file := range files {
-		if isNotArchiveFile(file) {
+		fileInfo, err = file.Info()
+		if err != nil {
+			return nil, false, err
+		}
+		if isNotArchiveFile(fileInfo) {
 			continue
 		}
-		if !file.ModTime().After(since) {
+		if !fileInfo.ModTime().After(since) {
 			continue
 		}
 		recentFiles = append(recentFiles, file.Name())

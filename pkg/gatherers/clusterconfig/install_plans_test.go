@@ -2,7 +2,7 @@ package clusterconfig
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -65,7 +65,7 @@ func Test_InstallPlans_Gather(t *testing.T) {
 					t.Fatal("test failed to read installplan data", err)
 				}
 				defer f.Close()
-				installplancontent, err := ioutil.ReadAll(f)
+				installplancontent, err := io.ReadAll(f)
 				if err != nil {
 					t.Fatal("error reading test data file", err)
 				}

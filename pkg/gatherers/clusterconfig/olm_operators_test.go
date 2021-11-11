@@ -3,7 +3,7 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"testing"
@@ -154,7 +154,7 @@ func readFromFile(filePath string) ([]byte, error) {
 
 	defer f.Close()
 
-	content, err := ioutil.ReadAll(f)
+	content, err := io.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
