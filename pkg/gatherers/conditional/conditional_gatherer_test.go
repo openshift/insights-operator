@@ -54,7 +54,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 			Conditions: []ConditionWithParams{
 				{
 					Type: AlertIsFiring,
-					Params: AlertIsFiringConditionParams{
+					Alert: &AlertConditionParams{
 						Name: "SamplesImagestreamImportFailing",
 					},
 				},

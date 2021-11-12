@@ -14,13 +14,13 @@ func Test_Validation(t *testing.T) {
 			Conditions: []ConditionWithParams{
 				{
 					Type: AlertIsFiring,
-					Params: AlertIsFiringConditionParams{
+					Alert: &AlertConditionParams{
 						Name: "test1",
 					},
 				},
 				{
 					Type: AlertIsFiring,
-					Params: AlertIsFiringConditionParams{
+					Alert: &AlertConditionParams{
 						Name: "test2",
 					},
 				},
@@ -53,7 +53,7 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 			Conditions: []ConditionWithParams{
 				{
 					Type: AlertIsFiring,
-					Params: AlertIsFiringConditionParams{
+					Alert: &AlertConditionParams{
 						Name: "test" + fmt.Sprint(i),
 					},
 				},
@@ -81,7 +81,7 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 					Conditions: []ConditionWithParams{
 						{
 							Type: AlertIsFiring,
-							Params: AlertIsFiringConditionParams{
+							Alert: &AlertConditionParams{
 								Name: "test1",
 							},
 						},
@@ -96,7 +96,7 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 					Conditions: []ConditionWithParams{
 						{
 							Type: AlertIsFiring,
-							Params: AlertIsFiringConditionParams{
+							Alert: &AlertConditionParams{
 								Name: "test1",
 							},
 						},
@@ -140,11 +140,11 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 			}},
 			Errors: []string{
 				`0.conditions.0: Must validate at least one schema (anyOf)`,
+				`0.conditions.0: alert is required`,
 				`0.conditions.0.type: 0.conditions.0.type does not match: "alert_is_firing"`,
-				`0.conditions.0.params: Invalid type. Expected: object, given: null`,
 				`0.conditions.1: Must validate at least one schema (anyOf)`,
+				`0.conditions.1: alert is required`,
 				`0.conditions.1.type: 0.conditions.1.type does not match: "alert_is_firing"`,
-				`0.conditions.1.params: Invalid type. Expected: object, given: null`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -153,14 +153,14 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 			Rules: []GatheringRule{{
 				Conditions: []ConditionWithParams{
 					{
-						Type:   AlertIsFiring,
-						Params: "using incorrect type for params",
+						Type:  AlertIsFiring,
+						Alert: nil,
 					},
 				},
 			}},
 			Errors: []string{
 				`0.conditions.0: Must validate at least one schema (anyOf)`,
-				`0.conditions.0.params: Invalid type. Expected: object, given: string`,
+				`0.conditions.0: alert is required`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -170,7 +170,7 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				Conditions: []ConditionWithParams{
 					{
 						Type: AlertIsFiring,
-						Params: AlertIsFiringConditionParams{
+						Alert: &AlertConditionParams{
 							Name: "contains invalid characters $^#!@$%&",
 						},
 					},
@@ -178,7 +178,7 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 			}},
 			Errors: []string{
 				`0.conditions.0: Must validate at least one schema (anyOf)`,
-				`0.conditions.0.params.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -188,7 +188,7 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				Conditions: []ConditionWithParams{
 					{
 						Type: AlertIsFiring,
-						Params: AlertIsFiringConditionParams{
+						Alert: &AlertConditionParams{
 							Name: "", // empty
 						},
 					},
@@ -197,7 +197,7 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 			Errors: []string{
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 				`0.conditions.0: Must validate at least one schema (anyOf)`,
-				`0.conditions.0.params.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
 			},
 		},
 		{
@@ -206,7 +206,7 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				Conditions: []ConditionWithParams{
 					{
 						Type: AlertIsFiring,
-						Params: AlertIsFiringConditionParams{
+						Alert: &AlertConditionParams{
 							Name: rand.String(1024), // too long
 						},
 					},
@@ -214,7 +214,7 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 			}},
 			Errors: []string{
 				`0.conditions.0: Must validate at least one schema (anyOf)`,
-				`0.conditions.0.params.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
