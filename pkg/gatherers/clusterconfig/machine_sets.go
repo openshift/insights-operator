@@ -6,10 +6,13 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherMachineSet collects MachineSet information
@@ -52,9 +55,27 @@ func gatherMachineSet(ctx context.Context, dynamicClient dynamic.Interface) ([]r
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.ResourceMarshaller{Resource: &machineSets.Items[i]},
+			Item: record.ResourceMarshaller{Resource: anonymizeMachineset(&machineSets.Items[i])},
 		})
 	}
 
 	return records, nil
+}
+
+func anonymizeMachineset(data *unstructured.Unstructured) *unstructured.Unstructured {
+	fieldsToAnonymize := [][]string{
+		{"spec", "template", "spec", "providerSpec", "value", "projectID"},
+		{"spec", "template", "spec", "providerSpec", "value", "region"},
+		{"spec", "template", "spec", "providerSpec", "value", "placement", "availabilityZone"},
+		{"spec", "template", "spec", "providerSpec", "value", "placement", "region"},
+	}
+
+	for _, fieldToAnonymize := range fieldsToAnonymize {
+		err := anonymize.UnstructuredNestedStringField(data.Object, fieldToAnonymize...)
+		if err != nil {
+			klog.Infof("error during anonymizing machineset: %v", err)
+		}
+	}
+
+	return data
 }

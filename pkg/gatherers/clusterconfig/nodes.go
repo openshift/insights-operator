@@ -48,21 +48,30 @@ func anonymizeNode(node *corev1.Node) *corev1.Node {
 		if isProductNamespacedKey(k) {
 			continue
 		}
+
 		node.Annotations[k] = ""
 	}
+
 	for k, v := range node.Labels {
-		if isProductNamespacedKey(k) {
+		if isProductNamespacedKey(k) && !isRegionLabel(k) {
 			continue
 		}
+
 		node.Labels[k] = anonymize.String(v)
 	}
+
 	node.Status.NodeInfo.BootID = anonymize.String(node.Status.NodeInfo.BootID)
 	node.Status.NodeInfo.SystemUUID = anonymize.String(node.Status.NodeInfo.SystemUUID)
 	node.Status.NodeInfo.MachineID = anonymize.String(node.Status.NodeInfo.MachineID)
 	node.Status.Images = nil
+
 	return node
 }
 
 func isProductNamespacedKey(key string) bool {
 	return strings.Contains(key, "openshift.io/") || strings.Contains(key, "k8s.io/") || strings.Contains(key, "kubernetes.io/")
+}
+
+func isRegionLabel(key string) bool {
+	return key == "failure-domain.beta.kubernetes.io/region" || key == "topology.kubernetes.io/region"
 }
