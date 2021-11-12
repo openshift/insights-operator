@@ -2,8 +2,9 @@ package conditional
 
 // ConditionWithParams is a type holding a condition with its params
 type ConditionWithParams struct {
-	Type  ConditionType         `json:"type"`
-	Alert *AlertConditionParams `json:"alert,omitempty"`
+	Type                  ConditionType                         `json:"type"`
+	Alert                 *AlertConditionParams                 `json:"alert,omitempty"`
+	ClusterVersionMatches *ClusterVersionMatchesConditionParams `json:"cluster_version_matches,omitempty"`
 }
 
 // condition types:

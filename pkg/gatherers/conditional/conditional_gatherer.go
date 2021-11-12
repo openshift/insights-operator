@@ -260,15 +260,11 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 				return false, nil
 			}
 		case ClusterVersionMatches:
-			params, ok := condition.Params.(ClusterVersionMatchesConditionParams)
-			if !ok {
-				return false, fmt.Errorf(
-					"invalid params type, expected %T, got %T",
-					ClusterVersionMatchesConditionParams{}, condition.Params,
-				)
+			if condition.ClusterVersionMatches == nil {
+				return false, fmt.Errorf("cluster_version_matches field should not be nil")
 			}
 
-			if doesMatch, err := g.doesClusterVersionMatch(params.Version); !doesMatch || err != nil {
+			if doesMatch, err := g.doesClusterVersionMatch(condition.ClusterVersionMatches.Version); !doesMatch || err != nil {
 				return false, err
 			}
 		default:
