@@ -54,5 +54,25 @@ func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *instal
 	// we don't use it
 	installConfig.BaseDomain = anonymize.String(installConfig.BaseDomain)
 
+	if installConfig.Platform.AWS != nil {
+		installConfig.Platform.AWS.Region = anonymize.String(installConfig.Platform.AWS.Region)
+	}
+	if installConfig.Platform.Azure != nil {
+		installConfig.Platform.Azure.Region = anonymize.String(installConfig.Platform.Azure.Region)
+	}
+	if installConfig.Platform.GCP != nil {
+		installConfig.Platform.GCP.Region = anonymize.String(installConfig.Platform.GCP.Region)
+		installConfig.Platform.GCP.ProjectID = anonymize.String(installConfig.Platform.GCP.ProjectID)
+	}
+	if installConfig.Platform.VSphere != nil {
+		installConfig.Platform.VSphere.Datacenter = anonymize.String(installConfig.Platform.VSphere.Datacenter)
+		installConfig.Platform.VSphere.Username = anonymize.String(installConfig.Platform.VSphere.Username)
+		installConfig.Platform.VSphere.Password = anonymize.String(installConfig.Platform.VSphere.Password)
+	}
+	if installConfig.Platform.OpenStack != nil {
+		installConfig.Platform.OpenStack.Region = anonymize.String(installConfig.Platform.OpenStack.Region)
+		installConfig.Platform.OpenStack.Cloud = anonymize.String(installConfig.Platform.OpenStack.Cloud)
+	}
+
 	return installConfig
 }
