@@ -285,30 +285,28 @@ Such a client is used in [GatherMachineSet](pkg/gather/clusterconfig/clusterconf
 
 ## Gathering the data
 
-### clusterconfig
-When the `periodic.go` calls method Gather of the `clusterconfig` Gatherer, it's handled [here](https://github.com/openshift/insights-operator/blob/master/pkg/gather/clusterconfig/0_gatherer.go#L99).
+Insights operator defines three types of gatherers (see below). Each of them must implement the [Interface](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/interface.go#L11) and they are initialized by calling [gather.CreateAllGatherers](https://github.com/openshift/insights-operator/blob/master/pkg/controller/operator.go#L124) in `operator.go`. The actual gathering is triggered in [periodic.go](https://github.com/openshift/insights-operator/blob/master/pkg/controller/periodic/periodic.go#L93), but not every gatherer is triggered every time ( for example, see the [CustomPeriodGatherer type](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/interface.go#L21)).
 
-The clusterconfig Gatherer starts each gather-function in its own separate goroutine with a dedicated channel to send back their results.
-Each gather-function is its own separate entity, each creates their own clients using the configs present in the `Gatherer` object that was passed down as parameter.
-We further divided the gather-functions into 2 main parts:
-1. the 'adapter-part' that is called by the `Gatherer.Gather`, named `Gather<Something>`, it handles the creation of the clients and handling the communication with the `Gatherer`.
-2. the 'core-part' that holds the actual logic of what to gather, named `gather<Something>`, the clients required for this are passed in as arguments by the 'adapter-part'.
+Each gatherer includes one or more gathering functions. Gathering functions are defined as a map, where the key is the name of the function and the value is the [GatheringClosure type](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/interface.go#L34). They are executed concurrently in the [HandleTasksConcurrently function](https://github.com/openshift/insights-operator/blob/master/pkg/gather/tasks_processing.go#L33) in `task_processing.go`.
+One of the attributes of the `GatheringClosure` type is the function that returns the values: `([]record.Record, []error)`. The slice of the records is the result of gathering function. The actual data is in the `Item` attribute of the `Record`. This `Item` is of type [Marshalable](https://github.com/openshift/insights-operator/blob/master/pkg/record/record.go#L32) and there are two JSON marshallers used to serialize the data - [JSONMarshaller](https://github.com/openshift/insights-operator/blob/master/pkg/record/record.go#L37) and [ResourceMarshaller](https://github.com/openshift/insights-operator/blob/master/pkg/record/resource_marshaller.go#L19) which allows you to save few bytes by omitting the `managedFields` during the serialization. 
 
-Gather-functions are IO bound and they don't use much of the CPU, so giving each of them a goroutine doesn't stress the CPU but gives us an 'async' way of making REST calls, which improves the performance greatly.
+### Clusterconfig gatherer
 
-After starting the goroutines, the Gatherer will start monitoring the channels, when it receives a result it will:
-- Store the received `record`s using the provided `record.Interface`'s `Record` method.
-- Store some metadata about the gather-function.
-- Collect the errors accordingly. Errors are accumulated over all the gather-functions and returned as 1 summed up error.
+Defined in [clusterconfig_gatherer.go](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/clusterconfig/clusterconfig_gatherer.go). This gatherer is run regularly (2h by default) and gathers various data related to cluster config (see [gathered-data doc](https://github.com/openshift/insights-operator/blob/master/docs/gathered-data.md) for more details).
 
-Each result is being stored into record.Item as Marshalable item. It is using either golang Json marshaller, or K8s Api serializers. Those has to be explicitly registered in init func. The record is created to archive under its Name specifying full relative path including folders. The extension for particular record file is defined by GetExtension() func, but most of them are today of "json", except metrics or id.
+The data from this gatherer is stored under `/config` directory in the archive.
 
-The `gatherFunctions` map is where we reference all the gather-functions we have within the `clusterconfig` package.
-Each has an id (the key in the map) these can be used to only execute a selection of the gather-functions. (according to the default config all gather-function will be executed)
-Furthermore each gather-function is categorized into either:
-- `important` meaning if that gather-function has an error we will notify `periodic.go` about it, which will handle it accordingly.
-- `failable` meaning if that gather-function has an error we will just log it and add it to our metadata.
-This is necessary as we are expanding into gathering data about resources that are not guaranteed to be present on the cluster. By default if a resource is not present we shouldn't see an error, but it's better to be safe.
+### Workloads gatherer
+
+Defined in [workloads_gatherer.go](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/workloads/workloads_gatherer.go). This gatherer only runs every 12 hours and the interval is not configurable. This is done because running the gatherer more often would significantly increase data in the archive, that is assumed will not change very often. There is only one gathering function in this gatherer and it gathers workload fingerprint data (SHA of the images, fingerprints of namespaces as number of pods in namespace, fingerprints of containers as first command and first argument).
+
+The data from this gatherer is stored in the `/config/workload_info.json` file in the archive, but please note that not every archive contains this data. 
+
+### Conditional gatherer
+
+Defined in [conditional_gatherer.go](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is run regularly (2h by default), but it gathers some data only when a corresponding condition is met. The conditions and corresponding gathering functions are defined as [a slice of gathering rules](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/conditional_gatherer.go#L62). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts. 
+
+The data from this gatherer is stored under the `/conditional` directory in the archive. 
 
 ## Downloading and exposing Archive Analysis
 After the successful upload of archive, the progress monitoring task starts. By default it waits for 1m until it checks if results of analysis of the archive (done by external pipeline in cloud.redhat.com) are available. The report contains LastUpdatedAt timestamp, and verifies if report has changed its state (for this cluster) since the last time. If there was no
