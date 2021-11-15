@@ -77,11 +77,11 @@ func gatherWorkloadInfo(
 	start := time.Now()
 	limitReached := false
 
-	var info workloadPods
+	var info WorkloadPods
 	var namespace string
 	var namespaceHash string
-	var namespacePods workloadNamespacePods
-	h := sha256.New()
+	var namespacePods WorkloadNamespacePods
+	h := NewDefaultHash()
 
 	// Use the Limit and Continue fields to request the pod information in chunks.
 	var continueValue string
@@ -98,14 +98,14 @@ func gatherWorkloadInfo(
 			if pod.Namespace != namespace {
 				if len(namespace) != 0 {
 					if info.Namespaces == nil {
-						info.Namespaces = make(map[string]workloadNamespacePods, 1024)
+						info.Namespaces = make(map[string]WorkloadNamespacePods, 1024)
 					}
 					info.Namespaces[namespaceHash] = namespacePods
 					info.PodCount += namespacePods.Count
 				}
 				namespace = pod.Namespace
-				namespaceHash = workloadHashString(h, namespace)
-				namespacePods = workloadNamespacePods{Shapes: make([]workloadPodShape, 0, 16)}
+				namespaceHash = WorkloadHashString(h, namespace)
+				namespacePods = WorkloadNamespacePods{Shapes: make([]WorkloadPodShape, 0, 16)}
 			}
 			// we also need to check the number of pods in current namespace, because when
 			// there's a namespace with a lot of pods it could exceed the limit a lot
@@ -130,7 +130,7 @@ func gatherWorkloadInfo(
 				continue
 			}
 
-			var podShape workloadPodShape
+			var podShape WorkloadPodShape
 			var ok bool
 			podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.Spec.InitContainers, pod.Status.InitContainerStatuses)
 			if !ok {
@@ -169,7 +169,7 @@ func gatherWorkloadInfo(
 	// add the last set of pods
 	if len(namespace) != 0 {
 		if info.Namespaces == nil {
-			info.Namespaces = make(map[string]workloadNamespacePods, 1)
+			info.Namespaces = make(map[string]WorkloadNamespacePods, 1)
 		}
 		info.Namespaces[namespaceHash] = namespacePods
 		info.PodCount += namespacePods.Count
@@ -185,7 +185,7 @@ func gatherWorkloadInfo(
 	}
 
 	// wait for as many images as we can find to load
-	var imageInfo workloadImageInfo
+	var imageInfo WorkloadImageInfo
 	// wait proportional to the number of pods + a floor
 	waitDuration := time.Second*time.Duration(info.PodCount)/10 + 15*time.Second
 	klog.V(2).Infof("Loaded pods in %s, will wait %s for image data",
@@ -219,12 +219,12 @@ func gatherWorkloadImageInfo(
 	ctx context.Context,
 	imageClient imageclient.ImageInterface,
 	imageCh <-chan string,
-) <-chan workloadImageInfo {
-	images := make(map[string]workloadImage)
-	imagesDoneCh := make(chan workloadImageInfo)
+) <-chan WorkloadImageInfo {
+	images := make(map[string]WorkloadImage)
+	imagesDoneCh := make(chan WorkloadImageInfo)
 
 	go func() {
-		h := sha256.New()
+		h := NewDefaultHash()
 
 		defer func() {
 			count := len(images)
@@ -233,7 +233,7 @@ func gatherWorkloadImageInfo(
 					delete(images, k)
 				}
 			}
-			imagesDoneCh <- workloadImageInfo{
+			imagesDoneCh <- WorkloadImageInfo{
 				count:  count,
 				images: images,
 			}
@@ -274,7 +274,7 @@ func gatherWorkloadImageInfo(
 						images[imageID] = image
 						continue
 					}
-					images[imageID] = workloadImage{}
+					images[imageID] = WorkloadImage{}
 					start := time.Now()
 					image, err := imageClient.Get(ctx, imageID, metav1.GetOptions{})
 					if errors.IsNotFound(err) {
@@ -303,7 +303,7 @@ func gatherWorkloadImageInfo(
 // namespace, returning the index of the matching shape or -1. It exploits the
 // property that identical pods tend to have similar name prefixes and searches
 // in reverse order from the most recent shape (since pods appear in name order).
-func workloadPodShapeIndex(shapes []workloadPodShape, shape workloadPodShape) int {
+func workloadPodShapeIndex(shapes []WorkloadPodShape, shape WorkloadPodShape) int {
 	for i := len(shapes) - 1; i >= 0; i-- {
 		existing := shapes[i]
 		if !workloadContainerShapesEqual(existing.InitContainers, shape.InitContainers) {
@@ -318,7 +318,7 @@ func workloadPodShapeIndex(shapes []workloadPodShape, shape workloadPodShape) in
 }
 
 // workloadContainerShapesEqual returns true if the provided shape arrays are equal
-func workloadContainerShapesEqual(a, b []workloadContainerShape) bool {
+func workloadContainerShapesEqual(a, b []WorkloadContainerShape) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -330,16 +330,32 @@ func workloadContainerShapesEqual(a, b []workloadContainerShape) bool {
 	return true
 }
 
-// workloadHashString returns a base64 URL encoded version of the hash of the
+// NewDefaultHash selects the default hash function for the workload gatherer.
+func NewDefaultHash() hash.Hash {
+	return sha256.New()
+}
+
+// WorkloadHashString returns a base64 URL encoded version of the hash of the
 // provided string. The resulting string length of 12 is chosen to have a
 // probability of a collision across 1 billion results of 0.0001.
-func workloadHashString(h hash.Hash, s string) string {
+func WorkloadHashString(h hash.Hash, s string) string {
 	h.Reset()
 	h.Write([]byte(s))
 	return base64.RawURLEncoding.EncodeToString(h.Sum(nil))[:12]
 }
 
-func workloadArgumentString(s string) string {
+// WorkloadArgumentString attempts to convert a shell like string into a minimal
+// string value suitable for safe and anonymous hashing by applying the following
+// transformations:
+//
+// * if it has spaces, drop everything from the first space onwards (try to find
+//   the root command, and drop any possible arguments)
+// * if it starts with '-', it might be a flag, so attempt to drop the value by
+//   looking for an equals (i.e. --password=X would be converted to --password)
+// * if it has slashes or backslashes (windows), drop the part we assume is the
+//   path (/usr/bin/test becomes test)
+//
+func WorkloadArgumentString(s string) string {
 	// if this is a multipart script string, split it to get the first
 	// part
 	s = strings.TrimSpace(s)
@@ -387,8 +403,8 @@ func calculateWorkloadContainerShapes(
 	h hash.Hash,
 	spec []corev1.Container,
 	status []corev1.ContainerStatus,
-) ([]workloadContainerShape, bool) {
-	shapes := make([]workloadContainerShape, 0, len(status))
+) ([]WorkloadContainerShape, bool) {
+	shapes := make([]WorkloadContainerShape, 0, len(status))
 	for i := range status {
 		specIndex := matchingSpecIndex(status[i].Name, spec, i)
 		if specIndex == -1 {
@@ -407,17 +423,17 @@ func calculateWorkloadContainerShapes(
 
 		var firstCommand, firstArg string
 		if len(spec[specIndex].Command) > 0 {
-			short := workloadArgumentString(spec[specIndex].Command[0])
-			shortHash := workloadHashString(h, short)
+			short := WorkloadArgumentString(spec[specIndex].Command[0])
+			shortHash := WorkloadHashString(h, short)
 			firstCommand = shortHash
 		}
 		if len(spec[specIndex].Args) > 0 {
-			short := workloadArgumentString(spec[specIndex].Args[0])
-			shortHash := workloadHashString(h, short)
+			short := WorkloadArgumentString(spec[specIndex].Args[0])
+			shortHash := WorkloadHashString(h, short)
 			firstArg = shortHash
 		}
 
-		shapes = append(shapes, workloadContainerShape{
+		shapes = append(shapes, WorkloadContainerShape{
 			ImageID:      imageID,
 			FirstCommand: firstCommand,
 			FirstArg:     firstArg,
@@ -428,12 +444,12 @@ func calculateWorkloadContainerShapes(
 
 // calculateWorkloadInfo converts an image object into the minimal info we
 // recover. If the image can't be converted we only gather layer data.
-func calculateWorkloadInfo(h hash.Hash, image *imagev1.Image) workloadImage {
+func calculateWorkloadInfo(h hash.Hash, image *imagev1.Image) WorkloadImage {
 	layers := make([]string, 0, len(image.DockerImageLayers))
 	for _, layer := range image.DockerImageLayers {
 		layers = append(layers, layer.Name)
 	}
-	info := workloadImage{
+	info := WorkloadImage{
 		LayerIDs: layers,
 	}
 
@@ -449,13 +465,13 @@ func calculateWorkloadInfo(h hash.Hash, image *imagev1.Image) workloadImage {
 	}
 
 	if len(imageMeta.ContainerConfig.Entrypoint) > 0 {
-		short := workloadArgumentString(imageMeta.ContainerConfig.Entrypoint[0])
-		shortHash := workloadHashString(h, short)
+		short := WorkloadArgumentString(imageMeta.ContainerConfig.Entrypoint[0])
+		shortHash := WorkloadHashString(h, short)
 		info.FirstCommand = shortHash
 	}
 	if len(imageMeta.ContainerConfig.Cmd) > 0 {
-		short := workloadArgumentString(imageMeta.ContainerConfig.Cmd[0])
-		shortHash := workloadHashString(h, short)
+		short := WorkloadArgumentString(imageMeta.ContainerConfig.Cmd[0])
+		shortHash := WorkloadHashString(h, short)
 		info.FirstArg = shortHash
 	}
 
@@ -495,18 +511,18 @@ func workloadImageResize(estimatedSize int) {
 }
 
 // workloadImageGet returns the cached image if it is found or false.
-func workloadImageGet(imageID string) (workloadImage, bool) {
+func workloadImageGet(imageID string) (WorkloadImage, bool) {
 	workloadSizeLock.Lock()
 	defer workloadSizeLock.Unlock()
 	v, ok := workloadImageLRU.Get(imageID)
 	if !ok {
-		return workloadImage{}, false
+		return WorkloadImage{}, false
 	}
-	return v.(workloadImage), true
+	return v.(WorkloadImage), true
 }
 
 // workloadImageAdd adds the provided image to the cache.
-func workloadImageAdd(imageID string, image workloadImage) {
+func workloadImageAdd(imageID string, image WorkloadImage) {
 	workloadSizeLock.Lock()
 	defer workloadSizeLock.Unlock()
 	workloadImageLRU.Add(imageID, image)

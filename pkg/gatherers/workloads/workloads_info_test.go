@@ -69,7 +69,7 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 		images := make(map[string]struct{})
 
 		var total, totalTerminal, totalIgnored, totalInvalid int
-		pods := r.Item.(record.JSONMarshaller).Object.(*workloadPods)
+		pods := r.Item.(record.JSONMarshaller).Object.(*WorkloadPods)
 		for ns, pods := range pods.Namespaces {
 			var count int
 			for i, pod := range pods.Shapes {

@@ -1,6 +1,6 @@
 package workloads
 
-// workloadPods is the top level description of the workloads on the cluster, primarily
+// WorkloadPods is the top level description of the workloads on the cluster, primarily
 // consisting of pod shapes by namespace. The shape of a pod is tracked as the content
 // addressable hashes of each container image, a hash of the first command and argument,
 // and hashes of the namespace name. This can be used to identify images that are publicly
@@ -11,7 +11,7 @@ package workloads
 //
 // Additions to this data set are required to be reviewed for likelihood of data exposure
 // and utility.
-type workloadPods struct {
+type WorkloadPods struct {
 	// PodCount is the count of all pods scanned.
 	PodCount int `json:"pods"`
 	// ImageCount is the number of unique image IDs identified from pods.
@@ -19,15 +19,15 @@ type workloadPods struct {
 	// Images is a map of image ID to data about the images referenced by pods. Images are
 	// only populated if the cluster had imported the image ID to the image API via an
 	// import or an image stream.
-	Images map[string]workloadImage `json:"images"`
+	Images map[string]WorkloadImage `json:"images"`
 	// Namespaces is a map of namespace name hash to data about the namespace. The namespace
 	// is populated even if it has no pods.
-	Namespaces map[string]workloadNamespacePods `json:"namespaces"`
+	Namespaces map[string]WorkloadNamespacePods `json:"namespaces"`
 }
 
-// workloadImage tracks a minimal set of metadata about images allowing identification
+// WorkloadImage tracks a minimal set of metadata about images allowing identification
 // of parent / child relationships via layers.
-type workloadImage struct {
+type WorkloadImage struct {
 	// LayerIDs is the list of image layers in lowest-to-highest order.
 	LayerIDs []string `json:"layerIDs"`
 	// FirstCommand is a hash of the first value in the entrypoint array, if
@@ -39,12 +39,12 @@ type workloadImage struct {
 }
 
 // Empty returns true if the image has no contents and can be ignored.
-func (i workloadImage) Empty() bool {
+func (i WorkloadImage) Empty() bool {
 	return len(i.LayerIDs) == 0
 }
 
 // workloadNamespacePods tracks the identified pod shapes within a namespace.
-type workloadNamespacePods struct {
+type WorkloadNamespacePods struct {
 	// Count is the number of pods identified in the namespace.
 	Count int `json:"count"`
 	// TerminalCount is the number of pods that have reached a terminal phase
@@ -58,12 +58,12 @@ type workloadNamespacePods struct {
 	// time.
 	InvalidCount int `json:"invalidCount,omitempty"`
 	// Shapes is the identified workload pod shapes in this namespace.
-	Shapes []workloadPodShape `json:"shapes"`
+	Shapes []WorkloadPodShape `json:"shapes"`
 }
 
 // workloadPodShape describes a pod shape observed in a namespace. Pod shapes are
 // identical if init containers and container shapes are identical.
-type workloadPodShape struct {
+type WorkloadPodShape struct {
 	// Duplicates is the number of pods that share this shape. The number of
 	// pods is always this number + one for the first pod with the shape.
 	Duplicates int `json:"duplicates,omitempty"`
@@ -73,18 +73,18 @@ type workloadPodShape struct {
 	RestartsAlways bool `json:"restartAlways"`
 	// InitContainers is the shapes of the init containers in this pod, in
 	// the same order as they are defined in spec.
-	InitContainers []workloadContainerShape `json:"initContainers,omitempty"`
+	InitContainers []WorkloadContainerShape `json:"initContainers,omitempty"`
 	// Containers is the shapes of the containers in this pod, in
 	// the same order as they are defined in spec.
-	Containers []workloadContainerShape `json:"containers"`
+	Containers []WorkloadContainerShape `json:"containers"`
 }
 
-// workloadContainerShape describes the shape of a container which includes
+// WorkloadContainerShape describes the shape of a container which includes
 // a subset of the data in the container.
 // TODO: this may desirable to make more precise with a whole container hash
 //   that includes more of the workload, but that would only be necessary if
 //   it assisted reconstruction of type of workloads.
-type workloadContainerShape struct {
+type WorkloadContainerShape struct {
 	// ImageID is the content addressable hash of the image as observed from
 	// the status or the spec tag.
 	ImageID string `json:"imageID"`
@@ -96,7 +96,7 @@ type workloadContainerShape struct {
 	FirstArg string `json:"firstArg,omitempty"`
 }
 
-type workloadImageInfo struct {
+type WorkloadImageInfo struct {
 	count  int
-	images map[string]workloadImage
+	images map[string]WorkloadImage
 }

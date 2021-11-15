@@ -2,6 +2,7 @@
 main
 .vscode/
 .idea/
+/workloadinfo
 
 # Ignore DevSpace cache and log folder
 .devspace/
