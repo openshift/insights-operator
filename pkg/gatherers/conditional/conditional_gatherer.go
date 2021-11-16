@@ -137,7 +137,7 @@ var defaultGatheringRules = []GatheringRule{
 		Conditions: []ConditionWithParams{
 			{
 				Type: AlertIsFiring,
-				Params: AlertIsFiringConditionParams{
+				Alert: &AlertConditionParams{
 					Name: "AlertmanagerClusterFailedToSendAlerts",
 				},
 			},
@@ -153,7 +153,7 @@ var defaultGatheringRules = []GatheringRule{
 		Conditions: []ConditionWithParams{
 			{
 				Type: AlertIsFiring,
-				Params: AlertIsFiringConditionParams{
+				Alert: &AlertConditionParams{
 					Name: "AlertmanagerFailedToSendAlerts",
 				},
 			},

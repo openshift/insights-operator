@@ -23,7 +23,10 @@ import (
 func (g *Gatherer) BuildGatherAlertmanagerLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherAlertmanagerLogsParams)
 	if !ok {
-		return gatherers.GatheringClosure{}, fmt.Errorf("unexpected type in paramsInterface, expected %T, got %T", GatherAlertmanagerLogsParams{}, paramsInterface)
+		return gatherers.GatheringClosure{}, fmt.Errorf(
+			"unexpected type in paramsInterface, expected %T, got %T",
+			GatherAlertmanagerLogsParams{},
+			paramsInterface)
 	}
 
 	return gatherers.GatheringClosure{
