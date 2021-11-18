@@ -20,6 +20,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+var lacAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
+
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 // If the Image Registry configuration uses some PersistentVolumeClaim for the storage then the corresponding
 // PersistentVolume definition is gathered
@@ -92,28 +94,33 @@ type ImageRegistryAnonymizer struct {
 func (a ImageRegistryAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 	a.Spec.HTTPSecret = anonymizeString(a.Spec.HTTPSecret)
 	if a.Spec.Storage.S3 != nil {
-		a.Spec.Storage.S3.Bucket = anonymizeString(a.Spec.Storage.S3.Bucket)
-		a.Spec.Storage.S3.KeyID = anonymizeString(a.Spec.Storage.S3.KeyID)
-		a.Spec.Storage.S3.RegionEndpoint = anonymizeString(a.Spec.Storage.S3.RegionEndpoint)
-		a.Spec.Storage.S3.Region = anonymizeString(a.Spec.Storage.S3.Region)
+		anonymizeS3Storage(a.Spec.Storage.S3)
 	}
 	if a.Spec.Storage.Azure != nil {
-		a.Spec.Storage.Azure.AccountName = anonymizeString(a.Spec.Storage.Azure.AccountName)
-		a.Spec.Storage.Azure.Container = anonymizeString(a.Spec.Storage.Azure.Container)
+		anonymizeAzureStorage(a.Spec.Storage.Azure)
 	}
 	if a.Spec.Storage.GCS != nil {
-		a.Spec.Storage.GCS.Bucket = anonymizeString(a.Spec.Storage.GCS.Bucket)
-		a.Spec.Storage.GCS.ProjectID = anonymizeString(a.Spec.Storage.GCS.ProjectID)
-		a.Spec.Storage.GCS.KeyID = anonymizeString(a.Spec.Storage.GCS.KeyID)
+		anonymizeGCSStorage(a.Spec.Storage.GCS)
 	}
 	if a.Spec.Storage.Swift != nil {
-		a.Spec.Storage.Swift.AuthURL = anonymizeString(a.Spec.Storage.Swift.AuthURL)
-		a.Spec.Storage.Swift.Container = anonymizeString(a.Spec.Storage.Swift.Container)
-		a.Spec.Storage.Swift.Domain = anonymizeString(a.Spec.Storage.Swift.Domain)
-		a.Spec.Storage.Swift.DomainID = anonymizeString(a.Spec.Storage.Swift.DomainID)
-		a.Spec.Storage.Swift.Tenant = anonymizeString(a.Spec.Storage.Swift.Tenant)
-		a.Spec.Storage.Swift.TenantID = anonymizeString(a.Spec.Storage.Swift.TenantID)
-		a.Spec.Storage.Swift.RegionName = anonymizeString(a.Spec.Storage.Swift.RegionName)
+		anonymizeSwiftStorage(a.Spec.Storage.Swift)
+	}
+	if a.Status.Storage.S3 != nil {
+		anonymizeS3Storage(a.Status.Storage.S3)
+	}
+	if a.Status.Storage.GCS != nil {
+		anonymizeGCSStorage(a.Status.Storage.GCS)
+	}
+	if a.Status.Storage.Azure != nil {
+		anonymizeAzureStorage(a.Status.Storage.Azure)
+	}
+	if a.Status.Storage.Swift != nil {
+		anonymizeSwiftStorage(a.Status.Storage.Swift)
+	}
+	// kubectl.kubernetes.io/last-applied-configuration annotation contains complete previous resource definition
+	// including the sensitive information as bucket, keyIDs, etc.
+	if lac, ok := a.Annotations[lacAnnotation]; ok {
+		a.Annotations[lacAnnotation] = anonymizeString(lac)
 	}
 	return runtime.Encode(registrySerializer.LegacyCodec(registryv1.SchemeGroupVersion), a.Config)
 }
@@ -161,4 +168,34 @@ func (p PersistentVolumeAnonymizer) Marshal(_ context.Context) ([]byte, error) {
 // GetExtension returns extension for PersistentVolume objects
 func (p PersistentVolumeAnonymizer) GetExtension() string {
 	return "json"
+}
+
+func anonymizeS3Storage(s3Storage *registryv1.ImageRegistryConfigStorageS3) {
+	s3Storage.Bucket = anonymizeString(s3Storage.Bucket)
+	s3Storage.KeyID = anonymizeString(s3Storage.KeyID)
+	s3Storage.RegionEndpoint = anonymizeString(s3Storage.RegionEndpoint)
+	s3Storage.Region = anonymizeString(s3Storage.Region)
+}
+
+func anonymizeGCSStorage(gcsStorage *registryv1.ImageRegistryConfigStorageGCS) {
+	gcsStorage.Bucket = anonymizeString(gcsStorage.Bucket)
+	gcsStorage.KeyID = anonymizeString(gcsStorage.KeyID)
+	gcsStorage.ProjectID = anonymizeString(gcsStorage.ProjectID)
+	gcsStorage.Region = anonymizeString(gcsStorage.Region)
+}
+
+func anonymizeAzureStorage(azureStorage *registryv1.ImageRegistryConfigStorageAzure) {
+	azureStorage.AccountName = anonymizeString(azureStorage.AccountName)
+	azureStorage.Container = anonymizeString(azureStorage.Container)
+	azureStorage.CloudName = anonymizeString(azureStorage.CloudName)
+}
+
+func anonymizeSwiftStorage(swiftStorage *registryv1.ImageRegistryConfigStorageSwift) {
+	swiftStorage.AuthURL = anonymizeString(swiftStorage.AuthURL)
+	swiftStorage.Container = anonymizeString(swiftStorage.Container)
+	swiftStorage.Domain = anonymizeString(swiftStorage.Domain)
+	swiftStorage.DomainID = anonymizeString(swiftStorage.DomainID)
+	swiftStorage.Tenant = anonymizeString(swiftStorage.Tenant)
+	swiftStorage.TenantID = anonymizeString(swiftStorage.TenantID)
+	swiftStorage.RegionName = anonymizeString(swiftStorage.RegionName)
 }
