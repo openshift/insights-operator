@@ -2,13 +2,12 @@ package clusterconfig
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog/v2"
 
@@ -18,6 +17,8 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 const (
@@ -111,7 +112,7 @@ func clusterOperatorsRecords(ctx context.Context, items []configv1.ClusterOperat
 			}
 			records = append(records, record.Record{
 				Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name),
-				Item: ClusterOperatorResourceAnonymizer{rr},
+				Item: record.JSONMarshaller{Object: rr},
 			})
 		}
 	}
@@ -156,6 +157,7 @@ func collectClusterOperatorResources(ctx context.Context, dynamicClient dynamic.
 			if !ok {
 				klog.Warningf("Can't find spec for cluster operator resource %s", name)
 			}
+			anonymizeIdentityProviders(clusterResource.Object)
 			res = append(res, clusterOperatorResource{Spec: spec, Kind: kind, Name: name, APIVersion: apiVersion})
 		}
 	}
@@ -189,27 +191,29 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 	return resourceVersionMap, nil
 }
 
-// ClusterOperatorResourceAnonymizer implements serialization of clusterOperatorResource
-type ClusterOperatorResourceAnonymizer struct{ resource clusterOperatorResource }
+// anonymizeIdentityProviders tries to get an array of identity providers defined in OAuth config
+// and anonymize potentially sensitive data - e.g LDAP domain, url
+func anonymizeIdentityProviders(obj map[string]interface{}) {
+	ips, err := utils.NestedSliceWrapper(obj, "spec", "observedConfig", "oauthServer", "oauthConfig", "identityProviders")
 
-// Marshal serializes clusterOperatorResource with IP address anonymization
-func (a ClusterOperatorResourceAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	bytes, err := json.Marshal(a.resource)
+	// most of the clusteroperator resources will not have any identity provider config so silence the error
 	if err != nil {
-		return nil, err
+		return
 	}
-	resStr := string(bytes)
-	//anonymize URLs
-	re := regexp.MustCompile(`"(https|http)://(.*?)"`)
-	urlMatches := re.FindAllString(resStr, -1)
-	for _, m := range urlMatches {
-		m = strings.ReplaceAll(m, "\"", "")
-		resStr = strings.ReplaceAll(resStr, m, anonymizeString(m))
+	sensittiveProviderAttributes := []string{"url", "bindDN", "hostname", "clientID", "hostedDomain", "issuer", "domainName"}
+	for _, ip := range ips {
+		ip, ok := ip.(map[string]interface{})
+		if !ok {
+			klog.Warningln("Failed to convert %v to map[string]interface{}", ip)
+			continue
+		}
+		for _, sensitiveVal := range sensittiveProviderAttributes {
+			// check if the sensitive value is in the provider definition under "provider" attribute
+			// and overwrite only if exists
+			if val, err := utils.NestedStringWrapper(ip, "provider", sensitiveVal); err == nil {
+				_ = unstructured.SetNestedField(ip, anonymize.String(val), "provider", sensitiveVal)
+			}
+		}
 	}
-	return []byte(resStr), nil
-}
-
-// GetExtension returns extension for anonymized cluster operator objects
-func (a ClusterOperatorResourceAnonymizer) GetExtension() string {
-	return "json"
+	_ = unstructured.SetNestedSlice(obj, ips, "spec", "observedConfig", "oauthServer", "oauthConfig", "identityProviders")
 }
