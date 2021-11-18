@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 
 	"k8s.io/client-go/kubernetes"
@@ -31,9 +32,16 @@ func (g *Gatherer) BuildGatherAlertmanagerLogs(paramsInterface interface{}) (gat
 
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
-			records, err := g.gatherAlertmanagerLogs(ctx, params)
+			kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 			if err != nil {
-				return records, err
+				return nil, []error{err}
+			}
+
+			coreClient := kubeClient.CoreV1()
+
+			records, errs := g.gatherAlertmanagerLogs(ctx, params, coreClient)
+			if errs != nil {
+				return records, errs
 			}
 			return records, nil
 		},
@@ -41,18 +49,14 @@ func (g *Gatherer) BuildGatherAlertmanagerLogs(paramsInterface interface{}) (gat
 	}, nil
 }
 
-func (g *Gatherer) gatherAlertmanagerLogs(ctx context.Context, params GatherAlertmanagerLogsParams) ([]record.Record, []error) {
+func (g *Gatherer) gatherAlertmanagerLogs(
+	ctx context.Context,
+	params GatherAlertmanagerLogsParams,
+	coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	alertInstances, ok := g.firingAlerts[params.AlertName]
 	if !ok {
 		return nil, []error{fmt.Errorf("conditional gatherer triggered, but specified alert %q is not firing", params.AlertName)}
 	}
-
-	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	coreClient := kubeClient.CoreV1()
 
 	var errs []error
 	var records []record.Record
