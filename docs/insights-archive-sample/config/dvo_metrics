@@ -1,3 +1,4 @@
+# http://deployment-validation-operator-metrics.deployment-validation-operator.svc:8383
 deployment_validation_operator_cluster_admin_role_binding{kind="ClusterRoleBinding",name="cluster-admin",namespace=""} 1
 deployment_validation_operator_cluster_admin_role_binding{kind="ClusterRoleBinding",name="cluster-admins",namespace=""} 1
 deployment_validation_operator_cluster_admin_role_binding{kind="ClusterRoleBinding",name="cluster-storage-operator-role",namespace=""} 1
