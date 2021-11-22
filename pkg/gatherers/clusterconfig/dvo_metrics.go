@@ -73,7 +73,7 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 				// Log errors as warnings and don't fail the entire gatherer.
 				// It is possible that this service is not really the correct one
 				// and a different service may return the metrics we are looking for.
-				klog.Warningf("Unable to read metrics from endpoint %q: %v", apiURL, err)
+				klog.Warningf("Unable to read metrics from endpoint %q: %v", apiURL.String(), err)
 				nonFatalErrors = append(nonFatalErrors, err)
 				continue
 			}
@@ -83,7 +83,7 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 				prefixedLines = append(prefixedLines, utils.MetricsLineSep...)
 			}
 
-			allDVOMetricsLines = append(allDVOMetricsLines, []byte(fmt.Sprintf("# %v\n", apiURL))...)
+			allDVOMetricsLines = append(allDVOMetricsLines, []byte(fmt.Sprintf("# %s\n", apiURL.String()))...)
 			allDVOMetricsLines = append(allDVOMetricsLines, prefixedLines...)
 		}
 	}
