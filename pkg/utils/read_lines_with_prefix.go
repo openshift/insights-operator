@@ -16,7 +16,7 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 		rc, err := reader.Read(tmp)
 		// If nothing was read or if a non-EOF error occurred.
 		if rc <= 0 || err != nil && err != io.EOF {
-			buff = appendIfPrefixed(buff, prefix, partialLine)
+			buff = appendBufferIfLinePrefixed(buff, prefix, partialLine)
 			return buff, err
 		}
 		lines := bytes.SplitAfter(tmp[:rc], MetricsLineSep)
@@ -29,7 +29,7 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 
 			// If the partial line has been finished, it should be processed.
 			if bytes.HasSuffix(partialLine, MetricsLineSep) {
-				buff = appendIfPrefixed(buff, prefix, partialLine)
+				buff = appendBufferIfLinePrefixed(buff, prefix, partialLine)
 				partialLine = []byte{}
 			} else if len(lines) > 0 {
 				// It should never happen, but it's better to have this sanity check.
@@ -46,18 +46,18 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 
 		// The slice now only contains full lines.
 		for _, line := range lines {
-			buff = appendIfPrefixed(buff, prefix, line)
+			buff = appendBufferIfLinePrefixed(buff, prefix, line)
 		}
 
 		// If the EOF was reported by the reader.
 		if err == io.EOF {
-			buff = appendIfPrefixed(buff, prefix, partialLine)
+			buff = appendBufferIfLinePrefixed(buff, prefix, partialLine)
 			return buff, err
 		}
 	}
 }
 
-func appendIfPrefixed(buff []byte, prefix []byte, line []byte) []byte {
+func appendBufferIfLinePrefixed(buff, prefix, line []byte) []byte {
 	if bytes.HasPrefix(line, prefix) {
 		buff = append(buff, line...)
 	}
