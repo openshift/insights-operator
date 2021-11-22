@@ -5,6 +5,6 @@ const (
 )
 
 var (
-	// lineSep is the line separator used by the alerts metric
-	lineSep = []byte{'\n'}
+	// MetricsLineSep is the line separator used by the alerts metric
+	MetricsLineSep = []byte{'\n'}
 )

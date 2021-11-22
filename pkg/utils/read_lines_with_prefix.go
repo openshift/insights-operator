@@ -19,7 +19,7 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 			}
 			return buff, err
 		}
-		lines := bytes.SplitAfter(tmp[:rc], lineSep)
+		lines := bytes.SplitAfter(tmp[:rc], MetricsLineSep)
 
 		// If the last line of the previous iteration wasn't properly terminated.
 		if len(partialLine) > 0 {
@@ -28,7 +28,7 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 			lines = lines[1:]
 
 			// If the partial line has been finished, it should be processed.
-			if bytes.HasSuffix(partialLine, lineSep) {
+			if bytes.HasSuffix(partialLine, MetricsLineSep) {
 				if bytes.HasPrefix(partialLine, prefix) {
 					buff = append(buff, partialLine...)
 				}
@@ -40,7 +40,7 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 		}
 
 		// Check if the last line is terminated with a line separator.
-		if linesLen := len(lines); linesLen > 0 && !bytes.HasSuffix(lines[linesLen-1], lineSep) {
+		if linesLen := len(lines); linesLen > 0 && !bytes.HasSuffix(lines[linesLen-1], MetricsLineSep) {
 			partialLine = append(partialLine, lines[linesLen-1]...)
 			// Remove the last line from the slice.
 			lines = lines[:linesLen-1]

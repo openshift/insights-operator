@@ -25,11 +25,11 @@ func (l *LineLimitedReader) Read(p []byte) (int, error) {
 	}
 
 	rc, err := l.reader.Read(p)
-	l.totalLinesRead += bytes.Count(p[:rc], lineSep)
+	l.totalLinesRead += bytes.Count(p[:rc], MetricsLineSep)
 
 	lc := 0
 	for {
-		lineSepIdx := bytes.Index(p[lc:rc], lineSep)
+		lineSepIdx := bytes.Index(p[lc:rc], MetricsLineSep)
 		if lineSepIdx == -1 {
 			return rc, err
 		}
