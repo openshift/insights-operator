@@ -293,6 +293,19 @@ collects CostManagementMetricsConfigs definitions.
   * 4.10+
 
 
+## DVOMetrics
+
+collects metrics from the Deployment Validation Operator's
+metrics service. The metrics are fetched via the /metrics endpoint and
+filtered to only include those with a deployment_validation_operator_ prefix.
+
+* Location in archive: config/dvo_metrics
+* See: docs/insights-archive-sample/config/dvo_metrics
+* Id in config: dvo_metrics
+* Since version:
+  - 4.10
+
+
 ## HostSubnet
 
 collects HostSubnet information
@@ -467,7 +480,7 @@ Gathered metrics:
   namespace CPU and memory usage
   followed by at most 1000 lines of ALERTS metric
 
-* Location in archive: config/metrics/
+* Location in archive: config/metrics
 * See: docs/insights-archive-sample/config/metrics
 * Id in config: metrics
 * Since version:
