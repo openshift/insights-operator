@@ -95,11 +95,15 @@ func gatherDVOMetrics(
 		}
 	}
 
-	records := []record.Record{
-		{Name: "config/dvo_metrics", Item: marshal.RawByte(allDVOMetricsLines)},
+	// If there are no DVO metrics (or no DVO metrics service), don't create a record at all.
+	if len(allDVOMetricsLines) == 0 {
+		klog.Warning("No DVO metrics gathered")
+		return nil, nonFatalErrors
 	}
 
-	return records, nonFatalErrors
+	return []record.Record{
+		{Name: "config/dvo_metrics", Item: marshal.RawByte(allDVOMetricsLines)},
+	}, nonFatalErrors
 }
 
 func gatherDVOMetricsFromEndpoint(
