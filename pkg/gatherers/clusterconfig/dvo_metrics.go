@@ -1,6 +1,7 @@
 package clusterconfig
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -22,24 +23,25 @@ import (
 
 const (
 	dvoNamespace = "deployment-validation-operator"
-	// dvo_metrics_endpoint = "http://deployment-validation-operator-metrics.deployment-validation-operator.svc:8383"
 )
 
 var (
+	// Only services with the word "metrics" in their name should be considered.
 	dvoMetricsServiceNameRegex = regexp.MustCompile(`\bmetrics\b`)
-	dvoMetricsPrefix           = []byte("deployment_validation_operator_")
+	// Only metrics with the DVO prefix should be gathered.
+	dvoMetricsPrefix = []byte("deployment_validation_operator_")
 )
 
+// GatherDVOMetrics collects metrics from the Deployment Validation Operator's
+// metrics service. The metrics are fetched via the /metrics endpoint and
+// filtered to only include those with a deployment_validation_operator_ prefix.
+//
+// * Location in archive: config/dvo_metrics
+// * See: docs/insights-archive-sample/config/dvo_metrics
+// * Id in config: dvo_metrics
+// * Since version:
+//   - 4.10
 func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []error) {
-	// apiURL, err := url.Parse(dvo_metrics_endpoint)
-	// if err != nil {
-	// 	return nil, []error{err}
-	// }
-	// metricsRESTClient, err := rest.NewRESTClient(apiURL, "/", rest.ClientContentConfig{}, g.gatherKubeConfig.RateLimiter, http.DefaultClient)
-	// if err != nil {
-	// 	klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
-	// 	return nil, nil
-	// }
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
@@ -54,8 +56,8 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 		return nil, []error{err}
 	}
 
+	nonFatalErrors := []error{}
 	allDVOMetricsLines := []byte{}
-
 	for _, service := range serviceList.Items {
 		if !dvoMetricsServiceNameRegex.MatchString(service.Name) {
 			continue
@@ -65,36 +67,56 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 				Scheme: "http",
 				Host:   fmt.Sprintf("%s.%s.svc:%d", service.Name, dvoNamespace, port.Port),
 			}
-			metricsRESTClient, err := rest.NewRESTClient(&apiURL, "/", rest.ClientContentConfig{}, rateLimiter, http.DefaultClient)
+
+			prefixedLines, err := gatherDVOMetricsFromEndpoint(ctx, apiURL, rateLimiter)
 			if err != nil {
-				klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
-				return nil, nil
+				// Log errors as warnings and don't fail the entire gatherer.
+				// It is possible that this service is not really the correct one
+				// and a different service may return the metrics we are looking for.
+				klog.Warningf("Unable to read metrics from endpoint %q: %v", apiURL, err)
+				nonFatalErrors = append(nonFatalErrors, err)
+				continue
 			}
 
-			dataReader, err := metricsRESTClient.Get().AbsPath("metrics").Stream(ctx)
-			defer func() {
-				if err := dataReader.Close(); err != nil {
-					klog.Errorf("Unable to close metrics stream: %v", err)
-				}
-			}()
-			if err != nil {
-				klog.Errorf("Unable to retrieve most recent metrics: %v", err)
-				return nil, []error{err}
+			// Make sure the metrics are terminated by a final line separator or completely empty.
+			if len(prefixedLines) > 0 && !bytes.HasSuffix(prefixedLines, utils.MetricsLineSep) {
+				prefixedLines = append(prefixedLines, utils.MetricsLineSep...)
 			}
 
-			prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvoMetricsPrefix)
-			if err != io.EOF {
-				klog.Errorf("Unable to read metrics lines with DVO prefix: %v", err)
-				return nil, []error{err}
-			}
-
+			allDVOMetricsLines = append(allDVOMetricsLines, []byte(fmt.Sprintf("# %v\n", apiURL))...)
 			allDVOMetricsLines = append(allDVOMetricsLines, prefixedLines...)
 		}
 	}
 
 	records := []record.Record{
-		{Name: "config/dvo_metrics_filtered", Item: marshal.RawByte(allDVOMetricsLines)},
+		{Name: "config/dvo_metrics", Item: marshal.RawByte(allDVOMetricsLines)},
 	}
 
-	return records, nil
+	return records, nonFatalErrors
+}
+
+func gatherDVOMetricsFromEndpoint(ctx context.Context, apiURL url.URL, rateLimiter flowcontrol.RateLimiter) ([]byte, error) {
+	metricsRESTClient, err := rest.NewRESTClient(&apiURL, "/", rest.ClientContentConfig{}, rateLimiter, http.DefaultClient)
+	if err != nil {
+		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
+		return nil, err
+	}
+
+	dataReader, err := metricsRESTClient.Get().AbsPath("metrics").Stream(ctx)
+	if err != nil {
+		klog.Warningf("Unable to retrieve most recent metrics: %v", err)
+		return nil, err
+	}
+	defer func() {
+		if err := dataReader.Close(); err != nil {
+			klog.Errorf("Unable to close metrics stream: %v", err)
+		}
+	}()
+
+	prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvoMetricsPrefix)
+	if err != io.EOF {
+		klog.Warningf("Unable to read metrics lines with DVO prefix: %v", err)
+		return prefixedLines, err
+	}
+	return prefixedLines, nil
 }
