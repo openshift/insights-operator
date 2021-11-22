@@ -6,6 +6,8 @@ import (
 	"io"
 )
 
+// ReadAllLinesWithPrefix reads lines from the given reader
+// and returns those that begin with the specified prefix.
 func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 	buff := []byte{}
 	tmp := make([]byte, 1024)
