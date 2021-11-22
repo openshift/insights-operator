@@ -50,7 +50,11 @@ func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []err
 	return gatherDVOMetrics(ctx, gatherKubeClient.CoreV1(), g.gatherKubeConfig.RateLimiter)
 }
 
-func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interface, rateLimiter flowcontrol.RateLimiter) ([]record.Record, []error) {
+func gatherDVOMetrics(
+	ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
+	rateLimiter flowcontrol.RateLimiter,
+) ([]record.Record, []error) {
 	serviceList, err := coreClient.Services(dvoNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
@@ -58,7 +62,9 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 
 	nonFatalErrors := []error{}
 	allDVOMetricsLines := []byte{}
-	for _, service := range serviceList.Items {
+	for svcIdx := range serviceList.Items {
+		// Use pointer to make gocritic happy and avoid copying the whole Service struct.
+		service := &serviceList.Items[svcIdx]
 		if !dvoMetricsServiceNameRegex.MatchString(service.Name) {
 			continue
 		}
@@ -68,7 +74,7 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 				Host:   fmt.Sprintf("%s.%s.svc:%d", service.Name, dvoNamespace, port.Port),
 			}
 
-			prefixedLines, err := gatherDVOMetricsFromEndpoint(ctx, apiURL, rateLimiter)
+			prefixedLines, err := gatherDVOMetricsFromEndpoint(ctx, &apiURL, rateLimiter)
 			if err != nil {
 				// Log errors as warnings and don't fail the entire gatherer.
 				// It is possible that this service is not really the correct one
@@ -83,7 +89,8 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 				prefixedLines = append(prefixedLines, utils.MetricsLineSep...)
 			}
 
-			allDVOMetricsLines = append(allDVOMetricsLines, []byte(fmt.Sprintf("# %s\n", apiURL.String()))...)
+			metricsHeading := fmt.Sprintf("# %s\n", apiURL.String())
+			allDVOMetricsLines = append(allDVOMetricsLines, []byte(metricsHeading)...)
 			allDVOMetricsLines = append(allDVOMetricsLines, prefixedLines...)
 		}
 	}
@@ -95,8 +102,18 @@ func gatherDVOMetrics(ctx context.Context, coreClient corev1client.CoreV1Interfa
 	return records, nonFatalErrors
 }
 
-func gatherDVOMetricsFromEndpoint(ctx context.Context, apiURL url.URL, rateLimiter flowcontrol.RateLimiter) ([]byte, error) {
-	metricsRESTClient, err := rest.NewRESTClient(&apiURL, "/", rest.ClientContentConfig{}, rateLimiter, http.DefaultClient)
+func gatherDVOMetricsFromEndpoint(
+	ctx context.Context,
+	apiURL *url.URL,
+	rateLimiter flowcontrol.RateLimiter,
+) ([]byte, error) {
+	metricsRESTClient, err := rest.NewRESTClient(
+		apiURL,
+		"/",
+		rest.ClientContentConfig{},
+		rateLimiter,
+		http.DefaultClient,
+	)
 	if err != nil {
 		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
 		return nil, err
@@ -108,8 +125,9 @@ func gatherDVOMetricsFromEndpoint(ctx context.Context, apiURL url.URL, rateLimit
 		return nil, err
 	}
 	defer func() {
-		if err := dataReader.Close(); err != nil {
-			klog.Errorf("Unable to close metrics stream: %v", err)
+		// The error variable must have a more unique name to satisfy govet.
+		if closeErr := dataReader.Close(); closeErr != nil {
+			klog.Errorf("Unable to close metrics stream: %v", closeErr)
 		}
 	}()
 
