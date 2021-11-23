@@ -35,7 +35,7 @@ const (
 	workloadGatherPageSize = 500
 	// limit the number of collected Pods in this gatherer. In the worst case, one Pod can add around 600 bytes (before compression)
 	// This limit can be removed in the future.
-	podsLimit = 6000
+	podsLimit = 8000
 )
 
 // GatherWorkloadInfo collects summarized info about the workloads on a cluster
