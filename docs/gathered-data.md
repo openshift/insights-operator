@@ -774,6 +774,17 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
   * 4.7+
 
 
+## SilencedAlerts
+
+gathers the alerts that have been silenced.
+
+* Location in archive: config/silenced_alerts
+* See: docs/insights-archive-sample/config/silenced_alerts
+* Id in config: silenced_alerts
+* Since version:
+  * 4.10+
+
+
 ## TSDBStatus
 
 gathers the Prometheus TSDB status.

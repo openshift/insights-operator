@@ -56,6 +56,14 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	metricsGatherKubeConfig.APIPath = "/"
 	metricsGatherKubeConfig.Host = metricHost
 
+	// the alertSilence client will connect to alert manager and collect a set of alerts that have been silenced.
+	alertsGatherKubeConfig := rest.CopyConfig(kubeConfig)
+	alertsGatherKubeConfig.CAFile = metricCAFile
+	alertsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
+	alertsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
+	alertsGatherKubeConfig.APIPath = "/"
+	alertsGatherKubeConfig.Host = alertManagerHost
+
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
 		if err = os.MkdirAll(d.StoragePath, 0777); err != nil {
@@ -81,7 +89,8 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	defer rec.Flush()
 
 	gatherers := gather.CreateAllGatherers(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, &d.Controller,
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,
+		anonymizer, &d.Controller,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)

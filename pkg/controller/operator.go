@@ -82,6 +82,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	metricsGatherKubeConfig.APIPath = "/"
 	metricsGatherKubeConfig.Host = metricHost
 
+	// the metrics client will connect to alert manager and collect a set of silences
+	alertsGatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
+	alertsGatherKubeConfig.CAFile = metricCAFile
+	alertsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
+	alertsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
+	alertsGatherKubeConfig.APIPath = "/"
+	alertsGatherKubeConfig.Host = alertManagerHost
+
 	// If we fail, it's likely due to the service CA not existing yet. Warn and continue,
 	// and when the service-ca is loaded we will be restarted.
 	_, err = kubernetes.NewForConfig(gatherProtoKubeConfig)
@@ -122,7 +130,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, &s.Controller,
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer, &s.Controller,
 	)
 	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer)
 	statusReporter.AddSources(periodicGather.Sources()...)

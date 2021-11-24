@@ -16,6 +16,7 @@ type Gatherer struct {
 	gatherKubeConfig        *rest.Config
 	gatherProtoKubeConfig   *rest.Config
 	metricsGatherKubeConfig *rest.Config
+	alertsGatherKubeConfig  *rest.Config
 	anonymizer              *anonymization.Anonymizer
 	interval                time.Duration
 }
@@ -94,16 +95,18 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"cost_management_metrics_configs":   failableFunc((*Gatherer).GatherCostManagementMetricsConfigs),
 	"node_logs":                         failableFunc((*Gatherer).GatherNodeLogs),
 	"tsdb_status":                       failableFunc((*Gatherer).GatherTSDBStatus),
+	"silenced_alerts":                   failableFunc((*Gatherer).GatherSilencedAlerts),
 }
 
 func New(
-	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig *rest.Config,
+	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
 	anonymizer *anonymization.Anonymizer, interval time.Duration,
 ) *Gatherer {
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
+		alertsGatherKubeConfig:  alertsGatherKubeConfig,
 		anonymizer:              anonymizer,
 		interval:                interval,
 	}
