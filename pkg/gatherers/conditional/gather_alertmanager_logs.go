@@ -3,7 +3,6 @@ package conditional
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
@@ -18,7 +17,8 @@ import (
 
 // BuildGatherAlertmanagerLogs collects alertmanager logs for pods firing one the configured alerts.
 //
-// * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/logs/alertmanager-<event-name>.log
+// * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/logs/last-{i}-lines.log
+// * Id in config: alertmanager_logs
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) BuildGatherAlertmanagerLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
@@ -86,11 +86,12 @@ func (g *Gatherer) gatherAlertmanagerLogs(
 			},
 			func(namespace string, podName string, containerName string) string {
 				return fmt.Sprintf(
-					"%s/namespaces/%s/pods/%s/containers/logs/alertmanager-%s.log",
+					"%s/namespaces/%s/pods/%s/containers/%s/logs/last-%d-lines.log",
 					g.GetName(),
 					namespace,
 					podName,
-					strings.ToLower(params.AlertName),
+					containerName,
+					params.TailLines,
 				)
 			},
 		)
@@ -104,24 +105,4 @@ func (g *Gatherer) gatherAlertmanagerLogs(
 	}
 
 	return records, errs
-}
-
-func getAlertPodName(labels AlertLabels) (string, error) {
-	name, ok := labels["pod"]
-	if !ok {
-		newErr := fmt.Errorf("alert is missing 'pod' label")
-		klog.Warningln(newErr.Error())
-		return "", newErr
-	}
-	return name, nil
-}
-
-func getAlertPodNamespace(labels AlertLabels) (string, error) {
-	namespace, ok := labels["namespace"]
-	if !ok {
-		newErr := fmt.Errorf("alert is missing 'namespace' label")
-		klog.Warningln(newErr.Error())
-		return "", newErr
-	}
-	return namespace, nil
 }

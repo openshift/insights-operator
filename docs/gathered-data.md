@@ -27,7 +27,8 @@ Params is of type AlertIsFiringConditionParams:
 
 collects alertmanager logs for pods firing one the configured alerts.
 
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/logs/alertmanager-<event-name>.log
+* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/logs/last-{i}-lines.log
+* Id in config: alertmanager_logs
 * Since versions:
   * 4.10+
 

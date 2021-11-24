@@ -50,20 +50,18 @@ func (g *Gatherer) gatherLogsOfUnhealthyPods(
 		return nil, []error{fmt.Errorf("conditional gatherer triggered, but specified alert %q is not firing", params.AlertName)}
 	}
 	for _, alertLabels := range alertInstances {
-		alertNamespace, ok := alertLabels["namespace"]
-		if !ok {
-			newErr := fmt.Errorf("alert is missing 'namespace' label")
-			klog.Warningln(newErr.Error())
-			errs = append(errs, newErr)
+		alertNamespace, err := getAlertPodNamespace(alertLabels)
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
-		alertPod, ok := alertLabels["pod"]
-		if !ok {
-			newErr := fmt.Errorf("alert is missing 'pod' label")
-			klog.Warningln(newErr.Error())
-			errs = append(errs, newErr)
+
+		alertPod, err := getAlertPodName(alertLabels)
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
+
 		// The container label may not be present for all alerts (e.g., KubePodNotReady).
 		containerFilter := ""
 		if alertContainer, ok := alertLabels["container"]; ok && alertContainer != "" {

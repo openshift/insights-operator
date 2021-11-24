@@ -138,22 +138,6 @@ var defaultGatheringRules = []GatheringRule{
 			{
 				Type: AlertIsFiring,
 				Alert: &AlertConditionParams{
-					Name: "AlertmanagerClusterFailedToSendAlerts",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherAlertmanagerLogs: GatherAlertmanagerLogsParams{
-				AlertName: "AlertmanagerClusterFailedToSendAlerts",
-				TailLines: 50,
-			},
-		},
-	},
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
 					Name: "AlertmanagerFailedToSendAlerts",
 				},
 			},
