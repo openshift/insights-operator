@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+  name: insights-prometheus-rules
+  namespace: openshift-insights
+spec:
+  groups:
+  - name: insights
+    rules:
+    - alert: InsightsDisabled
+      annotations:
+        description: 'Insights operator is disabled and the cluster will not receive any remote health checks and recommendations'
+        summary: Insights operator is disabled.
+      expr: |
+       cluster_operator_conditions{name="insights", condition="Disabled"} == 1
+      for: 5m
+      labels:
+        severity: info
+        
