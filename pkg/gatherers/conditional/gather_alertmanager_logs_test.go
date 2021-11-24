@@ -79,7 +79,7 @@ func TestGatherer_gatherAlertmanagerLogs(t *testing.T) {
 				TailLines: 100,
 			},
 			want: []record.Record{{
-				// nolint:lll
+				// nolint: lll
 				Name:     "conditional/namespaces/openshift-monitoring/pods/alertmanager-main-0/containers/alertmanager/logs/last-100-lines.log",
 				Captured: time.Time{},
 				Item:     marshal.Raw{Str: "fake logs"},
