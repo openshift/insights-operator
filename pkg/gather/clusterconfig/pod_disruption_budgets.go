@@ -54,19 +54,19 @@ func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.P
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: PodDisruptionBudgetsAnonymizer{&pdb},
+			Item: PodDisruptionBudgetsAnonymizer{pdb},
 		})
 	}
 	return records, nil
 }
 
 type PodDisruptionBudgetsAnonymizer struct {
-	*policyv1beta1.PodDisruptionBudget
+	policyv1beta1.PodDisruptionBudget
 }
 
 // Marshal implements serialization of a PodDisruptionBudget with anonymization
 func (a PodDisruptionBudgetsAnonymizer) Marshal(_ context.Context) ([]byte, error) {
-	return runtime.Encode(policyV1Beta1Serializer, a.PodDisruptionBudget)
+	return runtime.Encode(policyV1Beta1Serializer, &a.PodDisruptionBudget)
 }
 
 // GetExtension returns extension for anonymized PodDisruptionBudget objects
