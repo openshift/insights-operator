@@ -76,11 +76,11 @@ func TestGatherer_gatherAlertmanagerLogs(t *testing.T) {
 			name: "Can record logs",
 			params: GatherAlertmanagerLogsParams{
 				AlertName: "AlertmanagerFailedToSendAlerts",
-				TailLines: 100,
+				TailLines: 50,
 			},
 			want: []record.Record{{
 				// nolint: lll
-				Name:     "conditional/namespaces/openshift-monitoring/pods/alertmanager-main-0/containers/alertmanager/logs/last-100-lines.log",
+				Name:     "conditional/namespaces/openshift-monitoring/pods/alertmanager-main-0/containers/alertmanager/logs/last-50-lines.log",
 				Captured: time.Time{},
 				Item:     marshal.Raw{Str: "fake logs"},
 			}},
