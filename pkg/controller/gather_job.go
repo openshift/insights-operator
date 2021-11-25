@@ -88,8 +88,13 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	for _, gatherer := range gatherers {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, configObserver)
 		if err != nil {
-			return err
+			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
+			functionReports = append(functionReports, gather.GathererFunctionReport{
+				FuncName: gatherer.GetName(),
+				Errors:   []string{err.Error()},
+			})
 		}
+
 		for i := range functionReports {
 			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 		}
