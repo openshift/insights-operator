@@ -6,7 +6,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -219,7 +218,7 @@ func findGoMod(pkgFilePath string) (goModPath, relPkgPath string, err error) {
 
 // getModuleNameFromGoMod parses the go.mod file and returns the name (URL) of the module.
 func getModuleNameFromGoMod(goModPath string) (string, error) {
-	goModBytes, err := ioutil.ReadFile(goModPath)
+	goModBytes, err := os.ReadFile(goModPath)
 	if err != nil {
 		return "", err
 	}

@@ -1,10 +1,11 @@
 package clusterconfig
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -86,7 +87,7 @@ func Test_ConfigMap_Anonymizer(t *testing.T) {
 			mustNotFail(t, err, "unmarshaling of expected failed %+v")
 			exp, err := json.Marshal(d)
 			mustNotFail(t, err, "marshaling of expected failed %+v")
-			if string(exp) != string(md) {
+			if !bytes.Equal(exp, md) {
 				t.Fatalf("The test %s result is unexpected. Result: \n%s \nExpected \n%s", tt.testName, string(md), string(exp))
 			}
 		})
@@ -119,7 +120,7 @@ func readConfigMapsTestData() (*corev1.ConfigMapList, error) {
 
 	defer f.Close()
 
-	bts, err := ioutil.ReadAll(f)
+	bts, err := io.ReadAll(f)
 	if err != nil {
 		return nil, fmt.Errorf("error reading test data file %+v ", err)
 	}

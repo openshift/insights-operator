@@ -2,7 +2,6 @@ package start
 
 import (
 	"context"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
@@ -87,7 +86,7 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 
 		var clientConfig *rest.Config
 		if kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String(); len(kubeConfigPath) > 0 {
-			kubeConfigBytes, err := ioutil.ReadFile(kubeConfigPath) //nolint: govet
+			kubeConfigBytes, err := os.ReadFile(kubeConfigPath) //nolint: govet
 			if err != nil {
 				klog.Exit(err)
 			}
@@ -143,7 +142,7 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 		}
 
 		// if the service CA is rotated, we want to restart
-		if data, err := ioutil.ReadFile(serviceCACertPath); err == nil {
+		if data, err := os.ReadFile(serviceCACertPath); err == nil {
 			startingFileContent[serviceCACertPath] = data
 		} else {
 			klog.V(4).Infof("Unable to read service ca bundle: %v", err)

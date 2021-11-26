@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -102,7 +101,7 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 }
 
 func getTrustedCABundle() (*x509.CertPool, error) {
-	caBytes, err := ioutil.ReadFile("/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt")
+	caBytes, err := os.ReadFile("/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -251,7 +250,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	requestID := resp.Header.Get(insightsReqId)
 
 	defer func() {
-		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
+		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
 			klog.Warningf("error copying body: %v", err)
 		}
 		if err := resp.Body.Close(); err != nil {
@@ -331,14 +330,14 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
 		return nil, fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
 	}
 	if resp.StatusCode == http.StatusNotFound {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
@@ -350,7 +349,7 @@ func (c Client) RecvReport(ctx context.Context, endpoint string) (*io.ReadCloser
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		if len(body) > 1024 {
 			body = body[:1024]
 		}
@@ -395,14 +394,14 @@ func (c Client) RecvSCACerts(ctx context.Context, endpoint string) ([]byte, erro
 		return nil, ocmErrorMessage(res.Request.URL, res)
 	}
 
-	return ioutil.ReadAll(res.Body)
+	return io.ReadAll(res.Body)
 }
 
 func responseBody(r *http.Response) string {
 	if r == nil {
 		return ""
 	}
-	body, _ := ioutil.ReadAll(r.Body)
+	body, _ := io.ReadAll(r.Body)
 	if len(body) > responseBodyLogLen {
 		body = body[:responseBodyLogLen]
 	}

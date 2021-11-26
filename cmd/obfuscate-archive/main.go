@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -190,7 +189,7 @@ func readArchive(path string) (map[string]*record.MemoryRecord, error) {
 			return nil, err
 		}
 
-		content, err := ioutil.ReadAll(tarReader)
+		content, err := io.ReadAll(tarReader)
 		if err != nil {
 			return nil, err
 		}
