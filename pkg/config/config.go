@@ -27,7 +27,7 @@ type Serialized struct {
 	OCM                     struct {
 		SCAEndpoint string `json:"scaEndpoint"`
 		SCAInterval string `json:"scaInterval"`
-		SCADisabled bool   `json:"scaInterval"`
+		SCADisabled bool   `json:"scaDisabled"`
 	}
 }
 

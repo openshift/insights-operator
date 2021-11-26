@@ -91,18 +91,19 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 	data, err := c.requestSCAWithExpBackoff(endpoint)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
+		errMsg := fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err)
 		if ok {
-			// mark as degraded only in case of HTTP 500 and higher
-			if httpErr.StatusCode >= 500 {
-				c.Simple.UpdateStatus(controllerstatus.Summary{
-					Operation: controllerstatus.PullingSCACerts,
-					Reason:    "FailedToPullSCACerts",
-					Message:   fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err),
-				})
-				return
-			}
+			c.Simple.UpdateStatus(controllerstatus.Summary{
+				Operation: controllerstatus.Operation{
+					Name:           controllerstatus.PullingSCACerts.Name,
+					HTTPStatusCode: httpErr.StatusCode,
+				},
+				Reason:  fmt.Sprintf("HTTP%d", httpErr.StatusCode),
+				Message: errMsg,
+			})
+			return
 		}
-		klog.Warningf("Failed to pull SCA certs: %v", err)
+		klog.Warningf(errMsg)
 		c.Simple.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.PullingSCACerts,
 			Healthy:   true,

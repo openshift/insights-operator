@@ -5,6 +5,7 @@ const (
 	UploadStatus   = "upload"
 	DownloadStatus = "download"
 	ErrorStatus    = "error"
+	ScaPullStatus  = "scaPullStatus"
 )
 
 type controllerStatus struct {
