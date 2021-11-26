@@ -64,9 +64,9 @@ func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configura
 // Run periodically queries the OCM API and update corresponding secret accordingly
 func (c *Controller) Run() {
 	cfg := c.configurator.Config()
-	endpoint := cfg.OCMConfig.Endpoint
-	interval := cfg.OCMConfig.Interval
-	disabled := cfg.OCMConfig.Disabled
+	endpoint := cfg.OCMConfig.SCAEndpoint
+	interval := cfg.OCMConfig.SCAInterval
+	disabled := cfg.OCMConfig.SCADisabled
 	configCh, cancel := c.configurator.ConfigChanged()
 	defer cancel()
 	if !disabled {
@@ -80,9 +80,9 @@ func (c *Controller) Run() {
 			}
 		case <-configCh:
 			cfg := c.configurator.Config()
-			interval = cfg.OCMConfig.Interval
-			endpoint = cfg.OCMConfig.Endpoint
-			disabled = cfg.OCMConfig.Disabled
+			interval = cfg.OCMConfig.SCAInterval
+			endpoint = cfg.OCMConfig.SCAEndpoint
+			disabled = cfg.OCMConfig.SCADisabled
 		}
 	}
 }
@@ -193,11 +193,11 @@ func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secre
 // The exponential backoff is applied only for HTTP errors >= 500.
 func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
-		Duration: c.configurator.Config().OCMConfig.Interval / 32, // 15 min by default
+		Duration: c.configurator.Config().OCMConfig.SCAInterval / 32, // 15 min by default
 		Factor:   2,
 		Jitter:   0,
 		Steps:    status.OCMAPIFailureCountThreshold,
-		Cap:      c.configurator.Config().OCMConfig.Interval,
+		Cap:      c.configurator.Config().OCMConfig.SCAInterval,
 	}
 	var data []byte
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {
