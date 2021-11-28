@@ -81,7 +81,7 @@
                         "description": "cluster_version_matches condition",
                         "required": [
                             "type",
-                            "params"
+                            "cluster_version_matches"
                         ],
                         "properties": {
                             "type": {
@@ -90,7 +90,7 @@
                                 "description": "Type of the condition cluster_version_matches",
                                 "const": "cluster_version_matches"
                             },
-                            "params": {
+                            "cluster_version_matches": {
                                 "type": "object",
                                 "title": "ClusterVersionMatchesConditionParams",
                                 "description": "Parameters of the condition cluster_version_matches",
