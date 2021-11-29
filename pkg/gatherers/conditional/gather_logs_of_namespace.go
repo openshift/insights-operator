@@ -41,7 +41,11 @@ func (g *Gatherer) BuildGatherLogsOfNamespace(paramsInterface interface{}) (gath
 	}, nil
 }
 
-func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, tailLines int64, maxContainers int) ([]record.Record, []error) {
+func (g *Gatherer) gatherLogsOfNamespace(
+	ctx context.Context,
+	namespace string,
+	tailLines int64,
+	maxContainers int) ([]record.Record, []error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
