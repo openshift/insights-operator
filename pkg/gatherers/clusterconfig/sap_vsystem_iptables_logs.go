@@ -93,7 +93,7 @@ func gatherSAPLicenseManagementLogs(
 			nil,
 		)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, err...)
 		} else {
 			records = append(records, namespaceRecords...)
 		}

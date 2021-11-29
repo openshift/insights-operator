@@ -35,27 +35,23 @@ func (g *Gatherer) BuildGatherLogsOfNamespace(paramsInterface interface{}) (gath
 
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
-			records, err := g.gatherLogsOfNamespace(ctx, params.Namespace, params.TailLines, params.MaxContainers)
-			if err != nil {
-				return records, []error{err}
-			}
-			return records, nil
+			return g.gatherLogsOfNamespace(ctx, params.Namespace, params.TailLines, params.MaxContainers)
 		},
 		CanFail: canConditionalGathererFail,
 	}, nil
 }
 
-func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, tailLines int64, maxContainers int) ([]record.Record, error) {
+func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, tailLines int64, maxContainers int) ([]record.Record, []error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
-		return nil, err
+		return nil, []error{err}
 	}
 
 	coreClient := kubeClient.CoreV1()
 
 	fileName := fmt.Sprintf("last-%v-lines.log", tailLines)
 
-	records, err := common.CollectLogsFromContainers(
+	return common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		common.LogContainersFilter{
@@ -72,9 +68,4 @@ func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, 
 			)
 		},
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return records, nil
 }
