@@ -59,6 +59,8 @@ type GatherLogsOfNamespaceParams struct {
 	Namespace string `json:"namespace"`
 	// A number of log lines to keep for each container
 	TailLines int64 `json:"tail_lines"`
+	// MaxContainers limit the number of containers per namespace
+	MaxContainers int `json:"max_containers"`
 }
 
 // GatherImageStreamsOfNamespaceParams defines parameters for image streams of namespace gatherer

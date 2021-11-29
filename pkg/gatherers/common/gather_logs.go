@@ -23,6 +23,7 @@ type LogContainersFilter struct {
 	LabelSelector            string
 	FieldSelector            string
 	ContainerNameRegexFilter string
+	MaxNamespaceContainers   int
 }
 
 // LogMessagesFilter allows you to filter messages
@@ -40,6 +41,7 @@ type LogMessagesFilter struct {
 //     - namespace in which to search for pods
 //     - labelSelector to filter pods by their labels (keep empty to not filter)
 //     - containerNameRegexFilter to filter containers in the pod (keep empty to not filter)
+//	   - maxNamespaceContainers to limit the containers in the given namespace (keep empty to not limit)
 //   - logMessagesFilter allows you to specify
 //     - messagesToSearch to filter the logs by substrings (case-insensitive)
 //       or regex (add `(?i)` in the beginning to make search case-insensitive). Leave nil to not filter.
@@ -110,6 +112,12 @@ func CollectLogsFromContainers( //nolint:gocyclo
 			tailLines := &messagesFilter.TailLines
 			if messagesFilter.TailLines == 0 {
 				tailLines = nil
+			}
+
+			if containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers {
+				klog.Infof("Max containers per namespace reached (max: %d). Skipping %s for %s.",
+					containersFilter.MaxNamespaceContainers, containerName, containersFilter.Namespace)
+				continue
 			}
 
 			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
