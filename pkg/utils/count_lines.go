@@ -15,7 +15,7 @@ func CountLines(r io.Reader) (int, error) {
 	lineCount := 1
 	for {
 		c, err := r.Read(buf)
-		lineCount += bytes.Count(buf[:c], lineSep)
+		lineCount += bytes.Count(buf[:c], MetricsLineSep)
 		if err != nil {
 			return lineCount, err
 		}

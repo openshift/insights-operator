@@ -32,7 +32,7 @@ const (
 //   namespace CPU and memory usage
 //   followed by at most 1000 lines of ALERTS metric
 //
-// * Location in archive: config/metrics/
+// * Location in archive: config/metrics
 // * See: docs/insights-archive-sample/config/metrics
 // * Id in config: metrics
 // * Since version:
