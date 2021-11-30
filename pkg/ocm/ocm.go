@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -98,7 +99,7 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 					Name:           controllerstatus.PullingSCACerts.Name,
 					HTTPStatusCode: httpErr.StatusCode,
 				},
-				Reason:  fmt.Sprintf("HTTP%d", httpErr.StatusCode),
+				Reason:  strings.ReplaceAll(http.StatusText(httpErr.StatusCode), " ", ""),
 				Message: errMsg,
 			})
 			return
