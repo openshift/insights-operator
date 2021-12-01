@@ -41,11 +41,16 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	return common.CollectLogsFromContainers(
+	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
 		nil,
 	)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	return records, nil
 }

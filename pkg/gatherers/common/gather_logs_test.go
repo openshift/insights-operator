@@ -45,7 +45,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 		t.Fatal(err)
 	}
 
-	records, errs := CollectLogsFromContainers(
+	records, err := CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		LogContainersFilter{
@@ -61,7 +61,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 		},
 		nil,
 	)
-	if len(errs) > 0 {
+	if err != nil {
 		t.Fatal(err)
 	}
 

@@ -60,7 +60,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	containersFilter LogContainersFilter,
 	messagesFilter LogMessagesFilter,
 	buildLogFileName func(namespace string, podName string, containerName string) string,
-) ([]record.Record, []error) {
+) ([]record.Record, error) {
 	if buildLogFileName == nil {
 		buildLogFileName = func(namespace string, podName string, containerName string) string {
 			return fmt.Sprintf("config/pod/%s/logs/%s/errors.log", namespace, podName)
@@ -72,10 +72,9 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		FieldSelector: containersFilter.FieldSelector,
 	})
 	if err != nil {
-		return nil, []error{err}
+		return nil, err
 	}
 
-	var errs []error
 	var records []record.Record
 
 	for i := range pods.Items {
@@ -93,7 +92,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 			if len(containersFilter.ContainerNameRegexFilter) > 0 {
 				match, err := regexp.MatchString(containersFilter.ContainerNameRegexFilter, containerName)
 				if err != nil {
-					return nil, []error{err}
+					return nil, err
 				}
 				if !match {
 					continue
@@ -116,8 +115,8 @@ func CollectLogsFromContainers( //nolint:gocyclo
 			}
 
 			if containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers {
-				errs = append(errs, fmt.Errorf("skipping %s for %s. Max containers per namespace reached (max: %d)",
-					containerName, containersFilter.Namespace, containersFilter.MaxNamespaceContainers))
+				klog.Infof("Max containers per namespace reached (max: %d). Skipping %s for %s.",
+					containersFilter.MaxNamespaceContainers, containerName, containersFilter.Namespace)
 				continue
 			}
 
@@ -132,7 +131,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 
 			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
 			if err != nil {
-				return nil, []error{err}
+				return nil, err
 			}
 
 			if len(strings.TrimSpace(logs)) != 0 {
@@ -148,7 +147,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		klog.Infof("no pods in %v namespace were found", containersFilter.Namespace)
 	}
 
-	return records, errs
+	return records, nil
 }
 
 func filterLogs(

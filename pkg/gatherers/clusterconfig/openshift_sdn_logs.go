@@ -49,11 +49,16 @@ func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record,
 
 	coreClient := gatherKubeClient.CoreV1()
 
-	return common.CollectLogsFromContainers(
+	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		containersFilter,
 		messagesFilter,
 		nil,
 	)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	return records, nil
 }
