@@ -93,6 +93,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"mutating_webhook_configurations":   failableFunc((*Gatherer).GatherMutatingWebhookConfigurations),
 	"cost_management_metrics_configs":   failableFunc((*Gatherer).GatherCostManagementMetricsConfigs),
 	"node_logs":                         failableFunc((*Gatherer).GatherNodeLogs),
+	"tsdb_status":                       failableFunc((*Gatherer).GatherTSDBStatus),
 }
 
 func New(
