@@ -148,11 +148,11 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	}
 
 	if skipped > 0 {
-		err = fmt.Errorf("skipping %d containers for namespace %s (max: %d)",
+		return records, fmt.Errorf("skipping %d containers for namespace %s (max: %d)",
 			skipped, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
 	}
 
-	return records, err
+	return records, nil
 }
 
 func filterLogs(
