@@ -23,6 +23,16 @@ Params is of type AlertIsFiringConditionParams:
   * 4.10+
 
 
+## AlertmanagerLogs
+
+collects alertmanager logs for pods firing one the configured alerts.
+
+* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/logs/last-{i}-lines.log
+* Id in config: alertmanager_logs
+* Since versions:
+  * 4.10+
+
+
 ## CRD
 
 collects the specified Custom Resource Definitions.

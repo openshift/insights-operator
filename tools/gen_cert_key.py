@@ -63,7 +63,7 @@ def decode(b64):
 def generate_cert_and_key_files(input_file):
     """Generate file with certificate and user key from k8s configuration file."""
     with open(input_file) as f:
-        payload = yaml.load(f)
+        payload = yaml.load(f, Loader=yaml.FullLoader)
         if payload is not None:
             user_data = get_data_for_user(payload, "admin")
             encoded_certificate = get_value_assigned_to_user(user_data, "client-certificate-data")

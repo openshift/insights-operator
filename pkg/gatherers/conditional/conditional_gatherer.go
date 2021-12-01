@@ -29,6 +29,7 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
 	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
 	GatherLogsOfUnhealthyPods:     (*Gatherer).BuildGatherLogsOfUnhealthyPods,
+	GatherAlertmanagerLogs:        (*Gatherer).BuildGatherAlertmanagerLogs,
 }
 
 // gatheringRules contains all the rules used to run conditional gatherings.
@@ -60,6 +61,7 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 // per container only if cluster version is 4.8 (not implemented, just an example of possible use) and alert
 // ClusterVersionOperatorIsDown is firing
 var defaultGatheringRules = []GatheringRule{
+	// GatherImageStreamsOfNamespace
 	{
 		Conditions: []ConditionWithParams{
 			{
@@ -79,6 +81,7 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 	},
+	// GatherAPIRequestCounts
 	{
 		Conditions: []ConditionWithParams{
 			{
@@ -94,6 +97,7 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 	},
+	// GatherLogsOfUnhealthyPods
 	{
 		Conditions: []ConditionWithParams{
 			{
@@ -125,6 +129,23 @@ var defaultGatheringRules = []GatheringRule{
 				AlertName: "KubePodNotReady",
 				TailLines: 100,
 				Previous:  false,
+			},
+		},
+	},
+	// AlertManagerLogs
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Alert: &AlertConditionParams{
+					Name: "AlertmanagerFailedToSendAlerts",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherAlertmanagerLogs: GatherAlertmanagerLogsParams{
+				AlertName: "AlertmanagerFailedToSendAlerts",
+				TailLines: 50,
 			},
 		},
 	},
