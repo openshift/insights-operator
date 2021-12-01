@@ -75,6 +75,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		return nil, err
 	}
 
+	var skipped int
 	var records []record.Record
 
 	for i := range pods.Items {
@@ -115,8 +116,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 			}
 
 			if containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers {
-				klog.Infof("Max containers per namespace reached (max: %d). Skipping %s for %s.",
-					containersFilter.MaxNamespaceContainers, containerName, containersFilter.Namespace)
+				skipped++
 				continue
 			}
 
@@ -147,7 +147,12 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		klog.Infof("no pods in %v namespace were found", containersFilter.Namespace)
 	}
 
-	return records, nil
+	if skipped > 0 {
+		err = fmt.Errorf("skipping %d containers for namespace %s (max: %d)",
+			skipped, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
+	}
+
+	return records, err
 }
 
 func filterLogs(
