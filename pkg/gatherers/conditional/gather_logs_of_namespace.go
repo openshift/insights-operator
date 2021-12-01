@@ -35,7 +35,7 @@ func (g *Gatherer) BuildGatherLogsOfNamespace(paramsInterface interface{}) (gath
 
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
-			records, err := g.gatherLogsOfNamespace(ctx, params.Namespace, params.TailLines, params.MaxContainers)
+			records, err := g.gatherLogsOfNamespace(ctx, params.Namespace, params.TailLines)
 			if err != nil {
 				return records, []error{err}
 			}
@@ -45,11 +45,7 @@ func (g *Gatherer) BuildGatherLogsOfNamespace(paramsInterface interface{}) (gath
 	}, nil
 }
 
-func (g *Gatherer) gatherLogsOfNamespace(
-	ctx context.Context,
-	namespace string,
-	tailLines int64,
-	maxContainers int) ([]record.Record, error) {
+func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, tailLines int64) ([]record.Record, error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, err
@@ -64,7 +60,7 @@ func (g *Gatherer) gatherLogsOfNamespace(
 		coreClient,
 		common.LogContainersFilter{
 			Namespace:              namespace,
-			MaxNamespaceContainers: maxContainers,
+			MaxNamespaceContainers: 10, // arbitrary fixed value
 		},
 		common.LogMessagesFilter{
 			TailLines: tailLines,

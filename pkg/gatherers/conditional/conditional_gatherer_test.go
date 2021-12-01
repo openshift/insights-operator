@@ -110,7 +110,7 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	_, found := gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
 
-	_, found = gatheringFunctions["logs_of_namespace/max_containers=10,namespace=openshift-cluster-samples-operator,tail_lines=100"]
+	_, found = gatheringFunctions["logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100"]
 	assert.True(t, found)
 
 	_, found = gatheringFunctions["image_streams_of_namespace/namespace=openshift-cluster-samples-operator"]

@@ -71,9 +71,8 @@ var defaultGatheringRules = []GatheringRule{
 		},
 		GatheringFunctions: GatheringFunctions{
 			GatherLogsOfNamespace: GatherLogsOfNamespaceParams{
-				Namespace:     "openshift-cluster-samples-operator",
-				TailLines:     100,
-				MaxContainers: 10,
+				Namespace: "openshift-cluster-samples-operator",
+				TailLines: 100,
 			},
 			GatherImageStreamsOfNamespace: GatherImageStreamsOfNamespaceParams{
 				Namespace: "openshift-cluster-samples-operator",
