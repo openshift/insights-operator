@@ -87,6 +87,8 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"machine_autoscalers":               failableFunc((*Gatherer).GatherMachineAutoscalers),
 	"openshift_logging":                 failableFunc((*Gatherer).GatherOpenshiftLogging),
 	"psps":                              failableFunc((*Gatherer).GatherPodSecurityPolicies),
+	"validating_webhook_configurations": failableFunc((*Gatherer).GatherValidatingWebhookConfigurations),
+	"mutating_webhook_configurations":   failableFunc((*Gatherer).GatherMutatingWebhookConfigurations),
 }
 
 func New(
