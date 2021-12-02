@@ -75,7 +75,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		return nil, err
 	}
 
-	var skipped int
+	var skippedContainers int
 	var records []record.Record
 
 	for i := range pods.Items {
@@ -85,6 +85,12 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		}
 		for j := range pods.Items[i].Spec.InitContainers {
 			containerNames = append(containerNames, pods.Items[i].Spec.InitContainers[j].Name)
+		}
+
+		containersLimited := containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers
+		if containersLimited {
+			skippedContainers += len(containerNames)
+			continue
 		}
 
 		pod := &pods.Items[i]
@@ -100,34 +106,12 @@ func CollectLogsFromContainers( //nolint:gocyclo
 				}
 			}
 
-			sinceSeconds := &messagesFilter.SinceSeconds
-			if messagesFilter.SinceSeconds == 0 {
-				sinceSeconds = nil
+			if containersLimited {
+				skippedContainers = len(containerNames) - containersFilter.MaxNamespaceContainers
+				break
 			}
 
-			limitBytes := &messagesFilter.LimitBytes
-			if messagesFilter.LimitBytes == 0 {
-				limitBytes = nil
-			}
-
-			tailLines := &messagesFilter.TailLines
-			if messagesFilter.TailLines == 0 {
-				tailLines = nil
-			}
-
-			if containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers {
-				skipped++
-				continue
-			}
-
-			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
-				Container:    containerName,
-				SinceSeconds: sinceSeconds,
-				LimitBytes:   limitBytes,
-				TailLines:    tailLines,
-				Previous:     messagesFilter.Previous,
-				Timestamps:   true,
-			})
+			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
 			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
 			if err != nil {
@@ -147,9 +131,9 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		klog.Infof("no pods in %v namespace were found", containersFilter.Namespace)
 	}
 
-	if skipped > 0 {
-		return records, fmt.Errorf("skipping %d containers for namespace %s (max: %d)",
-			skipped, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
+	if skippedContainers > 0 {
+		return records, fmt.Errorf("skipping %d containers on namespace %s (max: %d)",
+			skippedContainers, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
 	}
 
 	return records, nil
@@ -210,4 +194,30 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, reg
 	}
 
 	return strings.Join(result, "\n"), nil
+}
+
+func podLogOptions(containerName string, messagesFilter LogMessagesFilter) *corev1.PodLogOptions {
+	sinceSeconds := &messagesFilter.SinceSeconds
+	if messagesFilter.SinceSeconds == 0 {
+		sinceSeconds = nil
+	}
+
+	limitBytes := &messagesFilter.LimitBytes
+	if messagesFilter.LimitBytes == 0 {
+		limitBytes = nil
+	}
+
+	tailLines := &messagesFilter.TailLines
+	if messagesFilter.TailLines == 0 {
+		tailLines = nil
+	}
+
+	return &corev1.PodLogOptions{
+		Container:    containerName,
+		SinceSeconds: sinceSeconds,
+		LimitBytes:   limitBytes,
+		TailLines:    tailLines,
+		Previous:     messagesFilter.Previous,
+		Timestamps:   true,
+	}
 }
