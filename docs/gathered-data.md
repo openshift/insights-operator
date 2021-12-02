@@ -130,12 +130,13 @@ Id in config: oauths
 
 ## ClusterOperatorPodsAndEvents
 
-collects all the ClusterOperators degraded Pods
-for degraded cluster operators or that lives at the Cluster Operator's namespace, to collect:
+collects information about pods
+and events from namespaces of degraded cluster operators. The collected
+information includes:
 
-- Pod definitions
-- Previous and current Pod Container logs (when available)
-- Namespace Events
+- Definitions for non-running (terminated, pending) Pods
+- Previous (if container was terminated) and current logs of all related pod containers
+- Namespace events
 
 * Location of pods in archive: config/pod/
 * Location of events in archive: events/
