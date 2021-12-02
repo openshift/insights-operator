@@ -191,6 +191,13 @@ func New(gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.
 	}
 }
 
+// GatheringRuleMetadata stores information about gathering rules
+type GatheringRuleMetadata struct {
+	Rule         GatheringRule `json:"rule"`
+	Errors       []error       `json:"errors"`
+	WasTriggered bool          `json:"was_triggered"`
+}
+
 // GetName returns the name of the gatherer
 func (g *Gatherer) GetName() string {
 	return "conditional"
@@ -204,46 +211,53 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
 	}
 
-	err := g.updateCache(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("conditional gatherer can't update the cache: %v", err)
-	}
+	g.updateCache(ctx)
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
-	gatheringFunctions["conditional_gatherer_rules"] = gatherers.GatheringClosure{
-		Run:     g.GatherConditionalGathererRules,
-		CanFail: canConditionalGathererFail,
-	}
+	var metadata []GatheringRuleMetadata
 
 	for _, conditionalGathering := range g.gatheringRules {
+		ruleMetadata := GatheringRuleMetadata{
+			Rule: conditionalGathering,
+		}
+
 		allConditionsAreSatisfied, err := g.areAllConditionsSatisfied(conditionalGathering.Conditions)
 		if err != nil {
-			return nil, err
+			klog.Errorf("error checking conditions for a gathering rule: %v", err)
+			ruleMetadata.Errors = append(ruleMetadata.Errors, err)
 		}
+
+		ruleMetadata.WasTriggered = allConditionsAreSatisfied
+
 		if allConditionsAreSatisfied {
 			functions, errs := g.createGatheringClosures(conditionalGathering.GatheringFunctions)
 			if len(errs) > 0 {
-				return nil, err
+				klog.Errorf("error(s) creating a closure for a gathering rule: %v", errs)
+				ruleMetadata.Errors = append(ruleMetadata.Errors, errs...)
 			}
 
 			for funcName, function := range functions {
 				gatheringFunctions[funcName] = function
 			}
 		}
+
+		metadata = append(metadata, ruleMetadata)
+	}
+
+	gatheringFunctions["conditional_gatherer_rules"] = gatherers.GatheringClosure{
+		Run: func(context.Context) ([]record.Record, []error) {
+			return []record.Record{
+				{
+					Name: "insights-operator/conditional-gatherer-rules",
+					Item: record.JSONMarshaller{Object: metadata},
+				},
+			}, nil
+		},
+		CanFail: canConditionalGathererFail,
 	}
 
 	return gatheringFunctions, nil
-}
-
-// GatherConditionalGathererRules stores the gathering rules in insights-operator/conditional-gatherer-rules.json
-func (g *Gatherer) GatherConditionalGathererRules(context.Context) ([]record.Record, []error) {
-	return []record.Record{
-		{
-			Name: "insights-operator/conditional-gatherer-rules",
-			Item: record.JSONMarshaller{Object: g.gatheringRules},
-		},
-	}, nil
 }
 
 // areAllConditionsSatisfied returns true if all the conditions are satisfied, for example if the condition is
@@ -256,8 +270,8 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 				return false, fmt.Errorf("alert field should not be nil")
 			}
 
-			if !g.isAlertFiring(condition.Alert.Name) {
-				return false, nil
+			if firing, err := g.isAlertFiring(condition.Alert.Name); !firing || err != nil {
+				return false, err
 			}
 		case ClusterVersionMatches:
 			if condition.ClusterVersionMatches == nil {
@@ -276,26 +290,27 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 }
 
 // updateCache updates alerts and version caches
-func (g *Gatherer) updateCache(ctx context.Context) error {
+func (g *Gatherer) updateCache(ctx context.Context) {
 	if g.metricsGatherKubeConfig == nil {
-		return nil
+		return
 	}
 
 	metricsClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
-		return err
-	}
-
-	if err := g.updateAlertsCache(ctx, metricsClient); err != nil { //nolint:govet
-		return err
+		klog.Errorf("unable to update alerts cache: %v", err)
+	} else if err := g.updateAlertsCache(ctx, metricsClient); err != nil { //nolint:govet
+		klog.Errorf("unable to update alerts cache: %v", err)
+		g.firingAlerts = nil
 	}
 
 	configClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
-		return err
+		klog.Errorf("unable to update version cache: %v", err)
+	} else if err := g.updateVersionCache(ctx, configClient); err != nil {
+		klog.Errorf("unable to update version cache: %v", err)
+		g.clusterVersion = ""
 	}
 
-	return g.updateVersionCache(ctx, configClient)
 }
 
 func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Interface) error {
@@ -363,12 +378,20 @@ func (g *Gatherer) updateVersionCache(ctx context.Context, configClient configv1
 }
 
 // isAlertFiring using the cache it returns true if the alert is firing
-func (g *Gatherer) isAlertFiring(alertName string) bool {
+func (g *Gatherer) isAlertFiring(alertName string) (bool, error) {
+	if g.firingAlerts == nil {
+		return false, fmt.Errorf("alerts cache is missing")
+	}
+
 	_, alertIsFiring := g.firingAlerts[alertName]
-	return alertIsFiring
+	return alertIsFiring, nil
 }
 
 func (g *Gatherer) doesClusterVersionMatch(expectedVersionExpression string) (bool, error) {
+	if len(g.clusterVersion) == 0 {
+		return false, fmt.Errorf("cluster version is missing")
+	}
+
 	clusterVersion, err := semver.Parse(g.clusterVersion)
 	if err != nil {
 		return false, err

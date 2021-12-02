@@ -2,7 +2,6 @@ package conditional
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -116,7 +115,9 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	_, found = gatheringFunctions["image_streams_of_namespace/namespace=openshift-cluster-samples-operator"]
 	assert.True(t, found)
 
-	assert.True(t, gatherer.isAlertFiring("SamplesImagestreamImportFailing"))
+	firing, err := gatherer.isAlertFiring("SamplesImagestreamImportFailing")
+	assert.NoError(t, err)
+	assert.True(t, firing)
 
 	err = gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		"ALERTS{alertname=\"OtherAlert\",alertstate=\"firing\"} 1 1621618110163\n",
@@ -137,7 +138,9 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	_, found = gatheringFunctions["image_streams_of_namespace/namespace=openshift-cluster-samples-operator"]
 	assert.False(t, found)
 
-	assert.False(t, gatherer.isAlertFiring("SamplesImagestreamImportFailing"))
+	firing, err = gatherer.isAlertFiring("SamplesImagestreamImportFailing")
+	assert.NoError(t, err)
+	assert.False(t, firing)
 }
 
 func Test_getConditionalGatheringFunctionName(t *testing.T) {
@@ -149,24 +152,6 @@ func Test_getConditionalGatheringFunctionName(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "func/param1=test,param2=5,param3=9", res)
-}
-
-func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
-	gatherer := newEmptyGatherer()
-	records, errs := gatherer.GatherConditionalGathererRules(context.TODO())
-	assert.Empty(t, errs)
-
-	assert.Len(t, records, 1)
-	assert.Equal(t, "insights-operator/conditional-gatherer-rules", records[0].Name)
-
-	item, err := records[0].Item.Marshal(context.TODO())
-	assert.NoError(t, err)
-
-	var gotGatheringRules []GatheringRule
-	err = json.Unmarshal(item, &gotGatheringRules)
-	assert.NoError(t, err)
-
-	assert.Len(t, gotGatheringRules, 5)
 }
 
 func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
