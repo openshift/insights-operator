@@ -95,6 +95,8 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"cost_management_metrics_configs":   failableFunc((*Gatherer).GatherCostManagementMetricsConfigs),
 	"node_logs":                         failableFunc((*Gatherer).GatherNodeLogs),
 	"tsdb_status":                       failableFunc((*Gatherer).GatherTSDBStatus),
+	"schedulers":                        failableFunc((*Gatherer).GatherSchedulers),
+	"scheduler_logs":                    failableFunc((*Gatherer).GatherSchedulerLogs),
 	"silenced_alerts":                   failableFunc((*Gatherer).GatherSilencedAlerts),
 }
 

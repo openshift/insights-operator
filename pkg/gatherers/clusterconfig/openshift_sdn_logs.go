@@ -38,8 +38,8 @@ func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record,
 			"Failed to update proxy firewall for policy",
 		},
 		IsRegexSearch: false,
-		SinceSeconds:  86400,
-		LimitBytes:    1024 * 64,
+		SinceSeconds:  logDefaultSinceSeconds,
+		LimitBytes:    logDefaultLimitBytes,
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

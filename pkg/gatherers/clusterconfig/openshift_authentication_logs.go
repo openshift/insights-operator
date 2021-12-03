@@ -30,8 +30,8 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 			"AuthenticationError: invalid resource name",
 		},
 		IsRegexSearch: false,
-		SinceSeconds:  86400,     // last day
-		LimitBytes:    1024 * 64, // maximum 64 kb of logs
+		SinceSeconds:  logDefaultSinceSeconds,
+		LimitBytes:    logDefaultLimitBytes,
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
