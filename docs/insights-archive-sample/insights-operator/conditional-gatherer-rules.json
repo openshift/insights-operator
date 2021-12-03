@@ -1,70 +1,106 @@
 [
   {
-    "conditions": [
-      {
-        "type": "alert_is_firing",
-        "params": {
-          "name": "SamplesImagestreamImportFailing"
+    "rule": {
+      "conditions": [
+        {
+          "type": "alert_is_firing",
+          "alert": {
+            "name": "SamplesImagestreamImportFailing"
+          }
+        }
+      ],
+      "gathering_functions": {
+        "image_streams_of_namespace": {
+          "namespace": "openshift-cluster-samples-operator"
+        },
+        "logs_of_namespace": {
+          "namespace": "openshift-cluster-samples-operator",
+          "tail_lines": 100
         }
       }
-    ],
-    "gathering_functions": {
-      "image_streams_of_namespace": {
-        "namespace": "openshift-cluster-samples-operator"
-      },
-      "logs_of_namespace": {
-        "namespace": "openshift-cluster-samples-operator",
-        "tail_lines": 100
-      }
-    }
+    },
+    "errors": null,
+    "was_triggered": true
   },
   {
-    "conditions": [
-      {
-        "type": "alert_is_firing",
-        "params": {
-          "name": "APIRemovedInNextEUSReleaseInUse"
+    "rule": {
+      "conditions": [
+        {
+          "type": "alert_is_firing",
+          "alert": {
+            "name": "APIRemovedInNextEUSReleaseInUse"
+          }
+        }
+      ],
+      "gathering_functions": {
+        "api_request_counts_of_resource_from_alert": {
+          "alert_name": "APIRemovedInNextEUSReleaseInUse"
         }
       }
-    ],
-    "gathering_functions": {
-      "api_request_counts_of_resource_from_alert": {
-        "alert_name": "APIRemovedInNextEUSReleaseInUse"
-      }
-    }
+    },
+    "errors": null,
+    "was_triggered": false
   },
   {
-    "conditions": [
-      {
-        "type": "alert_is_firing",
-        "params": {
-          "name": "KubePodCrashLooping"
+    "rule": {
+      "conditions": [
+        {
+          "type": "alert_is_firing",
+          "alert": {
+            "name": "KubePodCrashLooping"
+          }
+        }
+      ],
+      "gathering_functions": {
+        "logs_of_unhealthy_pods": {
+          "alert_name": "KubePodCrashLooping",
+          "tail_lines": 20,
+          "previous": true
         }
       }
-    ],
-    "gathering_functions": {
-      "logs_of_unhealthy_pods": {
-        "alert_name": "KubePodCrashLooping",
-        "tail_lines": 20,
-        "previous": true
-      }
-    }
+    },
+    "errors": null,
+    "was_triggered": false
   },
   {
-    "conditions": [
-      {
-        "type": "alert_is_firing",
-        "params": {
-          "name": "KubePodNotReady"
+    "rule": {
+      "conditions": [
+        {
+          "type": "alert_is_firing",
+          "alert": {
+            "name": "KubePodNotReady"
+          }
+        }
+      ],
+      "gathering_functions": {
+        "logs_of_unhealthy_pods": {
+          "alert_name": "KubePodNotReady",
+          "tail_lines": 100,
+          "previous": false
         }
       }
-    ],
-    "gathering_functions": {
-      "logs_of_unhealthy_pods": {
-        "alert_name": "KubePodNotReady",
-        "tail_lines": 100,
-        "previous": false
+    },
+    "errors": null,
+    "was_triggered": false
+  },
+  {
+    "rule": {
+      "conditions": [
+        {
+          "type": "alert_is_firing",
+          "alert": {
+            "name": "AlertmanagerFailedToSendAlerts"
+          }
+        }
+      ],
+      "gathering_functions": {
+        "alertmanager_logs": {
+          "alert_name": "AlertmanagerFailedToSendAlerts",
+          "tail_lines": 50
+        }
       }
-    }
+    },
+    "errors": null,
+    "was_triggered": false
   }
 ]

@@ -194,7 +194,7 @@ func New(gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.
 // GatheringRuleMetadata stores information about gathering rules
 type GatheringRuleMetadata struct {
 	Rule         GatheringRule `json:"rule"`
-	Errors       []error       `json:"errors"`
+	Errors       []string      `json:"errors"`
 	WasTriggered bool          `json:"was_triggered"`
 }
 
@@ -225,7 +225,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		allConditionsAreSatisfied, err := g.areAllConditionsSatisfied(conditionalGathering.Conditions)
 		if err != nil {
 			klog.Errorf("error checking conditions for a gathering rule: %v", err)
-			ruleMetadata.Errors = append(ruleMetadata.Errors, err)
+			ruleMetadata.Errors = append(ruleMetadata.Errors, err.Error())
 		}
 
 		ruleMetadata.WasTriggered = allConditionsAreSatisfied
@@ -234,7 +234,9 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 			functions, errs := g.createGatheringClosures(conditionalGathering.GatheringFunctions)
 			if len(errs) > 0 {
 				klog.Errorf("error(s) creating a closure for a gathering rule: %v", errs)
-				ruleMetadata.Errors = append(ruleMetadata.Errors, errs...)
+				for _, err := range errs {
+					ruleMetadata.Errors = append(ruleMetadata.Errors, err.Error())
+				}
 			}
 
 			for funcName, function := range functions {
@@ -310,7 +312,6 @@ func (g *Gatherer) updateCache(ctx context.Context) {
 		klog.Errorf("unable to update version cache: %v", err)
 		g.clusterVersion = ""
 	}
-
 }
 
 func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Interface) error {
