@@ -12,7 +12,7 @@ const (
 	InsightsUploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
 	// InsightsDownloadDegraded defines the condition type (when set to True) when the Insights report can't be successfully downloaded
 	InsightsDownloadDegraded configv1.ClusterStatusConditionType = "InsightsDownloadDegraded"
-
+	// SCANotAvailable is a condition type providing info about unsuccessful SCA pull attempt from the OCM API
 	SCANotAvailable configv1.ClusterStatusConditionType = "SCANotAvailable"
 )
 

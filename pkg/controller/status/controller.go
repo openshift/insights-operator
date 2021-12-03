@@ -216,7 +216,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 					OCMAPIFailureCountThreshold)
 				degradingFailure = true
 			}
-			c.ctrlStatus.setStatus(ScaPullStatus, summary.Reason, summary.Message)
+			c.ctrlStatus.setStatus(SCAPullStatus, summary.Reason, summary.Message)
 		}
 
 		if degradingFailure {
@@ -359,7 +359,7 @@ func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 	}
 
 	// handler when SCA pull from OCM fails
-	if ss := ctrlStatus.getStatus(ScaPullStatus); ss != nil {
+	if ss := ctrlStatus.getStatus(SCAPullStatus); ss != nil {
 		cs.setCondition(SCANotAvailable, configv1.ConditionTrue, ss.reason, ss.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.removeCondition(SCANotAvailable)
