@@ -78,6 +78,8 @@ func (c *Controller) Run() {
 		case <-time.After(interval):
 			if !disabled {
 				c.requestDataAndCheckSecret(endpoint)
+			} else {
+				klog.Warning("Pulling of the SCA certs from the OCM API is disabled")
 			}
 		case <-configCh:
 			cfg := c.configurator.Config()
