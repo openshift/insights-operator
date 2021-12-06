@@ -778,7 +778,7 @@ The Kubernetes API:
 Response see:
         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-* Location in archive: config/pod/openshift-kube-scheduler/logs/{pod-name}/errors.log
+* Location in archive: config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log
 * Since versions:
   * 4.10+
 
@@ -787,7 +787,10 @@ Response see:
 
 collects information about schedulers
 
-* Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
+The API:
+        https://docs.openshift.com/container-platform/4.9/rest_api/config_apis/scheduler-config-openshift-io-v1.html
+
+* Location in archive: config/schedulers/cluster.json
 * Since versions:
   * 4.10+
 
