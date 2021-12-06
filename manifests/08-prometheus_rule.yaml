@@ -13,7 +13,7 @@ spec:
     rules:
     - alert: InsightsDisabled
       annotations:
-        description: 'Insights operator is disabled and the cluster will not receive any remote health checks and recommendations'
+        description: 'Insights operator is disabled. In order to enable Insights and benefit from recommendations specific to your cluster, please follow steps listed in the documentation: https://docs.openshift.com/container-platform/latest/support/remote_health_monitoring/enabling-remote-health-reporting.html'
         summary: Insights operator is disabled.
       expr: |
        cluster_operator_conditions{name="insights", condition="Disabled"} == 1
