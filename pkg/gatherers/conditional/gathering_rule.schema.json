@@ -74,6 +74,40 @@
                                 }
                             }
                         }
+                    },
+                    {
+                        "type": "object",
+                        "title": "ConditionWithParams",
+                        "description": "cluster_version_matches condition",
+                        "required": [
+                            "type",
+                            "cluster_version_matches"
+                        ],
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "title": "Type",
+                                "description": "Type of the condition cluster_version_matches",
+                                "const": "cluster_version_matches"
+                            },
+                            "cluster_version_matches": {
+                                "type": "object",
+                                "title": "ClusterVersionMatchesConditionParams",
+                                "description": "Parameters of the condition cluster_version_matches",
+                                "required": [
+                                    "version"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "title": "Version",
+                                        "description": "Version contains a semantic versioning expression",
+                                        "minLength": 1,
+                                        "maxLength": 32
+                                    }
+                                }
+                            }
+                        }
                     }
                 ]
             }

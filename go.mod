@@ -3,6 +3,7 @@ module github.com/openshift/insights-operator
 go 1.16
 
 require (
+	github.com/blang/semver/v4 v4.0.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/openshift/api v0.0.0-20210901140736-d8ed1449662d

@@ -24,14 +24,17 @@ const (
 
 	// GatherAPIRequestCounts is a function collecting api request counts for the resources read
 	// from the corresponding alert
+	// See file gather_api_requests_count.go
 	GatherAPIRequestCounts GatheringFunctionName = "api_request_counts_of_resource_from_alert"
 
 	// GatherAlertmanagerLogs is the function collection the alertmanager logs from containers
 	// See file alertmanager_logs.go
 	GatherAlertmanagerLogs GatheringFunctionName = "alertmanager_logs"
-)
 
-const GatherLogsOfUnhealthyPods GatheringFunctionName = "logs_of_unhealthy_pods"
+	// GatherLogsOfUnhealthyPods is a function collecting logs of unhealthy pods
+	// See file gather_logs_of_unhealthy_pods.go
+	GatherLogsOfUnhealthyPods GatheringFunctionName = "logs_of_unhealthy_pods"
+)
 
 func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
 	switch name {

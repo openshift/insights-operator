@@ -60,7 +60,7 @@ func CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, anonymizer, controller.Interval,
 	)
 	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
-	conditionalGatherer := conditional.New(gatherProtoKubeConfig, metricsGatherKubeConfig)
+	conditionalGatherer := conditional.New(gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig)
 
 	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer, conditionalGatherer}
 }

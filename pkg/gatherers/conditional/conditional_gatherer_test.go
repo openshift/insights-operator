@@ -2,7 +2,6 @@ package conditional
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -16,7 +15,7 @@ import (
 )
 
 func newEmptyGatherer() *Gatherer {
-	return New(nil, nil)
+	return New(nil, nil, nil)
 }
 
 func Test_Gatherer_Basic(t *testing.T) {
@@ -35,7 +34,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 
 func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	gatherer := newEmptyGatherer()
-	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
 	))
 	assert.NoError(t, err)
@@ -68,7 +67,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 		},
 	} // invalid namespace (doesn't start with openshift-)
 
-	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
 	))
 	assert.NoError(t, err)
@@ -97,7 +96,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	gatherer := newEmptyGatherer()
 
-	err := gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		"ALERTS{alertname=\"SamplesImagestreamImportFailing\",alertstate=\"firing\"} 1 1621618110163\n",
 	))
 	assert.NoError(t, err)
@@ -116,9 +115,11 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	_, found = gatheringFunctions["image_streams_of_namespace/namespace=openshift-cluster-samples-operator"]
 	assert.True(t, found)
 
-	assert.True(t, gatherer.isAlertFiring("SamplesImagestreamImportFailing"))
+	firing, err := gatherer.isAlertFiring("SamplesImagestreamImportFailing")
+	assert.NoError(t, err)
+	assert.True(t, firing)
 
-	err = gatherer.updateAlertsCacheFromClient(context.TODO(), newFakeClientWithMetrics(
+	err = gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		"ALERTS{alertname=\"OtherAlert\",alertstate=\"firing\"} 1 1621618110163\n",
 	))
 	assert.NoError(t, err)
@@ -137,7 +138,9 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	_, found = gatheringFunctions["image_streams_of_namespace/namespace=openshift-cluster-samples-operator"]
 	assert.False(t, found)
 
-	assert.False(t, gatherer.isAlertFiring("SamplesImagestreamImportFailing"))
+	firing, err = gatherer.isAlertFiring("SamplesImagestreamImportFailing")
+	assert.NoError(t, err)
+	assert.False(t, firing)
 }
 
 func Test_getConditionalGatheringFunctionName(t *testing.T) {
@@ -149,24 +152,6 @@ func Test_getConditionalGatheringFunctionName(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "func/param1=test,param2=5,param3=9", res)
-}
-
-func Test_Gatherer_GatherConditionalGathererRules(t *testing.T) {
-	gatherer := newEmptyGatherer()
-	records, errs := gatherer.GatherConditionalGathererRules(context.TODO())
-	assert.Empty(t, errs)
-
-	assert.Len(t, records, 1)
-	assert.Equal(t, "insights-operator/conditional-gatherer-rules", records[0].Name)
-
-	item, err := records[0].Item.Marshal(context.TODO())
-	assert.NoError(t, err)
-
-	var gotGatheringRules []GatheringRule
-	err = json.Unmarshal(item, &gotGatheringRules)
-	assert.NoError(t, err)
-
-	assert.Len(t, gotGatheringRules, 5)
 }
 
 func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
@@ -181,4 +166,49 @@ func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
 		}),
 	}
 	return fakeClient
+}
+
+func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
+	g := newEmptyGatherer()
+
+	type testCase struct {
+		expectedVersion string
+		shouldMatch     bool
+	}
+
+	g.clusterVersion = "4.8.0-0.nightly-2021-06-13-101614"
+
+	for _, testCase := range []testCase{
+		{
+			expectedVersion: "4.8.x",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: "4.8.0",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: "4.8.1",
+			shouldMatch:     false,
+		},
+		{
+			expectedVersion: ">=4.8.0",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: ">1.0.0 <2.0.0",
+			shouldMatch:     false,
+		},
+		{
+			expectedVersion: ">1.0.0 <2.0.0 || >=3.0.0",
+			shouldMatch:     true,
+		},
+	} {
+		doesMatch, err := g.doesClusterVersionMatch(testCase.expectedVersion)
+		if err != nil {
+			assert.Error(t, err)
+		}
+
+		assert.Equal(t, testCase.shouldMatch, doesMatch)
+	}
 }
