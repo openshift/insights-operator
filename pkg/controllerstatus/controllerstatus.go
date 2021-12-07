@@ -11,17 +11,20 @@ type Interface interface {
 	CurrentStatus() (summary Summary, ready bool)
 }
 
-type Operation string
+type Operation struct {
+	Name           string
+	HTTPStatusCode int
+}
 
-const (
+var (
 	// DownloadingReport specific flag for Smart Proxy report downloading process.
-	DownloadingReport Operation = "DownloadingReport"
+	DownloadingReport = Operation{Name: "DownloadingReport"}
 	// Uploading specific flag for summary related to uploading process.
-	Uploading Operation = "Uploading"
+	Uploading = Operation{Name: "Uploading"}
 	// GatheringReport specific for gathering the report from the cluster
-	GatheringReport Operation = "GatheringReport"
+	GatheringReport = Operation{Name: "GatheringReport"}
 	// PullingSCACerts is specific operation for pulling the SCA certs data from the OCM API
-	PullingSCACerts Operation = "PullingSCACerts"
+	PullingSCACerts = Operation{Name: "PullingSCACerts"}
 )
 
 // Summary represents the status summary of an Operation

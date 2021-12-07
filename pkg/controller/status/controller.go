@@ -196,7 +196,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 
 		degradingFailure := false
 
-		if summary.Operation == controllerstatus.Uploading {
+		if summary.Operation.Name == controllerstatus.Uploading.Name {
 			if summary.Count < uploadFailuresCountThreshold {
 				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
@@ -206,13 +206,17 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 					summary.Count, uploadFailuresCountThreshold)
 			}
 			c.ctrlStatus.setStatus(UploadStatus, summary.Reason, summary.Message)
-		} else if summary.Operation == controllerstatus.DownloadingReport {
+		} else if summary.Operation.Name == controllerstatus.DownloadingReport.Name {
 			klog.V(4).Info("Failed to download Insights report")
 			c.ctrlStatus.setStatus(DownloadStatus, summary.Reason, summary.Message)
-		} else if summary.Operation == controllerstatus.PullingSCACerts {
-			klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
-				OCMAPIFailureCountThreshold)
-			degradingFailure = true
+		} else if summary.Operation.Name == controllerstatus.PullingSCACerts.Name {
+			// mark as degraded only in case of HTTP 500 and higher
+			if summary.Operation.HTTPStatusCode >= 500 {
+				klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
+					OCMAPIFailureCountThreshold)
+				degradingFailure = true
+			}
+			c.ctrlStatus.setStatus(SCAPullStatus, summary.Reason, summary.Message)
 		}
 
 		if degradingFailure {
@@ -352,6 +356,13 @@ func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 		cs.setCondition(InsightsDownloadDegraded, configv1.ConditionTrue, ds.reason, ds.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.removeCondition(InsightsDownloadDegraded)
+	}
+
+	// handler when SCA pull from OCM fails
+	if ss := ctrlStatus.getStatus(SCAPullStatus); ss != nil {
+		cs.setCondition(SCANotAvailable, configv1.ConditionTrue, ss.reason, ss.message, metav1.Time{Time: lastTransition})
+	} else {
+		cs.removeCondition(SCANotAvailable)
 	}
 }
 

@@ -24,10 +24,10 @@ type Serialized struct {
 	Impersonate             string   `json:"impersonate"`
 	Gather                  []string `json:"gather"`
 	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
-	Ocm                     struct {
-		Endpoint string `json:"endpoint"`
-		Interval string `json:"interval"`
-		Disabled bool   `json:"disabled"`
+	OCM                     struct {
+		SCAEndpoint string `json:"scaEndpoint"`
+		SCAInterval string `json:"scaInterval"`
+		SCADisabled bool   `json:"scaDisabled"`
 	}
 }
 
@@ -73,9 +73,9 @@ type HTTPConfig struct {
 
 // OCMConfig configures the interval and endpoint for retrieving the data from OCM API
 type OCMConfig struct {
-	Interval time.Duration
-	Endpoint string
-	Disabled bool
+	SCAInterval time.Duration
+	SCAEndpoint string
+	SCADisabled bool
 }
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
@@ -172,17 +172,17 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 		return nil, fmt.Errorf("storagePath must point to a directory where snapshots can be stored")
 	}
 
-	if len(s.Ocm.Endpoint) > 0 {
-		cfg.OCMConfig.Endpoint = s.Ocm.Endpoint
+	if len(s.OCM.SCAEndpoint) > 0 {
+		cfg.OCMConfig.SCAEndpoint = s.OCM.SCAEndpoint
 	}
-	cfg.OCMConfig.Disabled = s.Ocm.Disabled
+	cfg.OCMConfig.SCADisabled = s.OCM.SCADisabled
 
-	if len(s.Ocm.Interval) > 0 {
-		i, err := time.ParseDuration(s.Ocm.Interval)
+	if len(s.OCM.SCAInterval) > 0 {
+		i, err := time.ParseDuration(s.OCM.SCAInterval)
 		if err != nil {
-			return nil, fmt.Errorf("ocm interval must be a valid duration: %v", err)
+			return nil, fmt.Errorf("OCM SCA interval must be a valid duration: %v", err)
 		}
-		cfg.OCMConfig.Interval = i
+		cfg.OCMConfig.SCAInterval = i
 	}
 	return cfg, nil
 }

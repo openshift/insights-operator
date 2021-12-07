@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -64,9 +65,9 @@ func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configura
 // Run periodically queries the OCM API and update corresponding secret accordingly
 func (c *Controller) Run() {
 	cfg := c.configurator.Config()
-	endpoint := cfg.OCMConfig.Endpoint
-	interval := cfg.OCMConfig.Interval
-	disabled := cfg.OCMConfig.Disabled
+	endpoint := cfg.OCMConfig.SCAEndpoint
+	interval := cfg.OCMConfig.SCAInterval
+	disabled := cfg.OCMConfig.SCADisabled
 	configCh, cancel := c.configurator.ConfigChanged()
 	defer cancel()
 	if !disabled {
@@ -77,12 +78,14 @@ func (c *Controller) Run() {
 		case <-time.After(interval):
 			if !disabled {
 				c.requestDataAndCheckSecret(endpoint)
+			} else {
+				klog.Warning("Pulling of the SCA certs from the OCM API is disabled")
 			}
 		case <-configCh:
 			cfg := c.configurator.Config()
-			interval = cfg.OCMConfig.Interval
-			endpoint = cfg.OCMConfig.Endpoint
-			disabled = cfg.OCMConfig.Disabled
+			interval = cfg.OCMConfig.SCAInterval
+			endpoint = cfg.OCMConfig.SCAEndpoint
+			disabled = cfg.OCMConfig.SCADisabled
 		}
 	}
 }
@@ -91,18 +94,19 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 	data, err := c.requestSCAWithExpBackoff(endpoint)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
+		errMsg := fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err)
 		if ok {
-			// mark as degraded only in case of HTTP 500 and higher
-			if httpErr.StatusCode >= 500 {
-				c.Simple.UpdateStatus(controllerstatus.Summary{
-					Operation: controllerstatus.PullingSCACerts,
-					Reason:    "FailedToPullSCACerts",
-					Message:   fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err),
-				})
-				return
-			}
+			c.Simple.UpdateStatus(controllerstatus.Summary{
+				Operation: controllerstatus.Operation{
+					Name:           controllerstatus.PullingSCACerts.Name,
+					HTTPStatusCode: httpErr.StatusCode,
+				},
+				Reason:  strings.ReplaceAll(http.StatusText(httpErr.StatusCode), " ", ""),
+				Message: errMsg,
+			})
+			return
 		}
-		klog.Warningf("Failed to pull SCA certs: %v", err)
+		klog.Warningf(errMsg)
 		c.Simple.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.PullingSCACerts,
 			Healthy:   true,
@@ -193,11 +197,11 @@ func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secre
 // The exponential backoff is applied only for HTTP errors >= 500.
 func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
-		Duration: c.configurator.Config().OCMConfig.Interval / 32, // 15 min by default
+		Duration: c.configurator.Config().OCMConfig.SCAInterval / 32, // 15 min by default
 		Factor:   2,
 		Jitter:   0,
 		Steps:    status.OCMAPIFailureCountThreshold,
-		Cap:      c.configurator.Config().OCMConfig.Interval,
+		Cap:      c.configurator.Config().OCMConfig.SCAInterval,
 	}
 	var data []byte
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {

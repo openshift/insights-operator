@@ -204,22 +204,22 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 		}
 
 		// OCM config
-		if ocmEndpoint, ok := secret.Data["ocmEndpoint"]; ok {
-			nextConfig.OCMConfig.Endpoint = string(ocmEndpoint)
+		if scaEndpoint, ok := secret.Data["scaEndpoint"]; ok {
+			nextConfig.OCMConfig.SCAEndpoint = string(scaEndpoint)
 		}
-		if ocmInterval, ok := secret.Data["ocmInterval"]; ok {
+		if scaInterval, ok := secret.Data["scaInterval"]; ok {
 			var newInterval time.Duration
-			if newInterval, err = time.ParseDuration(string(ocmInterval)); err == nil {
-				nextConfig.OCMConfig.Interval = newInterval
+			if newInterval, err = time.ParseDuration(string(scaInterval)); err == nil {
+				nextConfig.OCMConfig.SCAInterval = newInterval
 			} else {
 				klog.Warningf(
-					"secret contains an invalid value (%s) for ocmInterval. Using previous value",
-					ocmInterval,
+					"secret contains an invalid value (%s) for scaInterval. Using previous value",
+					scaInterval,
 				)
 			}
 		}
-		if ocmDisabled, ok := secret.Data["ocmPullDisabled"]; ok {
-			nextConfig.OCMConfig.Disabled = strings.EqualFold(string(ocmDisabled), "true")
+		if scaDisabled, ok := secret.Data["scaPullDisabled"]; ok {
+			nextConfig.OCMConfig.SCADisabled = strings.EqualFold(string(scaDisabled), "true")
 		}
 	}
 	if err != nil {
@@ -302,14 +302,14 @@ func (c *Controller) mergeConfigLocked() {
 		cfg.EnableGlobalObfuscation = cfg.EnableGlobalObfuscation || c.secretConfig.EnableGlobalObfuscation
 
 		// OCM config
-		if len(c.secretConfig.OCMConfig.Endpoint) > 0 {
-			cfg.OCMConfig.Endpoint = c.secretConfig.OCMConfig.Endpoint
+		if len(c.secretConfig.OCMConfig.SCAEndpoint) > 0 {
+			cfg.OCMConfig.SCAEndpoint = c.secretConfig.OCMConfig.SCAEndpoint
 		}
-		if c.secretConfig.OCMConfig.Interval > 0 {
-			cfg.OCMConfig.Interval = c.secretConfig.OCMConfig.Interval
+		if c.secretConfig.OCMConfig.SCAInterval > 0 {
+			cfg.OCMConfig.SCAInterval = c.secretConfig.OCMConfig.SCAInterval
 		}
 
-		cfg.OCMConfig.Disabled = c.secretConfig.OCMConfig.Disabled
+		cfg.OCMConfig.SCADisabled = c.secretConfig.OCMConfig.SCADisabled
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
 	if c.tokenConfig != nil {

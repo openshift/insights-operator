@@ -12,7 +12,7 @@ pull_report:
   timeout: "3000s"
   min_retry: "30s"
 ocm:
-  endpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates
-  interval: "8h"
+  scaEndpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates
+  scaInterval: "8h"
 gather:
   - ALL
