@@ -103,7 +103,7 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 	},
-	// GatherLogsOfUnhealthyPods (w/ GatherContainersLogs)
+	// GatherContainersLogs
 	{
 		Conditions: []ConditionWithParams{
 			{
@@ -138,7 +138,6 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 	},
-	// AlertManagerLogs (w/ GatherContainersLogs)
 	{
 		Conditions: []ConditionWithParams{
 			{
@@ -151,6 +150,24 @@ var defaultGatheringRules = []GatheringRule{
 		GatheringFunctions: GatheringFunctions{
 			GatherContainersLogs: GatherContainersLogsParams{
 				AlertName: "AlertmanagerFailedToSendAlerts",
+				Container: "alertmanager",
+				TailLines: 50,
+			},
+		},
+	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Alert: &AlertConditionParams{
+					Name: "PrometheusOperatorSyncFailed",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherContainersLogs: GatherContainersLogsParams{
+				AlertName: "PrometheusOperatorSyncFailed",
+				Container: "kube-rbac-proxy",
 				TailLines: 50,
 			},
 		},
