@@ -81,8 +81,8 @@ func gatherSAPLicenseManagementLogs(
 				"can't initialize iptables table",
 			},
 			IsRegexSearch: false,
-			SinceSeconds:  86400,
-			LimitBytes:    1024 * 64,
+			SinceSeconds:  logDefaultSinceSeconds,
+			LimitBytes:    logDefaultLimitBytes,
 		}
 
 		namespaceRecords, err := common.CollectLogsFromContainers(

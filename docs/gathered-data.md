@@ -767,6 +767,34 @@ Response see:
   * 4.8+
 
 
+## SchedulerLogs
+
+collects logs from pods in openshift-kube-scheduler-namespace from app openshift-kube-scheduler
+with following substring:
+  - "PodTopologySpread"
+
+The Kubernetes API:
+        https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see:
+        https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+* Location in archive: config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log
+* Since versions:
+  * 4.10+
+
+
+## Schedulers
+
+collects information about schedulers
+
+The API:
+        https://docs.openshift.com/container-platform/4.9/rest_api/config_apis/scheduler-config-openshift-io-v1.html
+
+* Location in archive: config/schedulers/cluster.json
+* Since versions:
+  * 4.10+
+
+
 ## ServiceAccounts
 
 collects ServiceAccount stats
