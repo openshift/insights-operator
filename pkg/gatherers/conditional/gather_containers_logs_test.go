@@ -23,7 +23,7 @@ var testAlertManagerFiringAlerts = map[string][]AlertLabels{
 	},
 }
 
-func TestGatherer_gatherAlertmanagerLogs(t *testing.T) {
+func TestGatherer_gatherContainersLogs(t *testing.T) {
 	ctx := context.TODO()
 	testPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -51,13 +51,13 @@ func TestGatherer_gatherAlertmanagerLogs(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		params  GatherAlertmanagerLogsParams
+		params  GatherContainersLogsParams
 		want    []record.Record
 		wantErr []error
 	}{
 		{
 			name: "Can record logs",
-			params: GatherAlertmanagerLogsParams{
+			params: GatherContainersLogsParams{
 				AlertName: "AlertmanagerFailedToSendAlerts",
 				TailLines: 50,
 			},
@@ -73,12 +73,12 @@ func TestGatherer_gatherAlertmanagerLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &Gatherer{firingAlerts: testAlertManagerFiringAlerts}
-			got, gotErr := g.gatherAlertmanagerLogs(ctx, tt.params, coreClient)
+			got, gotErr := g.gatherContainersLogs(ctx, tt.params, coreClient)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("gatherAlertmanagerLogs() got = %v, want %v", got, tt.want)
+				t.Errorf("gatherContainersLogs() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(gotErr, tt.wantErr) {
-				t.Errorf("gatherAlertmanagerLogs() gotErr = %v, want %v", gotErr, tt.wantErr)
+				t.Errorf("gatherContainersLogs() gotErr = %v, want %v", gotErr, tt.wantErr)
 			}
 		})
 	}

@@ -27,13 +27,9 @@ const (
 	// See file gather_api_requests_count.go
 	GatherAPIRequestCounts GatheringFunctionName = "api_request_counts_of_resource_from_alert"
 
-	// GatherAlertmanagerLogs is the function collection the alertmanager logs from containers
-	// See file alertmanager_logs.go
-	GatherAlertmanagerLogs GatheringFunctionName = "alertmanager_logs"
-
-	// GatherLogsOfUnhealthyPods is a function collecting logs of unhealthy pods
-	// See file gather_logs_of_unhealthy_pods.go
-	GatherLogsOfUnhealthyPods GatheringFunctionName = "logs_of_unhealthy_pods"
+	// GatherContainersLogs is a function that collects logs from pod's containers
+	// See file gather_containers_logs.go
+	GatherContainersLogs GatheringFunctionName = "containers_logs"
 )
 
 func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
@@ -50,12 +46,8 @@ func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, err
 		var params GatherAPIRequestCountsParams
 		err := json.Unmarshal(jsonParams, &params)
 		return params, err
-	case GatherLogsOfUnhealthyPods:
-		var result GatherLogsOfUnhealthyPodsParams
-		err := json.Unmarshal(jsonParams, &result)
-		return result, err
-	case GatherAlertmanagerLogs:
-		var params GatherAlertmanagerLogsParams
+	case GatherContainersLogs:
+		var params GatherContainersLogsParams
 		err := json.Unmarshal(jsonParams, &params)
 		return params, err
 	}
@@ -83,14 +75,11 @@ type GatherAPIRequestCountsParams struct {
 	AlertName string `json:"alert_name"`
 }
 
-type GatherLogsOfUnhealthyPodsParams struct {
+// GatherContainersLogsParams defines parameters for container_logs gatherer
+type GatherContainersLogsParams struct {
 	AlertName string `json:"alert_name"`
+	Namespace string `json:"namespace,omitempty"`
+	Container string `json:"container,omitempty"`
 	TailLines int64  `json:"tail_lines"`
-	Previous  bool   `json:"previous"`
-}
-
-// GatherAlertmanagerLogsParams defines parameters for alertmanager_logs gatherer
-type GatherAlertmanagerLogsParams struct {
-	AlertName string `json:"alert_name"`
-	TailLines int64  `json:"tail_lines"`
+	Previous  bool   `json:"previous,omitempty"`
 }

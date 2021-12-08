@@ -25,3 +25,13 @@ func getAlertPodNamespace(labels AlertLabels) (string, error) {
 	}
 	return namespace, nil
 }
+
+func getAlertPodContainer(labels AlertLabels) (string, error) {
+	container, ok := labels["container"]
+	if !ok && len(container) > 0 {
+		newErr := fmt.Errorf("alert is missing 'container' label")
+		klog.Warningln(newErr.Error())
+		return "", newErr
+	}
+	return container, nil
+}

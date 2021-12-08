@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -13,18 +13,19 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// BuildGatherLogsOfUnhealthyPods collects either current or previous logs for pods firing one of the configured alerts.
+// BuildGatherContainersLogs collects either current or previous containers logs for pods firing one of the configured alerts.
 //
 // * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
+// * Id in config: containers_logs
 // * Since versions:
 //   * 4.10+
-func (g *Gatherer) BuildGatherLogsOfUnhealthyPods(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
-	params, ok := paramsInterface.(GatherLogsOfUnhealthyPodsParams)
+func (g *Gatherer) BuildGatherContainersLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
+	params, ok := paramsInterface.(GatherContainersLogsParams)
 	if !ok {
 		return gatherers.GatheringClosure{}, fmt.Errorf(
 			"unexpected type in paramsInterface, expected %T, got %T",
-			GatherLogsOfUnhealthyPodsParams{}, paramsInterface,
-		)
+			GatherContainersLogsParams{},
+			paramsInterface)
 	}
 
 	return gatherers.GatheringClosure{
@@ -33,51 +34,66 @@ func (g *Gatherer) BuildGatherLogsOfUnhealthyPods(paramsInterface interface{}) (
 			if err != nil {
 				return nil, []error{err}
 			}
-			return g.gatherLogsOfUnhealthyPods(ctx, kubeClient.CoreV1(), params)
+			coreClient := kubeClient.CoreV1()
+			return g.gatherContainersLogs(ctx, params, coreClient)
 		},
 	}, nil
 }
 
-func (g *Gatherer) gatherLogsOfUnhealthyPods(
-	ctx context.Context, coreClient v1.CoreV1Interface, params GatherLogsOfUnhealthyPodsParams,
+func (g *Gatherer) gatherContainersLogs(
+	ctx context.Context,
+	params GatherContainersLogsParams,
+	coreClient corev1client.CoreV1Interface,
 ) ([]record.Record, []error) {
-	errs := []error{}
-	records := []record.Record{}
-
 	alertInstances, ok := g.firingAlerts[params.AlertName]
 	if !ok {
-		return nil, []error{fmt.Errorf("conditional gatherer triggered, but specified alert %q is not firing", params.AlertName)}
+		err := fmt.Errorf("condigional gather triggered, but specified alert %q is not firing", params.AlertName)
+		return nil, []error{err}
 	}
+
+	var errs []error
+	var records []record.Record
+
 	for _, alertLabels := range alertInstances {
-		alertNamespace, err := getAlertPodNamespace(alertLabels)
+		alertPodNamespace, err := getAlertPodNamespace(alertLabels)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-
-		alertPod, err := getAlertPodName(alertLabels)
+		alertPodName, err := getAlertPodName(alertLabels)
 		if err != nil {
 			errs = append(errs, err)
 			continue
+		}
+		var alertPodContainer string
+		if len(params.Container) > 0 {
+			alertPodContainer = params.Container
+		} else {
+			alertPodContainer, err = getAlertPodContainer(alertLabels)
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+
+		logContainersFilter := common.LogContainersFilter{
+			Namespace:     alertPodNamespace,
+			FieldSelector: fmt.Sprintf("metadata.name=%s", alertPodName),
 		}
 
 		// The container label may not be present for all alerts (e.g., KubePodNotReady).
-		containerFilter := ""
-		if alertContainer, ok := alertLabels["container"]; ok && alertContainer != "" {
-			containerFilter = fmt.Sprintf("^%s$", alertContainer)
+		if len(alertPodContainer) > 0 {
+			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", alertPodContainer)
 		}
 
-		logRecords, err := common.CollectLogsFromContainers(ctx, coreClient,
-			common.LogContainersFilter{
-				Namespace:                alertNamespace,
-				FieldSelector:            fmt.Sprintf("metadata.name=%s", alertPod),
-				ContainerNameRegexFilter: containerFilter,
-			},
+		logRecords, err := common.CollectLogsFromContainers(
+			ctx,
+			coreClient,
+			logContainersFilter,
 			common.LogMessagesFilter{
 				TailLines: params.TailLines,
 				Previous:  params.Previous,
 			},
-			func(namespace string, podName string, containerName string) string {
+			func(namespace, podName, containerName string) string {
 				logDirName := "logs"
 				if params.Previous {
 					logDirName = "logs-previous"
@@ -91,13 +107,12 @@ func (g *Gatherer) gatherLogsOfUnhealthyPods(
 					logDirName,
 					params.TailLines,
 				)
-			})
+			},
+		)
 		if err != nil {
-			// This can happen when the pod is destroyed but the alert still exists.
 			newErr := fmt.Errorf("unable to get container logs: %v", err)
 			klog.Warningln(newErr.Error())
 			errs = append(errs, newErr)
-			continue
 		}
 
 		records = append(records, logRecords...)
