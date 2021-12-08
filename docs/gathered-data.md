@@ -284,6 +284,17 @@ See: docs/insights-archive-sample/config/metrics
 Id in config: metrics
 
 
+## MutatingWebhookConfigurations
+
+collects MutatingWebhookConfiguration resources
+Relevant OpenShift API docs:
+  - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/mutatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+
+* Location in archive: config/mutatingwebhookconfigurations
+* Since versions:
+  * 4.10+
+
+
 ## NetNamespace
 
 collects NetNamespaces networking information
@@ -457,5 +468,16 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 Location of serviceaccounts in archive: config/serviceaccounts
 See: docs/insights-archive-sample/config/serviceaccounts
 Id in config: service_accounts
+
+
+## ValidatingWebhookConfigurations
+
+collects ValidatingWebhookConfiguration resources
+Relevant OpenShift API docs:
+  - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/validatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+
+* Location in archive: config/validatingwebhookconfigurations
+* Since versions:
+  * 4.10+
 
 
