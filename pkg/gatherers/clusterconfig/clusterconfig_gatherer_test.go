@@ -12,7 +12,7 @@ import (
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
-	gatherer := clusterconfig.New(nil, nil, nil, nil, 1*time.Minute)
+	gatherer := clusterconfig.New(nil, nil, nil, nil, nil, 1*time.Minute)
 	assert.Equal(t, "clusterconfig", gatherer.GetName())
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
 	assert.NoError(t, err)
