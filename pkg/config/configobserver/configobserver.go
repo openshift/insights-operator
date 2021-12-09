@@ -72,26 +72,25 @@ func (c *Controller) Start(ctx context.Context) {
 }
 
 // Retrieves the token from cluster secret
-func (c *Controller) getSecret(ctx context.Context) (*v1.Secret, error) {
-	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "pull-secret", metav1.GetOptions{})
+func (c *Controller) getSecret(ctx context.Context, key string) (*v1.Secret, error) {
+	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, key, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("pull-secret does not exist")
+			klog.V(4).Infof("%s does not exist", key)
 			err = nil
 		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check pull-secret: %v", err)
+			klog.V(2).Infof("Operator does not have permission to check %s: %v", key, err)
 			err = nil
 		} else {
-			err = fmt.Errorf("could not check pull-secret: %v", err)
+			err = fmt.Errorf("could not check %s: %v", key, err)
 		}
 	}
 
 	return secret, err
 }
 
-// Creates the nextConfig from given secret
-func (c *Controller) nextConfig(secret *v1.Secret) (config.Controller, error) {
-	var nextConfig config.Controller
+// Parses the given secret to retrieve the token
+func (c *Controller) getTokenFromSecret(secret *v1.Secret) (string, error) {
 	if data := secret.Data[".dockerconfigjson"]; len(data) > 0 {
 		var pullSecret serializedAuthMap
 		if err := json.Unmarshal(data, &pullSecret); err != nil {
@@ -100,54 +99,48 @@ func (c *Controller) nextConfig(secret *v1.Secret) (config.Controller, error) {
 		if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
 			token := strings.TrimSpace(auth.Auth)
 			if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
-				return nextConfig, fmt.Errorf("cluster authorization token is not valid: contains newlines")
+				return "", fmt.Errorf("cluster authorization token is not valid: contains newlines")
 			}
 			if len(token) > 0 {
 				klog.V(4).Info("Found cloud.openshift.com token")
-				nextConfig.Token = token
+				return token, nil
 			}
 		}
 	}
-	nextConfig.Report = true
-	return nextConfig, nil
+	return "", nil
 }
 
 // Updates the stored tokens from the secrets in the cluster. (if present)
 func (c *Controller) retrieveToken(ctx context.Context) error {
 	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
-	secret, err := c.getSecret(ctx)
+	secret, err := c.getSecret(ctx, "pull-secret")
+
+	var nextConfig config.Controller
+	if secret != nil {
+		token, terr := c.getTokenFromSecret(secret)
+		if terr != nil {
+			return terr
+		}
+		if len(token) > 0 {
+			nextConfig.Token = token
+			nextConfig.Report = true
+		}
+	}
+
+	c.setTokenConfig(&nextConfig)
+
 	if err != nil {
 		return err
 	}
-
-	if secret != nil {
-		nextConfig, err := c.nextConfig(secret)
-		if err != nil {
-			return err
-		}
-		c.setTokenConfig(&nextConfig)
-	}
-
 	return nil
 }
 
 // Updates the stored configs from the secrets in the cluster. (if present)
 func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo,funlen
 	var nextConfig config.Controller
-
 	klog.V(2).Infof("Refreshing configuration from cluster secret")
-	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "support", metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			klog.V(4).Infof("Support secret does not exist")
-			err = nil
-		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err)
-			err = nil
-		} else {
-			err = fmt.Errorf("could not check support secret: %v", err)
-		}
-	}
+	secret, err := c.getSecret(ctx, "support")
+
 	if secret != nil {
 		if username, ok := secret.Data["username"]; ok {
 			nextConfig.Username = string(username)
@@ -173,6 +166,7 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 		if enableGlobalObfuscation, ok := secret.Data["enableGlobalObfuscation"]; ok {
 			nextConfig.EnableGlobalObfuscation = strings.EqualFold(string(enableGlobalObfuscation), "true")
 		}
+
 		if reportPullingDelay, ok := secret.Data["reportPullingDelay"]; ok {
 			if v, err := time.ParseDuration(string(reportPullingDelay)); err == nil { //nolint: govet
 				nextConfig.ReportPullingDelay = v
@@ -185,6 +179,7 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 		} else {
 			nextConfig.ReportPullingDelay = time.Duration(-1)
 		}
+
 		if reportPullingTimeout, ok := secret.Data["reportPullingTimeout"]; ok {
 			if v, err := time.ParseDuration(string(reportPullingTimeout)); err == nil { //nolint: govet
 				nextConfig.ReportPullingTimeout = v
@@ -195,6 +190,7 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 				)
 			}
 		}
+
 		if reportMinRetryTime, ok := secret.Data["reportMinRetryTime"]; ok {
 			if v, err := time.ParseDuration(string(reportMinRetryTime)); err == nil { //nolint: govet
 				nextConfig.ReportMinRetryTime = v
@@ -205,6 +201,7 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 				)
 			}
 		}
+
 		nextConfig.Report = len(nextConfig.Endpoint) > 0
 
 		if intervalString, ok := secret.Data["interval"]; ok {
@@ -240,10 +237,12 @@ func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyc
 			nextConfig.OCMConfig.SCADisabled = strings.EqualFold(string(scaDisabled), "true")
 		}
 	}
+
 	if err != nil {
 		return err
 	}
 	c.setSecretConfig(&nextConfig)
+
 	return nil
 }
 
