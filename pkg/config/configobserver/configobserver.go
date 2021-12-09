@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -70,11 +71,8 @@ func (c *Controller) Start(ctx context.Context) {
 	}, c.checkPeriod, ctx.Done())
 }
 
-// Updates the stored tokens from the secrets in the cluster. (if present)
-func (c *Controller) retrieveToken(ctx context.Context) error {
-	var nextConfig config.Controller
-
-	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
+// Retrieves the token from cluster secret
+func (c *Controller) getSecret(ctx context.Context) (*v1.Secret, error) {
 	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "pull-secret", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -87,29 +85,49 @@ func (c *Controller) retrieveToken(ctx context.Context) error {
 			err = fmt.Errorf("could not check pull-secret: %v", err)
 		}
 	}
-	if secret != nil {
-		if data := secret.Data[".dockerconfigjson"]; len(data) > 0 {
-			var pullSecret serializedAuthMap
-			if err := json.Unmarshal(data, &pullSecret); err != nil { //nolint: govet
-				klog.Errorf("Unable to unmarshal cluster pull-secret: %v", err)
+
+	return secret, err
+}
+
+// Creates the nextConfig from given secret
+func (c *Controller) nextConfig(secret *v1.Secret) (config.Controller, error) {
+	var nextConfig config.Controller
+	if data := secret.Data[".dockerconfigjson"]; len(data) > 0 {
+		var pullSecret serializedAuthMap
+		if err := json.Unmarshal(data, &pullSecret); err != nil {
+			klog.Errorf("Unable to unmarshal cluster pull-secret: %v", err)
+		}
+		if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
+			token := strings.TrimSpace(auth.Auth)
+			if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
+				return nextConfig, fmt.Errorf("cluster authorization token is not valid: contains newlines")
 			}
-			if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
-				token := strings.TrimSpace(auth.Auth)
-				if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
-					return fmt.Errorf("cluster authorization token is not valid: contains newlines")
-				}
-				if len(token) > 0 {
-					klog.V(4).Info("Found cloud.openshift.com token")
-					nextConfig.Token = token
-				}
+			if len(token) > 0 {
+				klog.V(4).Info("Found cloud.openshift.com token")
+				nextConfig.Token = token
 			}
 		}
-		nextConfig.Report = true
 	}
+	nextConfig.Report = true
+	return nextConfig, nil
+}
+
+// Updates the stored tokens from the secrets in the cluster. (if present)
+func (c *Controller) retrieveToken(ctx context.Context) error {
+	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
+	secret, err := c.getSecret(ctx)
 	if err != nil {
 		return err
 	}
-	c.setTokenConfig(&nextConfig)
+
+	if secret != nil {
+		nextConfig, err := c.nextConfig(secret)
+		if err != nil {
+			return err
+		}
+		c.setTokenConfig(&nextConfig)
+	}
+
 	return nil
 }
 
@@ -278,9 +296,11 @@ func (c *Controller) setSecretConfig(operatorConfig *config.Controller) {
 
 func (c *Controller) mergeConfigLocked() {
 	cfg := c.defaultConfig
+
 	if c.secretConfig != nil {
 		cfg.Username = c.secretConfig.Username
 		cfg.Password = c.secretConfig.Password
+
 		if c.secretConfig.Interval > 0 {
 			cfg.Interval = c.secretConfig.Interval
 		}
@@ -312,9 +332,11 @@ func (c *Controller) mergeConfigLocked() {
 		cfg.OCMConfig.SCADisabled = c.secretConfig.OCMConfig.SCADisabled
 		cfg.HTTPConfig = c.secretConfig.HTTPConfig
 	}
+
 	if c.tokenConfig != nil {
 		cfg.Token = c.tokenConfig.Token
 	}
+
 	cfg.Report = len(cfg.Endpoint) > 0 && (len(cfg.Token) > 0 || len(cfg.Username) > 0)
 	c.setConfigLocked(&cfg)
 }
