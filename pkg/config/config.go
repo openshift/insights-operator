@@ -102,6 +102,62 @@ func (c *Controller) ToString() string {
 		c.ReportPullingTimeout)
 }
 
+func (c *Controller) MergeWith(cfg *Controller) {
+	c.mergeCredentials(cfg)
+	c.mergeInterval(cfg)
+	c.mergeEndpoint(cfg)
+	c.mergeReport(cfg)
+	c.mergeOCM(cfg)
+	c.mergeHTTP(cfg)
+}
+
+func (c *Controller) mergeCredentials(cfg *Controller) {
+	c.Username = cfg.Username
+	c.Password = cfg.Password
+}
+
+func (c *Controller) mergeEndpoint(cfg *Controller) {
+	if len(cfg.Endpoint) > 0 {
+		c.Endpoint = cfg.Endpoint
+	}
+}
+
+func (c *Controller) mergeReport(cfg *Controller) {
+	if len(cfg.ReportEndpoint) > 0 {
+		c.ReportEndpoint = cfg.ReportEndpoint
+	}
+	if cfg.ReportPullingDelay >= 0 {
+		c.ReportPullingDelay = cfg.ReportPullingDelay
+	}
+	if cfg.ReportPullingTimeout > 0 {
+		c.ReportPullingTimeout = cfg.ReportPullingTimeout
+	}
+	if cfg.ReportMinRetryTime > 0 {
+		c.ReportMinRetryTime = cfg.ReportMinRetryTime
+	}
+	c.EnableGlobalObfuscation = c.EnableGlobalObfuscation || cfg.EnableGlobalObfuscation
+}
+
+func (c *Controller) mergeOCM(cfg *Controller) {
+	if len(cfg.OCMConfig.SCAEndpoint) > 0 {
+		c.OCMConfig.SCAEndpoint = cfg.OCMConfig.SCAEndpoint
+	}
+	if cfg.OCMConfig.SCAInterval > 0 {
+		c.OCMConfig.SCAInterval = cfg.OCMConfig.SCAInterval
+	}
+	c.OCMConfig.SCADisabled = cfg.OCMConfig.SCADisabled
+}
+
+func (c *Controller) mergeHTTP(cfg *Controller) {
+	c.HTTPConfig = cfg.HTTPConfig
+}
+
+func (c *Controller) mergeInterval(cfg *Controller) {
+	if cfg.Interval > 0 {
+		c.Interval = cfg.Interval
+	}
+}
+
 // ToController creates/updates a config Controller according to the Serialized config.
 // Makes sure that the config is correct.
 func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // nolint: gocyclo
