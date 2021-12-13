@@ -126,12 +126,15 @@ func (c *Controller) fetchSecret(ctx context.Context, key string) (*v1.Secret, e
 func (c *Controller) updateToken(ctx context.Context) error {
 	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
 	secret, err := c.fetchSecret(ctx, "pull-secret")
+	if err != nil {
+		return err
+	}
 
 	var nextConfig config.Controller
 	if secret != nil {
-		token, terr := tokenFromSecret(secret)
-		if terr != nil {
-			return terr
+		token, err := tokenFromSecret(secret)
+		if err != nil {
+			return err
 		}
 		if len(token) > 0 {
 			nextConfig.Token = token
@@ -152,14 +155,17 @@ func (c *Controller) updateConfig(ctx context.Context) error {
 	var nextConfig config.Controller
 	klog.V(2).Infof("Refreshing configuration from cluster secret")
 	secret, err := c.fetchSecret(ctx, "support")
-
-	if secret != nil {
-		nextConfig, err = LoadSecretConfig(secret)
-	}
-
 	if err != nil {
 		return err
 	}
+
+	if secret != nil {
+		nextConfig, err = LoadSecretConfig(secret)
+		if err != nil {
+			return err
+		}
+	}
+
 	c.setSecretConfig(&nextConfig)
 
 	return nil
