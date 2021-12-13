@@ -23,6 +23,7 @@ type LogContainersFilter struct {
 	LabelSelector            string
 	FieldSelector            string
 	ContainerNameRegexFilter string
+	MaxNamespaceContainers   int
 }
 
 // LogMessagesFilter allows you to filter messages
@@ -40,6 +41,7 @@ type LogMessagesFilter struct {
 //     - namespace in which to search for pods
 //     - labelSelector to filter pods by their labels (keep empty to not filter)
 //     - containerNameRegexFilter to filter containers in the pod (keep empty to not filter)
+//	   - maxNamespaceContainers to limit the containers in the given namespace (keep empty to not limit)
 //   - logMessagesFilter allows you to specify
 //     - messagesToSearch to filter the logs by substrings (case-insensitive)
 //       or regex (add `(?i)` in the beginning to make search case-insensitive). Leave nil to not filter.
@@ -73,6 +75,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		return nil, err
 	}
 
+	var skippedContainers int
 	var records []record.Record
 
 	for i := range pods.Items {
@@ -82,6 +85,12 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		}
 		for j := range pods.Items[i].Spec.InitContainers {
 			containerNames = append(containerNames, pods.Items[i].Spec.InitContainers[j].Name)
+		}
+
+		containersLimited := containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers
+		if containersLimited {
+			skippedContainers += len(containerNames)
+			continue
 		}
 
 		pod := &pods.Items[i]
@@ -97,29 +106,12 @@ func CollectLogsFromContainers( //nolint:gocyclo
 				}
 			}
 
-			sinceSeconds := &messagesFilter.SinceSeconds
-			if messagesFilter.SinceSeconds == 0 {
-				sinceSeconds = nil
+			if containersLimited {
+				skippedContainers = len(containerNames) - containersFilter.MaxNamespaceContainers
+				break
 			}
 
-			limitBytes := &messagesFilter.LimitBytes
-			if messagesFilter.LimitBytes == 0 {
-				limitBytes = nil
-			}
-
-			tailLines := &messagesFilter.TailLines
-			if messagesFilter.TailLines == 0 {
-				tailLines = nil
-			}
-
-			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
-				Container:    containerName,
-				SinceSeconds: sinceSeconds,
-				LimitBytes:   limitBytes,
-				TailLines:    tailLines,
-				Previous:     messagesFilter.Previous,
-				Timestamps:   true,
-			})
+			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
 			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
 			if err != nil {
@@ -137,6 +129,11 @@ func CollectLogsFromContainers( //nolint:gocyclo
 
 	if len(pods.Items) == 0 {
 		klog.Infof("no pods in %v namespace were found", containersFilter.Namespace)
+	}
+
+	if skippedContainers > 0 {
+		return records, fmt.Errorf("skipping %d containers on namespace %s (max: %d)",
+			skippedContainers, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
 	}
 
 	return records, nil
@@ -197,4 +194,30 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, reg
 	}
 
 	return strings.Join(result, "\n"), nil
+}
+
+func podLogOptions(containerName string, messagesFilter LogMessagesFilter) *corev1.PodLogOptions {
+	sinceSeconds := &messagesFilter.SinceSeconds
+	if messagesFilter.SinceSeconds == 0 {
+		sinceSeconds = nil
+	}
+
+	limitBytes := &messagesFilter.LimitBytes
+	if messagesFilter.LimitBytes == 0 {
+		limitBytes = nil
+	}
+
+	tailLines := &messagesFilter.TailLines
+	if messagesFilter.TailLines == 0 {
+		tailLines = nil
+	}
+
+	return &corev1.PodLogOptions{
+		Container:    containerName,
+		SinceSeconds: sinceSeconds,
+		LimitBytes:   limitBytes,
+		TailLines:    tailLines,
+		Previous:     messagesFilter.Previous,
+		Timestamps:   true,
+	}
 }
