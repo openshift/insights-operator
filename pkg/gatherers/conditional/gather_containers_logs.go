@@ -47,7 +47,7 @@ func (g *Gatherer) gatherContainersLogs(
 ) ([]record.Record, []error) {
 	alertInstances, ok := g.firingAlerts[params.AlertName]
 	if !ok {
-		err := fmt.Errorf("condigional gather triggered, but specified alert %q is not firing", params.AlertName)
+		err := fmt.Errorf("conditional gather triggered, but specified alert %q is not firing", params.AlertName)
 		return nil, []error{err}
 	}
 
@@ -55,34 +55,34 @@ func (g *Gatherer) gatherContainersLogs(
 	var records []record.Record
 
 	for _, alertLabels := range alertInstances {
-		alertPodNamespace, err := getAlertPodNamespace(alertLabels)
+		podNamespace, err := getAlertPodNamespace(alertLabels)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		alertPodName, err := getAlertPodName(alertLabels)
+		podName, err := getAlertPodName(alertLabels)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		var alertPodContainer string
+		var podContainer string
 		if len(params.Container) > 0 {
-			alertPodContainer = params.Container
+			podContainer = params.Container
 		} else {
-			alertPodContainer, err = getAlertPodContainer(alertLabels)
+			podContainer, err = getAlertPodContainer(alertLabels)
 			if err != nil {
 				errs = append(errs, err)
 			}
 		}
 
 		logContainersFilter := common.LogContainersFilter{
-			Namespace:     alertPodNamespace,
-			FieldSelector: fmt.Sprintf("metadata.name=%s", alertPodName),
+			Namespace:     podNamespace,
+			FieldSelector: fmt.Sprintf("metadata.name=%s", podName),
 		}
 
 		// The container label may not be present for all alerts (e.g., KubePodNotReady).
-		if len(alertPodContainer) > 0 {
-			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", alertPodContainer)
+		if len(podContainer) > 0 {
+			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", podContainer)
 		}
 
 		logRecords, err := common.CollectLogsFromContainers(
