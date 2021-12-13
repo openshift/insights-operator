@@ -132,7 +132,8 @@ func (c *Controller) updateToken(ctx context.Context) error {
 
 	var nextConfig config.Controller
 	if secret != nil {
-		token, err := tokenFromSecret(secret)
+		var token string
+		token, err = tokenFromSecret(secret)
 		if err != nil {
 			return err
 		}
