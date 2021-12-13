@@ -11,8 +11,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/config"
 )
 
-// ConfigSecret defines the configuration loaded from cluster secret
-type ConfigSecret struct {
+// Config defines the configuration loaded from cluster secret
+type Config struct {
 	config.Controller
 }
 
@@ -21,7 +21,7 @@ const MinDuration = 10 * time.Second
 
 // LoadSecretConfig loads the controller config with given secret data
 func LoadSecretConfig(secret *v1.Secret) (config.Controller, error) {
-	var cfg ConfigSecret
+	var cfg Config
 	var err error
 
 	cfg.loadCredentials(secret.Data)
@@ -49,7 +49,7 @@ func LoadSecretConfig(secret *v1.Secret) (config.Controller, error) {
 	return cfg.Controller, err
 }
 
-func (c *ConfigSecret) loadCredentials(data map[string][]byte) {
+func (c *Config) loadCredentials(data map[string][]byte) {
 	if username, ok := data["username"]; ok {
 		c.Username = string(username)
 	}
@@ -58,13 +58,13 @@ func (c *ConfigSecret) loadCredentials(data map[string][]byte) {
 	}
 }
 
-func (c *ConfigSecret) loadEndpoint(data map[string][]byte) {
+func (c *Config) loadEndpoint(data map[string][]byte) {
 	if endpoint, ok := data["endpoint"]; ok {
 		c.Endpoint = string(endpoint)
 	}
 }
 
-func (c *ConfigSecret) loadHTTP(data map[string][]byte) {
+func (c *Config) loadHTTP(data map[string][]byte) {
 	if httpProxy, ok := data["httpProxy"]; ok {
 		c.HTTPConfig.HTTPProxy = string(httpProxy)
 	}
@@ -76,7 +76,7 @@ func (c *ConfigSecret) loadHTTP(data map[string][]byte) {
 	}
 }
 
-func (c *ConfigSecret) loadReport(data map[string][]byte) {
+func (c *Config) loadReport(data map[string][]byte) {
 	if enableGlobalObfuscation, ok := data["enableGlobalObfuscation"]; ok {
 		c.EnableGlobalObfuscation = strings.EqualFold(string(enableGlobalObfuscation), "true")
 	}
@@ -122,7 +122,7 @@ func (c *ConfigSecret) loadReport(data map[string][]byte) {
 	c.Report = len(c.Endpoint) > 0
 }
 
-func (c *ConfigSecret) loadOCM(data map[string][]byte) {
+func (c *Config) loadOCM(data map[string][]byte) {
 	if scaEndpoint, ok := data["scaEndpoint"]; ok {
 		c.OCMConfig.SCAEndpoint = string(scaEndpoint)
 	}

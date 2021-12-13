@@ -14,7 +14,7 @@ func TestConfigSecret_loadCredentials(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
-		want *ConfigSecret
+		want *Config
 	}{
 		{
 			name: "Load credentials",
@@ -22,7 +22,7 @@ func TestConfigSecret_loadCredentials(t *testing.T) {
 				"username": []byte("user"),
 				"password": []byte("xxxxxx"),
 			},
-			want: &ConfigSecret{Controller: config.Controller{
+			want: &Config{Controller: config.Controller{
 				Report:   false,
 				Username: "user",
 				Password: "xxxxxx",
@@ -31,7 +31,7 @@ func TestConfigSecret_loadCredentials(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := &ConfigSecret{Controller: config.Controller{}}
+			got := &Config{Controller: config.Controller{}}
 			got.loadCredentials(tt.data)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("loadCredentials() got = %v, want %v", got, tt.want)
@@ -44,12 +44,12 @@ func TestConfigSecret_loadEndpoint(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
-		want *ConfigSecret
+		want *Config
 	}{
 		{
 			name: "Load HTTP Config",
 			data: map[string][]byte{"endpoint": []byte("http://endpoint")},
-			want: &ConfigSecret{Controller: config.Controller{
+			want: &Config{Controller: config.Controller{
 				Report:   false,
 				Endpoint: "http://endpoint",
 			}},
@@ -57,7 +57,7 @@ func TestConfigSecret_loadEndpoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := &ConfigSecret{Controller: config.Controller{}}
+			got := &Config{Controller: config.Controller{}}
 			got.loadEndpoint(tt.data)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("loadEndpoint() got = %v, want %v", got, tt.want)
@@ -70,7 +70,7 @@ func TestConfigSecret_loadHTTP(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
-		want *ConfigSecret
+		want *Config
 	}{
 		{
 			name: "Load HTTP Config",
@@ -79,7 +79,7 @@ func TestConfigSecret_loadHTTP(t *testing.T) {
 				"httpsProxy": []byte("https://proxy"),
 				"noProxy":    []byte("true"),
 			},
-			want: &ConfigSecret{Controller: config.Controller{
+			want: &Config{Controller: config.Controller{
 				Report: false,
 				HTTPConfig: config.HTTPConfig{
 					HTTPProxy:  "http://proxy",
@@ -91,7 +91,7 @@ func TestConfigSecret_loadHTTP(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := &ConfigSecret{Controller: config.Controller{}}
+			got := &Config{Controller: config.Controller{}}
 			got.loadHTTP(tt.data)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("loadHTTP() got = %v, want %v", got, tt.want)
@@ -104,7 +104,7 @@ func TestConfigSecret_loadOCM(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
-		want *ConfigSecret
+		want *Config
 	}{
 		{
 			name: "Load OCM Config",
@@ -113,7 +113,7 @@ func TestConfigSecret_loadOCM(t *testing.T) {
 				"scaInterval":     []byte("2h"),
 				"scaPullDisabled": []byte("false"),
 			},
-			want: &ConfigSecret{Controller: config.Controller{
+			want: &Config{Controller: config.Controller{
 				Report: false,
 				OCMConfig: config.OCMConfig{
 					SCAInterval: 2 * time.Hour,
@@ -125,7 +125,7 @@ func TestConfigSecret_loadOCM(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := &ConfigSecret{Controller: config.Controller{}}
+			got := &Config{Controller: config.Controller{}}
 			got.loadOCM(tt.data)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("loadOCM() got = %v, want %v", got, tt.want)
@@ -138,7 +138,7 @@ func TestConfigSecret_loadReport(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
-		want *ConfigSecret
+		want *Config
 	}{
 		{
 			name: "Load Report Config",
@@ -148,7 +148,7 @@ func TestConfigSecret_loadReport(t *testing.T) {
 				"reportPullingTimeout": []byte("1h"),
 				"reportMinRetryTime":   []byte("30m"),
 			},
-			want: &ConfigSecret{Controller: config.Controller{
+			want: &Config{Controller: config.Controller{
 				Report:               false,
 				ReportEndpoint:       "http://endpoint",
 				ReportPullingDelay:   1 * time.Hour,
@@ -163,7 +163,7 @@ func TestConfigSecret_loadReport(t *testing.T) {
 				"reportPullingTimeout": []byte("1h"),
 				"reportMinRetryTime":   []byte("30m"),
 			},
-			want: &ConfigSecret{Controller: config.Controller{
+			want: &Config{Controller: config.Controller{
 				Report:               false,
 				ReportEndpoint:       "http://endpoint",
 				ReportPullingDelay:   time.Duration(-1),
@@ -174,7 +174,7 @@ func TestConfigSecret_loadReport(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := &ConfigSecret{Controller: config.Controller{}}
+			got := &Config{Controller: config.Controller{}}
 			got.loadReport(tt.data)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("loadReport() got = %v, want %v", got, tt.want)
