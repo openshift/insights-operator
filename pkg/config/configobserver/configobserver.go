@@ -145,9 +145,6 @@ func (c *Controller) updateToken(ctx context.Context) error {
 
 	c.setTokenConfig(&nextConfig)
 
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
