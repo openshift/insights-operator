@@ -77,5 +77,42 @@ func anonymizeMachineset(data *unstructured.Unstructured) *unstructured.Unstruct
 		}
 	}
 
+	return anonymizeServiceAccounts(data)
+}
+
+func anonymizeServiceAccounts(data *unstructured.Unstructured) *unstructured.Unstructured {
+	serviceAccounts, found, err := unstructured.NestedSlice(data.Object, "spec", "template", "spec", "providerSpec", "value", "serviceAccounts")
+	if !found || err != nil {
+		klog.Infof("error during anonymizing machineset: unable to find service accounts %v %v", found, err)
+		return data
+	}
+
+	for i := range serviceAccounts {
+		serviceAccount, ok := serviceAccounts[i].(map[string]interface{})
+		if !ok {
+			klog.Infof("error during anonymizing machineset: service account is not a map")
+			continue
+		}
+
+		emailI, found := serviceAccount["email"]
+		if !found {
+			klog.Infof("error during anonymizing machineset: email was not found in service account map")
+			continue
+		}
+
+		email, ok := emailI.(string)
+		if !ok {
+			klog.Infof("error during anonymizing machineset: email was not a string")
+			continue
+		}
+
+		serviceAccount["email"] = anonymize.String(email)
+	}
+
+	err = unstructured.SetNestedSlice(data.Object, serviceAccounts, "spec", "template", "spec", "providerSpec", "value", "serviceAccounts")
+	if err != nil {
+		klog.Infof("error during anonymizing machineset: unable to set anonymized service accounts: %v", err.Error())
+	}
+
 	return data
 }
