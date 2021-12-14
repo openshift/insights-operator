@@ -81,7 +81,9 @@ func anonymizeMachineset(data *unstructured.Unstructured) *unstructured.Unstruct
 }
 
 func anonymizeServiceAccounts(data *unstructured.Unstructured) *unstructured.Unstructured {
-	serviceAccounts, found, err := unstructured.NestedSlice(data.Object, "spec", "template", "spec", "providerSpec", "value", "serviceAccounts")
+	serviceAccounts, found, err := unstructured.NestedSlice(
+		data.Object, "spec", "template", "spec", "providerSpec", "value", "serviceAccounts",
+	)
 	if !found || err != nil {
 		klog.Infof("error during anonymizing machineset: unable to find service accounts %v %v", found, err)
 		return data
