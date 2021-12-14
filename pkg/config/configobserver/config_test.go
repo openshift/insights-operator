@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/config"
 )
 
-func TestConfigSecret_loadCredentials(t *testing.T) {
+func TestConfig_loadCredentials(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
@@ -40,14 +40,14 @@ func TestConfigSecret_loadCredentials(t *testing.T) {
 	}
 }
 
-func TestConfigSecret_loadEndpoint(t *testing.T) {
+func TestConfig_loadEndpoint(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
 		want *Config
 	}{
 		{
-			name: "Load HTTP Config",
+			name: "Load Endpoint Config",
 			data: map[string][]byte{"endpoint": []byte("http://endpoint")},
 			want: &Config{Controller: config.Controller{
 				Report:   false,
@@ -66,7 +66,7 @@ func TestConfigSecret_loadEndpoint(t *testing.T) {
 	}
 }
 
-func TestConfigSecret_loadHTTP(t *testing.T) {
+func TestConfig_loadHTTP(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
@@ -100,7 +100,7 @@ func TestConfigSecret_loadHTTP(t *testing.T) {
 	}
 }
 
-func TestConfigSecret_loadOCM(t *testing.T) {
+func TestConfig_loadOCM(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
@@ -134,7 +134,7 @@ func TestConfigSecret_loadOCM(t *testing.T) {
 	}
 }
 
-func TestConfigSecret_loadReport(t *testing.T) {
+func TestConfig_loadReport(t *testing.T) {
 	tests := []struct {
 		name string
 		data map[string][]byte
@@ -183,7 +183,7 @@ func TestConfigSecret_loadReport(t *testing.T) {
 	}
 }
 
-func TestLoadSecretConfig(t *testing.T) {
+func TestLoadConfigFromSecret(t *testing.T) {
 	tests := []struct {
 		name    string
 		secret  *v1.Secret
@@ -221,13 +221,13 @@ func TestLoadSecretConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := LoadSecretConfig(tt.secret)
+			got, err := LoadConfigFromSecret(tt.secret)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadSecretConfig() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("LoadConfigFromSecret() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LoadSecretConfig() got = %v, want %v", got, tt.want)
+				t.Errorf("LoadConfigFromSecret() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

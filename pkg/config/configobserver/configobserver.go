@@ -158,7 +158,7 @@ func (c *Controller) updateConfig(ctx context.Context) error {
 	}
 
 	if secret != nil {
-		nextConfig, err = LoadSecretConfig(secret)
+		nextConfig, err = LoadConfigFromSecret(secret)
 		if err != nil {
 			return err
 		}

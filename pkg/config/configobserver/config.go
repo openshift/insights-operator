@@ -19,8 +19,8 @@ type Config struct {
 // MinDuration defines the minimal report interval
 const MinDuration = 10 * time.Second
 
-// LoadSecretConfig loads the controller config with given secret data
-func LoadSecretConfig(secret *v1.Secret) (config.Controller, error) {
+// LoadConfigFromSecret loads the controller config with given secret data
+func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 	var cfg Config
 	var err error
 
