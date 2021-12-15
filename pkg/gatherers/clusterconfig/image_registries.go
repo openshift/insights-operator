@@ -137,14 +137,15 @@ func anonymizeImageRegistry(config *registryv1.Config) *registryv1.Config {
 	if config.Spec.Storage.IBMCOS != nil {
 		anonymizeIBMCOSStorage(config.Spec.Storage.IBMCOS)
 	}
+
 	if config.Status.Storage.S3 != nil {
 		anonymizeS3Storage(config.Status.Storage.S3)
 	}
-	if config.Status.Storage.GCS != nil {
-		anonymizeGCSStorage(config.Status.Storage.GCS)
-	}
 	if config.Status.Storage.Azure != nil {
 		anonymizeAzureStorage(config.Status.Storage.Azure)
+	}
+	if config.Status.Storage.GCS != nil {
+		anonymizeGCSStorage(config.Status.Storage.GCS)
 	}
 	if config.Status.Storage.Swift != nil {
 		anonymizeSwiftStorage(config.Status.Storage.Swift)
@@ -152,6 +153,7 @@ func anonymizeImageRegistry(config *registryv1.Config) *registryv1.Config {
 	if config.Status.Storage.IBMCOS != nil {
 		anonymizeIBMCOSStorage(config.Status.Storage.IBMCOS)
 	}
+
 	// kubectl.kubernetes.io/last-applied-configuration annotation contains complete previous resource definition
 	// including the sensitive information as bucket, keyIDs, etc.
 	if lac, ok := config.Annotations[lacAnnotation]; ok {

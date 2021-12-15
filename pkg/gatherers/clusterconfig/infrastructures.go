@@ -42,5 +42,25 @@ func gatherClusterInfrastructure(ctx context.Context, configClient configv1clien
 
 func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastructure {
 	config.Status.InfrastructureName = anonymize.URL(config.Status.InfrastructureName)
+
+	if config.Status.PlatformStatus.AWS != nil {
+		config.Status.PlatformStatus.AWS.Region = anonymize.String(config.Status.PlatformStatus.AWS.Region)
+	}
+	if config.Status.PlatformStatus.Azure != nil {
+		config.Status.PlatformStatus.Azure.CloudName = configv1.AzureCloudEnvironment(
+			anonymize.String(string(config.Status.PlatformStatus.Azure.CloudName)),
+		)
+	}
+	if config.Status.PlatformStatus.GCP != nil {
+		config.Status.PlatformStatus.GCP.Region = anonymize.String(config.Status.PlatformStatus.GCP.Region)
+		config.Status.PlatformStatus.GCP.ProjectID = anonymize.String(config.Status.PlatformStatus.GCP.ProjectID)
+	}
+	if config.Status.PlatformStatus.IBMCloud != nil {
+		config.Status.PlatformStatus.IBMCloud.Location = anonymize.String(config.Status.PlatformStatus.IBMCloud.Location)
+	}
+	if config.Status.PlatformStatus.OpenStack != nil {
+		config.Status.PlatformStatus.OpenStack.CloudName = anonymize.String(config.Status.PlatformStatus.OpenStack.CloudName)
+	}
+
 	return config
 }

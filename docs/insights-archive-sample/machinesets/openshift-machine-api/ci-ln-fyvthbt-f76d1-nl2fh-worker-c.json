@@ -64,8 +64,8 @@
                 "subnetwork": "ci-ln-fyvthbt-f76d1-nl2fh-worker-subnet"
               }
             ],
-            "projectID": "openshift-gce-devel-ci",
-            "region": "us-east1",
+            "projectID": "xxxxxxxxxxxxxxxxxxxxxx",
+            "region": "xxxxxxxx",
             "serviceAccounts": [
               {
                 "email": "ci-ln-fyvthbt-f76d1-nl2fh-w@openshift-gce-devel-ci.iam.gserviceaccount.com",
