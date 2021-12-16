@@ -232,11 +232,6 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * Id in config: version
 
 
-## ConditionalGathererRules
-
-stores the gathering rules in insights-operator/conditional-gatherer-rules.json
-
-
 ## ConfigMaps
 
 fetches the ConfigMaps from namespace openshift-config
@@ -511,6 +506,9 @@ Relevant OpenShift API docs:
 
 * Location in archive: config/mutatingwebhookconfigurations
 * Since versions:
+  * 4.7.40+
+  * 4.8.24+
+  * 4.9.11+
   * 4.10+
 
 
@@ -842,6 +840,9 @@ Relevant OpenShift API docs:
 
 * Location in archive: config/validatingwebhookconfigurations
 * Since versions:
+  * 4.7.40+
+  * 4.8.24+
+  * 4.9.11+
   * 4.10+
 
 

@@ -20,6 +20,9 @@ import (
 //
 // * Location in archive: config/validatingwebhookconfigurations
 // * Since versions:
+//   * 4.7.40+
+//   * 4.8.24+
+//   * 4.9.11+
 //   * 4.10+
 func (g *Gatherer) GatherValidatingWebhookConfigurations(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
