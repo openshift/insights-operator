@@ -45,7 +45,6 @@ func (g *Gatherer) BuildGatherAlertmanagerLogs(paramsInterface interface{}) (gat
 			}
 			return records, nil
 		},
-		CanFail: canConditionalGathererFail,
 	}, nil
 }
 

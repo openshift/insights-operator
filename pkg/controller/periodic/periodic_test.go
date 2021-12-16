@@ -151,8 +151,7 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 
 	c.Gather()
 	metadataFound := false
-	// failing gatherer failed 5x (see GatherFailuresCountThreshold const) + metadata
-	assert.Len(t, mockRecorder.Records, 6)
+	assert.Len(t, mockRecorder.Records, 2)
 	for i := range mockRecorder.Records {
 		// find metadata record
 		if mockRecorder.Records[i].Name != recorder.MetadataRecordName {

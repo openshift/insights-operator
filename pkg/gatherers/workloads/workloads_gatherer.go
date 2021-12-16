@@ -35,7 +35,6 @@ func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherWorkloadInfo(ctx)
 			},
-			CanFail: true,
 		},
 	}, nil
 }

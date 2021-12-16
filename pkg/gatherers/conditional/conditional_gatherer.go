@@ -158,8 +158,6 @@ var defaultGatheringRules = []GatheringRule{
 	},
 }
 
-const canConditionalGathererFail = false
-
 // Gatherer implements the conditional gatherer
 type Gatherer struct {
 	gatherProtoKubeConfig   *rest.Config
@@ -256,7 +254,6 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 				},
 			}, nil
 		},
-		CanFail: canConditionalGathererFail,
 	}
 
 	return gatheringFunctions, nil

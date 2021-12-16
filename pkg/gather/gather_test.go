@@ -128,12 +128,10 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 				fmt.Errorf("error2"),
 				fmt.Errorf("error3"),
 			},
-			IgnoreErrors: false,
 		},
 		{
 			FunctionName: "panic",
 			Panic:        "test panic",
-			IgnoreErrors: false,
 		},
 	})
 
@@ -229,7 +227,7 @@ func Test_CollectAndRecord(t *testing.T) {
 	assert.NoError(t, err)
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
 	assert.NoError(t, err)

@@ -41,7 +41,6 @@ func (g *Gatherer) BuildGatherLogsOfNamespace(paramsInterface interface{}) (gath
 			}
 			return records, nil
 		},
-		CanFail: canConditionalGathererFail,
 	}, nil
 }
 

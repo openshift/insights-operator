@@ -35,7 +35,6 @@ func (g *Gatherer) BuildGatherLogsOfUnhealthyPods(paramsInterface interface{}) (
 			}
 			return g.gatherLogsOfUnhealthyPods(ctx, kubeClient.CoreV1(), params)
 		},
-		CanFail: canConditionalGathererFail,
 	}, nil
 }
 

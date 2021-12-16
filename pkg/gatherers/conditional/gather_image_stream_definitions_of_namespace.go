@@ -40,7 +40,6 @@ func (g *Gatherer) BuildGatherImageStreamsOfNamespace(paramsInterface interface{
 			}
 			return records, nil
 		},
-		CanFail: canConditionalGathererFail,
 	}, nil
 }
 
