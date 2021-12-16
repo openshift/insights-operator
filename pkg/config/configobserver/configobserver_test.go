@@ -7,14 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	clsetfake "k8s.io/client-go/kubernetes/fake"
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/klog/v2"
+
+	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/utils"
 
 	clienttesting "k8s.io/client-go/testing"
 )
@@ -166,10 +167,10 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 				kubeClient:    &kube,
 				defaultConfig: ctrl,
 			}
-			c.mergeConfigLocked()
-			err := c.retrieveToken(context.Background())
+			c.mergeConfig()
+			err := c.updateToken(context.Background())
 			if err == nil {
-				err = c.retrieveConfig(context.Background())
+				err = c.updateConfig(context.Background())
 			}
 			expErrS := ""
 			if tt.expErr != nil {
@@ -197,7 +198,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 		kubeClient:    &kube,
 		defaultConfig: ctrl,
 	}
-	c.mergeConfigLocked()
+	c.mergeConfig()
 
 	// Subscribe to config change event
 	configCh, closeFn := c.ConfigChanged()
@@ -214,7 +215,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 		}},
 	})
 	// 1. config update
-	err := c.retrieveConfig(context.TODO())
+	err := c.updateConfig(context.TODO())
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
@@ -235,7 +236,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 		}},
 	})
 	// 2. config update
-	err = c.retrieveConfig(context.TODO())
+	err = c.updateConfig(context.TODO())
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}

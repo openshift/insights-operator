@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -48,11 +49,11 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 		defaultConfig: defaultConfig,
 		checkPeriod:   5 * time.Minute,
 	}
-	c.mergeConfigLocked()
-	if err := c.retrieveToken(context.TODO()); err != nil {
+	c.mergeConfig()
+	if err := c.updateToken(context.TODO()); err != nil {
 		klog.Warningf("Unable to retrieve initial token config: %v", err)
 	}
-	if err := c.retrieveConfig(context.TODO()); err != nil {
+	if err := c.updateConfig(context.TODO()); err != nil {
 		klog.Warningf("Unable to retrieve initial config: %v", err)
 	}
 	return c
@@ -61,172 +62,13 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 // Start is periodically invoking check and set of config and token
 func (c *Controller) Start(ctx context.Context) {
 	wait.Until(func() {
-		if err := c.retrieveToken(ctx); err != nil {
+		if err := c.updateToken(ctx); err != nil {
 			klog.Warningf("Unable to retrieve token config: %v", err)
 		}
-		if err := c.retrieveConfig(ctx); err != nil {
+		if err := c.updateConfig(ctx); err != nil {
 			klog.Warningf("Unable to retrieve config: %v", err)
 		}
 	}, c.checkPeriod, ctx.Done())
-}
-
-// Updates the stored tokens from the secrets in the cluster. (if present)
-func (c *Controller) retrieveToken(ctx context.Context) error {
-	var nextConfig config.Controller
-
-	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
-	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "pull-secret", metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			klog.V(4).Infof("pull-secret does not exist")
-			err = nil
-		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check pull-secret: %v", err)
-			err = nil
-		} else {
-			err = fmt.Errorf("could not check pull-secret: %v", err)
-		}
-	}
-	if secret != nil {
-		if data := secret.Data[".dockerconfigjson"]; len(data) > 0 {
-			var pullSecret serializedAuthMap
-			if err := json.Unmarshal(data, &pullSecret); err != nil { //nolint: govet
-				klog.Errorf("Unable to unmarshal cluster pull-secret: %v", err)
-			}
-			if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
-				token := strings.TrimSpace(auth.Auth)
-				if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
-					return fmt.Errorf("cluster authorization token is not valid: contains newlines")
-				}
-				if len(token) > 0 {
-					klog.V(4).Info("Found cloud.openshift.com token")
-					nextConfig.Token = token
-				}
-			}
-		}
-		nextConfig.Report = true
-	}
-	if err != nil {
-		return err
-	}
-	c.setTokenConfig(&nextConfig)
-	return nil
-}
-
-// Updates the stored configs from the secrets in the cluster. (if present)
-func (c *Controller) retrieveConfig(ctx context.Context) error { //nolint: gocyclo,funlen
-	var nextConfig config.Controller
-
-	klog.V(2).Infof("Refreshing configuration from cluster secret")
-	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, "support", metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			klog.V(4).Infof("Support secret does not exist")
-			err = nil
-		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check support secret: %v", err)
-			err = nil
-		} else {
-			err = fmt.Errorf("could not check support secret: %v", err)
-		}
-	}
-	if secret != nil {
-		if username, ok := secret.Data["username"]; ok {
-			nextConfig.Username = string(username)
-		}
-		if password, ok := secret.Data["password"]; ok {
-			nextConfig.Password = string(password)
-		}
-		if endpoint, ok := secret.Data["endpoint"]; ok {
-			nextConfig.Endpoint = string(endpoint)
-		}
-		if httpproxy, ok := secret.Data["httpProxy"]; ok {
-			nextConfig.HTTPConfig.HTTPProxy = string(httpproxy)
-		}
-		if httpsproxy, ok := secret.Data["httpsProxy"]; ok {
-			nextConfig.HTTPConfig.HTTPSProxy = string(httpsproxy)
-		}
-		if noproxy, ok := secret.Data["noProxy"]; ok {
-			nextConfig.HTTPConfig.NoProxy = string(noproxy)
-		}
-		if reportEndpoint, ok := secret.Data["reportEndpoint"]; ok {
-			nextConfig.ReportEndpoint = string(reportEndpoint)
-		}
-		if enableGlobalObfuscation, ok := secret.Data["enableGlobalObfuscation"]; ok {
-			nextConfig.EnableGlobalObfuscation = strings.EqualFold(string(enableGlobalObfuscation), "true")
-		}
-		if reportPullingDelay, ok := secret.Data["reportPullingDelay"]; ok {
-			if v, err := time.ParseDuration(string(reportPullingDelay)); err == nil { //nolint: govet
-				nextConfig.ReportPullingDelay = v
-			} else {
-				klog.Warningf(
-					"reportPullingDelay secret contains an invalid value (%s). Using previous value",
-					reportPullingDelay,
-				)
-			}
-		} else {
-			nextConfig.ReportPullingDelay = time.Duration(-1)
-		}
-		if reportPullingTimeout, ok := secret.Data["reportPullingTimeout"]; ok {
-			if v, err := time.ParseDuration(string(reportPullingTimeout)); err == nil { //nolint: govet
-				nextConfig.ReportPullingTimeout = v
-			} else {
-				klog.Warningf(
-					"reportPullingTimeout secret contains an invalid value (%s). Using previous value",
-					reportPullingTimeout,
-				)
-			}
-		}
-		if reportMinRetryTime, ok := secret.Data["reportMinRetryTime"]; ok {
-			if v, err := time.ParseDuration(string(reportMinRetryTime)); err == nil { //nolint: govet
-				nextConfig.ReportMinRetryTime = v
-			} else {
-				klog.Warningf(
-					"reportMinRetryTime secret contains an invalid value (%s). Using previous value",
-					reportMinRetryTime,
-				)
-			}
-		}
-		nextConfig.Report = len(nextConfig.Endpoint) > 0
-
-		if intervalString, ok := secret.Data["interval"]; ok {
-			var duration time.Duration
-			duration, err = time.ParseDuration(string(intervalString))
-			if err == nil && duration < 10*time.Second {
-				err = fmt.Errorf("too short")
-			}
-			if err == nil {
-				nextConfig.Interval = duration
-			} else {
-				err = fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to ten seconds: %v", err)
-				nextConfig.Report = false
-			}
-		}
-
-		// OCM config
-		if scaEndpoint, ok := secret.Data["scaEndpoint"]; ok {
-			nextConfig.OCMConfig.SCAEndpoint = string(scaEndpoint)
-		}
-		if scaInterval, ok := secret.Data["scaInterval"]; ok {
-			var newInterval time.Duration
-			if newInterval, err = time.ParseDuration(string(scaInterval)); err == nil {
-				nextConfig.OCMConfig.SCAInterval = newInterval
-			} else {
-				klog.Warningf(
-					"secret contains an invalid value (%s) for scaInterval. Using previous value",
-					scaInterval,
-				)
-			}
-		}
-		if scaDisabled, ok := secret.Data["scaPullDisabled"]; ok {
-			nextConfig.OCMConfig.SCADisabled = strings.EqualFold(string(scaDisabled), "true")
-		}
-	}
-	if err != nil {
-		return err
-	}
-	c.setSecretConfig(&nextConfig)
-	return nil
 }
 
 // Config provides the config in a thread-safe way.
@@ -262,64 +104,89 @@ func (c *Controller) ConfigChanged() (configCh <-chan struct{}, closeFn func()) 
 	}
 }
 
+// Fetches the token from cluster secret key
+func (c *Controller) fetchSecret(ctx context.Context, key string) (*v1.Secret, error) {
+	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, key, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			klog.V(4).Infof("%s secret does not exist", key)
+			err = nil
+		} else if errors.IsForbidden(err) {
+			klog.V(2).Infof("Operator does not have permission to check %s: %v", key, err)
+			err = nil
+		} else {
+			err = fmt.Errorf("could not check %s: %v", key, err)
+		}
+	}
+
+	return secret, err
+}
+
+// Updates the stored tokens from the secrets in the cluster. (if present)
+func (c *Controller) updateToken(ctx context.Context) error {
+	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
+	secret, err := c.fetchSecret(ctx, "pull-secret")
+	if err != nil {
+		return err
+	}
+
+	var nextConfig config.Controller
+	if secret != nil {
+		var token string
+		token, err = tokenFromSecret(secret)
+		if err != nil {
+			return err
+		}
+		if len(token) > 0 {
+			nextConfig.Token = token
+			nextConfig.Report = true
+		}
+	}
+
+	c.setTokenConfig(&nextConfig)
+
+	return nil
+}
+
+// Updates the stored configs from the secrets in the cluster. (if present)
+func (c *Controller) updateConfig(ctx context.Context) error {
+	var nextConfig config.Controller
+	klog.V(2).Infof("Refreshing configuration from cluster secret")
+	secret, err := c.fetchSecret(ctx, "support")
+	if err != nil {
+		return err
+	}
+
+	if secret != nil {
+		nextConfig, err = LoadConfigFromSecret(secret)
+		if err != nil {
+			return err
+		}
+	}
+
+	c.setSecretConfig(&nextConfig)
+
+	return nil
+}
+
+// Sets the token configuration to the observer
 func (c *Controller) setTokenConfig(operatorConfig *config.Controller) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.tokenConfig = operatorConfig
-	c.mergeConfigLocked()
+	c.mergeConfig()
 }
 
+// Sets the secret configuration to the observer
 func (c *Controller) setSecretConfig(operatorConfig *config.Controller) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.secretConfig = operatorConfig
-	c.mergeConfigLocked()
+	c.mergeConfig()
 }
 
-func (c *Controller) mergeConfigLocked() {
-	cfg := c.defaultConfig
-	if c.secretConfig != nil {
-		cfg.Username = c.secretConfig.Username
-		cfg.Password = c.secretConfig.Password
-		if c.secretConfig.Interval > 0 {
-			cfg.Interval = c.secretConfig.Interval
-		}
-		if len(c.secretConfig.Endpoint) > 0 {
-			cfg.Endpoint = c.secretConfig.Endpoint
-		}
-		if len(c.secretConfig.ReportEndpoint) > 0 {
-			cfg.ReportEndpoint = c.secretConfig.ReportEndpoint
-		}
-		if c.secretConfig.ReportPullingDelay >= 0 {
-			cfg.ReportPullingDelay = c.secretConfig.ReportPullingDelay
-		}
-		if c.secretConfig.ReportPullingTimeout > 0 {
-			cfg.ReportPullingTimeout = c.secretConfig.ReportPullingTimeout
-		}
-		if c.secretConfig.ReportMinRetryTime > 0 {
-			cfg.ReportMinRetryTime = c.secretConfig.ReportMinRetryTime
-		}
-		cfg.EnableGlobalObfuscation = cfg.EnableGlobalObfuscation || c.secretConfig.EnableGlobalObfuscation
-
-		// OCM config
-		if len(c.secretConfig.OCMConfig.SCAEndpoint) > 0 {
-			cfg.OCMConfig.SCAEndpoint = c.secretConfig.OCMConfig.SCAEndpoint
-		}
-		if c.secretConfig.OCMConfig.SCAInterval > 0 {
-			cfg.OCMConfig.SCAInterval = c.secretConfig.OCMConfig.SCAInterval
-		}
-
-		cfg.OCMConfig.SCADisabled = c.secretConfig.OCMConfig.SCADisabled
-		cfg.HTTPConfig = c.secretConfig.HTTPConfig
-	}
-	if c.tokenConfig != nil {
-		cfg.Token = c.tokenConfig.Token
-	}
-	cfg.Report = len(cfg.Endpoint) > 0 && (len(cfg.Token) > 0 || len(cfg.Username) > 0)
-	c.setConfigLocked(&cfg)
-}
-
-func (c *Controller) setConfigLocked(operatorConfig *config.Controller) {
+// Sets the operator configuration to the observer
+func (c *Controller) setConfig(operatorConfig *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, operatorConfig) {
 			klog.V(2).Infof("Configuration updated: %s", operatorConfig.ToString())
@@ -337,6 +204,42 @@ func (c *Controller) setConfigLocked(operatorConfig *config.Controller) {
 		klog.V(2).Infof("Configuration set: %s", operatorConfig.ToString())
 	}
 	c.config = operatorConfig
+}
+
+// Merges operator configuration to the observer
+func (c *Controller) mergeConfig() {
+	cfg := c.defaultConfig
+
+	if c.secretConfig != nil {
+		cfg.MergeWith(c.secretConfig)
+	}
+	if c.tokenConfig != nil {
+		cfg.Token = c.tokenConfig.Token
+	}
+
+	cfg.Report = len(cfg.Endpoint) > 0 && (len(cfg.Token) > 0 || len(cfg.Username) > 0)
+	c.setConfig(&cfg)
+}
+
+// Parses the given secret to retrieve the token
+func tokenFromSecret(secret *v1.Secret) (string, error) {
+	if data := secret.Data[".dockerconfigjson"]; len(data) > 0 {
+		var pullSecret serializedAuthMap
+		if err := json.Unmarshal(data, &pullSecret); err != nil {
+			klog.Errorf("Unable to unmarshal cluster pull-secret: %v", err)
+		}
+		if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
+			token := strings.TrimSpace(auth.Auth)
+			if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
+				return "", fmt.Errorf("cluster authorization token is not valid: contains newlines")
+			}
+			if len(token) > 0 {
+				klog.V(4).Info("Found cloud.openshift.com token")
+				return token, nil
+			}
+		}
+	}
+	return "", nil
 }
 
 type serializedAuthMap struct {
