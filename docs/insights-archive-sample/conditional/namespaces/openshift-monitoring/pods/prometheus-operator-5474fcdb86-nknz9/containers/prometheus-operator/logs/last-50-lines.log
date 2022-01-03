@@ -1,0 +1,5 @@
+2022-01-03T12:52:54.973991984Z level=info ts=2022-01-03T12:52:54.973727812Z caller=operator.go:1218 component=prometheusoperator key=openshift-monitoring/k8s msg="sync prometheus"
+2022-01-03T12:52:57.666379411Z level=info ts=2022-01-03T12:52:57.666283111Z caller=operator.go:741 component=alertmanageroperator key=openshift-monitoring/main msg="sync alertmanager"
+2022-01-03T12:52:57.668743701Z level=info ts=2022-01-03T12:52:57.668675922Z caller=operator.go:1218 component=prometheusoperator key=openshift-monitoring/k8s msg="sync prometheus"
+2022-01-03T12:52:59.474704423Z level=info ts=2022-01-03T12:52:59.474623015Z caller=operator.go:741 component=alertmanageroperator key=openshift-monitoring/main msg="sync alertmanager"
+2022-01-03T12:52:59.493561306Z level=info ts=2022-01-03T12:52:59.493496866Z caller=operator.go:1218 component=prometheusoperator key=openshift-monitoring/k8s msg="sync prometheus"

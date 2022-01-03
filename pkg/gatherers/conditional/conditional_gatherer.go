@@ -167,7 +167,7 @@ var defaultGatheringRules = []GatheringRule{
 		GatheringFunctions: GatheringFunctions{
 			GatherContainersLogs: GatherContainersLogsParams{
 				AlertName: "PrometheusOperatorSyncFailed",
-				Container: "kube-rbac-proxy",
+				Container: "prometheus-operator",
 				TailLines: 50,
 			},
 		},
