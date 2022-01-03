@@ -101,7 +101,6 @@ func CollectAndRecordGatherer(
 			)
 
 			errs = append(errs, fmt.Errorf(errStr))
-
 		}
 		recordedRecs := 0
 		for _, r := range result.Records {
