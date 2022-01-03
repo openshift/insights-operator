@@ -166,7 +166,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 }
 
 // calculate the current controller status based on its given sources
-func (c *Controller) currentControllerStatus() (allReady bool, lastTransition time.Time) {
+func (c *Controller) currentControllerStatus() (allReady bool, lastTransition time.Time) { //nolint: gocyclo
 	var errorReason string
 	var errs []string
 
@@ -210,6 +210,14 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 				degradingFailure = true
 			}
 			c.ctrlStatus.setStatus(SCAPullStatus, summary.Reason, summary.Message)
+		} else if summary.Operation.Name == controllerstatus.PullingClusterTransfer.Name {
+			// mark as degraded only in case of HTTP 500 and higher
+			if summary.Operation.HTTPStatusCode >= 500 {
+				klog.V(4).Infof("Failed to pull the cluster transfer object within the threshold %d with exponential backoff. Marking as degraded.",
+					OCMAPIFailureCountThreshold)
+				degradingFailure = true
+			}
+			c.ctrlStatus.setStatus(ClusterTransferStatus, summary.Reason, summary.Message)
 		}
 
 		if degradingFailure {
@@ -355,6 +363,13 @@ func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 		cs.setCondition(SCANotAvailable, configv1.ConditionTrue, ss.reason, ss.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.removeCondition(SCANotAvailable)
+	}
+
+	// handler when ClusterTransfer pull from the OCM fails
+	if ss := ctrlStatus.getStatus(ClusterTransferStatus); ss != nil {
+		cs.setCondition(ClusterTransferFailed, configv1.ConditionTrue, ss.reason, ss.message, metav1.Time{Time: lastTransition})
+	} else {
+		cs.removeCondition(ClusterTransferFailed)
 	}
 }
 

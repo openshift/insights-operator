@@ -146,4 +146,18 @@ func (c *Config) loadOCM(data map[string][]byte) {
 	if scaDisabled, ok := data["scaPullDisabled"]; ok {
 		c.OCMConfig.SCADisabled = strings.EqualFold(string(scaDisabled), "true")
 	}
+
+	if clusterTransferEndpoint, ok := data["clusterTransferEndpoint"]; ok {
+		c.OCMConfig.ClusterTransferEndpoint = string(clusterTransferEndpoint)
+	}
+	if clusterTransferInterval, ok := data["clusterTransferInterval"]; ok {
+		if newInterval, err := time.ParseDuration(string(clusterTransferInterval)); err == nil {
+			c.OCMConfig.ClusterTransferInterval = newInterval
+		} else {
+			klog.Warningf(
+				"secret contains an invalid value (%s) for clusterTransferInterval. Using previous value",
+				clusterTransferInterval,
+			)
+		}
+	}
 }

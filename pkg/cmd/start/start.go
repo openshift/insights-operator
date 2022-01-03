@@ -34,8 +34,10 @@ func NewOperator() *cobra.Command {
 			ReportMinRetryTime:          10 * time.Second,
 			ReportPullingTimeout:        30 * time.Minute,
 			OCMConfig: config.OCMConfig{
-				SCAInterval: 8 * time.Hour,
-				SCAEndpoint: "https://api.openshift.com/api/accounts_mgmt/v1/certificates",
+				SCAInterval:             8 * time.Hour,
+				SCAEndpoint:             "https://api.openshift.com/api/accounts_mgmt/v1/certificates",
+				ClusterTransferEndpoint: "https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers",
+				ClusterTransferInterval: 24 * time.Hour,
 			},
 		},
 	}

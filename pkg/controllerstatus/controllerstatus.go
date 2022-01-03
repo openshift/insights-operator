@@ -12,9 +12,11 @@ type Interface interface {
 }
 
 type Operation struct {
-	Name           string
+	Name           OperationName
 	HTTPStatusCode int
 }
+
+type OperationName string
 
 var (
 	// DownloadingReport specific flag for Smart Proxy report downloading process.
@@ -25,6 +27,8 @@ var (
 	GatheringReport = Operation{Name: "GatheringReport"}
 	// PullingSCACerts is specific operation for pulling the SCA certs data from the OCM API
 	PullingSCACerts = Operation{Name: "PullingSCACerts"}
+	// PullingClusterTransfer is an operator for pulling ClusterTransfer object from the OCM API endpoint
+	PullingClusterTransfer = Operation{Name: "PullingClusterTransfer"}
 )
 
 // Summary represents the status summary of an Operation

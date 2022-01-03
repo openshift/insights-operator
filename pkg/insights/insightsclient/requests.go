@@ -5,10 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"k8s.io/klog/v2"
 	"mime/multipart"
 	"net/http"
 	"strconv"
+
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
 )
@@ -244,4 +245,50 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 	}()
 
 	return io.ReadAll(resp.Body)
+}
+
+// RecvClusterTransfer performs a request to the OCM cluster transfer API.
+// It is a HTTP GET request with the `search` query parameter limiting the result
+// only for the one cluster.
+func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
+	cv, err := c.getClusterVersion()
+	if err != nil {
+		return nil, err
+	}
+	if cv == nil {
+		return nil, ErrWaitingForVersion
+	}
+	token, err := c.authorizer.Token()
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodGet, endpoint, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	q := req.URL.Query()
+	searchQuery := fmt.Sprintf("cluster_uuid is '%s'", cv.Spec.ClusterID)
+	q.Add("search", searchQuery)
+	req.URL.RawQuery = q.Encode()
+	req.Header.Set("Content-Type", "application/json")
+	c.client.Transport = clientTransport(c.authorizer)
+	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
+	req.Header.Set("Authorization", authHeader)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve cluster transfer data from %s: %v", endpoint, err)
+	}
+
+	if resp.StatusCode > 399 || resp.StatusCode < 200 {
+		return nil, ocmErrorMessage(resp)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			klog.Warningf("Failed to close response body: %v", err)
+		}
+	}()
+
+	return io.ReadAll(resp.Body)
+
 }
