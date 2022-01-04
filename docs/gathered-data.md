@@ -23,6 +23,18 @@ Params is of type AlertIsFiringConditionParams:
   * 4.10+
 
 
+## ActiveAlerts
+
+gathers active alerts from the Alertmanager API V2.
+Unstructured alerts data was previously (OCP < 4.10) included in [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
+
+* Location in archive: config/alerts.json
+* See: docs/insights-archive-sample/config/alerts.json
+* Id in config: active_alerts
+* Since version:
+  * 4.10+
+
+
 ## AlertmanagerLogs
 
 collects alertmanager logs for pods firing one the configured alerts.

@@ -98,6 +98,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"schedulers":                        failableFunc((*Gatherer).GatherSchedulers),
 	"scheduler_logs":                    failableFunc((*Gatherer).GatherSchedulerLogs),
 	"silenced_alerts":                   failableFunc((*Gatherer).GatherSilencedAlerts),
+	"active_alerts":                     failableFunc((*Gatherer).GatherActiveAlerts),
 }
 
 func New(
