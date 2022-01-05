@@ -88,6 +88,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"psps":                              failableFunc((*Gatherer).GatherPodSecurityPolicies),
 	"validating_webhook_configurations": failableFunc((*Gatherer).GatherValidatingWebhookConfigurations),
 	"mutating_webhook_configurations":   failableFunc((*Gatherer).GatherMutatingWebhookConfigurations),
+	"cost_management_metrics_configs":   failableFunc((*Gatherer).GatherCostManagementMetricsConfigs),
 }
 
 func New(
