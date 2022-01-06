@@ -51,17 +51,21 @@ func (g *Gatherer) gatherContainersLogs(
 		return nil, []error{err}
 	}
 
+	const logMissingAlert = "%s at alertName: %s"
+
 	var errs []error
 	var records []record.Record
 
 	for _, alertLabels := range alertInstances {
 		podNamespace, err := getAlertPodNamespace(alertLabels)
 		if err != nil {
+			klog.Warningf(logMissingAlert, err.Error(), params.AlertName)
 			errs = append(errs, err)
 			continue
 		}
 		podName, err := getAlertPodName(alertLabels)
 		if err != nil {
+			klog.Warningf(logMissingAlert, err.Error(), params.AlertName)
 			errs = append(errs, err)
 			continue
 		}
@@ -71,6 +75,7 @@ func (g *Gatherer) gatherContainersLogs(
 		} else {
 			podContainer, err = getAlertPodContainer(alertLabels)
 			if err != nil {
+				klog.Warningf(logMissingAlert, err.Error(), params.AlertName)
 				errs = append(errs, err)
 			}
 		}
