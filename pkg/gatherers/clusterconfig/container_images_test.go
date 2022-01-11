@@ -110,11 +110,11 @@ func Test_ContainerImages_Gather(t *testing.T) { //nolint: funlen,gocyclo
 		containerInfo = &containers
 	}
 
-	if containerInfo == nil {
+	if containerInfo == nil { // nolint: staticcheck
 		t.Fatal("container info has not been reported")
 	}
 
-	if len(containerInfo.Images) != len(mockContainers) {
+	if len(containerInfo.Images) != len(mockContainers) { // nolint: staticcheck
 		t.Fatalf("expected %d unique images, got %d", len(mockContainers), len(containerInfo.Images))
 	}
 
