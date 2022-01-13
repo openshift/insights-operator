@@ -20,7 +20,7 @@ spec:
       for: 5m
       labels:
         severity: info
-    - alert: SCANotAvailable
+    - alert: SimpleContentAccessNotAvailable
       annotations:
         description: 'Simple content access (SCA) is not enabled. Once enabled, Insights Operator can automatically import the SCA certificates from Red Hat OpenShift Cluster Manager making it easier to use the content provided by your Red Hat subscriptions when creating container images. See https://docs.openshift.com/container-platform/latest/cicd/builds/running-entitled-builds.html for more information.'
         summary: Simple content access certificates are not available.
