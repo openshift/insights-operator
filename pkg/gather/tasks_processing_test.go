@@ -33,7 +33,6 @@ func Test_HandleTasksConcurrently(t *testing.T) {
 
 					return records, nil
 				},
-				CanFail: false,
 			},
 		})
 	}
@@ -75,7 +74,6 @@ func Test_HandleTasksConcurrently_CannotFail_Panic(t *testing.T) {
 			Run: func(context.Context) ([]record.Record, []error) {
 				panic("test panic")
 			},
-			CanFail: false,
 		},
 	}})
 
@@ -83,8 +81,7 @@ func Test_HandleTasksConcurrently_CannotFail_Panic(t *testing.T) {
 	results[0].TimeElapsed = 0
 	assert.Equal(t, results, []GatheringFunctionResult{
 		{
-			Panic:        "test panic",
-			IgnoreErrors: false,
+			Panic: "test panic",
 		},
 	})
 }
@@ -97,7 +94,6 @@ func Test_HandleTasksConcurrently_CannotFail_Error(t *testing.T) {
 					fmt.Errorf("test error"),
 				}
 			},
-			CanFail: false,
 		},
 	}})
 
@@ -108,7 +104,6 @@ func Test_HandleTasksConcurrently_CannotFail_Error(t *testing.T) {
 			Errs: []error{
 				fmt.Errorf("test error"),
 			},
-			IgnoreErrors: false,
 		},
 	})
 }
@@ -121,7 +116,6 @@ func Test_HandleTasksConcurrently_CanFail_Error(t *testing.T) {
 					fmt.Errorf("test error"),
 				}
 			},
-			CanFail: true,
 		},
 	}})
 
@@ -132,7 +126,6 @@ func Test_HandleTasksConcurrently_CanFail_Error(t *testing.T) {
 			Errs: []error{
 				fmt.Errorf("test error"),
 			},
-			IgnoreErrors: true,
 		},
 	})
 }
@@ -143,7 +136,6 @@ func Test_HandleTasksConcurrently_CanFail_Panic(t *testing.T) {
 			Run: func(context.Context) ([]record.Record, []error) {
 				panic("test panic")
 			},
-			CanFail: true,
 		},
 	}})
 
@@ -151,8 +143,7 @@ func Test_HandleTasksConcurrently_CanFail_Panic(t *testing.T) {
 	results[0].TimeElapsed = 0
 	assert.Equal(t, results, []GatheringFunctionResult{
 		{
-			Panic:        "test panic",
-			IgnoreErrors: true,
+			Panic: "test panic",
 		},
 	})
 }

@@ -50,7 +50,6 @@ func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gat
 			}
 			return records, nil
 		},
-		CanFail: canConditionalGathererFail,
 	}, nil
 }
 

@@ -23,23 +23,6 @@ var testAlertManagerFiringAlerts = map[string][]AlertLabels{
 	},
 }
 
-func TestGatherer_BuildGatherAlertmanagerLogs(t *testing.T) {
-	g := &Gatherer{firingAlerts: testAlertManagerFiringAlerts}
-	gather, err := g.BuildGatherAlertmanagerLogs(GatherAlertmanagerLogsParams{
-		AlertName: "AlertmanagerFailedToSendAlerts",
-		TailLines: 100,
-	})
-
-	if err != nil {
-		t.Errorf("BuildGatherAlertmanagerLogs() error = %v, it must not fail to be build", err)
-		return
-	}
-
-	if gather.CanFail != canConditionalGathererFail {
-		t.Errorf("BuildGatherAlertmanagerLogs() got = %v, want %v", gather.CanFail, canConditionalGathererFail)
-	}
-}
-
 func TestGatherer_gatherAlertmanagerLogs(t *testing.T) {
 	ctx := context.TODO()
 	testPod := &corev1.Pod{

@@ -30,8 +30,6 @@ type CustomPeriodGatherer interface {
 }
 
 // GatheringClosure is a struct containing a closure each gatherer returns
-// it also contains CanFail field showing if we should just log the failures
 type GatheringClosure struct {
-	Run     func(context.Context) ([]record.Record, []error)
-	CanFail bool
+	Run func(context.Context) ([]record.Record, []error)
 }

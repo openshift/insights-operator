@@ -100,11 +100,7 @@ func CollectAndRecordGatherer(
 				gathererName, result.FunctionName, err,
 			)
 
-			if result.IgnoreErrors {
-				klog.Error(errStr)
-			} else {
-				errs = append(errs, fmt.Errorf(errStr))
-			}
+			errs = append(errs, fmt.Errorf(errStr))
 		}
 		recordedRecs := 0
 		for _, r := range result.Records {

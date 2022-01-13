@@ -25,7 +25,6 @@ type GatheringFunctionResult struct {
 	Errs         []error
 	Panic        interface{}
 	TimeElapsed  time.Duration
-	IgnoreErrors bool
 }
 
 // HandleTasksConcurrently processes tasks concurrently and returns iterator like channel with the results
@@ -98,6 +97,5 @@ func handleTask(ctx context.Context, task Task, resultsChan chan<- GatheringFunc
 		Errs:         errs,
 		Panic:        panicked,
 		TimeElapsed:  time.Since(startTime),
-		IgnoreErrors: task.F.CanFail,
 	}
 }

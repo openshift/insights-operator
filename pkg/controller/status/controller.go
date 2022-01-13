@@ -27,8 +27,6 @@ const (
 	// How many upload failures in a row we tolerate before starting reporting
 	// as InsightsUploadDegraded
 	uploadFailuresCountThreshold = 5
-	// GatherFailuresCountThreshold defines how many gatherings can fail in a row before we report Degraded
-	GatherFailuresCountThreshold = 5
 	// OCMAPIFailureCountThreshold defines how many unsuccessful responses from the OCM API in a row is tolerated
 	// before the operator is marked as Degraded
 	OCMAPIFailureCountThreshold = 5

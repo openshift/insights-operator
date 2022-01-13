@@ -12,7 +12,6 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
-	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -94,18 +93,6 @@ func (c *Controller) Gather() {
 		return
 	}
 
-	interval := c.configurator.Config().Interval
-	threshold := status.GatherFailuresCountThreshold
-	duration := interval / (time.Duration(threshold) * 2)
-	// IMPORTANT: We NEED to run retry $threshold times or we will never set status to degraded.
-	backoff := wait.Backoff{
-		Duration: duration,
-		Factor:   1.35,
-		Jitter:   0,
-		Steps:    threshold,
-		Cap:      interval,
-	}
-
 	// flush when all necessary gatherers were processed
 	defer func() {
 		if err := c.recorder.Flush(); err != nil {
@@ -129,33 +116,30 @@ func (c *Controller) Gather() {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 
 	for _, gatherer := range gatherersToProcess {
-		_ = wait.ExponentialBackoff(backoff, func() (bool, error) {
-			name := gatherer.GetName()
-			start := time.Now()
+		name := gatherer.GetName()
+		start := time.Now()
 
-			ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
-			defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+		defer cancel()
 
-			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
-			for i := range functionReports {
-				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
-			}
-			if err == nil {
-				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
-				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
-				return true, nil
-			}
+		klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
+		for i := range functionReports {
+			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+		}
+		if err == nil {
+			klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+			c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
+			continue
+		}
 
-			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-			c.statuses[name].UpdateStatus(
-				controllerstatus.Summary{
-					Operation: controllerstatus.GatheringReport,
-					Reason:    "PeriodicGatherFailed",
-					Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
-				})
-			return false, nil
-		})
+		utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
+		c.statuses[name].UpdateStatus(
+			controllerstatus.Summary{
+				Operation: controllerstatus.GatheringReport,
+				Reason:    "PeriodicGatherFailed",
+				Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+			})
 	}
 
 	err := gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)

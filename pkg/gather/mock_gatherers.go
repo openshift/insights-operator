@@ -23,31 +23,26 @@ func (g *MockGatherer) GetGatheringFunctions(context.Context) (map[string]gather
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherName(ctx)
 			},
-			CanFail: false,
 		},
 		"some_field": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherSomeField(ctx)
 			},
-			CanFail: false,
 		},
 		"3_records": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.Gather3Records(ctx)
 			},
-			CanFail: false,
 		},
 		"errors": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherErrors(ctx)
 			},
-			CanFail: g.CanFail,
 		},
 		"panic": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherPanic(ctx)
 			},
-			CanFail: g.CanFail,
 		},
 	}, nil
 }
@@ -113,7 +108,6 @@ func (g *MockCustomPeriodGatherer) GetGatheringFunctions(context.Context) (map[s
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherPeriod(ctx)
 			},
-			CanFail: false,
 		},
 	}, nil
 }
@@ -155,7 +149,6 @@ func (g *MockCustomPeriodGathererNoPeriod) GetGatheringFunctions(context.Context
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherShouldBeProcessed(ctx)
 			},
-			CanFail: false,
 		},
 	}, nil
 }
@@ -191,7 +184,6 @@ func (g *MockFailingGatherer) GetGatheringFunctions(context.Context) (map[string
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.FailingGatherer(ctx)
 			},
-			CanFail: false,
 		},
 	}, nil
 }
