@@ -76,6 +76,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"schedulers":                        (*Gatherer).GatherSchedulers,
 	"scheduler_logs":                    (*Gatherer).GatherSchedulerLogs,
 	"silenced_alerts":                   (*Gatherer).GatherSilencedAlerts,
+	"elasticsearch":                     (*Gatherer).GatherElasticsearch,
 }
 
 func New(
