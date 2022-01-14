@@ -9,12 +9,15 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/component-base/logs"
+	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/cmd/start"
 )
 
 func main() {
-	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	flags := goflag.CommandLine
+	klog.InitFlags(flags)
+	pflag.CommandLine.AddGoFlagSet(flags)
 	err := pflag.CommandLine.Lookup("alsologtostderr").Value.Set("true")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
