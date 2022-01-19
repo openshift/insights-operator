@@ -35,8 +35,7 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 	GatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
 	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
 	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
-	GatherLogsOfUnhealthyPods:     (*Gatherer).BuildGatherLogsOfUnhealthyPods,
-	GatherAlertmanagerLogs:        (*Gatherer).BuildGatherAlertmanagerLogs,
+	GatherContainersLogs:          (*Gatherer).BuildGatherContainersLogs,
 }
 
 // gatheringRules contains all the rules used to run conditional gatherings.
@@ -104,7 +103,7 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 	},
-	// GatherLogsOfUnhealthyPods
+	// GatherContainersLogs
 	{
 		Conditions: []ConditionWithParams{
 			{
@@ -115,7 +114,7 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 		GatheringFunctions: GatheringFunctions{
-			GatherLogsOfUnhealthyPods: GatherLogsOfUnhealthyPodsParams{
+			GatherContainersLogs: GatherContainersLogsParams{
 				AlertName: "KubePodCrashLooping",
 				TailLines: 20,
 				Previous:  true,
@@ -132,14 +131,13 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 		GatheringFunctions: GatheringFunctions{
-			GatherLogsOfUnhealthyPods: GatherLogsOfUnhealthyPodsParams{
+			GatherContainersLogs: GatherContainersLogsParams{
 				AlertName: "KubePodNotReady",
 				TailLines: 100,
 				Previous:  false,
 			},
 		},
 	},
-	// AlertManagerLogs
 	{
 		Conditions: []ConditionWithParams{
 			{
@@ -150,8 +148,26 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 		GatheringFunctions: GatheringFunctions{
-			GatherAlertmanagerLogs: GatherAlertmanagerLogsParams{
+			GatherContainersLogs: GatherContainersLogsParams{
 				AlertName: "AlertmanagerFailedToSendAlerts",
+				Container: "alertmanager",
+				TailLines: 50,
+			},
+		},
+	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Alert: &AlertConditionParams{
+					Name: "PrometheusOperatorSyncFailed",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherContainersLogs: GatherContainersLogsParams{
+				AlertName: "PrometheusOperatorSyncFailed",
+				Container: "prometheus-operator",
 				TailLines: 50,
 			},
 		},

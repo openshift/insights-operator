@@ -23,16 +23,6 @@ Params is of type AlertIsFiringConditionParams:
   * 4.10+
 
 
-## AlertmanagerLogs
-
-collects alertmanager logs for pods firing one the configured alerts.
-
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/logs/last-{i}-lines.log
-* Id in config: alertmanager_logs
-* Since versions:
-  * 4.10+
-
-
 ## CRD
 
 collects the specified Custom Resource Definitions.
@@ -289,6 +279,16 @@ Response see:
   * 4.7+
 
 
+## ContainersLogs
+
+collects either current or previous containers logs for pods firing one of the configured alerts.
+
+* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
+* Id in config: containers_logs
+* Since versions:
+  * 4.10+
+
+
 ## CostManagementMetricsConfigs
 
 collects CostManagementMetricsConfigs definitions.
@@ -383,15 +383,6 @@ Response see:
 * Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
 * Since versions:
   * 4.9+
-
-
-## LogsOfUnhealthyPods
-
-collects either current or previous logs for pods firing one of the configured alerts.
-
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
-* Since versions:
-  * 4.10+
 
 
 ## MachineAutoscalers
