@@ -1,4 +1,4 @@
-package ocm
+package sca
 
 import (
 	"context"
@@ -16,7 +16,7 @@ var (
 	secTestData       = "secret testing data"
 )
 
-var testRes = &ScaResponse{
+var testRes = &Response{
 	Key:  "secret key",
 	Cert: "secret cert",
 }

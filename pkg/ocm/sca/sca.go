@@ -1,4 +1,4 @@
-package ocm
+package sca
 
 import (
 	"context"
@@ -42,8 +42,8 @@ type Configurator interface {
 	ConfigChanged() (<-chan struct{}, func())
 }
 
-// ScaResponse structure is used to unmarshall the OCM response. It holds the SCA certificate
-type ScaResponse struct {
+// Response structure is used to unmarshall the OCM SCA response. It holds the SCA certificate
+type Response struct {
 	ID    string `json:"id"`
 	OrgID string `json:"organization_id"`
 	Key   string `json:"key"`
@@ -54,7 +54,7 @@ type ScaResponse struct {
 func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator Configurator,
 	insightsClient *insightsclient.Client) *Controller {
 	return &Controller{
-		Simple:       controllerstatus.Simple{Name: "ocmcontroller"},
+		Simple:       controllerstatus.Simple{Name: "scaController"},
 		coreClient:   coreClient,
 		ctx:          ctx,
 		configurator: configurator,
@@ -79,7 +79,13 @@ func (c *Controller) Run() {
 			if !disabled {
 				c.requestDataAndCheckSecret(endpoint)
 			} else {
-				klog.Warning("Pulling of the SCA certs from the OCM API is disabled")
+				msg := "Pulling of the SCA certs from the OCM API is disabled"
+				klog.Warning(msg)
+				c.Simple.UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.PullingSCACerts,
+					Healthy:   true,
+					Message:   msg,
+				})
 			}
 		case <-configCh:
 			cfg := c.configurator.Config()
@@ -91,6 +97,8 @@ func (c *Controller) Run() {
 }
 
 func (c *Controller) requestDataAndCheckSecret(endpoint string) {
+	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().OCMConfig.SCAEndpoint,
+		c.configurator.Config().OCMConfig.SCAInterval)
 	data, err := c.requestSCAWithExpBackoff(endpoint)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
@@ -114,7 +122,7 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 		return
 	}
 
-	var ocmRes ScaResponse
+	var ocmRes Response
 	err = json.Unmarshal(data, &ocmRes)
 	if err != nil {
 		klog.Errorf("Unable to decode response: %v", err)
@@ -138,7 +146,7 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 // checkSecret checks "etc-pki-entitlement" secret in the "openshift-config-managed" namespace.
 // If the secret doesn't exist then it will create a new one.
 // If the secret already exist then it will update the data.
-func (c *Controller) checkSecret(ocmData *ScaResponse) error {
+func (c *Controller) checkSecret(ocmData *Response) error {
 	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(c.ctx, secretName, metav1.GetOptions{})
 
 	// if the secret doesn't exist then create one
@@ -160,7 +168,7 @@ func (c *Controller) checkSecret(ocmData *ScaResponse) error {
 	return nil
 }
 
-func (c *Controller) createSecret(ocmData *ScaResponse) (*v1.Secret, error) {
+func (c *Controller) createSecret(ocmData *Response) (*v1.Secret, error) {
 	newSCA := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -180,7 +188,7 @@ func (c *Controller) createSecret(ocmData *ScaResponse) (*v1.Secret, error) {
 }
 
 // updateSecret updates provided secret with given data
-func (c *Controller) updateSecret(s *v1.Secret, ocmData *ScaResponse) (*v1.Secret, error) {
+func (c *Controller) updateSecret(s *v1.Secret, ocmData *Response) (*v1.Secret, error) {
 	s.Data = map[string][]byte{
 		entitlementAttrName:    []byte(ocmData.Cert),
 		entitlementKeyAttrName: []byte(ocmData.Key),
