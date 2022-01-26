@@ -20,6 +20,7 @@ import (
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) BuildGatherPodDefinition(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
+	// nolint: dupl
 	params, ok := paramsInterface.(GatherPodDefinitionParams)
 	if !ok {
 		return gatherers.GatheringClosure{}, fmt.Errorf(
