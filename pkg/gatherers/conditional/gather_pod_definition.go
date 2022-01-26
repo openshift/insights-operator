@@ -19,8 +19,7 @@ import (
 // * Id in config: pod_definition
 // * Since versions:
 //   * 4.10+
-func (g *Gatherer) BuildGatherPodDefinition(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
-	// nolint: dupl
+func (g *Gatherer) BuildGatherPodDefinition(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherPodDefinitionParams)
 	if !ok {
 		return gatherers.GatheringClosure{}, fmt.Errorf(
