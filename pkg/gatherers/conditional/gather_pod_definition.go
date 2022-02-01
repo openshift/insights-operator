@@ -15,10 +15,9 @@ import (
 
 // BuildGatherPodDefinition collects pod definition from pods that are firing one of the configured alerts.
 //
-// * Location in archive: conditional/namespaces/<namespace>/pods/<pod>.json
-// * Id in config: pod_definition
+// * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/<pod>.json
 // * Since versions:
-//   * 4.10+
+//   * 4.11+
 func (g *Gatherer) BuildGatherPodDefinition(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherPodDefinitionParams)
 	if !ok {
@@ -79,9 +78,10 @@ func (g *Gatherer) gatherPodDefinition(
 
 		records = append(records, record.Record{
 			Name: fmt.Sprintf(
-				"%s/namespaces/%s/pods/%s",
+				"%s/namespaces/%s/pods/%s/%s",
 				g.GetName(),
 				podNamespace,
+				podName,
 				podName),
 			Item: record.ResourceMarshaller{Resource: pod},
 		})

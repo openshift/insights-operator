@@ -664,10 +664,9 @@ Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcon
 
 collects pod definition from pods that are firing one of the configured alerts.
 
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>.json
-* Id in config: pod_definition
+* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/<pod>.json
 * Since versions:
-  * 4.10+
+  * 4.11+
 
 
 ## PodDisruptionBudgets
