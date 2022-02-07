@@ -116,30 +116,32 @@ func (c *Controller) Gather() {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 
 	for _, gatherer := range gatherersToProcess {
-		name := gatherer.GetName()
-		start := time.Now()
+		func() {
+			name := gatherer.GetName()
+			start := time.Now()
 
-		ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
-		defer cancel()
+			ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+			defer cancel()
 
-		klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
-		for i := range functionReports {
-			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
-		}
-		if err == nil {
-			klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
-			c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
-			continue
-		}
+			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
+			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
+			for i := range functionReports {
+				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+			}
+			if err == nil {
+				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
+				return
+			}
 
-		utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-		c.statuses[name].UpdateStatus(
-			controllerstatus.Summary{
-				Operation: controllerstatus.GatheringReport,
-				Reason:    "PeriodicGatherFailed",
-				Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
-			})
+			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
+			c.statuses[name].UpdateStatus(
+				controllerstatus.Summary{
+					Operation: controllerstatus.GatheringReport,
+					Reason:    "PeriodicGatherFailed",
+					Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+				})
+		}()
 	}
 
 	err := gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)
