@@ -100,7 +100,7 @@ func CollectAndRecordGatherer(
 				gathererName, result.FunctionName, err,
 			)
 
-			errs = append(errs, fmt.Errorf(errStr))
+			errs = append(errs, fmt.Errorf("%s", errStr))
 		}
 		recordedRecs := 0
 		for _, r := range result.Records {
