@@ -172,6 +172,57 @@ var defaultGatheringRules = []GatheringRule{
 			},
 		},
 	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Alert: &AlertConditionParams{
+					Name: "AlertmanagerFailedReload",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherContainersLogs: GatherContainersLogsParams{
+				AlertName: "AlertmanagerFailedReload",
+				Container: "alertmanager",
+				TailLines: 50,
+			},
+		},
+	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Alert: &AlertConditionParams{
+					Name: "PrometheusTargetSyncFailure",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherContainersLogs: GatherContainersLogsParams{
+				AlertName: "PrometheusTargetSyncFailure",
+				Container: "prometheus",
+				TailLines: 50,
+			},
+		},
+	},
+	{
+		Conditions: []ConditionWithParams{
+			{
+				Type: AlertIsFiring,
+				Alert: &AlertConditionParams{
+					Name: "ThanosRuleQueueIsDroppingAlerts",
+				},
+			},
+		},
+		GatheringFunctions: GatheringFunctions{
+			GatherContainersLogs: GatherContainersLogsParams{
+				AlertName: "ThanosRuleQueueIsDroppingAlerts",
+				Container: "thanos-ruler",
+				TailLines: 50,
+			},
+		},
+	},
 }
 
 // Gatherer implements the conditional gatherer
