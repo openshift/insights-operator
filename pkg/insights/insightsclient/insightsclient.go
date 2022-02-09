@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"k8s.io/client-go/pkg/version"
@@ -57,9 +58,10 @@ type Authorizer interface {
 }
 
 type Source struct {
-	ID       string
-	Type     string
-	Contents io.Reader
+	ID           string
+	Type         string
+	CreationTime time.Time
+	Contents     io.ReadCloser
 }
 
 // HttpError is helper error type to have HTTP error status code
@@ -230,11 +232,20 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		if err != nil {
 			_ = pw.CloseWithError(err)
 		}
+		// set gathering time as custom metada field
+		fw, err = mw.CreateFormFile("metadata", "metadata.json")
+		if err != nil {
+			_ = pw.CloseWithError(err)
+			return
+		}
+		cm := fmt.Sprintf(`{"custom_metadata":{"gathering_time":%q}}`, source.CreationTime.Format(time.RFC3339))
+		_, err = io.Copy(fw, strings.NewReader(cm))
+		if err != nil {
+			_ = pw.CloseWithError(err)
+		}
 		_ = pw.CloseWithError(mw.Close())
 	}()
-
 	req.Body = pr
-
 	// dynamically set the proxy environment
 	c.client.Transport = clientTransport(c.authorizer)
 
