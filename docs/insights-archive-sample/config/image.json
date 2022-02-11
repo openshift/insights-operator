@@ -1,0 +1,32 @@
+{
+    "metadata": {
+        "name": "cluster",
+        "uid": "6b109ced-672b-4570-9d8b-0416394b2d46",
+        "resourceVersion": "21068",
+        "generation": 1,
+        "creationTimestamp": "2022-02-08T13:24:30Z",
+        "annotations": {
+            "include.release.openshift.io/ibm-cloud-managed": "true",
+            "include.release.openshift.io/self-managed-high-availability": "true",
+            "include.release.openshift.io/single-node-developer": "true",
+            "release.openshift.io/create-only": "true"
+        },
+        "ownerReferences": [
+            {
+                "apiVersion": "config.openshift.io/v1",
+                "kind": "ClusterVersion",
+                "name": "version",
+                "uid": "9af31338-5de0-45d0-bf8f-965abc00e1ed"
+            }
+        ]
+    },
+    "spec": {
+        "additionalTrustedCA": {
+            "name": ""
+        },
+        "registrySources": {}
+    },
+    "status": {
+        "internalRegistryHostname": "image-registry.openshift-image-registry.svc:5000"
+    }
+}
