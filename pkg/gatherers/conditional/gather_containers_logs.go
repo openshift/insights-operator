@@ -19,7 +19,7 @@ import (
 // * Id in config: containers_logs
 // * Since versions:
 //   * 4.10+
-func (g *Gatherer) BuildGatherContainersLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
+func (g *Gatherer) BuildGatherContainersLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherContainersLogsParams)
 	if !ok {
 		return gatherers.GatheringClosure{}, fmt.Errorf(

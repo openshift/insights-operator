@@ -30,6 +30,10 @@ const (
 	// GatherContainersLogs is a function that collects logs from pod's containers
 	// See file gather_containers_logs.go
 	GatherContainersLogs GatheringFunctionName = "containers_logs"
+
+	// GatherPodDefinition is a function that collects the pod definitions
+	// See file gather_pod_definition.go
+	GatherPodDefinition GatheringFunctionName = "pod_definition"
 )
 
 func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
@@ -48,6 +52,10 @@ func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, err
 		return params, err
 	case GatherContainersLogs:
 		var params GatherContainersLogsParams
+		err := json.Unmarshal(jsonParams, &params)
+		return params, err
+	case GatherPodDefinition:
+		var params GatherPodDefinitionParams
 		err := json.Unmarshal(jsonParams, &params)
 		return params, err
 	}
@@ -82,4 +90,9 @@ type GatherContainersLogsParams struct {
 	Container string `json:"container,omitempty"`
 	TailLines int64  `json:"tail_lines"`
 	Previous  bool   `json:"previous,omitempty"`
+}
+
+// GatherPodDefinitionParams defines parameters for pod_definition gatherer
+type GatherPodDefinitionParams struct {
+	AlertName string `json:"alert_name"`
 }

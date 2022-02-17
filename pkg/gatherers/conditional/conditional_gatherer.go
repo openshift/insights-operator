@@ -36,6 +36,7 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
 	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
 	GatherContainersLogs:          (*Gatherer).BuildGatherContainersLogs,
+	GatherPodDefinition:           (*Gatherer).BuildGatherPodDefinition,
 }
 
 // gatheringRules contains all the rules used to run conditional gatherings.
@@ -135,6 +136,9 @@ var defaultGatheringRules = []GatheringRule{
 				AlertName: "KubePodNotReady",
 				TailLines: 100,
 				Previous:  false,
+			},
+			GatherPodDefinition: GatherPodDefinitionParams{
+				AlertName: "KubePodNotReady",
 			},
 		},
 	},

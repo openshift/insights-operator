@@ -1,0 +1,668 @@
+{
+    "metadata": {
+        "name": "alertmanager-main-0",
+        "generateName": "alertmanager-main-",
+        "namespace": "openshift-monitoring",
+        "uid": "c8aeffb7-4a02-4d95-9956-7f81cd2d3ddf",
+        "resourceVersion": "23095",
+        "creationTimestamp": "2022-01-24T14:25:22Z",
+        "labels": {
+            "alertmanager": "main",
+            "app": "alertmanager",
+            "app.kubernetes.io/component": "alert-router",
+            "app.kubernetes.io/instance": "main",
+            "app.kubernetes.io/managed-by": "prometheus-operator",
+            "app.kubernetes.io/name": "alertmanager",
+            "app.kubernetes.io/part-of": "openshift-monitoring",
+            "app.kubernetes.io/version": "0.22.2",
+            "controller-revision-hash": "alertmanager-main-d4975fd7c",
+            "statefulset.kubernetes.io/pod-name": "alertmanager-main-0"
+        },
+        "annotations": {
+            "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.2.10\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+            "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.2.10\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+            "kubectl.kubernetes.io/default-container": "alertmanager",
+            "openshift.io/scc": "nonroot"
+        },
+        "ownerReferences": [
+            {
+                "apiVersion": "apps/v1",
+                "kind": "StatefulSet",
+                "name": "alertmanager-main",
+                "uid": "a2fe80e8-1de7-459e-a84f-8b4ed665a183",
+                "controller": true,
+                "blockOwnerDeletion": true
+            }
+        ]
+    },
+    "spec": {
+        "volumes": [
+            {
+                "name": "config-volume",
+                "secret": {
+                    "secretName": "alertmanager-main-generated",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "tls-assets",
+                "secret": {
+                    "secretName": "alertmanager-main-tls-assets",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "secret-alertmanager-main-tls",
+                "secret": {
+                    "secretName": "alertmanager-main-tls",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "secret-alertmanager-main-proxy",
+                "secret": {
+                    "secretName": "alertmanager-main-proxy",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "secret-alertmanager-kube-rbac-proxy",
+                "secret": {
+                    "secretName": "alertmanager-kube-rbac-proxy",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "alertmanager-main-db",
+                "emptyDir": {}
+            },
+            {
+                "name": "alertmanager-trusted-ca-bundle",
+                "configMap": {
+                    "name": "alertmanager-trusted-ca-bundle-2rsonso43rc5p",
+                    "items": [
+                        {
+                            "key": "ca-bundle.crt",
+                            "path": "tls-ca-bundle.pem"
+                        }
+                    ],
+                    "defaultMode": 420,
+                    "optional": true
+                }
+            },
+            {
+                "name": "kube-api-access-wchdg",
+                "projected": {
+                    "sources": [
+                        {
+                            "serviceAccountToken": {
+                                "expirationSeconds": 3607,
+                                "path": "token"
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "name": "kube-root-ca.crt",
+                                "items": [
+                                    {
+                                        "key": "ca.crt",
+                                        "path": "ca.crt"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "downwardAPI": {
+                                "items": [
+                                    {
+                                        "path": "namespace",
+                                        "fieldRef": {
+                                            "apiVersion": "v1",
+                                            "fieldPath": "metadata.namespace"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "name": "openshift-service-ca.crt",
+                                "items": [
+                                    {
+                                        "key": "service-ca.crt",
+                                        "path": "service-ca.crt"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "defaultMode": 420
+                }
+            }
+        ],
+        "containers": [
+            {
+                "name": "alertmanager",
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2ff95508332a75a0b0b50be84416297781946d0feb687df36c8082baff564857",
+                "args": [
+                    "--config.file=/etc/alertmanager/config/alertmanager.yaml",
+                    "--storage.path=/alertmanager",
+                    "--data.retention=120h",
+                    "--cluster.listen-address=[$(POD_IP)]:9094",
+                    "--web.listen-address=127.0.0.1:9093",
+                    "--web.external-url=https://alertmanager-main-openshift-monitoring.apps.rluders.24.01.2022.ccxdev.devshift.net/",
+                    "--web.route-prefix=/",
+                    "--cluster.peer=alertmanager-main-0.alertmanager-operated:9094",
+                    "--cluster.peer=alertmanager-main-1.alertmanager-operated:9094",
+                    "--cluster.peer=alertmanager-main-2.alertmanager-operated:9094",
+                    "--cluster.reconnect-timeout=5m"
+                ],
+                "ports": [
+                    {
+                        "name": "mesh-tcp",
+                        "containerPort": 9094,
+                        "protocol": "TCP"
+                    },
+                    {
+                        "name": "mesh-udp",
+                        "containerPort": 9094,
+                        "protocol": "UDP"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "POD_IP",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "status.podIP"
+                            }
+                        }
+                    }
+                ],
+                "resources": {
+                    "requests": {
+                        "cpu": "4m",
+                        "memory": "40Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "config-volume",
+                        "mountPath": "/etc/alertmanager/config"
+                    },
+                    {
+                        "name": "tls-assets",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/certs"
+                    },
+                    {
+                        "name": "alertmanager-main-db",
+                        "mountPath": "/alertmanager"
+                    },
+                    {
+                        "name": "secret-alertmanager-main-tls",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/secrets/alertmanager-main-tls"
+                    },
+                    {
+                        "name": "secret-alertmanager-main-proxy",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/secrets/alertmanager-main-proxy"
+                    },
+                    {
+                        "name": "secret-alertmanager-kube-rbac-proxy",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/secrets/alertmanager-kube-rbac-proxy"
+                    },
+                    {
+                        "name": "alertmanager-trusted-ca-bundle",
+                        "readOnly": true,
+                        "mountPath": "/etc/pki/ca-trust/extracted/pem/"
+                    },
+                    {
+                        "name": "kube-api-access-wchdg",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "FallbackToLogsOnError",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "KILL",
+                            "MKNOD",
+                            "SETGID",
+                            "SETUID"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "config-reloader",
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:06ca4e45c6ec3aba104a066905322e35b44c8a2c293d9f2821c83ed2cb743633",
+                "command": [
+                    "/bin/prometheus-config-reloader"
+                ],
+                "args": [
+                    "--listen-address=localhost:8080",
+                    "--reload-url=http://localhost:9093/-/reload",
+                    "--watched-dir=/etc/alertmanager/config",
+                    "--watched-dir=/etc/alertmanager/secrets/alertmanager-main-tls",
+                    "--watched-dir=/etc/alertmanager/secrets/alertmanager-main-proxy",
+                    "--watched-dir=/etc/alertmanager/secrets/alertmanager-kube-rbac-proxy"
+                ],
+                "env": [
+                    {
+                        "name": "POD_NAME",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.name"
+                            }
+                        }
+                    },
+                    {
+                        "name": "SHARD",
+                        "value": "-1"
+                    }
+                ],
+                "resources": {
+                    "requests": {
+                        "cpu": "1m",
+                        "memory": "10Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "config-volume",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/config"
+                    },
+                    {
+                        "name": "secret-alertmanager-main-tls",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/secrets/alertmanager-main-tls"
+                    },
+                    {
+                        "name": "secret-alertmanager-main-proxy",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/secrets/alertmanager-main-proxy"
+                    },
+                    {
+                        "name": "secret-alertmanager-kube-rbac-proxy",
+                        "readOnly": true,
+                        "mountPath": "/etc/alertmanager/secrets/alertmanager-kube-rbac-proxy"
+                    },
+                    {
+                        "name": "kube-api-access-wchdg",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "FallbackToLogsOnError",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "KILL",
+                            "MKNOD",
+                            "SETGID",
+                            "SETUID"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "alertmanager-proxy",
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e146605c1b75917d26c07268b361134aeda68983b2e2b060c202420b8267aa45",
+                "args": [
+                    "-provider=openshift",
+                    "-https-address=:9095",
+                    "-http-address=",
+                    "-email-domain=*",
+                    "-upstream=http://localhost:9093",
+                    "-openshift-sar=[{\"resource\": \"namespaces\", \"verb\": \"get\"}, {\"resource\": \"alertmanagers\", \"resourceAPIGroup\": \"monitoring.coreos.com\", \"namespace\": \"openshift-monitoring\", \"verb\": \"patch\", \"resourceName\": \"non-existant\"}]",
+                    "-openshift-delegate-urls={\"/\": {\"resource\": \"namespaces\", \"verb\": \"get\"}, \"/\": {\"resource\":\"alertmanagers\", \"group\": \"monitoring.coreos.com\", \"namespace\": \"openshift-monitoring\", \"verb\": \"patch\", \"name\": \"non-existant\"}}",
+                    "-tls-cert=/etc/tls/private/tls.crt",
+                    "-tls-key=/etc/tls/private/tls.key",
+                    "-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token",
+                    "-cookie-secret-file=/etc/proxy/secrets/session_secret",
+                    "-openshift-service-account=alertmanager-main",
+                    "-openshift-ca=/etc/pki/tls/cert.pem",
+                    "-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                ],
+                "ports": [
+                    {
+                        "name": "web",
+                        "containerPort": 9095,
+                        "protocol": "TCP"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "HTTP_PROXY"
+                    },
+                    {
+                        "name": "HTTPS_PROXY"
+                    },
+                    {
+                        "name": "NO_PROXY"
+                    }
+                ],
+                "resources": {
+                    "requests": {
+                        "cpu": "1m",
+                        "memory": "20Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "secret-alertmanager-main-tls",
+                        "mountPath": "/etc/tls/private"
+                    },
+                    {
+                        "name": "secret-alertmanager-main-proxy",
+                        "mountPath": "/etc/proxy/secrets"
+                    },
+                    {
+                        "name": "alertmanager-trusted-ca-bundle",
+                        "readOnly": true,
+                        "mountPath": "/etc/pki/ca-trust/extracted/pem/"
+                    },
+                    {
+                        "name": "kube-api-access-wchdg",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "FallbackToLogsOnError",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "KILL",
+                            "MKNOD",
+                            "SETGID",
+                            "SETUID"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "kube-rbac-proxy",
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e",
+                "args": [
+                    "--secure-listen-address=0.0.0.0:9092",
+                    "--upstream=http://127.0.0.1:9096",
+                    "--config-file=/etc/kube-rbac-proxy/config.yaml",
+                    "--tls-cert-file=/etc/tls/private/tls.crt",
+                    "--tls-private-key-file=/etc/tls/private/tls.key",
+                    "--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+                    "--logtostderr=true",
+                    "--v=10"
+                ],
+                "ports": [
+                    {
+                        "name": "tenancy",
+                        "containerPort": 9092,
+                        "protocol": "TCP"
+                    }
+                ],
+                "resources": {
+                    "requests": {
+                        "cpu": "1m",
+                        "memory": "15Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "secret-alertmanager-kube-rbac-proxy",
+                        "mountPath": "/etc/kube-rbac-proxy"
+                    },
+                    {
+                        "name": "secret-alertmanager-main-tls",
+                        "mountPath": "/etc/tls/private"
+                    },
+                    {
+                        "name": "kube-api-access-wchdg",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "FallbackToLogsOnError",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "KILL",
+                            "MKNOD",
+                            "SETGID",
+                            "SETUID"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "prom-label-proxy",
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c6124ae70fd1f19ada3d5930ffc912dd5a3fb09dcffabc6425e9e327a61528fa",
+                "args": [
+                    "--insecure-listen-address=127.0.0.1:9096",
+                    "--upstream=http://127.0.0.1:9093",
+                    "--label=namespace"
+                ],
+                "resources": {
+                    "requests": {
+                        "cpu": "1m",
+                        "memory": "20Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "kube-api-access-wchdg",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "FallbackToLogsOnError",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "KILL",
+                            "MKNOD",
+                            "SETGID",
+                            "SETUID"
+                        ]
+                    }
+                }
+            }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 120,
+        "dnsPolicy": "ClusterFirst",
+        "nodeSelector": {
+            "kubernetes.io/os": "linux"
+        },
+        "serviceAccountName": "alertmanager-main",
+        "serviceAccount": "alertmanager-main",
+        "nodeName": "ip-10-0-134-121.us-east-2.compute.internal",
+        "securityContext": {
+            "seLinuxOptions": {
+                "level": "s0:c21,c0"
+            },
+            "runAsUser": 65534,
+            "runAsNonRoot": true,
+            "fsGroup": 65534
+        },
+        "hostname": "alertmanager-main-0",
+        "subdomain": "alertmanager-operated",
+        "affinity": {
+            "podAntiAffinity": {
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                        "weight": 100,
+                        "podAffinityTerm": {
+                            "labelSelector": {
+                                "matchLabels": {
+                                    "app.kubernetes.io/component": "alert-router",
+                                    "app.kubernetes.io/name": "alertmanager",
+                                    "app.kubernetes.io/part-of": "openshift-monitoring"
+                                }
+                            },
+                            "namespaces": [
+                                "openshift-monitoring"
+                            ],
+                            "topologyKey": "kubernetes.io/hostname"
+                        }
+                    }
+                ]
+            }
+        },
+        "schedulerName": "default-scheduler",
+        "tolerations": [
+            {
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            },
+            {
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            },
+            {
+                "key": "node.kubernetes.io/memory-pressure",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+            }
+        ],
+        "priorityClassName": "system-cluster-critical",
+        "priority": 2000000000,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority"
+    },
+    "status": {
+        "phase": "Running",
+        "conditions": [
+            {
+                "type": "Initialized",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2022-01-24T14:25:22Z"
+            },
+            {
+                "type": "Ready",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2022-01-24T14:25:34Z"
+            },
+            {
+                "type": "ContainersReady",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2022-01-24T14:25:34Z"
+            },
+            {
+                "type": "PodScheduled",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2022-01-24T14:25:22Z"
+            }
+        ],
+        "hostIP": "10.0.134.121",
+        "podIP": "10.128.2.10",
+        "podIPs": [
+            {
+                "ip": "10.128.2.10"
+            }
+        ],
+        "startTime": "2022-01-24T14:25:22Z",
+        "containerStatuses": [
+            {
+                "name": "alertmanager",
+                "state": {
+                    "running": {
+                        "startedAt": "2022-01-24T14:25:27Z"
+                    }
+                },
+                "lastState": {},
+                "ready": true,
+                "restartCount": 0,
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2ff95508332a75a0b0b50be84416297781946d0feb687df36c8082baff564857",
+                "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:2ff95508332a75a0b0b50be84416297781946d0feb687df36c8082baff564857",
+                "containerID": "cri-o://23b42c7a5e8f9ad92cc5278b2cef4d2733181c6b794619e4748ab7eb0d3f0122",
+                "started": true
+            },
+            {
+                "name": "alertmanager-proxy",
+                "state": {
+                    "running": {
+                        "startedAt": "2022-01-24T14:25:28Z"
+                    }
+                },
+                "lastState": {},
+                "ready": true,
+                "restartCount": 0,
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e146605c1b75917d26c07268b361134aeda68983b2e2b060c202420b8267aa45",
+                "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e146605c1b75917d26c07268b361134aeda68983b2e2b060c202420b8267aa45",
+                "containerID": "cri-o://a705c56880ce13d168ed0baa54b8777377902e2a747e62ffc1d143548d25be78",
+                "started": true
+            },
+            {
+                "name": "config-reloader",
+                "state": {
+                    "running": {
+                        "startedAt": "2022-01-24T14:25:27Z"
+                    }
+                },
+                "lastState": {},
+                "ready": true,
+                "restartCount": 0,
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:06ca4e45c6ec3aba104a066905322e35b44c8a2c293d9f2821c83ed2cb743633",
+                "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:06ca4e45c6ec3aba104a066905322e35b44c8a2c293d9f2821c83ed2cb743633",
+                "containerID": "cri-o://2fd902fae451d885d5fea152518597bb6caae07199f1e9158a3a4e3b14995455",
+                "started": true
+            },
+            {
+                "name": "kube-rbac-proxy",
+                "state": {
+                    "running": {
+                        "startedAt": "2022-01-24T14:25:28Z"
+                    }
+                },
+                "lastState": {},
+                "ready": true,
+                "restartCount": 0,
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e",
+                "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5e33f9d095952866b9743cc8268fb740cce6d93439f00ce333a2de1e5974837e",
+                "containerID": "cri-o://011a584d787d1953e2e2ed81d5492a6d960ff5fb4ec95b83bf2ffd0dad27b8b0",
+                "started": true
+            },
+            {
+                "name": "prom-label-proxy",
+                "state": {
+                    "running": {
+                        "startedAt": "2022-01-24T14:25:34Z"
+                    }
+                },
+                "lastState": {},
+                "ready": true,
+                "restartCount": 0,
+                "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c6124ae70fd1f19ada3d5930ffc912dd5a3fb09dcffabc6425e9e327a61528fa",
+                "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c6124ae70fd1f19ada3d5930ffc912dd5a3fb09dcffabc6425e9e327a61528fa",
+                "containerID": "cri-o://603583e7bba94f336e9f7d6bd29c502a02872b79ca4f6b7b46a3c6350f5a1ef0",
+                "started": true
+            }
+        ],
+        "qosClass": "Burstable"
+    }
+}

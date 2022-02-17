@@ -203,6 +203,20 @@
                             "title": "If true, the previous logs will be gathered instead of the current"
                         }
                     }
+                },
+                "^pod_definition$": {
+                    "type": "object",
+                    "title": "GatherPodDefinitionParams",
+                    "required": [
+                        "alert_name"
+                    ],
+                    "properties": {
+                        "alert_name": {
+                            "type": "string",
+                            "title": "AlertName",
+                            "pattern": "^[a-zA-Z0-9_]{1,128}$"
+                        }
+                    }
                 }
             }
         }
