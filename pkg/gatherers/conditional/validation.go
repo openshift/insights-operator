@@ -39,7 +39,7 @@ func validateGatheringRules(gatheringRules []GatheringRule) []error {
 	if !result.Valid() {
 		var errs []error
 		for _, err := range result.Errors() {
-			errs = append(errs, fmt.Errorf(err.String()))
+			errs = append(errs, fmt.Errorf("%s", err.String()))
 		}
 
 		return errs
