@@ -30,8 +30,9 @@ func Test_Diskrecorder_Save(t *testing.T) {
 	dr := newDiskRecorder()
 	records := getMemoryRecords()
 	saved, err := dr.Save(records)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Len(t, saved, len(records))
+	assert.WithinDuration(t, time.Now(), dr.lastRecording, 10*time.Second)
 }
 
 func Test_Diskrecorder_SaveInvalidPath(t *testing.T) {
@@ -63,15 +64,15 @@ func Test_Diskrecorder_SaveFailsIfDuplicatedReport(t *testing.T) {
 func Test_Diskrecorder_Summary(t *testing.T) {
 	since := time.Now().Add(time.Duration(-5) * time.Minute)
 	dr := newDiskRecorder()
-	reader, ok, err := dr.Summary(context.TODO(), since)
-	assert.IsType(t, reader, reader)
+	source, ok, err := dr.Summary(context.TODO(), since)
+	assert.NoError(t, err)
 	assert.True(t, ok)
-	assert.Nil(t, err)
+	assert.NotNil(t, source)
 }
 
 func Test_Diskrecorder_Prune(t *testing.T) {
 	olderThan := time.Now().Add(time.Duration(5) * time.Minute)
 	dr := newDiskRecorder()
 	err := dr.Prune(olderThan)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }

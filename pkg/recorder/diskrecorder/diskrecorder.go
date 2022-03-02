@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -14,11 +13,13 @@ import (
 
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
 type DiskRecorder struct {
-	basePath string
+	basePath      string
+	lastRecording time.Time
 }
 
 // New diskrecorder driver
@@ -30,8 +31,8 @@ const archiveExtension = ".tar.gz"
 
 // Save the records into the archive in the directory at d.basePath
 func (d *DiskRecorder) Save(records record.MemoryRecords) (record.MemoryRecords, error) {
-	age := records[0].At.UTC()
-	name := fmt.Sprintf("insights-%s%s", age.Format("2006-01-02-150405"), archiveExtension)
+	d.lastRecording = records[0].At.UTC()
+	name := fmt.Sprintf("insights-%s%s", d.lastRecording.Format("2006-01-02-150405"), archiveExtension)
 	path := filepath.Join(d.basePath, name)
 
 	return d.SaveAtPath(records, path)
@@ -138,7 +139,7 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 }
 
 // Summary implements summarizer interface to insights uploader
-func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadCloser, bool, error) {
+func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (*insightsclient.Source, bool, error) {
 	files, err := os.ReadDir(d.basePath)
 	if err != nil {
 		return nil, false, err
@@ -171,7 +172,7 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (io.ReadClose
 	if err != nil {
 		return nil, false, nil
 	}
-	return f, true, nil
+	return &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}, true, nil
 }
 
 func isNotArchiveFile(file os.FileInfo) bool {

@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"k8s.io/client-go/pkg/version"
@@ -57,9 +58,10 @@ type Authorizer interface {
 }
 
 type Source struct {
-	ID       string
-	Type     string
-	Contents io.Reader
+	ID           string
+	Type         string
+	CreationTime time.Time
+	Contents     io.ReadCloser
 }
 
 // HttpError is helper error type to have HTTP error status code
@@ -211,30 +213,12 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		return err
 	}
 
-	var bytesRead int64
+	bytesRead := make(chan int64, 1)
 	pr, pw := io.Pipe()
 	mw := multipart.NewWriter(pw)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
-	go func() {
-		h := make(textproto.MIMEHeader)
-		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, "file", "payload.tar.gz"))
-		h.Set("Content-Type", source.Type)
-		fw, err := mw.CreatePart(h)
-		if err != nil {
-			_ = pw.CloseWithError(err)
-			return
-		}
-		r := &LimitedReader{R: source.Contents, N: c.maxBytes}
-		n, err := io.Copy(fw, r)
-		bytesRead = n
-		if err != nil {
-			_ = pw.CloseWithError(err)
-		}
-		_ = pw.CloseWithError(mw.Close())
-	}()
-
+	go c.createAndWriteMIMEHeader(&source, mw, pw, bytesRead)
 	req.Body = pr
-
 	// dynamically set the proxy environment
 	c.client.Transport = clientTransport(c.authorizer)
 
@@ -279,7 +263,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 	}
 
 	if len(requestID) > 0 {
-		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, bytesRead)
+		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, <-bytesRead)
 	}
 
 	return nil
@@ -430,6 +414,38 @@ func ocmErrorMessage(url *url.URL, r *http.Response) error {
 // IncrementRecvReportMetric increments the "insightsclient_request_recvreport_total" metric for the given HTTP status code
 func (c *Client) IncrementRecvReportMetric(statusCode int) {
 	counterRequestRecvReport.WithLabelValues(c.metricsName, strconv.Itoa(statusCode)).Inc()
+}
+
+// createAndWriteMIMEHeader creates and writes a new MIME header. There are two parts (basically two content-disposition headers).
+// First is to write the tar.gz file and second is to write `custom_metadata` field including gathering time info. Both parts are
+// written with the provided `multipart.Writer`.
+func (c *Client) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, pw *io.PipeWriter, ch chan<- int64) {
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, "file", "payload.tar.gz"))
+	h.Set("Content-Type", source.Type)
+	fw, err := mw.CreatePart(h)
+	if err != nil {
+		_ = pw.CloseWithError(err)
+		return
+	}
+	r := &LimitedReader{R: source.Contents, N: c.maxBytes}
+	n, err := io.Copy(fw, r)
+	ch <- n
+	if err != nil {
+		_ = pw.CloseWithError(err)
+	}
+	// set gathering time as custom metada field
+	fw, err = mw.CreateFormFile("metadata", "metadata.json")
+	if err != nil {
+		_ = pw.CloseWithError(err)
+		return
+	}
+	cm := fmt.Sprintf(`{"custom_metadata":{"gathering_time":%q}}`, source.CreationTime.Format(time.RFC3339))
+	_, err = io.Copy(fw, strings.NewReader(cm))
+	if err != nil {
+		_ = pw.CloseWithError(err)
+	}
+	_ = pw.CloseWithError(mw.Close())
 }
 
 var (
