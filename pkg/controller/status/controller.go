@@ -30,8 +30,6 @@ const (
 	// OCMAPIFailureCountThreshold defines how many unsuccessful responses from the OCM API in a row is tolerated
 	// before the operator is marked as Degraded
 	OCMAPIFailureCountThreshold = 5
-
-	insightsAvailableMessage = "Insights works as expected"
 )
 
 type Reported struct {
@@ -148,6 +146,10 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	// cluster operator conditions
 	cs := newConditions(&clusterOperator.Status, metav1.Time{Time: now})
 	updateControllerConditions(cs, c.ctrlStatus, isInitializing, lastTransition)
+
+	// once the operator is running it is always considered available
+	cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", "", metav1.Now())
+
 	updateControllerConditionsByStatus(cs, c.ctrlStatus, isInitializing, lastTransition)
 
 	// all status conditions from conditions to cluster operator
@@ -263,7 +265,7 @@ func (c *Controller) Start(ctx context.Context) error {
 				}
 			}
 			if err := c.updateStatus(ctx, false); err != nil {
-				klog.Errorf("Unable to write cluster operator status: %v", err)
+				klog.Errorf("Unable to write cluster operator statusMessage: %v", err)
 			}
 		}
 	}, time.Second, ctx.Done())
@@ -283,31 +285,32 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 			var reported Reported
 			if len(existing.Status.Extension.Raw) > 0 {
 				if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil { //nolint: govet
-					klog.Errorf("The initial operator extension status is invalid: %v", err)
+					klog.Errorf("The initial operator extension statusMessage is invalid: %v", err)
 				}
 			}
 			c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
 			cs := newConditions(&existing.Status, metav1.Now())
 			if con := cs.findCondition(configv1.OperatorDegraded); con == nil ||
 				con != nil && con.Status == configv1.ConditionFalse {
-				klog.Info("The initial operator extension status is healthy")
+				klog.Info("The initial operator extension statusMessage is healthy")
 			}
 		}
 	}
 
-	updatedClusterOperator := c.merge(existing)
+	updated := c.merge(existing)
 	if existing == nil {
-		created, err := c.client.ClusterOperators().Create(ctx, updatedClusterOperator, metav1.CreateOptions{}) //nolint: govet
+		created, err := c.client.ClusterOperators().Create(ctx, updated, metav1.CreateOptions{}) //nolint: govet
 		if err != nil {
 			return err
 		}
-		updatedClusterOperator.ObjectMeta = created.ObjectMeta
-		updatedClusterOperator.Spec = created.Spec
-	} else if reflect.DeepEqual(updatedClusterOperator.Status, existing.Status) {
-		klog.V(4).Infof("No status update necessary, objects are identical")
+		updated.ObjectMeta = created.ObjectMeta
+		updated.Spec = created.Spec
+	} else if reflect.DeepEqual(updated.Status, existing.Status) {
+		klog.V(4).Infof("No statusMessage update necessary, objects are identical")
 		return nil
 	}
-	_, err = c.client.ClusterOperators().UpdateStatus(ctx, updatedClusterOperator, metav1.UpdateOptions{})
+
+	_, err = c.client.ClusterOperators().UpdateStatus(ctx, updated, metav1.UpdateOptions{})
 	return err
 }
 
@@ -336,7 +339,7 @@ func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
 	} else {
-		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", insightsAvailableMessage, metav1.Now())
+		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 	}
 
 	// handle when upload fails
@@ -376,8 +379,6 @@ func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerSt
 	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
 		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "Degraded", "An error has occurred", metav1.Now())
-		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, es.reason, es.message, metav1.Now())
-		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionFalse, "InsightsNotUpgradeable", es.message, metav1.Now())
 	}
 
 	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
@@ -388,9 +389,6 @@ func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerSt
 	if ctrlStatus.isHealthy() {
 		klog.V(4).Infof("The operator is healthy")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
-		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", insightsAvailableMessage, metav1.Now())
-		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, "InsightsUpgradeable",
-			"Insights operator can be upgraded", metav1.Now())
 	}
 }
 
@@ -405,7 +403,6 @@ func handleControllerStatusError(errs []string, errorReason string) (reason, mes
 			reason = "UnknownError"
 		}
 		message = errs[0]
-		reason = errorReason
 	}
 	return reason, message
 }
