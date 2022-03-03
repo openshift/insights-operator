@@ -68,7 +68,7 @@ func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 	if s.summary.Message != summary.Message || s.summary.Reason != summary.Reason {
 		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
 		if summary.LastTransitionTime.IsZero() {
-			summary.LastTransitionTime = time.Now()
+			s.summary.LastTransitionTime = time.Now()
 		}
 		s.summary.Reason = summary.Reason
 		s.summary.Message = summary.Message
