@@ -307,6 +307,10 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 		klog.V(4).Infof("No status update necessary, objects are identical")
 		return nil
 	}
+	for i := range updatedClusterOperator.Status.Conditions {
+		c := updatedClusterOperator.Status.Conditions[i]
+		klog.Infof("Updating condition\n type: %s\n, lastTransitionTime: %s\n, reason: %s\n, status: %s\n, message: %s\n", c.Type, c.LastTransitionTime, c.Reason, c.Status, c.Message)
+	}
 	_, err = c.client.ClusterOperators().UpdateStatus(ctx, updatedClusterOperator, metav1.UpdateOptions{})
 	return err
 }
