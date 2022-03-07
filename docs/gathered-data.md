@@ -74,8 +74,8 @@ fetches the cluster FeatureGate - the FeatureGate with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
 
-* Location in archive: config/featuregate/
-* See: docs/insights-archive-sample/config/featuregate
+* Location in archive: config/featuregate.json
+* See: docs/insights-archive-sample/config/featuregate.json
 * Id in config: feature_gates
 
 
@@ -139,8 +139,8 @@ fetches the cluster Ingress - the Ingress with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
 
-* Location in archive: config/ingress/
-* See: docs/insights-archive-sample/config/ingress
+* Location in archive: config/ingress.json
+* See: docs/insights-archive-sample/config/ingress.json
 * Id in config: ingress
 
 
@@ -214,8 +214,8 @@ fetches the cluster Proxy - the Proxy with name cluster.
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
 
-* Location in archive: config/proxy/
-* See: docs/insights-archive-sample/config/proxy
+* Location in archive: config/proxy.json
+* See: docs/insights-archive-sample/config/proxy.json
 * Id in config: proxies
 
 
