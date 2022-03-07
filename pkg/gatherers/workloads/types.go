@@ -19,7 +19,7 @@ type workloadPods struct {
 	// Images is a map of image ID to data about the images referenced by pods. Images are
 	// only populated if the cluster had imported the image ID to the image API via an
 	// import or an image stream.
-	Images map[string]workloadImage `json:"images"`
+	Images map[string]workloadImage `json:"images,omitempty"`
 	// Namespaces is a map of namespace name hash to data about the namespace. The namespace
 	// is populated even if it has no pods.
 	Namespaces map[string]workloadNamespacePods `json:"namespaces"`
