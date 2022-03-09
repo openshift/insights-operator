@@ -29,10 +29,10 @@ var (
 	squashRegexp       = regexp.MustCompile(`(.*)-(\d+)$`)
 	mergeRequestRegexp = regexp.MustCompile(`Merge-pull-request-(\d+)`)
 	prefixRegexp       = regexp.MustCompile(`^.+: (.+)`)
-	releaseRegexp      = regexp.MustCompile(`(release-\d\.\d)`)
+	releaseRegexp      = regexp.MustCompile(`(release-\d\.\d+)`)
 	latestHashRegexp   = regexp.MustCompile(`<!--Latest hash: (.+)-->`)
 
-	versionSectionRegExp     = regexp.MustCompile(`^(\d.\d)`)
+	versionSectionRegExp     = regexp.MustCompile(`^(\d.\d+)`)
 	backportsSectionRegExp   = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BACKPORTING))
 	enhancementSectionRegExp = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, ENHANCEMENT))
 	bugfixSectionRegExp      = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BUGFIX))
@@ -58,13 +58,19 @@ const gitHubPath = "https://github.com/openshift/insights-operator"
 // API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
 const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" // owner, repo, pull-number
 
+// OpenShift release version helper type
+type ReleaseVersion struct {
+	Major int
+	Minor int
+}
+
 type Change struct {
 	pullID      string
 	hash        string
 	title       string
 	description string
 	category    string
-	release     string
+	release     ReleaseVersion
 }
 
 func (c *Change) toMarkdown() string {
@@ -88,9 +94,9 @@ func main() {
 	}
 
 	var gitLog []string
-	var releaseBlocks map[string]MarkdownReleaseBlock
+	var releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock
 	if len(os.Args) == 3 {
-		releaseBlocks = make(map[string]MarkdownReleaseBlock)
+		releaseBlocks = make(map[ReleaseVersion]MarkdownReleaseBlock)
 		after := os.Args[1]
 		until := os.Args[2]
 		gitLog = timeFrameReverseGitLog(after, until)
@@ -119,8 +125,9 @@ type MarkdownReleaseBlock struct {
 	misc         string
 }
 
-func readCHANGELOG() map[string]MarkdownReleaseBlock {
-	releaseBlocks := make(map[string]MarkdownReleaseBlock)
+func readCHANGELOG() map[ReleaseVersion]MarkdownReleaseBlock {
+	log.Print("Reading existing changelog")
+	releaseBlocks := make(map[ReleaseVersion]MarkdownReleaseBlock)
 	rawBytes, _ := os.ReadFile("./CHANGELOG.md")
 	rawString := string(rawBytes)
 	if match := latestHashRegexp.FindStringSubmatch(rawString); len(match) > 0 {
@@ -131,9 +138,9 @@ func readCHANGELOG() map[string]MarkdownReleaseBlock {
 
 	for _, versionSection := range versions {
 		var releaseBlock MarkdownReleaseBlock
-		var version string
+		var version ReleaseVersion
 		if match := versionSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
-			version = match[1]
+			version = stringToReleaseVersion(match[1])
 		}
 		if match := backportsSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			releaseBlock.backports = match[1]
@@ -150,13 +157,18 @@ func readCHANGELOG() map[string]MarkdownReleaseBlock {
 		if match := miscSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			releaseBlock.misc = match[1]
 		}
-		releaseBlocks[version] = releaseBlock
+		// We want only found versions - e.g master is not considered as a version
+		if version != (ReleaseVersion{}) {
+			releaseBlocks[version] = releaseBlock
+		}
 	}
 
 	return releaseBlocks
 }
 
-func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock, changes []*Change) map[string]MarkdownReleaseBlock {
+func updateToMarkdownReleaseBlock(releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock,
+	changes []*Change) map[ReleaseVersion]MarkdownReleaseBlock {
+	log.Print("Applying new changes")
 	for _, ch := range changes {
 		tmp := releaseBlocks[ch.release]
 		if ch.category == BUGFIX {
@@ -179,19 +191,20 @@ func updateToMarkdownReleaseBlock(releaseBlocks map[string]MarkdownReleaseBlock,
 	return releaseBlocks
 }
 
-func createCHANGELOG(releaseBlocks map[string]MarkdownReleaseBlock) {
+func createCHANGELOG(releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock) {
+	log.Print("Writing new changes to CHANGELOG.md file")
 	file, _ := os.Create("CHANGELOG.md")
 	defer file.Close()
 	_, _ = file.WriteString(`# Note: This CHANGELOG is only for the changes in insights operator.
 	Please see OpenShift release notes for official changes\n`)
 	_, _ = file.WriteString(fmt.Sprintf("<!--Latest hash: %s-->\n", latestHash))
-	var releases []string
+	var releases ReleaseVersions
 	for k := range releaseBlocks {
 		releases = append(releases, k)
 	}
-	sort.Sort(sort.Reverse(sort.StringSlice(releases)))
+	sort.Sort(sort.Reverse(releases))
 	for _, release := range releases {
-		_, _ = file.WriteString(fmt.Sprintf("## %s\n\n", release))
+		_, _ = file.WriteString(fmt.Sprintf("## %d.%d\n\n", release.Major, release.Minor))
 
 		backports := releaseBlocks[release].backports
 		createReleaseBlock(file, backports, BACKPORTING)
@@ -219,10 +232,13 @@ func createReleaseBlock(file *os.File, release, title string) {
 
 func getChanges(pullRequestIds, pullRequestHashes []string) []*Change {
 	var changes []*Change
+	log.Print("Reading changes from the GitHub API")
 	for i, id := range pullRequestIds {
 		change := getPullRequestFromGitHub(id)
 		change.hash = pullRequestHashes[i]
-		change = determineReleases(change)
+		if _, err := determineReleases(change); err != nil {
+			continue
+		}
 		changes = append(changes, change)
 	}
 	return changes
@@ -279,44 +295,37 @@ func getPullRequestFromGitHub(id string) *Change {
 	return &ch
 }
 
-func determineReleases(change *Change) *Change {
+func determineReleases(change *Change) (*Change, error) {
 	releases := releaseBranchesContain(change.hash)
+	if len(releases) == 0 {
+		log.Printf("Did not find release match for the commit %s. This is likely master branch.\n", change.hash)
+		return nil, fmt.Errorf("can't determine release for commit %s", change.hash)
+	}
 	earliestRelease := findEarliestRelease(releases)
-	change.release = strings.Trim(earliestRelease, " \n*")
-	return change
+	change.release = earliestRelease
+	return change, nil
 }
 
-func releaseBranchesContain(hash string) []string {
-	var releaseBranches []string
+func releaseBranchesContain(hash string) []ReleaseVersion {
+	var releaseBranches []ReleaseVersion
 	out, err := exec.Command("git", "branch", "--contains", hash).CombinedOutput()
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 	branches := string(out)
 	matches := releaseRegexp.FindAllStringSubmatch(branches, -1)
+
 	for _, match := range matches {
-		releaseBranches = append(releaseBranches, match[1])
+		version := strings.TrimPrefix(match[1], "release-")
+		relVer := stringToReleaseVersion(version)
+		releaseBranches = append(releaseBranches, relVer)
 	}
 	return releaseBranches
 }
 
-func findEarliestRelease(releases []string) string {
-	// Its hacky I KNOW.
-	minStr := ""
-	minMajor := 99
-	minMinor := 99
-	for _, release := range releases {
-		releaseNumber := strings.Split(release, "-")[1]
-		releaseNumbers := strings.Split(releaseNumber, ".")
-		majorRelease, _ := strconv.Atoi(releaseNumbers[0])
-		minorRelease, _ := strconv.Atoi(releaseNumbers[1])
-		if majorRelease < minMajor || majorRelease == minMajor && minorRelease < minMinor {
-			minStr = releaseNumber
-			minMajor = majorRelease
-			minMinor = minorRelease
-		}
-	}
-	return minStr
+func findEarliestRelease(releases ReleaseVersions) ReleaseVersion {
+	sort.Sort(releases)
+	return releases[0]
 }
 
 func timeFrameReverseGitLog(after, until string) []string {
@@ -364,4 +373,37 @@ func getPullRequestInfo(gitLog []string) (ids, hashes []string) {
 		}
 	}
 	return pullRequestIds, pullRequestHashes
+}
+
+func stringToReleaseVersion(s string) ReleaseVersion {
+	var relVer ReleaseVersion
+	versionNums := strings.Split(s, ".")
+	major, err := strconv.Atoi(versionNums[0])
+	if err != nil {
+		log.Fatalf("Failed to parse %s: %v", versionNums[0], err.Error())
+	}
+	minor, err := strconv.Atoi(versionNums[1])
+	if err != nil {
+		log.Fatalf("Failed to parse %s: %v", versionNums[1], err.Error())
+	}
+	relVer.Major = major
+	relVer.Minor = minor
+	return relVer
+}
+
+type ReleaseVersions []ReleaseVersion
+
+func (r ReleaseVersions) Len() int {
+	return len(r)
+}
+
+func (r ReleaseVersions) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+func (r ReleaseVersions) Less(i, j int) bool {
+	if r[i].Major == r[j].Major {
+		return r[i].Minor < r[j].Minor
+	}
+	return r[i].Major < r[j].Major
 }

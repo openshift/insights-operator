@@ -1,5 +1,89 @@
-# Note: This CHANGELOG is only for the changes in insights operator. 
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 66d737fc1e0516222ac73726ee5df667048c1399-->
+# Note: This CHANGELOG is only for the changes in insights operator.
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 393215401cc2891ff86a561103debc752561d756-->
+## 4.11
+
+### Enhancement
+- [#576](https://github.com/openshift/insights-operator/pull/576) pod_definition conditional gather
+- [#579](https://github.com/openshift/insights-operator/pull/579) collecting logs if certain alerts are raised
+- [#580](https://github.com/openshift/insights-operator/pull/580) Gather cluster images.config.openshift.io resource definition
+
+### Bugfix
+- [#589](https://github.com/openshift/insights-operator/pull/589) Don't serialize empty `images` attribute in the workload info gatherer
+- [#584](https://github.com/openshift/insights-operator/pull/584) Set default messages & reconcile clusteroperator status conditions
+- [#584](https://github.com/openshift/insights-operator/pull/584) Set default messages & reconcile clusteroperator status conditions
+- [#578](https://github.com/openshift/insights-operator/pull/578) defer in loop
+
+### Others
+- [#585](https://github.com/openshift/insights-operator/pull/585) HyperShift - Add required annotation to remaining manifests
+- [#582](https://github.com/openshift/insights-operator/pull/582) Send gathering time as metadata field with upload request
+
+### Misc
+- [#586](https://github.com/openshift/insights-operator/pull/586) Revert "Set default messages & reconcile clusteroperator status conditions (#584)
+- [#577](https://github.com/openshift/insights-operator/pull/577) Updating ose-insights-operator images to be consistent with ART
+
+## 4.10
+
+### Enhancement
+- [#563](https://github.com/openshift/insights-operator/pull/563) conditional log gathers into a single gather and PrometheusOperatorSyncFailed
+- [#557](https://github.com/openshift/insights-operator/pull/557) limit number of containers per namespace
+- [#558](https://github.com/openshift/insights-operator/pull/558) Collect Info about Openshift scheduler
+- [#551](https://github.com/openshift/insights-operator/pull/551) adding gatherer for collecting silenced alerts
+- [#545](https://github.com/openshift/insights-operator/pull/545) alertmanager conditional log gathering
+- [#528](https://github.com/openshift/insights-operator/pull/528) changes for collecting tsdb status
+- [#529](https://github.com/openshift/insights-operator/pull/529) Gather DVO metrics
+- [#517](https://github.com/openshift/insights-operator/pull/517) Collecting node logs
+- [#509](https://github.com/openshift/insights-operator/pull/509) Conditional gatherer of logs of unhealthy pods
+- [#525](https://github.com/openshift/insights-operator/pull/525) Gather all CostManagementMericsConfig definitions.
+- [#508](https://github.com/openshift/insights-operator/pull/508) gather webhook configurations
+- [#511](https://github.com/openshift/insights-operator/pull/511) Removing one unnecessary case statement from workload_info
+- [#505](https://github.com/openshift/insights-operator/pull/505) Gather jaegers.jaegertracing.io CRs
+- [#504](https://github.com/openshift/insights-operator/pull/504) Reduce stacktrace size in logs
+- [#492](https://github.com/openshift/insights-operator/pull/492) ApiRequestCount conditional gathering
+
+### Bugfix
+- [#534](https://github.com/openshift/insights-operator/pull/534) make projectid and region anonymization consistent
+- [#544](https://github.com/openshift/insights-operator/pull/544) fixed a bug with missing metadata
+- [#519](https://github.com/openshift/insights-operator/pull/519) unified conditional gatherer api with targeted update edge blocking api
+- [#538](https://github.com/openshift/insights-operator/pull/538) Shorter delay in case of HTTP 403 during upload
+- [#537](https://github.com/openshift/insights-operator/pull/537) Fix cost management metric resource name
+- [#516](https://github.com/openshift/insights-operator/pull/516) Gather all the container logs from related namespaces of degraded clu…
+- [#515](https://github.com/openshift/insights-operator/pull/515) obfuscation ovn clusters bug
+- [#514](https://github.com/openshift/insights-operator/pull/514) Increment the "insightsclient_request_recvreport_total" metric only w…
+- [#507](https://github.com/openshift/insights-operator/pull/507) Anonymize the ImageRegistry storage information also in
+- [#495](https://github.com/openshift/insights-operator/pull/495)  Respect user defined proxy's CA cert
+- [#497](https://github.com/openshift/insights-operator/pull/497) insightsclient - close response body
+- [#494](https://github.com/openshift/insights-operator/pull/494) Fix the error logic in the OCM controller & degrade only…
+
+### Others
+- [#575](https://github.com/openshift/insights-operator/pull/575) Minor gathering docs update
+- [#574](https://github.com/openshift/insights-operator/pull/574) Remove "InsightsOperatorPullingSCA" TP feature check
+- [#565](https://github.com/openshift/insights-operator/pull/565) info alert when the SCA is not available
+- [#572](https://github.com/openshift/insights-operator/pull/572) Bump k8s & OpenShift versions
+- [#567](https://github.com/openshift/insights-operator/pull/567) Remove unnecessary division into important and failable gatherers
+- [#566](https://github.com/openshift/insights-operator/pull/566) Update versions for backports in our gathered data docs
+- [#564](https://github.com/openshift/insights-operator/pull/564) recucing configobserver.go cognitive complexity
+- [#556](https://github.com/openshift/insights-operator/pull/556) alert about disconnected cluster
+- [#562](https://github.com/openshift/insights-operator/pull/562) new cluster operator condition providing info about unavailable SCA certs
+- [#524](https://github.com/openshift/insights-operator/pull/524) Cluster version condition
+- [#550](https://github.com/openshift/insights-operator/pull/550) workloads info - increase the pods limit a bit
+- [#547](https://github.com/openshift/insights-operator/pull/547) Update documentation for PSP gatherer
+- [#542](https://github.com/openshift/insights-operator/pull/542) Update docs/arch.md documentation to mention the new gatherers
+- [#531](https://github.com/openshift/insights-operator/pull/531) Enhance gathered-data.md
+- [#532](https://github.com/openshift/insights-operator/pull/532) Replacing deprecated ioutil
+- [#520](https://github.com/openshift/insights-operator/pull/520) Anonymize identity provider attributes in the
+- [#498](https://github.com/openshift/insights-operator/pull/498) Refactoring Status controller
+- [#513](https://github.com/openshift/insights-operator/pull/513) Reverts "Respect user defined proxy's CA cert"
+- [#510](https://github.com/openshift/insights-operator/pull/510) Regenerate changelog & update some gatherers OCP versions
+- [#501](https://github.com/openshift/insights-operator/pull/501) Update changelog
+- [#499](https://github.com/openshift/insights-operator/pull/499) Fix the sample archive path for the last conditional gatherer
+- [#481](https://github.com/openshift/insights-operator/pull/481) Add a script for updating files in the sample archive
+
+### Misc
+- [#540](https://github.com/openshift/insights-operator/pull/540) Updating ose-insights-operator images to be consistent with ART
+- [#500](https://github.com/openshift/insights-operator/pull/500) OCM controller - change type of the secret
+- [#502](https://github.com/openshift/insights-operator/pull/502) Updating ose-insights-operator images to be consistent with ART
+- [#491](https://github.com/openshift/insights-operator/pull/491) Updating ose-insights-operator images to be consistent with ART
+
 ## 4.9
 
 ### Enhancement
@@ -297,25 +381,4 @@
 - [#62](https://github.com/openshift/insights-operator/pull/62) Add Pavel Tisnovsky into list of repo owners
 - [#61](https://github.com/openshift/insights-operator/pull/61) added TestOptOutOptIn and moved some code to functions
 - [#59](https://github.com/openshift/insights-operator/pull/59) Bug 1782151 - override node selector
-
-## 
-
-### Enhancement
-- [#504](https://github.com/openshift/insights-operator/pull/504) Reduce stacktrace size in logs
-- [#492](https://github.com/openshift/insights-operator/pull/492) ApiRequestCount conditional gathering
-
-### Bugfix
-- [#495](https://github.com/openshift/insights-operator/pull/495)  Respect user defined proxy's CA cert
-- [#497](https://github.com/openshift/insights-operator/pull/497) insightsclient - close response body
-- [#494](https://github.com/openshift/insights-operator/pull/494) Fix the error logic in the OCM controller & degrade only…
-
-### Others
-- [#501](https://github.com/openshift/insights-operator/pull/501) Update changelog
-- [#499](https://github.com/openshift/insights-operator/pull/499) Fix the sample archive path for the last conditional gatherer
-- [#481](https://github.com/openshift/insights-operator/pull/481) Add a script for updating files in the sample archive
-
-### Misc
-- [#500](https://github.com/openshift/insights-operator/pull/500) OCM controller - change type of the secret
-- [#502](https://github.com/openshift/insights-operator/pull/502) Updating ose-insights-operator images to be consistent with ART
-- [#491](https://github.com/openshift/insights-operator/pull/491) Updating ose-insights-operator images to be consistent with ART
 
