@@ -9,6 +9,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/openshift/api v0.0.0-20220110170128-ab6fffcd6b76
+	github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
 	github.com/openshift/installer v0.9.0-master.0.20191219195746-103098955ced
 	github.com/openshift/library-go v0.0.0-20220110124235-d70e915b42bd
