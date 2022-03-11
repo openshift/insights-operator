@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gather"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
@@ -38,31 +38,10 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	if err != nil {
 		return err
 	}
-	// these are gathering configs
-	gatherProtoKubeConfig := rest.CopyConfig(protoKubeConfig)
-	if len(d.Impersonate) > 0 {
-		gatherProtoKubeConfig.Impersonate.UserName = d.Impersonate
-	}
-	gatherKubeConfig := rest.CopyConfig(kubeConfig)
-	if len(d.Impersonate) > 0 {
-		gatherKubeConfig.Impersonate.UserName = d.Impersonate
-	}
 
-	// the metrics client will connect to prometheus and scrape a small set of metrics
-	metricsGatherKubeConfig := rest.CopyConfig(kubeConfig)
-	metricsGatherKubeConfig.CAFile = metricCAFile
-	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
-	metricsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
-	metricsGatherKubeConfig.APIPath = "/"
-	metricsGatherKubeConfig.Host = metricHost
-
-	// the alertSilence client will connect to alert manager and collect a set of alerts that have been silenced.
-	alertsGatherKubeConfig := rest.CopyConfig(kubeConfig)
-	alertsGatherKubeConfig.CAFile = metricCAFile
-	alertsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
-	alertsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
-	alertsGatherKubeConfig.APIPath = "/"
-	alertsGatherKubeConfig.Host = alertManagerHost
+	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
+		protoKubeConfig, kubeConfig, d.Impersonate,
+	)
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
@@ -86,11 +65,18 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(d.StoragePath)
 	rec := recorder.New(recdriver, d.Interval, anonymizer)
-	defer rec.Flush()
+	defer func() {
+		if err := rec.Flush(); err != nil {
+			klog.Error(err)
+		}
+	}()
+
+	authorizer := clusterauthorizer.New(configObserver)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
 
 	gatherers := gather.CreateAllGatherers(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,
-		anonymizer, &d.Controller,
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
+		configObserver, insightsClient,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)

@@ -11,11 +11,12 @@ import (
 
 // Serialized defines the standard config for this operator.
 type Serialized struct {
-	Report      bool   `json:"report"`
-	StoragePath string `json:"storagePath"`
-	Interval    string `json:"interval"`
-	Endpoint    string `json:"endpoint"`
-	PullReport  struct {
+	Report                      bool   `json:"report"`
+	StoragePath                 string `json:"storagePath"`
+	Interval                    string `json:"interval"`
+	Endpoint                    string `json:"endpoint"`
+	ConditionalGathererEndpoint string `json:"conditionalGathererEndpoint"`
+	PullReport                  struct {
 		Endpoint     string `json:"endpoint"`
 		Delay        string `json:"delay"`
 		Timeout      string `json:"timeout"`
@@ -33,15 +34,16 @@ type Serialized struct {
 
 // Controller defines the standard config for this operator.
 type Controller struct {
-	Report               bool
-	StoragePath          string
-	Interval             time.Duration
-	Endpoint             string
-	ReportEndpoint       string
-	ReportPullingDelay   time.Duration
-	ReportMinRetryTime   time.Duration
-	ReportPullingTimeout time.Duration
-	Impersonate          string
+	Report                      bool
+	StoragePath                 string
+	Interval                    time.Duration
+	Endpoint                    string
+	ConditionalGathererEndpoint string
+	ReportEndpoint              string
+	ReportPullingDelay          time.Duration
+	ReportMinRetryTime          time.Duration
+	ReportPullingTimeout        time.Duration
+	Impersonate                 string
 	// list of gathering functions to enable
 	// if there's a string "ALL", we enable everything
 	// otherwise, each string should consist of 2 parts:
@@ -84,6 +86,7 @@ type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
 func (c *Controller) ToString() string {
 	return fmt.Sprintf("enabled=%t "+
 		"endpoint=%s "+
+		"conditional_gatherer_endpoint=%s "+
 		"interval=%s "+
 		"username=%t "+
 		"token=%t "+
@@ -93,6 +96,7 @@ func (c *Controller) ToString() string {
 		"pollingTimeout=%s",
 		c.Report,
 		c.Endpoint,
+		c.ConditionalGathererEndpoint,
 		c.Interval,
 		len(c.Username) > 0,
 		len(c.Token) > 0,
@@ -106,6 +110,7 @@ func (c *Controller) MergeWith(cfg *Controller) {
 	c.mergeCredentials(cfg)
 	c.mergeInterval(cfg)
 	c.mergeEndpoint(cfg)
+	c.mergeConditionalGathererEndpoint(cfg)
 	c.mergeReport(cfg)
 	c.mergeOCM(cfg)
 	c.mergeHTTP(cfg)
@@ -119,6 +124,12 @@ func (c *Controller) mergeCredentials(cfg *Controller) {
 func (c *Controller) mergeEndpoint(cfg *Controller) {
 	if len(cfg.Endpoint) > 0 {
 		c.Endpoint = cfg.Endpoint
+	}
+}
+
+func (c *Controller) mergeConditionalGathererEndpoint(cfg *Controller) {
+	if len(cfg.ConditionalGathererEndpoint) > 0 {
+		c.ConditionalGathererEndpoint = cfg.ConditionalGathererEndpoint
 	}
 }
 
@@ -168,6 +179,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	cfg.Report = s.Report
 	cfg.StoragePath = s.StoragePath
 	cfg.Endpoint = s.Endpoint
+	cfg.ConditionalGathererEndpoint = s.ConditionalGathererEndpoint
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
@@ -254,6 +266,7 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
+	cfg.ConditionalGathererEndpoint = s.ConditionalGathererEndpoint
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)

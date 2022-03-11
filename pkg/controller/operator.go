@@ -10,10 +10,8 @@ import (
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
@@ -63,31 +61,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
-	// these are gathering configs
-	gatherProtoKubeConfig := rest.CopyConfig(controller.ProtoKubeConfig)
-	if len(s.Impersonate) > 0 {
-		gatherProtoKubeConfig.Impersonate.UserName = s.Impersonate
-	}
-	gatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
-	if len(s.Impersonate) > 0 {
-		gatherKubeConfig.Impersonate.UserName = s.Impersonate
-	}
 
-	// the metrics client will connect to prometheus and scrape a small set of metrics
-	metricsGatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
-	metricsGatherKubeConfig.CAFile = metricCAFile
-	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
-	metricsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
-	metricsGatherKubeConfig.APIPath = "/"
-	metricsGatherKubeConfig.Host = metricHost
-
-	// the metrics client will connect to alert manager and collect a set of silences
-	alertsGatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
-	alertsGatherKubeConfig.CAFile = metricCAFile
-	alertsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
-	alertsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
-	alertsGatherKubeConfig.APIPath = "/"
-	alertsGatherKubeConfig.Host = alertManagerHost
+	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
+		controller.ProtoKubeConfig, controller.KubeConfig, s.Impersonate,
+	)
 
 	// If we fail, it's likely due to the service CA not existing yet. Warn and continue,
 	// and when the service-ca is loaded we will be restarted.
@@ -95,6 +72,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
+
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err = os.MkdirAll(s.StoragePath, 0777); err != nil {
@@ -126,10 +104,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	rec := recorder.New(recdriver, s.Interval, anonymizer)
 	go rec.PeriodicallyPrune(ctx, statusReporter)
 
+	authorizer := clusterauthorizer.New(configObserver)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
+
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer, &s.Controller,
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
+		configObserver, insightsClient,
 	)
 	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer)
 	statusReporter.AddSources(periodicGather.Sources()...)
@@ -144,9 +126,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
 	go periodicGather.Run(ctx.Done(), initialDelay)
-
-	authorizer := clusterauthorizer.New(configObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
