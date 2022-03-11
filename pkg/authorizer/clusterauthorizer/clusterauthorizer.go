@@ -6,23 +6,20 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/openshift/insights-operator/pkg/config"
 	"golang.org/x/net/http/httpproxy"
 	knet "k8s.io/apimachinery/pkg/util/net"
+
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
 )
 
-type Configurator interface {
-	Config() *config.Controller
-}
-
 type Authorizer struct {
-	configurator Configurator
+	configurator configobserver.Configurator
 	// exposed for tests
 	proxyFromEnvironment func(*http.Request) (*url.URL, error)
 }
 
 // New creates a new Authorizer, whose purpose is to auth requests for outgoing traffic.
-func New(configurator Configurator) *Authorizer {
+func New(configurator configobserver.Configurator) *Authorizer {
 	return &Authorizer{
 		configurator:         configurator,
 		proxyFromEnvironment: http.ProxyFromEnvironment,
@@ -32,18 +29,23 @@ func New(configurator Configurator) *Authorizer {
 // Authorize adds the necessary auth header to the request, depending on the config. (BasicAuth/Token)
 func (a *Authorizer) Authorize(req *http.Request) error {
 	cfg := a.configurator.Config()
+
+	if req.Header == nil {
+		req.Header = make(http.Header)
+	}
+
 	if len(cfg.Username) > 0 || len(cfg.Password) > 0 {
 		req.SetBasicAuth(cfg.Username, cfg.Password)
 		return nil
 	}
+
 	token, err := a.Token()
 	if err != nil {
 		return err
 	}
-	if req.Header == nil {
-		req.Header = make(http.Header)
-	}
+
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
 	return nil
 }
 

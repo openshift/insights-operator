@@ -8,20 +8,14 @@ import (
 	"io"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/openshift/insights-operator/pkg/authorizer"
-	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
-
-type Configurator interface {
-	Config() *config.Controller
-	ConfigChanged() (<-chan struct{}, func())
-}
 
 type Authorizer interface {
 	IsAuthorizationError(error) bool
@@ -41,13 +35,13 @@ type Controller struct {
 
 	summarizer      Summarizer
 	client          *insightsclient.Client
-	configurator    Configurator
+	configurator    configobserver.Configurator
 	reporter        StatusReporter
 	archiveUploaded chan struct{}
 	initialDelay    time.Duration
 }
 
-func New(summarizer Summarizer, client *insightsclient.Client, configurator Configurator, statusReporter StatusReporter, initialDelay time.Duration) *Controller {
+func New(summarizer Summarizer, client *insightsclient.Client, configurator configobserver.Configurator, statusReporter StatusReporter, initialDelay time.Duration) *Controller {
 	return &Controller{
 		Simple: controllerstatus.Simple{Name: "insightsuploader"},
 

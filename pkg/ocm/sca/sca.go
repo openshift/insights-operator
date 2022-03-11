@@ -8,16 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/controller/status"
-	"github.com/openshift/insights-operator/pkg/controllerstatus"
-	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
+
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/controller/status"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
 
 const (
@@ -32,14 +33,8 @@ type Controller struct {
 	controllerstatus.Simple
 	coreClient   corev1client.CoreV1Interface
 	ctx          context.Context
-	configurator Configurator
+	configurator configobserver.Configurator
 	client       *insightsclient.Client
-}
-
-// Configurator represents the interface to retrieve the configuration for the gatherer
-type Configurator interface {
-	Config() *config.Controller
-	ConfigChanged() (<-chan struct{}, func())
 }
 
 // Response structure is used to unmarshall the OCM SCA response. It holds the SCA certificate
@@ -51,7 +46,7 @@ type Response struct {
 }
 
 // New creates new instance
-func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator Configurator,
+func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator configobserver.Configurator,
 	insightsClient *insightsclient.Client) *Controller {
 	return &Controller{
 		Simple:       controllerstatus.Simple{Name: "scaController"},
