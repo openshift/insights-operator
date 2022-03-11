@@ -17,8 +17,8 @@ import (
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
 //
-// * Location in archive: config/proxy/
-// * See: docs/insights-archive-sample/config/proxy
+// * Location in archive: config/proxy.json
+// * See: docs/insights-archive-sample/config/proxy.json
 // * Id in config: proxies
 func (g *Gatherer) GatherClusterProxy(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
