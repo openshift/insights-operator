@@ -45,6 +45,33 @@ func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	assert.True(t, found)
 }
 
+func Test_Gatherer_GetGatheringFunctions_CacheWorks(t *testing.T) {
+	gatherer := newEmptyGatherer("")
+
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
+		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
+	))
+	assert.NoError(t, err)
+
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
+	assert.Len(t, gatheringFunctions, 3)
+	_, found := gatheringFunctions["conditional_gatherer_rules"]
+	assert.True(t, found)
+
+	// the service suddenly died
+	gatherer.gatheringRulesServiceClient = &MockGatheringRulesServiceClient{
+		err: fmt.Errorf("404"),
+	}
+
+	// but we still expect the same rules (from the cache)
+	gatheringFunctions, err = gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
+	assert.Len(t, gatheringFunctions, 3)
+	_, found = gatheringFunctions["conditional_gatherer_rules"]
+	assert.True(t, found)
+}
+
 func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 	gathererConfig := `{
 		"version": "1.0.0",
@@ -247,9 +274,14 @@ func newEmptyGatherer(gathererConfig string) *Gatherer { // nolint:gocritic
 
 type MockGatheringRulesServiceClient struct {
 	Conf string
+	err  error
 }
 
 func (s *MockGatheringRulesServiceClient) RecvGatheringRules(_ context.Context, endpoint string) ([]byte, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+
 	if strings.HasSuffix(endpoint, "gathering_rules") {
 		return []byte(s.Conf), nil
 	}

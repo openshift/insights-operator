@@ -25,13 +25,14 @@ const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 func NewOperator() *cobra.Command {
 	operator := &controller.Operator{
 		Controller: config.Controller{
-			StoragePath:          "/var/lib/insights-operator",
-			Interval:             10 * time.Minute,
-			Endpoint:             "https://cloud.redhat.com/api/ingress/v1/upload",
-			ReportEndpoint:       "https://cloud.redhat.com/api/insights-results-aggregator/v1/clusters/%s/report",
-			ReportPullingDelay:   60 * time.Second,
-			ReportMinRetryTime:   10 * time.Second,
-			ReportPullingTimeout: 30 * time.Minute,
+			StoragePath:                 "/var/lib/insights-operator",
+			Interval:                    10 * time.Minute,
+			Endpoint:                    "https://cloud.redhat.com/api/ingress/v1/upload",
+			ReportEndpoint:              "https://cloud.redhat.com/api/insights-results-aggregator/v1/clusters/%s/report",
+			ConditionalGathererEndpoint: "https://console.redhat.com/api/gathering/gathering_rules",
+			ReportPullingDelay:          60 * time.Second,
+			ReportMinRetryTime:          10 * time.Second,
+			ReportPullingTimeout:        30 * time.Minute,
 			OCMConfig: config.OCMConfig{
 				SCAInterval: 8 * time.Hour,
 				SCAEndpoint: "https://api.openshift.com/api/accounts_mgmt/v1/certificates",
@@ -53,8 +54,9 @@ func NewOperator() *cobra.Command {
 func NewGather() *cobra.Command {
 	operator := &controller.GatherJob{
 		Controller: config.Controller{
-			StoragePath: "/var/lib/insights-operator",
-			Interval:    30 * time.Minute,
+			ConditionalGathererEndpoint: "https://console.redhat.com/api/gathering/gathering_rules",
+			StoragePath:                 "/var/lib/insights-operator",
+			Interval:                    30 * time.Minute,
 		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil)

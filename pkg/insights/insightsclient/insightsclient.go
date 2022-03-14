@@ -67,6 +67,16 @@ type HttpError struct {
 	StatusCode int
 }
 
+// createAPIErrorMessage creates an error from http.Response combining request URL, http status
+// and the body into a string
+func newHTTPErrorFromResponse(r *http.Response) *HttpError {
+	err := fmt.Errorf(`URL "%s" returned HTTP code %d: %s`, r.Request.URL, r.StatusCode, responseBody(r))
+	return &HttpError{
+		Err:        err,
+		StatusCode: r.StatusCode,
+	}
+}
+
 func (e HttpError) Error() string {
 	return e.Err.Error()
 }

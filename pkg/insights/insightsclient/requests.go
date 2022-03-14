@@ -167,7 +167,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	return nil, fmt.Errorf("Report response status code: %d", resp.StatusCode)
 }
 
-func (c *Client) RecvSCACerts(ctx context.Context, endpoint string) ([]byte, error) {
+func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error) {
 	cv, err := c.getClusterVersion()
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, ocmErrorMessage(resp)
+		return nil, newHTTPErrorFromResponse(resp)
 	}
 
 	defer func() {

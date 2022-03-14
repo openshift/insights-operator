@@ -181,6 +181,10 @@ func (g *Gatherer) getGatheringRulesJSON(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("config is nil")
 	}
 
+	if g.gatheringRulesServiceClient == nil {
+		return "", fmt.Errorf("gathering rules service client is nil")
+	}
+
 	rulesBytes, err := g.gatheringRulesServiceClient.RecvGatheringRules(ctx, config.ConditionalGathererEndpoint)
 	if err != nil {
 		return "", err
