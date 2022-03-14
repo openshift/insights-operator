@@ -79,6 +79,19 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * Id in config: feature_gates
 
 
+## ClusterImage
+
+gathers cluster "images.config.openshift.io" resource definition
+
+The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/config_client.go#L72
+Response see https://docs.openshift.com/container-platform/latest/rest_api/config_apis/image-config-openshift-io-v1.html#image-config-openshift-io-v1
+
+* Location in archive: config/image.json
+* Id in config: image
+* Since versions:
+  * 4.11+
+
+
 ## ClusterImagePruner
 
 fetches the image pruner configuration
