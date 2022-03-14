@@ -220,6 +220,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 			errs = append(errs, summary.Message)
 		}
 
+		klog.Infof("================ last transition time is %s and summary time is %s", lastTransition, summary.LastTransitionTime)
 		if lastTransition.Before(summary.LastTransitionTime) {
 			lastTransition = summary.LastTransitionTime
 		}
@@ -382,6 +383,7 @@ func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerSt
 
 	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		klog.V(4).Infof("The operator is marked as disabled")
+		klog.Infof("============================ Disabled last transition ", lastTransition)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Time{Time: lastTransition})
 	}
 
