@@ -139,7 +139,7 @@ func (c *Controller) updateToken(ctx context.Context) error {
 		}
 		if len(token) > 0 {
 			nextConfig.Token = token
-			nextConfig.Report = true
+			nextConfig.Report = false
 		}
 	}
 
