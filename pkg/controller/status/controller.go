@@ -236,7 +236,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 	if !c.configurator.Config().Report {
 		c.ctrlStatus.setStatus(DisabledStatus, "Disabled", "Health reporting is disabled")
 	}
-
+	klog.Infof("================= currentControllerStatus returns lastTransition %s ", lastTransition)
 	return allReady, lastTransition
 }
 
@@ -282,7 +282,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 	if initial {
 		klog.Info("===================== Initial status update")
 		if existing != nil {
-			klog.Info("===================== There's existing CO %s", existing.Status.Conditions)
+			klog.Infof("===================== There's existing CO %s", existing.Status.Conditions)
 			var reported Reported
 			if len(existing.Status.Extension.Raw) > 0 {
 				if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil { //nolint: govet
