@@ -119,7 +119,7 @@ func (c *Config) loadReport(data map[string][]byte) {
 		}
 	}
 
-	c.Report = len(c.Endpoint) > 0
+	c.Report = false //len(c.Endpoint) > 0
 }
 
 func (c *Config) loadOCM(data map[string][]byte) {

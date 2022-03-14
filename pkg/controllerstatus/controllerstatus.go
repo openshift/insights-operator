@@ -52,6 +52,7 @@ func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 
 	if summary.LastTransitionTime.IsZero() {
 		s.summary.LastTransitionTime = time.Now()
+		klog.Info("================= Setting last transition time %s", s.summary.LastTransitionTime)
 	}
 
 	if s.summary.Healthy != summary.Healthy {

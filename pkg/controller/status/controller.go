@@ -280,7 +280,9 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 		existing = nil
 	}
 	if initial {
+		klog.Info("===================== Initial status update")
 		if existing != nil {
+			klog.Info("===================== There's existing CO %s", existing.Status.Conditions)
 			var reported Reported
 			if len(existing.Status.Extension.Raw) > 0 {
 				if err := json.Unmarshal(existing.Status.Extension.Raw, &reported); err != nil { //nolint: govet
