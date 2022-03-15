@@ -148,7 +148,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	// cluster operator conditions
 	cs := newConditions(&clusterOperator.Status, metav1.Time{Time: now})
 	updateControllerConditions(cs, c.ctrlStatus, isInitializing, lastTransition)
-	updateControllerConditionsByStatus(cs, c.ctrlStatus, isInitializing, lastTransition)
+	updateControllerConditionsByStatus(cs, c.ctrlStatus, isInitializing)
 
 	// all status conditions from conditions to cluster operator
 	clusterOperator.Status.Conditions = cs.entries()
@@ -161,7 +161,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 
 	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}
 	if data, err := json.Marshal(reported); err != nil {
-		klog.Errorf("Unable to marshal statusMessage extension: %v", err)
+		klog.Errorf("Unable to marshal status extension: %v", err)
 	} else {
 		clusterOperator.Status.Extension.Raw = data
 	}
@@ -186,7 +186,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 			continue
 		}
 		if len(summary.Message) == 0 {
-			klog.Errorf("Programmer error: statusMessage source %d %T reported an empty message: %#v", i, source, summary)
+			klog.Errorf("Programmer error: status source %d %T reported an empty message: %#v", i, source, summary)
 			continue
 		}
 
@@ -259,7 +259,7 @@ func (c *Controller) Start(ctx context.Context) error {
 			case <-c.statusCh:
 				err := limiter.Wait(ctx)
 				if err != nil {
-					klog.Errorf("Limiter error by statusMessage: %v", err)
+					klog.Errorf("Limiter error by status: %v", err)
 				}
 			}
 			if err := c.updateStatus(ctx, false); err != nil {
@@ -363,7 +363,7 @@ func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 
 // update the current controller state by it status
 func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerStatus,
-	isInitializing bool, lastTransition time.Time) {
+	isInitializing bool) {
 	if isInitializing {
 		klog.V(4).Infof("The operator is still being initialized")
 		// if we're still starting up and some sources are not ready, initialize the conditions
@@ -382,7 +382,7 @@ func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerSt
 
 	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		klog.V(4).Infof("The operator is marked as disabled")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Time{Time: lastTransition})
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Now())
 	}
 
 	if ctrlStatus.isHealthy() {
