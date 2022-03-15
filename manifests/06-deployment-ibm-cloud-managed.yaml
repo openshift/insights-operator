@@ -57,8 +57,6 @@ spec:
           readOnly: true
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
-      nodeSelector:
-        beta.kubernetes.io/os: linux
       priorityClassName: system-cluster-critical
       serviceAccountName: operator
       tolerations:
