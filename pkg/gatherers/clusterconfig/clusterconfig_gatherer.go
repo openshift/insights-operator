@@ -77,6 +77,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"scheduler_logs":                    (*Gatherer).GatherSchedulerLogs,
 	"silenced_alerts":                   (*Gatherer).GatherSilencedAlerts,
 	"image":                             (*Gatherer).GatherClusterImage,
+	"kube_controller_manager_logs":      (*Gatherer).GatherKubeControllerManagerLogs,
 }
 
 func New(

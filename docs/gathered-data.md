@@ -383,6 +383,22 @@ installed in the cluster
   * 4.10+
 
 
+## KubeControllerManagerLogs
+
+collects logs from kube-controller-manager pods in the openshift-kube-controller-manager namespace with following substrings:
+  - "Internal error occurred: error resolving resource",
+  - "syncing garbage collector with updated resources from discovery",
+
+The Kubernetes API:
+         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+Response see:
+         https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
+
+* Location in archive: config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log
+* Since versions:
+  * 4.11+
+
+
 ## LogsOfNamespace
 
 creates a gathering closure which collects logs from pods in the provided namespace
