@@ -85,9 +85,10 @@ func (g *Gatherer) GetName() string {
 // + the gathering function producing metadata for the conditional gatherer
 func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
 	newGatheringRules, err := g.fetchGatheringRulesFromServer(ctx)
+	klog.Infof("got %v gathering rules for conditional gatherer", len(newGatheringRules))
 	if err != nil {
 		klog.Errorf("unable to fetch gathering rules from the server: %v", err)
-		klog.Info("trying to use cached gathering functions")
+		klog.Infof("trying to use cached gathering config containing %v gathering rules", len(g.gatheringRules))
 	} else {
 		g.gatheringRules = newGatheringRules
 	}

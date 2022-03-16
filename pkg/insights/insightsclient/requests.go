@@ -209,6 +209,7 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error
 // https://github.com/RedHatInsights/insights-operator-gathering-conditions-service
 // and returns the response body or an error
 func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byte, error) {
+	klog.Infof("Preparing a request to Insights Operator Gathering Conditions Service")
 	cv, err := c.getClusterVersion()
 	if err != nil {
 		return nil, err
@@ -225,6 +226,7 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 	// dynamically set the proxy environment and authentication
 	c.client.Transport = clientTransport(c.authorizer)
 
+	klog.Infof("Performing a request to Insights Operator Gathering Conditions Service")
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
