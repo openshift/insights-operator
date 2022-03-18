@@ -50,12 +50,12 @@ func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	if summary.LastTransitionTime.IsZero() {
+		s.summary.LastTransitionTime = time.Now()
+	}
+
 	if s.summary.Healthy != summary.Healthy {
 		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
-		if summary.LastTransitionTime.IsZero() {
-			summary.LastTransitionTime = time.Now()
-		}
-
 		s.summary = summary
 		s.summary.Count = 1
 		return
