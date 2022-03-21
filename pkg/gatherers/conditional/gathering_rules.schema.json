@@ -29,7 +29,7 @@
     ],
     "type": "array",
     "description": "array of rules for conditional gatherer",
-    "minItems": 0,
+    "minItems": 1,
     "maxItems": 64,
     "uniqueItems": true,
     "items": {

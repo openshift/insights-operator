@@ -97,7 +97,7 @@ func Test_Proxy(tt *testing.T) {
 				}
 			}
 
-			co2 := &testConfig{config: &config.Controller{HTTPConfig: tc.HTTPConfig}}
+			co2 := &config.MockConfigurator{Conf: &config.Controller{HTTPConfig: tc.HTTPConfig}}
 			a := Authorizer{proxyFromEnvironment: nonCachedProxyFromEnvironment(), configurator: co2}
 			p := a.NewSystemOrConfiguredProxy()
 			req := httptest.NewRequest("GET", tc.RequestURL, nil)
@@ -112,14 +112,6 @@ func Test_Proxy(tt *testing.T) {
 			}
 		})
 	}
-}
-
-type testConfig struct {
-	config *config.Controller
-}
-
-func (t *testConfig) Config() *config.Controller {
-	return t.config
 }
 
 func SafeRestoreEnv(key string) func() {

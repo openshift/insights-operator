@@ -1,7 +1,6 @@
 package insightsclient
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -31,8 +30,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
-
-	"github.com/openshift/insights-operator/pkg/authorizer"
 )
 
 const (
@@ -68,6 +65,16 @@ type Source struct {
 type HttpError struct {
 	Err        error
 	StatusCode int
+}
+
+// createAPIErrorMessage creates an error from http.Response combining request URL, http status
+// and the body into a string
+func newHTTPErrorFromResponse(r *http.Response) *HttpError {
+	err := fmt.Errorf(`URL "%s" returned HTTP code %d: %s`, r.Request.URL, r.StatusCode, responseBody(r))
+	return &HttpError{
+		Err:        err,
+		StatusCode: r.StatusCode,
+	}
 }
 
 func (e HttpError) Error() string {
@@ -178,7 +185,7 @@ func (c *Client) getClusterVersion() (*configv1.ClusterVersion, error) {
 	return cv, nil
 }
 
-func (c Client) prepareRequest(ctx context.Context, method string, endpoint string, cv *configv1.ClusterVersion) (*http.Request, error) {
+func (c *Client) prepareRequest(ctx context.Context, method string, endpoint string, cv *configv1.ClusterVersion) (*http.Request, error) {
 	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -198,198 +205,6 @@ func (c Client) prepareRequest(ctx context.Context, method string, endpoint stri
 	return req, nil
 }
 
-// Send uploads archives to Ingress service
-func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
-	cv, err := c.getClusterVersion()
-	if err != nil {
-		return err
-	}
-	if cv == nil {
-		return ErrWaitingForVersion
-	}
-
-	req, err := c.prepareRequest(ctx, http.MethodPost, endpoint, cv)
-	if err != nil {
-		return err
-	}
-
-	bytesRead := make(chan int64, 1)
-	pr, pw := io.Pipe()
-	mw := multipart.NewWriter(pw)
-	req.Header.Set("Content-Type", mw.FormDataContentType())
-	go c.createAndWriteMIMEHeader(&source, mw, pw, bytesRead)
-	req.Body = pr
-	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer)
-
-	klog.V(4).Infof("Uploading %s to %s", source.Type, req.URL.String())
-	resp, err := c.client.Do(req)
-	if err != nil {
-		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
-		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
-		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()
-		return fmt.Errorf("unable to build request to connect to Insights server: %v", err)
-	}
-
-	requestID := resp.Header.Get(insightsReqId)
-
-	defer func() {
-		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-			klog.Warningf("error copying body: %v", err)
-		}
-		if err := resp.Body.Close(); err != nil {
-			klog.Warningf("Failed to close response body: %v", err)
-		}
-	}()
-
-	counterRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		klog.V(2).Infof("gateway server %s returned 401, %s=%s", resp.Request.URL, insightsReqId, requestID)
-		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
-	}
-
-	if resp.StatusCode == http.StatusForbidden {
-		klog.V(2).Infof("gateway server %s returned 403, %s=%s", resp.Request.URL, insightsReqId, requestID)
-		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
-	}
-
-	if resp.StatusCode == http.StatusBadRequest {
-		return fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, responseBody(resp))
-	}
-
-	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-		return fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, responseBody(resp))
-	}
-
-	if len(requestID) > 0 {
-		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, <-bytesRead)
-	}
-
-	return nil
-}
-
-// RecvReport perform a request to Insights Results Smart Proxy endpoint
-func (c Client) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
-	cv, err := c.getClusterVersion()
-	if err != nil {
-		return nil, err
-	}
-	if cv == nil {
-		return nil, ErrWaitingForVersion
-	}
-
-	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID)
-	klog.Infof("Retrieving report for cluster: %s", cv.Spec.ClusterID)
-	klog.Infof("Endpoint: %s", endpoint)
-
-	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
-	if err != nil {
-		return nil, err
-	}
-
-	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer)
-
-	klog.V(4).Infof("Retrieving report from %s", req.URL.String())
-	resp, err := c.client.Do(req)
-
-	if err != nil {
-		klog.Errorf("Unable to retrieve latest report for %s: %v", cv.Spec.ClusterID, err)
-		counterRequestRecvReport.WithLabelValues(c.metricsName, "0").Inc()
-		return nil, err
-	}
-
-	requestID := resp.Header.Get("x-rh-insights-request-id")
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
-		c.IncrementRecvReportMetric(resp.StatusCode)
-		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
-	}
-
-	if resp.StatusCode == http.StatusForbidden {
-		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
-		c.IncrementRecvReportMetric(resp.StatusCode)
-		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
-	}
-
-	if resp.StatusCode == http.StatusBadRequest {
-		body, _ := io.ReadAll(resp.Body)
-		if len(body) > 1024 {
-			body = body[:1024]
-		}
-		c.IncrementRecvReportMetric(resp.StatusCode)
-		return nil, fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, string(body))
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		body, _ := io.ReadAll(resp.Body)
-		if len(body) > 1024 {
-			body = body[:1024]
-		}
-		notFoundErr := HttpError{
-			StatusCode: resp.StatusCode,
-			Err:        fmt.Errorf("not found: %s (request=%s): %s", resp.Request.URL, requestID, string(body)),
-		}
-		c.IncrementRecvReportMetric(resp.StatusCode)
-		return nil, notFoundErr
-	}
-
-	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-		body, _ := io.ReadAll(resp.Body)
-		if len(body) > 1024 {
-			body = body[:1024]
-		}
-		c.IncrementRecvReportMetric(resp.StatusCode)
-		return nil, fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, string(body))
-	}
-
-	if resp.StatusCode == http.StatusOK {
-		return resp, nil
-	}
-
-	klog.Warningf("Report response status code: %d", resp.StatusCode)
-	return nil, fmt.Errorf("Report response status code: %d", resp.StatusCode)
-}
-
-func (c Client) RecvSCACerts(ctx context.Context, endpoint string) ([]byte, error) {
-	cv, err := c.getClusterVersion()
-	if err != nil {
-		return nil, err
-	}
-	if cv == nil {
-		return nil, ErrWaitingForVersion
-	}
-	token, err := c.authorizer.Token()
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(scaArchPayload)))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	c.client.Transport = clientTransport(c.authorizer)
-	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
-	req.Header.Set("Authorization", authHeader)
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve SCA certs data from %s: %v", endpoint, err)
-	}
-
-	if resp.StatusCode > 399 || resp.StatusCode < 200 {
-		return nil, ocmErrorMessage(resp.Request.URL, resp)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			klog.Warningf("Failed to close response body: %v", err)
-		}
-	}()
-
-	return io.ReadAll(resp.Body)
-}
-
 func responseBody(r *http.Response) string {
 	if r == nil {
 		return ""
@@ -402,8 +217,9 @@ func responseBody(r *http.Response) string {
 }
 
 // ocmErrorMessage wraps the OCM error states in the error
-func ocmErrorMessage(url *url.URL, r *http.Response) error {
-	errMessage := fmt.Sprintf("OCM API %s returned HTTP %d: %s", url, r.StatusCode, responseBody(r))
+func ocmErrorMessage(r *http.Response) error {
+	requestURL := r.Request.URL
+	errMessage := fmt.Sprintf("OCM API %s returned HTTP %d: %s", requestURL, r.StatusCode, responseBody(r))
 	err := fmt.Errorf(errMessage)
 	return HttpError{
 		Err:        err,
@@ -434,7 +250,7 @@ func (c *Client) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, 
 	if err != nil {
 		_ = pw.CloseWithError(err)
 	}
-	// set gathering time as custom metada field
+	// set gathering time as custom metadata field
 	fw, err = mw.CreateFormFile("metadata", "metadata.json")
 	if err != nil {
 		_ = pw.CloseWithError(err)

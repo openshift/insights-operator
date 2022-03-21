@@ -5,6 +5,7 @@ leaderElection:
 interval: "5m"
 storagePath: /tmp/insights-operator
 endpoint: http://[::1]:8081
+conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules
 impersonate: system:serviceaccount:openshift-insights:gather
 gather:
   - ALL

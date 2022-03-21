@@ -13,7 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
-	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
@@ -22,7 +22,7 @@ import (
 type Controller struct {
 	controllerstatus.Simple
 
-	configurator          Configurator
+	configurator          configobserver.Configurator
 	client                *insightsclient.Client
 	LastReport            SmartProxyReport
 	archiveUploadReporter <-chan struct{}
@@ -31,12 +31,6 @@ type Controller struct {
 // Response represents the Smart Proxy report response structure
 type Response struct {
 	Report SmartProxyReport `json:"report"`
-}
-
-// Configurator represents the interface to retrieve the configuration for the gatherer
-type Configurator interface {
-	Config() *config.Controller
-	ConfigChanged() (<-chan struct{}, func())
 }
 
 // InsightsReporter represents an object that can notify about archive uploading
@@ -58,7 +52,7 @@ var (
 )
 
 // New initializes and returns a Gatherer
-func New(client *insightsclient.Client, configurator Configurator, reporter InsightsReporter) *Controller {
+func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter) *Controller {
 	return &Controller{
 		Simple:                controllerstatus.Simple{Name: "insightsreport"},
 		configurator:          configurator,

@@ -1,12 +1,10 @@
-// conditional package provides conditional gatherer which runs gatherings based on the rules and only if the provided
-// conditions are satisfied. Right now the rules are in the code (see `gatheringRules` at line 32), but later
-// they can be fetched from outside, checked that they make sense (we want to check the parameters, for example if
-// a rule tells to collect logs of a namespace on firing alert, we want to check that the namespace is created
-// by openshift and not by a user). Conditional gathering isn't considered prioritized, so we run it every 6 hours.
+// Package conditional provides conditional gatherer which runs gatherings based on the rules and only if the provided
+// conditions are satisfied. The rules are fetched from Insights Operator Gathering Conditions Service
+// https://github.com/RedHatInsights/insights-operator-gathering-conditions-service . The rules are validated to
+// check that they make sense (for example we don't allow collecting logs from non openshift namespaces).
 //
-// To add a new condition, follow the next steps:
-// 1. Add structures to conditions.go
-// 2. Change areAllConditionsSatisfied function in conditional_gatherer.go
+// To add a new condition, follow the steps described in conditions.go file.
+// To add a new gathering function, follow the steps described in gathering_functions.go file.
 package conditional
 
 import (
@@ -16,218 +14,18 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/blang/semver/v4"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/prometheus/common/expfmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
 )
-
-// gatheringFunctionBuilders lists all the gatherers which can be run on some condition. Gatherers can have parameters,
-// like namespace or number of log lines to fetch, see the docs of the functions.
-var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilderPtr{
-	GatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
-	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
-	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
-	GatherContainersLogs:          (*Gatherer).BuildGatherContainersLogs,
-	GatherPodDefinition:           (*Gatherer).BuildGatherPodDefinition,
-}
-
-// gatheringRules contains all the rules used to run conditional gatherings.
-// Right now they are declared here in the code, but later they can be fetched from an external source.
-// An example of the future json version of this is:
-//   [{
-//     "conditions": [
-//       {
-//         "type": "alert_is_firing",
-//         "alert": {
-//           "name": "ClusterVersionOperatorIsDown"
-//         }
-//       },
-//       {
-//         "type": "cluster_version_matches",
-//         "cluster_version": {
-//           "version": "4.8.x"
-//         }
-//       }
-//     ],
-//     "gathering_functions": {
-//       "gather_logs_of_namespace": {
-//         "namespace": "openshift-cluster-version",
-//         "keep_lines": 100
-//       },
-//     }
-//   }]
-// Which means to collect logs of all containers from all pods in namespace openshift-monitoring keeping last 100 lines
-// per container only if cluster version is 4.8 (not implemented, just an example of possible use) and alert
-// ClusterVersionOperatorIsDown is firing
-var defaultGatheringRules = []GatheringRule{
-	// GatherImageStreamsOfNamespace
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "SamplesImagestreamImportFailing",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherLogsOfNamespace: GatherLogsOfNamespaceParams{
-				Namespace: "openshift-cluster-samples-operator",
-				TailLines: 100,
-			},
-			GatherImageStreamsOfNamespace: GatherImageStreamsOfNamespaceParams{
-				Namespace: "openshift-cluster-samples-operator",
-			},
-		},
-	},
-	// GatherAPIRequestCounts
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "APIRemovedInNextEUSReleaseInUse",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherAPIRequestCounts: GatherAPIRequestCountsParams{
-				AlertName: "APIRemovedInNextEUSReleaseInUse",
-			},
-		},
-	},
-	// GatherContainersLogs
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "KubePodCrashLooping",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherContainersLogs: GatherContainersLogsParams{
-				AlertName: "KubePodCrashLooping",
-				TailLines: 20,
-				Previous:  true,
-			},
-		},
-	},
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "KubePodNotReady",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherContainersLogs: GatherContainersLogsParams{
-				AlertName: "KubePodNotReady",
-				TailLines: 100,
-				Previous:  false,
-			},
-			GatherPodDefinition: GatherPodDefinitionParams{
-				AlertName: "KubePodNotReady",
-			},
-		},
-	},
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "AlertmanagerFailedToSendAlerts",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherContainersLogs: GatherContainersLogsParams{
-				AlertName: "AlertmanagerFailedToSendAlerts",
-				Container: "alertmanager",
-				TailLines: 50,
-			},
-		},
-	},
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "PrometheusOperatorSyncFailed",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherContainersLogs: GatherContainersLogsParams{
-				AlertName: "PrometheusOperatorSyncFailed",
-				Container: "prometheus-operator",
-				TailLines: 50,
-			},
-		},
-	},
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "AlertmanagerFailedReload",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherContainersLogs: GatherContainersLogsParams{
-				AlertName: "AlertmanagerFailedReload",
-				Container: "alertmanager",
-				TailLines: 50,
-			},
-		},
-	},
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "PrometheusTargetSyncFailure",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherContainersLogs: GatherContainersLogsParams{
-				AlertName: "PrometheusTargetSyncFailure",
-				Container: "prometheus",
-				TailLines: 50,
-			},
-		},
-	},
-	{
-		Conditions: []ConditionWithParams{
-			{
-				Type: AlertIsFiring,
-				Alert: &AlertConditionParams{
-					Name: "ThanosRuleQueueIsDroppingAlerts",
-				},
-			},
-		},
-		GatheringFunctions: GatheringFunctions{
-			GatherContainersLogs: GatherContainersLogsParams{
-				AlertName: "ThanosRuleQueueIsDroppingAlerts",
-				Container: "thanos-ruler",
-				TailLines: 50,
-			},
-		},
-	},
-}
 
 // Gatherer implements the conditional gatherer
 type Gatherer struct {
@@ -236,13 +34,22 @@ type Gatherer struct {
 	imageKubeConfig         *rest.Config
 	gatherKubeConfig        *rest.Config
 	// there can be multiple instances of the same alert
-	firingAlerts   map[string][]AlertLabels
-	gatheringRules []GatheringRule
-	clusterVersion string
+	firingAlerts                map[string][]AlertLabels
+	gatheringRules              []GatheringRule
+	clusterVersion              string
+	configurator                configobserver.Configurator
+	gatheringRulesServiceClient GatheringRulesServiceClient
+}
+
+type GatheringRulesServiceClient interface {
+	RecvGatheringRules(ctx context.Context, endpoint string) ([]byte, error)
 }
 
 // New creates a new instance of conditional gatherer with the appropriate configs
-func New(gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.Config) *Gatherer {
+func New(
+	gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.Config,
+	configurator configobserver.Configurator, gatheringRulesServiceClient GatheringRulesServiceClient,
+) *Gatherer {
 	var imageKubeConfig *rest.Config
 	if gatherProtoKubeConfig != nil {
 		// needed for getting image streams
@@ -252,11 +59,13 @@ func New(gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.
 	}
 
 	return &Gatherer{
-		gatherProtoKubeConfig:   gatherProtoKubeConfig,
-		metricsGatherKubeConfig: metricsGatherKubeConfig,
-		imageKubeConfig:         imageKubeConfig,
-		gatherKubeConfig:        gatherKubeConfig,
-		gatheringRules:          defaultGatheringRules,
+		gatherProtoKubeConfig:       gatherProtoKubeConfig,
+		metricsGatherKubeConfig:     metricsGatherKubeConfig,
+		imageKubeConfig:             imageKubeConfig,
+		gatherKubeConfig:            gatherKubeConfig,
+		gatheringRules:              []GatheringRule{},
+		configurator:                configurator,
+		gatheringRulesServiceClient: gatheringRulesServiceClient,
 	}
 }
 
@@ -275,6 +84,15 @@ func (g *Gatherer) GetName() string {
 // GetGatheringFunctions returns gathering functions that should be run considering the conditions
 // + the gathering function producing metadata for the conditional gatherer
 func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
+	newGatheringRules, err := g.fetchGatheringRulesFromServer(ctx)
+	klog.Infof("got %v gathering rules for conditional gatherer", len(newGatheringRules))
+	if err != nil {
+		klog.Errorf("unable to fetch gathering rules from the server: %v", err)
+		klog.Infof("trying to use cached gathering config containing %v gathering rules", len(g.gatheringRules))
+	} else {
+		g.gatheringRules = newGatheringRules
+	}
+
 	errs := validateGatheringRules(g.gatheringRules)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
@@ -330,33 +148,37 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	return gatheringFunctions, nil
 }
 
-// areAllConditionsSatisfied returns true if all the conditions are satisfied, for example if the condition is
-// to check if a metric is firing, it will look at that metric and return the result according to that
-func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (bool, error) {
-	for _, condition := range conditions {
-		switch condition.Type {
-		case AlertIsFiring:
-			if condition.Alert == nil {
-				return false, fmt.Errorf("alert field should not be nil")
-			}
-
-			if firing, err := g.isAlertFiring(condition.Alert.Name); !firing || err != nil {
-				return false, err
-			}
-		case ClusterVersionMatches:
-			if condition.ClusterVersionMatches == nil {
-				return false, fmt.Errorf("cluster_version_matches field should not be nil")
-			}
-
-			if doesMatch, err := g.doesClusterVersionMatch(condition.ClusterVersionMatches.Version); !doesMatch || err != nil {
-				return false, err
-			}
-		default:
-			return false, fmt.Errorf("unknown condition type: %v", condition.Type)
-		}
+// fetchGatheringRulesFromServer returns the latest version of the rules from the server
+func (g *Gatherer) fetchGatheringRulesFromServer(ctx context.Context) ([]GatheringRule, error) {
+	gatheringRulesJSON, err := g.getGatheringRulesJSON(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	return true, nil
+	return parseGatheringRules(gatheringRulesJSON)
+}
+
+// getGatheringRulesJSON returns json version of the rules from the server
+func (g *Gatherer) getGatheringRulesJSON(ctx context.Context) (string, error) {
+	if g.configurator == nil {
+		return "", fmt.Errorf("no configurator was provided")
+	}
+
+	config := g.configurator.Config()
+	if config == nil {
+		return "", fmt.Errorf("config is nil")
+	}
+
+	if g.gatheringRulesServiceClient == nil {
+		return "", fmt.Errorf("gathering rules service client is nil")
+	}
+
+	rulesBytes, err := g.gatheringRulesServiceClient.RecvGatheringRules(ctx, config.ConditionalGathererEndpoint)
+	if err != nil {
+		return "", err
+	}
+
+	return string(rulesBytes), err
 }
 
 // updateCache updates alerts and version caches
@@ -446,49 +268,17 @@ func (g *Gatherer) updateVersionCache(ctx context.Context, configClient configv1
 	return nil
 }
 
-// isAlertFiring using the cache it returns true if the alert is firing
-func (g *Gatherer) isAlertFiring(alertName string) (bool, error) {
-	if g.firingAlerts == nil {
-		return false, fmt.Errorf("alerts cache is missing")
-	}
-
-	_, alertIsFiring := g.firingAlerts[alertName]
-	return alertIsFiring, nil
-}
-
-func (g *Gatherer) doesClusterVersionMatch(expectedVersionExpression string) (bool, error) {
-	if len(g.clusterVersion) == 0 {
-		return false, fmt.Errorf("cluster version is missing")
-	}
-
-	clusterVersion, err := semver.Parse(g.clusterVersion)
-	if err != nil {
-		return false, err
-	}
-
-	expectedRange, err := semver.ParseRange(expectedVersionExpression)
-	if err != nil {
-		return false, err
-	}
-
-	// ignore everything after the first three numbers
-	clusterVersion.Pre = nil
-	clusterVersion.Build = nil
-
-	return expectedRange(clusterVersion), nil
-}
-
-// createGatheringClosures produces gathering closures from the rules
+// createGatheringClosures produces gathering closures
 func (g *Gatherer) createGatheringClosures(
 	gatheringFunctions map[GatheringFunctionName]interface{},
 ) (map[string]gatherers.GatheringClosure, []error) {
 	resultingClosures := make(map[string]gatherers.GatheringClosure)
 	var errs []error
 
-	for functionName, functionParams := range gatheringFunctions {
-		builderFunc, found := gatheringFunctionBuilders[functionName]
+	for function, functionParams := range gatheringFunctions {
+		builderFunc, found := gatheringFunctionBuilders[function]
 		if !found {
-			errs = append(errs, fmt.Errorf("unknown action type: %v", functionName))
+			errs = append(errs, fmt.Errorf("unknown action type: %v", function))
 			continue
 		}
 
@@ -496,11 +286,11 @@ func (g *Gatherer) createGatheringClosures(
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			name, err := getConditionalGatheringFunctionName(string(functionName), functionParams)
+			name, err := getConditionalGatheringFunctionName(string(function), functionParams)
 			if err != nil {
 				errs = append(errs, fmt.Errorf(
 					"unable to get name for the function %v with params %v: %v",
-					functionName, functionParams, err,
+					function, functionParams, err,
 				))
 				continue
 			}

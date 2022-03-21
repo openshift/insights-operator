@@ -26,6 +26,7 @@ func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 
 	cfg.loadCredentials(secret.Data)
 	cfg.loadEndpoint(secret.Data)
+	cfg.loadConditionalGathererEndpoint(secret.Data)
 	cfg.loadHTTP(secret.Data)
 	cfg.loadReport(secret.Data)
 	cfg.loadOCM(secret.Data)
@@ -51,16 +52,22 @@ func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 
 func (c *Config) loadCredentials(data map[string][]byte) {
 	if username, ok := data["username"]; ok {
-		c.Username = string(username)
+		c.Username = strings.TrimSpace(string(username))
 	}
 	if password, ok := data["password"]; ok {
-		c.Password = string(password)
+		c.Password = strings.TrimSpace(string(password))
 	}
 }
 
 func (c *Config) loadEndpoint(data map[string][]byte) {
 	if endpoint, ok := data["endpoint"]; ok {
 		c.Endpoint = string(endpoint)
+	}
+}
+
+func (c *Config) loadConditionalGathererEndpoint(data map[string][]byte) {
+	if endpoint, ok := data["conditionalGathererEndpoint"]; ok {
+		c.ConditionalGathererEndpoint = string(endpoint)
 	}
 }
 

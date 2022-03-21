@@ -5,6 +5,14 @@ import (
 	"fmt"
 )
 
+// To add a new gathering function, follow the next steps:
+// 1. Create gather_*[_test].go file(s) with the function builder, the function and the tests
+// 2. Add a value in GatheringFunctionName enum
+// 3. Modify GatheringFunctionName.NewParams function to create params for this function
+// 4. Create Gather*Params struct
+// 5. Register the builder in gatheringFunctionBuilders map
+// 6. Add validation in gathering_rule.schema.json
+
 // GatheringFunctions is a type to map gathering function name to its params
 type GatheringFunctions = map[GatheringFunctionName]interface{}
 
@@ -95,4 +103,16 @@ type GatherContainersLogsParams struct {
 // GatherPodDefinitionParams defines parameters for pod_definition gatherer
 type GatherPodDefinitionParams struct {
 	AlertName string `json:"alert_name"`
+}
+
+// registered builders:
+
+// gatheringFunctionBuilders lists all the gatherers which can be run on some condition. Gatherers can have parameters,
+// like namespace or number of log lines to fetch, see the docs of the functions.
+var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilderPtr{
+	GatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
+	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
+	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
+	GatherContainersLogs:          (*Gatherer).BuildGatherContainersLogs,
+	GatherPodDefinition:           (*Gatherer).BuildGatherPodDefinition,
 }

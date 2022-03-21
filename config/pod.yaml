@@ -5,6 +5,7 @@ leaderElection:
 interval: "2h"
 storagePath: /var/lib/insights-operator
 endpoint: https://cloud.redhat.com/api/ingress/v1/upload
+conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules
 impersonate: system:serviceaccount:openshift-insights:gather
 pull_report:
   endpoint: https://cloud.redhat.com/api/insights-results-aggregator/v1/clusters/%s/report

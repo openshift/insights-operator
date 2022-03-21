@@ -15,12 +15,13 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
+
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
 )
 
 const (
@@ -38,10 +39,6 @@ type Reported struct {
 	LastReportTime metav1.Time `json:"lastReportTime"`
 }
 
-type Configurator interface {
-	Config() *config.Controller
-}
-
 // Controller is the type responsible for managing the statusMessage of the operator according to the statusMessage of the sources.
 // Sources come from different major parts of the codebase, for the purpose of communicating their statusMessage with the controller.
 type Controller struct {
@@ -51,7 +48,7 @@ type Controller struct {
 	client configv1client.ConfigV1Interface
 
 	statusCh     chan struct{}
-	configurator Configurator
+	configurator configobserver.Configurator
 
 	sources  []controllerstatus.Interface
 	reported Reported
@@ -63,7 +60,7 @@ type Controller struct {
 }
 
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
-func NewController(client configv1client.ConfigV1Interface, configurator Configurator, namespace string) *Controller {
+func NewController(client configv1client.ConfigV1Interface, configurator configobserver.Configurator, namespace string) *Controller {
 	c := &Controller{
 		name:         "insights",
 		statusCh:     make(chan struct{}, 1),

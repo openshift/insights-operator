@@ -2,6 +2,7 @@ package conditional
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -11,29 +12,27 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest/fake"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 )
 
-func newEmptyGatherer() *Gatherer {
-	return New(nil, nil, nil)
-}
-
 func Test_Gatherer_Basic(t *testing.T) {
-	gatherer := newEmptyGatherer()
+	gatherer := newEmptyGatherer("")
+
 	assert.Equal(t, "conditional", gatherer.GetName())
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
 	assert.NoError(t, err)
 	assert.Len(t, gatheringFunctions, 1)
 
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
-
 	var g interface{} = gatherer
 	_, ok := g.(gatherers.CustomPeriodGatherer)
 	assert.False(t, ok, "should NOT implement gather.CustomPeriodGatherer")
 }
 
 func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
-	gatherer := newEmptyGatherer()
+	gatherer := newEmptyGatherer("")
+
 	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
 	))
@@ -46,26 +45,53 @@ func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	assert.True(t, found)
 }
 
+func Test_Gatherer_GetGatheringFunctions_CacheWorks(t *testing.T) {
+	gatherer := newEmptyGatherer("")
+
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
+		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
+	))
+	assert.NoError(t, err)
+
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
+	assert.Len(t, gatheringFunctions, 3)
+	_, found := gatheringFunctions["conditional_gatherer_rules"]
+	assert.True(t, found)
+
+	// the service suddenly died
+	gatherer.gatheringRulesServiceClient = &MockGatheringRulesServiceClient{
+		err: fmt.Errorf("404"),
+	}
+
+	// but we still expect the same rules (from the cache)
+	gatheringFunctions, err = gatherer.GetGatheringFunctions(context.TODO())
+	assert.NoError(t, err)
+	assert.Len(t, gatheringFunctions, 3)
+	_, found = gatheringFunctions["conditional_gatherer_rules"]
+	assert.True(t, found)
+}
+
 func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
-	gatherer := newEmptyGatherer()
-	gatherer.gatheringRules = []GatheringRule{
-		{
-			Conditions: []ConditionWithParams{
-				{
-					Type: AlertIsFiring,
-					Alert: &AlertConditionParams{
-						Name: "SamplesImagestreamImportFailing",
-					},
-				},
-			},
-			GatheringFunctions: GatheringFunctions{
-				GatherLogsOfNamespace: GatherLogsOfNamespaceParams{
-					Namespace: "not-openshift-cluster-samples-operator",
-					TailLines: 100,
-				},
-			},
-		},
-	} // invalid namespace (doesn't start with openshift-)
+	gathererConfig := `{
+		"version": "1.0.0",
+		"rules": [{
+			"conditions": [{
+				"type": "alert_is_firing",
+				"alert": {
+					"name": "SamplesImagestreamImportFailing"
+				}
+			}],
+			"gathering_functions": {
+				"logs_of_namespace": {
+					"namespace": "not-openshift-cluster-samples-operator",
+					"tail_lines": 100
+				}
+			}
+		}]
+	}` // invalid namespace (doesn't start with openshift-)
+
+	gatherer := newEmptyGatherer(gathererConfig)
 
 	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
@@ -83,7 +109,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 }
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
-	gatherer := newEmptyGatherer()
+	gatherer := newEmptyGatherer("")
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
 	assert.NoError(t, err)
@@ -94,7 +120,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 }
 
 func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
-	gatherer := newEmptyGatherer()
+	gatherer := newEmptyGatherer("")
 
 	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
 		"ALERTS{alertname=\"SamplesImagestreamImportFailing\",alertstate=\"firing\"} 1 1621618110163\n",
@@ -169,14 +195,14 @@ func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
 }
 
 func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
-	g := newEmptyGatherer()
+	gatherer := newEmptyGatherer("")
 
 	type testCase struct {
 		expectedVersion string
 		shouldMatch     bool
 	}
 
-	g.clusterVersion = "4.8.0-0.nightly-2021-06-13-101614"
+	gatherer.clusterVersion = "4.8.0-0.nightly-2021-06-13-101614"
 
 	for _, testCase := range []testCase{
 		{
@@ -204,11 +230,61 @@ func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
 			shouldMatch:     true,
 		},
 	} {
-		doesMatch, err := g.doesClusterVersionMatch(testCase.expectedVersion)
+		doesMatch, err := gatherer.doesClusterVersionMatch(testCase.expectedVersion)
 		if err != nil {
 			assert.Error(t, err)
 		}
 
 		assert.Equal(t, testCase.shouldMatch, doesMatch)
 	}
+}
+
+func newEmptyGatherer(gathererConfig string) *Gatherer { // nolint:gocritic
+	if len(gathererConfig) == 0 {
+		gathererConfig = `{
+			"version": "1.0.0",
+			"rules": [{
+				"conditions": [
+					{
+						"type": "` + string(AlertIsFiring) + `",
+						"alert": { "name": "SamplesImagestreamImportFailing" }
+					}
+				],
+				"gathering_functions": {
+					"logs_of_namespace": {
+						"namespace": "openshift-cluster-samples-operator",
+						"tail_lines": 100
+					},
+					"image_streams_of_namespace": {
+						"namespace": "openshift-cluster-samples-operator"
+					}
+				}
+			}]
+		}`
+	}
+
+	return New(
+		nil,
+		nil,
+		nil,
+		&config.MockConfigurator{Conf: &config.Controller{ConditionalGathererEndpoint: "/gathering_rules"}},
+		&MockGatheringRulesServiceClient{Conf: gathererConfig},
+	)
+}
+
+type MockGatheringRulesServiceClient struct {
+	Conf string
+	err  error
+}
+
+func (s *MockGatheringRulesServiceClient) RecvGatheringRules(_ context.Context, endpoint string) ([]byte, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+
+	if strings.HasSuffix(endpoint, "gathering_rules") {
+		return []byte(s.Conf), nil
+	}
+
+	return nil, fmt.Errorf("endpoint not supported")
 }

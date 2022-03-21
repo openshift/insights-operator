@@ -12,12 +12,12 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
-	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/clusterconfig"
 	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/gatherers/workloads"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils"
@@ -54,14 +54,17 @@ type ArchiveMetadata struct {
 // CreateAllGatherers creates all the gatherers
 func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer, controller *config.Controller,
+	anonymizer *anonymization.Anonymizer, configurator configobserver.Configurator,
+	insightsClient *insightsclient.Client,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,
-		anonymizer, controller.Interval,
+		anonymizer, configurator.Config().Interval,
 	)
 	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
-	conditionalGatherer := conditional.New(gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig)
+	conditionalGatherer := conditional.New(
+		gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig, configurator, insightsClient,
+	)
 
 	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer, conditionalGatherer}
 }
