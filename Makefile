@@ -93,7 +93,7 @@ run: ## Executes the insights operator
 		--config=$(CONFIG) \
 		$(RUN_FLAGS)
 
-build: | verify ## Compiles the insights operator
+build: ## Compiles the insights operator
 	go build -o ./bin/insights-operator ./cmd/insights-operator
 .PHONY: build
 
