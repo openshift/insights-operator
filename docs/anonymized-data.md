@@ -1,8 +1,7 @@
 # Anonymized Data
 
-This is an approximate list of data point (Kubernetes/OpenShift resource fields)
-that are anonymized by the Insights Operator. This list is subject to change and
-may not include all anonymized fields.
+This is a list of data points (Kubernetes/OpenShift resource fields) that are
+anonymized by the Insights Operator. This list is subject to change.
 
 - Identity Provider
   - URL
