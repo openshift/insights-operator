@@ -130,3 +130,4 @@ run:
   skip-dirs:
     - tests/integration
     - pkg/insights
+    - pkg/dependencymagnet
