@@ -1,0 +1,81 @@
+# Anonymized Data
+
+This is a list of data points (Kubernetes/OpenShift resource fields) that are
+anonymized by the Insights Operator. This list is subject to change.
+
+- Identity Provider
+  - URL
+  - BindDN
+  - Hostname
+  - ClientID
+  - HostedDomain
+  - Issuer
+  - DomainName
+- MachineSet
+  - ServiceAccounts
+    - Email
+  - ProviderSpec
+    - ProjectID
+    - Region
+    - Placement.AvailabilityZone
+    - Placement.Region
+- ImageRegistry
+  - HTTP secret
+  - Spec.Storage
+  - Status.Storage
+  - "kubectl.kubernetes.io/last-applied-configuration" Annotation
+- Mutating Webhook Configuration
+  - ClientConfig.CABundle
+- Validating Webhook Configuration
+  - ClientConfig.CABundle
+- Infrastructure
+  - InfrastructureName
+  - PlatformStatus
+    - Region
+    - CloudName
+    - ProjectID
+    - Location
+- Nodes
+  - Non-product-namespaced Annotations
+  - Non-product-namespaced Labels
+  - Region Labels
+  - BootID
+  - SystemUUID
+  - MachineID
+  - Images
+- ImageStreams
+  - Spec.DockerImageRepository
+  - Spec.Tags.From.Name
+  - Status.DockerImageRepository
+  - Status.PublicDockerImageRepository
+  - Status.Tags.DockerImageReference
+- CertificateSigningRequests
+  - Requests
+    - Pkix Name
+    - DNS Names
+    - Email Addresses
+    - IP Addresses
+    - URIs
+  - Certificates
+    - Pkix Name
+- Install Config
+  - SSH key
+  - PullSecret
+  - Base domain
+  - Platform
+    - Region
+    - ProjectID
+    - Datacenter (VSphere)
+    - Username
+    - Password
+    - Cloud (OpenStack)
+- Cluster Version
+  - Spec.Upstream URL
+- Proxy
+  - Spec.HTTPProxy
+  - Spec.HTTPSProxy
+  - Spec.NoProxy
+  - Spec.ReadinessEndpoints
+  - Status.HTTPProxy
+  - Status.HTTPSProxy
+  - Status.NoProxy

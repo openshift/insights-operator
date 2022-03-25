@@ -239,6 +239,9 @@ at [docs/gathered-data.md](docs/gathered-data.md)
 The resulting data is packed in `.tar.gz` archive with folder structure indicated in the document. Example of such
 archive is at [docs/insights-archive-sample](docs/insights-archive-sample).
 
+For more information on which data points are anonymized by the Insights
+Operator, please see [this list](docs/anonymized-data.md).
+
 ## Insights Operator Archive
 
 ### Sample IO archive
