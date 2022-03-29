@@ -35,7 +35,7 @@ type Gatherer struct {
 	gatherKubeConfig        *rest.Config
 	// there can be multiple instances of the same alert
 	firingAlerts                map[string][]AlertLabels
-	gatheringRules              []GatheringRule
+	gatheringRules              GatheringRules
 	clusterVersion              string
 	configurator                configobserver.Configurator
 	gatheringRulesServiceClient GatheringRulesServiceClient
@@ -63,17 +63,23 @@ func New(
 		metricsGatherKubeConfig:     metricsGatherKubeConfig,
 		imageKubeConfig:             imageKubeConfig,
 		gatherKubeConfig:            gatherKubeConfig,
-		gatheringRules:              []GatheringRule{},
+		gatheringRules:              GatheringRules{},
 		configurator:                configurator,
 		gatheringRulesServiceClient: gatheringRulesServiceClient,
 	}
 }
 
-// GatheringRuleMetadata stores information about gathering rules
+// GatheringRuleMetadata stores metadata about a gathering rule
 type GatheringRuleMetadata struct {
 	Rule         GatheringRule `json:"rule"`
 	Errors       []string      `json:"errors"`
 	WasTriggered bool          `json:"was_triggered"`
+}
+
+// GatheringRulesMetadata stores metadata about gathering rules
+type GatheringRulesMetadata struct {
+	Version string                  `json:"version"`
+	Rules   []GatheringRuleMetadata `json:"rules"`
 }
 
 // GetName returns the name of the gatherer
@@ -85,15 +91,21 @@ func (g *Gatherer) GetName() string {
 // + the gathering function producing metadata for the conditional gatherer
 func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
 	newGatheringRules, err := g.fetchGatheringRulesFromServer(ctx)
-	klog.Infof("got %v gathering rules for conditional gatherer", len(newGatheringRules))
+	klog.Infof(
+		"got %v gathering rules for conditional gatherer with version %v",
+		len(newGatheringRules.Rules), newGatheringRules.Version,
+	)
 	if err != nil {
 		klog.Errorf("unable to fetch gathering rules from the server: %v", err)
-		klog.Infof("trying to use cached gathering config containing %v gathering rules", len(g.gatheringRules))
+		klog.Infof(
+			"trying to use cached gathering config containing %v gathering rules and version %v",
+			len(g.gatheringRules.Rules), g.gatheringRules.Version,
+		)
 	} else {
 		g.gatheringRules = newGatheringRules
 	}
 
-	errs := validateGatheringRules(g.gatheringRules)
+	errs := validateGatheringRules(g.gatheringRules.Rules)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
 	}
@@ -102,9 +114,11 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
-	var metadata []GatheringRuleMetadata
+	metadata := GatheringRulesMetadata{
+		Version: g.gatheringRules.Version,
+	}
 
-	for _, conditionalGathering := range g.gatheringRules {
+	for _, conditionalGathering := range g.gatheringRules.Rules {
 		ruleMetadata := GatheringRuleMetadata{
 			Rule: conditionalGathering,
 		}
@@ -131,7 +145,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 			}
 		}
 
-		metadata = append(metadata, ruleMetadata)
+		metadata.Rules = append(metadata.Rules, ruleMetadata)
 	}
 
 	gatheringFunctions["conditional_gatherer_rules"] = gatherers.GatheringClosure{
@@ -149,10 +163,10 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 }
 
 // fetchGatheringRulesFromServer returns the latest version of the rules from the server
-func (g *Gatherer) fetchGatheringRulesFromServer(ctx context.Context) ([]GatheringRule, error) {
+func (g *Gatherer) fetchGatheringRulesFromServer(ctx context.Context) (GatheringRules, error) {
 	gatheringRulesJSON, err := g.getGatheringRulesJSON(ctx)
 	if err != nil {
-		return nil, err
+		return GatheringRules{}, err
 	}
 
 	return parseGatheringRules(gatheringRulesJSON)
