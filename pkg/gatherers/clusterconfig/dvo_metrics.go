@@ -38,7 +38,7 @@ var (
 //
 // * Location in archive: config/dvo_metrics
 // * See: docs/insights-archive-sample/config/dvo_metrics
-// * Id in config: dvo_metrics
+// * Id in config: clusterconfig/dvo_metrics
 // * Since version:
 //   - 4.10
 func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []error) {

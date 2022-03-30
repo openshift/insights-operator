@@ -25,7 +25,7 @@ import (
 //
 // * Location in archive: config/nodes/logs/
 // * See: docs/insights-archive-sample/config/nodes/logs
-// * Id in config: node_logs
+// * Id in config: clusterconfig/node_logs
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) GatherNodeLogs(ctx context.Context) ([]record.Record, []error) {

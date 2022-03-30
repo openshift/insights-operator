@@ -18,7 +18,7 @@ import (
 //
 // * Location in archive: config/oauth/
 // * See: docs/insights-archive-sample/config/oauth
-// * Id in config: oauths
+// * Id in config: clusterconfig/oauths
 func (g *Gatherer) GatherClusterOAuth(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

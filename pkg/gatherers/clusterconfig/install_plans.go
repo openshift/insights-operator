@@ -44,7 +44,7 @@ type InstallPlanAnonymizer struct {
 // The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 //
 // * Location in archive: config/installplans/
-// * Id in config: install_plans
+// * Id in config: clusterconfig/install_plans
 // * Since versions:
 //   * 4.5.33+
 //   * 4.6.16+

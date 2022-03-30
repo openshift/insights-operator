@@ -19,7 +19,7 @@ import (
 //       https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
 //
 // * Location in archive: config/machinehealthchecks
-// * Id in config: machine_healthchecks
+// * Id in config: clusterconfig/machine_healthchecks
 // * Since versions:
 //   * 4.8+
 func (g *Gatherer) GatherMachineHealthCheck(ctx context.Context) ([]record.Record, []error) {

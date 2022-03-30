@@ -17,7 +17,7 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 //
 // * Location in archive: config/hostsubnet/
-// * Id in config: host_subnets
+// * Id in config: clusterconfig/host_subnets
 // * Since versions:
 //   * 4.4.29+
 //   * 4.5.15+

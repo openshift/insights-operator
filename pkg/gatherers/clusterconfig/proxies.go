@@ -19,7 +19,7 @@ import (
 //
 // * Location in archive: config/proxy.json
 // * See: docs/insights-archive-sample/config/proxy.json
-// * Id in config: proxies
+// * Id in config: clusterconfig/proxies
 func (g *Gatherer) GatherClusterProxy(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

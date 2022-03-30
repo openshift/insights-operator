@@ -17,7 +17,7 @@ var limit = 5
 // installed in the cluster
 //
 // * Location in archive: config/jaegertracing.io/
-// * Id in config: jaegers
+// * Id in config: clusterconfig/jaegers
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) GatherJaegerCR(ctx context.Context) ([]record.Record, []error) {

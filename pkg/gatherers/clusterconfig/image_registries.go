@@ -28,7 +28,7 @@ var lacAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
 //
 // * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 // * Location in older versions: config/imageregistry.json
-// * Id in config: image_registries
+// * Id in config: clusterconfig/image_registries
 // * Since versions:
 //   * 4.3.40+
 //   * 4.4.12+

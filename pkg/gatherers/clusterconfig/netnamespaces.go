@@ -23,7 +23,7 @@ type netNamespace struct {
 // Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
 //
 // * Location in archive: config/netnamespaces
-// * Id in config: netnamespaces
+// * Id in config: clusterconfig/netnamespaces
 // * Since versions:
 //   * 4.6.20+
 //   * 4.7+

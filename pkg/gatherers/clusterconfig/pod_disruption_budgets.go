@@ -21,7 +21,7 @@ const (
 //
 // * Location in archive: config/pdbs/
 // * See: docs/insights-archive-sample/config/pdbs
-// * Id in config: pdbs
+// * Id in config: clusterconfig/pdbs
 // * Since versions:
 //   * 4.4.30+
 //   * 4.5.34+

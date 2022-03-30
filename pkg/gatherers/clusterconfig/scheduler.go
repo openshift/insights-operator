@@ -61,6 +61,7 @@ func gatherSchedulerInfo(
 //         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log
+// * Id in config: clusterconfig/scheduler_logs
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) GatherSchedulerLogs(ctx context.Context) ([]record.Record, []error) {

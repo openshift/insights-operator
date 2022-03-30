@@ -19,7 +19,7 @@ import (
 //       https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
 //
 // * Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
-// * Id in config: machine_autoscalers
+// * Id in config: clusterconfig/machine_autoscalers
 // * Since versions:
 //   * 4.8+
 func (g *Gatherer) GatherMachineAutoscalers(ctx context.Context) ([]record.Record, []error) {

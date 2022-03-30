@@ -14,7 +14,7 @@ import (
 //
 // * Location in archive: config/silenced_alerts
 // * See: docs/insights-archive-sample/config/silenced_alerts
-// * Id in config: silenced_alerts
+// * Id in config: clusterconfig/silenced_alerts
 // * Since version:
 //   * 4.10+
 func (g *Gatherer) GatherSilencedAlerts(ctx context.Context) ([]record.Record, []error) {

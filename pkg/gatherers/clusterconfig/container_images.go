@@ -34,7 +34,7 @@ const (
 // Specifically, the age of pods, the set of running images and the container names are collected.
 //
 // * Location in archive: config/running_containers.json
-// * Id in config: container_images
+// * Id in config: clusterconfig/container_images
 // * Since versions:
 //   * 4.5.33+
 //   * 4.6.16+

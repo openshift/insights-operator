@@ -18,7 +18,7 @@ import (
 //
 // * Location in archive: config/network/
 // * See: docs/insights-archive-sample/config/network
-// * Id in config: networks
+// * Id in config: clusterconfig/networks
 func (g *Gatherer) GatherClusterNetwork(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

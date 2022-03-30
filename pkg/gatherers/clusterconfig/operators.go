@@ -43,7 +43,7 @@ type clusterOperatorResource struct {
 // * Location of operators in archive: config/clusteroperator/
 // * Location of operators related resources in older versions: config/clusteroperator/{kind}-{name}
 // * See: docs/insights-archive-sample/config/clusteroperator
-// * Id in config: operators
+// * Id in config: clusterconfig/operators
 // * Spec config for CO resources since versions:
 //   * 4.6.16+
 //   * 4.7+

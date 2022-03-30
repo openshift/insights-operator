@@ -18,7 +18,7 @@ import (
 //
 // * Location in archive: config/ingress.json
 // * See: docs/insights-archive-sample/config/ingress.json
-// * Id in config: ingress
+// * Id in config: clusterconfig/ingress
 func (g *Gatherer) GatherClusterIngress(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

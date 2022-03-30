@@ -27,6 +27,7 @@ type APIRequestCount struct {
 //   - alert_name string - name of the firing alert
 //
 // * Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
+// * Id in config: conditional/api_request_counts_of_resource_from_alert
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gatherers.GatheringClosure, error) {

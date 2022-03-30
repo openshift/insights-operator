@@ -33,7 +33,7 @@ const csrGatherLimit = 5000
 //     https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
 // * Location in archive: config/certificatesigningrequests/
-// * Id in config: certificate_signing_requests
+// * Id in config: clusterconfig/certificate_signing_requests
 // * Since versions:
 //   * 4.3.25+
 //   * 4.4.12+

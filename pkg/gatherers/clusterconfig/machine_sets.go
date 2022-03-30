@@ -23,7 +23,7 @@ import (
 //       https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 //
 // * Location in archive: machinesets/
-// * Id in config: machine_sets
+// * Id in config: clusterconfig/machine_sets
 // * Since versions:
 //   * 4.4.29+
 //   * 4.5.15+

@@ -14,7 +14,7 @@ import (
 //
 // * Location in archive: config/tsdb
 // * See: docs/insights-archive-sample/config/metrics
-// * Id in config: tsdb_status
+// * Id in config: clusterconfig/tsdb_status
 // * Since version:
 //    * 4.10+
 func (g *Gatherer) GatherTSDBStatus(ctx context.Context) ([]record.Record, []error) {

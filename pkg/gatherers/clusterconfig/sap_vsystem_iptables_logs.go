@@ -27,6 +27,7 @@ import (
 //        https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
+// * Id in config: clusterconfig/sap_license_management_logs
 // * Since versions:
 //   * 4.6.25+
 //   * 4.7.5+

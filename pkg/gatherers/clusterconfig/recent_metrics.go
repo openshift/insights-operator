@@ -34,7 +34,7 @@ const (
 //
 // * Location in archive: config/metrics
 // * See: docs/insights-archive-sample/config/metrics
-// * Id in config: metrics
+// * Id in config: clusterconfig/metrics
 // * Since version:
 //   - "etcd_object_counts": 4.3+
 //   - "cluster_installer": 4.3+

@@ -20,7 +20,7 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
 //
 // * Location in archive: config/machineconfigs/<name>.json
-// * Id in config: machine_configs
+// * Id in config: clusterconfig/machine_configs
 // * Since versions:
 //   * 4.8.5+
 //   * 4.9+

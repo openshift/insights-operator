@@ -21,7 +21,7 @@ import (
 //    https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 //
 // * Location in archive: config/containerruntimeconfigs/
-// * Id in config: container_runtime_configs
+// * Id in config: clusterconfig/container_runtime_configs
 // * Since versions:
 //   * 4.6.18+
 //   * 4.7+

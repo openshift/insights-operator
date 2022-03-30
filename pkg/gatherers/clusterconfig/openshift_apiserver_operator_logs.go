@@ -19,6 +19,7 @@ import (
 //       https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
+// * Id in config: clusterconfig/openshift_apiserver_operator_logs
 func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{
 		Namespace:     "openshift-apiserver-operator",

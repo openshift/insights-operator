@@ -24,6 +24,7 @@ import (
 //   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 //
 // * Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
+// * Id in config: clusterconfig/sap_config
 // * Since versions:
 //   * 4.6.20+
 //   * 4.7+
