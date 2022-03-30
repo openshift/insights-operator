@@ -16,17 +16,16 @@ var (
 	secTestData       = "secret testing data"
 )
 
-var testRes = &Response{
-	Key:  "secret key",
-	Cert: "secret cert",
-}
-
-func Test_OCMController_SecretIsCreated(t *testing.T) {
+func Test_SCAController_SecretIsCreated(t *testing.T) {
 	kube := kubefake.NewSimpleClientset()
 	coreClient := kube.CoreV1()
-	ocmController := New(context.TODO(), coreClient, nil, nil)
+	scaController := New(context.TODO(), coreClient, nil, nil)
 
-	err := ocmController.checkSecret(testRes)
+	testRes := &Response{
+		Key:  "secret key",
+		Cert: "secret cert",
+	}
+	err := scaController.checkSecret(testRes)
 	assert.NoError(t, err, "failed to check the secret")
 
 	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -37,7 +36,7 @@ func Test_OCMController_SecretIsCreated(t *testing.T) {
 	assert.Equal(t, "secret cert", string(testSecret.Data[entitlementPem]), "unexpected data in %s secret", secretName)
 }
 
-func Test_OCMController_SecretIsUpdated(t *testing.T) {
+func Test_SCAController_SecretIsUpdated(t *testing.T) {
 	kube := kubefake.NewSimpleClientset()
 	coreClient := kube.CoreV1()
 
@@ -53,11 +52,12 @@ func Test_OCMController_SecretIsUpdated(t *testing.T) {
 	}
 	_, err := coreClient.Secrets(targetNamespaceName).Create(context.Background(), existingSec, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	ocmController := New(context.TODO(), coreClient, nil, nil)
-
-	testRes.Cert = "new secret testing cert"
-	testRes.Key = "new secret testing key"
-	err = ocmController.checkSecret(testRes)
+	scaController := New(context.TODO(), coreClient, nil, nil)
+	testRes := &Response{
+		Key:  "new secret testing key",
+		Cert: "new secret testing cert",
+	}
+	err = scaController.checkSecret(testRes)
 	assert.NoError(t, err, "failed to check the secret")
 
 	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
