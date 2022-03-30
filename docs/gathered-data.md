@@ -398,6 +398,7 @@ Response see:
 
 * Location in archive: config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log
 * Since versions:
+  * 4.10.6
   * 4.11+
 
 

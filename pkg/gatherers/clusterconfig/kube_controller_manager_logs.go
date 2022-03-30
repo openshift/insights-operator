@@ -21,6 +21,7 @@ import (
 //
 // * Location in archive: config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log
 // * Since versions:
+//   * 4.10.6
 //   * 4.11+
 func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{
