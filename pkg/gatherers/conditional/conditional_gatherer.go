@@ -101,10 +101,16 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 			"trying to use cached gathering config containing %v gathering rules and version %v",
 			len(g.gatheringRules.Rules), g.gatheringRules.Version,
 		)
-	} else {
-		g.gatheringRules = newGatheringRules
+
+		return g.createGatheringFunctions(ctx)
 	}
 
+	g.gatheringRules = newGatheringRules
+
+	return g.createGatheringFunctions(ctx)
+}
+
+func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
 	errs := validateGatheringRules(g.gatheringRules.Rules)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
@@ -112,10 +118,6 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 
 	g.updateCache(ctx)
 
-	return g.createGatheringFunctions()
-}
-
-func (g *Gatherer) createGatheringFunctions() (map[string]gatherers.GatheringClosure, error) {
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
 	metadata := GatheringRulesMetadata{
