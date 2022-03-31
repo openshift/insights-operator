@@ -112,6 +112,10 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 
 	g.updateCache(ctx)
 
+	return g.createGatheringFunctions()
+}
+
+func (g *Gatherer) createGatheringFunctions() (map[string]gatherers.GatheringClosure, error) {
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
 	metadata := GatheringRulesMetadata{
