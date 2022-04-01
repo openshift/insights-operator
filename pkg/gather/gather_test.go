@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/types"
 )
 
 func Test_GetListOfEnabledFunctionForGatherer(t *testing.T) {
@@ -405,6 +406,26 @@ func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
 	assert.Len(t, mockDriver.Saves, 1)
 	records := mockDriver.Saves[0]
 	assert.Len(t, records, 2)
+}
+
+func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
+	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
+		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
+			return nil, []error{&types.Warning{UnderlyingValue: fmt.Errorf("test warning")}}
+		}},
+	}}
+	mockDriver := &MockDriver{}
+	rec := recorder.New(mockDriver, time.Second, nil)
+	mockConfigurator := config.NewMockConfigurator(nil)
+
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockConfigurator)
+	assert.NoError(t, err)
+	assert.Len(t, functionReports, 1)
+	assert.Equal(t, "mock_gatherer_with_provided_functions/function_1", functionReports[0].FuncName)
+	assert.Equal(t, 0, functionReports[0].RecordsCount)
+	assert.Nil(t, functionReports[0].Errors)
+	assert.Equal(t, []string{"warning: test warning"}, functionReports[0].Warnings)
+	assert.Nil(t, functionReports[0].Panic)
 }
 
 func assertMetadataOneGatherer(
