@@ -5,6 +5,19 @@ type MockConfigurator struct {
 	Conf *Controller
 }
 
+// NewMockConfigurator constructs a new MockConfigurator with default config values
+func NewMockConfigurator(conf *Controller) *MockConfigurator {
+	if conf == nil {
+		conf = &Controller{}
+	}
+	if len(conf.Gather) == 0 {
+		conf.Gather = []string{"ALL"}
+	}
+	return &MockConfigurator{
+		Conf: conf,
+	}
+}
+
 func (mc *MockConfigurator) Config() *Controller {
 	return mc.Conf
 }

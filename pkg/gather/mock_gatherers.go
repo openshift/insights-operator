@@ -12,7 +12,6 @@ import (
 // MockGatherer is a mock gatherer collecting some fake data
 type MockGatherer struct {
 	SomeField string
-	CanFail   bool
 }
 
 func (*MockGatherer) GetName() string { return "mock_gatherer" }
@@ -195,4 +194,20 @@ func (g *MockFailingGatherer) FailingGatherer(context.Context) ([]record.Record,
 			Item: record.JSONMarshaller{Object: "empty"},
 		},
 	}, []error{fmt.Errorf("gather error")}
+}
+
+// MockGathererWithProvidedFunctions is a gatherer containing the provided functions
+type MockGathererWithProvidedFunctions struct {
+	Functions map[string]gatherers.GatheringClosure
+	Err       error
+}
+
+func (*MockGathererWithProvidedFunctions) GetName() string {
+	return "mock_gatherer_with_provided_functions"
+}
+
+func (g *MockGathererWithProvidedFunctions) GetGatheringFunctions(context.Context) (
+	map[string]gatherers.GatheringClosure, error,
+) {
+	return g.Functions, g.Err
 }

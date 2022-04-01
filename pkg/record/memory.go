@@ -5,9 +5,9 @@ import "time"
 // MemoryRecord Represents records stored in memory
 type MemoryRecord struct {
 	Name        string
-	Fingerprint string
 	At          time.Time
 	Data        []byte
+	Fingerprint string
 }
 
 type MemoryRecords []MemoryRecord

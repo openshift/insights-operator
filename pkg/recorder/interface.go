@@ -8,7 +8,7 @@ import (
 
 // Interface that defines the recorder
 type Interface interface {
-	Record(record.Record) error
+	Record(record.Record) []error
 }
 
 // FlushInterface extends Recorder by requiring flush
