@@ -154,21 +154,12 @@ func (ss SetOfNamespaceSets) BothOverlap(n1, n2 namespaceWithRange) (NamespaceSe
 	return nil, false
 }
 
-type namespace struct {
-	Namespace string `json:"namespace"`
-	Range     string `json:"uid_range"`
-}
-
 func (ss SetOfNamespaceSets) Marshal(ctx context.Context) ([]byte, error) {
-	result := make([][]namespace, 0, len(ss))
+	result := make([][]string, 0, len(ss))
 	for _, set := range ss {
-		var overlapping []namespace
+		var overlapping []string
 		for s := range set {
-			n := namespace{
-				Namespace: s.name,
-				Range:     s.uidRange.String(),
-			}
-			overlapping = append(overlapping, n)
+			overlapping = append(overlapping, s.name)
 		}
 		result = append(result, overlapping)
 	}
