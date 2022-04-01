@@ -28,6 +28,7 @@ import (
 //   - https://pkg.go.dev/k8s.io/client-go/dynamic
 //
 // * Location in archive: config/pod/{namespace}/{pod-name}.json
+// * Id in config: clusterconfig/sap_pods
 // * Since versions:
 //   * 4.6.24+
 //   * 4.7.5+

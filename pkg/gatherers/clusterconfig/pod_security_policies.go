@@ -14,7 +14,7 @@ import (
 //
 // * Location in archive: config/psp_names.json
 // * See: docs/insights-archive-sample/config/psp_names.json
-// * Id in config: psps
+// * Id in config: clusterconfig/psps
 // * Since versions:
 //   * 4.7.33+
 //   * 4.8.12+

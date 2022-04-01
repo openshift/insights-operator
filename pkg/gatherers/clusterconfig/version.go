@@ -31,7 +31,7 @@ import (
 // * Location of events in archive: events/
 // * Location of cluster ID: config/id
 // * See: docs/insights-archive-sample/config/id
-// * Id in config: version
+// * Id in config: clusterconfig/version
 func (g *Gatherer) GatherClusterVersion(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

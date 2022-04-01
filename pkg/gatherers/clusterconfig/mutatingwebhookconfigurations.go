@@ -19,6 +19,7 @@ import (
 //   - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/mutatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
 //
 // * Location in archive: config/mutatingwebhookconfigurations
+// * Id in config: clusterconfig/mutating_webhook_configurations
 // * Since versions:
 //   * 4.7.40+
 //   * 4.8.24+

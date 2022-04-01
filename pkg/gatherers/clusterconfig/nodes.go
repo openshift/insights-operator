@@ -20,7 +20,7 @@ import (
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 //
 // * Location in archive: config/node/
-// * Id in config: nodes
+// * Id in config: clusterconfig/nodes
 func (g *Gatherer) GatherNodes(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

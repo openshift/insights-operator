@@ -21,7 +21,7 @@ import (
 // The CRD sizes above are in the raw (uncompressed) state.
 //
 // * Location in archive: config/crd/
-// * Id in config: crds
+// * Id in config: clusterconfig/crds
 func (g *Gatherer) GatherCRD(ctx context.Context) ([]record.Record, []error) {
 	crdClient, err := apixv1.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

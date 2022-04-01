@@ -57,7 +57,7 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // * Location of pod container previous logs:
 //   config/pod/{namespace}/logs/{pod}/{container}_previous.log
 // * Location of events in archive: events/
-// * Id in config: operators_pods_and_events
+// * Id in config: clusterconfig/operators_pods_and_events
 // * Spec config for CO resources since versions:
 //   * 4.6.16+
 //   * 4.7+

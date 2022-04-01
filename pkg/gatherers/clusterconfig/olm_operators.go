@@ -44,7 +44,7 @@ type csvRef struct {
 //
 // * See: docs/insights-archive-sample/config/olm_operators
 // * Location of in archive: config/olm_operators
-// * Id in config: olm_operators
+// * Id in config: clusterconfig/olm_operators
 // * Since versions:
 //   * 4.7+
 func (g *Gatherer) GatherOLMOperators(ctx context.Context) ([]record.Record, []error) {

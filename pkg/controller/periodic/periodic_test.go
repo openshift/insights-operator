@@ -48,8 +48,6 @@ func Test_Controller_Run(t *testing.T) {
 	// 2 sec delay, 5 gatherers + metadata
 	stopCh = make(chan struct{})
 	go c.Run(stopCh, 2*time.Second)
-	time.Sleep(100 * time.Millisecond)
-	assert.Len(t, mockRecorder.Records, 0)
 	time.Sleep(2 * time.Second)
 	stopCh <- struct{}{}
 	assert.Len(t, mockRecorder.Records, 6)
@@ -74,10 +72,8 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	c.configurator.Config().Interval = 1 * time.Second
 	stopCh := make(chan struct{})
 	go c.periodicTrigger(stopCh)
-	time.Sleep(1100 * time.Millisecond)
-	assert.Len(t, mockRecorder.Records, 6)
-	// 2. interval
-	time.Sleep(1100 * time.Millisecond)
+	// 2 intervals
+	time.Sleep(2200 * time.Millisecond)
 	stopCh <- struct{}{}
 	assert.Len(t, mockRecorder.Records, 12)
 	mockRecorder.Reset()

@@ -21,7 +21,7 @@ import (
 //     https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 //
 // * Location in archive: config/machineconfigpools/
-// * Id in config: machine_config_pools
+// * Id in config: clusterconfig/machine_config_pools
 // * Since versions:
 //   * 4.5.33+
 //   * 4.6+

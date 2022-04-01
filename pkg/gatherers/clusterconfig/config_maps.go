@@ -29,7 +29,7 @@ import (
 // * Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
 // * Location in older versions: config/configmaps/{configmap-name}/
 // * See: docs/insights-archive-sample/config/configmaps
-// * Id in config: config_maps
+// * Id in config: clusterconfig/config_maps
 // * Since versions:
 //   * 4.3.25+
 //   * 4.4.6+

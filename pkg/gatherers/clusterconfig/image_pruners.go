@@ -18,7 +18,7 @@ import (
 //
 // * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
 // * Location in older versions: config/imagepruner.json
-// * Id in config: image_pruners
+// * Id in config: clusterconfig/image_pruners
 func (g *Gatherer) GatherClusterImagePruner(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

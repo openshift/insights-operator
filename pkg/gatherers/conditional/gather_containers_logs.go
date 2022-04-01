@@ -16,7 +16,7 @@ import (
 // BuildGatherContainersLogs collects either current or previous containers logs for pods firing one of the configured alerts.
 //
 // * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
-// * Id in config: containers_logs
+// * Id in config: conditional/containers_logs
 // * Since versions:
 //   * 4.10+
 func (g *Gatherer) BuildGatherContainersLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl

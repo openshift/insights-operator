@@ -42,7 +42,7 @@ const (
 // in a generic fashion
 //
 // * Location in archive: config/workload_info
-// * Id in config: workload_info
+// * Id in config: workloads/workload_info
 // * Since versions:
 //   * 4.8+
 func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []error) {

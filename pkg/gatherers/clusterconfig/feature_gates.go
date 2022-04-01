@@ -18,7 +18,7 @@ import (
 //
 // * Location in archive: config/featuregate.json
 // * See: docs/insights-archive-sample/config/featuregate.json
-// * Id in config: feature_gates
+// * Id in config: clusterconfig/feature_gates
 func (g *Gatherer) GatherClusterFeatureGates(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

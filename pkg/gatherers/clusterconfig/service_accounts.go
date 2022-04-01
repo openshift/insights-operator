@@ -27,7 +27,7 @@ const maxServiceAccountsLimit = 1000
 //
 // * Location of serviceaccounts in archive: config/serviceaccounts
 // * See: docs/insights-archive-sample/config/serviceaccounts
-// * Id in config: service_accounts
+// * Id in config: clusterconfig/service_accounts
 // * Since versions:
 //   * 4.5.34+
 //   * 4.6.20+

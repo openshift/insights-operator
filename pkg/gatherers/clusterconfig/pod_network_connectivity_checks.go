@@ -21,7 +21,7 @@ import (
 // Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
 //
 // * Location in archive: config/podnetworkconnectivitychecks.json
-// * Id in config: pod_network_connectivity_checks
+// * Id in config: clusterconfig/pod_network_connectivity_checks
 // * Since versions:
 //   * 4.8+
 func (g *Gatherer) GatherPNCC(ctx context.Context) ([]record.Record, []error) {

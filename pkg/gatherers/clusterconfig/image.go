@@ -16,7 +16,7 @@ import (
 // Response see https://docs.openshift.com/container-platform/latest/rest_api/config_apis/image-config-openshift-io-v1.html#image-config-openshift-io-v1
 //
 // * Location in archive: config/image.json
-// * Id in config: image
+// * Id in config: clusterconfig/image
 // * Since versions:
 //   * 4.11+
 func (g *Gatherer) GatherClusterImage(ctx context.Context) ([]record.Record, []error) {

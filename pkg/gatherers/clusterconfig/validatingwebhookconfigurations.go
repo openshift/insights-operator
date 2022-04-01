@@ -19,6 +19,7 @@ import (
 //   - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/validatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
 //
 // * Location in archive: config/validatingwebhookconfigurations
+// * Id in config: clusterconfig/validating_webhook_configurations
 // * Since versions:
 //   * 4.7.40+
 //   * 4.8.24+

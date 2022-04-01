@@ -19,7 +19,7 @@ import (
 //
 // * Location in archive: config/infrastructure/
 // * See: docs/insights-archive-sample/config/infrastructure
-// * Id in config: infrastructures
+// * Id in config: clusterconfig/infrastructures
 func (g *Gatherer) GatherClusterInfrastructure(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
