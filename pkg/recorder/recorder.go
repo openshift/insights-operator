@@ -56,8 +56,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	// TODO: context???
-	fingerprint, err := rec.GetFingerprint(context.TODO())
+	fingerprint, err := rec.GetFingerprint()
 	if err != nil {
 		errs = append(errs, fmt.Errorf(
 			`unable to create fingerprint for record "%v": %v`, rec.GetFilename(), err,
@@ -74,8 +73,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		at = time.Now()
 	}
 
-	// TODO: handle records that are slow to capture
-	data, err := rec.Item.Marshal(context.TODO())
+	data, err := rec.Item.Marshal()
 	if err != nil {
 		errs = append(errs, err)
 		return

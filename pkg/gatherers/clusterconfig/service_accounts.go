@@ -90,7 +90,7 @@ type ServiceAccountsMarshaller struct {
 }
 
 // Marshal implements serialization of ServiceAccount
-func (a ServiceAccountsMarshaller) Marshal(_ context.Context) ([]byte, error) {
+func (a ServiceAccountsMarshaller) Marshal() ([]byte, error) {
 	// Creates map for marshal
 	sr := map[string]interface{}{}
 	st := map[string]interface{}{}

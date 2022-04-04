@@ -155,7 +155,7 @@ func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []erro
 }
 
 // Marshal implements serialization of InstallPlan
-func (a InstallPlanAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+func (a InstallPlanAnonymizer) Marshal() ([]byte, error) {
 	if a.limit == 0 {
 		a.limit = InstallPlansTopX
 	}

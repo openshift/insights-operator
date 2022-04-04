@@ -1,7 +1,6 @@
 package recorder
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -22,7 +21,7 @@ var (
 type RawReport struct{ Data string }
 
 // Marshal returns raw bytes
-func (r RawReport) Marshal(_ context.Context) ([]byte, error) {
+func (r RawReport) Marshal() ([]byte, error) {
 	return []byte(r.Data), nil
 }
 
@@ -35,7 +34,7 @@ func (r RawReport) GetExtension() string {
 type RawInvalidReport struct{}
 
 // Marshal returns raw bytes
-func (r RawInvalidReport) Marshal(_ context.Context) ([]byte, error) {
+func (r RawInvalidReport) Marshal() ([]byte, error) {
 	return nil, &json.UnsupportedTypeError{}
 }
 

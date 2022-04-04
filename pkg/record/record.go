@@ -1,8 +1,7 @@
 package record
 
 import (
-	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -23,15 +22,14 @@ type Record struct {
 }
 
 // GetFingerprint returns the fingerprint possibly using the cache
-func (r *Record) GetFingerprint(ctx context.Context) (string, error) {
+func (r *Record) GetFingerprint() (string, error) {
 	if len(r.fingerprint) == 0 {
-		content, err := r.Item.Marshal(ctx)
+		content, err := r.Item.Marshal()
 		if err != nil {
 			return "", err
 		}
 
-		// TODO: use a better algorithm? md5 can produce a lot of collisions
-		h := md5.New()
+		h := sha256.New()
 		h.Write(content)
 		r.fingerprint = hex.EncodeToString(h.Sum(nil))
 	}
@@ -49,7 +47,7 @@ func (r *Record) GetFilename() string {
 }
 
 type Marshalable interface {
-	Marshal(context.Context) ([]byte, error)
+	Marshal() ([]byte, error)
 	GetExtension() string
 }
 
@@ -57,7 +55,7 @@ type JSONMarshaller struct {
 	Object interface{}
 }
 
-func (m JSONMarshaller) Marshal(_ context.Context) ([]byte, error) {
+func (m JSONMarshaller) Marshal() ([]byte, error) {
 	return json.Marshal(m.Object)
 }
 
