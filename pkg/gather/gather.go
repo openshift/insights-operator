@@ -82,6 +82,8 @@ func CollectAndRecordGatherer(
 	rec recorder.Interface,
 	configurator configobserver.Configurator,
 ) ([]GathererFunctionReport, error) {
+	startTime := time.Now()
+
 	resultsChan, err := startGatheringConcurrently(ctx, gatherer, configurator.Config().Gather)
 	if err != nil {
 		return nil, err
@@ -91,6 +93,7 @@ func CollectAndRecordGatherer(
 
 	var allErrors []error
 	var functionReports []GathererFunctionReport
+	totalNumberOfRecords := 0
 
 	for result := range resultsChan {
 		var recordWarnings []error
@@ -156,6 +159,8 @@ func CollectAndRecordGatherer(
 			gathererName, result.FunctionName, result.TimeElapsed, len(result.Records),
 		)
 
+		totalNumberOfRecords += recordedRecs
+
 		functionReports = append(functionReports, GathererFunctionReport{
 			FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
 			Duration:     result.TimeElapsed.Milliseconds(),
@@ -165,6 +170,13 @@ func CollectAndRecordGatherer(
 			Panic:        result.Panic,
 		})
 	}
+
+	functionReports = append(functionReports, GathererFunctionReport{
+		FuncName:     gatherer.GetName(),
+		Duration:     time.Since(startTime).Milliseconds(),
+		RecordsCount: totalNumberOfRecords,
+		Errors:       utils.ErrorsToStrings(allErrors),
+	})
 
 	return functionReports, utils.SumErrors(allErrors)
 }

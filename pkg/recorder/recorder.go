@@ -192,5 +192,6 @@ func (r *Recorder) clear(records record.MemoryRecords) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.records = make(map[string]*record.MemoryRecord, len(records))
+	r.recordedFingerprints = make(map[string]string, len(records))
 	r.size = 0
 }
