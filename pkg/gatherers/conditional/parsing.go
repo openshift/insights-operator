@@ -7,15 +7,12 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func parseGatheringRules(jsonData string) ([]GatheringRule, error) {
-	var unmarshalledRules struct {
-		Version string          `json:"version"`
-		Rules   []GatheringRule `json:"rules"`
-	}
+func parseGatheringRules(jsonData string) (GatheringRules, error) {
+	var unmarshalledRules GatheringRules
 
 	err := json.Unmarshal([]byte(jsonData), &unmarshalledRules)
 	if err != nil {
-		return nil, err
+		return GatheringRules{}, err
 	}
 
 	var result []GatheringRule
@@ -29,7 +26,10 @@ func parseGatheringRules(jsonData string) ([]GatheringRule, error) {
 		result = append(result, unmarshalledRule)
 	}
 
-	return result, nil
+	// changing to correctly parsed rules
+	unmarshalledRules.Rules = result
+
+	return unmarshalledRules, nil
 }
 
 func parseGatheringFunctions(gatheringFunctions GatheringFunctions) (GatheringFunctions, error) {

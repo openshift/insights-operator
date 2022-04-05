@@ -4,6 +4,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 )
 
+// GatheringRules is a structure to hold gathering rules with their version
+type GatheringRules struct {
+	Version string          `json:"version"`
+	Rules   []GatheringRule `json:"rules"`
+}
+
 // GatheringRule is a rule consisting of conditions and gathering functions to run if all conditions are met,
 // gathering_rule.schema.json describes valid values for this struct.
 // An example of it:

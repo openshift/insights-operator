@@ -1,106 +1,196 @@
-[
-  {
-    "rule": {
-      "conditions": [
-        {
-          "type": "alert_is_firing",
-          "alert": {
-            "name": "SamplesImagestreamImportFailing"
+{
+  "version": "1.0.1",
+  "rules": [
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "APIRemovedInNextEUSReleaseInUse"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "api_request_counts_of_resource_from_alert": {
+            "alert_name": "APIRemovedInNextEUSReleaseInUse"
           }
         }
-      ],
-      "gathering_functions": {
-        "image_streams_of_namespace": {
-          "namespace": "openshift-cluster-samples-operator"
-        },
-        "logs_of_namespace": {
-          "namespace": "openshift-cluster-samples-operator",
-          "tail_lines": 100
-        }
-      }
+      },
+      "errors": null,
+      "was_triggered": false
     },
-    "errors": null,
-    "was_triggered": true
-  },
-  {
-    "rule": {
-      "conditions": [
-        {
-          "type": "alert_is_firing",
-          "alert": {
-            "name": "APIRemovedInNextEUSReleaseInUse"
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "AlertmanagerFailedReload"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "containers_logs": {
+            "alert_name": "AlertmanagerFailedReload",
+            "container": "alertmanager",
+            "tail_lines": 50
           }
         }
-      ],
-      "gathering_functions": {
-        "api_request_counts_of_resource_from_alert": {
-          "alert_name": "APIRemovedInNextEUSReleaseInUse"
-        }
-      }
+      },
+      "errors": null,
+      "was_triggered": false
     },
-    "errors": null,
-    "was_triggered": false
-  },
-  {
-    "rule": {
-      "conditions": [
-        {
-          "type": "alert_is_firing",
-          "alert": {
-            "name": "KubePodCrashLooping"
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "AlertmanagerFailedToSendAlerts"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "containers_logs": {
+            "alert_name": "AlertmanagerFailedToSendAlerts",
+            "container": "alertmanager",
+            "tail_lines": 50
           }
         }
-      ],
-      "gathering_functions": {
-        "logs_of_unhealthy_pods": {
-          "alert_name": "KubePodCrashLooping",
-          "tail_lines": 20,
-          "previous": true
-        }
-      }
+      },
+      "errors": null,
+      "was_triggered": false
     },
-    "errors": null,
-    "was_triggered": false
-  },
-  {
-    "rule": {
-      "conditions": [
-        {
-          "type": "alert_is_firing",
-          "alert": {
-            "name": "KubePodNotReady"
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "KubePodCrashLooping"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "containers_logs": {
+            "alert_name": "KubePodCrashLooping",
+            "tail_lines": 20,
+            "previous": true
           }
         }
-      ],
-      "gathering_functions": {
-        "logs_of_unhealthy_pods": {
-          "alert_name": "KubePodNotReady",
-          "tail_lines": 100,
-          "previous": false
-        }
-      }
+      },
+      "errors": null,
+      "was_triggered": false
     },
-    "errors": null,
-    "was_triggered": false
-  },
-  {
-    "rule": {
-      "conditions": [
-        {
-          "type": "alert_is_firing",
-          "alert": {
-            "name": "AlertmanagerFailedToSendAlerts"
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "KubePodNotReady"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "containers_logs": {
+            "alert_name": "KubePodNotReady",
+            "tail_lines": 100
+          },
+          "pod_definition": {
+            "alert_name": "KubePodNotReady"
           }
         }
-      ],
-      "gathering_functions": {
-        "alertmanager_logs": {
-          "alert_name": "AlertmanagerFailedToSendAlerts",
-          "tail_lines": 50
-        }
-      }
+      },
+      "errors": null,
+      "was_triggered": false
     },
-    "errors": null,
-    "was_triggered": false
-  }
-]
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "PrometheusOperatorSyncFailed"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "containers_logs": {
+            "alert_name": "PrometheusOperatorSyncFailed",
+            "container": "prometheus-operator",
+            "tail_lines": 50
+          }
+        }
+      },
+      "errors": null,
+      "was_triggered": false
+    },
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "PrometheusTargetSyncFailure"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "containers_logs": {
+            "alert_name": "PrometheusTargetSyncFailure",
+            "container": "prometheus",
+            "tail_lines": 50
+          }
+        }
+      },
+      "errors": null,
+      "was_triggered": false
+    },
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "SamplesImagestreamImportFailing"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "image_streams_of_namespace": {
+            "namespace": "openshift-cluster-samples-operator"
+          },
+          "logs_of_namespace": {
+            "namespace": "openshift-cluster-samples-operator",
+            "tail_lines": 100
+          }
+        }
+      },
+      "errors": null,
+      "was_triggered": true
+    },
+    {
+      "rule": {
+        "conditions": [
+          {
+            "type": "alert_is_firing",
+            "alert": {
+              "name": "ThanosRuleQueueIsDroppingAlerts"
+            }
+          }
+        ],
+        "gathering_functions": {
+          "containers_logs": {
+            "alert_name": "ThanosRuleQueueIsDroppingAlerts",
+            "container": "thanos-ruler",
+            "tail_lines": 50
+          }
+        }
+      },
+      "errors": null,
+      "was_triggered": false
+    }
+  ]
+}

@@ -6,16 +6,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_ParseConditionalGathererConfig(t *testing.T) {
+func Test_ParseConditionalGathererConfig(t *testing.T) { //nolint:funlen
 	config, err := parseGatheringRules("{}")
 	assert.NoError(t, err)
 	assert.Empty(t, config)
 
 	config, err = parseGatheringRules(`{"rules": [{}]}`)
 	assert.NoError(t, err)
-	assert.Len(t, config, 1)
-	assert.Nil(t, config[0].Conditions)
-	assert.Empty(t, config[0].GatheringFunctions)
+	assert.NotNil(t, config)
+
+	rules := config.Rules
+	assert.Len(t, rules, 1)
+	assert.Nil(t, rules[0].Conditions)
+	assert.Empty(t, rules[0].GatheringFunctions)
 
 	// an invalid config should be unmarshalled
 	config, err = parseGatheringRules(`{
@@ -44,9 +47,13 @@ func Test_ParseConditionalGathererConfig(t *testing.T) {
 		]
 	}`)
 	assert.NoError(t, err)
-	assert.Len(t, config, 2)
-	assert.Len(t, config[0].Conditions, 2)
-	assert.Len(t, config[0].GatheringFunctions, 2)
+	assert.NotNil(t, config)
+	assert.Equal(t, "1.0.0", config.Version)
+
+	rules = config.Rules
+	assert.Len(t, rules, 2)
+	assert.Len(t, rules[0].Conditions, 2)
+	assert.Len(t, rules[0].GatheringFunctions, 2)
 	assert.ElementsMatch(t, []ConditionWithParams{
 		{
 			Type:  AlertIsFiring,
@@ -56,7 +63,7 @@ func Test_ParseConditionalGathererConfig(t *testing.T) {
 			Type:  AlertIsFiring,
 			Alert: &AlertConditionParams{Name: "invalid alert name"},
 		},
-	}, config[0].Conditions)
+	}, rules[0].Conditions)
 	assert.Equal(t, GatheringFunctions{
 		GatherLogsOfNamespace: GatherLogsOfNamespaceParams{
 			Namespace: "openshift-something",
@@ -65,14 +72,14 @@ func Test_ParseConditionalGathererConfig(t *testing.T) {
 		GatherImageStreamsOfNamespace: GatherImageStreamsOfNamespaceParams{
 			Namespace: "invalid param",
 		},
-	}, config[0].GatheringFunctions)
+	}, rules[0].GatheringFunctions)
 
-	assert.Nil(t, config[1].Conditions)
-	assert.Empty(t, config[1].GatheringFunctions)
+	assert.Nil(t, rules[1].Conditions)
+	assert.Empty(t, rules[1].GatheringFunctions)
 
 	// but validation of an invalid config should fail
 
-	errs := validateGatheringRules(config)
+	errs := validateGatheringRules(rules)
 	assert.NotEmpty(t, errs)
 
 	// test the valid config
@@ -101,7 +108,9 @@ func Test_ParseConditionalGathererConfig(t *testing.T) {
 		]
 	}`)
 	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	assert.Equal(t, "1.0.0", config.Version)
 
-	errs = validateGatheringRules(config)
+	errs = validateGatheringRules(config.Rules)
 	assert.Empty(t, errs)
 }
