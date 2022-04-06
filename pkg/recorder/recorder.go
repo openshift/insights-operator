@@ -56,27 +56,22 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	fingerprint, err := rec.GetFingerprint()
-	if err != nil {
-		errs = append(errs, fmt.Errorf(
-			`unable to create fingerprint for record "%v": %v`, rec.GetFilename(), err,
-		))
-	}
-	klog.V(4).Infof("Recording %s with fingerprint=%s", rec.Name, fingerprint)
 	if rec.Item == nil {
 		errs = append(errs, fmt.Errorf(`empty "%s" record data. Nothing will be recorded`, rec.Name))
 		return
 	}
 
-	at := rec.Captured
-	if at.IsZero() {
-		at = time.Now()
-	}
-
-	data, err := rec.Item.Marshal()
+	data, fingerprint, err := rec.Marshal()
 	if err != nil {
 		errs = append(errs, err)
 		return
+	}
+
+	klog.V(4).Infof("Recording %s with fingerprint=%s", rec.Name, fingerprint)
+
+	at := rec.Captured
+	if at.IsZero() {
+		at = time.Now()
 	}
 
 	recordName := rec.GetFilename()
@@ -100,24 +95,31 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		return
 	}
 
-	if existingRecord, found := r.records[rec.GetFilename()]; found {
+	if existingRecord, found := r.records[memoryRecord.Name]; found {
 		errs = append(errs, fmt.Errorf(
-			`a record with the name "%v" was already recorded and had fingerprint "%v", `+
-				`overwriting with data having fingerprint "%v"`,
-			rec.GetFilename(), existingRecord.Fingerprint, fingerprint,
+			`the record %v with the same name was already recorded, overwriting with the record %v`,
+			existingRecord.Print(), memoryRecord.Print(),
 		))
+		r.size -= int64(len(existingRecord.Data))
 	}
+
+	r.size += recordSize
+	r.records[memoryRecord.Name] = memoryRecord
+
 	if existingPath, found := r.recordedFingerprints[fingerprint]; found {
+		existingRecord, found := r.records[existingPath]
+		if !found {
+			existingRecord = &record.MemoryRecord{Name: "unable to find the record"}
+		}
 		// this doesn't necessarily mean it's an error. There can be a collision after hashing
 		errs = append(errs, &types.Warning{UnderlyingValue: fmt.Errorf(
-			`a record with the same fingerprint "%v" was already recorded at path "%v", `+
-				`recording a new one at path "%v". `, fingerprint, existingPath, recordName,
+			`the record %v with the same fingerprint %v was already recorded, `+
+				`recording another one with a different path %v`,
+			existingRecord.Print(), fingerprint, memoryRecord.Print(),
 		)})
 	}
 
-	r.records[memoryRecord.Name] = memoryRecord
 	r.recordedFingerprints[fingerprint] = recordName
-	r.size += recordSize
 
 	return
 }

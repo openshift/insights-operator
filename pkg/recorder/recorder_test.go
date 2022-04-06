@@ -65,12 +65,13 @@ func newRecorder(maxArchiveSize int64, clusterBaseDomain string) Recorder {
 
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{
-		driver:         &driver,
-		interval:       interval,
-		maxAge:         interval * 6 * 24,
-		maxArchiveSize: maxArchiveSize,
-		records:        make(map[string]*record.MemoryRecord),
-		anonymizer:     anonymizer,
+		driver:               &driver,
+		interval:             interval,
+		maxAge:               interval * 6 * 24,
+		maxArchiveSize:       maxArchiveSize,
+		records:              make(map[string]*record.MemoryRecord),
+		recordedFingerprints: make(map[string]string),
+		anonymizer:           anonymizer,
 	}
 }
 
@@ -95,7 +96,7 @@ func Test_Record_Duplicated(t *testing.T) {
 		Name: mock1Name,
 		Item: RawReport{Data: "mock1"},
 	})
-	assert.Empty(t, errs)
+	assert.Len(t, errs, 2)
 	assert.Equal(t, 1, len(rec.records))
 }
 
@@ -111,12 +112,16 @@ func Test_Record_CantBeSerialized(t *testing.T) {
 
 func Test_Record_Flush(t *testing.T) {
 	rec := newRecorder(MaxArchiveSize, "")
-	for i := range []int{1, 2, 3} {
+	for i := 0; i < 3; i++ {
 		errs := rec.Record(record.Record{
 			Name: fmt.Sprintf("config/mock%d", i),
 			Item: RawReport{Data: "mockdata"},
 		})
-		assert.Empty(t, errs)
+		if i > 0 {
+			assert.NotEmpty(t, errs)
+		} else {
+			assert.Empty(t, errs)
+		}
 	}
 	err := rec.Flush()
 	assert.Nil(t, err)
@@ -166,7 +171,7 @@ func Test_Record_SizeDoesntGrowWithSameRecords(t *testing.T) {
 	assert.Empty(t, errs)
 	// record again the same record
 	errs = rec.Record(testRec)
-	assert.Empty(t, errs)
+	assert.Len(t, errs, 2)
 
 	// check that size refers only to one record data
 	assert.Equal(t, rec.size, int64(len(data)))
@@ -203,5 +208,5 @@ func Test_EmptyItemRecord(t *testing.T) {
 	errs := rec.Record(testRec)
 	assert.Len(t, errs, 1)
 	err := errs[0]
-	assert.Equal(t, err, fmt.Errorf("empty %s record data. Nothing will be recorded", testRec.Name))
+	assert.Equal(t, fmt.Errorf(`empty "%s" record data. Nothing will be recorded`, testRec.Name), err)
 }

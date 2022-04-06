@@ -17,24 +17,20 @@ type Record struct {
 	Name     string
 	Captured time.Time
 	Item     Marshalable
-
-	fingerprint string
 }
 
-// GetFingerprint returns the fingerprint possibly using the cache
-func (r *Record) GetFingerprint() (string, error) {
-	if len(r.fingerprint) == 0 {
-		content, err := r.Item.Marshal()
-		if err != nil {
-			return "", err
-		}
-
-		h := sha256.New()
-		h.Write(content)
-		r.fingerprint = hex.EncodeToString(h.Sum(nil))
+// Marshal marshals the item and returns its fingerprint
+func (r *Record) Marshal() ([]byte, string, error) {
+	content, err := r.Item.Marshal()
+	if err != nil {
+		return content, "", err
 	}
 
-	return r.fingerprint, nil
+	h := sha256.New()
+	h.Write(content)
+	fingerprint := hex.EncodeToString(h.Sum(nil))
+
+	return content, fingerprint, nil
 }
 
 // GetFilename with extension, if present

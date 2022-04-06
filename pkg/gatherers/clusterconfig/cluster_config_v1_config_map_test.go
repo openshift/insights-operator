@@ -32,7 +32,7 @@ func Test_gatherClusterConfigV1(t *testing.T) {
 	assert.Len(t, records, 1)
 	assert.Equal(t, "config/configmaps/kube-system/cluster-config-v1", records[0].Name)
 
-	data, err := records[0].Item.Marshal(context.Background())
+	data, err := records[0].Item.Marshal()
 	assert.NoError(t, err)
 
 	installConfig := `baseDomain: \"\"\nmetadata:\n  creationTimestamp: null\nplatform: {}\npullSecret: \"\"\n`

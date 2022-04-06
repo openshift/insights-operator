@@ -1,7 +1,6 @@
 package periodic
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -17,7 +16,7 @@ import (
 
 func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
-		&gather.MockGatherer{CanFail: true},
+		&gather.MockGatherer{},
 		&gather.MockCustomPeriodGatherer{Period: 999 * time.Hour},
 	}, 1*time.Hour)
 
@@ -34,7 +33,7 @@ func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 
 func Test_Controller_Run(t *testing.T) {
 	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
-		&gather.MockGatherer{CanFail: true},
+		&gather.MockGatherer{},
 	}, 1*time.Hour)
 
 	// No delay, 5 gatherers + metadata
@@ -65,7 +64,7 @@ func Test_Controller_Run(t *testing.T) {
 
 func Test_Controller_periodicTrigger(t *testing.T) {
 	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
-		&gather.MockGatherer{CanFail: true},
+		&gather.MockGatherer{},
 	}, 1*time.Hour)
 
 	// 1 sec interval, 5 gatherers + metadata
@@ -90,7 +89,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 }
 
 func Test_Controller_Sources(t *testing.T) {
-	mockGatherer := gather.MockGatherer{CanFail: true}
+	mockGatherer := gather.MockGatherer{}
 	mockCustomPeriodGatherer := gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true}
 	// 1 Gatherer ==> 1 source
 	c, _ := getMocksForPeriodicTest([]gatherers.Interface{
@@ -109,7 +108,7 @@ func Test_Controller_Sources(t *testing.T) {
 func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	mockGatherer := gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true}
 	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
-		&gather.MockGatherer{CanFail: true},
+		&gather.MockGatherer{},
 		&mockGatherer,
 	}, 1*time.Hour)
 
@@ -154,12 +153,12 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 			continue
 		}
 		metadataFound = true
-		b, err := mockRecorder.Records[i].Item.Marshal(context.Background())
+		b, err := mockRecorder.Records[i].Item.Marshal()
 		assert.NoError(t, err)
 		metaData := make(map[string]interface{})
 		err = json.Unmarshal(b, &metaData)
 		assert.NoError(t, err)
-		assert.Len(t, metaData["status_reports"].([]interface{}), 1,
+		assert.Len(t, metaData["status_reports"].([]interface{}), 2,
 			fmt.Sprintf("Only one function for %s expected ", c.gatherers[0].GetName()))
 	}
 	assert.Truef(t, metadataFound, fmt.Sprintf("%s not found in records", recorder.MetadataRecordName))

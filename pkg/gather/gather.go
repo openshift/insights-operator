@@ -100,12 +100,11 @@ func CollectAndRecordGatherer(
 		var recordErrs []error
 
 		if result.Panic != nil {
-			err := fmt.Errorf(
+			recordErrs = append(recordErrs, fmt.Errorf("panic: %v", result.Panic))
+			klog.Error(fmt.Errorf(
 				`gatherer "%v" function "%v" panicked with the error: %v`,
 				gathererName, result.FunctionName, result.Panic,
-			)
-			recordErrs = append(recordErrs, err)
-			klog.Error(err)
+			))
 			allErrors = append(allErrors, fmt.Errorf(`function "%v" panicked`, result.FunctionName))
 		}
 

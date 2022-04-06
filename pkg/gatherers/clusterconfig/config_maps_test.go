@@ -69,7 +69,7 @@ func Test_ConfigMap_Anonymizer(t *testing.T) {
 			addAnonymized := func(cmdata map[string]string, dn string, encodebase64 bool, d []byte) {
 				m := record.Marshalable(ConfigMapAnonymizer{v: d, encodeBase64: encodebase64})
 
-				res, err = m.Marshal(context.TODO())
+				res, err = m.Marshal()
 				cmdata[dn] = string(res)
 				mustNotFail(t, err, "serialization failed %+v")
 			}

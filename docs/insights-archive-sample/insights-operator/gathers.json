@@ -1,269 +1,446 @@
 {
   "status_reports": [
     {
-      "name": "clusterconfig/metrics",
-      "duration_in_ms": 6,
-      "records_count": 0,
-      "errors": [
-        "Get \"https://prometheus-k8s.openshift-monitoring.svc:9091/federate?match%5B%5D=etcd_object_counts&match%5B%5D=cluster_installer&match%5B%5D=namespace%3Acontainer_cpu_usage_seconds_total%3Asum_rate&match%5B%5D=namespace%3Acontainer_memory_usage_bytes%3Asum\": dial tcp 127.0.0.2:9091: connect: connection refused"
-      ],
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/networks",
-      "duration_in_ms": 215,
-      "records_count": 1,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/container_runtime_configs",
-      "duration_in_ms": 214,
-      "records_count": 0,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/sap_datahubs",
-      "duration_in_ms": 215,
-      "records_count": 0,
-      "errors": [
-        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ],
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/sap_config",
-      "duration_in_ms": 216,
-      "records_count": 0,
-      "errors": [
-        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ],
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/ingress",
-      "duration_in_ms": 216,
-      "records_count": 1,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/sap_pods",
-      "duration_in_ms": 422,
-      "records_count": 0,
-      "errors": [
-        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ],
-      "panic": null
-    },
-    {
       "name": "clusterconfig/olm_operators",
-      "duration_in_ms": 422,
+      "duration_in_ms": 19,
       "records_count": 0,
-      "errors": [
-        "operators.operators.coreos.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"operators\" in API group \"operators.coreos.com\" at the cluster scope"
-      ],
+      "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
-      "name": "clusterconfig/sap_license_management_logs",
-      "duration_in_ms": 424,
-      "records_count": 0,
-      "errors": [
-        "datahubs.installers.datahub.sap.com is forbidden: User \"system:serviceaccount:openshift-insights:gather\" cannot list resource \"datahubs\" in API group \"installers.datahub.sap.com\" at the cluster scope"
-      ],
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/authentication",
-      "duration_in_ms": 730,
+      "name": "clusterconfig/silenced_alerts",
+      "duration_in_ms": 26,
       "records_count": 1,
       "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
-      "name": "clusterconfig/netnamespaces",
-      "duration_in_ms": 733,
+      "name": "clusterconfig/image",
+      "duration_in_ms": 32,
       "records_count": 1,
       "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/image_pruners",
-      "duration_in_ms": 734,
-      "records_count": 1,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/oauths",
-      "duration_in_ms": 734,
-      "records_count": 1,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/infrastructures",
-      "duration_in_ms": 735,
-      "records_count": 1,
-      "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
       "name": "clusterconfig/certificate_signing_requests",
-      "duration_in_ms": 932,
+      "duration_in_ms": 20,
       "records_count": 0,
       "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
-      "name": "clusterconfig/proxies",
-      "duration_in_ms": 934,
+      "name": "clusterconfig/sap_pods",
+      "duration_in_ms": 24,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/netnamespaces",
+      "duration_in_ms": 18,
       "records_count": 1,
       "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/image_registries",
-      "duration_in_ms": 940,
-      "records_count": 1,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/pdbs",
-      "duration_in_ms": 1548,
-      "records_count": 2,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/feature_gates",
-      "duration_in_ms": 2163,
-      "records_count": 1,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/machine_config_pools",
-      "duration_in_ms": 2782,
-      "records_count": 2,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/machine_sets",
-      "duration_in_ms": 3188,
-      "records_count": 3,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/crds",
-      "duration_in_ms": 3596,
-      "records_count": 2,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/host_subnets",
-      "duration_in_ms": 3596,
-      "records_count": 6,
-      "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
       "name": "clusterconfig/config_maps",
-      "duration_in_ms": 3804,
-      "records_count": 10,
+      "duration_in_ms": 52,
+      "records_count": 12,
       "errors": [
         "configmaps \"cluster-monitoring-config\" not found"
+      ],
+      "warnings": [
+        "warning: the record MemoryRecord{Name: \"config/configmaps/openshift-config/admin-kubeconfig-client-ca/ca-bundle.crt\", At: \"2022-04-06 13:37:33.151034204 +0000 UTC m=+1.418822848\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"} with the same fingerprint 34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d was already recorded, recording another one with a different path MemoryRecord{Name: \"config/configmaps/openshift-config/etcd-ca-bundle/ca-bundle.crt\", At: \"2022-04-06 13:37:33.151044784 +0000 UTC m=+1.418833420\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"}",
+        "warning: the record MemoryRecord{Name: \"config/configmaps/openshift-config/etcd-ca-bundle/ca-bundle.crt\", At: \"2022-04-06 13:37:33.151044784 +0000 UTC m=+1.418833420\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"} with the same fingerprint 34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d was already recorded, recording another one with a different path MemoryRecord{Name: \"config/configmaps/openshift-config/etcd-metric-serving-ca/ca-bundle.crt\", At: \"2022-04-06 13:37:33.151107046 +0000 UTC m=+1.418895686\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"}",
+        "warning: the record MemoryRecord{Name: \"config/configmaps/openshift-config/etcd-metric-serving-ca/ca-bundle.crt\", At: \"2022-04-06 13:37:33.151107046 +0000 UTC m=+1.418895686\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"} with the same fingerprint 34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d was already recorded, recording another one with a different path MemoryRecord{Name: \"config/configmaps/openshift-config/etcd-serving-ca/ca-bundle.crt\", At: \"2022-04-06 13:37:33.151150915 +0000 UTC m=+1.418939553\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"}",
+        "warning: the record MemoryRecord{Name: \"config/configmaps/openshift-config/openshift-install/invoker\", At: \"2022-04-06 13:37:33.151246164 +0000 UTC m=+1.419034800\", len(Data): 4, Fingerprint: \"04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb\"} with the same fingerprint 04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb was already recorded, recording another one with a different path MemoryRecord{Name: \"config/configmaps/openshift-config/openshift-install-manifests/invoker\", At: \"2022-04-06 13:37:33.151250155 +0000 UTC m=+1.419038791\", len(Data): 4, Fingerprint: \"04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb\"}",
+        "warning: the record MemoryRecord{Name: \"config/configmaps/openshift-config/openshift-install/version\", At: \"2022-04-06 13:37:33.151242512 +0000 UTC m=+1.419031148\", len(Data): 7, Fingerprint: \"0b1a3f6d3f482ca278248842aa3a3b6e20f421b3dfc6b7e8803dc4a3b90bd15c\"} with the same fingerprint 0b1a3f6d3f482ca278248842aa3a3b6e20f421b3dfc6b7e8803dc4a3b90bd15c was already recorded, recording another one with a different path MemoryRecord{Name: \"config/configmaps/openshift-config/openshift-install-manifests/version\", At: \"2022-04-06 13:37:33.151275632 +0000 UTC m=+1.419064278\", len(Data): 7, Fingerprint: \"0b1a3f6d3f482ca278248842aa3a3b6e20f421b3dfc6b7e8803dc4a3b90bd15c\"}",
+        "warning: the record MemoryRecord{Name: \"config/configmaps/openshift-config/etcd-serving-ca/ca-bundle.crt\", At: \"2022-04-06 13:37:33.151150915 +0000 UTC m=+1.418939553\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"} with the same fingerprint 34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d was already recorded, recording another one with a different path MemoryRecord{Name: \"config/configmaps/openshift-config/openshift-service-ca.crt/service-ca.crt\", At: \"2022-04-06 13:37:33.151299674 +0000 UTC m=+1.419088321\", len(Data): 65, Fingerprint: \"34cdf5d36d45a9e3ee7c2be31546e3d937ae4ebf144ac07b0210c06a1610a94d\"}"
       ],
       "panic": null
     },
     {
-      "name": "clusterconfig/operators_pods_and_events",
-      "duration_in_ms": 3808,
-      "records_count": 0,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/version",
-      "duration_in_ms": 4006,
-      "records_count": 3,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/nodes",
-      "duration_in_ms": 4006,
-      "records_count": 6,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/openshift_apiserver_operator_logs",
-      "duration_in_ms": 4418,
-      "records_count": 0,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/openshift_sdn_controller_logs",
-      "duration_in_ms": 4547,
-      "records_count": 0,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/container_images",
-      "duration_in_ms": 4684,
-      "records_count": 8,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/openshift_authentication_logs",
-      "duration_in_ms": 4831,
-      "records_count": 0,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/openshift_sdn_logs",
-      "duration_in_ms": 6768,
-      "records_count": 0,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/operators",
-      "duration_in_ms": 8815,
-      "records_count": 31,
-      "errors": null,
-      "panic": null
-    },
-    {
-      "name": "clusterconfig/install_plans",
-      "duration_in_ms": 14242,
+      "name": "clusterconfig/psps",
+      "duration_in_ms": 34,
       "records_count": 1,
       "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/operators_pods_and_events",
+      "duration_in_ms": 96,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/oauths",
+      "duration_in_ms": 14,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/networks",
+      "duration_in_ms": 13,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/ingress",
+      "duration_in_ms": 13,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/host_subnets",
+      "duration_in_ms": 20,
+      "records_count": 6,
+      "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
       "name": "clusterconfig/service_accounts",
-      "duration_in_ms": 14854,
+      "duration_in_ms": 11007,
       "records_count": 1,
       "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/validating_webhook_configurations",
+      "duration_in_ms": 15,
+      "records_count": 5,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/scheduler_logs",
+      "duration_in_ms": 617,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig",
+      "duration_in_ms": 11008,
+      "records_count": 148,
+      "errors": [
+        "function \"config_maps\" failed with an error"
+      ],
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "workloads",
+      "duration_in_ms": 7451,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/machine_config_pools",
+      "duration_in_ms": 32,
+      "records_count": 2,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/node_logs",
+      "duration_in_ms": 326,
+      "records_count": 3,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/machine_configs",
+      "duration_in_ms": 64,
+      "records_count": 10,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/container_runtime_configs",
+      "duration_in_ms": 22,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/metrics",
+      "duration_in_ms": 5,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
       "name": "workloads/workload_info",
-      "duration_in_ms": 16074,
+      "duration_in_ms": 7450,
       "records_count": 1,
       "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/schedulers",
+      "duration_in_ms": 17,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/machine_sets",
+      "duration_in_ms": 30,
+      "records_count": 3,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/pod_network_connectivity_checks",
+      "duration_in_ms": 56,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/authentication",
+      "duration_in_ms": 17,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/image_registries",
+      "duration_in_ms": 22,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/sap_config",
+      "duration_in_ms": 35,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "conditional/image_streams_of_namespace/namespace=openshift-cluster-samples-operator",
+      "duration_in_ms": 6,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/sap_license_management_logs",
+      "duration_in_ms": 1,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/feature_gates",
+      "duration_in_ms": 15,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/machine_autoscalers",
+      "duration_in_ms": 28,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/sap_datahubs",
+      "duration_in_ms": 12,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_sdn_logs",
+      "duration_in_ms": 607,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/kube_controller_manager_logs",
+      "duration_in_ms": 1119,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "conditional/logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100",
+      "duration_in_ms": 17,
+      "records_count": 2,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/dvo_metrics",
+      "duration_in_ms": 29,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/jaegers",
+      "duration_in_ms": 11,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "conditional",
+      "duration_in_ms": 146,
+      "records_count": 3,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/infrastructures",
+      "duration_in_ms": 20,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/nodes",
+      "duration_in_ms": 16,
+      "records_count": 6,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/pdbs",
+      "duration_in_ms": 24,
+      "records_count": 16,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/proxies",
+      "duration_in_ms": 22,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_authentication_logs",
+      "duration_in_ms": 159,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_apiserver_operator_logs",
+      "duration_in_ms": 30,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_sdn_controller_logs",
+      "duration_in_ms": 204,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/crds",
+      "duration_in_ms": 62,
+      "records_count": 2,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/operators",
+      "duration_in_ms": 2166,
+      "records_count": 50,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/image_pruners",
+      "duration_in_ms": 48,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/container_images",
+      "duration_in_ms": 165,
+      "records_count": 9,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/install_plans",
+      "duration_in_ms": 10245,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/cost_management_metrics_configs",
+      "duration_in_ms": 24,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
@@ -271,24 +448,51 @@
       "duration_in_ms": 0,
       "records_count": 1,
       "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
-      "name": "conditional/image_stream_definitions_of_namespace/namespace=openshift-cluster-samples-operator",
-      "duration_in_ms": 135,
+      "name": "clusterconfig/machine_healthchecks",
+      "duration_in_ms": 46,
       "records_count": 1,
       "errors": null,
+      "warnings": null,
       "panic": null
     },
     {
-      "name": "conditional/logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100",
-      "duration_in_ms": 498,
+      "name": "clusterconfig/mutating_webhook_configurations",
+      "duration_in_ms": 14,
       "records_count": 2,
       "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openshift_logging",
+      "duration_in_ms": 3,
+      "records_count": 0,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/tsdb_status",
+      "duration_in_ms": 48,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/version",
+      "duration_in_ms": 79,
+      "records_count": 2,
+      "errors": null,
+      "warnings": null,
       "panic": null
     }
   ],
-  "memory_alloc_bytes": 17411816,
-  "uptime_seconds": 74.851,
+  "memory_alloc_bytes": 20575264,
+  "uptime_seconds": 19.807,
   "is_global_obfuscation_enabled": false
 }

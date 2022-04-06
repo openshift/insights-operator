@@ -117,7 +117,7 @@ func Test_InstallPlans_Gather(t *testing.T) {
 				// copy to new anonymizer with limited max
 				m = InstallPlanAnonymizer{limit: 1, total: m.total, v: m.v}
 			}
-			b, _ := m.Marshal(context.Background())
+			b, _ := m.Marshal()
 			sb := string(b)
 			if sb != test.exp {
 				t.Fatalf("unexpected installplan exp: %s got: %s", test.exp, sb)

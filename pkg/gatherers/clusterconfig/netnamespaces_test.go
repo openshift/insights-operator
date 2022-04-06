@@ -38,7 +38,7 @@ func Test_NetNamespaces_Gather(t *testing.T) {
 		t.Fatalf("unexpected number or records %d", len(rec))
 	}
 	it1 := rec[0].Item
-	it1Bytes, err := it1.Marshal(context.TODO())
+	it1Bytes, err := it1.Marshal()
 	if err != nil {
 		t.Fatalf("unable to marshal: %v", err)
 	}

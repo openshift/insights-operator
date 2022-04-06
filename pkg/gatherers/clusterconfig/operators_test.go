@@ -44,7 +44,7 @@ func Test_Operators_GatherClusterOperators(t *testing.T) {
 		return
 	}
 
-	item, _ := records[0].Item.Marshal(context.TODO())
+	item, _ := records[0].Item.Marshal()
 	var gatheredCO configv1.ClusterOperator
 	openshiftCodec := openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
 	_, _, err = openshiftCodec.Decode(item, nil, &gatheredCO)

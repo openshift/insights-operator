@@ -202,7 +202,7 @@ func Test_ImageRegistry_Gather(t *testing.T) {
 				return
 			}
 			item := records[0].Item
-			_, err := item.Marshal(context.TODO())
+			_, err := item.Marshal()
 			if err != nil {
 				t.Fatalf("unable to marshal config: %v", err)
 			}
