@@ -25,13 +25,13 @@ type namespaceWithRange struct {
 }
 
 // IsOverlappingWith checks if the UIDRange is overlapping with the provided one
-func (u *uidRange) IsOverlappingWith(r uidRange) bool {
+func (u uidRange) IsOverlappingWith(r uidRange) bool {
 	uSum := u.starting + u.length
 	rSum := r.starting + r.length
 	return (uSum > r.starting && uSum <= rSum) || (rSum > u.starting && rSum <= uSum)
 }
 
-func (u *uidRange) String() string {
+func (u uidRange) String() string {
 	return fmt.Sprintf("%d/%d", u.starting, u.length)
 }
 
