@@ -539,6 +539,20 @@ Relevant OpenShift API docs:
   * 4.10+
 
 
+## NamespacesWithOverlappingUIDs
+
+gathers namespaces with overlapping UID ranges
+
+The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/namespace.go
+Response is an array of arrays of namespaces with overlapping UIDs. Each namespace is represented by its name and the UID range value
+from the "openshift.io/sa.scc.uid-range" annotation
+
+* Location in archive: config/namespaces_with_overlapping_uids
+* Id in config: clusterconfig/overlapping_namespace_uids
+* Since versions:
+  * 4.11+
+
+
 ## NetNamespace
 
 collects NetNamespaces networking information
