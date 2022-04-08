@@ -18,6 +18,7 @@ import (
 // * Location in archive: config/image.json
 // * Id in config: clusterconfig/image
 // * Since versions:
+//   * 4.10.8
 //   * 4.11+
 func (g *Gatherer) GatherClusterImage(ctx context.Context) ([]record.Record, []error) {
 	configCli, err := configv1client.NewForConfig(g.gatherKubeConfig)
