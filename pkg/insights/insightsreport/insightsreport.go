@@ -50,9 +50,9 @@ var (
 	// number of pulling report retries
 	retryThreshold = 2
 
-	// insightsAnalysisTime contains time of the last Insights gathering
-	insightsAnalysisTime = metrics.NewGauge(&metrics.GaugeOpts{
-		Name: "insightsclient_analysis_time",
+	// insightsLastGatherTime contains time of the last Insights data gathering
+	insightsLastGatherTime = metrics.NewGauge(&metrics.GaugeOpts{
+		Name: "insightsclient_last_gather_time",
 	})
 )
 
@@ -61,7 +61,7 @@ func init() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = legacyregistry.Register(insightsAnalysisTime)
+	err = legacyregistry.Register(insightsLastGatherTime)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -286,8 +286,8 @@ func updateInsightsMetrics(report SmartProxyReport) {
 
 	t, err := time.Parse(time.RFC3339, string(report.Meta.GatheredAt))
 	if err != nil {
-		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsAnalysisTime.Name, err)
+		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTime.Name, err)
 		return
 	}
-	insightsAnalysisTime.Set(float64(t.Unix()))
+	insightsLastGatherTime.Set(float64(t.Unix()))
 }
