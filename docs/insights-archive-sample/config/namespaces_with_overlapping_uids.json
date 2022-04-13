@@ -1,36 +1,16 @@
 [
     [
-        {
-            "namespace": "test-2",
-            "uid_range": "1000670000/10000"
-        },
-        {
-            "namespace": "test-3",
-            "uid_range": "1000670000/7000"
-        },
-        {
-            "namespace": "test-5",
-            "uid_range": "1000676000/2000"
-        }
+        "openshift",
+        "test-1",
+        "test-2"
     ],
     [
-        {
-            "namespace": "test-4",
-            "uid_range": "1000679000/2000"
-        },
-        {
-            "namespace": "test-2",
-            "uid_range": "1000670000/10000"
-        }
+        "openshift-ingress-canary",
+        "test-3"
     ],
     [
-        {
-            "namespace": "test-6",
-            "uid_range": "1000710000/10000"
-        },
-        {
-            "namespace": "test-7",
-            "uid_range": "1000715000/10000"
-        }
+        "test-4",
+        "test-5",
+        "test-6"
     ]
 ]
