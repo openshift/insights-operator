@@ -154,7 +154,7 @@ func (ss SetOfNamespaceSets) BothOverlap(n1, n2 namespaceWithRange) (NamespaceSe
 	return nil, false
 }
 
-func (ss SetOfNamespaceSets) Marshal(ctx context.Context) ([]byte, error) {
+func (ss SetOfNamespaceSets) Marshal() ([]byte, error) {
 	result := make([][]string, 0, len(ss))
 	for _, set := range ss {
 		var overlapping []string
