@@ -89,7 +89,7 @@ func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
 
 	// there's no cluster transfer for the cluster - HTTP 204
 	if len(data) == 0 {
-		klog.Info("no available cluster transfer")
+		klog.Info("no available accepted cluster transfer")
 		c.updateStatus(true, "no cluster transfer", "NoData", nil)
 		return
 	}
@@ -104,30 +104,27 @@ func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
 	c.checkCTListAndOptionallyUpdatePS(ctList)
 }
 
-// checkCTListAndOptionallyUpdatePS tries to find an accepted cluster transfer in the
-// provided `ClusterTranferList`. If there is not any accepted cluster transfer then
-// update the controller status and return. If there is some accepted cluster transfer then
-// check if the `pull-secret`` needs to be updated. If the `pull-secret` needs to be updated then
+// checkCTListAndOptionallyUpdatePS checks the provided cluster transfer list length,
+// If there is more than 1 accepted cluster transfer then log the message, update the controller status
+// and do nothing. If there is only one accepted cluster transfer then
+// check if the `pull-secret` needs to be updated. If the `pull-secret` needs to be updated then
 // update it and update the controller status, otherwise just update the controller status.
 func (c *Controller) checkCTListAndOptionallyUpdatePS(ctList *clusterTransferList) {
-	acceptedCt, ok := findAcceptedClusterTransfer(*ctList)
-	// there is no accepted cluster transfer
-	if !ok {
-		if len(ctList.Transfers) == 1 {
-			msg := fmt.Sprintf("there is one cluster transfer %s with %s status", ctList.Transfers[0].ID, ctList.Transfers[0].Status)
-			klog.Infof(msg)
-			c.updateStatus(true, msg, ctList.Transfers[0].Status, nil)
-			return
-		}
-		if len(ctList.Transfers) > 1 {
-			msg := "there are more non-accepted cluster transfers"
-			klog.Infof(msg)
-			c.updateStatus(true, msg, "MultipleNonAcceptedClusterTransfers", nil)
-			return
-		}
+	if ctList.Total > 1 {
+		msg := "there are more accepted cluster transfers. The pull-secret will not be updated!"
+		klog.Infof(msg)
+		c.updateStatus(true, msg, "MoreAcceptedClusterTransfers", nil)
 		return
 	}
-	newPullSecret := []byte(acceptedCt.Secret)
+	// this should not happen. This is just safe check
+	if len(ctList.Transfers) != 1 {
+		msg := "unexpected number of cluster transfers received from the API"
+		klog.Infof(msg)
+		c.updateStatus(true, msg, "UnexpectedData", nil)
+		return
+	}
+
+	newPullSecret := []byte(ctList.Transfers[0].Secret)
 	var statusMsg, reason string
 	// check if the pull-secret needs to be updated
 	updating, err := c.isUpdateRequired(newPullSecret)
@@ -300,15 +297,4 @@ func unmarhallResponseData(data []byte) (*clusterTransferList, error) {
 		return nil, err
 	}
 	return &ctList, nil
-}
-
-// findAcceptedClusterTransfer tries to find first accepted cluster transfer in the provided
-// cluster transfer list
-func findAcceptedClusterTransfer(ctList clusterTransferList) (*clusterTransfer, bool) {
-	for i := range ctList.Transfers {
-		if ctList.Transfers[i].Status == "accepted" {
-			return &ctList.Transfers[i], true
-		}
-	}
-	return nil, false
 }

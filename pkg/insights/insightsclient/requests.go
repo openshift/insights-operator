@@ -249,7 +249,7 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 
 // RecvClusterTransfer performs a request to the OCM cluster transfer API.
 // It is a HTTP GET request with the `search` query parameter limiting the result
-// only for the one cluster.
+// only for the one cluster and only for the `accepted` cluster transfers.
 func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	cv, err := c.getClusterVersion()
 	if err != nil {
@@ -267,7 +267,7 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 		return nil, err
 	}
 	q := req.URL.Query()
-	searchQuery := fmt.Sprintf("cluster_uuid is '%s'", cv.Spec.ClusterID)
+	searchQuery := fmt.Sprintf("cluster_uuid is '%s' and status is 'accepted'", cv.Spec.ClusterID)
 	q.Add("search", searchQuery)
 	req.URL.RawQuery = q.Encode()
 	req.Header.Set("Content-Type", "application/json")

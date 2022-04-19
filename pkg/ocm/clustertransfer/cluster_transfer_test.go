@@ -96,15 +96,15 @@ func Test_ClusterTransfer_RequestDataAndUpdateSecret(t *testing.T) {
 		updatedPullSecretDataFilePath string
 	}{
 		{
-			name:                        "pending cluster transfer does not change pull-secret value",
+			name:                        "more accepted cluster transfers do not change pull-secret value",
 			pullSecretDataFilePath:      "test-data/test-pull-secret.json",
-			clusterTransferDataFilePath: "test-data/pending-cluster-transfer.json",
+			clusterTransferDataFilePath: "test-data/more-cluster-transfers.json",
 			expectedSummary: controllerstatus.Summary{
 				Operation: controllerstatus.PullingClusterTransfer,
 				Healthy:   true,
-				Reason:    "pending",
+				Reason:    "MoreAcceptedClusterTransfers",
 				Count:     1,
-				Message:   "there is one cluster transfer test-id with pending status"},
+				Message:   "there are more accepted cluster transfers. The pull-secret will not be updated!"},
 			// no update expected so the same file
 			updatedPullSecretDataFilePath: "test-data/test-pull-secret.json",
 		},
