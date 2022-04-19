@@ -17,8 +17,8 @@ spec:
       regex: etcd_(debugging|disk|request|server).*
       sourceLabels:
       - __name__
-    port: https
-    scheme: https
+    port: metrics
+    scheme: http
     tlsConfig:
       caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
       serverName: metrics.openshift-insights.svc
