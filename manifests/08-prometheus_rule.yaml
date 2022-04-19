@@ -29,4 +29,12 @@ spec:
       for: 5m
       labels:
         severity: info
-        
+    - alert: InsightsRecommendationActive
+      annotations:
+        summary: An Insights recommendation is active for this cluster.
+        description: 'Insights recommendation "{{ $labels.description }}" with total risk "{{ $labels.total_risk }}" was detected on the cluster. More information is available at {{ $labels.info_link }}.'
+      expr: |
+       insights_recommendation_active == 1
+      for: 5m
+      labels:
+        severity: info

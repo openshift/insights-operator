@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/insights/types"
 )
 
 // Controller gathers the report from Smart Proxy
@@ -24,13 +25,13 @@ type Controller struct {
 
 	configurator          configobserver.Configurator
 	client                *insightsclient.Client
-	LastReport            SmartProxyReport
+	LastReport            types.SmartProxyReport
 	archiveUploadReporter <-chan struct{}
 }
 
 // Response represents the Smart Proxy report response structure
 type Response struct {
-	Report SmartProxyReport `json:"report"`
+	Report types.SmartProxyReport `json:"report"`
 }
 
 // InsightsReporter represents an object that can notify about archive uploading
@@ -246,10 +247,12 @@ func (c *Controller) Run(ctx context.Context) {
 }
 
 // updateInsightsMetrics update the Prometheus metrics from a report
-func updateInsightsMetrics(report SmartProxyReport) {
+func updateInsightsMetrics(report types.SmartProxyReport) {
 	var critical, important, moderate, low, total int
 
 	total = report.Meta.Count
+
+	activeRecommendations := []types.InsightsRecommendation{}
 
 	for _, rule := range report.Data {
 		switch rule.TotalRisk {
@@ -262,7 +265,38 @@ func updateInsightsMetrics(report SmartProxyReport) {
 		case 4:
 			critical++
 		}
+
+		if rule.Disabled {
+			continue
+		}
+
+		extraDataMap, ok := rule.TemplateData.(map[string]interface{})
+		if !ok {
+			klog.Error("Unable to convert the TemplateData of rule %q in an Insights report to a map", rule.RuleID)
+			continue
+		}
+
+		errorKeyField, exists := extraDataMap["error_key"]
+		if !exists {
+			klog.Error("TemplateData of rule %q does not contain error_key", rule.RuleID)
+			continue
+		}
+
+		errorKeyStr, ok := errorKeyField.(string)
+		if !ok {
+			klog.Error("The error_key of TemplateData of rule %q is not a string", rule.RuleID)
+			continue
+		}
+
+		activeRecommendations = append(activeRecommendations, types.InsightsRecommendation{
+			RuleID:      rule.RuleID,
+			ErrorKey:    errorKeyStr,
+			Description: rule.Description,
+			TotalRisk:   rule.TotalRisk,
+		})
 	}
+
+	insights.RecommendationCollector.SetActiveRecommendations(activeRecommendations)
 
 	insightsStatus.WithLabelValues("low").Set(float64(low))
 	insightsStatus.WithLabelValues("moderate").Set(float64(moderate))
