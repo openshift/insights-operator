@@ -118,12 +118,6 @@ github.com/openshift/api/security/v1
 # github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3
 ## explicit
 github.com/openshift/build-machinery-go/make
-github.com/openshift/build-machinery-go/make/lib
-github.com/openshift/build-machinery-go/make/targets
-github.com/openshift/build-machinery-go/make/targets/golang
-github.com/openshift/build-machinery-go/make/targets/openshift
-github.com/openshift/build-machinery-go/make/targets/openshift/operator
-github.com/openshift/build-machinery-go/scripts
 # github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
 ## explicit
 github.com/openshift/client-go/authorization/clientset/versioned
@@ -190,6 +184,7 @@ github.com/pkg/profile
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.11.0
+## explicit
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp

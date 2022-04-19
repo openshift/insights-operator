@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/component-base/metrics"
-	"k8s.io/component-base/metrics/legacyregistry"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
+	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Controller gathers the report from Smart Proxy
@@ -41,7 +41,7 @@ type InsightsReporter interface {
 var (
 
 	// insightsStatus contains a metric with the latest report information
-	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{
+	insightsStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "health",
 		Subsystem: "statuses",
 		Name:      "insights",
@@ -264,10 +264,7 @@ func updateInsightsMetrics(report SmartProxyReport) {
 }
 
 func init() {
-	err := legacyregistry.Register(insightsStatus)
-	if err != nil {
-		fmt.Println(err)
-	}
+	insights.RegisterMetricCollectors(insightsStatus)
 
 	insightsStatus.WithLabelValues("low").Set(float64(-1))
 	insightsStatus.WithLabelValues("moderate").Set(float64(-1))

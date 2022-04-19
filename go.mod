@@ -13,6 +13,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
 	github.com/openshift/installer v0.9.0-master.0.20191219195746-103098955ced
 	github.com/openshift/library-go v0.0.0-20220110124235-d70e915b42bd
+	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.28.0
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
