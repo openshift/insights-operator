@@ -90,6 +90,7 @@ Response see https://docs.openshift.com/container-platform/latest/rest_api/confi
 * Location in archive: config/image.json
 * Id in config: clusterconfig/image
 * Since versions:
+  * 4.10.8
   * 4.11+
 
 
@@ -398,6 +399,7 @@ Response see:
 
 * Location in archive: config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log
 * Since versions:
+  * 4.9.27
   * 4.10.6
   * 4.11+
 
