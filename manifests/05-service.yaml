@@ -13,10 +13,10 @@ metadata:
   namespace: openshift-insights
 spec:
   ports:
-  - name: metrics
+  - name: https
     port: 443
     protocol: TCP
-    targetPort: 8080
+    targetPort: 8443
   selector:
     app: insights-operator
   type: ClusterIP
