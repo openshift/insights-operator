@@ -93,25 +93,22 @@ func CollectAndRecordGatherer(
 		}
 
 		for _, err := range result.Errs {
-			errStr := fmt.Sprintf(
+			errStr := fmt.Errorf(
 				"gatherer %v's function %v failed with error: %v",
-				gathererName, result.FunctionName, err,
-			)
-
+				gathererName, result.FunctionName, err)
 			if result.IgnoreErrors {
 				klog.Error(errStr)
 			} else {
-				errs = append(errs, fmt.Errorf(errStr))
+				errs = append(errs, errStr)
 			}
 		}
 		recordedRecs := 0
 		for _, r := range result.Records {
 			if err := rec.Record(r); err != nil {
-				recErr := fmt.Errorf(
+				result.Errs = append(result.Errs, fmt.Errorf(
 					"unable to record gatherer %v function %v' result %v because of error: %v",
 					gathererName, result.FunctionName, r.Name, err,
-				)
-				result.Errs = append(result.Errs, recErr)
+				))
 				continue
 			}
 			recordedRecs++
