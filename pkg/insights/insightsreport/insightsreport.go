@@ -9,7 +9,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/component-base/metrics"
-	"k8s.io/component-base/metrics/legacyregistry"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
@@ -57,23 +56,6 @@ var (
 		Name: "insightsclient_last_gather_time",
 	})
 )
-
-func init() {
-	err := legacyregistry.Register(insightsStatus)
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = legacyregistry.Register(insightsLastGatherTime)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	insightsStatus.WithLabelValues("low").Set(float64(-1))
-	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
-	insightsStatus.WithLabelValues("important").Set(float64(-1))
-	insightsStatus.WithLabelValues("critical").Set(float64(-1))
-	insightsStatus.WithLabelValues("total").Set(float64(-1))
-}
 
 // New initializes and returns a Gatherer
 func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter) *Controller {
@@ -295,7 +277,7 @@ func updateInsightsMetrics(report SmartProxyReport) {
 }
 
 func init() {
-	insights.RegisterMetricCollectors(insightsStatus)
+	insights.RegisterMetricCollectors(insightsStatus, insightsLastGatherTime)
 
 	insightsStatus.WithLabelValues("low").Set(float64(-1))
 	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
