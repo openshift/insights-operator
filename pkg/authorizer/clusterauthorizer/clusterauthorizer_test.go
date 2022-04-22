@@ -8,8 +8,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/openshift/insights-operator/pkg/config"
 	"golang.org/x/net/http/httpproxy"
+
+	"github.com/openshift/insights-operator/pkg/config"
 )
 
 // nonCachedProxyFromEnvironment creates Proxier if Proxy is set. It uses always fresh Env
@@ -84,9 +85,9 @@ func Test_Proxy(tt *testing.T) {
 	for _, tcase := range testCases {
 		tc := tcase
 		tt.Run(tc.Name, func(t *testing.T) {
-			// do not use parallel here
 			for k, v := range tc.EnvValues {
-				defer SafeRestoreEnv(k)()
+				// do not use parallel here
+				defer SafeRestoreEnv(k)() // nolint: gocritic
 				// nil will indicate the need to unset Env
 				if v != nil {
 					vv := v.(string)
