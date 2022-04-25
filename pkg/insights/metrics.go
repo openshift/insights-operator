@@ -22,9 +22,7 @@ func init() {
 // functions only, because it uses the MustRegister method, and therefore panics
 // in case of an error.
 func RegisterMetricCollectors(collectors ...prometheus.Collector) {
-	for _, c := range collectors {
-		insightsMetricsRegistry.MustRegister(c)
-	}
+	insightsMetricsRegistry.MustRegister(collectors...)
 }
 
 // Starts an HTTP Prometheus server for the Insights metrics registry.

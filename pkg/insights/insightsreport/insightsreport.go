@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/component-base/metrics"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
@@ -39,8 +38,11 @@ type InsightsReporter interface {
 	ArchiveUploaded() <-chan struct{}
 }
 
-var (
+const (
+	insightsLastGatherTimeName = "insights_last_gather_time"
+)
 
+var (
 	// insightsStatus contains a metric with the latest report information
 	insightsStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "health",
@@ -52,8 +54,8 @@ var (
 	retryThreshold = 2
 
 	// insightsLastGatherTime contains time of the last Insights data gathering
-	insightsLastGatherTime = metrics.NewGauge(&metrics.GaugeOpts{
-		Name: "insightsclient_last_gather_time",
+	insightsLastGatherTime = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: insightsLastGatherTimeName,
 	})
 )
 
@@ -270,7 +272,7 @@ func updateInsightsMetrics(report SmartProxyReport) {
 
 	t, err := time.Parse(time.RFC3339, string(report.Meta.GatheredAt))
 	if err != nil {
-		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTime.Name, err)
+		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTimeName, err)
 		return
 	}
 	insightsLastGatherTime.Set(float64(t.Unix()))
