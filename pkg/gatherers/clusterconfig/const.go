@@ -49,6 +49,9 @@ var (
 	openshiftLoggingResource = schema.GroupVersionResource{
 		Group: "logging.openshift.io", Version: "v1", Resource: "clusterloggings",
 	}
+	openshiftStorageResource = schema.GroupVersionResource{
+		Group: "ocs.openshift.io", Version: "v1", Resource: "storageclusters",
+	}
 
 	jaegerResource = schema.GroupVersionResource{
 		Group: "jaegertracing.io", Version: "v1", Resource: "jaegers",

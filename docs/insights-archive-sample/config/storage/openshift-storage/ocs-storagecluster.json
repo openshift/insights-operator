@@ -1,0 +1,156 @@
+{
+    "apiVersion": "ocs.openshift.io/v1",
+    "kind": "StorageCluster",
+    "metadata": {
+        "annotations": {
+            "storagesystem.odf.openshift.io/watched-by": "ocs-storagecluster-storagesystem",
+            "uninstall.ocs.openshift.io/cleanup-policy": "delete",
+            "uninstall.ocs.openshift.io/mode": "graceful"
+        },
+        "creationTimestamp": "2022-02-24T05:31:35Z",
+        "finalizers": ["storagecluster.ocs.openshift.io"],
+        "generation": 4,
+        "name": "ocs-storagecluster",
+        "namespace": "openshift-storage",
+        "ownerReferences": [
+            {
+                "apiVersion": "odf.openshift.io/v1alpha1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "StorageSystem",
+                "name": "ocs-storagecluster-storagesystem",
+                "uid": "395e3b8f-37ad-4ddb-af67-b2a7d3324ae9"
+            }
+        ],
+        "resourceVersion": "56661474",
+        "uid": "a0bfbbc1-0d25-4a8a-806d-cc42e6183a39"
+    },
+    "spec": {
+        "arbiter": {},
+        "encryption": { "kms": {} },
+        "externalStorage": {},
+        "managedResources": {
+            "cephBlockPools": {},
+            "cephConfig": {},
+            "cephDashboard": {},
+            "cephFilesystems": {},
+            "cephObjectStoreUsers": {},
+            "cephObjectStores": {}
+        },
+        "mirroring": {},
+        "nodeTopologies": {},
+        "storageDeviceSets": [
+            {
+                "config": {},
+                "count": 1,
+                "dataPVCTemplate": {
+                    "metadata": {},
+                    "spec": {
+                        "accessModes": ["ReadWriteOnce"],
+                        "resources": { "requests": { "storage": "512Gi" } },
+                        "storageClassName": "thin",
+                        "volumeMode": "Block"
+                    },
+                    "status": {}
+                },
+                "name": "ocs-deviceset-thin",
+                "placement": {},
+                "portable": true,
+                "preparePlacement": {},
+                "replica": 3,
+                "resources": {}
+            }
+        ],
+        "version": "4.9.0"
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastHeartbeatTime": "2022-04-26T12:41:51Z",
+                "lastTransitionTime": "2022-04-26T06:38:23Z",
+                "message": "Reconcile completed successfully",
+                "reason": "ReconcileCompleted",
+                "status": "True",
+                "type": "ReconcileComplete"
+            },
+            {
+                "lastHeartbeatTime": "2022-04-26T12:41:51Z",
+                "lastTransitionTime": "2022-02-24T05:40:14Z",
+                "message": "Reconcile completed successfully",
+                "reason": "ReconcileCompleted",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "lastHeartbeatTime": "2022-04-26T12:41:51Z",
+                "lastTransitionTime": "2022-03-22T06:29:53Z",
+                "message": "Reconcile completed successfully",
+                "reason": "ReconcileCompleted",
+                "status": "False",
+                "type": "Progressing"
+            },
+            {
+                "lastHeartbeatTime": "2022-04-26T12:41:51Z",
+                "lastTransitionTime": "2022-02-24T05:31:36Z",
+                "message": "Reconcile completed successfully",
+                "reason": "ReconcileCompleted",
+                "status": "False",
+                "type": "Degraded"
+            },
+            {
+                "lastHeartbeatTime": "2022-04-26T12:41:51Z",
+                "lastTransitionTime": "2022-02-28T08:21:42Z",
+                "message": "Reconcile completed successfully",
+                "reason": "ReconcileCompleted",
+                "status": "True",
+                "type": "Upgradeable"
+            }
+        ],
+        "failureDomain": "rack",
+        "failureDomainKey": "topology.rook.io/rack",
+        "failureDomainValues": ["rack0", "rack1", "rack2"],
+        "images": {
+            "ceph": {
+                "actualImage": "registry.redhat.io/rhceph/rhceph-5-rhel8@sha256:2296c19fbd3a0be84d6030dff789ce3e79b38cc30c39f45913aec97967b65cce",
+                "desiredImage": "registry.redhat.io/rhceph/rhceph-5-rhel8@sha256:2296c19fbd3a0be84d6030dff789ce3e79b38cc30c39f45913aec97967b65cce"
+            },
+            "noobaaCore": {
+                "actualImage": "registry.redhat.io/odf4/mcg-core-rhel8@sha256:b0726c457b0fda796014b2743910ad12130a60be361796c90479e8954d8bfe99",
+                "desiredImage": "registry.redhat.io/odf4/mcg-core-rhel8@sha256:b0726c457b0fda796014b2743910ad12130a60be361796c90479e8954d8bfe99"
+            },
+            "noobaaDB": {
+                "actualImage": "registry.redhat.io/rhel8/postgresql-12@sha256:da0b8d525b173ef472ff4c71fae60b396f518860d6313c4f3287b844aab6d622",
+                "desiredImage": "registry.redhat.io/rhel8/postgresql-12@sha256:da0b8d525b173ef472ff4c71fae60b396f518860d6313c4f3287b844aab6d622"
+            }
+        },
+        "nodeTopologies": {
+            "labels": {
+                "kubernetes.io/hostname": [
+                    "perf6-fhz82-ocs-5q98p",
+                    "perf6-fhz82-ocs-jnmf4",
+                    "perf6-fhz82-ocs-kbbc4"
+                ],
+                "topology.rook.io/rack": ["rack0", "rack1", "rack2"]
+            }
+        },
+        "phase": "Ready",
+        "relatedObjects": [
+            {
+                "apiVersion": "ceph.rook.io/v1",
+                "kind": "CephCluster",
+                "name": "ocs-storagecluster-cephcluster",
+                "namespace": "openshift-storage",
+                "resourceVersion": "56661470",
+                "uid": "221d739b-d2d9-4cd9-864d-59da7c766fcb"
+            },
+            {
+                "apiVersion": "noobaa.io/v1alpha1",
+                "kind": "NooBaa",
+                "name": "noobaa",
+                "namespace": "openshift-storage",
+                "resourceVersion": "29319336",
+                "uid": "62c1c608-ef52-4b90-b6c5-cd60490d3dc9"
+            }
+        ]
+    }
+}

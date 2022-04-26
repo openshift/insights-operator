@@ -652,6 +652,19 @@ API Reference:
 * Since versions:
   * 4.9+
 
+## OpenshiftStorage
+
+collects `storageclusters.ocs.openshift.io` resources
+from Openshift Data Foundation Stack.
+
+API Reference:
+  https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+* Location in archive: config/storage/<namespace>/<name>.json
+* Id in config: clusterconfig/openshift_storage
+* Since versions:
+  * 4.11+
+
 
 ## OpenshiftSDNControllerLogs
 
