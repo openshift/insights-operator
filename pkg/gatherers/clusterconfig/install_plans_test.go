@@ -15,8 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-
-	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 //nolint: funlen, lll, gocyclo
@@ -60,46 +58,47 @@ func Test_InstallPlans_Gather(t *testing.T) {
 			var client *dynamicfake.FakeDynamicClient
 			coreClient := kubefake.NewSimpleClientset()
 			for _, file := range test.testfiles {
-				f, err := os.Open(file)
-				if err != nil {
-					t.Fatal("test failed to read installplan data", err)
-				}
-				defer f.Close()
-				installplancontent, err := io.ReadAll(f)
-				if err != nil {
-					t.Fatal("error reading test data file", err)
-				}
+				func() {
+					f, err := os.Open(file)
+					if err != nil {
+						t.Fatal("test failed to read installplan data", err)
+					}
+					defer f.Close()
+					installplancontent, err := io.ReadAll(f)
+					if err != nil {
+						t.Fatal("error reading test data file", err)
+					}
 
-				decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-				installplan := &unstructured.Unstructured{}
+					decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+					installplan := &unstructured.Unstructured{}
 
-				_, _, err = decUnstructured.Decode(installplancontent, nil, installplan)
-				if err != nil {
-					t.Fatal("unable to decode", err)
-				}
-				gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
-				gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
-				var ns string
-				err = utils.ParseJSONQuery(installplan.Object, "metadata.namespace", &ns)
-				if err != nil {
-					t.Fatal("unable to read ns ", err)
-				}
-				_, err = coreClient.CoreV1().Namespaces().Get(context.Background(), ns, metav1.GetOptions{})
-				if errors.IsNotFound(err) {
-					_, err = coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
-				}
-				if err != nil {
-					t.Fatal("unable to create ns fake ", err)
-				}
-				if client == nil {
-					client = dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-						gvr: "InstallPlansList",
-					})
-				}
-				_, err = client.Resource(gvr).Namespace(ns).Create(context.Background(), installplan, metav1.CreateOptions{})
-				if err != nil {
-					t.Fatal("unable to create installplan fake ", err)
-				}
+					_, _, err = decUnstructured.Decode(installplancontent, nil, installplan)
+					if err != nil {
+						t.Fatal("unable to decode", err)
+					}
+					gv, _ := schema.ParseGroupVersion(installplan.GetAPIVersion())
+					gvr := schema.GroupVersionResource{Version: gv.Version, Group: gv.Group, Resource: "installplans"}
+					ns, _, err := unstructured.NestedString(installplan.Object, "metadata", "namespace")
+					if err != nil {
+						t.Fatal("unable to read ns ", err)
+					}
+					_, err = coreClient.CoreV1().Namespaces().Get(context.Background(), ns, metav1.GetOptions{})
+					if errors.IsNotFound(err) {
+						_, err = coreClient.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}, metav1.CreateOptions{})
+					}
+					if err != nil {
+						t.Fatal("unable to create ns fake ", err)
+					}
+					if client == nil {
+						client = dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+							gvr: "InstallPlansList",
+						})
+					}
+					_, err = client.Resource(gvr).Namespace(ns).Create(context.Background(), installplan, metav1.CreateOptions{})
+					if err != nil {
+						t.Fatal("unable to create installplan fake ", err)
+					}
+				}()
 			}
 			ctx := context.Background()
 			records, errs := gatherInstallPlans(ctx, client, coreClient.CoreV1())
