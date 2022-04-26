@@ -12,11 +12,10 @@ const (
 	InsightsUploadDegraded configv1.ClusterStatusConditionType = "UploadDegraded"
 	// InsightsDownloadDegraded defines the condition type (when set to True) when the Insights report can't be successfully downloaded
 	InsightsDownloadDegraded configv1.ClusterStatusConditionType = "InsightsDownloadDegraded"
-	// SCANotAvailable is a condition type providing info about unsuccessful SCA pull attempt from the OCM API
-	SCANotAvailable configv1.ClusterStatusConditionType = "SCANotAvailable"
-	// ClusterTransferFailed is a condition type providing info about unsuccessful pull attempt of the ClusterTransfer from the OCM API
-	// or unsuccessful pull-secret update
-	ClusterTransferFailed configv1.ClusterStatusConditionType = "ClusterTransferFailed"
+	// ClusterTransferAvailable is a condition type providing info about ClusterTransfer controller status
+	ClusterTransferAvailable configv1.ClusterStatusConditionType = "ClusterTransferAvailable"
+	// SCAAvailable is a condition type providing info about SCA controller status
+	SCAAvailable configv1.ClusterStatusConditionType = "SCAAvailable"
 )
 
 type conditionsMap map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition
@@ -26,7 +25,7 @@ type conditions struct {
 }
 
 func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *conditions {
-	entries := map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{
+	entries := map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{ // nolint: dupl
 		configv1.OperatorAvailable: {
 			Type:               configv1.OperatorAvailable,
 			Status:             configv1.ConditionUnknown,
@@ -41,6 +40,18 @@ func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *condi
 		},
 		configv1.OperatorDegraded: {
 			Type:               configv1.OperatorDegraded,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
+		SCAAvailable: {
+			Type:               SCAAvailable,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
+		ClusterTransferAvailable: {
+			Type:               ClusterTransferAvailable,
 			Status:             configv1.ConditionUnknown,
 			LastTransitionTime: time,
 			Reason:             "",

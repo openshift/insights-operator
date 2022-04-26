@@ -7,8 +7,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type Interface interface {
+type StatusController interface {
 	CurrentStatus() (summary Summary, ready bool)
+	UpdateStatus(summary Summary)
+	Name() string
 }
 
 type Operation struct {
@@ -43,10 +45,16 @@ type Summary struct {
 
 // Simple represents the status of a given part of the operator
 type Simple struct {
-	Name string
+	name string
 
 	lock    sync.Mutex
 	summary Summary
+}
+
+func New(name string) StatusController {
+	return &Simple{
+		name: name,
+	}
 }
 
 // UpdateStatus updates the status, keeps track how long a status have been in effect
@@ -59,22 +67,20 @@ func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 	}
 
 	if s.summary.Healthy != summary.Healthy {
-		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
+		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.name, summary.Healthy, summary.Reason, summary.Message)
 		s.summary = summary
 		s.summary.Count = 1
+		s.summary.LastTransitionTime = summary.LastTransitionTime
 		return
 	}
 
 	s.summary.Count++
-	if summary.Healthy {
-		return
-	}
 	if s.summary.Message != summary.Message || s.summary.Reason != summary.Reason {
-		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.Name, summary.Healthy, summary.Reason, summary.Message)
+		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.name, summary.Healthy, summary.Reason, summary.Message)
 		s.summary.Reason = summary.Reason
 		s.summary.Message = summary.Message
 		s.summary.Operation = summary.Operation
-		return
+		s.summary.LastTransitionTime = summary.LastTransitionTime
 	}
 }
 
@@ -86,4 +92,8 @@ func (s *Simple) CurrentStatus() (Summary, bool) {
 		return Summary{}, false
 	}
 	return s.summary, true
+}
+
+func (s *Simple) Name() string {
+	return s.name
 }

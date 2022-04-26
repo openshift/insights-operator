@@ -16,9 +16,9 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
-	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/ocm"
 )
 
 const (
@@ -26,11 +26,13 @@ const (
 	secretName             = "etc-pki-entitlement" //nolint: gosec
 	entitlementAttrName    = "entitlement.pem"
 	entitlementKeyAttrName = "entitlement-key.pem"
+	ControllerName         = "scaController"
+	AvailableReason        = "Updated"
 )
 
 // Controller holds all the required resources to be able to communicate with OCM API
 type Controller struct {
-	controllerstatus.Simple
+	controllerstatus.StatusController
 	coreClient   corev1client.CoreV1Interface
 	ctx          context.Context
 	configurator configobserver.Configurator
@@ -49,11 +51,11 @@ type Response struct {
 func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator configobserver.Configurator,
 	insightsClient *insightsclient.Client) *Controller {
 	return &Controller{
-		Simple:       controllerstatus.Simple{Name: "scaController"},
-		coreClient:   coreClient,
-		ctx:          ctx,
-		configurator: configurator,
-		client:       insightsClient,
+		StatusController: controllerstatus.New(ControllerName),
+		coreClient:       coreClient,
+		ctx:              ctx,
+		configurator:     configurator,
+		client:           insightsClient,
 	}
 }
 
@@ -76,10 +78,12 @@ func (c *Controller) Run() {
 			} else {
 				msg := "Pulling of the SCA certs from the OCM API is disabled"
 				klog.Warning(msg)
-				c.Simple.UpdateStatus(controllerstatus.Summary{
-					Operation: controllerstatus.PullingSCACerts,
-					Healthy:   true,
-					Message:   msg,
+				c.StatusController.UpdateStatus(controllerstatus.Summary{
+					Operation:          controllerstatus.PullingSCACerts,
+					Healthy:            true,
+					Message:            msg,
+					Reason:             "Disabled",
+					LastTransitionTime: time.Now(),
 				})
 			}
 		case <-configCh:
@@ -99,20 +103,24 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 		httpErr, ok := err.(insightsclient.HttpError)
 		errMsg := fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err)
 		if ok {
-			c.Simple.UpdateStatus(controllerstatus.Summary{
+			c.StatusController.UpdateStatus(controllerstatus.Summary{
 				Operation: controllerstatus.Operation{
 					Name:           controllerstatus.PullingSCACerts.Name,
 					HTTPStatusCode: httpErr.StatusCode,
 				},
-				Reason:  strings.ReplaceAll(http.StatusText(httpErr.StatusCode), " ", ""),
-				Message: errMsg,
+				Reason:             strings.ReplaceAll(http.StatusText(httpErr.StatusCode), " ", ""),
+				Message:            errMsg,
+				LastTransitionTime: time.Now(),
 			})
 			return
 		}
 		klog.Warningf(errMsg)
-		c.Simple.UpdateStatus(controllerstatus.Summary{
-			Operation: controllerstatus.PullingSCACerts,
-			Healthy:   true,
+		c.StatusController.UpdateStatus(controllerstatus.Summary{
+			Operation:          controllerstatus.PullingSCACerts,
+			Healthy:            true,
+			Reason:             "NonHTTPError",
+			Message:            errMsg,
+			LastTransitionTime: time.Now(),
 		})
 		return
 	}
@@ -131,10 +139,12 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 		return
 	}
 	klog.Infof("%s secret successfully updated", secretName)
-	c.Simple.UpdateStatus(controllerstatus.Summary{
-		Operation: controllerstatus.PullingSCACerts,
-		Message:   fmt.Sprintf("SCA certs successfully updated in the %s secret", secretName),
-		Healthy:   true,
+	c.StatusController.UpdateStatus(controllerstatus.Summary{
+		Operation:          controllerstatus.PullingSCACerts,
+		Message:            fmt.Sprintf("SCA certs successfully updated in the %s secret", secretName),
+		Healthy:            true,
+		LastTransitionTime: time.Now(),
+		Reason:             AvailableReason,
 	})
 }
 
@@ -203,7 +213,7 @@ func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 		Duration: c.configurator.Config().OCMConfig.SCAInterval / 32, // 15 min by default
 		Factor:   2,
 		Jitter:   0,
-		Steps:    status.OCMAPIFailureCountThreshold,
+		Steps:    ocm.OCMAPIFailureCountThreshold,
 		Cap:      c.configurator.Config().OCMConfig.SCAInterval,
 	}
 	var data []byte

@@ -10,9 +10,9 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
-	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/ocm"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -20,8 +20,13 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const (
+	ControllerName  = "clusterTransferController"
+	AvailableReason = "PullSecretUpdated"
+)
+
 type Controller struct {
-	controllerstatus.Simple
+	controllerstatus.StatusController
 	coreClient   corev1client.CoreV1Interface
 	ctx          context.Context
 	configurator configobserver.Configurator
@@ -39,11 +44,11 @@ func New(ctx context.Context,
 	configurator configobserver.Configurator,
 	insightsClient clusterTransferClient) *Controller {
 	return &Controller{
-		Simple:       controllerstatus.Simple{Name: "clusterTransferController"},
-		coreClient:   coreClient,
-		ctx:          ctx,
-		configurator: configurator,
-		client:       insightsClient,
+		StatusController: controllerstatus.New(ControllerName),
+		coreClient:       coreClient,
+		ctx:              ctx,
+		configurator:     configurator,
+		client:           insightsClient,
 	}
 }
 
@@ -90,7 +95,7 @@ func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
 	// there's no cluster transfer for the cluster - HTTP 204
 	if len(data) == 0 {
 		klog.Info("no available accepted cluster transfer")
-		c.updateStatus(true, "no cluster transfer", "NoData", nil)
+		c.updateStatus(true, "no available cluster transfer", "NoClusterTransfer", nil)
 		return
 	}
 	// deserialize the data from the OCM API
@@ -144,7 +149,7 @@ func (c *Controller) checkCTListAndOptionallyUpdatePS(ctList *clusterTransferLis
 			return
 		}
 		statusMsg = "pull-secret successfully updated"
-		reason = "PullSecretUpdated"
+		reason = AvailableReason
 		klog.Info(statusMsg)
 	} else {
 		statusMsg = "no new data received"
@@ -207,7 +212,7 @@ func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint strin
 		Duration: c.configurator.Config().OCMConfig.ClusterTransferInterval / 48, // 30 min as the first waiting
 		Factor:   2,
 		Jitter:   0,
-		Steps:    status.OCMAPIFailureCountThreshold,
+		Steps:    ocm.OCMAPIFailureCountThreshold,
 		Cap:      c.configurator.Config().OCMConfig.ClusterTransferInterval,
 	}
 
@@ -243,9 +248,10 @@ func (c *Controller) updateStatus(healthy bool, msg, reason string, httpErr *ins
 		Operation: controllerstatus.Operation{
 			Name: controllerstatus.PullingClusterTransfer.Name,
 		},
-		Healthy: healthy,
-		Reason:  reason,
-		Message: msg,
+		Healthy:            healthy,
+		Reason:             reason,
+		Message:            msg,
+		LastTransitionTime: time.Now(),
 	}
 	if httpErr != nil {
 		newSummary.Operation.HTTPStatusCode = httpErr.StatusCode

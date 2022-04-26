@@ -377,7 +377,7 @@ func Test_conditions_setCondition(t *testing.T) {
 	}
 }
 
-func Test_newConditions(t *testing.T) {
+func Test_newConditions(t *testing.T) { // nolint: funlen
 	time := metav1.Now()
 
 	type args struct {
@@ -396,7 +396,7 @@ func Test_newConditions(t *testing.T) {
 				time: time,
 			},
 			want: &conditions{
-				entryMap: map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{
+				entryMap: map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{ // nolint: dupl
 					configv1.OperatorAvailable: {
 						Type:               configv1.OperatorAvailable,
 						Status:             configv1.ConditionUnknown,
@@ -411,6 +411,18 @@ func Test_newConditions(t *testing.T) {
 					},
 					configv1.OperatorDegraded: {
 						Type:               configv1.OperatorDegraded,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					SCAAvailable: {
+						Type:               SCAAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					ClusterTransferAvailable: {
+						Type:               ClusterTransferAvailable,
 						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
 						Reason:             "",
@@ -454,6 +466,18 @@ func Test_newConditions(t *testing.T) {
 						LastTransitionTime: time,
 						Reason:             "degraded reason",
 						Message:            "degraded message",
+					},
+					SCAAvailable: {
+						Type:               SCAAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					ClusterTransferAvailable: {
+						Type:               ClusterTransferAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
 					},
 				},
 			},
