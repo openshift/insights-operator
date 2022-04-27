@@ -32,7 +32,7 @@ func (g *Gatherer) GatherOpenshiftStorage(ctx context.Context) ([]record.Record,
 }
 
 func gatherOpenshiftStorage(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	loggingResourceList, err := dynamicClient.Resource(openshiftStorageResource).List(ctx, metav1.ListOptions{})
+	storageResourceList, err := dynamicClient.Resource(openshiftStorageResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -42,8 +42,8 @@ func gatherOpenshiftStorage(ctx context.Context, dynamicClient dynamic.Interface
 	}
 
 	var records []record.Record
-	for i := range loggingResourceList.Items {
-		item := loggingResourceList.Items[i]
+	for i := range storageResourceList.Items {
+		item := storageResourceList.Items[i]
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/storage/%s/%s", item.GetNamespace(), item.GetName()),
 			Item: record.ResourceMarshaller{Resource: &item},
