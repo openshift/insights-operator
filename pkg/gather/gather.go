@@ -89,85 +89,15 @@ func CollectAndRecordGatherer(
 		return nil, err
 	}
 
-	gathererName := gatherer.GetName()
-
 	var allErrors []error
 	var functionReports []GathererFunctionReport
 	totalNumberOfRecords := 0
 
 	for result := range resultsChan {
-		var recordWarnings []error
-		var recordErrs []error
-
-		if result.Panic != nil {
-			recordErrs = append(recordErrs, fmt.Errorf("panic: %v", result.Panic))
-			klog.Error(fmt.Errorf(
-				`gatherer "%v" function "%v" panicked with the error: %v`,
-				gathererName, result.FunctionName, result.Panic,
-			))
-			allErrors = append(allErrors, fmt.Errorf(`function "%v" panicked`, result.FunctionName))
-		}
-
-		for _, err := range result.Errs {
-			if w, isWarning := err.(*types.Warning); isWarning {
-				recordWarnings = append(recordWarnings, w)
-				klog.Warningf(
-					`gatherer "%v" function "%v" produced the warning: %v`, gathererName, result.FunctionName, w,
-				)
-			} else {
-				recordErrs = append(recordErrs, err)
-				klog.Errorf(
-					`gatherer "%v" function "%v" failed with the error: %v`,
-					gathererName, result.FunctionName, err,
-				)
-				allErrors = append(allErrors, fmt.Errorf(`function "%v" failed with an error`, result.FunctionName))
-			}
-		}
-
-		recordedRecs := 0
-		for _, r := range result.Records {
-			wasRecorded := true
-			if errs := rec.Record(r); len(errs) > 0 {
-				for _, err := range errs {
-					if w, isWarning := err.(*types.Warning); isWarning {
-						recordWarnings = append(recordWarnings, w)
-						klog.Warningf(
-							`issue recording gatherer "%v" function "%v" result "%v" because of the warning: %v`,
-							gathererName, result.FunctionName, r.GetFilename(), w,
-						)
-					} else {
-						recordErrs = append(recordErrs, err)
-						klog.Errorf(
-							`error recording gatherer "%v" function "%v" result "%v" because of the error: %v`,
-							gathererName, result.FunctionName, r.GetFilename(), err,
-						)
-						allErrors = append(allErrors, fmt.Errorf(
-							`unable to record function "%v" record "%v"`, result.FunctionName, r.GetFilename(),
-						))
-						wasRecorded = false
-					}
-				}
-			}
-			if wasRecorded {
-				recordedRecs++
-			}
-		}
-
-		klog.Infof(
-			`gatherer "%v" function "%v" took %v to process %v records`,
-			gathererName, result.FunctionName, result.TimeElapsed, len(result.Records),
-		)
-
-		totalNumberOfRecords += recordedRecs
-
-		functionReports = append(functionReports, GathererFunctionReport{
-			FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
-			Duration:     result.TimeElapsed.Milliseconds(),
-			RecordsCount: recordedRecs,
-			Errors:       utils.ErrorsToStrings(recordErrs),
-			Warnings:     utils.ErrorsToStrings(recordWarnings),
-			Panic:        result.Panic,
-		})
+		report, errs := recordGatheringFunctionResult(rec, &result, gatherer.GetName())
+		allErrors = append(allErrors, errs...)
+		functionReports = append(functionReports, report)
+		totalNumberOfRecords += report.RecordsCount
 	}
 
 	functionReports = append(functionReports, GathererFunctionReport{
@@ -178,6 +108,82 @@ func CollectAndRecordGatherer(
 	})
 
 	return functionReports, utils.SumErrors(allErrors)
+}
+
+func recordGatheringFunctionResult(
+	rec recorder.Interface, result *GatheringFunctionResult, gathererName string,
+) (GathererFunctionReport, []error) {
+	var allErrors []error
+	var recordWarnings []error
+	var recordErrs []error
+
+	if result.Panic != nil {
+		recordErrs = append(recordErrs, fmt.Errorf("panic: %v", result.Panic))
+		klog.Error(fmt.Errorf(
+			`gatherer "%v" function "%v" panicked with the error: %v`,
+			gathererName, result.FunctionName, result.Panic,
+		))
+		allErrors = append(allErrors, fmt.Errorf(`function "%v" panicked`, result.FunctionName))
+	}
+
+	for _, err := range result.Errs {
+		if w, isWarning := err.(*types.Warning); isWarning {
+			recordWarnings = append(recordWarnings, w)
+			klog.Warningf(
+				`gatherer "%v" function "%v" produced the warning: %v`, gathererName, result.FunctionName, w,
+			)
+		} else {
+			recordErrs = append(recordErrs, err)
+			klog.Errorf(
+				`gatherer "%v" function "%v" failed with the error: %v`,
+				gathererName, result.FunctionName, err,
+			)
+			allErrors = append(allErrors, fmt.Errorf(`function "%v" failed with an error`, result.FunctionName))
+		}
+	}
+
+	recordedRecs := 0
+	for _, r := range result.Records {
+		wasRecorded := true
+		if errs := rec.Record(r); len(errs) > 0 {
+			for _, err := range errs {
+				if w, isWarning := err.(*types.Warning); isWarning {
+					recordWarnings = append(recordWarnings, w)
+					klog.Warningf(
+						`issue recording gatherer "%v" function "%v" result "%v" because of the warning: %v`,
+						gathererName, result.FunctionName, r.GetFilename(), w,
+					)
+				} else {
+					recordErrs = append(recordErrs, err)
+					klog.Errorf(
+						`error recording gatherer "%v" function "%v" result "%v" because of the error: %v`,
+						gathererName, result.FunctionName, r.GetFilename(), err,
+					)
+					allErrors = append(allErrors, fmt.Errorf(
+						`unable to record function "%v" record "%v"`, result.FunctionName, r.GetFilename(),
+					))
+					wasRecorded = false
+				}
+			}
+		}
+		if wasRecorded {
+			recordedRecs++
+		}
+	}
+
+	klog.Infof(
+		`gatherer "%v" function "%v" took %v to process %v records`,
+		gathererName, result.FunctionName, result.TimeElapsed, len(result.Records),
+	)
+
+	return GathererFunctionReport{
+		FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
+		Duration:     result.TimeElapsed.Milliseconds(),
+		RecordsCount: recordedRecs,
+		Errors:       utils.ErrorsToStrings(recordErrs),
+		Warnings:     utils.ErrorsToStrings(recordWarnings),
+		Panic:        result.Panic,
+	}, allErrors
 }
 
 // RecordArchiveMetadata records info about archive and gatherers' reports

@@ -58,13 +58,13 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 
 	if rec.Item == nil {
 		errs = append(errs, fmt.Errorf(`empty "%s" record data. Nothing will be recorded`, rec.Name))
-		return
+		return errs
 	}
 
 	data, fingerprint, err := rec.Marshal()
 	if err != nil {
 		errs = append(errs, err)
-		return
+		return errs
 	}
 
 	klog.V(4).Infof("Recording %s with fingerprint=%s", rec.Name, fingerprint)
@@ -92,7 +92,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 			"record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive",
 			recordName, recordSize, r.maxArchiveSize,
 		))
-		return
+		return errs
 	}
 
 	if existingRecord, found := r.records[memoryRecord.Name]; found {
@@ -121,7 +121,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 
 	r.recordedFingerprints[fingerprint] = recordName
 
-	return
+	return errs
 }
 
 // Flush and save the reports using recorder driver

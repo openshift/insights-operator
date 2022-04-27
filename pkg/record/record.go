@@ -20,15 +20,15 @@ type Record struct {
 }
 
 // Marshal marshals the item and returns its fingerprint
-func (r *Record) Marshal() ([]byte, string, error) {
-	content, err := r.Item.Marshal()
+func (r *Record) Marshal() (content []byte, fingerprint string, err error) {
+	content, err = r.Item.Marshal()
 	if err != nil {
 		return content, "", err
 	}
 
 	h := sha256.New()
 	h.Write(content)
-	fingerprint := hex.EncodeToString(h.Sum(nil))
+	fingerprint = hex.EncodeToString(h.Sum(nil))
 
 	return content, fingerprint, nil
 }
