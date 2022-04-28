@@ -288,7 +288,5 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 			klog.Warningf("Failed to close response body: %v", err)
 		}
 	}()
-
 	return io.ReadAll(resp.Body)
-
 }

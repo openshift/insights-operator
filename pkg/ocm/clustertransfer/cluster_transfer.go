@@ -215,22 +215,22 @@ func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint strin
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {
 		var err error
 		data, err = c.client.RecvClusterTransfer(endpoint)
-		if err != nil {
-			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
-			if !insightsclient.IsHttpError(err) {
-				return true, err
-			}
-			httpErr := err.(insightsclient.HttpError)
-			if httpErr.StatusCode >= http.StatusInternalServerError {
-				// check the number of steps to prevent "timeout waiting for condition" error - we want to propagate the HTTP error below
-				if bo.Steps > 1 {
-					klog.Errorf("Got HTTP %v. Trying again in %s", httpErr.StatusCode, bo.Step())
-					return false, nil
-				}
-			}
-			return true, httpErr
+		if err == nil {
+			return true, nil
 		}
-		return true, nil
+		// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
+		if !insightsclient.IsHttpError(err) {
+			return true, err
+		}
+		httpErr := err.(insightsclient.HttpError)
+		if httpErr.StatusCode >= http.StatusInternalServerError {
+			// check the number of steps to prevent "timeout waiting for condition" error - we want to propagate the HTTP error below
+			if bo.Steps > 1 {
+				klog.Errorf("Got HTTP %v. Trying again in %s", httpErr.StatusCode, bo.Step())
+				return false, nil
+			}
+		}
+		return true, httpErr
 	})
 	if err != nil {
 		return nil, err
@@ -255,11 +255,7 @@ func (c *Controller) updateStatus(healthy bool, msg, reason string, httpErr *ins
 
 // getPullSecret gets pull-secret as *v1.Secret
 func (c *Controller) getPullSecret() (*v1.Secret, error) {
-	ps, err := c.coreClient.Secrets("openshift-config").Get(c.ctx, "pull-secret", metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return ps, nil
+	return c.coreClient.Secrets("openshift-config").Get(c.ctx, "pull-secret", metav1.GetOptions{})
 }
 
 // isUpdatedPullSecretContentSame checks if the updatedPS content is different
