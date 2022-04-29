@@ -21,6 +21,10 @@ spec:
       labels:
         app: insights-operator
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: operator
       priorityClassName: system-cluster-critical
       nodeSelector:
@@ -56,6 +60,10 @@ spec:
           optional: true
       containers:
       - name: insights-operator
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
         image: quay.io/openshift/origin-insights-operator:latest
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
