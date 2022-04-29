@@ -97,8 +97,9 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 
 	if existingRecord, found := r.records[memoryRecord.Name]; found {
 		errs = append(errs, fmt.Errorf(
-			`the record %v with the same name was already recorded, overwriting with the record %v`,
-			existingRecord.Print(), memoryRecord.Print(),
+			`the record with the same name "%v" was already recorded and had the fingerprint "%v", `+
+				`overwriting with the record having fingerprint "%v"`,
+			memoryRecord.Name, existingRecord.Fingerprint, memoryRecord.Fingerprint,
 		))
 		r.size -= int64(len(existingRecord.Data))
 	}
@@ -113,9 +114,9 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		}
 		// this doesn't necessarily mean it's an error. There can be a collision after hashing
 		errs = append(errs, &types.Warning{UnderlyingValue: fmt.Errorf(
-			`the record %v with the same fingerprint %v was already recorded, `+
-				`recording another one with a different path %v`,
-			existingRecord.Print(), fingerprint, memoryRecord.Print(),
+			`the record with the same fingerprint "%v" was already recorded at path "%v", `+
+				`recording another one with a different path "%v"`,
+			fingerprint, existingRecord.Name, memoryRecord.Name,
 		)})
 	}
 

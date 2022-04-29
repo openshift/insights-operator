@@ -1,7 +1,6 @@
 package record
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -11,13 +10,6 @@ type MemoryRecord struct {
 	At          time.Time
 	Data        []byte
 	Fingerprint string
-}
-
-func (r *MemoryRecord) Print() string {
-	return fmt.Sprintf(
-		`MemoryRecord{Name: "%v", At: "%v", len(Data): %v, Fingerprint: "%v"}`,
-		r.Name, r.At, len(r.Data), r.Fingerprint,
-	)
 }
 
 type MemoryRecords []MemoryRecord

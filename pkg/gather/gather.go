@@ -83,31 +83,37 @@ func CollectAndRecordGatherer(
 	configurator configobserver.Configurator,
 ) ([]GathererFunctionReport, error) {
 	startTime := time.Now()
+	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, configurator)
+	reports = append(reports, GathererFunctionReport{
+		FuncName:     gatherer.GetName(),
+		Duration:     time.Since(startTime).Milliseconds(),
+		RecordsCount: totalNumberOfRecords,
+		Errors:       utils.ErrorsToStrings(errs),
+	})
 
+	return reports, utils.SumErrors(errs)
+}
+
+func collectAndRecordGatherer(
+	ctx context.Context,
+	gatherer gatherers.Interface,
+	rec recorder.Interface,
+	configurator configobserver.Configurator,
+) (reports []GathererFunctionReport, totalNumberOfRecords int, allErrors []error) {
 	resultsChan, err := startGatheringConcurrently(ctx, gatherer, configurator.Config().Gather)
 	if err != nil {
-		return nil, err
+		allErrors = append(allErrors, err)
+		return reports, totalNumberOfRecords, allErrors
 	}
-
-	var allErrors []error
-	var functionReports []GathererFunctionReport
-	totalNumberOfRecords := 0
 
 	for result := range resultsChan {
 		report, errs := recordGatheringFunctionResult(rec, &result, gatherer.GetName())
 		allErrors = append(allErrors, errs...)
-		functionReports = append(functionReports, report)
+		reports = append(reports, report)
 		totalNumberOfRecords += report.RecordsCount
 	}
 
-	functionReports = append(functionReports, GathererFunctionReport{
-		FuncName:     gatherer.GetName(),
-		Duration:     time.Since(startTime).Milliseconds(),
-		RecordsCount: totalNumberOfRecords,
-		Errors:       utils.ErrorsToStrings(allErrors),
-	})
-
-	return functionReports, utils.SumErrors(allErrors)
+	return reports, totalNumberOfRecords, allErrors
 }
 
 func recordGatheringFunctionResult(
