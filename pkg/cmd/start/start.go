@@ -168,7 +168,6 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 		builder := controllercmd.NewController("openshift-insights-operator", operator.Run).
 			WithKubeConfigFile(cmd.Flags().Lookup("kubeconfig").Value.String(), nil).
 			WithLeaderElection(operatorConfig.LeaderElection, "", "openshift-insights-operator-lock").
-			// WithServer(operatorConfig.ServingInfo, operatorConfig.Authentication, operatorConfig.Authorization).
 			WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
 		if err := builder.Run(ctx2, unstructured); err != nil {
 			klog.Error(err)

@@ -279,7 +279,7 @@ func updateInsightsMetrics(report SmartProxyReport) {
 }
 
 func init() {
-	insights.RegisterMetricCollectors(insightsStatus, insightsLastGatherTime)
+	insights.MustRegisterMetricCollectors(insightsStatus, insightsLastGatherTime)
 
 	insightsStatus.WithLabelValues("low").Set(float64(-1))
 	insightsStatus.WithLabelValues("moderate").Set(float64(-1))

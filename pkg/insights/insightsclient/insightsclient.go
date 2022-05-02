@@ -276,6 +276,6 @@ var (
 )
 
 func init() {
-	insights.RegisterMetricCollectors(counterRequestSend, counterRequestRecvReport)
+	insights.MustRegisterMetricCollectors(counterRequestSend, counterRequestRecvReport)
 	insights.StartMetricsServer()
 }

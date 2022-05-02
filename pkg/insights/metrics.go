@@ -7,21 +7,23 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var insightsMetricsRegistry *prometheus.Registry
-var insightsCollector *insightsMetricsCollector
+var (
+	insightsMetricsRegistry *prometheus.Registry
+	insightsCollector       *insightsMetricsCollector
+)
 
 func init() {
 	insightsMetricsRegistry = prometheus.NewRegistry()
 	insightsCollector = &insightsMetricsCollector{}
 
-	RegisterMetricCollectors(insightsCollector)
+	MustRegisterMetricCollectors(insightsCollector)
 }
 
 // RegisterMetricCollector registers a new metric collector or a new metric in
 // the Insights metrics registry. This function should be called from init()
 // functions only, because it uses the MustRegister method, and therefore panics
 // in case of an error.
-func RegisterMetricCollectors(collectors ...prometheus.Collector) {
+func MustRegisterMetricCollectors(collectors ...prometheus.Collector) {
 	insightsMetricsRegistry.MustRegister(collectors...)
 }
 
