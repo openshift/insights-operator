@@ -9,14 +9,10 @@ import (
 
 var (
 	insightsMetricsRegistry *prometheus.Registry
-	insightsCollector       *insightsMetricsCollector
 )
 
 func init() {
 	insightsMetricsRegistry = prometheus.NewRegistry()
-	insightsCollector = &insightsMetricsCollector{}
-
-	MustRegisterMetricCollectors(insightsCollector)
 }
 
 // RegisterMetricCollector registers a new metric collector or a new metric in
@@ -32,20 +28,4 @@ func StartMetricsServer() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(insightsMetricsRegistry, promhttp.HandlerOpts{}))
 	go http.ListenAndServe(":8080", mux)
-}
-
-type insightsMetricsCollector struct {
-	exampleMetricValue int
-}
-
-func (c *insightsMetricsCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- prometheus.NewDesc("example_insights_metric", "An example metric.", nil, nil)
-}
-
-func (c *insightsMetricsCollector) Collect(ch chan<- prometheus.Metric) {
-	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc("example_insights_metric", "An example metric.", nil, nil),
-		prometheus.GaugeValue,
-		float64(c.exampleMetricValue),
-	)
 }
