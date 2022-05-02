@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -13,6 +14,10 @@ var (
 
 func init() {
 	insightsMetricsRegistry = prometheus.NewRegistry()
+	MustRegisterMetricCollectors(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+	)
 }
 
 // RegisterMetricCollector registers a new metric collector or a new metric in
