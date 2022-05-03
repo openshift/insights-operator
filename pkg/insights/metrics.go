@@ -2,10 +2,12 @@ package insights
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -18,14 +20,19 @@ func init() {
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 	)
-	startMetricsServer()
 }
 
-// startMetricsServer starts an HTTP server for the Insights metrics registry.
-func startMetricsServer() {
+// RunMetricsServer starts an HTTP server for the Insights metrics registry.
+// The server will run synchronously in an infinite loop. In case of an error,
+// it will be logged, and the server will be restarted after a short sleep
+// (to avoid spamming the log with the same error).
+func RunMetricsServer() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(insightsMetricsRegistry, promhttp.HandlerOpts{}))
-	go http.ListenAndServe(":8080", mux)
+	for {
+		klog.Errorf("Unable to serve metrics: %v", http.ListenAndServe(":8080", mux))
+		time.Sleep(time.Minute)
+	}
 }
 
 // RegisterMetricCollector registers a new metric collector or a new metric in
