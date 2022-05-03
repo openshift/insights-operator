@@ -552,6 +552,8 @@ from the "openshift.io/sa.scc.uid-range" annotation
 * Location in archive: config/namespaces_with_overlapping_uids
 * Id in config: clusterconfig/overlapping_namespace_uids
 * Since versions:
+  * 4.9.31
+  * 4.10.12
   * 4.11+
 
 
@@ -652,19 +654,6 @@ API Reference:
 * Since versions:
   * 4.9+
 
-## OpenshiftStorage
-
-collects `storageclusters.ocs.openshift.io` resources
-from Openshift Data Foundation Stack.
-
-API Reference:
-  https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
-
-* Location in archive: config/storage/<namespace>/<name>.json
-* Id in config: clusterconfig/openshift_storage
-* Since versions:
-  * 4.11+
-
 
 ## OpenshiftSDNControllerLogs
 
@@ -710,6 +699,20 @@ Response see:
 * Since versions:
   * 4.6.19+
   * 4.7+
+
+
+## OpenshiftStorage
+
+collects `storageclusters.ocs.openshift.io` resources
+from Openshift Data Foundation Stack.
+
+API Reference:
+  https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+* Location in archive: config/storage/<namespace>/<name>.json
+* Id in config: clusterconfig/openshift_storage
+* Since versions:
+  * 4.11+
 
 
 ## PNCC
