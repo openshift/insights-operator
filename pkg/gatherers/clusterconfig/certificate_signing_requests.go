@@ -76,7 +76,7 @@ type CSRAnonymizer struct {
 	*CSRAnonymizedFeatures
 }
 
-func (a CSRAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+func (a CSRAnonymizer) Marshal() ([]byte, error) {
 	// json.Marshal can handle nil well
 	return json.Marshal(a.CSRAnonymizedFeatures)
 }

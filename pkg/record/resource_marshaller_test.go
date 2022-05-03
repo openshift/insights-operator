@@ -3,7 +3,6 @@ package record
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -39,7 +38,7 @@ func Test_ResourceMarshaller_MarshalUnstructured(t *testing.T) {
 	}
 
 	rm := ResourceMarshaller{Resource: &unstr}
-	jsonBytesRM, err := rm.Marshal(context.TODO())
+	jsonBytesRM, err := rm.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +71,7 @@ func Test_ResourceMarshaller_MarshalPod(t *testing.T) {
 	}
 
 	rm := ResourceMarshaller{Resource: &pod}
-	jsonBytesRM, err := rm.Marshal(context.TODO())
+	jsonBytesRM, err := rm.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}

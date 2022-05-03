@@ -116,7 +116,7 @@ type ConfigMapAnonymizer struct {
 }
 
 // Marshal implements serialization of Node with anonymization
-func (a ConfigMapAnonymizer) Marshal(_ context.Context) ([]byte, error) {
+func (a ConfigMapAnonymizer) Marshal() ([]byte, error) {
 	c := []byte(anonymizeConfigMap(a.v))
 	if a.encodeBase64 {
 		buff := make([]byte, base64.StdEncoding.EncodedLen(len(c)))
@@ -156,7 +156,7 @@ ANONYMIZED
 type RawJSON []byte
 
 // Marshal just returns bytes
-func (r RawJSON) Marshal(_ context.Context) ([]byte, error) {
+func (r RawJSON) Marshal() ([]byte, error) {
 	return r, nil
 }
 

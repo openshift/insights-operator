@@ -7,7 +7,7 @@ type MockRecorder struct {
 	Records []record.Record
 }
 
-func (mr *MockRecorder) Record(r record.Record) error {
+func (mr *MockRecorder) Record(r record.Record) []error {
 	mr.Records = append(mr.Records, r)
 	return nil
 }

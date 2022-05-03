@@ -62,7 +62,7 @@ func assertWebhookConfigurations(t *testing.T, records []record.Record, expected
 	assert.Len(t, records, 1)
 	assert.Equal(t, records[0].Name, expectedName)
 
-	configurationBytes, err := records[0].Item.Marshal(context.TODO())
+	configurationBytes, err := records[0].Item.Marshal()
 	assert.NoError(t, err)
 
 	assert.JSONEq(t, `{

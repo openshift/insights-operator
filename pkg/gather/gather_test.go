@@ -4,15 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/types"
 )
 
 func Test_GetListOfEnabledFunctionForGatherer(t *testing.T) {
@@ -213,16 +217,14 @@ func Test_StartGatheringConcurrently_Error(t *testing.T) {
 	assert.Nil(t, resultsChan)
 }
 
-func Test_CollectAndRecord(t *testing.T) {
+func Test_CollectAndRecordGatherer(t *testing.T) {
 	gatherer := &MockGatherer{
 		SomeField: "some_value",
-		CanFail:   true,
 	}
 	mockRecorder := &recorder.MockRecorder{}
-	mockConfigurator := &config.MockConfigurator{Conf: &config.Controller{
-		Gather:                  []string{AllGatherersConst},
+	mockConfigurator := config.NewMockConfigurator(&config.Controller{
 		EnableGlobalObfuscation: true,
-	}}
+	})
 	anonymizer, err := anonymization.NewAnonymizer("", nil, nil)
 	assert.NoError(t, err)
 
@@ -256,8 +258,18 @@ func Test_CollectAndRecord(t *testing.T) {
 		},
 		{
 			FuncName: "mock_gatherer/panic",
-			Errors:   []string{"test panic"},
+			Errors:   []string{"panic: test panic"},
 			Panic:    "test panic",
+		},
+		{
+			FuncName:     "mock_gatherer",
+			RecordsCount: 5,
+			Errors: []string{
+				`function "errors" failed with an error`,
+				`function "errors" failed with an error`,
+				`function "errors" failed with an error`,
+				`function "panic" panicked`,
+			},
 		},
 	})
 	assertRecordsOneGatherer(t, mockRecorder.Records, []record.Record{
@@ -284,23 +296,19 @@ func Test_CollectAndRecord(t *testing.T) {
 	})
 }
 
-func Test_CollectAndRecord_Error(t *testing.T) {
-	gatherer := &MockGatherer{
-		CanFail: false,
-	}
+func Test_CollectAndRecordGatherer_Error(t *testing.T) {
+	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	mockConfigurator := &config.MockConfigurator{Conf: &config.Controller{
+	mockConfigurator := config.NewMockConfigurator(&config.Controller{
 		Gather:                  []string{"mock_gatherer/errors"},
 		EnableGlobalObfuscation: false,
-	}}
+	})
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)
 	assert.EqualError(
 		t,
 		err,
-		"gatherer mock_gatherer's function errors failed with error: error1, "+
-			"gatherer mock_gatherer's function errors failed with error: error2, "+
-			"gatherer mock_gatherer's function errors failed with error: error3",
+		`function "errors" failed with an error`,
 	)
 
 	err = RecordArchiveMetadata(functionReports, mockRecorder, nil)
@@ -317,29 +325,125 @@ func Test_CollectAndRecord_Error(t *testing.T) {
 				"error3",
 			},
 		},
+		{
+			FuncName:     "mock_gatherer",
+			RecordsCount: 0,
+			Errors: []string{
+				`function "errors" failed with an error`,
+				`function "errors" failed with an error`,
+				`function "errors" failed with an error`,
+			},
+		},
 	})
 }
 
-func Test_CollectAndRecord_Panic(t *testing.T) {
-	gatherer := &MockGatherer{
-		CanFail: false,
-	}
+func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
+	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	mockConfigurator := &config.MockConfigurator{Conf: &config.Controller{
+	mockConfigurator := config.NewMockConfigurator(&config.Controller{
 		Gather:                  []string{"mock_gatherer/panic"},
 		EnableGlobalObfuscation: false,
-	}}
+	})
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)
-	assert.EqualError(t, err, "gatherer mock_gatherer's function panic failed with error: test panic")
-	assert.Len(t, functionReports, 1)
+	assert.EqualError(t, err, `function "panic" panicked`)
+	assert.Len(t, functionReports, 2)
 	functionReports[0].Duration = 0
-	assert.ElementsMatch(t, functionReports, []GathererFunctionReport{{
-		FuncName: "mock_gatherer/panic",
-		Errors:   []string{"test panic"},
-		Panic:    "test panic",
-	}})
+	assert.ElementsMatch(t, functionReports, []GathererFunctionReport{
+		{
+			FuncName: "mock_gatherer/panic",
+			Errors:   []string{"panic: test panic"},
+			Panic:    "test panic",
+		},
+		{
+			FuncName: "mock_gatherer",
+			Errors:   []string{`function "panic" panicked`},
+		},
+	})
 	assert.Len(t, mockRecorder.Records, 0)
+}
+
+func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
+	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
+		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
+			return []record.Record{{
+				Name: "record_1",
+				Item: record.JSONMarshaller{Object: "content_1"},
+			}}, nil
+		}},
+		"function_2": {Run: func(ctx context.Context) ([]record.Record, []error) {
+			return []record.Record{{
+				Name: "record_1",
+				Item: record.JSONMarshaller{Object: "content_2"},
+			}}, nil
+		}},
+		"function_3": {Run: func(ctx context.Context) ([]record.Record, []error) {
+			return []record.Record{{
+				Name: "record_2",
+				Item: record.JSONMarshaller{Object: "content_1"},
+			}}, nil
+		}},
+	}}
+	mockDriver := &MockDriver{}
+	rec := recorder.New(mockDriver, time.Second, nil)
+	mockConfigurator := config.NewMockConfigurator(nil)
+
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockConfigurator)
+	assert.Error(t, err)
+	assert.NotEmpty(t, functionReports)
+	assert.Len(t, functionReports, 4)
+
+	sort.Slice(functionReports, func(i1, i2 int) bool {
+		return functionReports[i1].FuncName < functionReports[i2].FuncName
+	})
+
+	assert.Equal(t, gatherer.GetName(), functionReports[0].FuncName)
+	assert.Equal(t, fmt.Sprintf("%v/%v", gatherer.GetName(), "function_1"), functionReports[1].FuncName)
+	assert.Equal(t, fmt.Sprintf("%v/%v", gatherer.GetName(), "function_2"), functionReports[2].FuncName)
+	assert.Equal(t, fmt.Sprintf("%v/%v", gatherer.GetName(), "function_3"), functionReports[3].FuncName)
+
+	// the execution is parallel so testing gets a little tricky
+	totalRecordsCount := 0
+	var totalErrs []string
+	var totalWarnings []string
+	for _, report := range functionReports {
+		totalRecordsCount += report.RecordsCount
+		totalErrs = append(totalErrs, report.Errors...)
+		totalWarnings = append(totalWarnings, report.Warnings...)
+		assert.Nil(t, report.Panic)
+	}
+
+	assert.Equal(t, 4, totalRecordsCount)
+	assert.Len(t, totalErrs, 2)
+	assert.Len(t, totalWarnings, 1)
+	assert.Len(t, totalWarnings, 1)
+
+	err = rec.Flush()
+	assert.NoError(t, err)
+
+	assert.Len(t, mockDriver.Saves, 1)
+	records := mockDriver.Saves[0]
+	assert.Len(t, records, 2)
+}
+
+func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
+	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
+		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
+			return nil, []error{&types.Warning{UnderlyingValue: fmt.Errorf("test warning")}}
+		}},
+	}}
+	mockDriver := &MockDriver{}
+	rec := recorder.New(mockDriver, time.Second, nil)
+	mockConfigurator := config.NewMockConfigurator(nil)
+
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockConfigurator)
+	assert.NoError(t, err)
+	assert.Len(t, functionReports, 2)
+	assert.Equal(t, "mock_gatherer_with_provided_functions/function_1", functionReports[0].FuncName)
+	assert.Equal(t, 0, functionReports[0].RecordsCount)
+	assert.Nil(t, functionReports[0].Errors)
+	assert.Equal(t, []string{"warning: test warning"}, functionReports[0].Warnings)
+	assert.Nil(t, functionReports[0].Panic)
 }
 
 func assertMetadataOneGatherer(
@@ -354,7 +458,11 @@ func assertMetadataOneGatherer(
 
 	for _, rec := range records {
 		if strings.HasSuffix(rec.Name, recorder.MetadataRecordName) {
-			bytes, err := rec.Item.Marshal(context.Background())
+			if len(metadataBytes) > 0 {
+				t.Fatalf("found 2 metadata records")
+			}
+
+			bytes, err := rec.Item.Marshal()
 			assert.NoError(t, err)
 
 			metadataBytes = bytes
@@ -367,7 +475,14 @@ func assertMetadataOneGatherer(
 	assert.NoError(t, err)
 
 	for i := range archiveMetadata.StatusReports {
-		archiveMetadata.StatusReports[i].Duration = 0
+		statusReport := &archiveMetadata.StatusReports[i]
+		statusReport.Duration = 0
+		sort.Slice(statusReport.Errors, func(i1, i2 int) bool {
+			return statusReport.Errors[i1] < statusReport.Errors[i2]
+		})
+		sort.Slice(statusReport.Warnings, func(i1, i2 int) bool {
+			return statusReport.Warnings[i1] < statusReport.Warnings[i2]
+		})
 	}
 
 	assert.Equal(t, isGlobalObfuscationEnabled, archiveMetadata.IsGlobalObfuscationEnabled)
@@ -393,3 +508,14 @@ func gatherResultsFromChannel(resultsChan chan GatheringFunctionResult) []Gather
 
 	return results
 }
+
+// MockDriver implements a driver saving all the records to the Saves field
+type MockDriver struct {
+	Saves []record.MemoryRecords
+}
+
+func (md *MockDriver) Save(records record.MemoryRecords) (record.MemoryRecords, error) {
+	md.Saves = append(md.Saves, records)
+	return records, nil
+}
+func (*MockDriver) Prune(_ time.Time) error { return nil }

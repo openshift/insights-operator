@@ -1,12 +1,10 @@
 package marshal
 
-import "context"
-
 // RawByte is skipping marshaling from byte slice
 type RawByte []byte
 
 // Marshal just returns bytes
-func (r RawByte) Marshal(_ context.Context) ([]byte, error) {
+func (r RawByte) Marshal() ([]byte, error) {
 	return r, nil
 }
 

@@ -1,7 +1,8 @@
 package record
 
 import (
-	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -15,13 +16,25 @@ const (
 type Record struct {
 	Name     string
 	Captured time.Time
-
-	Fingerprint string
-	Item        Marshalable
+	Item     Marshalable
 }
 
-// Filename with extension, if present
-func (r *Record) Filename() string {
+// Marshal marshals the item and returns its fingerprint
+func (r *Record) Marshal() (content []byte, fingerprint string, err error) {
+	content, err = r.Item.Marshal()
+	if err != nil {
+		return content, "", err
+	}
+
+	h := sha256.New()
+	h.Write(content)
+	fingerprint = hex.EncodeToString(h.Sum(nil))
+
+	return content, fingerprint, nil
+}
+
+// GetFilename with extension, if present
+func (r *Record) GetFilename() string {
 	extension := r.Item.GetExtension()
 	if len(extension) > 0 {
 		return fmt.Sprintf("%s.%s", r.Name, extension)
@@ -30,7 +43,7 @@ func (r *Record) Filename() string {
 }
 
 type Marshalable interface {
-	Marshal(context.Context) ([]byte, error)
+	Marshal() ([]byte, error)
 	GetExtension() string
 }
 
@@ -38,7 +51,7 @@ type JSONMarshaller struct {
 	Object interface{}
 }
 
-func (m JSONMarshaller) Marshal(_ context.Context) ([]byte, error) {
+func (m JSONMarshaller) Marshal() ([]byte, error) {
 	return json.Marshal(m.Object)
 }
 

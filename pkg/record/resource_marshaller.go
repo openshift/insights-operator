@@ -2,7 +2,6 @@
 package record
 
 import (
-	"context"
 	"encoding/json"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +21,7 @@ type ResourceMarshaller struct {
 
 // Marshal cleans up the resource structure by removing unnecessary fields
 // and converts it into a JSON format using the default serializer.
-func (m ResourceMarshaller) Marshal(_ context.Context) ([]byte, error) {
+func (m ResourceMarshaller) Marshal() ([]byte, error) {
 	// If the resource passed to the marshaller is structured (e.g., Pod,
 	// Node, NetNamespace), or if the resource is passed as the raw
 	// unstructured.Unstructured struct instance (which has the same methods

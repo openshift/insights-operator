@@ -1,4 +1,4 @@
-// gather package contains common gathering logic for all gatherers
+// Package gather contains common gathering logic for all gatherers
 package gather
 
 import (
@@ -20,11 +20,14 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/types"
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // norevive
 const (
+	// AllGatherersConst is used to specify in the config that we want to enable
+	// all gathering functions from all gatherers
 	AllGatherersConst = "ALL"
 )
 
@@ -36,6 +39,7 @@ type GathererFunctionReport struct {
 	Duration     int64       `json:"duration_in_ms"`
 	RecordsCount int         `json:"records_count"`
 	Errors       []string    `json:"errors"`
+	Warnings     []string    `json:"warnings"`
 	Panic        interface{} `json:"panic"`
 }
 
@@ -78,57 +82,114 @@ func CollectAndRecordGatherer(
 	rec recorder.Interface,
 	configurator configobserver.Configurator,
 ) ([]GathererFunctionReport, error) {
+	startTime := time.Now()
+	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, configurator)
+	reports = append(reports, GathererFunctionReport{
+		FuncName:     gatherer.GetName(),
+		Duration:     time.Since(startTime).Milliseconds(),
+		RecordsCount: totalNumberOfRecords,
+		Errors:       utils.ErrorsToStrings(errs),
+	})
+
+	return reports, utils.SumErrors(errs)
+}
+
+func collectAndRecordGatherer(
+	ctx context.Context,
+	gatherer gatherers.Interface,
+	rec recorder.Interface,
+	configurator configobserver.Configurator,
+) (reports []GathererFunctionReport, totalNumberOfRecords int, allErrors []error) {
 	resultsChan, err := startGatheringConcurrently(ctx, gatherer, configurator.Config().Gather)
 	if err != nil {
-		return nil, err
+		allErrors = append(allErrors, err)
+		return reports, totalNumberOfRecords, allErrors
 	}
-
-	gathererName := gatherer.GetName()
-
-	var errs []error
-	var functionReports []GathererFunctionReport
 
 	for result := range resultsChan {
-		if result.Panic != nil {
-			klog.Error(fmt.Errorf(
-				"gatherer %v's function %v panicked with error: %v",
-				gathererName, result.FunctionName, result.Panic,
-			))
-			result.Errs = append(result.Errs, fmt.Errorf("%v", result.Panic))
-		}
+		report, errs := recordGatheringFunctionResult(rec, &result, gatherer.GetName())
+		allErrors = append(allErrors, errs...)
+		reports = append(reports, report)
+		totalNumberOfRecords += report.RecordsCount
+	}
 
-		for _, err := range result.Errs {
-			errs = append(errs, fmt.Errorf(
-				"gatherer %v's function %v failed with error: %v",
+	return reports, totalNumberOfRecords, allErrors
+}
+
+func recordGatheringFunctionResult(
+	rec recorder.Interface, result *GatheringFunctionResult, gathererName string,
+) (GathererFunctionReport, []error) {
+	var allErrors []error
+	var recordWarnings []error
+	var recordErrs []error
+
+	if result.Panic != nil {
+		recordErrs = append(recordErrs, fmt.Errorf("panic: %v", result.Panic))
+		klog.Error(fmt.Errorf(
+			`gatherer "%v" function "%v" panicked with the error: %v`,
+			gathererName, result.FunctionName, result.Panic,
+		))
+		allErrors = append(allErrors, fmt.Errorf(`function "%v" panicked`, result.FunctionName))
+	}
+
+	for _, err := range result.Errs {
+		if w, isWarning := err.(*types.Warning); isWarning {
+			recordWarnings = append(recordWarnings, w)
+			klog.Warningf(
+				`gatherer "%v" function "%v" produced the warning: %v`, gathererName, result.FunctionName, w,
+			)
+		} else {
+			recordErrs = append(recordErrs, err)
+			klog.Errorf(
+				`gatherer "%v" function "%v" failed with the error: %v`,
 				gathererName, result.FunctionName, err,
-			))
+			)
+			allErrors = append(allErrors, fmt.Errorf(`function "%v" failed with an error`, result.FunctionName))
 		}
-		recordedRecs := 0
-		for _, r := range result.Records {
-			if err := rec.Record(r); err != nil {
-				result.Errs = append(result.Errs, fmt.Errorf(
-					"unable to record gatherer %v function %v' result %v because of error: %v",
-					gathererName, result.FunctionName, r.Name, err,
-				))
-				continue
+	}
+
+	recordedRecs := 0
+	for _, r := range result.Records {
+		wasRecorded := true
+		if errs := rec.Record(r); len(errs) > 0 {
+			for _, err := range errs {
+				if w, isWarning := err.(*types.Warning); isWarning {
+					recordWarnings = append(recordWarnings, w)
+					klog.Warningf(
+						`issue recording gatherer "%v" function "%v" result "%v" because of the warning: %v`,
+						gathererName, result.FunctionName, r.GetFilename(), w,
+					)
+				} else {
+					recordErrs = append(recordErrs, err)
+					klog.Errorf(
+						`error recording gatherer "%v" function "%v" result "%v" because of the error: %v`,
+						gathererName, result.FunctionName, r.GetFilename(), err,
+					)
+					allErrors = append(allErrors, fmt.Errorf(
+						`unable to record function "%v" record "%v"`, result.FunctionName, r.GetFilename(),
+					))
+					wasRecorded = false
+				}
 			}
+		}
+		if wasRecorded {
 			recordedRecs++
 		}
-
-		klog.Infof(
-			"Gather %v's function %v took %v to process %v records",
-			gathererName, result.FunctionName, result.TimeElapsed, len(result.Records),
-		)
-
-		functionReports = append(functionReports, GathererFunctionReport{
-			FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
-			Duration:     result.TimeElapsed.Milliseconds(),
-			RecordsCount: recordedRecs,
-			Errors:       utils.ErrorsToStrings(result.Errs),
-			Panic:        result.Panic,
-		})
 	}
-	return functionReports, utils.SumErrors(errs)
+
+	klog.Infof(
+		`gatherer "%v" function "%v" took %v to process %v records`,
+		gathererName, result.FunctionName, result.TimeElapsed, len(result.Records),
+	)
+
+	return GathererFunctionReport{
+		FuncName:     fmt.Sprintf("%v/%v", gathererName, result.FunctionName),
+		Duration:     result.TimeElapsed.Milliseconds(),
+		RecordsCount: recordedRecs,
+		Errors:       utils.ErrorsToStrings(recordErrs),
+		Warnings:     utils.ErrorsToStrings(recordWarnings),
+		Panic:        result.Panic,
+	}, allErrors
 }
 
 // RecordArchiveMetadata records info about archive and gatherers' reports
@@ -149,8 +210,8 @@ func RecordArchiveMetadata(
 			IsGlobalObfuscationEnabled: anonymizer != nil,
 		}},
 	}
-	if err := rec.Record(archiveMetadata); err != nil {
-		return fmt.Errorf("unable to record archive metadata because of error: %v", err)
+	if errs := rec.Record(archiveMetadata); len(errs) > 0 {
+		return fmt.Errorf("unable to record archive metadata because of the errors: %v", errs)
 	}
 
 	return nil

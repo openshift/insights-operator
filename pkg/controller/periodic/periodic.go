@@ -135,12 +135,11 @@ func (c *Controller) Gather() {
 			}
 
 			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-			c.statuses[name].UpdateStatus(
-				controllerstatus.Summary{
-					Operation: controllerstatus.GatheringReport,
-					Reason:    "PeriodicGatherFailed",
-					Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
-				})
+			c.statuses[name].UpdateStatus(controllerstatus.Summary{
+				Operation: controllerstatus.GatheringReport,
+				Reason:    "PeriodicGatherFailed",
+				Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+			})
 		}()
 	}
 

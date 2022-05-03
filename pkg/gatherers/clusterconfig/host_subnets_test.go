@@ -34,7 +34,7 @@ func Test_GatherHostSubnet(t *testing.T) {
 	if len(records) != 1 {
 		t.Fatalf("unexpected number or records %d", len(records))
 	}
-	_, err = records[0].Item.Marshal(context.TODO())
+	_, err = records[0].Item.Marshal()
 	if err != nil {
 		t.Fatalf("failed to marshal object: %v", err)
 	}
