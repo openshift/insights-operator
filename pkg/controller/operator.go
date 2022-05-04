@@ -27,6 +27,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
+	"github.com/openshift/insights-operator/pkg/ocm/clustertransfer"
 	"github.com/openshift/insights-operator/pkg/ocm/sca"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
@@ -149,6 +150,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		statusReporter.AddSources(scaController)
 		go scaController.Run()
 	}
+
+	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
+	statusReporter.AddSources(clusterTransferController)
+	go clusterTransferController.Run()
+
 	klog.Warning("started")
 
 	<-ctx.Done()

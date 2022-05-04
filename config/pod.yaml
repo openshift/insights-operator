@@ -15,5 +15,7 @@ pull_report:
 ocm:
   scaEndpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates
   scaInterval: "8h"
+  clusterTransferEndpoint: https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/
+  clusterTransferInterval: "24h"
 gather:
   - ALL

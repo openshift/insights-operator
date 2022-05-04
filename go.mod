@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/blang/semver/v4 v4.0.0
+	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/go-cmp v0.5.6 // indirect

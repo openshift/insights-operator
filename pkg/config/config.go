@@ -26,9 +26,11 @@ type Serialized struct {
 	Gather                  []string `json:"gather"`
 	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
 	OCM                     struct {
-		SCAEndpoint string `json:"scaEndpoint"`
-		SCAInterval string `json:"scaInterval"`
-		SCADisabled bool   `json:"scaDisabled"`
+		SCAEndpoint             string `json:"scaEndpoint"`
+		SCAInterval             string `json:"scaInterval"`
+		SCADisabled             bool   `json:"scaDisabled"`
+		ClusterTransferEndpoint string `json:"clusterTransferEndpoint"`
+		ClusterTransferInterval string `json:"clusterTransferInterval"`
 	}
 }
 
@@ -75,9 +77,11 @@ type HTTPConfig struct {
 
 // OCMConfig configures the interval and endpoint for retrieving the data from OCM API
 type OCMConfig struct {
-	SCAInterval time.Duration
-	SCAEndpoint string
-	SCADisabled bool
+	SCAInterval             time.Duration
+	SCAEndpoint             string
+	SCADisabled             bool
+	ClusterTransferEndpoint string
+	ClusterTransferInterval time.Duration
 }
 
 type Converter func(s *Serialized, cfg *Controller) (*Controller, error)
@@ -157,6 +161,13 @@ func (c *Controller) mergeOCM(cfg *Controller) {
 		c.OCMConfig.SCAInterval = cfg.OCMConfig.SCAInterval
 	}
 	c.OCMConfig.SCADisabled = cfg.OCMConfig.SCADisabled
+
+	if len(cfg.OCMConfig.ClusterTransferEndpoint) > 0 {
+		c.OCMConfig.ClusterTransferEndpoint = cfg.OCMConfig.ClusterTransferEndpoint
+	}
+	if cfg.OCMConfig.ClusterTransferInterval > 0 {
+		c.OCMConfig.ClusterTransferInterval = cfg.OCMConfig.ClusterTransferInterval
+	}
 }
 
 func (c *Controller) mergeHTTP(cfg *Controller) {
@@ -171,11 +182,10 @@ func (c *Controller) mergeInterval(cfg *Controller) {
 
 // ToController creates/updates a config Controller according to the Serialized config.
 // Makes sure that the config is correct.
-func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // nolint: gocyclo
+func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // nolint: gocyclo, funlen
 	if cfg == nil {
 		cfg = &Controller{}
 	}
-
 	cfg.Report = s.Report
 	cfg.StoragePath = s.StoragePath
 	cfg.Endpoint = s.Endpoint
@@ -251,6 +261,16 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 			return nil, fmt.Errorf("OCM SCA interval must be a valid duration: %v", err)
 		}
 		cfg.OCMConfig.SCAInterval = i
+	}
+	if len(s.OCM.SCAEndpoint) > 0 {
+		cfg.OCMConfig.ClusterTransferEndpoint = s.OCM.ClusterTransferEndpoint
+	}
+	if len(s.OCM.ClusterTransferInterval) > 0 {
+		i, err := time.ParseDuration(s.OCM.ClusterTransferInterval)
+		if err != nil {
+			return nil, fmt.Errorf("OCM Cluster transfer interval must be a valid duration: %v", err)
+		}
+		cfg.OCMConfig.ClusterTransferInterval = i
 	}
 	return cfg, nil
 }

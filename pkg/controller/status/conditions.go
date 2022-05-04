@@ -14,6 +14,9 @@ const (
 	InsightsDownloadDegraded configv1.ClusterStatusConditionType = "InsightsDownloadDegraded"
 	// SCANotAvailable is a condition type providing info about unsuccessful SCA pull attempt from the OCM API
 	SCANotAvailable configv1.ClusterStatusConditionType = "SCANotAvailable"
+	// ClusterTransferFailed is a condition type providing info about unsuccessful pull attempt of the ClusterTransfer from the OCM API
+	// or unsuccessful pull-secret update
+	ClusterTransferFailed configv1.ClusterStatusConditionType = "ClusterTransferFailed"
 )
 
 type conditionsMap map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition
