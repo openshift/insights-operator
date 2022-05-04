@@ -39,7 +39,7 @@ type InsightsReporter interface {
 }
 
 const (
-	insightsLastGatherTimeName = "insights_last_gather_time"
+	insightsLastGatherTimeName = "insightsclient_last_gather_time"
 )
 
 var (
