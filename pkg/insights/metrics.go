@@ -30,6 +30,7 @@ func RunMetricsServer() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(insightsMetricsRegistry, promhttp.HandlerOpts{}))
 	for {
+		klog.Info("Starting the Prometheus metrics server")
 		klog.Errorf("Unable to serve metrics: %v", http.ListenAndServe(":8080", mux))
 		time.Sleep(time.Minute)
 	}
