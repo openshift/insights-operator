@@ -338,21 +338,21 @@ func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 	}
 
 	// handle when has errors
-	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
+	if es := ctrlStatus.getStatus(ErrorStatus); es != nil && !ctrlStatus.isDisabled() {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", insightsAvailableMessage, metav1.Now())
 	}
 
 	// handle when upload fails
-	if ur := ctrlStatus.getStatus(UploadStatus); ur != nil {
+	if ur := ctrlStatus.getStatus(UploadStatus); ur != nil && !ctrlStatus.isDisabled() {
 		cs.setCondition(InsightsUploadDegraded, configv1.ConditionTrue, ur.reason, ur.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.removeCondition(InsightsUploadDegraded)
 	}
 
 	// handle when download fails
-	if ds := ctrlStatus.getStatus(DownloadStatus); ds != nil {
+	if ds := ctrlStatus.getStatus(DownloadStatus); ds != nil && !ctrlStatus.isDisabled() {
 		cs.setCondition(InsightsDownloadDegraded, configv1.ConditionTrue, ds.reason, ds.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.removeCondition(InsightsDownloadDegraded)
@@ -385,7 +385,7 @@ func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerSt
 		}
 	}
 
-	if es := ctrlStatus.getStatus(ErrorStatus); es != nil {
+	if es := ctrlStatus.getStatus(ErrorStatus); es != nil && !ctrlStatus.isDisabled() {
 		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "Degraded", "An error has occurred", metav1.Now())
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, es.reason, es.message, metav1.Now())
@@ -395,6 +395,9 @@ func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerSt
 	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		klog.V(4).Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Now())
+		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, ds.reason, ds.message, metav1.Now())
+		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, "InsightsUpgradeable",
+			"Insights operator can be upgraded", metav1.Now())
 	}
 
 	if ctrlStatus.isHealthy() {
