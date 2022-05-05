@@ -44,6 +44,8 @@ func (u uidRange) String() string {
 // * Location in archive: config/namespaces_with_overlapping_uids
 // * Id in config: clusterconfig/overlapping_namespace_uids
 // * Since versions:
+//   * 4.9.31
+//   * 4.10.12
 //   * 4.11+
 func (g *Gatherer) GatherNamespacesWithOverlappingUIDs(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
