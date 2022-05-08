@@ -31,7 +31,7 @@ func prepareGatherConfigs(protoKubeConfig, kubeConfig *rest.Config, impersonate 
 	metricsGatherKubeConfig.APIPath = "/"
 	metricsGatherKubeConfig.Host = metricHost
 
-	// the metrics client will connect to alert manager and collect a set of silences
+	// the alerts client will connect to alert manager and collect a set of silences
 	alertsGatherKubeConfig = rest.CopyConfig(kubeConfig)
 	alertsGatherKubeConfig.CAFile = metricCAFile
 	alertsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
