@@ -27,8 +27,8 @@ func NewOperator() *cobra.Command {
 		Controller: config.Controller{
 			StoragePath:                 "/var/lib/insights-operator",
 			Interval:                    10 * time.Minute,
-			Endpoint:                    "https://cloud.redhat.com/api/ingress/v1/upload",
-			ReportEndpoint:              "https://cloud.redhat.com/api/insights-results-aggregator/v1/clusters/%s/report",
+			Endpoint:                    "https://console.redhat.com/api/ingress/v1/upload",
+			ReportEndpoint:              "https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports",
 			ConditionalGathererEndpoint: "https://console.redhat.com/api/gathering/gathering_rules",
 			ReportPullingDelay:          60 * time.Second,
 			ReportMinRetryTime:          10 * time.Second,
