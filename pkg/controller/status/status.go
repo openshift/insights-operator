@@ -61,3 +61,7 @@ func (c *controllerStatus) reset() {
 func (c *controllerStatus) isHealthy() bool {
 	return !c.hasStatus(ErrorStatus)
 }
+
+func (c *controllerStatus) isDisabled() bool {
+	return c.hasStatus(DisabledStatus)
+}
