@@ -267,7 +267,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		}
 
-		if len(errorMessage) > 0 {
+		if len(errorMessage) > 0 && len(disabledReason) == 0 {
 			klog.V(4).Infof("The operator has some internal errors: %s", errorMessage)
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:               configv1.OperatorDegraded,
@@ -284,7 +284,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			})
 		}
 
-		if len(uploadErrorReason) > 0 {
+		if len(uploadErrorReason) > 0 && len(disabledReason) == 0 {
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:               UploadDegraded,
 				Status:             configv1.ConditionTrue,
@@ -296,7 +296,7 @@ func (c *Controller) merge(existing *configv1.ClusterOperator) *configv1.Cluster
 			removeOperatorStatusCondition(&existing.Status.Conditions, UploadDegraded)
 		}
 
-		if len(downloadReason) > 0 {
+		if len(downloadReason) > 0 && len(disabledReason) == 0 {
 			setOperatorStatusCondition(&existing.Status.Conditions, configv1.ClusterOperatorStatusCondition{
 				Type:               InsightsDownloadDegraded,
 				Status:             configv1.ConditionTrue,
