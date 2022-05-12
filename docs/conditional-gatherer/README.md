@@ -7,9 +7,11 @@ More details can be found in `pkg/gatherers/conditional/conditional_gatherer.go`
 
 To test that conditional gatherer provides some data, follow the next steps:
 
-1. Downscale CVO:
+1. Downscale CVO, CMO and Prometheus CRD:
 ```bash
 oc scale deployment -n openshift-cluster-version cluster-version-operator --replicas=0
+oc scale deployment -n openshift-monitoring cluster-monitoring-operator --replicas=0
+oc patch prometheus -n openshift-monitoring k8s --type "json" -p '[{"op": "replace", "path": "/spec/replicas", "value": 1}]'
 ```
 
 2. Backup prometheus rules:
@@ -51,11 +53,26 @@ echo '{
 ```
 
 4. Wait for the alert to fire:
-```
-export ALERT_MANAGER_HOST=(oc get route alertmanager-main -n openshift-monitoring -o jsonpath='{@.spec.host}')
+```bash
+export PROMETHEUS_HOST=(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath='{@.spec.host}')
 export INSECURE_PROMETHEUS_TOKEN=(oc sa get-token prometheus-k8s -n openshift-monitoring)
-curl -k -H "Authorization: Bearer $INSECURE_PROMETHEUS_TOKEN"  https://$ALERT_MANAGER_HOST/api/v1/alerts | \
-jq '.data[] | select(.labels.alertname == "SamplesImagestreamImportFailing")'
+curl -g -s -k -H 'Cache-Control: no-cache' -H "Authorization: Bearer $INSECURE_PROMETHEUS_TOKEN" "https://$PROMETHEUS_HOST/api/v1/query" --data-urlencode 'query=ALERTS{alertstate="firing",alertname="SamplesImagestreamImportFailing"}' | jq ".data.result[]"
+```
+
+The output should be:
+```json
+{
+  "metric": {
+    "__name__": "ALERTS",
+    "alertname": "SamplesImagestreamImportFailing",
+    "alertstate": "firing",
+    "severity": "critical"
+  },
+  "value": [
+    1652363876.855,
+    "1"
+  ]
+}
 ```
 
 5. Make metrics work by forwarding the endpoint and setting INSECURE_PROMETHEUS_TOKEN environment variable:

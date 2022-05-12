@@ -253,9 +253,8 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Int
 
 	data, err := metricsClient.Get().
 		AbsPath("api/v1/query").
-		SetHeader("Cache-Control", "no-cache").
 		Param("query", "ALERTS").
-		Param("match[]", `ALERTS{alertstate=~"firing|pending"}`).
+		Param("match[]", `ALERTS{alertstate="firing"}`).
 		DoRaw(ctx)
 	if err != nil {
 		return err
@@ -285,7 +284,7 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Int
 			continue
 		}
 		klog.Infof(`%v alert "%v" has state "%v"`, logPrefix, alertName, alertState)
-		if alertState == "firing" || alertState == "pending" {
+		if alertState == "firing" {
 			g.firingAlerts[alertName] = append(g.firingAlerts[alertName], result.Labels)
 		}
 	}
