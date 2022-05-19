@@ -5,7 +5,7 @@ The main goal of the Insights Operator is to periodically gather anonymized data
 Insights Operator does not manage any application. As usual with operator applications, most of the code is structured in the `pkg` package and `pkg/controller/operator.go` hosts the operator controller. Typically operator controllers read configuration and start some periodical tasks.
 
 ## How the Insights operator reads configuration
-The Insights Operator's configuration is a combination of file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoeded in the image) and configuration stored in the in the `support` secret in the `openshift-config` namespace. The secret doesn't exist by default, but when it does then it overrides default settings which IO reads from the `config/pod.yaml`.
+The Insights Operator's configuration is a combination of the file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoded in the image) and configuration stored in the `support` secret in the `openshift-config` namespace. The secret doesn't exist by default, but when it does, it overrides default settings which IO reads from the `config/pod.yaml`.
 The `support` secret provides following configuration attributes:
 - `endpoint` - upload endpoint - default is `https://console.redhat.com/api/ingress/v1/upload`,
 - `interval` - data gathering & uploading frequency - default is `2h` 
