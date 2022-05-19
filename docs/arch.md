@@ -217,7 +217,7 @@ oc get co insights -o=json | jq '.status.conditions'
 ```
 A condition is defined by its type. You may notice that there are some non-standard clusteroperator conditions. They are:
 - `SCAAvailable` - based on the SCA (Simple Content Access) controller in `pkg/ocm/sca/sca.go` and provides information about the status of downloading the SCA entitlements.
-- `ClusterTransferAvailable` - based on the cluster transfer controller in `pkg/ocm/clustertransfer/cluster_transfer.go` nad provides information about the availability of cluster transfers.
+- `ClusterTransferAvailable` - based on the cluster transfer controller in `pkg/ocm/clustertransfer/cluster_transfer.go` and provides information about the availability of cluster transfers.
 - `Disabled` - indicates whether data gathering is disabled or enabled. 
 
 In addition to the above clusteroperator conditions, there are some intermediate clusteroperator conditions. These are:
