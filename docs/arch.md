@@ -120,7 +120,7 @@ The data from this gatherer is stored in the `/config/workload_info.json` file i
 
 ### Conditional gatherer
 
-Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is run regularly (2h by default), but it gathers some data only when a corresponding condition is met. The conditions and corresponding gathering functions are defined in an external service (https://console.redhat.com/api/gathering/gathering_rules). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts. 
+Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is ran regularly (2h by default), but it only gathers some data when a corresponding condition is met. The conditions and corresponding gathering functions are defined in an external service (https://console.redhat.com/api/gathering/gathering_rules). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts. 
 
 The data from this gatherer is stored under the `/conditional` directory in the archive. 
 
