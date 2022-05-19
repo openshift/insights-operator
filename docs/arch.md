@@ -108,7 +108,7 @@ Errors, warnings or panics that occurred during  given gathering  function are l
 
 ### Clusterconfig gatherer
 
-Defined in [clusterconfig_gatherer.go](../pkg/gatherers/clusterconfig/clusterconfig_gatherer.go). This gatherer is run regularly (2h by default) and gathers various data related to cluster config (see [gathered-data doc](../docs/gathered-data.md) for more details).
+Defined in [clusterconfig_gatherer.go](../pkg/gatherers/clusterconfig/clusterconfig_gatherer.go). This gatherer is ran regularly (2h by default) and gathers various data related to cluster config (see [gathered-data doc](../docs/gathered-data.md) for more details).
 
 The data from this gatherer is stored under `/config` directory in the archive.
 
