@@ -81,7 +81,7 @@ export INSECURE_PROMETHEUS_TOKEN=(oc sa get-token prometheus-k8s -n openshift-mo
 ```
 ```bash
 # run this command in a separate terminal
-sudo kubefwd svc -n openshift-monitoring -d openshift-monitoring.svc -l prometheus=k8s --kubeconfig $KUBECONFIG
+sudo kubefwd svc -n openshift-monitoring -d openshift-monitoring.svc -l app.kubernetes.io/instance=k8s --kubeconfig $KUBECONFIG
 ```
 
 6. Run the operator and wait for an archive containing `conditional/` directory.
