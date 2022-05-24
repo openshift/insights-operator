@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -19,6 +20,7 @@ type Gatherer struct {
 	alertsGatherKubeConfig  *rest.Config
 	anonymizer              *anonymization.Anonymizer
 	interval                time.Duration
+	configObserver          *configobserver.Controller
 }
 
 // gathererFuncPtr is a type for pointers to functions of Gatherer
@@ -79,12 +81,18 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"image":                             (*Gatherer).GatherClusterImage,
 	"kube_controller_manager_logs":      (*Gatherer).GatherKubeControllerManagerLogs,
 	"overlapping_namespace_uids":        (*Gatherer).GatherNamespacesWithOverlappingUIDs,
+	"support_secret":                    (*Gatherer).GatherSupportSecret,
 }
 
 func New(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer, interval time.Duration,
+	anonymizer *anonymization.Anonymizer, configObserver *configobserver.Controller,
 ) *Gatherer {
+	interval := time.Minute
+	if configObserver != nil && configObserver.Config() != nil {
+		interval = configObserver.Config().Interval
+	}
+
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
@@ -92,6 +100,7 @@ func New(
 		alertsGatherKubeConfig:  alertsGatherKubeConfig,
 		anonymizer:              anonymizer,
 		interval:                interval,
+		configObserver:          configObserver,
 	}
 }
 
