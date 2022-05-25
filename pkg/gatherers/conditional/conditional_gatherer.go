@@ -77,10 +77,9 @@ type GatheringRuleMetadata struct {
 
 // GatheringRulesMetadata stores metadata about gathering rules
 type GatheringRulesMetadata struct {
-	Version      string                  `json:"version"`
-	Rules        []GatheringRuleMetadata `json:"rules"`
-	Endpoint     string                  `json:"endpoint"`
-	FiringAlerts []string                `json:"firing_alerts"`
+	Version  string                  `json:"version"`
+	Rules    []GatheringRuleMetadata `json:"rules"`
+	Endpoint string                  `json:"endpoint"`
 }
 
 // GetName returns the name of the gatherer
@@ -126,15 +125,9 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 		klog.Error(err)
 	}
 
-	firingAlerts := make([]string, 0, len(g.firingAlerts))
-	for alertName := range g.firingAlerts {
-		firingAlerts = append(firingAlerts, alertName)
-	}
-
 	metadata := GatheringRulesMetadata{
-		Version:      g.gatheringRules.Version,
-		Endpoint:     endpoint,
-		FiringAlerts: firingAlerts,
+		Version:  g.gatheringRules.Version,
+		Endpoint: endpoint,
 	}
 
 	for _, conditionalGathering := range g.gatheringRules.Rules {
