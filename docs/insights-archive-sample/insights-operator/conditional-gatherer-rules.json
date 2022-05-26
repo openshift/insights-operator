@@ -193,10 +193,5 @@
       "was_triggered": false
     }
   ],
-  "endpoint": "https://console.redhat.com/api/gathering/gathering_rules",
-  "firing_alerts": [
-    "AlertmanagerClusterDown",
-    "TargetDown",
-    "Watchdog"
-  ]
+  "endpoint": "https://console.redhat.com/api/gathering/gathering_rules"
 }
