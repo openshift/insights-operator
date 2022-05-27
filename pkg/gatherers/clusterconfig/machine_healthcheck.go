@@ -14,7 +14,7 @@ import (
 // GatherMachineHealthCheck collects MachineHealthCheck information
 //
 // The Kubernetes api:
-//       https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machinehealthcheck.go
+//       https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
 // Response see:
 //       https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
 //
