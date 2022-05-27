@@ -14,7 +14,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unsafe"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/client-go/rest"
@@ -124,9 +126,8 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 }
 
 func Test_requestNodeLog(t *testing.T) {
-	c, _ := rest.NewRESTClient(&url.URL{Path: ""}, "", rest.ClientContentConfig{}, nil, nil)
-	r := rest.NewRequest(c).SetHeader("Accept", "text/plain, */*").SetHeader("Accept-Encoding", "gzip")
-
+	c, err := rest.NewRESTClient(&url.URL{}, "", rest.ClientContentConfig{}, nil, nil)
+	assert.NoErrorf(t, err, "unable to create the rest client")
 	type args struct {
 		client rest.Interface
 		uri    string
@@ -146,14 +147,30 @@ func Test_requestNodeLog(t *testing.T) {
 				tail:   10,
 				unit:   "test",
 			},
-			want: r.RequestURI("/path/to/something").Param("tail", "10").Param("unit", "test").Verb("GET"),
+			want: c.Get().
+				RequestURI("/path/to/something").
+				Param("tail", "10").
+				Param("unit", "test").
+				SetHeader("Accept", "text/plain, */*").
+				SetHeader("Accept-Encoding", "gzip"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := requestNodeLog(tt.args.client, tt.args.uri, tt.args.tail, tt.args.unit); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("requestNodeLog() = %v, want %v", got, tt.want)
-			}
+			got := requestNodeLog(tt.args.client, tt.args.uri, tt.args.tail, tt.args.unit)
+
+			// This is not very nice. This reads unexported parameters of the *rest.Request type.
+			// Previously we simply checked reflect.DeepEqual(got, tt.want) but it started to fail
+			// with Kubernetes client 1.24
+			expectedParams := GetUnexportedField(reflect.ValueOf(tt.want).Elem().FieldByName("params"))
+			expectedHeaders := GetUnexportedField(reflect.ValueOf(tt.want).Elem().FieldByName("headers"))
+			expectedPathPrefix := GetUnexportedField(reflect.ValueOf(tt.want).Elem().FieldByName("pathPrefix"))
+			actualParams := GetUnexportedField(reflect.ValueOf(got).Elem().FieldByName("params"))
+			actualHeaders := GetUnexportedField(reflect.ValueOf(got).Elem().FieldByName("headers"))
+			actualPathPrefix := GetUnexportedField(reflect.ValueOf(got).Elem().FieldByName("pathPrefix"))
+			assert.Exactly(t, expectedParams, actualParams)
+			assert.Exactly(t, expectedHeaders, actualHeaders)
+			assert.Exactly(t, expectedPathPrefix, actualPathPrefix)
 		})
 	}
 }
@@ -177,6 +194,10 @@ func testRESTClientWithConfig(t testing.TB, srv *httptest.Server, contentConfig 
 
 func testRESTClient(t testing.TB, srv *httptest.Server) *rest.RESTClient {
 	return testRESTClientWithConfig(t, srv, &rest.ClientContentConfig{})
+}
+
+func GetUnexportedField(field reflect.Value) interface{} {
+	return reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface()
 }
 
 // nolint: errcheck
