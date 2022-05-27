@@ -45,7 +45,7 @@ func (c *InsightsRecommendationCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rec := range c.activeRecommendations {
 		ch <- prometheus.MustNewConstMetric(
-			prometheus.NewDesc("insights_metric", "", []string{}, prometheus.Labels{
+			prometheus.NewDesc("insights_recommendation_active", "", []string{}, prometheus.Labels{
 				"rule_id":     string(rec.RuleID),
 				"error_key":   string(rec.ErrorKey),
 				"description": rec.Description,
