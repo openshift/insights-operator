@@ -14,7 +14,7 @@ import (
 //     (can be omitted if the secret doesn't exist)
 // * Id in config: support_secret
 // * Since version:
-//   * 4.12+
+//   * 4.11+
 func (g *Gatherer) GatherSupportSecret(context.Context) ([]record.Record, []error) {
 	if g.configObserver == nil {
 		return nil, []error{fmt.Errorf("configObserver is nil")}
