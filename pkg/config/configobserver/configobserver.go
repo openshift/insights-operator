@@ -37,6 +37,7 @@ type Controller struct {
 	defaultConfig config.Controller
 	tokenConfig   *config.Controller
 	secretConfig  *config.Controller
+	supportSecret *v1.Secret
 	config        *config.Controller
 	checkPeriod   time.Duration
 	listeners     []chan struct{}
@@ -78,6 +79,12 @@ func (c *Controller) Config() *config.Controller {
 	return c.config
 }
 
+func (c *Controller) SupportSecret() *v1.Secret {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.supportSecret
+}
+
 // ConfigChanged subscribe for config changes
 // 1.Param: A channel where the listener is notified that the config has changed.
 // 2.Param: A func which can be used to unsubscribe from the config changes.
@@ -105,17 +112,19 @@ func (c *Controller) ConfigChanged() (configCh <-chan struct{}, closeFn func()) 
 }
 
 // Fetches the token from cluster secret key
-func (c *Controller) fetchSecret(ctx context.Context, key string) (*v1.Secret, error) {
-	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, key, metav1.GetOptions{})
+func (c *Controller) fetchSecret(ctx context.Context, name string) (*v1.Secret, error) {
+	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("%s secret does not exist", key)
+			klog.V(4).Infof("%s secret does not exist", name)
 			err = nil
+			secret = nil
 		} else if errors.IsForbidden(err) {
-			klog.V(2).Infof("Operator does not have permission to check %s: %v", key, err)
+			klog.V(2).Infof("Operator does not have permission to check %s: %v", name, err)
 			err = nil
+			secret = nil
 		} else {
-			err = fmt.Errorf("could not check %s: %v", key, err)
+			err = fmt.Errorf("could not check %s: %v", name, err)
 		}
 	}
 
@@ -150,21 +159,23 @@ func (c *Controller) updateToken(ctx context.Context) error {
 
 // Updates the stored configs from the secrets in the cluster. (if present)
 func (c *Controller) updateConfig(ctx context.Context) error {
-	var nextConfig config.Controller
 	klog.V(2).Infof("Refreshing configuration from cluster secret")
 	secret, err := c.fetchSecret(ctx, "support")
 	if err != nil {
 		return err
 	}
 
-	if secret != nil {
-		nextConfig, err = LoadConfigFromSecret(secret)
+	c.supportSecret = secret
+	if secret == nil {
+		c.setSecretConfig(nil)
+	} else {
+		nextConfig, err := LoadConfigFromSecret(secret)
 		if err != nil {
 			return err
 		}
-	}
 
-	c.setSecretConfig(&nextConfig)
+		c.setSecretConfig(&nextConfig)
+	}
 
 	return nil
 }

@@ -887,6 +887,17 @@ gathers the alerts that have been silenced.
   * 4.10+
 
 
+## SupportSecret
+
+gathers anonymized support secret if there is any
+
+* Location in archive: config/secrets/openshift-config/support/data.json
+    (can be omitted if the secret doesn't exist)
+* Id in config: support_secret
+* Since version:
+  * 4.11+
+
+
 ## TSDBStatus
 
 gathers the Prometheus TSDB status.

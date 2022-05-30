@@ -58,16 +58,16 @@ type ArchiveMetadata struct {
 // CreateAllGatherers creates all the gatherers
 func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer, configurator configobserver.Configurator,
+	anonymizer *anonymization.Anonymizer, configObserver *configobserver.Controller,
 	insightsClient *insightsclient.Client,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,
-		anonymizer, configurator.Config().Interval,
+		anonymizer, configObserver,
 	)
 	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
 	conditionalGatherer := conditional.New(
-		gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig, configurator, insightsClient,
+		gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig, configObserver, insightsClient,
 	)
 
 	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer, conditionalGatherer}
