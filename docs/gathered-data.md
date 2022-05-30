@@ -511,6 +511,7 @@ Gathered metrics:
   cluster_installer
   vsphere_node_hw_version_total
   namespace CPU and memory usage
+  console_helm_installs_total
   followed by at most 1000 lines of ALERTS metric
 
 * Location in archive: config/metrics
@@ -524,6 +525,7 @@ Gathered metrics:
   - "namespace:container_memory_usage_bytes:sum": 4.5+
   - "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
   - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
+  - "console_helm_installs_total": 4.11+
 
 
 ## MutatingWebhookConfigurations
