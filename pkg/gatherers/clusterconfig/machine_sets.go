@@ -18,7 +18,7 @@ import (
 // GatherMachineSet collects MachineSet information
 //
 // The Kubernetes api:
-//       https://github.com/openshift/machine-api-operator/blob/master/pkg/generated/clientset/versioned/typed/machine/v1beta1/machineset.go
+//       https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
 // Response see:
 //       https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 //
