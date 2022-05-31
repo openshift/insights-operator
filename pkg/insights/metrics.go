@@ -44,15 +44,33 @@ func (c *InsightsRecommendationCollector) Describe(ch chan<- *prometheus.Desc) {
 
 func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rec := range c.activeRecommendations {
+		ruleIDStr := string(rec.RuleID)
+		errorKeyStr := string(rec.ErrorKey)
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc("insights_recommendation_active", "", []string{}, prometheus.Labels{
-				"rule_id":     string(rec.RuleID),
-				"error_key":   string(rec.ErrorKey),
+				"rule_id":     ruleIDStr,
+				"error_key":   errorKeyStr,
 				"description": rec.Description,
-				"total_risk":  fmt.Sprint(rec.TotalRisk),
+				"total_risk":  totalRiskToStr(rec.TotalRisk),
+				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/recommendations/%s%%7C%s", ruleIDStr, errorKeyStr),
 			}),
 			prometheus.GaugeValue,
 			1,
 		)
+	}
+}
+
+func totalRiskToStr(totalRisk int) string {
+	switch totalRisk {
+	case 1:
+		return "low"
+	case 2:
+		return "moderate"
+	case 3:
+		return "important"
+	case 4:
+		return "critical"
+	default:
+		return "invalid"
 	}
 }
