@@ -8,14 +8,13 @@
 package conditional
 
 import (
-	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/prometheus/common/expfmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -78,8 +77,9 @@ type GatheringRuleMetadata struct {
 
 // GatheringRulesMetadata stores metadata about gathering rules
 type GatheringRulesMetadata struct {
-	Version string                  `json:"version"`
-	Rules   []GatheringRuleMetadata `json:"rules"`
+	Version  string                  `json:"version"`
+	Rules    []GatheringRuleMetadata `json:"rules"`
+	Endpoint string                  `json:"endpoint"`
 }
 
 // GetName returns the name of the gatherer
@@ -120,8 +120,14 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
+	endpoint, err := g.getRulesEndpoint()
+	if err != nil {
+		klog.Error(err)
+	}
+
 	metadata := GatheringRulesMetadata{
-		Version: g.gatheringRules.Version,
+		Version:  g.gatheringRules.Version,
+		Endpoint: endpoint,
 	}
 
 	for _, conditionalGathering := range g.gatheringRules.Rules {
@@ -184,21 +190,29 @@ func (g *Gatherer) getGatheringRulesJSON(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("no configurator was provided")
 	}
 
-	config := g.configurator.Config()
-	if config == nil {
-		return "", fmt.Errorf("config is nil")
-	}
-
 	if g.gatheringRulesServiceClient == nil {
 		return "", fmt.Errorf("gathering rules service client is nil")
 	}
 
-	rulesBytes, err := g.gatheringRulesServiceClient.RecvGatheringRules(ctx, config.ConditionalGathererEndpoint)
+	endpoint, err := g.getRulesEndpoint()
+	if err != nil {
+		return "", err
+	}
+
+	rulesBytes, err := g.gatheringRulesServiceClient.RecvGatheringRules(ctx, endpoint)
 	if err != nil {
 		return "", err
 	}
 
 	return string(rulesBytes), err
+}
+func (g *Gatherer) getRulesEndpoint() (string, error) {
+	config := g.configurator.Config()
+	if config == nil {
+		return "", fmt.Errorf("config is nil")
+	}
+
+	return config.ConditionalGathererEndpoint, nil
 }
 
 // updateCache updates alerts and version caches
@@ -226,52 +240,46 @@ func (g *Gatherer) updateCache(ctx context.Context) {
 
 func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Interface) error {
 	const logPrefix = "conditional gatherer: "
+	klog.Info(logPrefix + "updating alerts cache for conditional gatherer")
 
 	g.firingAlerts = make(map[string][]AlertLabels)
 
-	data, err := metricsClient.Get().AbsPath("federate").
+	data, err := metricsClient.Get().
+		AbsPath("api/v1/query").
+		Param("query", "ALERTS").
 		Param("match[]", `ALERTS{alertstate="firing"}`).
 		DoRaw(ctx)
 	if err != nil {
 		return err
 	}
 
-	var parser expfmt.TextParser
-	metricFamilies, err := parser.TextToMetricFamilies(bytes.NewReader(data))
+	var response struct {
+		Data struct {
+			Results []struct {
+				Labels map[string]string `json:"metric"`
+			} `json:"result"`
+		} `json:"data"`
+	}
+	err = json.Unmarshal(data, &response)
 	if err != nil {
 		return err
 	}
 
-	if len(metricFamilies) > 1 {
-		// just log cuz everything would still work
-		klog.Warning(logPrefix + "unexpected output from prometheus metrics parser")
-	}
-
-	metricFamily, found := metricFamilies["ALERTS"]
-	if !found {
-		klog.Info(logPrefix + "no alerts are firing")
-		return nil
-	}
-
-	for _, metric := range metricFamily.GetMetric() {
-		if metric == nil {
-			klog.Info(logPrefix + "metric is nil")
+	for _, result := range response.Data.Results {
+		alertName, found := result.Labels["alertname"]
+		if !found {
+			klog.Errorf(`%v label "alertname"" was not found in the result: %v`, logPrefix, result)
 			continue
 		}
-		alertLabels := make(map[string]string)
-		for _, label := range metric.GetLabel() {
-			if label == nil {
-				klog.Info(logPrefix + "label is nil")
-				continue
-			}
-			alertLabels[label.GetName()] = label.GetValue()
-		}
-		alertName, ok := alertLabels["alertname"]
-		if !ok {
-			klog.Warningf("%s can't find \"alertname\" label in the metric: %v", logPrefix, metric)
+		alertState, found := result.Labels["alertstate"]
+		if !found {
+			klog.Errorf(`%v label "alertstate"" was not found in the result: %v`, logPrefix, result)
 			continue
 		}
-		g.firingAlerts[alertName] = append(g.firingAlerts[alertName], alertLabels)
+		klog.Infof(`%v alert "%v" has state "%v"`, logPrefix, alertName, alertState)
+		if alertState == "firing" {
+			g.firingAlerts[alertName] = append(g.firingAlerts[alertName], result.Labels)
+		}
 	}
 
 	return nil

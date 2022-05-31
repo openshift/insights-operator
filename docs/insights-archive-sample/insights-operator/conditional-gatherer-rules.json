@@ -192,5 +192,6 @@
       "errors": null,
       "was_triggered": false
     }
-  ]
+  ],
+  "endpoint": "https://console.redhat.com/api/gathering/gathering_rules"
 }

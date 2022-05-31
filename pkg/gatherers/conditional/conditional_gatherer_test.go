@@ -33,9 +33,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	gatherer := newEmptyGatherer("")
 
-	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
-		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
-	))
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
 	assert.NoError(t, err)
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
@@ -48,9 +46,7 @@ func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 func Test_Gatherer_GetGatheringFunctions_CacheWorks(t *testing.T) {
 	gatherer := newEmptyGatherer("")
 
-	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
-		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
-	))
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
 	assert.NoError(t, err)
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
@@ -93,9 +89,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 
 	gatherer := newEmptyGatherer(gathererConfig)
 
-	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
-		`ALERTS{alertname="SamplesImagestreamImportFailing",alertstate="firing"} 1 1621618110163`,
-	))
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
 	assert.NoError(t, err)
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
@@ -122,9 +116,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	gatherer := newEmptyGatherer("")
 
-	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
-		"ALERTS{alertname=\"SamplesImagestreamImportFailing\",alertstate=\"firing\"} 1 1621618110163\n",
-	))
+	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
 	assert.NoError(t, err)
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
@@ -145,9 +137,7 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, firing)
 
-	err = gatherer.updateAlertsCache(context.TODO(), newFakeClientWithMetrics(
-		"ALERTS{alertname=\"OtherAlert\",alertstate=\"firing\"} 1 1621618110163\n",
-	))
+	err = gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("OtherAlert"))
 	assert.NoError(t, err)
 
 	gatheringFunctions, err = gatherer.GetGatheringFunctions(context.TODO())
@@ -180,13 +170,35 @@ func Test_getConditionalGatheringFunctionName(t *testing.T) {
 	assert.Equal(t, "func/param1=test,param2=5,param3=9", res)
 }
 
-func newFakeClientWithMetrics(metrics string) *fake.RESTClient {
+func newFakeClientWithAlerts(alerts ...string) *fake.RESTClient {
+	var results []string
+	for _, alert := range alerts {
+		results = append(results, fmt.Sprintf(`{
+			"metric": {
+				"__name__": "ALERTS",
+				"alertname": "%v",
+				"alertstate": "firing",
+				"severity": "critical"
+			},
+			"value": [1.0, "1"]
+		}`, alert))
+	}
+	response := fmt.Sprintf(`{
+		"status": "success",
+		"data": {
+			"resultType": "vector",
+			"result": [
+				%v
+			]
+		}
+	}`, strings.Join(results, ","))
+
 	fakeClient := &fake.RESTClient{
 		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
 		Client: fake.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader(metrics + "\n")),
+				Body:       io.NopCloser(strings.NewReader(response + "\n")),
 			}
 			return resp, nil
 		}),
