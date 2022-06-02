@@ -286,13 +286,16 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Int
 }
 
 func (g *Gatherer) updateVersionCache(ctx context.Context, configClient configv1client.ConfigV1Interface) error {
+	const logPrefix = "conditional gatherer: "
+	klog.Info(logPrefix + "updating version cache for conditional gatherer")
+
 	clusterVersion, err := configClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	g.clusterVersion = clusterVersion.Status.Desired.Version
-
+	klog.Infof(logPrefix+"cluster version is '%v'", g.clusterVersion)
 	return nil
 }
 

@@ -241,13 +241,25 @@ func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
 			expectedVersion: ">1.0.0 <2.0.0 || >=3.0.0",
 			shouldMatch:     true,
 		},
+		{
+			expectedVersion: "4.8.0-0.nightly-2021-06-13-101614",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: "4.8.0-0.ci-2021-06-13-101614",
+			shouldMatch:     false,
+		},
+		{
+			expectedVersion: "4.8.0-1.nightly-2021-06-13-101614",
+			shouldMatch:     false,
+		},
 	} {
 		doesMatch, err := gatherer.doesClusterVersionMatch(testCase.expectedVersion)
 		if err != nil {
 			assert.Error(t, err)
 		}
 
-		assert.Equal(t, testCase.shouldMatch, doesMatch)
+		assert.Equalf(t, testCase.shouldMatch, doesMatch, "test case is '%v'", testCase)
 	}
 }
 
