@@ -20,10 +20,6 @@ spec:
       labels:
         app: insights-operator
     spec:
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
       containers:
       - args:
         - start
@@ -42,17 +38,18 @@ spec:
           value: 0.0.1-snapshot
         image: quay.io/openshift/origin-insights-operator:latest
         name: insights-operator
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop: ["ALL"]
         ports:
-        - containerPort: 8443
-          name: https
+        - containerPort: 8080
+          name: metrics
         resources:
           requests:
             cpu: 10m
             memory: 30Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /var/lib/insights-operator
@@ -65,9 +62,34 @@ spec:
           readOnly: true
         - mountPath: /var/run/secrets/serving-cert
           name: serving-cert
+      - args:
+        - --logtostderr
+        - --secure-listen-address=:8443
+        - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - --upstream=http://127.0.0.1:8080/
+        - --tls-cert-file=/etc/tls/private/tls.crt
+        - --tls-private-key-file=/etc/tls/private/tls.key
+        image: quay.io/openshift/origin-kube-rbac-proxy:latest
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+        resources:
+          requests:
+            cpu: 1m
+            memory: 20Mi
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /etc/tls/private
+          name: serving-cert
+          readOnly: false
       nodeSelector:
         beta.kubernetes.io/os: linux
       priorityClassName: system-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: operator
       tolerations:
       - effect: NoSchedule
