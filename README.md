@@ -81,6 +81,8 @@ To start generating the document run:
 ```shell script
 make docs
 ```
+The configuration and functionality of the Insights operator is described more in the [architecture document](docs/arch.md).
+
 
 # Getting metrics from Prometheus
 
