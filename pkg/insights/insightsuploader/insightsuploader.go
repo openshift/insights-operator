@@ -31,7 +31,7 @@ type StatusReporter interface {
 }
 
 type Controller struct {
-	controllerstatus.Simple
+	controllerstatus.StatusController
 
 	summarizer      Summarizer
 	client          *insightsclient.Client
@@ -43,7 +43,7 @@ type Controller struct {
 
 func New(summarizer Summarizer, client *insightsclient.Client, configurator configobserver.Configurator, statusReporter StatusReporter, initialDelay time.Duration) *Controller {
 	return &Controller{
-		Simple: controllerstatus.Simple{Name: "insightsuploader"},
+		StatusController: controllerstatus.New("insightsuploader"),
 
 		summarizer:      summarizer,
 		configurator:    configurator,
@@ -55,7 +55,7 @@ func New(summarizer Summarizer, client *insightsclient.Client, configurator conf
 }
 
 func (c *Controller) Run(ctx context.Context) {
-	c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
+	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 
 	if c.client == nil {
 		klog.Infof("No reporting possible without a configured client")
@@ -107,7 +107,7 @@ func (c *Controller) Run(ctx context.Context) {
 
 		source, ok, err := c.summarizer.Summary(ctx, lastReported)
 		if err != nil {
-			c.Simple.UpdateStatus(controllerstatus.Summary{Reason: "SummaryFailed", Message: fmt.Sprintf("Unable to retrieve local insights data: %v", err)})
+			c.StatusController.UpdateStatus(controllerstatus.Summary{Reason: "SummaryFailed", Message: fmt.Sprintf("Unable to retrieve local insights data: %v", err)})
 			return
 		}
 		if !ok {
@@ -129,14 +129,14 @@ func (c *Controller) Run(ctx context.Context) {
 					return
 				}
 				if authorizer.IsAuthorizationError(err) {
-					c.Simple.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
+					c.StatusController.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
 						Reason: "NotAuthorized", Message: fmt.Sprintf("Reporting was not allowed: %v", err)})
 					c.initialDelay = wait.Jitter(interval/2, 2)
 					return
 				}
 
 				c.initialDelay = wait.Jitter(interval/8, 1.2)
-				c.Simple.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
+				c.StatusController.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
 					Reason: "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err)})
 				return
 			}
@@ -146,7 +146,7 @@ func (c *Controller) Run(ctx context.Context) {
 			default:
 			}
 			lastReported = start.UTC()
-			c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
+			c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 		} else {
 			klog.V(4).Info("Display report that would be sent")
 			// display what would have been sent (to ensure we always exercise source processing)

@@ -22,15 +22,15 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
+	"github.com/openshift/insights-operator/pkg/ocm"
+	"github.com/openshift/insights-operator/pkg/ocm/clustertransfer"
+	"github.com/openshift/insights-operator/pkg/ocm/sca"
 )
 
 const (
 	// How many upload failures in a row we tolerate before starting reporting
 	// as InsightsUploadDegraded
 	uploadFailuresCountThreshold = 5
-	// OCMAPIFailureCountThreshold defines how many unsuccessful responses from the OCM API in a row is tolerated
-	// before the operator is marked as Degraded
-	OCMAPIFailureCountThreshold = 5
 
 	insightsAvailableMessage = "Insights works as expected"
 )
@@ -50,7 +50,7 @@ type Controller struct {
 	statusCh     chan struct{}
 	configurator configobserver.Configurator
 
-	sources  []controllerstatus.Interface
+	sources  map[string]controllerstatus.StatusController
 	reported Reported
 	start    time.Time
 
@@ -67,6 +67,7 @@ func NewController(client configv1client.ConfigV1Interface, configurator configo
 		configurator: configurator,
 		client:       client,
 		namespace:    namespace,
+		sources:      make(map[string]controllerstatus.StatusController),
 		ctrlStatus:   newControllerStatus(),
 	}
 	return c
@@ -108,18 +109,27 @@ func (c *Controller) SetLastReportedTime(at time.Time) {
 
 // AddSources adds sources in a thread-safe way.
 // A source is used to monitor parts of the operator.
-func (c *Controller) AddSources(sources ...controllerstatus.Interface) {
+func (c *Controller) AddSources(sources ...controllerstatus.StatusController) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.sources = append(c.sources, sources...)
+	for i := range sources {
+		source := sources[i]
+		c.sources[source.Name()] = source
+	}
 }
 
 // Sources provides the sources in a thread-safe way.
 // A source is used to monitor parts of the operator.
-func (c *Controller) Sources() []controllerstatus.Interface {
+func (c *Controller) Sources() map[string]controllerstatus.StatusController {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.sources
+}
+
+func (c *Controller) Source(name string) controllerstatus.StatusController {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.sources[name]
 }
 
 func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.ClusterOperator {
@@ -144,7 +154,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 
 	// cluster operator conditions
 	cs := newConditions(&clusterOperator.Status, metav1.Time{Time: now})
-	updateControllerConditions(cs, c.ctrlStatus, isInitializing, lastTransition)
+	c.updateControllerConditions(cs, isInitializing, lastTransition)
 	updateControllerConditionsByStatus(cs, c.ctrlStatus, isInitializing)
 
 	// all status conditions from conditions to cluster operator
@@ -172,10 +182,10 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 
 	allReady = true
 
-	for i, source := range c.Sources() {
+	for name, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
 		if !ready {
-			klog.V(4).Infof("Source %d %T is not ready", i, source)
+			klog.V(4).Infof("Source %s %T is not ready", name, source)
 			allReady = false
 			continue
 		}
@@ -183,7 +193,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 			continue
 		}
 		if len(summary.Message) == 0 {
-			klog.Errorf("Programmer error: status source %d %T reported an empty message: %#v", i, source, summary)
+			klog.Errorf("Programmer error: status source %s %T reported an empty message: %#v", name, source, summary)
 			continue
 		}
 
@@ -206,18 +216,16 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
 				klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
-					OCMAPIFailureCountThreshold)
+					ocm.OCMAPIFailureCountThreshold)
 				degradingFailure = true
 			}
-			c.ctrlStatus.setStatus(SCAPullStatus, summary.Reason, summary.Message)
 		} else if summary.Operation.Name == controllerstatus.PullingClusterTransfer.Name {
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
 				klog.V(4).Infof("Failed to pull the cluster transfer object within the threshold %d with exponential backoff. Marking as degraded.",
-					OCMAPIFailureCountThreshold)
+					ocm.OCMAPIFailureCountThreshold)
 				degradingFailure = true
 			}
-			c.ctrlStatus.setStatus(ClusterTransferStatus, summary.Reason, summary.Message)
 		}
 
 		if degradingFailure {
@@ -317,11 +325,11 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 }
 
 // update the cluster controller status conditions
-func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
+func (c *Controller) updateControllerConditions(cs *conditions,
 	isInitializing bool, lastTransition time.Time) {
 	if isInitializing {
 		// the disabled condition is optional, but set it now if we already know we're disabled
-		if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
+		if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil {
 			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
 		}
 		if !cs.hasCondition(configv1.OperatorDegraded) {
@@ -331,45 +339,60 @@ func updateControllerConditions(cs *conditions, ctrlStatus *controllerStatus,
 
 	// once we've initialized set Failing and Disabled as best we know
 	// handle when disabled
-	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
+	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
 	} else {
 		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
 	}
 
 	// handle when has errors
-	if es := ctrlStatus.getStatus(ErrorStatus); es != nil && !ctrlStatus.isDisabled() {
+	if es := c.ctrlStatus.getStatus(ErrorStatus); es != nil && !c.ctrlStatus.isDisabled() {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", insightsAvailableMessage, metav1.Now())
 	}
 
 	// handle when upload fails
-	if ur := ctrlStatus.getStatus(UploadStatus); ur != nil && !ctrlStatus.isDisabled() {
+	if ur := c.ctrlStatus.getStatus(UploadStatus); ur != nil && !c.ctrlStatus.isDisabled() {
 		cs.setCondition(InsightsUploadDegraded, configv1.ConditionTrue, ur.reason, ur.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.removeCondition(InsightsUploadDegraded)
 	}
 
 	// handle when download fails
-	if ds := ctrlStatus.getStatus(DownloadStatus); ds != nil && !ctrlStatus.isDisabled() {
+	if ds := c.ctrlStatus.getStatus(DownloadStatus); ds != nil && !c.ctrlStatus.isDisabled() {
 		cs.setCondition(InsightsDownloadDegraded, configv1.ConditionTrue, ds.reason, ds.message, metav1.Time{Time: lastTransition})
 	} else {
 		cs.removeCondition(InsightsDownloadDegraded)
 	}
+	c.updateControllerConditionByReason(cs, SCAAvailable, sca.ControllerName, sca.AvailableReason, isInitializing)
+	c.updateControllerConditionByReason(cs,
+		ClusterTransferAvailable,
+		clustertransfer.ControllerName,
+		clustertransfer.AvailableReason,
+		isInitializing)
+}
 
-	// handler when SCA pull from OCM fails
-	if ss := ctrlStatus.getStatus(SCAPullStatus); ss != nil {
-		cs.setCondition(SCANotAvailable, configv1.ConditionTrue, ss.reason, ss.message, metav1.Time{Time: lastTransition})
-	} else {
-		cs.removeCondition(SCANotAvailable)
+func (c *Controller) updateControllerConditionByReason(cs *conditions,
+	condition configv1.ClusterStatusConditionType,
+	controllerName, reason string,
+	isInitializing bool) {
+	controller := c.Source(controllerName)
+	if controller == nil {
+		return
 	}
-
-	// handler when ClusterTransfer pull from the OCM fails
-	if ss := ctrlStatus.getStatus(ClusterTransferStatus); ss != nil {
-		cs.setCondition(ClusterTransferFailed, configv1.ConditionTrue, ss.reason, ss.message, metav1.Time{Time: lastTransition})
+	if isInitializing {
+		return
+	}
+	summary, ok := controller.CurrentStatus()
+	// no summary to read
+	if !ok {
+		return
+	}
+	if summary.Reason == reason {
+		cs.setCondition(condition, configv1.ConditionTrue, summary.Reason, summary.Message, metav1.Time{Time: summary.LastTransitionTime})
 	} else {
-		cs.removeCondition(ClusterTransferFailed)
+		cs.setCondition(condition, configv1.ConditionFalse, summary.Reason, summary.Message, metav1.Time{Time: summary.LastTransitionTime})
 	}
 }
 

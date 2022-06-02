@@ -141,7 +141,12 @@ func Test_ClusterTransfer_RequestDataAndUpdateSecret(t *testing.T) {
 			ctController.requestDataAndUpdateSecret(mockConfig.Conf.OCMConfig.ClusterTransferEndpoint)
 			summary, ok := ctController.CurrentStatus()
 			assert.True(t, ok, "unexpected summary")
-			assert.EqualValues(t, tt.expectedSummary, summary)
+			assert.Equal(t, tt.expectedSummary.Operation, summary.Operation)
+			assert.Equal(t, tt.expectedSummary.Healthy, summary.Healthy)
+			assert.Equal(t, tt.expectedSummary.Count, summary.Count)
+			assert.Equal(t, tt.expectedSummary.Reason, summary.Reason)
+			assert.Equal(t, tt.expectedSummary.Message, summary.Message)
+			assert.True(t, tt.expectedSummary.LastTransitionTime.Before(summary.LastTransitionTime))
 
 			// check pull-secret value
 			expectedPSData, err := loadDataFromFile(tt.updatedPullSecretDataFilePath)

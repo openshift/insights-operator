@@ -20,7 +20,7 @@ import (
 
 // Controller gathers the report from Smart Proxy
 type Controller struct {
-	controllerstatus.Simple
+	controllerstatus.StatusController
 
 	configurator          configobserver.Configurator
 	client                *insightsclient.Client
@@ -62,7 +62,7 @@ var (
 // New initializes and returns a Gatherer
 func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter) *Controller {
 	return &Controller{
-		Simple:                controllerstatus.Simple{Name: "insightsreport"},
+		StatusController:      controllerstatus.New("insightsreport"),
 		configurator:          configurator,
 		client:                client,
 		archiveUploadReporter: reporter.ArchiveUploaded(),
@@ -86,7 +86,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	klog.V(4).Info("Retrieving report")
 	resp, err := c.client.RecvReport(ctx, reportEndpoint)
 	if authorizer.IsAuthorizationError(err) {
-		c.Simple.UpdateStatus(controllerstatus.Summary{
+		c.StatusController.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
 			Reason:    "NotAuthorized",
 			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
@@ -105,7 +105,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, ie
 	} else if err != nil {
 		klog.Errorf("Unexpected error retrieving the report: %s", err)
-		c.Simple.UpdateStatus(controllerstatus.Summary{
+		c.StatusController.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
 			Reason:    "UnexpectedError",
 			Message:   fmt.Sprintf("Failed to download the latest report: %v", err),
@@ -137,7 +137,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	// we want to increment the metric only in case of download of a new report
 	c.client.IncrementRecvReportMetric(resp.StatusCode)
 	c.LastReport = reportResponse.Report
-	c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
+	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	return true, nil
 }
 
@@ -179,7 +179,7 @@ func (c *Controller) RetrieveReport() {
 
 			firstPullDone = true
 			if retryCounter >= retryThreshold {
-				c.Simple.UpdateStatus(controllerstatus.Summary{
+				c.StatusController.UpdateStatus(controllerstatus.Summary{
 					Operation: controllerstatus.DownloadingReport,
 					Reason:    "NotAvailable",
 					Message:   fmt.Sprintf("Couldn't download the latest report: %v", err),
@@ -228,7 +228,7 @@ func (c *Controller) RetrieveReport() {
 
 // Run goroutine code for gathering the reports from Smart Proxy
 func (c *Controller) Run(ctx context.Context) {
-	c.Simple.UpdateStatus(controllerstatus.Summary{Healthy: true})
+	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
 	klog.V(2).Infof("Initial config: %v", c.configurator.Config())
 

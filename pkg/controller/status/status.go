@@ -1,12 +1,10 @@
 package status
 
 const (
-	DisabledStatus        = "disabled"
-	UploadStatus          = "upload"
-	DownloadStatus        = "download"
-	ErrorStatus           = "error"
-	SCAPullStatus         = "scaPullStatus"
-	ClusterTransferStatus = "clusterTransferStatus"
+	DisabledStatus = "disabled"
+	UploadStatus   = "upload"
+	DownloadStatus = "download"
+	ErrorStatus    = "error"
 )
 
 type controllerStatus struct {

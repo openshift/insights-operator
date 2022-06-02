@@ -24,7 +24,7 @@ type Controller struct {
 	configurator configobserver.Configurator
 	recorder     recorder.FlushInterface
 	gatherers    []gatherers.Interface
-	statuses     map[string]*controllerstatus.Simple
+	statuses     map[string]controllerstatus.StatusController
 	anonymizer   *anonymization.Anonymizer
 }
 
@@ -36,11 +36,11 @@ func New(
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 ) *Controller {
-	statuses := make(map[string]*controllerstatus.Simple)
+	statuses := make(map[string]controllerstatus.StatusController)
 
 	for _, gatherer := range listGatherers {
 		gathererName := gatherer.GetName()
-		statuses[gathererName] = &controllerstatus.Simple{Name: fmt.Sprintf("periodic-%s", gathererName)}
+		statuses[gathererName] = controllerstatus.New(fmt.Sprintf("periodic-%s", gathererName))
 	}
 
 	return &Controller{
@@ -52,13 +52,13 @@ func New(
 	}
 }
 
-func (c *Controller) Sources() []controllerstatus.Interface {
+func (c *Controller) Sources() []controllerstatus.StatusController {
 	keys := make([]string, 0, len(c.statuses))
 	for key := range c.statuses {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-	sources := make([]controllerstatus.Interface, 0, len(keys))
+	sources := make([]controllerstatus.StatusController, 0, len(keys))
 	for _, key := range keys {
 		sources = append(sources, c.statuses[key])
 	}
