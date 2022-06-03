@@ -218,11 +218,19 @@ func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
 
 	for _, testCase := range []testCase{
 		{
-			expectedVersion: "4.8.x",
-			shouldMatch:     true,
+			expectedVersion: "4",
+			shouldMatch:     false,
+		},
+		{
+			expectedVersion: "4.8",
+			shouldMatch:     false,
 		},
 		{
 			expectedVersion: "4.8.0",
+			shouldMatch:     true,
+		},
+		{
+			expectedVersion: "4.8.x",
 			shouldMatch:     true,
 		},
 		{
