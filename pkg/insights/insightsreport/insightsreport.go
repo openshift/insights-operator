@@ -252,20 +252,7 @@ func updateInsightsMetrics(report types.SmartProxyReport) {
 
 	total = report.Meta.Count
 
-	activeRecommendations := []types.InsightsRecommendation{
-		{
-			RuleID:      "test-rule-id-1",
-			ErrorKey:    "test-error-key-1",
-			Description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-			TotalRisk:   1,
-		},
-		{
-			RuleID:      "test-rule-id-2",
-			ErrorKey:    "test-error-key-2",
-			Description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-			TotalRisk:   3,
-		},
-	}
+	activeRecommendations := []types.InsightsRecommendation{}
 
 	for _, rule := range report.Data {
 		switch rule.TotalRisk {
