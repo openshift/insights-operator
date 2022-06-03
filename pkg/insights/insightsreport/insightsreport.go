@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/component-base/metrics"
+	"k8s.io/component-base/metrics/legacyregistry"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
-	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Controller gathers the report from Smart Proxy
@@ -38,13 +38,10 @@ type InsightsReporter interface {
 	ArchiveUploaded() <-chan struct{}
 }
 
-const (
-	insightsLastGatherTimeName = "insightsclient_last_gather_time"
-)
-
 var (
+
 	// insightsStatus contains a metric with the latest report information
-	insightsStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{
 		Namespace: "health",
 		Subsystem: "statuses",
 		Name:      "insights",
@@ -54,10 +51,27 @@ var (
 	retryThreshold = 2
 
 	// insightsLastGatherTime contains time of the last Insights data gathering
-	insightsLastGatherTime = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: insightsLastGatherTimeName,
+	insightsLastGatherTime = metrics.NewGauge(&metrics.GaugeOpts{
+		Name: "insightsclient_last_gather_time",
 	})
 )
+
+func init() {
+	err := legacyregistry.Register(insightsStatus)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = legacyregistry.Register(insightsLastGatherTime)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	insightsStatus.WithLabelValues("low").Set(float64(-1))
+	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
+	insightsStatus.WithLabelValues("important").Set(float64(-1))
+	insightsStatus.WithLabelValues("critical").Set(float64(-1))
+	insightsStatus.WithLabelValues("total").Set(float64(-1))
+}
 
 // New initializes and returns a Gatherer
 func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter) *Controller {
@@ -272,18 +286,8 @@ func updateInsightsMetrics(report SmartProxyReport) {
 
 	t, err := time.Parse(time.RFC3339, string(report.Meta.GatheredAt))
 	if err != nil {
-		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTimeName, err)
+		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTime.Name, err)
 		return
 	}
 	insightsLastGatherTime.Set(float64(t.Unix()))
-}
-
-func init() {
-	insights.MustRegisterMetricCollectors(insightsStatus, insightsLastGatherTime)
-
-	insightsStatus.WithLabelValues("low").Set(float64(-1))
-	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
-	insightsStatus.WithLabelValues("important").Set(float64(-1))
-	insightsStatus.WithLabelValues("critical").Set(float64(-1))
-	insightsStatus.WithLabelValues("total").Set(float64(-1))
 }
