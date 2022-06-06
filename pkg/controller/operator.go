@@ -8,6 +8,7 @@ import (
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -80,6 +81,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
+
+	kubeInformersForNamespaces := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
+	configController, err := NewConfigController(gatherKubeConfig, controller.EventRecorder, kubeInformersForNamespaces)
+	if err != nil {
+		return err
+	}
+	kubeInformersForNamespaces.Start(ctx.Done())
+	go configController.Run(ctx, 1)
 
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(s.Controller, kubeClient)
