@@ -24,6 +24,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
+	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
@@ -52,6 +53,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 	s.Controller = cont
+
+	// Start the Prometheus metrics server.
+	go insights.RunMetricsServer()
 
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(controller.ProtoKubeConfig)
