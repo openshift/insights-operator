@@ -270,9 +270,27 @@ func updateInsightsMetrics(report types.SmartProxyReport) {
 			continue
 		}
 
+		extraDataMap, ok := rule.TemplateData.(map[string]interface{})
+		if !ok {
+			klog.Error("Unable to convert the TemplateData of rule %q in an Insights report to a map", rule.RuleID)
+			continue
+		}
+
+		errorKeyField, exists := extraDataMap["error_key"]
+		if !exists {
+			klog.Error("TemplateData of rule %q does not contain error_key", rule.RuleID)
+			continue
+		}
+
+		errorKeyStr, ok := errorKeyField.(string)
+		if !ok {
+			klog.Error("The error_key of TemplateData of rule %q is not a string", rule.RuleID)
+			continue
+		}
+
 		activeRecommendations = append(activeRecommendations, types.InsightsRecommendation{
 			RuleID:      rule.RuleID,
-			ErrorKey:    rule.ErrorKey,
+			ErrorKey:    errorKeyStr,
 			Description: rule.Description,
 			TotalRisk:   rule.TotalRisk,
 		})
