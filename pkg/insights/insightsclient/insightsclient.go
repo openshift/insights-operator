@@ -20,13 +20,13 @@ import (
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/transport"
+	"k8s.io/component-base/metrics"
 
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/insights-operator/pkg/insights"
-	"github.com/prometheus/client_golang/prometheus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
@@ -265,16 +265,16 @@ func (c *Client) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, 
 }
 
 var (
-	counterRequestSend = prometheus.NewCounterVec(prometheus.CounterOpts{
+	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
 		Name: "insightsclient_request_send_total",
 		Help: "Tracks the number of metrics sends",
 	}, []string{"client", "status_code"})
-	counterRequestRecvReport = prometheus.NewCounterVec(prometheus.CounterOpts{
+	counterRequestRecvReport = metrics.NewCounterVec(&metrics.CounterOpts{
 		Name: "insightsclient_request_recvreport_total",
 		Help: "Tracks the number of reports requested",
 	}, []string{"client", "status_code"})
 )
 
 func init() {
-	insights.MustRegisterMetricCollectors(counterRequestSend, counterRequestRecvReport)
+	insights.MustRegisterMetrics(counterRequestSend, counterRequestRecvReport)
 }
