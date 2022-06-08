@@ -43,7 +43,6 @@ const (
 )
 
 var (
-
 	// insightsStatus contains a metric with the latest report information
 	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{
 		Namespace: "health",
@@ -62,7 +61,6 @@ var (
 
 // New initializes and returns a Gatherer
 func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter) *Controller {
-
 	return &Controller{
 		StatusController:      controllerstatus.New("insightsreport"),
 		configurator:          configurator,
