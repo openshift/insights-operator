@@ -6,7 +6,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// RegisterMetrics registers a new metric in the Insights metrics registry.
+// MustRegisterMetrics registers provided registrables in the Insights metrics registry.
 // This function should be called from init() functions only, because
 // it uses the MustRegister method, and therefore panics in case of an error.
 func MustRegisterMetrics(registrables ...metrics.Registerable) {
