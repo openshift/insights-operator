@@ -2,6 +2,7 @@ package insights
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/prometheus/client_golang/prometheus"
@@ -45,6 +46,9 @@ func (c *InsightsRecommendationCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, rec := range c.activeRecommendations {
 		ruleIDStr := string(rec.RuleID)
+		// There is ".report" at the end of the rule ID for some reason, which
+		// should not be inserted into the URL.
+		ruleIDStr = strings.TrimSuffix(ruleIDStr, ".report")
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc("insights_recommendation_active", "", []string{}, prometheus.Labels{
 				"rule_id":     ruleIDStr,
@@ -62,14 +66,14 @@ func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 func totalRiskToStr(totalRisk int) string {
 	switch totalRisk {
 	case 1:
-		return "low"
+		return "Low"
 	case 2:
-		return "moderate"
+		return "Moderate"
 	case 3:
-		return "important"
+		return "Important"
 	case 4:
-		return "critical"
+		return "Critical"
 	default:
-		return "invalid"
+		return "Invalid"
 	}
 }
