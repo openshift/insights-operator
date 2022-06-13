@@ -349,6 +349,7 @@ func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
 	assert.EqualError(t, err, `function "panic" panicked`)
 	assert.Len(t, functionReports, 2)
 	functionReports[0].Duration = 0
+	functionReports[1].Duration = 0
 	assert.ElementsMatch(t, functionReports, []GathererFunctionReport{
 		{
 			FuncName: "mock_gatherer/panic",

@@ -100,14 +100,19 @@ func (g *Gatherer) doesClusterVersionMatch(expectedVersionExpression string) (bo
 		return false, err
 	}
 
+	shortClusterVersion, err := semver.Parse(g.clusterVersion)
+	if err != nil {
+		return false, err
+	}
+
+	// ignore everything after the first three numbers for the short version
+	shortClusterVersion.Pre = nil
+	shortClusterVersion.Build = nil
+
 	expectedRange, err := semver.ParseRange(expectedVersionExpression)
 	if err != nil {
 		return false, err
 	}
 
-	// ignore everything after the first three numbers
-	clusterVersion.Pre = nil
-	clusterVersion.Build = nil
-
-	return expectedRange(clusterVersion), nil
+	return expectedRange(clusterVersion) || expectedRange(shortClusterVersion), nil
 }

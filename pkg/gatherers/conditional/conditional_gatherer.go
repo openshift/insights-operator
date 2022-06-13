@@ -239,8 +239,7 @@ func (g *Gatherer) updateCache(ctx context.Context) {
 }
 
 func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Interface) error {
-	const logPrefix = "conditional gatherer: "
-	klog.Info(logPrefix + "updating alerts cache for conditional gatherer")
+	klog.Info("updating alerts cache for conditional gatherer")
 
 	g.firingAlerts = make(map[string][]AlertLabels)
 
@@ -268,15 +267,15 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Int
 	for _, result := range response.Data.Results {
 		alertName, found := result.Labels["alertname"]
 		if !found {
-			klog.Errorf(`%v label "alertname"" was not found in the result: %v`, logPrefix, result)
+			klog.Errorf(`label "alertname" was not found in the result: %v`, result)
 			continue
 		}
 		alertState, found := result.Labels["alertstate"]
 		if !found {
-			klog.Errorf(`%v label "alertstate"" was not found in the result: %v`, logPrefix, result)
+			klog.Errorf(`label "alertstate" was not found in the result: %v`, result)
 			continue
 		}
-		klog.Infof(`%v alert "%v" has state "%v"`, logPrefix, alertName, alertState)
+		klog.Infof(`alert "%v" has state "%v"`, alertName, alertState)
 		if alertState == "firing" {
 			g.firingAlerts[alertName] = append(g.firingAlerts[alertName], result.Labels)
 		}
@@ -286,13 +285,15 @@ func (g *Gatherer) updateAlertsCache(ctx context.Context, metricsClient rest.Int
 }
 
 func (g *Gatherer) updateVersionCache(ctx context.Context, configClient configv1client.ConfigV1Interface) error {
+	klog.Info("updating version cache for conditional gatherer")
+
 	clusterVersion, err := configClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	g.clusterVersion = clusterVersion.Status.Desired.Version
-
+	klog.Infof("cluster version is '%v'", g.clusterVersion)
 	return nil
 }
 

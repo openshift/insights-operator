@@ -99,7 +99,7 @@ build: ## Compiles the insights operator
 
 .PHONY: build-debug
 build-debug: ## Compiles the insights operator in debug mode
-	go build $(GO_BUILD_FLAGS) -gcflags="all=-N -l" \
+	go build -gcflags="all=-N -l" \
 		-o ./bin/insights-operator ./cmd/insights-operator
 
 ## --------------------------------------

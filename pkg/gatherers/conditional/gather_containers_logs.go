@@ -116,7 +116,7 @@ func (g *Gatherer) gatherContainersLogs(
 		)
 		if err != nil {
 			newErr := fmt.Errorf("unable to get container logs: %v", err)
-			klog.Warningln(newErr.Error())
+			klog.Warning(newErr.Error())
 			errs = append(errs, newErr)
 		}
 
