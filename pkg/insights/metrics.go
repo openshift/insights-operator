@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/blang/semver"
+	semver "github.com/blang/semver/v4"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/component-base/metrics"
