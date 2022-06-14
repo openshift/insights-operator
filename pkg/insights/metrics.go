@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/component-base/metrics"
@@ -51,8 +52,6 @@ func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 		ruleIDStr = strings.TrimSuffix(ruleIDStr, ".report")
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc("insights_recommendation_active", "", []string{}, prometheus.Labels{
-				"rule_id":     ruleIDStr,
-				"error_key":   rec.ErrorKey,
 				"description": rec.Description,
 				"total_risk":  totalRiskToStr(rec.TotalRisk),
 				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/recommendations/%s%%7C%s", ruleIDStr, rec.ErrorKey),
@@ -61,6 +60,19 @@ func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 			1,
 		)
 	}
+}
+
+func (c *InsightsRecommendationCollector) ClearState() {
+	// NOOP: There is no state that would need to be cleared.
+	// This method is implemented exclusively to comply with the Collector
+	// interface from the legacyregistry module.
+}
+
+func (c *InsightsRecommendationCollector) Create(version *semver.Version) bool {
+	return true
+	// NOOP: No versioning is implemented for this collector.
+	// This method is implemented exclusively to comply with the Collector
+	// interface from the legacyregistry module.
 }
 
 func totalRiskToStr(totalRisk int) string {
