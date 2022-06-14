@@ -256,6 +256,13 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - ocs.openshift.io
+    resources:
+      - storageclusters
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
