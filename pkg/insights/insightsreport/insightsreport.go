@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/component-base/metrics"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
@@ -15,7 +16,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Controller gathers the report from Smart Proxy
@@ -44,7 +44,7 @@ const (
 
 var (
 	// insightsStatus contains a metric with the latest report information
-	insightsStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{
 		Namespace: "health",
 		Subsystem: "statuses",
 		Name:      "insights",
@@ -54,7 +54,7 @@ var (
 	retryThreshold = 2
 
 	// insightsLastGatherTime contains time of the last Insights data gathering
-	insightsLastGatherTime = prometheus.NewGauge(prometheus.GaugeOpts{
+	insightsLastGatherTime = metrics.NewGauge(&metrics.GaugeOpts{
 		Name: insightsLastGatherTimeName,
 	})
 )
@@ -279,7 +279,7 @@ func updateInsightsMetrics(report SmartProxyReport) {
 }
 
 func init() {
-	insights.MustRegisterMetricCollectors(insightsStatus, insightsLastGatherTime)
+	insights.MustRegisterMetrics(insightsStatus, insightsLastGatherTime)
 
 	insightsStatus.WithLabelValues("low").Set(float64(-1))
 	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
