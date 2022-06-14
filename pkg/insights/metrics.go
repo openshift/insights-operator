@@ -75,6 +75,10 @@ func (c *InsightsRecommendationCollector) Create(version *semver.Version) bool {
 	// interface from the legacyregistry module.
 }
 
+func (c *InsightsRecommendationCollector) FQName() string {
+	return "insights_recommendation_active"
+}
+
 func totalRiskToStr(totalRisk int) string {
 	switch totalRisk {
 	case 1:
