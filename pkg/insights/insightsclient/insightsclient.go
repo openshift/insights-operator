@@ -219,8 +219,7 @@ func responseBody(r *http.Response) string {
 // ocmErrorMessage wraps the OCM error states in the error
 func ocmErrorMessage(r *http.Response) error {
 	requestURL := r.Request.URL
-	errMessage := fmt.Sprintf("OCM API %s returned HTTP %d: %s", requestURL, r.StatusCode, responseBody(r))
-	err := fmt.Errorf(errMessage)
+	err := fmt.Errorf("OCM API %s returned HTTP %d: %s", requestURL, r.StatusCode, responseBody(r))
 	return HttpError{
 		Err:        err,
 		StatusCode: r.StatusCode,
