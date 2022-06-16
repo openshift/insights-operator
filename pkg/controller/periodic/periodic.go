@@ -123,7 +123,7 @@ func (c *Controller) Gather() {
 	defer cancel()
 	go func() {
 		// once the configChangedChannel is closed by configChangedCloser
-		// (which happens when we're done with the gatherers) this goroutine will stop
+		// (which happens when the Gather function finishes) this goroutine will stop
 		for range configChangedChannel {
 			// TODO: check that our field has changed
 			fmt.Println()
