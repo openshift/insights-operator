@@ -134,7 +134,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, fmt.Errorf("report not updated")
 	}
 
-	updateInsightsMetrics(reportResponse.Report)
+	c.updateInsightsMetrics(reportResponse.Report)
 	// we want to increment the metric only in case of download of a new report
 	c.client.IncrementRecvReportMetric(resp.StatusCode)
 	c.LastReport = reportResponse.Report
@@ -247,7 +247,7 @@ func (c *Controller) Run(ctx context.Context) {
 }
 
 // updateInsightsMetrics update the Prometheus metrics from a report
-func updateInsightsMetrics(report types.SmartProxyReport) {
+func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 	var critical, important, moderate, low, total int
 
 	total = report.Meta.Count
@@ -266,6 +266,9 @@ func updateInsightsMetrics(report types.SmartProxyReport) {
 			critical++
 		}
 
+		if !c.configurator.Config().EnableInsightsAlerts {
+			continue
+		}
 		if rule.Disabled {
 			continue
 		}
@@ -295,7 +298,6 @@ func updateInsightsMetrics(report types.SmartProxyReport) {
 			TotalRisk:   rule.TotalRisk,
 		})
 	}
-
 	insights.RecommendationCollector.SetActiveRecommendations(activeRecommendations)
 
 	insightsStatus.WithLabelValues("low").Set(float64(low))

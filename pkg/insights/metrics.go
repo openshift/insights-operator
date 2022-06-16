@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	RecommendationCollector = &InsightsRecommendationCollector{}
+	RecommendationCollector = &InsightsRecommendationCollector{
+		metricName: "insights_recommendation_active",
+	}
 )
 
 // MustRegisterMetrics registers provided registrables in the Insights metrics registry.
@@ -34,6 +36,7 @@ func init() {
 
 type InsightsRecommendationCollector struct {
 	activeRecommendations []types.InsightsRecommendation
+	metricName            string
 }
 
 func (c *InsightsRecommendationCollector) SetActiveRecommendations(activeRecommendations []types.InsightsRecommendation) {
@@ -51,7 +54,7 @@ func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 		// should not be inserted into the URL.
 		ruleIDStr = strings.TrimSuffix(ruleIDStr, ".report")
 		ch <- prometheus.MustNewConstMetric(
-			prometheus.NewDesc("insights_recommendation_active", "", []string{}, prometheus.Labels{
+			prometheus.NewDesc(c.metricName, "", []string{}, prometheus.Labels{
 				"description": rec.Description,
 				"total_risk":  totalRiskToStr(rec.TotalRisk),
 				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/recommendations/%s%%7C%s", ruleIDStr, rec.ErrorKey),
@@ -76,7 +79,7 @@ func (c *InsightsRecommendationCollector) Create(version *semver.Version) bool {
 }
 
 func (c *InsightsRecommendationCollector) FQName() string {
-	return "insights_recommendation_active"
+	return c.metricName
 }
 
 func totalRiskToStr(totalRisk int) string {

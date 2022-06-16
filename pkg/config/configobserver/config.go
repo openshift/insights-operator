@@ -127,6 +127,9 @@ func (c *Config) loadReport(data map[string][]byte) {
 	}
 
 	c.Report = len(c.Endpoint) > 0
+	if enableInsightsAlerts, ok := data["enableInsightsAlerts"]; ok {
+		c.EnableInsightsAlerts = strings.EqualFold(string(enableInsightsAlerts), "true")
+	}
 }
 
 func (c *Config) loadOCM(data map[string][]byte) {
