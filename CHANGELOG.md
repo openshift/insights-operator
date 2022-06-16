@@ -1,23 +1,60 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 393215401cc2891ff86a561103debc752561d756-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 24aeaa5b82e3828883faafd351f530abddf484d7-->
 ## 4.11
 
 ### Enhancement
+- [#625](https://github.com/openshift/insights-operator/pull/625) gather io configuration
+- [#627](https://github.com/openshift/insights-operator/pull/627) Console helm metrics
+- [#603](https://github.com/openshift/insights-operator/pull/603) Implement fingerprint for records
+- [#614](https://github.com/openshift/insights-operator/pull/614) Gather ODF config data
+- [#604](https://github.com/openshift/insights-operator/pull/604) Gather namespace names with overlapping UIDs
+- [#596](https://github.com/openshift/insights-operator/pull/596) Gather some error messages from the kube-controller-manager containers
 - [#576](https://github.com/openshift/insights-operator/pull/576) pod_definition conditional gather
 - [#579](https://github.com/openshift/insights-operator/pull/579) collecting logs if certain alerts are raised
 - [#580](https://github.com/openshift/insights-operator/pull/580) Gather cluster images.config.openshift.io resource definition
 
 ### Bugfix
+- [#640](https://github.com/openshift/insights-operator/pull/640) Fix permissions for OCS for the storage gatherer
+- [#633](https://github.com/openshift/insights-operator/pull/633) make cluster version condition more flexible
+- [#620](https://github.com/openshift/insights-operator/pull/620) save conditional gatherer endpoint and firing alerts in the metadata
+- [#618](https://github.com/openshift/insights-operator/pull/618) Fix the clusteroperator conditions values when IO is
+- [#613](https://github.com/openshift/insights-operator/pull/613) Fix vendoring of the build-machinery-go
+- [#601](https://github.com/openshift/insights-operator/pull/601) save version of gathering rules in metadata
+- [#595](https://github.com/openshift/insights-operator/pull/595) Set default messages & reconcile clusteroperator status conditions
 - [#589](https://github.com/openshift/insights-operator/pull/589) Don't serialize empty `images` attribute in the workload info gatherer
 - [#584](https://github.com/openshift/insights-operator/pull/584) Set default messages & reconcile clusteroperator status conditions
 - [#584](https://github.com/openshift/insights-operator/pull/584) Set default messages & reconcile clusteroperator status conditions
 - [#578](https://github.com/openshift/insights-operator/pull/578) defer in loop
 
 ### Others
+- [#639](https://github.com/openshift/insights-operator/pull/639) Do not use the kube-rbac-proxy container
+- [#637](https://github.com/openshift/insights-operator/pull/637) Implement Prometheus Collector pattern
+- [#626](https://github.com/openshift/insights-operator/pull/626) update of the arch.md document
+- [#621](https://github.com/openshift/insights-operator/pull/621) create new permanent clusteroperator conditions for SCA &
+- [#607](https://github.com/openshift/insights-operator/pull/607) Implement Prometheus Collector pattern
+- [#629](https://github.com/openshift/insights-operator/pull/629) bump(k8s v0.24.0)
+- [#631](https://github.com/openshift/insights-operator/pull/631) Update links to machine-api types
+- [#622](https://github.com/openshift/insights-operator/pull/622) Update to console.redhat.com services
+- [#617](https://github.com/openshift/insights-operator/pull/617) Update new gatherer OCP versions
+- [#571](https://github.com/openshift/insights-operator/pull/571) Cluster transfer OCM controller
+- [#606](https://github.com/openshift/insights-operator/pull/606) Minor gatherer documentation update
+- [#600](https://github.com/openshift/insights-operator/pull/600) Create a new Prometheus metric providing Insights gathering time
+- [#608](https://github.com/openshift/insights-operator/pull/608) Remove PSP gatherer
+- [#609](https://github.com/openshift/insights-operator/pull/609) Namespaces with overlapping UIDs - do not store UID ranges
+- [#602](https://github.com/openshift/insights-operator/pull/602) Gather documentation update
+- [#597](https://github.com/openshift/insights-operator/pull/597) Add list of anonymized data points to documentation
+- [#593](https://github.com/openshift/insights-operator/pull/593) Create an alternate IO deployment manifest excluding the NodeSelector
+- [#583](https://github.com/openshift/insights-operator/pull/583) implemented fetching rules from a remote server for conditional gathering
+- [#591](https://github.com/openshift/insights-operator/pull/591) Update changelog and improve the logic for its generation
+- [#590](https://github.com/openshift/insights-operator/pull/590) fix some docs
 - [#585](https://github.com/openshift/insights-operator/pull/585) HyperShift - Add required annotation to remaining manifests
 - [#582](https://github.com/openshift/insights-operator/pull/582) Send gathering time as metadata field with upload request
 
 ### Misc
+- [#635](https://github.com/openshift/insights-operator/pull/635) Revert "Implement Prometheus Collector pattern (#607)"
+- [#624](https://github.com/openshift/insights-operator/pull/624) Updating ose-insights-operator images to be consistent with ART
+- [#616](https://github.com/openshift/insights-operator/pull/616) comply to restricted pod security level
+- [#592](https://github.com/openshift/insights-operator/pull/592) Revert "Set default messages & reconcile clusteroperator status conditions"
 - [#586](https://github.com/openshift/insights-operator/pull/586) Revert "Set default messages & reconcile clusteroperator status conditions (#584)
 - [#577](https://github.com/openshift/insights-operator/pull/577) Updating ose-insights-operator images to be consistent with ART
 
