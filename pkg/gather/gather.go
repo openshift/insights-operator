@@ -113,6 +113,12 @@ func collectAndRecordGatherer(
 		totalNumberOfRecords += report.RecordsCount
 	}
 
+	if err := ctx.Err(); err != nil {
+		allErrors = append(allErrors, fmt.Errorf(
+			`context had the error "%v", some functions may not have been written`, err,
+		))
+	}
+
 	return reports, totalNumberOfRecords, allErrors
 }
 
