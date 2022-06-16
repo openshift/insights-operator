@@ -40,7 +40,7 @@ type Controller struct {
 	supportSecret *v1.Secret
 	config        *config.Controller
 	checkPeriod   time.Duration
-	listeners     []chan struct{}
+	listeners     map[chan struct{}]struct{}
 }
 
 // New creates a new configobsever, the configs/tokens are updated from the configs/tokens present in the cluster if possible.
@@ -48,7 +48,8 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 	c := &Controller{
 		kubeClient:    kubeClient,
 		defaultConfig: defaultConfig,
-		checkPeriod:   5 * time.Minute,
+		checkPeriod:   1 * time.Second,
+		listeners:     map[chan struct{}]struct{}{},
 	}
 	c.mergeConfig()
 	if err := c.updateToken(context.TODO()); err != nil {
@@ -91,23 +92,13 @@ func (c *Controller) SupportSecret() *v1.Secret {
 func (c *Controller) ConfigChanged() (configCh <-chan struct{}, closeFn func()) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	position := -1
-	for i := range c.listeners {
-		if c.listeners == nil {
-			position = i
-			break
-		}
-	}
-	if position == -1 {
-		c.listeners = append(c.listeners, nil)
-		position = len(c.listeners) - 1
-	}
 	ch := make(chan struct{}, 1)
-	c.listeners[position] = ch
+	c.listeners[ch] = struct{}{}
 	return ch, func() {
 		c.lock.Lock()
 		defer c.lock.Unlock()
-		c.listeners[position] = nil
+		close(ch)
+		delete(c.listeners, ch)
 	}
 }
 
@@ -201,7 +192,7 @@ func (c *Controller) setConfig(operatorConfig *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, operatorConfig) {
 			klog.V(2).Infof("Configuration updated: %s", operatorConfig.ToString())
-			for _, ch := range c.listeners {
+			for ch, _ := range c.listeners {
 				if ch == nil {
 					continue
 				}

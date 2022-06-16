@@ -223,6 +223,11 @@ func startGatheringConcurrently(
 	ctx context.Context, gatherer gatherers.Interface, enabledFunctions []string,
 ) (chan GatheringFunctionResult, error) {
 	gathererName := gatherer.GetName()
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf(
+			`unable to start gathering of the gatherer "%v", context has the error: %v`, gathererName, err,
+		)
+	}
 
 	gatherAllFunctions, gatherFunctionsList := getListOfEnabledFunctionForGatherer(
 		gathererName, enabledFunctions,

@@ -115,32 +115,45 @@ func (c *Controller) Gather() {
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 
+	configChangedChannel, configChangedCloser := c.configurator.ConfigChanged()
+	defer configChangedCloser()
+
+	// TODO: use a separate field in the config for timeout
+	ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+	defer cancel()
+	go func() {
+		// once the configChangedChannel is closed by configChangedCloser
+		// (which happens when we're done with the gatherers) this goroutine will stop
+		for range configChangedChannel {
+			// TODO: check that our field has changed
+			fmt.Println()
+			fmt.Println("!!! CONFIG WAS CHANGED DURING GATHERING !!!")
+			fmt.Println("cancelling the gathering...")
+			fmt.Println()
+			cancel()
+		}
+	}()
+
 	for _, gatherer := range gatherersToProcess {
-		func() {
-			name := gatherer.GetName()
-			start := time.Now()
+		name := gatherer.GetName()
+		start := time.Now()
 
-			ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
-			defer cancel()
-
-			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
-			for i := range functionReports {
-				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
-			}
-			if err == nil {
-				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
-				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
-				return
-			}
-
+		klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
+		for i := range functionReports {
+			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+		}
+		if err != nil {
 			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
 			c.statuses[name].UpdateStatus(controllerstatus.Summary{
 				Operation: controllerstatus.GatheringReport,
 				Reason:    "PeriodicGatherFailed",
 				Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
 			})
-		}()
+		} else {
+			klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+			c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
+		}
 	}
 
 	err := gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)
