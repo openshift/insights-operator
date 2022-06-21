@@ -103,7 +103,8 @@ gen_cert_file.py kubeconfig.yaml
 ## Prometheus metrics provided by Insights Operator
 
 It is possible to read Prometheus metrics provided by Insights Operator. Example of metrics exposed by
-Insights Operator can be found at [metrics.txt](docs/metrics.txt)
+Insights Operator can be found at [metrics.txt](docs/metrics.txt), also there is a list of possible metrics 
+available in the [architecture document](docs/arch.md). 
 
 Depending on how or where the IO is running you may have different ways to retrieve the metrics.
 Here is a list of some options, so you can find the one that fits you:

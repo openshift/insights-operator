@@ -125,7 +125,13 @@ Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_ga
 The data from this gatherer is stored under the `/conditional` directory in the archive. 
 
 ## Downloading and exposing Insights Analysis
-After every successful upload of archive, the operator waits for 1m (see the `reportPullingDelay` config attribute) and then it tries to download the latest Insights analysis result of the latest archive (created by the Insights pipeline in `console.redhat.com`). The report is verified by checking the `LastCheckedAt` timestamp (see `pkg/insights/insightsreport/types.go`). If the latest Insights result is not yet available (e.g. the pipeline may be delayed) or there has been some error response, the download request is repeated (see the `reportMinRetryTime` config attribute). The successfully downloaded Insights report is parsed and the numbers of corresponding hitting Insights recommendations are exposed via `health_statuses_insights` Prometheus metric.
+After every successful upload of archive, the operator waits (see the `reportPullingDelay` config attribute) and 
+then it tries to download the latest Insights analysis result of the latest archive (created by the Insights pipeline 
+in `console.redhat.com`). The report is verified by checking the `LastCheckedAt` timestamp (see 
+`pkg/insights/insightsreport/types.go`). If the latest Insights result is not yet available (e.g. the pipeline may be 
+delayed) or there has been some error response, the download request is repeated (see the `reportMinRetryTime` config 
+attribute). The successfully downloaded Insights report is parsed and the numbers of corresponding hitting Insights 
+recommendations are exposed via `health_statuses_insights` Prometheus metric.
 
 Code: Example of reported metrics:
 ```prometheus
@@ -137,6 +143,13 @@ health_statuses_insights{metric="low"} 1
 health_statuses_insights{metric="moderate"} 1
 health_statuses_insights{metric="total"} 2
 ```
+
+### Generated Metrics
+
+- `health_statuses_insights`, information about the cluster health status as detected by Insights tooling
+- `insightsclient_request_send_total`, tracks the number of metrics sends.
+- `insightsclient_request_recvreport_total`, tracks the number of reports requested.
+- `insightsclient_last_gather_time`, the time of the last Insights data gathering.
 
 ### Scheduling and running of Uploader
 The `operator.go` starts background task defined in `pkg/insights/insightsuploader/insightsuploader.go`. The insights uploader periodically checks if there is any data to upload. If no data is found, the uploader continues with next cycle.
