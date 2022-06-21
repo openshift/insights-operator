@@ -144,12 +144,25 @@ health_statuses_insights{metric="moderate"} 1
 health_statuses_insights{metric="total"} 2
 ```
 
-### Generated Metrics
+### Metrics
 
 - `health_statuses_insights`, information about the cluster health status as detected by Insights tooling
 - `insightsclient_request_send_total`, tracks the number of metrics sends.
 - `insightsclient_request_recvreport_total`, tracks the number of reports requested.
 - `insightsclient_last_gather_time`, the time of the last Insights data gathering.
+- `insights_recommendation_active`, expose insights recommendations as Prometheus alerts.
+
+> **Note** 
+> The metrics are registered by [the `MustRegisterMetrics` function](../pkg/insights/metrics.go)
+
+### Alerts
+
+- `InsightsDisabled`, insights operator is disabled.
+- `SimpleContentAccessNotAvailable`, simple content access certificates are not available.
+- `InsightsRecommendationActive`, an Insights recommendation is active for this cluster.
+
+> **Note**
+> The alerts are defined [here](../manifests/08-prometheus_rule.yaml)
 
 ### Scheduling and running of Uploader
 The `operator.go` starts background task defined in `pkg/insights/insightsuploader/insightsuploader.go`. The insights uploader periodically checks if there is any data to upload. If no data is found, the uploader continues with next cycle.
