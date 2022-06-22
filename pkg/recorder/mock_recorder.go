@@ -16,6 +16,6 @@ func (*MockRecorder) Flush() error {
 	return nil
 }
 
-func (mr *MockRecorder) Reset() {
+func (mr *MockRecorder) Clear() {
 	mr.Records = []record.Record{}
 }

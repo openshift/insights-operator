@@ -23,12 +23,12 @@ func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 	c.Gather()
 	// 6 gatherers + metadata
 	assert.Len(t, mockRecorder.Records, 7)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 
 	c.Gather()
 	// 5 gatherers + metadata (one is low priority and we need to wait 999 hours to get it
 	assert.Len(t, mockRecorder.Records, 6)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 }
 
 func Test_Controller_Run(t *testing.T) {
@@ -42,7 +42,7 @@ func Test_Controller_Run(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	stopCh <- struct{}{}
 	assert.Len(t, mockRecorder.Records, 6)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 
 	// 2 sec delay, 5 gatherers + metadata
 	stopCh = make(chan struct{})
@@ -50,7 +50,7 @@ func Test_Controller_Run(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	stopCh <- struct{}{}
 	assert.Len(t, mockRecorder.Records, 6)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 
 	// 2 hour delay, stop before delay ends
 	stopCh = make(chan struct{})
@@ -59,7 +59,7 @@ func Test_Controller_Run(t *testing.T) {
 	assert.Len(t, mockRecorder.Records, 0)
 	stopCh <- struct{}{}
 	assert.Len(t, mockRecorder.Records, 0)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 }
 
 func Test_Controller_periodicTrigger(t *testing.T) {
@@ -75,7 +75,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	time.Sleep(2200 * time.Millisecond)
 	stopCh <- struct{}{}
 	assert.Len(t, mockRecorder.Records, 12)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 
 	// 2 hour interval, stop before delay ends
 	c.configurator.Config().Interval = 2 * time.Hour
@@ -85,7 +85,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	assert.Len(t, mockRecorder.Records, 0)
 	stopCh <- struct{}{}
 	assert.Len(t, mockRecorder.Records, 0)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 }
 
 func Test_Controller_Sources(t *testing.T) {
@@ -117,7 +117,7 @@ func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	assert.Len(t, mockRecorder.Records, 7)
 	assert.Equal(t, 1, mockGatherer.ShouldBeProcessedNowWasCalledNTimes)
 	assert.Equal(t, 1, mockGatherer.UpdateLastProcessingTimeWasCalledNTimes)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 
 	mockGatherer.ShouldBeProcessed = false
 
@@ -127,7 +127,7 @@ func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	assert.Equal(t, 2, mockGatherer.ShouldBeProcessedNowWasCalledNTimes)
 	// ShouldBeProcessedNow had returned false so we didn't call UpdateLastProcessingTime
 	assert.Equal(t, 1, mockGatherer.UpdateLastProcessingTimeWasCalledNTimes)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 
 	mockGatherer.ShouldBeProcessed = true
 
@@ -135,7 +135,7 @@ func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	assert.Len(t, mockRecorder.Records, 7)
 	assert.Equal(t, 3, mockGatherer.ShouldBeProcessedNowWasCalledNTimes)
 	assert.Equal(t, 2, mockGatherer.UpdateLastProcessingTimeWasCalledNTimes)
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 }
 
 // Test_Controller_FailingGatherer tests that metadata file doesn't grow with failing gatherer functions
@@ -162,7 +162,7 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 			fmt.Sprintf("Only one function for %s expected ", c.gatherers[0].GetName()))
 	}
 	assert.Truef(t, metadataFound, fmt.Sprintf("%s not found in records", recorder.MetadataRecordName))
-	mockRecorder.Reset()
+	mockRecorder.Clear()
 }
 
 func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder) {
@@ -173,5 +173,5 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 	}}
 	mockRecorder := recorder.MockRecorder{}
 
-	return New(&mockConfigurator, &mockRecorder, listGatherers, nil), &mockRecorder
+	return New(&mockConfigurator, nil, &mockRecorder, listGatherers, nil), &mockRecorder
 }

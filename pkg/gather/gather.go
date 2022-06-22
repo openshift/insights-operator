@@ -113,6 +113,12 @@ func collectAndRecordGatherer(
 		totalNumberOfRecords += report.RecordsCount
 	}
 
+	if err := ctx.Err(); err != nil {
+		allErrors = append(allErrors, fmt.Errorf(
+			`context had the error "%v", some functions may not have been written`, err,
+		))
+	}
+
 	return reports, totalNumberOfRecords, allErrors
 }
 
@@ -223,6 +229,11 @@ func startGatheringConcurrently(
 	ctx context.Context, gatherer gatherers.Interface, enabledFunctions []string,
 ) (chan GatheringFunctionResult, error) {
 	gathererName := gatherer.GetName()
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf(
+			`unable to start gathering of the gatherer "%v", context has the error: %v`, gathererName, err,
+		)
+	}
 
 	gatherAllFunctions, gatherFunctionsList := getListOfEnabledFunctionForGatherer(
 		gathererName, enabledFunctions,

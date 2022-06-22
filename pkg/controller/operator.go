@@ -83,7 +83,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 
 	kubeInformersForNamespaces := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
-	configController, err := NewConfigController(gatherKubeConfig, controller.EventRecorder, kubeInformersForNamespaces)
+	configController, err := config.NewConfigController(gatherKubeConfig, controller.EventRecorder, kubeInformersForNamespaces)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,
 	)
-	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer)
+	periodicGather := periodic.New(configObserver, configController, rec, gatherers, anonymizer)
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop

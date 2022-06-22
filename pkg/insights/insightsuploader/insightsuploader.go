@@ -56,7 +56,6 @@ func New(summarizer Summarizer, client *insightsclient.Client, configurator conf
 
 func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
-
 	if c.client == nil {
 		klog.Infof("No reporting possible without a configured client")
 		return
@@ -158,7 +157,7 @@ func (c *Controller) Run(ctx context.Context) {
 
 		c.reporter.SetLastReportedTime(lastReported)
 
-		c.initialDelay = wait.Jitter(interval, 1.2)
+		c.initialDelay = 1 * time.Minute
 	}, 15*time.Second, ctx.Done())
 }
 

@@ -11,6 +11,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
@@ -26,12 +27,14 @@ type Controller struct {
 	gatherers    []gatherers.Interface
 	statuses     map[string]controllerstatus.StatusController
 	anonymizer   *anonymization.Anonymizer
+	apiObserver  config.APIObserver
 }
 
 // New creates a new instance of Controller which periodically invokes the gatherers
 // and flushes the recorder to create archives.
 func New(
 	configurator configobserver.Configurator,
+	apiObserver config.APIObserver,
 	rec recorder.FlushInterface,
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
@@ -49,6 +52,7 @@ func New(
 		gatherers:    listGatherers,
 		statuses:     statuses,
 		anonymizer:   anonymizer,
+		apiObserver:  apiObserver,
 	}
 }
 
@@ -92,11 +96,34 @@ func (c *Controller) Gather() {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval)
+	defer cancel()
 
 	// flush when all necessary gatherers were processed
 	defer func() {
+		if err := ctx.Err(); err != nil {
+			if err == context.Canceled {
+				klog.Info("Context canceled. No data is recorded.")
+				return
+			}
+		}
 		if err := c.recorder.Flush(); err != nil {
 			klog.Errorf("Unable to flush the recorder: %v", err)
+		}
+	}()
+
+	forceChannel, closeFn := c.apiObserver.ForceGather()
+	defer closeFn()
+	go func() {
+		select {
+		case forceReason := <-forceChannel:
+			klog.Infof("Data gathering forced by user with reason: %s. Interrupting the gathering in progress.", forceReason)
+			c.recorder.Clear()
+			cancel()
+			c.Gather()
+			return
+		case <-ctx.Done():
+			return
 		}
 	}()
 
@@ -114,33 +141,27 @@ func (c *Controller) Gather() {
 	}
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
-
 	for _, gatherer := range gatherersToProcess {
-		func() {
-			name := gatherer.GetName()
-			start := time.Now()
+		name := gatherer.GetName()
+		start := time.Now()
 
-			ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
-			defer cancel()
+		klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
+		for i := range functionReports {
+			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+		}
+		if err == nil {
+			klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+			c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
+			continue
+		}
 
-			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
-			for i := range functionReports {
-				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
-			}
-			if err == nil {
-				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
-				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
-				return
-			}
-
-			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-			c.statuses[name].UpdateStatus(controllerstatus.Summary{
-				Operation: controllerstatus.GatheringReport,
-				Reason:    "PeriodicGatherFailed",
-				Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
-			})
-		}()
+		utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
+		c.statuses[name].UpdateStatus(controllerstatus.Summary{
+			Operation: controllerstatus.GatheringReport,
+			Reason:    "PeriodicGatherFailed",
+			Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+		})
 	}
 
 	err := gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)
@@ -157,6 +178,10 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 
 	interval := c.configurator.Config().Interval
 	klog.Infof("Gathering cluster info every %s", interval)
+
+	forceCh, forceChCloseFn := c.apiObserver.ForceGather()
+	defer forceChCloseFn()
+
 	for {
 		select {
 		case <-stopCh:
@@ -172,6 +197,11 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 
 		case <-time.After(interval):
 			c.Gather()
+			return
+		case reason := <-forceCh:
+			klog.Infof("Data gathering forced by user with reason: %s", reason)
+			c.Gather()
+			return
 		}
 	}
 }

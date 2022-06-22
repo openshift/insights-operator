@@ -138,7 +138,7 @@ func (r *Recorder) Flush() error {
 	sort.Sort(records)
 	saved, err := r.driver.Save(records)
 	defer func() {
-		r.clear(saved)
+		r.clear(len(saved))
 	}()
 	if err != nil {
 		return err
@@ -191,10 +191,14 @@ func (r *Recorder) copy() record.MemoryRecords {
 	return copies
 }
 
-func (r *Recorder) clear(records record.MemoryRecords) {
+func (r *Recorder) clear(numOfRecords int) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	r.records = make(map[string]*record.MemoryRecord, len(records))
-	r.recordedFingerprints = make(map[string]string, len(records))
+	r.records = make(map[string]*record.MemoryRecord, numOfRecords)
+	r.recordedFingerprints = make(map[string]string, numOfRecords)
 	r.size = 0
+}
+
+func (r *Recorder) Clear() {
+	r.clear(0)
 }
