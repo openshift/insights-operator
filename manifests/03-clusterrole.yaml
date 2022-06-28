@@ -6,6 +6,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: ClusterRole
   name: system:auth-delegator
@@ -23,6 +24,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: Role
   name: extension-apiserver-authentication-reader
@@ -31,7 +33,6 @@ subjects:
     namespace: openshift-insights
     name: operator
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -40,6 +41,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 rules:
   # allow the operator to update cluster operator status
   - apiGroups:
@@ -74,7 +76,6 @@ rules:
       - namespaces
     verbs:
       - get
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -85,6 +86,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: Role
   name: monitoring-alertmanager-edit
@@ -92,9 +94,7 @@ subjects:
   - kind: ServiceAccount
     namespace: openshift-insights
     name: operator
-
 ---
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -104,6 +104,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: ClusterRole
   name: insights-operator
@@ -111,7 +112,6 @@ subjects:
   - kind: ServiceAccount
     namespace: openshift-insights
     name: operator
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -121,6 +121,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 rules:
   - apiGroups:
       - ""
@@ -272,6 +273,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: ClusterRole
   name: insights-operator-gather
@@ -279,7 +281,6 @@ subjects:
   - kind: ServiceAccount
     namespace: openshift-insights
     name: gather
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -289,6 +290,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: ClusterRole
   name: cluster-reader
@@ -307,6 +309,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 rules:
   - apiGroups:
       - ""
@@ -328,6 +331,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: Role
   name: insights-operator
@@ -335,7 +339,6 @@ subjects:
   - kind: ServiceAccount
     name: operator
     namespace: openshift-insights
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -346,6 +349,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 rules:
   - apiGroups:
       - ""
@@ -371,6 +375,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 roleRef:
   kind: Role
   name: insights-operator
@@ -388,6 +393,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 rules:
   - apiGroups:
       - ''
@@ -410,6 +416,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 subjects:
   - kind: ServiceAccount
     name: operator
@@ -427,6 +434,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 rules:
   - apiGroups:
       - ''
@@ -449,6 +457,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: insights
 subjects:
   - kind: ServiceAccount
     name: operator

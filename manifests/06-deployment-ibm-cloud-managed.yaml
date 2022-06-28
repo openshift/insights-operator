@@ -5,6 +5,7 @@ metadata:
   annotations:
     config.openshift.io/inject-proxy: insights-operator
     include.release.openshift.io/ibm-cloud-managed: "true"
+    capability.openshift.io/name: insights
   name: insights-operator
   namespace: openshift-insights
 spec:
@@ -17,6 +18,7 @@ spec:
     metadata:
       annotations:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        capability.openshift.io/name: insights
       labels:
         app: insights-operator
     spec:
