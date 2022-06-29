@@ -1,22 +1,16 @@
 approvers:
-- smarterclayton
 - derekwaynecarr
 - mfojtik
 - inecas
 - tisnik
-- natiiix
 - tremes
 - rluders
-- Sergey1011010
 reviewers:
-- smarterclayton
 - derekwaynecarr
 - mfojtik
 - inecas
 - tisnik
-- natiiix
 - tremes
 - rluders
-- Sergey1011010
 
 component: "Insights operator"
