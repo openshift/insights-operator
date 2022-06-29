@@ -56,7 +56,10 @@ func (c *ConfigController) sync(ctx context.Context, syncCtx factory.SyncContext
 				if ch == nil {
 					continue
 				}
-				ch <- fgr
+				select {
+				case ch <- fgr:
+				default:
+				}
 			}
 		}
 	}
@@ -72,7 +75,7 @@ func (c *ConfigController) ForceGather() (configCh <-chan string, closeFn func()
 	return ch, func() {
 		c.lock.Lock()
 		defer c.lock.Unlock()
-		// close(ch)
+		close(ch)
 		delete(c.listeners, ch)
 	}
 }

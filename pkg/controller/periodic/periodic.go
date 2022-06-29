@@ -112,15 +112,16 @@ func (c *Controller) Gather() {
 		}
 	}()
 
-	forceChannel, closeFn := c.apiObserver.ForceGather()
+	forceCh, closeFn := c.apiObserver.ForceGather()
 	defer closeFn()
 	go func() {
 		select {
-		case forceReason := <-forceChannel:
-			klog.Infof("Data gathering forced by user with reason: %s. Interrupting the gathering in progress.", forceReason)
-			c.recorder.Clear()
-			cancel()
-			c.Gather()
+		case forceReason, open := <-forceCh:
+			if open {
+				klog.Infof("Data gathering forced by the user with reason: %s. Interrupting the gathering in progress.", forceReason)
+				cancel()
+				c.recorder.Clear()
+			}
 			return
 		case <-ctx.Done():
 			return
@@ -197,11 +198,9 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 
 		case <-time.After(interval):
 			c.Gather()
-			return
 		case reason := <-forceCh:
 			klog.Infof("Data gathering forced by user with reason: %s", reason)
 			c.Gather()
-			return
 		}
 	}
 }
