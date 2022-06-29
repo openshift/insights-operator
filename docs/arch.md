@@ -149,7 +149,7 @@ health_statuses_insights{metric="total"} 2
 - `health_statuses_insights`, information about the cluster health status based on the last downloaded report, corresponding to its number of hitting recommendations grouped by severity.
 - `insightsclient_request_send_total`, tracks the number of archives sent.
 - `insightsclient_request_recvreport_total`, tracks the number of insights reports received/downloaded.
-- `insightsclient_last_gather_time`, the time of the last Insights data gathering.
+- `insightsclient_last_gather_time`, the time of the last insights data gathering.
 - `insights_recommendation_active`, expose insights recommendations as Prometheus alerts.
 
 > **Note**
@@ -159,7 +159,7 @@ health_statuses_insights{metric="total"} 2
 
 - `InsightsDisabled`, insights operator is disabled.
 - `SimpleContentAccessNotAvailable`, simple content access certificates are not available.
-- `InsightsRecommendationActive`, an Insights recommendation is active for this cluster.
+- `InsightsRecommendationActive`, an insights recommendation is active for this cluster.
 
 > **Note**
 > The alerts are defined [here](../manifests/08-prometheus_rule.yaml)
