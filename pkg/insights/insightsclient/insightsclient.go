@@ -266,11 +266,11 @@ func (c *Client) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, 
 var (
 	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
 		Name: "insightsclient_request_send_total",
-		Help: "Tracks the number of metrics sends",
+		Help: "Tracks the number of archives sent",
 	}, []string{"client", "status_code"})
 	counterRequestRecvReport = metrics.NewCounterVec(&metrics.CounterOpts{
 		Name: "insightsclient_request_recvreport_total",
-		Help: "Tracks the number of reports requested",
+		Help: "Tracks the number of insights reports received/downloaded",
 	}, []string{"client", "status_code"})
 )
 

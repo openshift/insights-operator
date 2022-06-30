@@ -8,13 +8,13 @@ Insights Operator does not manage any application. As usual with operator applic
 The Insights Operator's configuration is a combination of the file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoded in the image) and configuration stored in the `support` secret in the `openshift-config` namespace. The secret doesn't exist by default, but when it does, it overrides default settings which IO reads from the `config/pod.yaml`.
 The `support` secret provides following configuration attributes:
 - `endpoint` - upload endpoint - default is `https://console.redhat.com/api/ingress/v1/upload`,
-- `interval` - data gathering & uploading frequency - default is `2h` 
+- `interval` - data gathering & uploading frequency - default is `2h`
 - `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator
 - `username`, `password` - if set, the insights client upload will be authenticated by basic authorization using the username/password. By default, it uses the token (see below) from the `pull-secret` secret.
 - `enableGlobalObfuscation` - to enable the global obfuscation of the IP addresses and the cluster domain name. Default value is `false`
 - `reportEndpoint` - download endpoint. From this endpoint, the Insights operator downloads the latest Insights analysis. Default value is `https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports` (where `%s` must be replaced with the cluster ID)
 - `reportPullingDelay` - the delay between data upload and download. Default value is `60s`
-- `reportPullingTimeout` - timeout for the Insights download request. 
+- `reportPullingTimeout` - timeout for the Insights download request.
 - `reportMinRetryTime` - the time after which the request is retried. Default value is `30s`
 - `scaEndpoint` - the endpoing for downloading the Simple Content Access(SCA) entitlements. Default value is `https://api.openshift.com/api/accounts_mgmt/v1/certificates`
 - `scaInterval` - frequency of the SCA entitlements download. Default value is `8h`.
@@ -103,7 +103,7 @@ There are these main tasks scheduled:
 Insights operator defines three types of gatherers (see below). Each of them must implement the [Interface](../pkg/gatherers/interface.go#L11) and they are initialized by calling `gather.CreateAllGatherers` in `operator.go`. The actual gathering is triggered in `Run` method in `pkg/controller/periodic/periodic.go`, but not every gatherer is triggered every time ( for example, see the [CustomPeriodGatherer type](../pkg/gatherers/interface.go#L21)).
 
 Each gatherer includes one or more gathering functions. Gathering functions are defined as a map, where the key is the name of the function and the value is the [GatheringClosure type](../pkg/gatherers/interface.go#L34). They are executed concurrently in the `HandleTasksConcurrently` function in `pkg/gather/task_processing.go`.
-One of the attributes of the `GatheringClosure` type is the function that returns the values: `([]record.Record, []error)`. The slice of the records is the result of gathering function. The actual data is in the `Item` attribute of the `Record`. This `Item` is of type `Marshalable` (see the interface in the [record.go](../pkg/record/record.go)) and there are two JSON marshallers used to serialize the data - `JSONMarshaller` and `ResourceMarshaller` which allows you to save few bytes by omitting the `managedFields` during the serialization. 
+One of the attributes of the `GatheringClosure` type is the function that returns the values: `([]record.Record, []error)`. The slice of the records is the result of gathering function. The actual data is in the `Item` attribute of the `Record`. This `Item` is of type `Marshalable` (see the interface in the [record.go](../pkg/record/record.go)) and there are two JSON marshallers used to serialize the data - `JSONMarshaller` and `ResourceMarshaller` which allows you to save few bytes by omitting the `managedFields` during the serialization.
 Errors, warnings or panics that occurred during  given gathering  function are logged in the "metadata" part of the Insights operator archive. See [sample archive example](../docs/insights-archive-sample/insigths-operator/gathers.json)
 
 ### Clusterconfig gatherer
@@ -116,16 +116,22 @@ The data from this gatherer is stored under `/config` directory in the archive.
 
 Defined in [workloads_gatherer.go](../pkg/gatherers/workloads/workloads_gatherer.go). This gatherer only runs every 12 hours and the interval is not configurable. This is done because running the gatherer more often would significantly increase data in the archive, that is assumed will not change very often. There is only one gathering function in this gatherer and it gathers workload fingerprint data (SHA of the images, fingerprints of namespaces as number of pods in namespace, fingerprints of containers as first command and first argument).
 
-The data from this gatherer is stored in the `/config/workload_info.json` file in the archive, but please note that not every archive contains this data. 
+The data from this gatherer is stored in the `/config/workload_info.json` file in the archive, but please note that not every archive contains this data.
 
 ### Conditional gatherer
 
-Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is ran regularly (2h by default), but it only gathers some data when a corresponding condition is met. The conditions and corresponding gathering functions are defined in an external service (https://console.redhat.com/api/gathering/gathering_rules). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts. 
+Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is ran regularly (2h by default), but it only gathers some data when a corresponding condition is met. The conditions and corresponding gathering functions are defined in an external service (https://console.redhat.com/api/gathering/gathering_rules). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts.
 
-The data from this gatherer is stored under the `/conditional` directory in the archive. 
+The data from this gatherer is stored under the `/conditional` directory in the archive.
 
 ## Downloading and exposing Insights Analysis
-After every successful upload of archive, the operator waits for 1m (see the `reportPullingDelay` config attribute) and then it tries to download the latest Insights analysis result of the latest archive (created by the Insights pipeline in `console.redhat.com`). The report is verified by checking the `LastCheckedAt` timestamp (see `pkg/insights/insightsreport/types.go`). If the latest Insights result is not yet available (e.g. the pipeline may be delayed) or there has been some error response, the download request is repeated (see the `reportMinRetryTime` config attribute). The successfully downloaded Insights report is parsed and the numbers of corresponding hitting Insights recommendations are exposed via `health_statuses_insights` Prometheus metric.
+After every successful upload of archive, the operator waits (see the `reportPullingDelay` config attribute) and
+then it tries to download the latest Insights analysis result of the latest archive (created by the Insights pipeline
+in `console.redhat.com`). The report is verified by checking the `LastCheckedAt` timestamp (see
+`pkg/insights/insightsreport/types.go`). If the latest Insights result is not yet available (e.g. the pipeline may be
+delayed) or there has been some error response, the download request is repeated (see the `reportMinRetryTime` config
+attribute). The successfully downloaded Insights report is parsed and the numbers of corresponding hitting Insights
+recommendations are exposed via `health_statuses_insights` Prometheus metric.
 
 Code: Example of reported metrics:
 ```prometheus
@@ -138,12 +144,32 @@ health_statuses_insights{metric="moderate"} 1
 health_statuses_insights{metric="total"} 2
 ```
 
+### Metrics
+
+- `health_statuses_insights`, information about the cluster health status based on the last downloaded report, corresponding to its number of hitting recommendations grouped by severity.
+- `insightsclient_request_send_total`, tracks the number of archives sent.
+- `insightsclient_request_recvreport_total`, tracks the number of Insights reports received/downloaded.
+- `insightsclient_last_gather_time`, the time of the last Insights data gathering.
+- `insights_recommendation_active`, expose Insights recommendations as Prometheus alerts.
+
+> **Note**
+> The metrics are registered by [the `MustRegisterMetrics` function](../pkg/insights/metrics.go)
+
+### Alerts
+
+- `InsightsDisabled`, Insights operator is disabled.
+- `SimpleContentAccessNotAvailable`, simple content access certificates are not available.
+- `InsightsRecommendationActive`, an Insights recommendation is active for this cluster.
+
+> **Note**
+> The alerts are defined [here](../manifests/08-prometheus_rule.yaml)
+
 ### Scheduling and running of Uploader
 The `operator.go` starts background task defined in `pkg/insights/insightsuploader/insightsuploader.go`. The insights uploader periodically checks if there is any data to upload. If no data is found, the uploader continues with next cycle.
-The uploader triggers the `wait.Until` function, which waits until the configuration changes or it is time to upload. After start of the operator, there is some waiting time before the very first upload. This time is defined by `initialDelay`. If no error occurred while sending the POST request, then the next uploader check is defined as `wait.Jitter(interval, 1.2)`, where interval is the gathering interval. 
+The uploader triggers the `wait.Until` function, which waits until the configuration changes or it is time to upload. After start of the operator, there is some waiting time before the very first upload. This time is defined by `initialDelay`. If no error occurred while sending the POST request, then the next uploader check is defined as `wait.Jitter(interval, 1.2)`, where interval is the gathering interval.
 
 ## How Uploader authenticates to console.redhat.com
-The HTTP communication with the external service (e.g uploading the Insights archive or downloading the Insights analysis) is defined in the [insightsclient package](../pkg/insights/insightsclient/). The HTTP transport is encrypted with TLS (see the `clientTransport()` function defined in the `pkg/insights/insightsclient/insightsclient.go`. This function (and the `prepareRequest` function) uses `pkg/authorizer/clusterauthorizer.go` to respect the proxy settings and to authorize (i.e add the authorization header with respective token value) the requests. The user defined certificates in the `/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt` are taken into account (see the cluster wide proxy setting in the [OCP documentation](https://docs.openshift.com/container-platform/latest/networking/enable-cluster-wide-proxy.html)). 
+The HTTP communication with the external service (e.g uploading the Insights archive or downloading the Insights analysis) is defined in the [insightsclient package](../pkg/insights/insightsclient/). The HTTP transport is encrypted with TLS (see the `clientTransport()` function defined in the `pkg/insights/insightsclient/insightsclient.go`. This function (and the `prepareRequest` function) uses `pkg/authorizer/clusterauthorizer.go` to respect the proxy settings and to authorize (i.e add the authorization header with respective token value) the requests. The user defined certificates in the `/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt` are taken into account (see the cluster wide proxy setting in the [OCP documentation](https://docs.openshift.com/container-platform/latest/networking/enable-cluster-wide-proxy.html)).
 
 ## Summarising the content before upload
 Summarizer is defined by `pkg/recorder/diskrecorder/diskrecorder.go` and is merging all existing archives. That is, it merges together all archives with name matching pattern `insights-*.tar.gz`, which weren't removed and which are newer than the last check time. Then mergeReader is taking one file after another and adding all of them to archive under their path.
@@ -218,7 +244,7 @@ oc get co insights -o=json | jq '.status.conditions'
 A condition is defined by its type. You may notice that there are some non-standard clusteroperator conditions. They are:
 - `SCAAvailable` - based on the SCA (Simple Content Access) controller in `pkg/ocm/sca/sca.go` and provides information about the status of downloading the SCA entitlements.
 - `ClusterTransferAvailable` - based on the cluster transfer controller in `pkg/ocm/clustertransfer/cluster_transfer.go` and provides information about the availability of cluster transfers.
-- `Disabled` - indicates whether data gathering is disabled or enabled. 
+- `Disabled` - indicates whether data gathering is disabled or enabled.
 
 In addition to the above clusteroperator conditions, there are some intermediate clusteroperator conditions. These are:
 - `UploadDegraded` - this condition occurs when there is any unsuccessful upload of the Insights data (if the number of the upload attemp is equal or greater than 5 then the operator is marked as **Degraded**). Example is:
