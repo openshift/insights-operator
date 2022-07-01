@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/library-go/pkg/controller/factory"
 )
 
 func Test_Controller_CustomPeriodGatherer(t *testing.T) {
@@ -172,6 +173,15 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		Gather:   []string{gather.AllGatherersConst},
 	}}
 	mockRecorder := recorder.MockRecorder{}
+	mockAPIController := MockAPIController{}
 
-	return New(&mockConfigurator, nil, &mockRecorder, listGatherers, nil), &mockRecorder
+	return New(&mockConfigurator, &mockAPIController, &mockRecorder, listGatherers, nil), &mockRecorder
+}
+
+type MockAPIController struct {
+	factory.Controller
+}
+
+func (m *MockAPIController) ForceGather() (configCh <-chan string, closeFn func()) {
+	return nil, func() {}
 }

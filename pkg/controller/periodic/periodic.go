@@ -99,19 +99,6 @@ func (c *Controller) Gather() {
 	ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval)
 	defer cancel()
 
-	// flush when all necessary gatherers were processed
-	defer func() {
-		if err := ctx.Err(); err != nil {
-			if err == context.Canceled {
-				klog.Info("Context canceled. No data is recorded.")
-				return
-			}
-		}
-		if err := c.recorder.Flush(); err != nil {
-			klog.Errorf("Unable to flush the recorder: %v", err)
-		}
-	}()
-
 	forceCh, closeFn := c.apiObserver.ForceGather()
 	defer closeFn()
 	go func() {
@@ -165,9 +152,20 @@ func (c *Controller) Gather() {
 		})
 	}
 
+	if err := ctx.Err(); err != nil {
+		if err == context.Canceled {
+			klog.Info("Context canceled. No data is recorded.")
+			return
+		}
+	}
+
 	err := gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)
 	if err != nil {
 		klog.Errorf("unable to record archive metadata because of error: %v", err)
+	}
+
+	if err := c.recorder.Flush(); err != nil {
+		klog.Errorf("Unable to flush the recorder: %v", err)
 	}
 }
 

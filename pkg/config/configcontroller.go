@@ -17,7 +17,7 @@ type APIObserver interface {
 	ForceGather() (<-chan string, func())
 }
 
-type ConfigController struct {
+type APIConfigController struct {
 	factory.Controller
 	lock         sync.Mutex
 	listeners    map[chan string]struct{}
@@ -33,7 +33,7 @@ func NewConfigController(kubeConfig *rest.Config,
 	if err != nil {
 		return nil, err
 	}
-	c := &ConfigController{
+	c := &APIConfigController{
 		corev1Client: corev1Cli,
 		listeners:    make(map[chan string]struct{}),
 	}
@@ -45,7 +45,7 @@ func NewConfigController(kubeConfig *rest.Config,
 	return c, nil
 }
 
-func (c *ConfigController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+func (c *APIConfigController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	cmTest, err := c.corev1Client.ConfigMaps("openshift-insights").Get(ctx, "test", metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (c *ConfigController) sync(ctx context.Context, syncCtx factory.SyncContext
 	return nil
 }
 
-func (c *ConfigController) ForceGather() (configCh <-chan string, closeFn func()) {
+func (c *APIConfigController) ForceGather() (configCh <-chan string, closeFn func()) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	ch := make(chan string, 1)
