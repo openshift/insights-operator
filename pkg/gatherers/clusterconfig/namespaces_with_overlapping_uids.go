@@ -44,6 +44,7 @@ func (u uidRange) String() string {
 // * Location in archive: config/namespaces_with_overlapping_uids
 // * Id in config: clusterconfig/overlapping_namespace_uids
 // * Since versions:
+//   * 4.8.41
 //   * 4.9.31
 //   * 4.10.12
 //   * 4.11+
