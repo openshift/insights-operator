@@ -24,6 +24,18 @@ Params is of type AlertIsFiringConditionParams:
   * 4.10+
 
 
+## ActiveAlerts
+
+gathers active alerts from the Alertmanager API V2 in the JSON format.
+Alert data is also still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
+
+* Location in archive: config/alerts.json
+* See: docs/insights-archive-sample/config/alerts.json
+* Id in config: active_alerts
+* Since version:
+  * 4.12+
+
+
 ## CRD
 
 collects the specified Custom Resource Definitions.
