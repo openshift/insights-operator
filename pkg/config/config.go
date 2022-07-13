@@ -32,7 +32,7 @@ type Serialized struct {
 		ClusterTransferEndpoint string `json:"clusterTransferEndpoint"`
 		ClusterTransferInterval string `json:"clusterTransferInterval"`
 	}
-	EnableInsightsAlerts bool `json:"enableInsightsAlerts"`
+	DisableInsightsAlerts bool `json:"disableInsightsAlerts"`
 }
 
 // Controller defines the standard config for this operator.
@@ -68,8 +68,8 @@ type Controller struct {
 	HTTPConfig HTTPConfig
 	OCMConfig  OCMConfig
 
-	// EnableInsightsAlerts enables exposing of Insights recommendations as Prometheus info alerts
-	EnableInsightsAlerts bool
+	// DisableInsightsAlerts disabled exposing of Insights recommendations as Prometheus info alerts
+	DisableInsightsAlerts bool
 }
 
 // HTTPConfig configures http proxy and exception settings if they come from config
@@ -155,7 +155,7 @@ func (c *Controller) mergeReport(cfg *Controller) {
 		c.ReportMinRetryTime = cfg.ReportMinRetryTime
 	}
 	c.EnableGlobalObfuscation = c.EnableGlobalObfuscation || cfg.EnableGlobalObfuscation
-	c.EnableInsightsAlerts = c.EnableInsightsAlerts || cfg.EnableInsightsAlerts
+	c.DisableInsightsAlerts = c.DisableInsightsAlerts || cfg.DisableInsightsAlerts
 }
 
 func (c *Controller) mergeOCM(cfg *Controller) {
@@ -198,7 +198,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	cfg.Impersonate = s.Impersonate
 	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
-	cfg.EnableInsightsAlerts = s.EnableInsightsAlerts
+	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
@@ -293,7 +293,7 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 	cfg.ConditionalGathererEndpoint = s.ConditionalGathererEndpoint
-	cfg.EnableInsightsAlerts = s.EnableInsightsAlerts
+	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
