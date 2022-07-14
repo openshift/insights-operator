@@ -18,7 +18,6 @@ spec:
     metadata:
       annotations:
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
-        capability.openshift.io/name: insights
       labels:
         app: insights-operator
     spec:
