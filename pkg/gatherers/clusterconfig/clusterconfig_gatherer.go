@@ -83,6 +83,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"overlapping_namespace_uids":        (*Gatherer).GatherNamespacesWithOverlappingUIDs,
 	"support_secret":                    (*Gatherer).GatherSupportSecret,
 	"active_alerts":                     (*Gatherer).GatherActiveAlerts,
+	"ceph_cluster":                      (*Gatherer).GatherCephCluster,
 }
 
 func New(
