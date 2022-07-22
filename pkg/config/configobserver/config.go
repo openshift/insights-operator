@@ -127,8 +127,8 @@ func (c *Config) loadReport(data map[string][]byte) {
 	}
 
 	c.Report = len(c.Endpoint) > 0
-	if enableInsightsAlerts, ok := data["enableInsightsAlerts"]; ok {
-		c.EnableInsightsAlerts = strings.EqualFold(string(enableInsightsAlerts), "true")
+	if disableInsightsAlerts, ok := data["disableInsightsAlerts"]; ok {
+		c.DisableInsightsAlerts = strings.EqualFold(string(disableInsightsAlerts), "true")
 	}
 }
 

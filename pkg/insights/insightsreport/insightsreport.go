@@ -266,7 +266,7 @@ func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 			critical++
 		}
 
-		if !c.configurator.Config().EnableInsightsAlerts {
+		if c.configurator.Config().DisableInsightsAlerts {
 			continue
 		}
 		if rule.Disabled {
