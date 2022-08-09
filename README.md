@@ -32,6 +32,7 @@ unanticipated errors.
     - [Formatting archive json files](#formatting-archive-json-files)
     - [Obfuscating an archive](#obfuscating-an-archive)
     - [Updating the sample archive](#updating-the-sample-archive)
+- [Conditional Gathering](#conditional-gathering)
 - [Contributing](#contributing)
 - [Support](#support)
 - [License](#license)
