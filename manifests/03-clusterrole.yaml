@@ -6,7 +6,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: ClusterRole
   name: system:auth-delegator
@@ -24,7 +24,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: Role
   name: extension-apiserver-authentication-reader
@@ -41,7 +41,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 rules:
   # allow the operator to update cluster operator status
   - apiGroups:
@@ -86,7 +86,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: Role
   name: monitoring-alertmanager-edit
@@ -104,7 +104,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: ClusterRole
   name: insights-operator
@@ -121,7 +121,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 rules:
   - apiGroups:
       - ""
@@ -273,7 +273,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: ClusterRole
   name: insights-operator-gather
@@ -290,7 +290,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: ClusterRole
   name: cluster-reader
@@ -309,7 +309,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 rules:
   - apiGroups:
       - ""
@@ -331,7 +331,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: Role
   name: insights-operator
@@ -349,7 +349,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 rules:
   - apiGroups:
       - ""
@@ -375,7 +375,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 roleRef:
   kind: Role
   name: insights-operator
@@ -393,7 +393,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 rules:
   - apiGroups:
       - ''
@@ -416,7 +416,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 subjects:
   - kind: ServiceAccount
     name: operator
@@ -434,7 +434,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 rules:
   - apiGroups:
       - ''
@@ -457,7 +457,7 @@ metadata:
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
 subjects:
   - kind: ServiceAccount
     name: operator

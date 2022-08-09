@@ -7,7 +7,7 @@ metadata:
     service.alpha.openshift.io/serving-cert-secret-name: openshift-insights-serving-cert
     include.release.openshift.io/single-node-developer: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
-    capability.openshift.io/name: insights
+    capability.openshift.io/name: Insights
   labels:
     app: insights-operator
   name: metrics
