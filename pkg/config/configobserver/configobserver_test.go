@@ -29,7 +29,7 @@ const (
 	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
 )
 
-//nolint: lll, funlen
+// nolint: lll, funlen
 func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 	var cases = []struct {
 		name      string

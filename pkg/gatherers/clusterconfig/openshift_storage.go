@@ -1,4 +1,4 @@
-//nolint: dupl
+// nolint: dupl
 package clusterconfig
 
 import (
@@ -17,12 +17,13 @@ import (
 // from Openshift Data Foundation Stack.
 //
 // API Reference:
-//   https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+//
+//	https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
 //
 // * Location in archive: config/storage/<namespace>/<name>.json
 // * Id in config: clusterconfig/openshift_storage
 // * Since versions:
-//   * 4.11+
+//   - 4.11+
 func (g *Gatherer) GatherOpenshiftStorage(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

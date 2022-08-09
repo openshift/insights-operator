@@ -31,14 +31,16 @@ import (
 // * See: docs/insights-archive-sample/config/configmaps
 // * Id in config: clusterconfig/config_maps
 // * Since versions:
-//   * 4.3.25+
-//   * 4.4.6+
-//   * 4.5+
+//   - 4.3.25+
+//   - 4.4.6+
+//   - 4.5+
+//
 // * "cluster-monitoring-config" ConfigMap data since versions:
-//   * 4.6.22+
-//   * 4.7+
+//   - 4.6.22+
+//   - 4.7+
+//
 // * "cluster-config-v1" ConfigMap since versions:
-//   * 4.9+
+//   - 4.9+
 func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

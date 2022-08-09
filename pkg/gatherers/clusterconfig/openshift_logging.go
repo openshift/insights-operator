@@ -1,4 +1,4 @@
-//nolint: dupl
+// nolint: dupl
 package clusterconfig
 
 import (
@@ -17,12 +17,13 @@ import (
 // from Openshift Logging Stack.
 //
 // API Reference:
-//   https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
+//
+//	https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 //
 // * Location in archive: config/logging/<namespace>/<name>.json
 // * Id in config: clusterconfig/openshift_logging
 // * Since versions:
-//   * 4.9+
+//   - 4.9+
 func (g *Gatherer) GatherOpenshiftLogging(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

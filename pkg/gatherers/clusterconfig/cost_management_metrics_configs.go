@@ -15,9 +15,9 @@ import (
 // * Location in archive: config/cost_management_metrics_configs/<name>.json
 // * Id in config: clusterconfig/cost_management_metrics_configs
 // * Since versions:
-//   * 4.8.27+
-//   * 4.9.13+
-//   * 4.10+
+//   - 4.8.27+
+//   - 4.9.13+
+//   - 4.10+
 func (g *Gatherer) GatherCostManagementMetricsConfigs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

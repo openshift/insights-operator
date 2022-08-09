@@ -25,8 +25,8 @@ type netNamespace struct {
 // * Location in archive: config/netnamespaces
 // * Id in config: clusterconfig/netnamespaces
 // * Since versions:
-//   * 4.6.20+
-//   * 4.7+
+//   - 4.6.20+
+//   - 4.7+
 func (g *Gatherer) GatherNetNamespace(ctx context.Context) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

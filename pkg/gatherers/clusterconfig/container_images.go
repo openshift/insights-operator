@@ -36,9 +36,9 @@ const (
 // * Location in archive: config/running_containers.json
 // * Id in config: clusterconfig/container_images
 // * Since versions:
-//   * 4.5.33+
-//   * 4.6.16+
-//   * 4.7+
+//   - 4.5.33+
+//   - 4.6.16+
+//   - 4.7+
 func (g *Gatherer) GatherContainerImages(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

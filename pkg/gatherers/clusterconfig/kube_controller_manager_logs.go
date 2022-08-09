@@ -1,4 +1,4 @@
-//nolint: dupl
+// nolint: dupl
 package clusterconfig
 
 import (
@@ -15,15 +15,18 @@ import (
 //   - "syncing garbage collector with updated resources from discovery",
 //
 // The Kubernetes API:
-//          https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+//
+//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+//
 // Response see:
-//          https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
+//
+//	https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log
 // * Since versions:
-//   * 4.9.27
-//   * 4.10.6
-//   * 4.11+
+//   - 4.9.27
+//   - 4.10.6
+//   - 4.11+
 func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{
 		Namespace:                "openshift-kube-controller-manager",

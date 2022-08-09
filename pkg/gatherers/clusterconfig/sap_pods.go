@@ -30,9 +30,9 @@ import (
 // * Location in archive: config/pod/{namespace}/{pod-name}.json
 // * Id in config: clusterconfig/sap_pods
 // * Since versions:
-//   * 4.6.24+
-//   * 4.7.5+
-//   * 4.8+
+//   - 4.6.24+
+//   - 4.7.5+
+//   - 4.8+
 func (g *Gatherer) GatherSAPPods(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

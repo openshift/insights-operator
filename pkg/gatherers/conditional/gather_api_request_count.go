@@ -29,7 +29,7 @@ type APIRequestCount struct {
 // * Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
 // * Id in config: conditional/api_request_counts_of_resource_from_alert
 // * Since versions:
-//   * 4.10+
+//   - 4.10+
 func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherAPIRequestCountsParams)
 	if !ok {

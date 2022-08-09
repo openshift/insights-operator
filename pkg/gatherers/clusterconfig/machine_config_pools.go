@@ -1,4 +1,4 @@
-//nolint: dupl
+// nolint: dupl
 package clusterconfig
 
 import (
@@ -16,15 +16,18 @@ import (
 // GatherMachineConfigPool collects MachineConfigPool information
 //
 // The Kubernetes api:
-//     https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+//
+//	https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+//
 // Response see:
-//     https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+//
+//	https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 //
 // * Location in archive: config/machineconfigpools/
 // * Id in config: clusterconfig/machine_config_pools
 // * Since versions:
-//   * 4.5.33+
-//   * 4.6+
+//   - 4.5.33+
+//   - 4.6+
 func (g *Gatherer) GatherMachineConfigPool(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

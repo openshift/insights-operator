@@ -46,9 +46,9 @@ type InstallPlanAnonymizer struct {
 // * Location in archive: config/installplans/
 // * Id in config: clusterconfig/install_plans
 // * Since versions:
-//   * 4.5.33+
-//   * 4.6.16+
-//   * 4.7+
+//   - 4.5.33+
+//   - 4.6.16+
+//   - 4.7+
 func (g *Gatherer) GatherInstallPlans(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

@@ -38,22 +38,23 @@ type LogMessagesFilter struct {
 
 // CollectLogsFromContainers collects logs from containers
 //   - containerFilter allows you to specify
-//     - namespace in which to search for pods
-//     - labelSelector to filter pods by their labels (keep empty to not filter)
-//     - containerNameRegexFilter to filter containers in the pod (keep empty to not filter)
-//	   - maxNamespaceContainers to limit the containers in the given namespace (keep empty to not limit)
+//   - namespace in which to search for pods
+//   - labelSelector to filter pods by their labels (keep empty to not filter)
+//   - containerNameRegexFilter to filter containers in the pod (keep empty to not filter)
+//   - maxNamespaceContainers to limit the containers in the given namespace (keep empty to not limit)
 //   - logMessagesFilter allows you to specify
-//     - messagesToSearch to filter the logs by substrings (case-insensitive)
-//       or regex (add `(?i)` in the beginning to make search case-insensitive). Leave nil to not filter.
-//     - regexSearch which makes messagesToSearch regex patterns, so you can accomplish more complicated search
-//     - sinceSeconds which sets the moment to fetch the logs from (current time - sinceSeconds)
-//     - limitBytes which sets the maximum amount of logs that can be fetched
-//     - tailLines which sets the maximum amount of log lines from the end that should be fetched
+//   - messagesToSearch to filter the logs by substrings (case-insensitive)
+//     or regex (add `(?i)` in the beginning to make search case-insensitive). Leave nil to not filter.
+//   - regexSearch which makes messagesToSearch regex patterns, so you can accomplish more complicated search
+//   - sinceSeconds which sets the moment to fetch the logs from (current time - sinceSeconds)
+//   - limitBytes which sets the maximum amount of logs that can be fetched
+//   - tailLines which sets the maximum amount of log lines from the end that should be fetched
 //   - buildLogFileName is the function returning filename for the current log,
-//       if nil, the default implementation is used
+//     if nil, the default implementation is used
 //
 // Default location of the logs is `config/pod/{namespace}/logs/{podName}/errors.log`,
-//   you can override it with buildLogFileName
+//
+//	you can override it with buildLogFileName
 func CollectLogsFromContainers( //nolint:gocyclo
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,

@@ -33,7 +33,7 @@ type alert struct {
 // * See: docs/insights-archive-sample/config/alerts.json
 // * Id in config: active_alerts
 // * Since version:
-//   * 4.12+
+//   - 4.12+
 func (g *Gatherer) GatherActiveAlerts(ctx context.Context) ([]record.Record, []error) {
 	alertsRESTClient, err := rest.RESTClientFor(g.alertsGatherKubeConfig)
 	if err != nil {

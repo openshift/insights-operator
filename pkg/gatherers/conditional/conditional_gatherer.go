@@ -332,7 +332,8 @@ func (g *Gatherer) createGatheringClosures(
 
 // getConditionalGatheringFunctionName creates a name of the conditional gathering function adding the parameters
 // after the name. For example:
-//   "conditional/logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100"
+//
+//	"conditional/logs_of_namespace/namespace=openshift-cluster-samples-operator,tail_lines=100"
 func getConditionalGatheringFunctionName(funcName string, gatherParamsInterface interface{}) (string, error) {
 	gatherParams, err := utils.StructToMap(gatherParamsInterface)
 	if err != nil {

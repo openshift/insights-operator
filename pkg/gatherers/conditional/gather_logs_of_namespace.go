@@ -17,14 +17,17 @@ import (
 //   - tail_lines int64 - a number of log lines to keep for each container
 //
 // The Kubernetes API:
-//          https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+//
+//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+//
 // Response see:
-//          https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+//
+//	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
 // * Id in config: conditional/logs_of_namespace
 // * Since versions:
-//   * 4.9+
+//   - 4.9+
 func (g *Gatherer) BuildGatherLogsOfNamespace(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherLogsOfNamespaceParams)
 	if !ok {

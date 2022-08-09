@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-//nolint: funlen, gocyclo, gosec
+// nolint: funlen, gocyclo, gosec
 func Test_gatherWorkloadInfo(t *testing.T) {
 	if len(os.Getenv("TEST_INTEGRATION")) == 0 {
 		t.Skip("will not run unless TEST_INTEGRATION is set, and requires KUBECONFIG to point to a real cluster")

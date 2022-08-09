@@ -19,7 +19,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-//nolint: lll
+// nolint: lll
 func Test_ConfigMap_Anonymizer(t *testing.T) {
 	klog.SetOutput(utils.NewTestLog(t).Writer())
 

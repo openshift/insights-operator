@@ -27,7 +27,7 @@ import (
 // * See: docs/insights-archive-sample/config/nodes/logs
 // * Id in config: clusterconfig/node_logs
 // * Since versions:
-//   * 4.10+
+//   - 4.10+
 func (g *Gatherer) GatherNodeLogs(ctx context.Context) ([]record.Record, []error) {
 	clientSet, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
