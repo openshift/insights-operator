@@ -26,13 +26,13 @@ const (
 // The GET REST query to URL /federate
 // Gathered metrics:
 //
-//		 virt_platform
-//	  etcd_object_counts
-//	  cluster_installer
-//	  vsphere_node_hw_version_total
-//	  namespace CPU and memory usage
-//	  console_helm_installs_total
-//	  followed by at most 1000 lines of ALERTS metric
+//	virt_platform
+//	etcd_object_counts
+//	cluster_installer
+//	vsphere_node_hw_version_total
+//	namespace CPU and memory usage
+//	console_helm_installs_total
+//	followed by at most 1000 lines of ALERTS metric
 //
 // * Location in archive: config/metrics
 // * See: docs/insights-archive-sample/config/metrics
