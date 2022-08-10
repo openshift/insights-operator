@@ -19,7 +19,7 @@ var limit = 5
 // * Location in archive: config/jaegertracing.io/
 // * Id in config: clusterconfig/jaegers
 // * Since versions:
-//   * 4.10+
+//   - 4.10+
 func (g *Gatherer) GatherJaegerCR(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

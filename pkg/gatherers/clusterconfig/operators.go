@@ -45,8 +45,8 @@ type clusterOperatorResource struct {
 // * See: docs/insights-archive-sample/config/clusteroperator
 // * Id in config: clusterconfig/operators
 // * Spec config for CO resources since versions:
-//   * 4.6.16+
-//   * 4.7+
+//   - 4.6.16+
+//   - 4.7+
 func (g *Gatherer) GatherClusterOperators(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

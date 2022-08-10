@@ -30,12 +30,13 @@ var lacAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
 // * Location in older versions: config/imageregistry.json
 // * Id in config: clusterconfig/image_registries
 // * Since versions:
-//   * 4.3.40+
-//   * 4.4.12+
-//   * 4.5+
+//   - 4.3.40+
+//   - 4.4.12+
+//   - 4.5+
+//
 // * PV definition since versions:
-//   * 4.6.20+
-//   * 4.7+
+//   - 4.6.20+
+//   - 4.7+
 func (g *Gatherer) GatherClusterImageRegistry(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -50,7 +51,7 @@ func (g *Gatherer) GatherClusterImageRegistry(ctx context.Context) ([]record.Rec
 	return gatherClusterImageRegistry(ctx, registryClient.ImageregistryV1(), gatherKubeClient.CoreV1())
 }
 
-//nolint: govet
+// nolint: govet
 func gatherClusterImageRegistry(ctx context.Context,
 	registryClient imageregistryv1.ImageregistryV1Interface,
 	coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {

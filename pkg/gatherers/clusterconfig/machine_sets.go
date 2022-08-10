@@ -18,16 +18,19 @@ import (
 // GatherMachineSet collects MachineSet information
 //
 // The Kubernetes api:
-//       https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
+//
+//	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
+//
 // Response see:
-//       https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+//
+//	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 //
 // * Location in archive: machinesets/
 // * Id in config: clusterconfig/machine_sets
 // * Since versions:
-//   * 4.4.29+
-//   * 4.5.15+
-//   * 4.6+
+//   - 4.4.29+
+//   - 4.5.15+
+//   - 4.6+
 func (g *Gatherer) GatherMachineSet(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

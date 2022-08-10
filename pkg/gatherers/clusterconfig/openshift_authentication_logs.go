@@ -13,14 +13,17 @@ import (
 //   - "AuthenticationError: invalid resource name"
 //
 // The Kubernetes API:
-//         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+//
+//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+//
 // Response see:
-//         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+//
+//	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // * Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
 // * Id in config: clusterconfig/openshift_authentication_logs
 // * Since versions:
-//   * 4.7+
+//   - 4.7+
 func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{
 		Namespace:     "openshift-authentication",

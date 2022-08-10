@@ -16,7 +16,7 @@ import (
 // * See: docs/insights-archive-sample/config/metrics
 // * Id in config: clusterconfig/tsdb_status
 // * Since version:
-//    * 4.10+
+//   - 4.10+
 func (g *Gatherer) GatherTSDBStatus(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {

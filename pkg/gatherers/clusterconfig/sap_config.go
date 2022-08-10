@@ -26,8 +26,8 @@ import (
 // * Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 // * Id in config: clusterconfig/sap_config
 // * Since versions:
-//   * 4.6.20+
-//   * 4.7+
+//   - 4.6.20+
+//   - 4.7+
 func (g *Gatherer) GatherSAPConfig(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

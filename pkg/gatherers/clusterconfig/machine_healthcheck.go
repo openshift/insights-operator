@@ -1,4 +1,4 @@
-//nolint: dupl
+// nolint: dupl
 package clusterconfig
 
 import (
@@ -14,14 +14,17 @@ import (
 // GatherMachineHealthCheck collects MachineHealthCheck information
 //
 // The Kubernetes api:
-//       https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
+//
+//	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
+//
 // Response see:
-//       https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
+//
+//	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
 //
 // * Location in archive: config/machinehealthchecks
 // * Id in config: clusterconfig/machine_healthchecks
 // * Since versions:
-//   * 4.8+
+//   - 4.8+
 func (g *Gatherer) GatherMachineHealthCheck(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

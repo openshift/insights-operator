@@ -82,8 +82,9 @@ type workloadPodShape struct {
 // workloadContainerShape describes the shape of a container which includes
 // a subset of the data in the container.
 // TODO: this may desirable to make more precise with a whole container hash
-//   that includes more of the workload, but that would only be necessary if
-//   it assisted reconstruction of type of workloads.
+//
+//	that includes more of the workload, but that would only be necessary if
+//	it assisted reconstruction of type of workloads.
 type workloadContainerShape struct {
 	// ImageID is the content addressable hash of the image as observed from
 	// the status or the spec tag.

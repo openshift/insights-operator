@@ -1,4 +1,4 @@
-//nolint: misspell
+// nolint: misspell
 package record
 
 import (

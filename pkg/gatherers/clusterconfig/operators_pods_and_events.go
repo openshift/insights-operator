@@ -51,16 +51,16 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // - Previous (if container was terminated) and current logs of all related pod containers
 // - Namespace events
 //
-// * Location of pod definitions: config/pod/{namespace}/{pod}.json
-// * Location of pod container current logs:
-//   config/pod/{namespace}/logs/{pod}/{container}_current.log
-// * Location of pod container previous logs:
-//   config/pod/{namespace}/logs/{pod}/{container}_previous.log
-// * Location of events in archive: events/
-// * Id in config: clusterconfig/operators_pods_and_events
-// * Spec config for CO resources since versions:
-//   * 4.6.16+
-//   * 4.7+
+//   - Location of pod definitions: config/pod/{namespace}/{pod}.json
+//   - Location of pod container current logs:
+//     config/pod/{namespace}/logs/{pod}/{container}_current.log
+//   - Location of pod container previous logs:
+//     config/pod/{namespace}/logs/{pod}/{container}_previous.log
+//   - Location of events in archive: events/
+//   - Id in config: clusterconfig/operators_pods_and_events
+//   - Spec config for CO resources since versions:
+//   - 4.6.16+
+//   - 4.7+
 func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

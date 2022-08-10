@@ -1,7 +1,46 @@
 # Conditional Gatherer
 
 Conditional gatherer is a special gatherer which uses a set of rules describing which gathering functions to activate.
-More details can be found in `pkg/gatherers/conditional/conditional_gatherer.go`.
+The conditional rules are defined in the [insights-operator-gathering-conditions GitHub repository](https://github.com/RedHatInsights/insights-operator-gathering-conditions). This content is consumed and exposed by the [insights-operator-gathering-conditions-service](https://github.com/RedHatInsights/insights-operator-gathering-conditions-service). A new version of the `insights-operator-gathering-conditions` requires a new release version of the `insights-operator-gathering-conditions-service`. 
+The Insights Operator connects to this service and consumes the conditional rules from it. The connection endpoint is defined in the [pod.yaml config file](../../config/pod.yaml) in the `conditionalGathererEndpoint` attribute (the value can be overriden in the `support` secret). Authentication is required and the `pull-secret` token is used for this purpose.
+
+## Validation of the conditional rules
+
+The Insights Operator internally validates the conditional rules JSON against the JSON schema. [The schema](../../pkg/gatherers/conditional/gathering_rules.schema.json) is available in the `pkg/gatherers/conditional` package. You can see that this schema refers to the second [gathering_rule.schema.json](../../pkg/gatherers/conditional/gathering_rule.schema.json). This second schema defines the more important restrictions on the specific rules. **If the validation fails, no conditional data will be gathered!**!
+
+The following are some examples of validation failures (which will show up in the log):
+
+Non-existing gathering fumction:
+```
+E0808 16:29:51.864716  241084 parsing.go:22] skipping a rule because of an error: unable to create params for conditional.GatheringFunctionName: containers_log {[{alert_is_firing 0xc0004639c0 <nil>}] map[]}
+```
+
+Missing alert name:
+```
+E0808 16:38:09.453211  242327 periodic.go:137] conditional failed after 14ms with: got invalid config for conditional gatherer: 0.conditions.0: Must validate at least one schema (anyOf), 0.conditions.0: alert is required
+```
+
+Gathering function missing required parameter:
+```
+E0808 16:41:35.184585  242636 periodic.go:137] conditional failed after 20ms with: got invalid config for conditional gatherer: 0.gathering_functions.containers_logs.tail_lines: Must be greater than or equal to 1
+```
+
+Failed to parse the provided cluster version:
+
+```
+E0809 10:02:16.383643   37430 conditional_gatherer.go:140] error checking conditions for a gathering rule: Could not parse Range "4-11.12": Could not parse version "4-11.12" in "4-11.12": No Major.Minor.Patch elements found
+```
+
+One of the common conditions type (see below) is the `alert_is_firing`. This condition depends on availability of Prometheus alerts - i.e connection to the in-cluster Prometheus instance. If the connection is not available, this may manifests in the log as follows for example: 
+
+```
+E0809 11:56:48.491346   46838 conditional_gatherer.go:226] unable to update alerts cache: open /var/run/configmaps/service-ca-bundle/service-ca.crt: no such file or directory
+```
+
+## Basic structure of the conditional rules
+
+From the schemas mentioned above, you can see that each rule consists of `conditions` array and `gathering_functions` object. The `conditions` array defines conditions that must be met and the `gathering_functions` object tells what functions are called in the Insights Operator source code. The current conditions are defined in the [`pkg/gatherers/conditional/conditions.go`](../../pkg/gatherers/conditional/conditions.go) (see the `ConditionType` and its use) and the gathering functions are defined in the [`pkg/gatherers/conditional/gathering_functions.go`](../../pkg/gatherers/conditional/gathering_functions.go)
+
 
 ## Manual Testing
 
@@ -54,8 +93,8 @@ echo '{
 
 4. Wait for the alert to fire:
 ```bash
-export PROMETHEUS_HOST=(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath='{@.spec.host}')
-export INSECURE_PROMETHEUS_TOKEN=(oc sa get-token prometheus-k8s -n openshift-monitoring)
+export PROMETHEUS_HOST=$(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath='{@.spec.host}')
+export INSECURE_PROMETHEUS_TOKEN=$(oc get secret $(oc get sa prometheus-k8s -n openshift-monitoring -o json | jq .secrets[0].name | tr --delete \") -n openshift-monitoring -o json | jq .metadata.annotations.\"openshift.io/token-secret.value\")
 curl -g -s -k -H 'Cache-Control: no-cache' -H "Authorization: Bearer $INSECURE_PROMETHEUS_TOKEN" "https://$PROMETHEUS_HOST/api/v1/query" --data-urlencode 'query=ALERTS{alertstate="firing",alertname="SamplesImagestreamImportFailing"}' | jq ".data.result[]"
 ```
 
@@ -77,7 +116,7 @@ The output should be:
 
 5. Make metrics work by forwarding the endpoint and setting INSECURE_PROMETHEUS_TOKEN environment variable:
 ```bash
-export INSECURE_PROMETHEUS_TOKEN=(oc sa get-token prometheus-k8s -n openshift-monitoring)
+export INSECURE_PROMETHEUS_TOKEN=$(oc get secret $(oc get sa prometheus-k8s -n openshift-monitoring -o json | jq .secrets[0].name | tr --delete \") -n openshift-monitoring -o json | jq .metadata.annotations.\"openshift.io/token-secret.value\")
 ```
 ```bash
 # run this command in a separate terminal

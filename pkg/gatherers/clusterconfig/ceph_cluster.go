@@ -1,4 +1,4 @@
-//nolint: dupl
+// nolint: dupl
 package clusterconfig
 
 import (
@@ -16,12 +16,13 @@ import (
 // from Openshift Data Foundation Stack.
 //
 // API Reference:
-//   https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
+//
+//	https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 //
 // * Location in archive: config/storage/<namespace>/<name>.json
 // * Id in config: clusterconfig/ceph_cluster
 // * Since versions:
-//   * 4.12+
+//   - 4.12+
 func (g *Gatherer) GatherCephCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

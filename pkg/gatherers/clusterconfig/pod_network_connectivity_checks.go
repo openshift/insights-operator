@@ -23,7 +23,7 @@ import (
 // * Location in archive: config/podnetworkconnectivitychecks.json
 // * Id in config: clusterconfig/pod_network_connectivity_checks
 // * Since versions:
-//   * 4.8+
+//   - 4.8+
 func (g *Gatherer) GatherPNCC(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

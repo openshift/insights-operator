@@ -18,7 +18,7 @@ import (
 // * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/<pod>.json
 // * Id in config: conditional/pod_definition
 // * Since versions:
-//   * 4.11+
+//   - 4.11+
 func (g *Gatherer) BuildGatherPodDefinition(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherPodDefinitionParams)
 	if !ok {

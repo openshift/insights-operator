@@ -10,15 +10,15 @@
 //   - IPv4 addresses. Using a config client, it retrieves cluster networks and uses them to anonymize IP addresses
 //     preserving subnet information. For example, if you have the following networks in your cluster:
 //     "10.128.0.0/14", "172.30.0.0/16", "127.0.0.0/8"(added by default) the anonymization will handle the IPs like this:
-//       - 10.128.0.0 -> 10.128.0.0  // subnetwork itself won't be anonymized
-//       - 10.128.0.55 -> 10.128.0.1
-//       - 10.128.0.56 -> 10.128.0.2
-//       - 10.128.0.55 -> 10.128.0.1
-//           // anonymizer maintains a translation table to replace the same original IPs with the same obfuscated IPs
-//       - 10.129.0.0 -> 10.128.0.3
-//       - 172.30.0.5 -> 172.30.0.1  // new subnet, so we use a new set of fake IPs
-//       - 127.0.0.1 -> 127.0.0.1  // it was the first IP, so the new IP matched the original in this case
-//       - 10.0.134.130 -> 0.0.0.0  // ip doesn't match any subnet, we replace such IPs with 0.0.0.0
+//   - 10.128.0.0 -> 10.128.0.0  // subnetwork itself won't be anonymized
+//   - 10.128.0.55 -> 10.128.0.1
+//   - 10.128.0.56 -> 10.128.0.2
+//   - 10.128.0.55 -> 10.128.0.1
+//     // anonymizer maintains a translation table to replace the same original IPs with the same obfuscated IPs
+//   - 10.129.0.0 -> 10.128.0.3
+//   - 172.30.0.5 -> 172.30.0.1  // new subnet, so we use a new set of fake IPs
+//   - 127.0.0.1 -> 127.0.0.1  // it was the first IP, so the new IP matched the original in this case
+//   - 10.0.134.130 -> 0.0.0.0  // ip doesn't match any subnet, we replace such IPs with 0.0.0.0
 package anonymization
 
 import (

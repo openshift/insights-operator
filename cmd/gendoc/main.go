@@ -249,8 +249,10 @@ func getModuleNameFromGoMod(goModPath string) (string, error) {
 }
 
 // mustGetPackageName generates full package name from asp.Package
-//   astRoot the relative path where ast.Package was parsed from, because ast.Package is relative to astRoot path
-//   f ast.Package with containing files
+//
+//	astRoot the relative path where ast.Package was parsed from, because ast.Package is relative to astRoot path
+//	f ast.Package with containing files
+//
 // The import path is based on the path of source files in the package and the module name in the nearest go.mod file.
 // Exits the program with an error return code in case of an error.
 func mustGetPackageName(astRoot string, f *ast.Package) string {

@@ -17,7 +17,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-//nolint: funlen, lll, gocyclo
+// nolint: funlen, lll, gocyclo
 func Test_InstallPlans_Gather(t *testing.T) {
 	tests := []struct {
 		name      string

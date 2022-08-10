@@ -19,9 +19,9 @@ import (
 // * Location in archive: config/hostsubnet/
 // * Id in config: clusterconfig/host_subnets
 // * Since versions:
-//   * 4.4.29+
-//   * 4.5.15+
-//   * 4.6+
+//   - 4.4.29+
+//   - 4.5.15+
+//   - 4.6+
 func (g *Gatherer) GatherHostSubnet(ctx context.Context) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

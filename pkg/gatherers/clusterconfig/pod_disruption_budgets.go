@@ -23,9 +23,9 @@ const (
 // * See: docs/insights-archive-sample/config/pdbs
 // * Id in config: clusterconfig/pdbs
 // * Since versions:
-//   * 4.4.30+
-//   * 4.5.34+
-//   * 4.6+
+//   - 4.4.30+
+//   - 4.5.34+
+//   - 4.6+
 func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

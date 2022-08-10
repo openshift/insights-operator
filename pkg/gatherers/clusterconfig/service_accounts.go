@@ -29,9 +29,9 @@ const maxServiceAccountsLimit = 1000
 // * See: docs/insights-archive-sample/config/serviceaccounts
 // * Id in config: clusterconfig/service_accounts
 // * Since versions:
-//   * 4.5.34+
-//   * 4.6.20+
-//   * 4.7+
+//   - 4.5.34+
+//   - 4.6.20+
+//   - 4.7+
 func (g *Gatherer) GatherServiceAccounts(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

@@ -253,12 +253,14 @@ func startGatheringConcurrently(
 }
 
 // getListOfEnabledFunctionForGatherer parses a list of gathering functions to enable,
-// which has the following structure: []string {
-//   "clusterconfig/container_images",
-//   "clusterconfig/nodes",
-//   "clusterconfig/authentication",
-//   "othergatherer/some_function",
-// } where each item consists of a gatherer name and a function name split by a slash.
+//
+//	which has the following structure: []string {
+//	  "clusterconfig/container_images",
+//	  "clusterconfig/nodes",
+//	  "clusterconfig/authentication",
+//	  "othergatherer/some_function",
+//	} where each item consists of a gatherer name and a function name split by a slash.
+//
 // If there's a string "ALL", we enable everything and return the first parameter as true,
 // otherwise it will be false and the second parameter will contain function names
 func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList []string) (ok bool, list []string) {

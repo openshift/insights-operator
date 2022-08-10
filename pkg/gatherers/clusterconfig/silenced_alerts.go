@@ -16,7 +16,7 @@ import (
 // * See: docs/insights-archive-sample/config/silenced_alerts
 // * Id in config: clusterconfig/silenced_alerts
 // * Since version:
-//   * 4.10+
+//   - 4.10+
 func (g *Gatherer) GatherSilencedAlerts(ctx context.Context) ([]record.Record, []error) {
 	alertsRESTClient, err := rest.RESTClientFor(g.alertsGatherKubeConfig)
 	if err != nil {
