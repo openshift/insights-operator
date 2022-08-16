@@ -12,13 +12,15 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+// GatherOpenshiftMachineApiEvents collects warning ("abnormal") events
+// from "openshift-machine-api" namespace
+//
+// *Location of events in archive: config/events/
 func (g *Gatherer) GatherOpenshiftMachineApiEvents(ctx context.Context) ([]record.Record, []error) {
-	print("in GatherOpenshiftMachineAPi\n")
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
-	print("after kubernetes config\n")
 	namespace := "openshift-machine-api"
 	records, err := gatherOpenshiftMachineApiEvents(ctx, gatherKubeClient.CoreV1(), namespace, g.interval)
 	if err != nil {
@@ -31,7 +33,6 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	namespace string,
 	interval time.Duration) ([]record.Record, error) {
-	print("in gatherOpenshiftMachineApi function\n")
 	events, err := coreClient.Events(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -40,7 +41,7 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 	oldestEventTime := time.Now().Add(-interval)
 	var filteredEventIndex []int
 	for i := range events.Items {
-		if events.Items[i].Type != "Normal" {
+		if events.Items[i].Type != "Normal" { //TODO see if there is types enum
 			if events.Items[i].LastTimestamp.IsZero() {
 				if events.Items[i].Series != nil {
 					if events.Items[i].Series.LastObservedTime.Time.After(oldestEventTime) {
@@ -57,7 +58,7 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 	if len(filteredEventIndex) == 0 {
 		return nil, nil
 	}
-	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
+	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))} //TODO check if this is good output
 	for i, index := range filteredEventIndex {
 		compactedEvents.Items[i] = CompactedEvent{
 			Namespace:     events.Items[index].Namespace,
@@ -73,5 +74,5 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
 
-	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
+	return []record.Record{{Name: fmt.Sprintf("config/events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
