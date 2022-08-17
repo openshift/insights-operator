@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"time"
 
@@ -72,5 +71,5 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
 
-	return []record.Record{{Name: fmt.Sprintf("events/openshift-machine-api"), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
+	return []record.Record{{Name: "events/openshift-machine-api", Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
