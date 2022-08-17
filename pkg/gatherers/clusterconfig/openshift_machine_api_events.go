@@ -15,14 +15,13 @@ import (
 // GatherOpenshiftMachineApiEvents collects warning ("abnormal") events
 // from "openshift-machine-api" namespace
 //
-// *Location of events in archive: config/events/
+// *Location of events in archive: events/
 func (g *Gatherer) GatherOpenshiftMachineApiEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
-	namespace := "openshift-machine-api"
-	records, err := gatherOpenshiftMachineApiEvents(ctx, gatherKubeClient.CoreV1(), namespace, g.interval)
+	records, err := gatherOpenshiftMachineApiEvents(ctx, gatherKubeClient.CoreV1(), g.interval)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -31,9 +30,8 @@ func (g *Gatherer) GatherOpenshiftMachineApiEvents(ctx context.Context) ([]recor
 
 func gatherOpenshiftMachineApiEvents(ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
-	namespace string,
 	interval time.Duration) ([]record.Record, error) {
-	events, err := coreClient.Events(namespace).List(ctx, metav1.ListOptions{})
+	events, err := coreClient.Events("openshift-machine-api").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +39,7 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 	oldestEventTime := time.Now().Add(-interval)
 	var filteredEventIndex []int
 	for i := range events.Items {
-		if events.Items[i].Type != "Normal" { //TODO see if there is types enum
+		if events.Items[i].Type != "Normal" {
 			if events.Items[i].LastTimestamp.IsZero() {
 				if events.Items[i].Series != nil {
 					if events.Items[i].Series.LastObservedTime.Time.After(oldestEventTime) {
@@ -58,7 +56,7 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 	if len(filteredEventIndex) == 0 {
 		return nil, nil
 	}
-	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))} //TODO check if this is good output
+	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
 	for i, index := range filteredEventIndex {
 		compactedEvents.Items[i] = CompactedEvent{
 			Namespace:     events.Items[index].Namespace,
@@ -74,5 +72,5 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})
 
-	return []record.Record{{Name: fmt.Sprintf("config/events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
+	return []record.Record{{Name: fmt.Sprintf("events/openshift-machine-api"), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }

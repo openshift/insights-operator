@@ -15,7 +15,6 @@ func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		coreClient corev1client.CoreV1Interface
-		namespace  string
 	}
 	tests := []struct {
 		name    string
@@ -24,11 +23,10 @@ func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "openshift-machine-api events",
+			name: "empty openshift-machine-api events",
 			args: args{
 				ctx:        context.TODO(),
 				coreClient: kubefake.NewSimpleClientset().CoreV1(),
-				namespace:  "openshift-machine-api",
 			},
 			want:    []record.Record{},
 			wantErr: false,
@@ -38,7 +36,7 @@ func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := gatherOpenshiftMachineApiEvents(tt.args.ctx, tt.args.coreClient, tt.args.namespace, 1*time.Minute)
+			got, err := gatherOpenshiftMachineApiEvents(tt.args.ctx, tt.args.coreClient, 1*time.Minute)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("gatherOpenshiftMachineApiEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
