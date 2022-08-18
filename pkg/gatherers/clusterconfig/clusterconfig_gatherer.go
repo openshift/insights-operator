@@ -82,6 +82,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"kube_controller_manager_logs":      (*Gatherer).GatherKubeControllerManagerLogs,
 	"overlapping_namespace_uids":        (*Gatherer).GatherNamespacesWithOverlappingUIDs,
 	"support_secret":                    (*Gatherer).GatherSupportSecret,
+	"ceph_cluster":                      (*Gatherer).GatherCephCluster,
 }
 
 func New(
