@@ -42,5 +42,4 @@ Yes/No
 <!-- What are related references for this PR? -->
 
 https://issues.redhat.com/browse/???
-https://bugzilla.redhat.com/show_bug.cgi?id=???
 https://access.redhat.com/solutions/???
