@@ -333,7 +333,7 @@ See [STYLEGUIDE](STYLEGUIDE.md) for file format and coding style guide.
 # Support
 
 Insights Operator is part of Red Hat OpenShift Container Platform. For product-related issues, please
-file a ticket [in Red Hat Bugzilla](https://bugzilla.redhat.com/enter_bug.cgi?product=OpenShift%20Container%20Platform&component=Insights%20Operator) for "Insights Operator" component.
+file a ticket in [Red Hat JIRA](https://issues.redhat.com/secure/CreateIssue.jspa?pid=12332330&issuetype=1) for "Insights Operator" component.
 
 # License
 
