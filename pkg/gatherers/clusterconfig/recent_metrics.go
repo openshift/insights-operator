@@ -32,6 +32,8 @@ const (
 //	vsphere_node_hw_version_total
 //	namespace CPU and memory usage
 //	console_helm_installs_total
+//	console_helm_upgrades_total
+//	console_helm_uninstalls_total
 //	followed by at most 1000 lines of ALERTS metric
 //
 // * Location in archive: config/metrics
@@ -46,6 +48,8 @@ const (
 //   - "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
 //   - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
 //   - "console_helm_installs_total": 4.11+
+//   - "console_helm_upgrades_total": 4.12+
+//   - "console_helm_uninstalls_total": 4.12+
 func (g *Gatherer) GatherMostRecentMetrics(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
@@ -65,6 +69,8 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "vsphere_node_hw_version_total").
 		Param("match[]", "virt_platform").
 		Param("match[]", "console_helm_installs_total").
+		Param("match[]", "console_helm_upgrades_total").
+		Param("match[]", "console_helm_uninstalls_total").
 		DoRaw(ctx)
 	if err != nil {
 		klog.Errorf("Unable to retrieve most recent metrics: %v", err)
