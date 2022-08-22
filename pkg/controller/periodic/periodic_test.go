@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	fakeOperatorCli "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -172,6 +173,7 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		Gather:   []string{gather.AllGatherersConst},
 	}}
 	mockRecorder := recorder.MockRecorder{}
-
-	return New(&mockConfigurator, &mockRecorder, listGatherers, nil), &mockRecorder
+	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
+	return New(&mockConfigurator, &mockRecorder, listGatherers, nil, fakeInsightsOperatorCli), &mockRecorder
 }
+

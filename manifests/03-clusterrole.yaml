@@ -60,6 +60,14 @@ rules:
     verbs:
       - create
   - apiGroups:
+      - "operator.openshift.io"
+    resources:
+      - insightsoperators
+    verbs:
+      - get
+      - update
+      - patch
+  - apiGroups:
       - "config.openshift.io"
     resources:
       - clusteroperators/status
