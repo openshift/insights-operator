@@ -6,12 +6,26 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/record"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
+	normalEvent := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "normalEvent"},
+		LastTimestamp: metav1.Now(),
+		Type:          "Normal",
+		Reason:        "normal",
+	}
+	warningEvent := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "warningEvent"},
+		LastTimestamp: metav1.Now(),
+		Type:          "Normal",
+		Reason:        "warning",
+	}
+
 	type args struct {
 		ctx        context.Context
 		coreClient corev1client.CoreV1Interface
@@ -19,16 +33,14 @@ func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []record.Record
 		wantErr bool
 	}{
 		{
 			name: "empty openshift-machine-api events",
 			args: args{
 				ctx:        context.TODO(),
-				coreClient: kubefake.NewSimpleClientset().CoreV1(),
+				coreClient: kubefake.NewSimpleClientset(normalEvent.DeepCopy(), warningEvent.DeepCopy()).CoreV1(),
 			},
-			want:    []record.Record{},
 			wantErr: false,
 		},
 	}
@@ -41,8 +53,8 @@ func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
 				t.Errorf("gatherOpenshiftMachineApiEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("gatherNameSpaceEvents() = %v, want %v", got, tt.want)
+			if reflect.DeepEqual(got, nil) {
+				t.Errorf("gatherOpenshiftMachineApiEvents() got nil")
 			}
 		})
 	}
