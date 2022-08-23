@@ -35,6 +35,9 @@ var (
 	openshiftLoggingResource = schema.GroupVersionResource{
 		Group: "logging.openshift.io", Version: "v1", Resource: "clusterloggings",
 	}
+	cephClustereResource = schema.GroupVersionResource{
+		Group: "ceph.rook.io", Version: "v1", Resource: "cephclusters",
+	}
 	costManagementMetricsConfigResource = schema.GroupVersionResource{
 		Group: "costmanagement-metrics-cfg.openshift.io", Version: "v1beta1", Resource: "costmanagementmetricsconfigs",
 	}

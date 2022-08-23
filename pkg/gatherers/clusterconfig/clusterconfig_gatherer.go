@@ -92,6 +92,7 @@ var gatheringFunctions = map[string]gatheringFunction{
 	"cost_management_metrics_configs":   failableFunc((*Gatherer).GatherCostManagementMetricsConfigs),
 	"kube_controller_manager_logs":      failableFunc((*Gatherer).GatherKubeControllerManagerLogs),
 	"overlapping_namespace_uids":        failableFunc((*Gatherer).GatherNamespacesWithOverlappingUIDs),
+	"ceph_cluster":                      failableFunc((*Gatherer).GatherCephCluster),
 }
 
 func New(
