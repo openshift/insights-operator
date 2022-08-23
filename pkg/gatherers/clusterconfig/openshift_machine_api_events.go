@@ -13,9 +13,10 @@ import (
 // GatherOpenshiftMachineApiEvents collects warning ("abnormal") events
 // from "openshift-machine-api" namespace
 //
-// *Location of events in archive: events/
-// *Id in config: clusterconfig/openshift_machine_api_events
-//  * 4.12+
+// * Location of events in archive: events/
+// * Id in config: clusterconfig/openshift_machine_api_events
+// * Since versions:
+// 	 * 4.12+
 func (g *Gatherer) GatherOpenshiftMachineApiEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

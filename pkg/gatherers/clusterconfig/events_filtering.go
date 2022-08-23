@@ -8,6 +8,7 @@ import (
 )
 
 //TODO: Simplify if logic
+//filterEvents() returns events that occoured since last interval
 func filterEvents(interval time.Duration, events *v1.EventList, Type string) v1.EventList {
 	oldestEventTime := time.Now().Add(-interval)
 	var filteredEvents = v1.EventList{}
@@ -49,6 +50,7 @@ func filterEvents(interval time.Duration, events *v1.EventList, Type string) v1.
 	return filteredEvents
 }
 
+//eventListToCompactedEventList() coverts EventList() into CompactedEventList()
 func eventListToCompactedEventList(events v1.EventList) CompactedEventList {
 	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(events.Items))}
 	for i := 0; i < len(events.Items); i++ {
@@ -60,7 +62,9 @@ func eventListToCompactedEventList(events v1.EventList) CompactedEventList {
 			Type:          events.Items[i].Type,
 		}
 		if events.Items[i].LastTimestamp.Time.IsZero() {
-			compactedEvents.Items[i].LastTimestamp = events.Items[i].Series.LastObservedTime.Time
+			if events.Items[i].Series != nil {
+				compactedEvents.Items[i].LastTimestamp = events.Items[i].Series.LastObservedTime.Time
+			}
 		}
 	}
 	sort.Slice(compactedEvents.Items, func(i, j int) bool {
