@@ -8,6 +8,7 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/single-node-developer: "true"
     workload.openshift.io/allowed: "management"
+    capability.openshift.io/name: Insights
   labels:
     openshift.io/cluster-monitoring: "true"
     name: openshift-insights
