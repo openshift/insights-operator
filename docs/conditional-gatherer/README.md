@@ -94,7 +94,7 @@ echo '{
 4. Wait for the alert to fire:
 ```bash
 export PROMETHEUS_HOST=$(oc get route -n openshift-monitoring prometheus-k8s -o jsonpath='{@.spec.host}')
-export INSECURE_PROMETHEUS_TOKEN=$(oc get secret $(oc get sa prometheus-k8s -n openshift-monitoring -o json | jq .secrets[0].name | tr --delete \") -n openshift-monitoring -o json | jq .metadata.annotations.\"openshift.io/token-secret.value\")
+export INSECURE_PROMETHEUS_TOKEN=$(oc get secret $(oc get sa prometheus-k8s -n openshift-monitoring -o json | jq .secrets[0].name | tr --delete \") -n openshift-monitoring -o json | jq .metadata.annotations.\"openshift.io/token-secret.value\" | tr --delete \")
 curl -g -s -k -H 'Cache-Control: no-cache' -H "Authorization: Bearer $INSECURE_PROMETHEUS_TOKEN" "https://$PROMETHEUS_HOST/api/v1/query" --data-urlencode 'query=ALERTS{alertstate="firing",alertname="SamplesImagestreamImportFailing"}' | jq ".data.result[]"
 ```
 
