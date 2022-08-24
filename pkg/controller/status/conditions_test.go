@@ -52,6 +52,49 @@ func Test_conditions_entries(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Condition array is always sorted by type",
+			fields: fields{entryMap: map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{
+				configv1.OperatorProgressing: {
+					Type:               configv1.OperatorProgressing,
+					Status:             configv1.ConditionUnknown,
+					LastTransitionTime: time,
+					Reason:             "",
+				},
+				configv1.OperatorAvailable: {
+					Type:               configv1.OperatorAvailable,
+					Status:             configv1.ConditionUnknown,
+					LastTransitionTime: time,
+					Reason:             "",
+				},
+				configv1.OperatorDegraded: {
+					Type:               configv1.OperatorDegraded,
+					Status:             configv1.ConditionUnknown,
+					LastTransitionTime: time,
+					Reason:             "",
+				},
+			}},
+			want: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:               configv1.OperatorAvailable,
+					Status:             configv1.ConditionUnknown,
+					LastTransitionTime: time,
+					Reason:             "",
+				},
+				{
+					Type:               configv1.OperatorDegraded,
+					Status:             configv1.ConditionUnknown,
+					LastTransitionTime: time,
+					Reason:             "",
+				},
+				{
+					Type:               configv1.OperatorProgressing,
+					Status:             configv1.ConditionUnknown,
+					LastTransitionTime: time,
+					Reason:             "",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,6 +103,9 @@ func Test_conditions_entries(t *testing.T) {
 			}
 			got := c.entries()
 			assert.ElementsMatchf(t, got, tt.want, "entries() = %v, want %v", got, tt.want)
+			for i, expected := range tt.want {
+				assert.Equal(t, expected, got[i])
+			}
 		})
 	}
 }
