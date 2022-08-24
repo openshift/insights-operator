@@ -1,0 +1,48 @@
+{
+    "ceph": {
+        "capacity": {},
+        "details": {
+            "MDS_ALL_DOWN": {
+                "message": "1 filesystem is offline",
+                "severity": "HEALTH_ERR"
+            },
+            "MDS_UP_LESS_THAN_MAX": {
+                "message": "1 filesystem is online with fewer MDS than max_mds",
+                "severity": "HEALTH_WARN"
+            },
+            "MGR_DOWN": {
+                "message": "no active mgr",
+                "severity": "HEALTH_WARN"
+            }
+        },
+        "health": "HEALTH_ERR",
+        "lastChanged": "2022-07-18T13:43:24Z",
+        "lastChecked": "2022-07-19T07:29:56Z",
+        "previousHealth": "HEALTH_WARN",
+        "versions": {
+            "mon": {
+                "ceph version 16.2.7-112.el8cp (e18db2ff03ac60c64a18f3315c032b9d5a0a3b8f) pacific (stable)": 3
+            },
+            "overall": {
+                "ceph version 16.2.7-112.el8cp (e18db2ff03ac60c64a18f3315c032b9d5a0a3b8f) pacific (stable)": 3
+            }
+        }
+    },
+    "conditions": [
+        {
+            "lastHeartbeatTime": "2022-07-19T07:29:56Z",
+            "lastTransitionTime": "2022-07-18T13:42:23Z",
+            "message": "Cluster created successfully",
+            "reason": "ClusterCreated",
+            "status": "True",
+            "type": "Ready"
+        }
+    ],
+    "message": "Cluster created successfully",
+    "phase": "Ready",
+    "state": "Created",
+    "version": {
+        "image": "registry.redhat.io/rhceph/rhceph-5-rhel8@sha256:b20a05e20403da9775408fde0f10ba9c81c5610a3814db7786dd43ce4b2aba4a",
+        "version": "16.2.7-112"
+    }
+}
