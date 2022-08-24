@@ -125,7 +125,7 @@ func Test_filterEvents(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			filteredEvents := filterEvents(time.Duration(1*time.Minute), &test.events, test.types)
+			filteredEvents := filterEvents(1*time.Minute, &test.events, test.types)
 			if !reflect.DeepEqual(filteredEvents, test.expected) {
 				t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
 			}
