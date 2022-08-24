@@ -14,7 +14,7 @@ func filterEvents(interval time.Duration, events *v1.EventList, Type string) v1.
 	switch Type {
 	case "Warning":
 		for i := range events.Items {
-			if isEventAbnormal(events.Items[i]) && isEventNew(&events.Items[i], oldestEventTime) {
+			if isEventAbnormal(&events.Items[i]) && isEventNew(&events.Items[i], oldestEventTime) {
 				filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
 			}
 		}
@@ -43,7 +43,7 @@ func isEventNew(event *v1.Event, oldestEventTime time.Time) bool {
 	return false
 }
 
-func isEventAbnormal(event v1.Event) bool {
+func isEventAbnormal(event *v1.Event) bool {
 	return event.Type != "Normal"
 }
 
