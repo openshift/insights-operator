@@ -12,7 +12,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
+func Test_WarningEvents_gatherOpenshiftMachineAPIEvents(t *testing.T) {
 	normalEvent := v1.Event{
 		ObjectMeta:    metav1.ObjectMeta{Name: "normalEvent"},
 		LastTimestamp: metav1.Now(),
@@ -48,7 +48,7 @@ func Test_WarningEvents_gatherOpenshiftMachineApiEvents(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := gatherOpenshiftMachineApiEvents(tt.args.ctx, tt.args.coreClient, 1*time.Minute)
+			got, err := gatherOpenshiftMachineAPIEvents(tt.args.ctx, tt.args.coreClient, 1*time.Minute)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("gatherOpenshiftMachineApiEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
