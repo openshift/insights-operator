@@ -1,6 +1,8 @@
 package status
 
 import (
+	"sort"
+
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -94,10 +96,15 @@ func (c *conditions) findCondition(condition configv1.ClusterStatusConditionType
 	return nil
 }
 
+// entries returns a sorted list of status conditions from the mapped values.
+// The list is sorted by  by type ClusterStatusConditionType to ensure consistent ordering for deep equal checks.
 func (c *conditions) entries() []configv1.ClusterOperatorStatusCondition {
 	var res []configv1.ClusterOperatorStatusCondition
 	for _, v := range c.entryMap {
 		res = append(res, v)
 	}
+	sort.SliceStable(res, func(i, j int) bool {
+		return string(res[i].Type) < string(res[j].Type)
+	})
 	return res
 }
