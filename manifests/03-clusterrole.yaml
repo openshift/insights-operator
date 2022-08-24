@@ -62,7 +62,7 @@ rules:
   - apiGroups:
       - "operator.openshift.io"
     resources:
-      - insightsoperators
+      - insightsoperators/status
     verbs:
       - get
       - update

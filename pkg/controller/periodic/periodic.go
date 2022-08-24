@@ -26,8 +26,10 @@ const (
 	DataGatheredCondition = "DataGathered"
 	// NoDataGathered is a reason when there is no data gathered - e.g the resource is not in a cluster
 	NoDataGatheredReason = "NoData"
-	// GatherError is a reason when there is some error and no data gathered
+	// Error is a reason when there is some error and no data gathered
 	GatherErrorReason = "Error"
+	// Panic is a reason when there is some error and no data gathered
+	GatherPanicReason = "Panic"
 	// GatheredOK is a reason when data is gathered as expected
 	GatherOKReason = "GatheredOK"
 	// GatherWithError is a reason when data is gathered partially or with another error message
@@ -240,6 +242,13 @@ func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus 
 	con := metav1.Condition{
 		Type:               DataGatheredCondition,
 		LastTransitionTime: metav1.Now(),
+		Status:             metav1.ConditionFalse,
+		Reason:             NoDataGatheredReason,
+	}
+
+	if gfr.Panic != nil {
+		con.Reason = GatherPanicReason
+		con.Message = gfr.Panic.(string)
 	}
 
 	if gfr.RecordsCount > 0 {
@@ -249,21 +258,19 @@ func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus 
 
 		if len(gfr.Errors) > 0 {
 			con.Reason = GatherWithErrorReason
-			con.Message = fmt.Sprintf("%s Error is: %s", con.Message, strings.Join(gfr.Errors, ","))
+			con.Message = fmt.Sprintf("%s Error: %s", con.Message, strings.Join(gfr.Errors, ","))
 		}
 
 		gs.Conditions = append(gs.Conditions, con)
-	} else {
-		con.Status = metav1.ConditionFalse
-		con.Reason = NoDataGatheredReason
-
-		if len(gfr.Errors) > 0 {
-			con.Reason = GatherErrorReason
-			con.Message = strings.Join(gfr.Errors, ",")
-		}
-
-		gs.Conditions = append(gs.Conditions, con)
+		return gs
 	}
+
+	if len(gfr.Errors) > 0 {
+		con.Reason = GatherErrorReason
+		con.Message = strings.Join(gfr.Errors, ",")
+	}
+
+	gs.Conditions = append(gs.Conditions, con)
 
 	return gs
 }
