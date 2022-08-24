@@ -68,6 +68,12 @@ rules:
       - update
       - patch
   - apiGroups:
+      - "operator.openshift.io"
+    resources:
+      - insightsoperators
+    verbs:
+      - get
+  - apiGroups:
       - "config.openshift.io"
     resources:
       - clusteroperators/status
