@@ -190,7 +190,10 @@ func gatherNamespaceEvents(ctx context.Context,
 	}
 	// filter the event list to only recent events
 	filteredEvents := filterEvents(interval, events, "")
-	compactedEvents := eventListToCompactedEventList(filteredEvents)
+	if len(filteredEvents.Items) == 0 {
+		return nil, nil
+	}
+	compactedEvents := eventListToCompactedEventList(&filteredEvents)
 
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }

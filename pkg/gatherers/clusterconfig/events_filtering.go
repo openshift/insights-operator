@@ -7,7 +7,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-//TODO: Simplify if logic
 //filterEvents() returns events that occoured since last interval
 func filterEvents(interval time.Duration, events *v1.EventList, Type string) v1.EventList {
 	oldestEventTime := time.Now().Add(-interval)
@@ -15,34 +14,14 @@ func filterEvents(interval time.Duration, events *v1.EventList, Type string) v1.
 	switch Type {
 	case "Warning":
 		for i := range events.Items {
-			if events.Items[i].Type != "Normal" {
-				// if LastTimestamp is zero then try to check the event series
-				if events.Items[i].LastTimestamp.IsZero() {
-					if events.Items[i].Series != nil {
-						if events.Items[i].Series.LastObservedTime.Time.After(oldestEventTime) {
-							filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
-						}
-					}
-				} else {
-					if events.Items[i].LastTimestamp.Time.After(oldestEventTime) {
-						filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
-					}
-				}
+			if isEventAbnormal(events.Items[i]) && isEventNew(&events.Items[i], oldestEventTime) {
+				filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
 			}
 		}
 	default:
 		for i := range events.Items {
-			// if LastTimestamp is zero then try to check the event series
-			if events.Items[i].LastTimestamp.IsZero() {
-				if events.Items[i].Series != nil {
-					if events.Items[i].Series.LastObservedTime.Time.After(oldestEventTime) {
-						filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
-					}
-				}
-			} else {
-				if events.Items[i].LastTimestamp.Time.After(oldestEventTime) {
-					filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
-				}
+			if isEventNew(&events.Items[i], oldestEventTime) {
+				filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
 			}
 		}
 	}
@@ -50,10 +29,28 @@ func filterEvents(interval time.Duration, events *v1.EventList, Type string) v1.
 	return filteredEvents
 }
 
+// if LastTimestamp is zero then try to check the event series
+func isEventNew(event *v1.Event, oldestEventTime time.Time) bool {
+	if event.LastTimestamp.Time.After(oldestEventTime) {
+		return true
+	} else if event.LastTimestamp.IsZero() {
+		if event.Series != nil {
+			if event.Series.LastObservedTime.Time.After(oldestEventTime) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isEventAbnormal(event v1.Event) bool {
+	return event.Type != "Normal"
+}
+
 //eventListToCompactedEventList() coverts EventList() into CompactedEventList()
-func eventListToCompactedEventList(events v1.EventList) CompactedEventList {
+func eventListToCompactedEventList(events *v1.EventList) CompactedEventList {
 	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(events.Items))}
-	for i := 0; i < len(events.Items); i++ {
+	for i := range events.Items {
 		compactedEvents.Items[i] = CompactedEvent{
 			Namespace:     events.Items[i].Namespace,
 			LastTimestamp: events.Items[i].LastTimestamp.Time,

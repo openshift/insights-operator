@@ -38,7 +38,10 @@ func gatherOpenshiftMachineApiEvents(ctx context.Context,
 	}
 	// filter the event list to only recent events with type different than "Normal"
 	filteredEvents := filterEvents(interval, events, "Warning")
-	compactedEvents := eventListToCompactedEventList(filteredEvents)
+	if len(filteredEvents.Items) == 0 {
+		return nil, nil
+	}
+	compactedEvents := eventListToCompactedEventList(&filteredEvents)
 
 	return []record.Record{{Name: "events/openshift-machine-api", Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
