@@ -189,7 +189,7 @@ func gatherNamespaceEvents(ctx context.Context,
 		return nil, err
 	}
 	// filter the event list to only recent events
-	filteredEvents := filterEvents(interval, events, "")
+	filteredEvents := getEventsForInterval(interval, events)
 	if len(filteredEvents.Items) == 0 {
 		return nil, nil
 	}

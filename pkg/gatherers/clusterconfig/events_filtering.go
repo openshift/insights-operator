@@ -7,25 +7,15 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-//filterEvents() returns events that occoured since last interval
-func filterEvents(interval time.Duration, events *v1.EventList, Type string) v1.EventList {
+// filterEvents() returns events that occoured since last interval
+func getEventsForInterval(interval time.Duration, events *v1.EventList) v1.EventList {
 	oldestEventTime := time.Now().Add(-interval)
-	var filteredEvents = v1.EventList{}
-	switch Type {
-	case "Warning":
-		for i := range events.Items {
-			if isEventAbnormal(&events.Items[i]) && isEventNew(&events.Items[i], oldestEventTime) {
-				filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
-			}
-		}
-	default:
-		for i := range events.Items {
-			if isEventNew(&events.Items[i], oldestEventTime) {
-				filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
-			}
+	var filteredEvents v1.EventList
+	for i := range events.Items {
+		if isEventNew(&events.Items[i], oldestEventTime) {
+			filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
 		}
 	}
-
 	return filteredEvents
 }
 
@@ -43,27 +33,41 @@ func isEventNew(event *v1.Event, oldestEventTime time.Time) bool {
 	return false
 }
 
+// filterAbnormalEvents returns events that have Type different from "Normal"
+func filterAbnormalEvents(events *v1.EventList) v1.EventList {
+	var filteredEvents v1.EventList
+	for i := range events.Items {
+		if isEventAbnormal(&events.Items[i]) {
+			filteredEvents.Items = append(filteredEvents.Items, events.Items[i])
+		}
+	}
+	return filteredEvents
+}
+
 func isEventAbnormal(event *v1.Event) bool {
 	return event.Type != "Normal"
 }
 
-//eventListToCompactedEventList() coverts EventList() into CompactedEventList()
+// eventListToCompactedEventList() coverts EventList() into CompactedEventList()
 func eventListToCompactedEventList(events *v1.EventList) CompactedEventList {
-	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(events.Items))}
+	var compactedEvents CompactedEventList
 	for i := range events.Items {
-		compactedEvents.Items[i] = CompactedEvent{
-			Namespace:     events.Items[i].Namespace,
-			LastTimestamp: events.Items[i].LastTimestamp.Time,
-			Reason:        events.Items[i].Reason,
-			Message:       events.Items[i].Message,
-			Type:          events.Items[i].Type,
+		event := events.Items[i]
+		compactedEvent := CompactedEvent{
+			Namespace:     event.Namespace,
+			LastTimestamp: event.LastTimestamp.Time,
+			Reason:        event.Reason,
+			Message:       event.Message,
+			Type:          event.Type,
 		}
-		if events.Items[i].LastTimestamp.Time.IsZero() {
-			if events.Items[i].Series != nil {
-				compactedEvents.Items[i].LastTimestamp = events.Items[i].Series.LastObservedTime.Time
+		if event.LastTimestamp.Time.IsZero() {
+			if event.Series != nil {
+				compactedEvent.LastTimestamp = event.Series.LastObservedTime.Time
 			}
 		}
+		compactedEvents.Items = append(compactedEvents.Items, compactedEvent)
 	}
+
 	sort.Slice(compactedEvents.Items, func(i, j int) bool {
 		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
 	})

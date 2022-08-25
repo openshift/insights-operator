@@ -37,7 +37,9 @@ func gatherOpenshiftMachineAPIEvents(ctx context.Context,
 		return nil, err
 	}
 	// filter the event list to only recent events with type different than "Normal"
-	filteredEvents := filterEvents(interval, events, "Warning")
+	filteredEvents := getEventsForInterval(interval, events)
+	filteredEvents = filterAbnormalEvents(&filteredEvents)
+
 	if len(filteredEvents.Items) == 0 {
 		return nil, nil
 	}
