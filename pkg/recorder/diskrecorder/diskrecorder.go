@@ -158,7 +158,7 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (*insightscli
 		if isNotArchiveFile(fileInfo) {
 			continue
 		}
-		if !fileInfo.ModTime().After(since) {
+		if fileInfo.ModTime().Before(since) {
 			continue
 		}
 		recentFiles = append(recentFiles, file.Name())

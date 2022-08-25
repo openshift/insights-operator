@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -21,15 +20,11 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-const (
-	dvoNamespace = "deployment-validation-operator"
-)
-
 var (
-	// Only services with the word "metrics" in their name should be considered.
-	dvoMetricsServiceNameRegex = regexp.MustCompile(`\bmetrics\b`)
 	// Only metrics with the DVO prefix should be gathered.
 	dvoMetricsPrefix = []byte("deployment_validation_operator_")
+	// label selector used for searching the required service
+	serviceLabelSelector = "name=deployment-validation-operator"
 )
 
 // GatherDVOMetrics collects metrics from the Deployment Validation Operator's
@@ -55,7 +50,9 @@ func gatherDVOMetrics(
 	coreClient corev1client.CoreV1Interface,
 	rateLimiter flowcontrol.RateLimiter,
 ) ([]record.Record, []error) {
-	serviceList, err := coreClient.Services(dvoNamespace).List(ctx, metav1.ListOptions{})
+	serviceList, err := coreClient.Services("").List(ctx, metav1.ListOptions{
+		LabelSelector: serviceLabelSelector,
+	})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -65,13 +62,10 @@ func gatherDVOMetrics(
 	for svcIdx := range serviceList.Items {
 		// Use pointer to make gocritic happy and avoid copying the whole Service struct.
 		service := &serviceList.Items[svcIdx]
-		if !dvoMetricsServiceNameRegex.MatchString(service.Name) {
-			continue
-		}
 		for _, port := range service.Spec.Ports {
 			apiURL := url.URL{
 				Scheme: "http",
-				Host:   fmt.Sprintf("%s.%s.svc:%d", service.Name, dvoNamespace, port.Port),
+				Host:   fmt.Sprintf("%s.%s.svc:%d", service.Name, service.Namespace, port.Port),
 			}
 
 			prefixedLines, err := gatherDVOMetricsFromEndpoint(ctx, &apiURL, rateLimiter)
