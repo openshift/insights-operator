@@ -7,7 +7,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// filterEvents() returns events that occoured since last interval
+// getEventsForInterval() returns events that occoured since last interval
 func getEventsForInterval(interval time.Duration, events *v1.EventList) v1.EventList {
 	oldestEventTime := time.Now().Add(-interval)
 	var filteredEvents v1.EventList
@@ -19,10 +19,10 @@ func getEventsForInterval(interval time.Duration, events *v1.EventList) v1.Event
 	return filteredEvents
 }
 
-// if LastTimestamp is zero then try to check the event series
 func isEventNew(event *v1.Event, oldestEventTime time.Time) bool {
 	if event.LastTimestamp.Time.After(oldestEventTime) {
 		return true
+		// if LastTimestamp is zero then try to check the event series
 	} else if event.LastTimestamp.IsZero() {
 		if event.Series != nil {
 			if event.Series.LastObservedTime.Time.After(oldestEventTime) {
@@ -48,7 +48,7 @@ func isEventAbnormal(event *v1.Event) bool {
 	return event.Type != "Normal"
 }
 
-// eventListToCompactedEventList() coverts EventList() into CompactedEventList()
+// eventListToCompactedEventList() converts EventList into CompactedEventList
 func eventListToCompactedEventList(events *v1.EventList) CompactedEventList {
 	var compactedEvents CompactedEventList
 	for i := range events.Items {

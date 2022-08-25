@@ -684,6 +684,17 @@ API Reference:
   * 4.9+
 
 
+## OpenshiftMachineAPIEvents
+
+collects warning ("abnormal") events
+from "openshift-machine-api" namespace
+
+* Location of events in archive: events/
+* Id in config: clusterconfig/openshift_machine_api_events
+* Since versions:
+	 * 4.12+
+
+
 ## OpenshiftSDNControllerLogs
 
 collects logs from sdn-controller pod in openshift-sdn namespace with following substrings:
