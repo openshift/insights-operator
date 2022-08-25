@@ -19,6 +19,7 @@ func getEventsForInterval(interval time.Duration, events *v1.EventList) v1.Event
 	return filteredEvents
 }
 
+// isEventNew() returns true if event occoured after given time, otherwise returns false
 func isEventNew(event *v1.Event, oldestEventTime time.Time) bool {
 	if event.LastTimestamp.Time.After(oldestEventTime) {
 		return true
