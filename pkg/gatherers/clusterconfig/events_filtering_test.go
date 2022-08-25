@@ -11,117 +11,111 @@ import (
 
 func Test_getEventsForInterval(t *testing.T) {
 	timeNow := time.Now()
-	tests := []struct {
+	test := struct {
 		events   v1.EventList
 		expected v1.EventList
 	}{
-		{
-			events: v1.EventList{
-				Items: []v1.Event{
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "oldEvent1"},
-						LastTimestamp: metav1.Time{},
-					},
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "newEvent1"},
-						LastTimestamp: metav1.NewTime(timeNow),
-					},
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "oldEvent2"},
-						LastTimestamp: metav1.Time{},
-					},
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "newEvent2"},
-						LastTimestamp: metav1.NewTime(timeNow),
-					},
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "newEvent3"},
-						LastTimestamp: metav1.NewTime(timeNow),
-					},
+		events: v1.EventList{
+			Items: []v1.Event{
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "oldEvent1"},
+					LastTimestamp: metav1.Time{},
+				},
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "newEvent1"},
+					LastTimestamp: metav1.NewTime(timeNow),
+				},
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "oldEvent2"},
+					LastTimestamp: metav1.Time{},
+				},
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "newEvent2"},
+					LastTimestamp: metav1.NewTime(timeNow),
+				},
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "newEvent3"},
+					LastTimestamp: metav1.NewTime(timeNow),
 				},
 			},
-			expected: v1.EventList{
-				Items: []v1.Event{
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "newEvent1"},
-						LastTimestamp: metav1.NewTime(timeNow),
-					},
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "newEvent2"},
-						LastTimestamp: metav1.NewTime(timeNow),
-					},
-					{
-						ObjectMeta:    metav1.ObjectMeta{Name: "newEvent3"},
-						LastTimestamp: metav1.NewTime(timeNow),
-					},
+		},
+		expected: v1.EventList{
+			Items: []v1.Event{
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "newEvent1"},
+					LastTimestamp: metav1.NewTime(timeNow),
+				},
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "newEvent2"},
+					LastTimestamp: metav1.NewTime(timeNow),
+				},
+				{
+					ObjectMeta:    metav1.ObjectMeta{Name: "newEvent3"},
+					LastTimestamp: metav1.NewTime(timeNow),
 				},
 			},
 		},
 	}
 
-	for _, test := range tests {
-		filteredEvents := getEventsForInterval(1*time.Minute, &test.events)
-		if !reflect.DeepEqual(filteredEvents, test.expected) {
-			t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
-		}
+	filteredEvents := getEventsForInterval(1*time.Minute, &test.events)
+	if !reflect.DeepEqual(filteredEvents, test.expected) {
+		t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
 	}
+
 }
 
 func Test_filterAbnormalEvents(t *testing.T) {
-	tests := []struct {
+	test := struct {
 		events   v1.EventList
 		expected v1.EventList
 	}{
-		{
-			events: v1.EventList{
-				Items: []v1.Event{
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "normalEvent1"},
-						Type:       "Normal",
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "warningEvent1"},
-						Type:       "Warning",
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "normalEvent2"},
-						Type:       "Normal",
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "warningEvent2"},
-						Type:       "Warning",
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "warningEvent3"},
-						Type:       "Warning",
-					},
+		events: v1.EventList{
+			Items: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "normalEvent1"},
+					Type:       "Normal",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "warningEvent1"},
+					Type:       "Warning",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "normalEvent2"},
+					Type:       "Normal",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "warningEvent2"},
+					Type:       "Warning",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "warningEvent3"},
+					Type:       "Warning",
 				},
 			},
-			expected: v1.EventList{
-				Items: []v1.Event{
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "warningEvent1"},
-						Type:       "Warning",
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "warningEvent2"},
-						Type:       "Warning",
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{Name: "warningEvent3"},
-						Type:       "Warning",
-					},
+		},
+		expected: v1.EventList{
+			Items: []v1.Event{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "warningEvent1"},
+					Type:       "Warning",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "warningEvent2"},
+					Type:       "Warning",
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "warningEvent3"},
+					Type:       "Warning",
 				},
 			},
 		},
 	}
 
-	for _, test := range tests {
-		filteredEvents := filterAbnormalEvents(&test.events)
-		if !reflect.DeepEqual(filteredEvents, test.expected) {
-			t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
-		}
+	filteredEvents := filterAbnormalEvents(&test.events)
+	if !reflect.DeepEqual(filteredEvents, test.expected) {
+		t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
 	}
+
 }
 
 func Test_isEventNew(t *testing.T) {
