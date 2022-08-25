@@ -201,7 +201,7 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 					{
 						Type:    DataGatheredCondition,
 						Status:  metav1.ConditionTrue,
-						Reason:  GatherOKReason,
+						Reason:  GatheredOKReason,
 						Message: "Created 5 records in the archive.",
 					},
 				},
@@ -268,7 +268,7 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 					{
 						Type:    DataGatheredCondition,
 						Status:  metav1.ConditionTrue,
-						Reason:  GatherWithErrorReason,
+						Reason:  GatheredWithErrorReason,
 						Message: "Created 2 records in the archive. Error: didn't find xyz configmap",
 					},
 				},

@@ -27,13 +27,13 @@ const (
 	// NoDataGathered is a reason when there is no data gathered - e.g the resource is not in a cluster
 	NoDataGatheredReason = "NoData"
 	// Error is a reason when there is some error and no data gathered
-	GatherErrorReason = "Error"
+	GatherErrorReason = "GatherError"
 	// Panic is a reason when there is some error and no data gathered
-	GatherPanicReason = "Panic"
+	GatherPanicReason = "GatherPanic"
 	// GatheredOK is a reason when data is gathered as expected
-	GatherOKReason = "GatheredOK"
-	// GatherWithError is a reason when data is gathered partially or with another error message
-	GatherWithErrorReason = "GatheredWithError"
+	GatheredOKReason = "GatheredOK"
+	// GatheredWithError is a reason when data is gathered partially or with another error message
+	GatheredWithErrorReason = "GatheredWithError"
 )
 
 // Controller periodically runs gatherers, records their results to the recorder
@@ -200,17 +200,20 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	}
 }
 
+// updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last
+// gathering details.
 func (c *Controller) updateOperatorStatusCR(allFunctionReports map[string]gather.GathererFunctionReport, gatherTime metav1.Time) error {
 	insightsOperatorCR, err := c.insightsOperatorCLI.Get(context.Background(), "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	ioCopy := insightsOperatorCR.DeepCopy()
-	ioCopy.Status.GatherStatus.Gatherers = []v1.GathererStatus{}
-	ioCopy.Status.GatherStatus.LastGatherTime = gatherTime
-	ioCopy.Status.GatherStatus.LastGatherDuration = metav1.Duration{
-		Duration: time.Since(gatherTime.Time),
+	updatedOperatorCR := insightsOperatorCR.DeepCopy()
+	updatedOperatorCR.Status.GatherStatus = v1.GatherStatus{
+		LastGatherTime: gatherTime,
+		LastGatherDuration: metav1.Duration{
+			Duration: time.Since(gatherTime.Time),
+		},
 	}
 
 	for k := range allFunctionReports {
@@ -221,10 +224,10 @@ func (c *Controller) updateOperatorStatusCR(allFunctionReports map[string]gather
 		}
 
 		gs := createGathererStatus(&fr)
-		ioCopy.Status.GatherStatus.Gatherers = append(ioCopy.Status.GatherStatus.Gatherers, gs)
+		updatedOperatorCR.Status.GatherStatus.Gatherers = append(updatedOperatorCR.Status.GatherStatus.Gatherers, gs)
 	}
 
-	_, err = c.insightsOperatorCLI.UpdateStatus(context.Background(), ioCopy, metav1.UpdateOptions{})
+	_, err = c.insightsOperatorCLI.UpdateStatus(context.Background(), updatedOperatorCR, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -253,11 +256,11 @@ func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus 
 
 	if gfr.RecordsCount > 0 {
 		con.Status = metav1.ConditionTrue
-		con.Reason = GatherOKReason
+		con.Reason = GatheredOKReason
 		con.Message = fmt.Sprintf("Created %d records in the archive.", gfr.RecordsCount)
 
 		if len(gfr.Errors) > 0 {
-			con.Reason = GatherWithErrorReason
+			con.Reason = GatheredWithErrorReason
 			con.Message = fmt.Sprintf("%s Error: %s", con.Message, strings.Join(gfr.Errors, ","))
 		}
 
