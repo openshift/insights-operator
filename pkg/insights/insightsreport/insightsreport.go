@@ -11,12 +11,15 @@ import (
 	"k8s.io/component-base/metrics"
 	"k8s.io/klog/v2"
 
+	v1 "github.com/openshift/api/operator/v1"
+	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/authorizer"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Controller gathers the report from Smart Proxy
@@ -27,6 +30,7 @@ type Controller struct {
 	client                *insightsclient.Client
 	LastReport            types.SmartProxyReport
 	archiveUploadReporter <-chan struct{}
+	insightsOperatorCLI   operatorv1client.InsightsOperatorInterface
 }
 
 // Response represents the Smart Proxy report response structure
@@ -61,12 +65,13 @@ var (
 )
 
 // New initializes and returns a Gatherer
-func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter) *Controller {
+func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
 	return &Controller{
 		StatusController:      controllerstatus.New("insightsreport"),
 		configurator:          configurator,
 		client:                client,
 		archiveUploadReporter: reporter.ArchiveUploaded(),
+		insightsOperatorCLI:   insightsOperatorCLI,
 	}
 }
 
@@ -135,6 +140,10 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	}
 
 	c.updateInsightsMetrics(reportResponse.Report)
+	err = c.updateOperatorStatusCR(reportResponse.Report)
+	if err != nil {
+		klog.Errorf("failed to update the Insights Operator CR status: %v", err)
+	}
 	// we want to increment the metric only in case of download of a new report
 	c.client.IncrementRecvReportMetric(resp.StatusCode)
 	c.LastReport = reportResponse.Report
@@ -272,22 +281,9 @@ func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 		if rule.Disabled {
 			continue
 		}
-
-		extraDataMap, ok := rule.TemplateData.(map[string]interface{})
-		if !ok {
-			klog.Error("Unable to convert the TemplateData of rule %q in an Insights report to a map", rule.RuleID)
-			continue
-		}
-
-		errorKeyField, exists := extraDataMap["error_key"]
-		if !exists {
-			klog.Error("TemplateData of rule %q does not contain error_key", rule.RuleID)
-			continue
-		}
-
-		errorKeyStr, ok := errorKeyField.(string)
-		if !ok {
-			klog.Error("The error_key of TemplateData of rule %q is not a string", rule.RuleID)
+		errorKeyStr, err := extractErrorKeyFromRuleData(rule)
+		if err != nil {
+			klog.Error("Unable to extract recommandation's error key: %v", err)
 			continue
 		}
 
@@ -312,6 +308,60 @@ func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 		return
 	}
 	insightsLastGatherTime.Set(float64(t.Unix()))
+}
+
+func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error {
+	insightsOperatorCR, err := c.insightsOperatorCLI.Get(context.Background(), "cluster", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	updatedOperatorCR := insightsOperatorCR.DeepCopy()
+	var healthChecks []v1.HealthCheck
+	for _, rule := range report.Data {
+		errorKey, err := extractErrorKeyFromRuleData(rule)
+		if err != nil {
+			klog.Error("Unable to extract recommandation's error key: %v", err)
+			continue
+		}
+		healthCheck := v1.HealthCheck{
+			Description: rule.Description,
+			TotalRisk:   int32(rule.TotalRisk),
+			State:       v1.HealthCheckEnabled,
+			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/recommendations/%s%%7C%s", rule.RuleID, errorKey),
+		}
+
+		if rule.Disabled {
+			healthCheck.State = v1.HealthCheckDisabled
+		}
+		healthChecks = append(healthChecks, healthCheck)
+	}
+
+	updatedOperatorCR.Status.InsightsReport.HealthChecks = healthChecks
+	_, err = c.insightsOperatorCLI.UpdateStatus(context.Background(), updatedOperatorCR, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// extractErrorKeyFromRuleData extracts "error_key" value from the provided rule.
+func extractErrorKeyFromRuleData(r types.RuleWithContentResponse) (string, error) {
+	extraDataMap, ok := r.TemplateData.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("unable to convert the TemplateData of rule %q in an Insights report to a map", r.RuleID)
+	}
+
+	errorKeyField, exists := extraDataMap["error_key"]
+	if !exists {
+		return "", fmt.Errorf("TemplateData of rule %q does not contain error_key", r.RuleID)
+	}
+
+	errorKeyStr, ok := errorKeyField.(string)
+	if !ok {
+		return "", fmt.Errorf("The error_key of TemplateData of rule %q is not a string", r.RuleID)
+	}
+	return errorKeyStr, nil
 }
 
 func init() {
