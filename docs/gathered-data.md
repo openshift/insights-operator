@@ -520,6 +520,8 @@ Gathered metrics:
   vsphere_node_hw_version_total
   namespace CPU and memory usage
   console_helm_installs_total
+  console_helm_upgrades_total
+  console_helm_uninstalls_total
   followed by at most 1000 lines of ALERTS metric
 
 * Location in archive: config/metrics
