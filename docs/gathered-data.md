@@ -14,6 +14,20 @@ The CRD sizes above are in the raw (uncompressed) state.
 * Id in config: crds
 
 
+## CephCluster
+
+collects statuses of the`cephclusters.ceph.rook.io` resources
+from Openshift Data Foundation Stack.
+
+API Reference:
+  https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
+
+* Location in archive: config/storage/<namespace>/<name>.json
+* Id in config: clusterconfig/ceph_cluster
+* Since versions:
+  * 4.12+
+
+
 ## CertificateSigningRequests
 
 collects anonymized CertificateSigningRequests.
