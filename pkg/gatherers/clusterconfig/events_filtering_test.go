@@ -61,7 +61,6 @@ func Test_getEventsForInterval(t *testing.T) {
 	if !reflect.DeepEqual(filteredEvents, test.expected) {
 		t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
 	}
-
 }
 
 func Test_filterAbnormalEvents(t *testing.T) {
@@ -115,7 +114,6 @@ func Test_filterAbnormalEvents(t *testing.T) {
 	if !reflect.DeepEqual(filteredEvents, test.expected) {
 		t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
 	}
-
 }
 
 func Test_isEventNew(t *testing.T) {
