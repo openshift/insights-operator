@@ -474,5 +474,6 @@ func relatedObjects(namespace string) []configv1.ObjectReference {
 		{Resource: "serviceaccounts", Namespace: namespace, Name: "operator"},
 		{Resource: "services", Namespace: namespace, Name: "metrics"},
 		{Resource: "configmaps", Namespace: namespace, Name: "service-ca-bundle"},
+		{Group: "operator.openshift.io", Resource: "insightsoperators", Name: "cluster"},
 	}
 }

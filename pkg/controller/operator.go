@@ -7,6 +7,7 @@ import (
 	"time"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,6 +64,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
+	operatorClient, err := operatorv1client.NewForConfig(controller.KubeConfig)
+	if err != nil {
+		return err
+	}
+
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
 		controller.ProtoKubeConfig, controller.KubeConfig, s.Impersonate,
 	)
@@ -114,7 +120,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,
 	)
-	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer)
+	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators())
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
