@@ -16,7 +16,7 @@ import (
 // * Location of events in archive: events/
 // * Id in config: clusterconfig/openshift_machine_api_events
 // * Since versions:
-//   * 4.12+
+//   - 4.12+
 func (g *Gatherer) GatherOpenshiftMachineAPIEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
