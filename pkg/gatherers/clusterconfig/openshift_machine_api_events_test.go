@@ -2,10 +2,11 @@ package clusterconfig
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
@@ -13,49 +14,74 @@ import (
 )
 
 func Test_WarningEvents_gatherOpenshiftMachineAPIEvents(t *testing.T) {
-	normalEvent := v1.Event{
-		ObjectMeta:    metav1.ObjectMeta{Name: "normalEvent"},
+	normalEvent1 := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "normalEvent1", Namespace: "openshift-machine-api"},
 		LastTimestamp: metav1.Now(),
 		Type:          "Normal",
 		Reason:        "normal",
 	}
-	warningEvent := v1.Event{
-		ObjectMeta:    metav1.ObjectMeta{Name: "warningEvent"},
+	warningEvent1 := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "warningEvent1", Namespace: "openshift-machine-api"},
 		LastTimestamp: metav1.Now(),
-		Type:          "Normal",
+		Type:          "Warning",
 		Reason:        "warning",
 	}
+	normalEvent2 := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "normalEvent2", Namespace: "openshift-machine-api"},
+		LastTimestamp: metav1.Now(),
+		Type:          "Normal",
+		Reason:        "normal",
+	}
+	warningEvent2 := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "warningEvent2", Namespace: "openshift-machine-api"},
+		LastTimestamp: metav1.Now(),
+		Type:          "Warning",
+		Reason:        "warning",
+	}
+	warningEvent3 := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "warningEvent3", Namespace: "openshift-machine-api"},
+		LastTimestamp: metav1.Time{},
+		Type:          "Warning",
+		Reason:        "warning",
+	}
+	normalEvent3 := v1.Event{
+		ObjectMeta:    metav1.ObjectMeta{Name: "normalEvent3", Namespace: "openshift-machine-api"},
+		LastTimestamp: metav1.Time{},
+		Type:          "Normal",
+		Reason:        "normal",
+	}
+	var events v1.EventList
+	events.Items = append(events.Items, warningEvent1, warningEvent2)
+	compactedEvents := eventListToCompactedEventList(&events)
 
 	type args struct {
 		ctx        context.Context
 		coreClient corev1client.CoreV1Interface
 	}
-	tests := []struct {
+	test := struct {
 		name    string
 		args    args
 		wantErr bool
+		want    []record.Record
 	}{
-		{
-			name: "empty openshift-machine-api events",
-			args: args{
-				ctx:        context.TODO(),
-				coreClient: kubefake.NewSimpleClientset(normalEvent.DeepCopy(), warningEvent.DeepCopy()).CoreV1(),
-			},
-			wantErr: false,
+		name: "empty openshift-machine-api events",
+		args: args{
+			ctx: context.TODO(),
+			coreClient: kubefake.NewSimpleClientset(warningEvent1.DeepCopy(), normalEvent1.DeepCopy(),
+				normalEvent2.DeepCopy(), warningEvent2.DeepCopy(), warningEvent3.DeepCopy(),
+				normalEvent3.DeepCopy()).CoreV1(),
 		},
+		wantErr: false,
+		want:    []record.Record{{Name: "events/openshift-machine-api", Item: record.JSONMarshaller{Object: &compactedEvents}}},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := gatherOpenshiftMachineAPIEvents(tt.args.ctx, tt.args.coreClient, 1*time.Minute)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("gatherOpenshiftMachineApiEvents() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if reflect.DeepEqual(got, nil) {
-				t.Errorf("gatherOpenshiftMachineApiEvents() got nil")
-			}
-		})
-	}
+
+	t.Run(test.name, func(t *testing.T) {
+		t.Parallel()
+		got, err := gatherOpenshiftMachineAPIEvents(test.args.ctx, test.args.coreClient, 1*time.Minute)
+		if (err != nil) != test.wantErr {
+			t.Errorf("gatherOpenshiftMachineApiEvents() error = %v, wantErr %v", err, test.wantErr)
+			return
+		}
+		assert.Equal(t, test.want, got)
+	})
 }
