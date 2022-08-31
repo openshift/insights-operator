@@ -64,24 +64,19 @@ func Test_WarningEvents_gatherOpenshiftMachineAPIEvents(t *testing.T) {
 		wantErr bool
 		want    []record.Record
 	}{
-		name: "empty openshift-machine-api events",
+		name: "openshift-machine-api warning events",
 		args: args{
 			ctx: context.TODO(),
-			coreClient: kubefake.NewSimpleClientset(warningEvent1.DeepCopy(), normalEvent1.DeepCopy(),
-				normalEvent2.DeepCopy(), warningEvent2.DeepCopy(), warningEvent3.DeepCopy(),
-				normalEvent3.DeepCopy()).CoreV1(),
+			coreClient: kubefake.NewSimpleClientset(&warningEvent1, &normalEvent1, &normalEvent2,
+				&warningEvent2, &warningEvent3, &normalEvent3).CoreV1(),
 		},
 		wantErr: false,
 		want:    []record.Record{{Name: "events/openshift-machine-api", Item: record.JSONMarshaller{Object: &compactedEvents}}},
 	}
 
 	t.Run(test.name, func(t *testing.T) {
-		t.Parallel()
 		got, err := gatherOpenshiftMachineAPIEvents(test.args.ctx, test.args.coreClient, 1*time.Minute)
-		if (err != nil) != test.wantErr {
-			t.Errorf("gatherOpenshiftMachineApiEvents() error = %v, wantErr %v", err, test.wantErr)
-			return
-		}
+		assert.NoError(t, err)
 		assert.Equal(t, test.want, got)
 	})
 }

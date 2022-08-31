@@ -1,10 +1,10 @@
 package clusterconfig
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -58,9 +58,7 @@ func Test_getEventsForInterval(t *testing.T) {
 	}
 
 	filteredEvents := getEventsForInterval(1*time.Minute, &test.events)
-	if !reflect.DeepEqual(filteredEvents, test.expected) {
-		t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
-	}
+	assert.Equal(t, filteredEvents, test.expected)
 }
 
 func Test_filterAbnormalEvents(t *testing.T) {
@@ -111,9 +109,7 @@ func Test_filterAbnormalEvents(t *testing.T) {
 	}
 
 	filteredEvents := filterAbnormalEvents(&test.events)
-	if !reflect.DeepEqual(filteredEvents, test.expected) {
-		t.Errorf("filterEvents() = %v, want %v", filteredEvents, test.expected)
-	}
+	assert.Equal(t, filteredEvents, test.expected)
 }
 
 func Test_isEventNew(t *testing.T) {
@@ -140,9 +136,7 @@ func Test_isEventNew(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if isEventNew(&test.event, time.Now().Add(-5*time.Minute)) != test.expected {
-			t.Errorf("isEventNew() = %v, got %v", !test.expected, test.expected)
-		}
+		assert.Equal(t, isEventNew(&test.event, time.Now().Add(-5*time.Minute)), test.expected)
 	}
 }
 
@@ -164,7 +158,5 @@ func Test_eventListToCompactedEventList(t *testing.T) {
 	}
 	compactedEventList := eventListToCompactedEventList(&v1.EventList{Items: []v1.Event{event}})
 
-	if !reflect.DeepEqual(compactedEvent, compactedEventList.Items[0]) {
-		t.Errorf("eventListToCompactedEventList() = %v, want %v", compactedEventList.Items[0], compactedEvent)
-	}
+	assert.Equal(t, compactedEvent, compactedEventList.Items[0])
 }
