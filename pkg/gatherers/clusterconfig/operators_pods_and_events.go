@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -33,6 +32,7 @@ type CompactedEvent struct {
 	LastTimestamp time.Time `json:"lastTimestamp"`
 	Reason        string    `json:"reason"`
 	Message       string    `json:"message"`
+	Type          string    `json:"type"`
 }
 
 // CompactedEventList is collection of events
@@ -189,40 +189,11 @@ func gatherNamespaceEvents(ctx context.Context,
 		return nil, err
 	}
 	// filter the event list to only recent events
-	oldestEventTime := time.Now().Add(-interval)
-	var filteredEventIndex []int
-	for i := range events.Items {
-		// if LastTimestamp is zero then try to check the event series
-		if events.Items[i].LastTimestamp.IsZero() {
-			if events.Items[i].Series != nil {
-				if events.Items[i].Series.LastObservedTime.Time.After(oldestEventTime) {
-					filteredEventIndex = append(filteredEventIndex, i)
-				}
-			}
-		} else {
-			if events.Items[i].LastTimestamp.Time.After(oldestEventTime) {
-				filteredEventIndex = append(filteredEventIndex, i)
-			}
-		}
-	}
-	if len(filteredEventIndex) == 0 {
+	filteredEvents := getEventsForInterval(interval, events)
+	if len(filteredEvents.Items) == 0 {
 		return nil, nil
 	}
-	compactedEvents := CompactedEventList{Items: make([]CompactedEvent, len(filteredEventIndex))}
-	for i, index := range filteredEventIndex {
-		compactedEvents.Items[i] = CompactedEvent{
-			Namespace:     events.Items[index].Namespace,
-			LastTimestamp: events.Items[index].LastTimestamp.Time,
-			Reason:        events.Items[index].Reason,
-			Message:       events.Items[index].Message,
-		}
-		if events.Items[index].LastTimestamp.Time.IsZero() {
-			compactedEvents.Items[i].LastTimestamp = events.Items[index].Series.LastObservedTime.Time
-		}
-	}
-	sort.Slice(compactedEvents.Items, func(i, j int) bool {
-		return compactedEvents.Items[i].LastTimestamp.Before(compactedEvents.Items[j].LastTimestamp)
-	})
+	compactedEvents := eventListToCompactedEventList(&filteredEvents)
 
 	return []record.Record{{Name: fmt.Sprintf("events/%s", namespace), Item: record.JSONMarshaller{Object: &compactedEvents}}}, nil
 }
