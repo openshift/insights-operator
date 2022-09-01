@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -324,11 +325,12 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 			klog.Error("Unable to extract recommandation's error key: %v", err)
 			continue
 		}
+		ruleIDStr := strings.TrimSuffix(string(rule.RuleID), ".report")
 		healthCheck := v1.HealthCheck{
 			Description: rule.Description,
 			TotalRisk:   int32(rule.TotalRisk),
 			State:       v1.HealthCheckEnabled,
-			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/recommendations/%s%%7C%s", rule.RuleID, errorKey),
+			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/recommendations/%s%%7C%s", ruleIDStr, errorKey),
 		}
 
 		if rule.Disabled {
