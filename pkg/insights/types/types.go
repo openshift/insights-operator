@@ -22,7 +22,6 @@ type ReportResponseMeta struct {
 // RuleWithContentResponse represents a single rule in the response of /report endpoint
 type RuleWithContentResponse struct {
 	RuleID          RuleID      `json:"rule_id"`
-	ErrorKey        ErrorKey    `json:"-"`
 	CreatedAt       string      `json:"created_at"`
 	Description     string      `json:"description"`
 	Generic         string      `json:"details"`

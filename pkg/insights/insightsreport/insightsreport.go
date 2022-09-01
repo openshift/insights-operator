@@ -322,7 +322,7 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 	for _, rule := range report.Data {
 		errorKey, err := extractErrorKeyFromRuleData(rule)
 		if err != nil {
-			klog.Error("Unable to extract recommandation's error key: %v", err)
+			klog.Error("Unable to extract recommendation's error key: %v", err)
 			continue
 		}
 		ruleIDStr := strings.TrimSuffix(string(rule.RuleID), ".report")
