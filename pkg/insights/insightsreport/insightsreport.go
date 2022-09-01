@@ -265,6 +265,9 @@ func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 	activeRecommendations := []types.InsightsRecommendation{}
 
 	for _, rule := range report.Data {
+		if rule.Disabled {
+			continue
+		}
 		switch rule.TotalRisk {
 		case 1:
 			low++
@@ -277,9 +280,6 @@ func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 		}
 
 		if c.configurator.Config().DisableInsightsAlerts {
-			continue
-		}
-		if rule.Disabled {
 			continue
 		}
 		errorKeyStr, err := extractErrorKeyFromRuleData(rule)
