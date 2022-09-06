@@ -114,6 +114,17 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 	if len(g.gatheringRules.Rules) == 0 {
 		return nil, fmt.Errorf("there are no conditional rules")
 	}
+
+	if len(g.gatheringRules.Rules) == 1 {
+		if len(g.gatheringRules.Rules[0].GatheringFunctions) == 0 {
+			if len(g.gatheringRules.Rules[0].Conditions) == 0 {
+				return nil, fmt.Errorf("there are no conditional rules")
+			} else if (g.gatheringRules.Rules[0].Conditions[0] == ConditionWithParams{}) {
+				return nil, fmt.Errorf("there are no conditional rules")
+			}
+		}
+	}
+
 	errs := validateGatheringRules(g.gatheringRules.Rules)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
