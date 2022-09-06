@@ -1,0 +1,5 @@
+apiVersion: config.openshift.io/v1alpha1
+kind: InsightsDataGather
+metadata:
+  name: cluster
+spec: {}
