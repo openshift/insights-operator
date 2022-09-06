@@ -10,9 +10,6 @@ func NewMockConfigurator(conf *Controller) *MockConfigurator {
 	if conf == nil {
 		conf = &Controller{}
 	}
-	if len(conf.Gather) == 0 {
-		conf.Gather = []string{"ALL"}
-	}
 	return &MockConfigurator{
 		Conf: conf,
 	}

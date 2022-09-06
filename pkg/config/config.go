@@ -22,9 +22,8 @@ type Serialized struct {
 		Timeout      string `json:"timeout"`
 		MinRetryTime string `json:"min_retry"`
 	} `json:"pull_report"`
-	Impersonate             string   `json:"impersonate"`
-	Gather                  []string `json:"gather"`
-	EnableGlobalObfuscation bool     `json:"enableGlobalObfuscation"`
+	Impersonate             string `json:"impersonate"`
+	EnableGlobalObfuscation bool   `json:"enableGlobalObfuscation"`
 	OCM                     struct {
 		SCAEndpoint             string `json:"scaEndpoint"`
 		SCAInterval             string `json:"scaInterval"`
@@ -47,16 +46,6 @@ type Controller struct {
 	ReportMinRetryTime          time.Duration
 	ReportPullingTimeout        time.Duration
 	Impersonate                 string
-	// list of gathering functions to enable
-	// if there's a string "ALL", we enable everything
-	// otherwise, each string should consist of 2 parts:
-	// gatherer name and function name split by slash
-	// Example: []{
-	//   "clusterconfig/container_images",
-	//   "clusterconfig/nodes",
-	//   "clusterconfig/authentication",
-	// }
-	Gather []string
 	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
 	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
 	EnableGlobalObfuscation bool
@@ -196,7 +185,6 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	cfg.Endpoint = s.Endpoint
 	cfg.ConditionalGathererEndpoint = s.ConditionalGathererEndpoint
 	cfg.Impersonate = s.Impersonate
-	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts
 
@@ -290,7 +278,6 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 	cfg.Report = s.Report
 	cfg.StoragePath = s.StoragePath
 	cfg.Impersonate = s.Impersonate
-	cfg.Gather = s.Gather
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 	cfg.ConditionalGathererEndpoint = s.ConditionalGathererEndpoint
 	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts

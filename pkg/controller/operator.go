@@ -6,7 +6,8 @@ import (
 	"os"
 	"time"
 
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
+	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -86,6 +87,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
+	configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
+
+	configController, err := config.NewConfigController(gatherKubeConfig, controller.EventRecorder, configInformers)
+	if err != nil {
+		return err
+	}
+	configInformers.Start(ctx.Done())
+	go configController.Run(ctx, 1)
 
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(s.Controller, kubeClient)
@@ -93,7 +102,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient, configObserver, os.Getenv("POD_NAMESPACE"))
+	statusReporter := status.NewController(configClient.ConfigV1(), configObserver, os.Getenv("POD_NAMESPACE"))
 
 	var anonymizer *anonymization.Anonymizer
 	if anonymization.IsObfuscationEnabled(configObserver) {
@@ -120,7 +129,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,
 	)
-	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators())
+	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), configController)
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop

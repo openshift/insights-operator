@@ -14,6 +14,7 @@ import (
 	v1 "github.com/openshift/api/operator/v1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
@@ -39,7 +40,8 @@ const (
 // Controller periodically runs gatherers, records their results to the recorder
 // and flushes the recorder to create archives
 type Controller struct {
-	configurator        configobserver.Configurator
+	secretConfigurator  configobserver.Configurator
+	apiConfigurator     config.APIObserver
 	recorder            recorder.FlushInterface
 	gatherers           []gatherers.Interface
 	statuses            map[string]controllerstatus.StatusController
@@ -50,11 +52,12 @@ type Controller struct {
 // New creates a new instance of Controller which periodically invokes the gatherers
 // and flushes the recorder to create archives.
 func New(
-	configurator configobserver.Configurator,
+	secretConfigurator configobserver.Configurator,
 	rec recorder.FlushInterface,
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
+	apiConfigurator config.APIObserver,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -64,7 +67,8 @@ func New(
 	}
 
 	return &Controller{
-		configurator:        configurator,
+		secretConfigurator:  secretConfigurator,
+		apiConfigurator:     apiConfigurator,
 		recorder:            rec,
 		gatherers:           listGatherers,
 		statuses:            statuses,
@@ -109,7 +113,7 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 
 // Gather Runs the gatherers one after the other.
 func (c *Controller) Gather() {
-	if !c.configurator.Config().Report {
+	if !c.secretConfigurator.Config().Report {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
 	}
@@ -141,11 +145,11 @@ func (c *Controller) Gather() {
 			name := gatherer.GetName()
 			start := time.Now()
 
-			ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+			ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval/2)
 			defer cancel()
 
 			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
+			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.apiConfigurator)
 			for i := range functionReports {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
@@ -176,10 +180,10 @@ func (c *Controller) Gather() {
 // Periodically starts the gathering.
 // If there is an initialDelay set then it waits that much for the first gather to happen.
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
-	configCh, closeFn := c.configurator.ConfigChanged()
+	configCh, closeFn := c.secretConfigurator.ConfigChanged()
 	defer closeFn()
 
-	interval := c.configurator.Config().Interval
+	interval := c.secretConfigurator.Config().Interval
 	klog.Infof("Gathering cluster info every %s", interval)
 	for {
 		select {
@@ -187,7 +191,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			return
 
 		case <-configCh:
-			newInterval := c.configurator.Config().Interval
+			newInterval := c.secretConfigurator.Config().Interval
 			if newInterval == interval {
 				continue
 			}

@@ -71,7 +71,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	}, 1*time.Hour)
 
 	// 1 sec interval, 5 gatherers + metadata
-	c.configurator.Config().Interval = 1 * time.Second
+	c.secretConfigurator.Config().Interval = 1 * time.Second
 	stopCh := make(chan struct{})
 	go c.periodicTrigger(stopCh)
 	// 2 intervals
@@ -81,7 +81,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	mockRecorder.Reset()
 
 	// 2 hour interval, stop before delay ends
-	c.configurator.Config().Interval = 2 * time.Hour
+	c.secretConfigurator.Config().Interval = 2 * time.Hour
 	stopCh = make(chan struct{})
 	go c.periodicTrigger(stopCh)
 	time.Sleep(100 * time.Millisecond)

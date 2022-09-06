@@ -81,7 +81,8 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
-		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, configObserver)
+		//FIXME
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, &config.APIConfigController{})
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
 		}
