@@ -15,6 +15,10 @@ var gatheringRulesJSONSchema string
 
 // validateGatheringRules validates provided gathering rules, will return nil on success, or a list of errors
 func validateGatheringRules(gatheringRules []GatheringRule) []error {
+	if len(gatheringRules) == 0 {
+		return []error{fmt.Errorf("there are no conditional rules")}
+	}
+
 	if len(gatheringRulesJSONSchema) == 0 || len(gatheringRuleJSONSchema) == 0 {
 		return []error{fmt.Errorf("unable to load JSON schemas")}
 	}
