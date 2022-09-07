@@ -75,6 +75,16 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 			},
 		},
 		{
+			Name: "empty Rules",
+			Rules: []GatheringRule{
+				{},
+			},
+			Errors: []string{
+				`0.conditions: Invalid type. Expected: array, given: null`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
+			},
+		},
+		{
 			Name: "repeating elements",
 			Rules: []GatheringRule{
 				{
