@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -113,7 +114,7 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 
 // Gather Runs the gatherers one after the other.
 func (c *Controller) Gather() {
-	if !c.secretConfigurator.Config().Report {
+	if c.isGatheringDisabled() {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
 	}
@@ -236,6 +237,24 @@ func (c *Controller) updateOperatorStatusCR(allFunctionReports map[string]gather
 		return err
 	}
 	return nil
+}
+
+func (c *Controller) isGatheringDisabled() bool {
+	// old way of disabling data gathering by removing
+	// the "cloud.openshift.com" token from the pull-secret
+	if !c.secretConfigurator.Config().Report {
+		return true
+	}
+
+	// disabled in the `insightsdatagather.config.openshift.io` API
+	if c.apiConfigurator != nil {
+		if utils.StringInSlice("all", c.apiConfigurator.GatherConfig().DisabledGatherers) ||
+			utils.StringInSlice("ALL", c.apiConfigurator.GatherConfig().DisabledGatherers) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus {

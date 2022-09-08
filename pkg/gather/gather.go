@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"strings"
 	"time"
 
 	"k8s.io/client-go/rest"
@@ -262,7 +261,7 @@ func startGatheringConcurrently(
 //
 // If there's a string "ALL", we enable everything and return the first parameter as true,
 // otherwise it will be false and the second parameter will contain function names
-func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList []string) (ok bool, list []string) {
+/* func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList []string) (ok bool, list []string) {
 	if utils.StringInSlice(AllGatherersConst, allFunctionsList) {
 		return true, nil
 	}
@@ -277,9 +276,11 @@ func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList [
 	}
 
 	return false, result
-}
+} */
 
-func getEnabledGatheringFunctions(gathererName string, allGatheringFunctions map[string]gatherers.GatheringClosure, disabledFunctions []string) map[string]gatherers.GatheringClosure {
+func getEnabledGatheringFunctions(gathererName string,
+	allGatheringFunctions map[string]gatherers.GatheringClosure,
+	disabledFunctions []string) map[string]gatherers.GatheringClosure {
 	enabledGatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
 	// disabling a complete gatherer - e.g workloads
