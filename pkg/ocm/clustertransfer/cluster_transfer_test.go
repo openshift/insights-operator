@@ -125,7 +125,7 @@ func Test_ClusterTransfer_RequestDataAndUpdateSecret(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			kube := kubefake.NewSimpleClientset()
 			coreClient := kube.CoreV1()
-			mockConfig := &config.MockConfigurator{
+			mockConfig := &config.MockSecretConfigurator{
 				Conf: &config.Controller{
 					OCMConfig: config.OCMConfig{ClusterTransferEndpoint: "/cluster_transfer"},
 				},

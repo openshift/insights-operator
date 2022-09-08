@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/openshift/api/config/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -79,7 +80,7 @@ func Test_GetListOfEnabledFunctionForGatherer(t *testing.T) {
 func Test_StartGatheringConcurrently(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
-	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, []string{AllGatherersConst})
+	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, nil)
 	assert.NoError(t, err)
 
 	results := gatherResultsFromChannel(resultsChan)
@@ -139,8 +140,13 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 		},
 	})
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []string{
-		"mock_gatherer/some_field",
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
+		DisabledGatherers: []string{
+			"mock_gatherer/3_records",
+			"mock_gatherer/errors",
+			"mock_gatherer/panic",
+			"mock_gatherer/name",
+		},
 	})
 	assert.NoError(t, err)
 
@@ -160,9 +166,12 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 		},
 	})
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []string{
-		"mock_gatherer/name",
-		"mock_gatherer/3_records",
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
+		DisabledGatherers: []string{
+			"mock_gatherer/some_field",
+			"mock_gatherer/errors",
+			"mock_gatherer/panic",
+		},
 	})
 	assert.NoError(t, err)
 	results = gatherResultsFromChannel(resultsChan)
@@ -204,15 +213,23 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 func Test_StartGatheringConcurrently_Error(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
-	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, []string{})
+	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
+		DisabledGatherers: []string{
+			"mock_gatherer/some_field",
+			"mock_gatherer/errors",
+			"mock_gatherer/panic",
+			"mock_gatherer/name",
+			"mock_gatherer/3_records",
+		},
+	})
 	assert.EqualError(t, err, "no gather functions are specified to run")
 	assert.Nil(t, resultsChan)
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []string{""})
-	assert.EqualError(t, err, "no gather functions are specified to run")
-	assert.Nil(t, resultsChan)
-
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []string{"not existing function"})
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
+		DisabledGatherers: []string{
+			"mock_gatherer",
+		},
+	})
 	assert.EqualError(t, err, "no gather functions are specified to run")
 	assert.Nil(t, resultsChan)
 }
@@ -222,13 +239,11 @@ func Test_CollectAndRecordGatherer(t *testing.T) {
 		SomeField: "some_value",
 	}
 	mockRecorder := &recorder.MockRecorder{}
-	mockConfigurator := config.NewMockConfigurator(&config.Controller{
-		EnableGlobalObfuscation: true,
-	})
+	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 	anonymizer, err := anonymization.NewAnonymizer("", nil, nil)
 	assert.NoError(t, err)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator)
 	assert.Error(t, err)
 
 	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
@@ -299,12 +314,16 @@ func Test_CollectAndRecordGatherer(t *testing.T) {
 func Test_CollectAndRecordGatherer_Error(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	mockConfigurator := config.NewMockConfigurator(&config.Controller{
-		Gather:                  []string{"mock_gatherer/errors"},
-		EnableGlobalObfuscation: false,
+	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
+		DisabledGatherers: []string{
+			"mock_gatherer/some_field",
+			"mock_gatherer/name",
+			"mock_gatherer/panic",
+			"mock_gatherer/3_records",
+		},
 	})
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator)
 	assert.EqualError(
 		t,
 		err,
@@ -340,12 +359,16 @@ func Test_CollectAndRecordGatherer_Error(t *testing.T) {
 func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	mockConfigurator := config.NewMockConfigurator(&config.Controller{
-		Gather:                  []string{"mock_gatherer/panic"},
-		EnableGlobalObfuscation: false,
+	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
+		DisabledGatherers: []string{
+			"mock_gatherer/some_field",
+			"mock_gatherer/name",
+			"mock_gatherer/errors",
+			"mock_gatherer/3_records",
+		},
 	})
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator)
 	assert.EqualError(t, err, `function "panic" panicked`)
 	assert.Len(t, functionReports, 2)
 	functionReports[0].Duration = 0
@@ -387,9 +410,9 @@ func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
 	}}
 	mockDriver := &MockDriver{}
 	rec := recorder.New(mockDriver, time.Second, nil)
-	mockConfigurator := config.NewMockConfigurator(nil)
+	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator)
 	assert.Error(t, err)
 	assert.NotEmpty(t, functionReports)
 	assert.Len(t, functionReports, 4)
@@ -435,9 +458,9 @@ func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
 	}}
 	mockDriver := &MockDriver{}
 	rec := recorder.New(mockDriver, time.Second, nil)
-	mockConfigurator := config.NewMockConfigurator(nil)
+	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator)
 	assert.NoError(t, err)
 	assert.Len(t, functionReports, 2)
 	assert.Equal(t, "mock_gatherer_with_provided_functions/function_1", functionReports[0].FuncName)

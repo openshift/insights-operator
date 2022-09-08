@@ -237,6 +237,10 @@ func startGatheringConcurrently(
 		gatheringFunctions = getEnabledGatheringFunctions(gatherer.GetName(), gatheringFunctions, gatheringConfig.DisabledGatherers)
 	}
 
+	if len(gatheringFunctions) == 0 {
+		return nil, fmt.Errorf("no gather functions are specified to run")
+	}
+
 	for functionName, gatheringClosure := range gatheringFunctions {
 		tasks = append(tasks, Task{
 			Name: functionName,

@@ -169,14 +169,14 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 }
 
 func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder) {
-	mockConfigurator := config.MockConfigurator{Conf: &config.Controller{
+	mockConfigurator := config.MockSecretConfigurator{Conf: &config.Controller{
 		Report:   true,
 		Interval: interval,
-		Gather:   []string{gather.AllGatherersConst},
 	}}
+	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 	mockRecorder := recorder.MockRecorder{}
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
-	return New(&mockConfigurator, &mockRecorder, listGatherers, nil, fakeInsightsOperatorCli), &mockRecorder
+	return New(&mockConfigurator, &mockRecorder, listGatherers, nil, fakeInsightsOperatorCli, mockAPIConfigurator), &mockRecorder
 }
 
 func Test_createGathererStatus(t *testing.T) { //nolint: funlen

@@ -97,7 +97,7 @@ func Test_Proxy(tt *testing.T) {
 				}
 			}
 
-			co2 := &config.MockConfigurator{Conf: &config.Controller{HTTPConfig: tc.HTTPConfig}}
+			co2 := &config.MockSecretConfigurator{Conf: &config.Controller{HTTPConfig: tc.HTTPConfig}}
 			a := Authorizer{proxyFromEnvironment: nonCachedProxyFromEnvironment(), configurator: co2}
 			p := a.NewSystemOrConfiguredProxy()
 			req := httptest.NewRequest("GET", tc.RequestURL, nil)
