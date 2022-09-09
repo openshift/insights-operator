@@ -25,6 +25,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/ocm"
 	"github.com/openshift/insights-operator/pkg/ocm/clustertransfer"
 	"github.com/openshift/insights-operator/pkg/ocm/sca"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 const (
@@ -47,8 +48,9 @@ type Controller struct {
 
 	client configv1client.ConfigV1Interface
 
-	statusCh     chan struct{}
-	configurator configobserver.Configurator
+	statusCh           chan struct{}
+	secretConfigurator configobserver.Configurator
+	apiConfigurator    configobserver.APIConfigObserver
 
 	sources  map[string]controllerstatus.StatusController
 	reported Reported
@@ -60,15 +62,19 @@ type Controller struct {
 }
 
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
-func NewController(client configv1client.ConfigV1Interface, configurator configobserver.Configurator, namespace string) *Controller {
+func NewController(client configv1client.ConfigV1Interface,
+	secretConfigurator configobserver.Configurator,
+	apiConfigurator configobserver.APIConfigObserver,
+	namespace string) *Controller {
 	c := &Controller{
-		name:         "insights",
-		statusCh:     make(chan struct{}, 1),
-		configurator: configurator,
-		client:       client,
-		namespace:    namespace,
-		sources:      make(map[string]controllerstatus.StatusController),
-		ctrlStatus:   newControllerStatus(),
+		name:               "insights",
+		statusCh:           make(chan struct{}, 1),
+		secretConfigurator: secretConfigurator,
+		apiConfigurator:    apiConfigurator,
+		client:             client,
+		namespace:          namespace,
+		sources:            make(map[string]controllerstatus.StatusController),
+		ctrlStatus:         newControllerStatus(),
 	}
 	return c
 }
@@ -244,10 +250,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 		c.ctrlStatus.setStatus(ErrorStatus, errorReason, errorMessage)
 	}
 
-	// disabled state only when it's disabled by config. It means that gathering will not happen
-	if !c.configurator.Config().Report {
-		c.ctrlStatus.setStatus(DisabledStatus, "Disabled", "Health reporting is disabled")
-	}
+	c.checkDisabledGathering()
 
 	return allReady, lastTransition
 }
@@ -393,6 +396,21 @@ func (c *Controller) updateControllerConditionByReason(cs *conditions,
 		cs.setCondition(condition, configv1.ConditionTrue, summary.Reason, summary.Message, metav1.Time{Time: summary.LastTransitionTime})
 	} else {
 		cs.setCondition(condition, configv1.ConditionFalse, summary.Reason, summary.Message, metav1.Time{Time: summary.LastTransitionTime})
+	}
+}
+
+func (c *Controller) checkDisabledGathering() {
+	// disabled state only when it's disabled by config. It means that gathering will not happen
+	if !c.secretConfigurator.Config().Report {
+		c.ctrlStatus.setStatus(DisabledStatus, "NoToken", "Health reporting is disabled")
+	}
+
+	// check if the gathering is disabled in the `insightsdatagather.config.openshift.io` API
+	if c.apiConfigurator != nil && c.apiConfigurator.GatherConfig() != nil {
+		if utils.StringInSlice("all", c.apiConfigurator.GatherConfig().DisabledGatherers) ||
+			utils.StringInSlice("ALL", c.apiConfigurator.GatherConfig().DisabledGatherers) {
+			c.ctrlStatus.setStatus(DisabledStatus, "DisabledInAPI", "Health reporting is disabled")
+		}
 	}
 }
 

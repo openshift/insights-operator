@@ -89,23 +89,23 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 	configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
-	configController, err := configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
+	apiConfigObserver, err := configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
 	if err != nil {
 		return err
 	}
 	configInformers.Start(ctx.Done())
-	go configController.Run(ctx, 1)
+	go apiConfigObserver.Run(ctx, 1)
 
-	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(s.Controller, kubeClient)
-	go configObserver.Start(ctx)
+	// secretConfigObserver synthesizes all config into the status reporter controller
+	secretConfigObserver := configobserver.New(s.Controller, kubeClient)
+	go secretConfigObserver.Start(ctx)
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient.ConfigV1(), configObserver, os.Getenv("POD_NAMESPACE"))
+	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver, apiConfigObserver, os.Getenv("POD_NAMESPACE"))
 
 	var anonymizer *anonymization.Anonymizer
-	if anonymization.IsObfuscationEnabled(configObserver) {
+	if anonymization.IsObfuscationEnabled(secretConfigObserver) {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig, controller.ProtoKubeConfig)
 		if err != nil {
@@ -120,16 +120,16 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	rec := recorder.New(recdriver, s.Interval, anonymizer)
 	go rec.PeriodicallyPrune(ctx, statusReporter)
 
-	authorizer := clusterauthorizer.New(configObserver)
+	authorizer := clusterauthorizer.New(secretConfigObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
 
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configObserver, insightsClient,
+		secretConfigObserver, insightsClient,
 	)
-	periodicGather := periodic.New(configObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), configController)
+	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), apiConfigObserver)
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
@@ -145,7 +145,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recdriver, insightsClient, configObserver, statusReporter, initialDelay)
+	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
 
 	// start reporting status now that all controller loops are added as sources
@@ -156,17 +156,17 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// know any previous last reported time
 	go uploader.Run(ctx)
 
-	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader, operatorClient.InsightsOperators())
+	reportGatherer := insightsreport.New(insightsClient, secretConfigObserver, uploader,operatorClient.InsightsOperators())
 	statusReporter.AddSources(reportGatherer)
 	go reportGatherer.Run(ctx)
 
-	scaController := initiateSCAController(ctx, kubeClient, configObserver, insightsClient)
+	scaController := initiateSCAController(ctx, kubeClient, secretConfigObserver, insightsClient)
 	if scaController != nil {
 		statusReporter.AddSources(scaController)
 		go scaController.Run()
 	}
 
-	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
+	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), secretConfigObserver, insightsClient)
 	statusReporter.AddSources(clusterTransferController)
 	go clusterTransferController.Run()
 
