@@ -80,10 +80,10 @@ func CollectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	configurator configobserver.APIConfigObserver,
+	gatherConfig *v1alpha1.GatherConfig,
 ) ([]GathererFunctionReport, error) {
 	startTime := time.Now()
-	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, configurator)
+	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, gatherConfig)
 	reports = append(reports, GathererFunctionReport{
 		FuncName:     gatherer.GetName(),
 		Duration:     time.Since(startTime).Milliseconds(),
@@ -98,10 +98,9 @@ func collectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	configurator configobserver.APIConfigObserver,
+	gatherConfig *v1alpha1.GatherConfig,
 ) (reports []GathererFunctionReport, totalNumberOfRecords int, allErrors []error) {
-	// configurator.GatherConfig() can be nil
-	resultsChan, err := startGatheringConcurrently(ctx, gatherer, configurator.GatherConfig())
+	resultsChan, err := startGatheringConcurrently(ctx, gatherer, gatherConfig)
 	if err != nil {
 		allErrors = append(allErrors, err)
 		return reports, totalNumberOfRecords, allErrors
@@ -249,34 +248,8 @@ func startGatheringConcurrently(
 	return HandleTasksConcurrently(ctx, tasks), nil
 }
 
-// getListOfEnabledFunctionForGatherer parses a list of gathering functions to enable,
-//
-//	which has the following structure: []string {
-//	  "clusterconfig/container_images",
-//	  "clusterconfig/nodes",
-//	  "clusterconfig/authentication",
-//	  "othergatherer/some_function",
-//	} where each item consists of a gatherer name and a function name split by a slash.
-//
-// If there's a string "ALL", we enable everything and return the first parameter as true,
-// otherwise it will be false and the second parameter will contain function names
-/* func getListOfEnabledFunctionForGatherer(gathererName string, allFunctionsList []string) (ok bool, list []string) {
-	if utils.StringInSlice(AllGatherersConst, allFunctionsList) {
-		return true, nil
-	}
-
-	var result []string
-
-	for _, functionName := range allFunctionsList {
-		prefix := gathererName + "/"
-		if strings.HasPrefix(functionName, prefix) {
-			result = append(result, strings.TrimPrefix(functionName, prefix))
-		}
-	}
-
-	return false, result
-} */
-
+// getEnabledGatheringFunctions iterates over all gathering functions and
+// creates a new map without all the disabled functions
 func getEnabledGatheringFunctions(gathererName string,
 	allGatheringFunctions map[string]gatherers.GatheringClosure,
 	disabledFunctions []string) map[string]gatherers.GatheringClosure {
@@ -284,6 +257,7 @@ func getEnabledGatheringFunctions(gathererName string,
 
 	// disabling a complete gatherer - e.g workloads
 	if utils.StringInSlice(gathererName, disabledFunctions) {
+		klog.Info("Gatherer %s is completely disabled", gathererName)
 		return enabledGatheringFunctions
 	}
 
@@ -291,8 +265,6 @@ func getEnabledGatheringFunctions(gathererName string,
 		fullGathererName := fmt.Sprintf("%s/%s", gathererName, fName)
 		if !utils.StringInSlice(fullGathererName, disabledFunctions) {
 			enabledGatheringFunctions[fName] = gatherinClosure
-		} else {
-			fmt.Println("========================= DISABLING ", fullGathererName)
 		}
 	}
 	return enabledGatheringFunctions

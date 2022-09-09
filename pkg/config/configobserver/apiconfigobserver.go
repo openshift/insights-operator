@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/api/config/v1alpha1"
 	configCliv1alpha1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1alpha1"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
+	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,7 @@ import (
 type APIConfigObserver interface {
 	factory.Controller
 	GatherConfig() *v1alpha1.GatherConfig
+	GatherDisabled() bool
 }
 
 type APIConfigController struct {
@@ -62,9 +64,23 @@ func (c *APIConfigController) sync(ctx context.Context, syncCtx factory.SyncCont
 	return nil
 }
 
-// Config provides the config in a thread-safe way.
+// GatherConfig provides the complete gather config in a thread-safe way.
 func (c *APIConfigController) GatherConfig() *v1alpha1.GatherConfig {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	return c.gatherConfig
+}
+
+// GatherDisabled tells whether data gathering is disabled or not
+func (c *APIConfigController) GatherDisabled() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.gatherConfig != nil {
+		if utils.StringInSlice("all", c.gatherConfig.DisabledGatherers) ||
+			utils.StringInSlice("ALL", c.gatherConfig.DisabledGatherers) {
+			return true
+		}
+	}
+	return false
 }

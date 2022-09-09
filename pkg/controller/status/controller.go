@@ -25,7 +25,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/ocm"
 	"github.com/openshift/insights-operator/pkg/ocm/clustertransfer"
 	"github.com/openshift/insights-operator/pkg/ocm/sca"
-	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 const (
@@ -406,9 +405,8 @@ func (c *Controller) checkDisabledGathering() {
 	}
 
 	// check if the gathering is disabled in the `insightsdatagather.config.openshift.io` API
-	if c.apiConfigurator != nil && c.apiConfigurator.GatherConfig() != nil {
-		if utils.StringInSlice("all", c.apiConfigurator.GatherConfig().DisabledGatherers) ||
-			utils.StringInSlice("ALL", c.apiConfigurator.GatherConfig().DisabledGatherers) {
+	if c.apiConfigurator != nil {
+		if c.apiConfigurator.GatherDisabled() {
 			c.ctrlStatus.setStatus(DisabledStatus, "DisabledInAPI", "Health reporting is disabled")
 		}
 	}

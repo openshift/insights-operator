@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	v1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
@@ -46,7 +47,7 @@ type Operator struct {
 // 3. Initiates the recorder and starts the periodic record pruneing
 // 4. Starts the periodic gathering
 // 5. Creates the insights-client and starts uploader and reporter
-func (s *Operator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error { //nolint: funlen
+func (s *Operator) Run(ctx context.Context, controller *controllercmd.ControllerContext) error { //nolint: funlen, gocyclo
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	initialDelay := 0 * time.Second
 	cont, err := config.LoadConfig(s.Controller, controller.ComponentConfig.Object, config.ToController)
@@ -87,14 +88,20 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
-	configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
-
-	apiConfigObserver, err := configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
+	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
 	if err != nil {
-		return err
+		klog.Error("can't read cluster feature gates: %v", err)
 	}
-	configInformers.Start(ctx.Done())
-	go apiConfigObserver.Run(ctx, 1)
+	var apiConfigObserver configobserver.APIConfigObserver
+	if tpEnabled {
+		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
+		apiConfigObserver, err = configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
+		if err != nil {
+			return err
+		}
+		configInformers.Start(ctx.Done())
+		go apiConfigObserver.Run(ctx, 1)
+	}
 
 	// secretConfigObserver synthesizes all config into the status reporter controller
 	secretConfigObserver := configobserver.New(s.Controller, kubeClient)
@@ -145,7 +152,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, statusReporter, initialDelay)
+	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
 
 	// start reporting status now that all controller loops are added as sources
@@ -213,4 +220,13 @@ func initiateSCAController(ctx context.Context,
 	// the data is exposed in the OpenShift API
 	scaController := sca.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
 	return scaController
+}
+
+// featureEnabled checks if the feature is enabled in the "cluster" FeatureGate
+func isTechPreviewEnabled(ctx context.Context, client *configv1client.Clientset) (bool, error) {
+	fg, err := client.ConfigV1().FeatureGates().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return fg.Spec.FeatureSet == v1.TechPreviewNoUpgrade, nil
 }

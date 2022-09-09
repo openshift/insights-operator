@@ -274,7 +274,7 @@ func Test_CollectAndRecordGatherer(t *testing.T) {
 	anonymizer, err := anonymization.NewAnonymizer("", nil, nil)
 	assert.NoError(t, err)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator.GatherConfig())
 	assert.Error(t, err)
 
 	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
@@ -354,7 +354,7 @@ func Test_CollectAndRecordGatherer_Error(t *testing.T) {
 		},
 	})
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator.GatherConfig())
 	assert.EqualError(
 		t,
 		err,
@@ -399,7 +399,7 @@ func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
 		},
 	})
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator.GatherConfig())
 	assert.EqualError(t, err, `function "panic" panicked`)
 	assert.Len(t, functionReports, 2)
 	functionReports[0].Duration = 0
@@ -443,7 +443,7 @@ func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
 	rec := recorder.New(mockDriver, time.Second, nil)
 	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator.GatherConfig())
 	assert.Error(t, err)
 	assert.NotEmpty(t, functionReports)
 	assert.Len(t, functionReports, 4)
@@ -491,7 +491,7 @@ func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
 	rec := recorder.New(mockDriver, time.Second, nil)
 	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator)
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator.GatherConfig())
 	assert.NoError(t, err)
 	assert.Len(t, functionReports, 2)
 	assert.Equal(t, "mock_gatherer_with_provided_functions/function_1", functionReports[0].FuncName)

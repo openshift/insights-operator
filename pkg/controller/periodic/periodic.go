@@ -19,7 +19,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
-	"github.com/openshift/insights-operator/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -149,7 +148,13 @@ func (c *Controller) Gather() {
 			defer cancel()
 
 			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.apiConfigurator)
+			var functionReports []gather.GathererFunctionReport
+			var err error
+			if c.apiConfigurator != nil {
+				functionReports, err = gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.apiConfigurator.GatherConfig())
+			} else {
+				functionReports, err = gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, nil)
+			}
 			for i := range functionReports {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
@@ -246,11 +251,8 @@ func (c *Controller) isGatheringDisabled() bool {
 	}
 
 	// disabled in the `insightsdatagather.config.openshift.io` API
-	if c.apiConfigurator != nil && c.apiConfigurator.GatherConfig() != nil {
-		if utils.StringInSlice("all", c.apiConfigurator.GatherConfig().DisabledGatherers) ||
-			utils.StringInSlice("ALL", c.apiConfigurator.GatherConfig().DisabledGatherers) {
-			return true
-		}
+	if c.apiConfigurator != nil {
+		return c.apiConfigurator.GatherDisabled()
 	}
 
 	return false

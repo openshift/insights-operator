@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/openshift/api/config/v1alpha1"
+	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 )
 
@@ -43,4 +44,14 @@ func NewMockAPIConfigurator(gatherConfig *v1alpha1.GatherConfig) *MockAPIConfigu
 
 func (mc *MockAPIConfigurator) GatherConfig() *v1alpha1.GatherConfig {
 	return mc.config
+}
+
+func (mc *MockAPIConfigurator) GatherDisabled() bool {
+	if mc.config != nil {
+		if utils.StringInSlice("all", mc.config.DisabledGatherers) ||
+			utils.StringInSlice("ALL", mc.config.DisabledGatherers) {
+			return true
+		}
+	}
+	return false
 }
