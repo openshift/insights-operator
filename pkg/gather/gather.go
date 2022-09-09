@@ -12,7 +12,6 @@ import (
 
 	"github.com/openshift/api/config/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
-	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/clusterconfig"
@@ -81,7 +80,7 @@ func CollectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	configurator config.APIObserver,
+	configurator configobserver.APIConfigObserver,
 ) ([]GathererFunctionReport, error) {
 	startTime := time.Now()
 	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, configurator)
@@ -99,7 +98,7 @@ func collectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	configurator config.APIObserver,
+	configurator configobserver.APIConfigObserver,
 ) (reports []GathererFunctionReport, totalNumberOfRecords int, allErrors []error) {
 	// configurator.GatherConfig() can be nil
 	resultsChan, err := startGatheringConcurrently(ctx, gatherer, configurator.GatherConfig())

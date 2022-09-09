@@ -89,7 +89,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 	configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
-	configController, err := config.NewConfigController(gatherKubeConfig, controller.EventRecorder, configInformers)
+	configController, err := configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
 	if err != nil {
 		return err
 	}

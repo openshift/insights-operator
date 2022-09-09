@@ -14,7 +14,6 @@ import (
 	v1 "github.com/openshift/api/operator/v1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
-	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
@@ -42,7 +41,7 @@ const (
 // and flushes the recorder to create archives
 type Controller struct {
 	secretConfigurator  configobserver.Configurator
-	apiConfigurator     config.APIObserver
+	apiConfigurator     configobserver.APIConfigObserver
 	recorder            recorder.FlushInterface
 	gatherers           []gatherers.Interface
 	statuses            map[string]controllerstatus.StatusController
@@ -58,7 +57,7 @@ func New(
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
-	apiConfigurator config.APIObserver,
+	apiConfigurator configobserver.APIConfigObserver,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -247,7 +246,7 @@ func (c *Controller) isGatheringDisabled() bool {
 	}
 
 	// disabled in the `insightsdatagather.config.openshift.io` API
-	if c.apiConfigurator != nil {
+	if c.apiConfigurator != nil && c.apiConfigurator.GatherConfig() != nil {
 		if utils.StringInSlice("all", c.apiConfigurator.GatherConfig().DisabledGatherers) ||
 			utils.StringInSlice("ALL", c.apiConfigurator.GatherConfig().DisabledGatherers) {
 			return true

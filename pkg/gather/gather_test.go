@@ -20,60 +20,91 @@ import (
 	"github.com/openshift/insights-operator/pkg/types"
 )
 
-func Test_GetListOfEnabledFunctionForGatherer(t *testing.T) {
-	list := []string{
-		"clusterconfig/container_images",
-		"clusterconfig/nodes",
-		"clusterconfig/authentication",
-		"othergatherer/some_function",
+func Test_getEnabledGatheringFunctions(t *testing.T) {
+	tests := []struct {
+		testName     string
+		gathererName string
+		all          map[string]gatherers.GatheringClosure
+		disabled     []string
+		expected     map[string]gatherers.GatheringClosure
+	}{
+		{
+			testName:     "disable some functions",
+			gathererName: "clusterconfig",
+			all: map[string]gatherers.GatheringClosure{
+				"container_images": {},
+				"nodes":            {},
+				"authentication":   {},
+				"some_function":    {},
+			},
+			disabled: []string{
+				"clusterconfig/container_images",
+				"clusterconfig/nodes",
+			},
+			expected: map[string]gatherers.GatheringClosure{
+				"authentication": {},
+				"some_function":  {},
+			},
+		},
+		{
+			testName:     "disable non-existing functions",
+			gathererName: "clusterconfig",
+			all: map[string]gatherers.GatheringClosure{
+				"container_images": {},
+				"nodes":            {},
+				"authentication":   {},
+				"some_function":    {},
+			},
+			disabled: []string{
+				"clusterconfig/foo",
+				"clusterconfig/bar",
+			},
+			expected: map[string]gatherers.GatheringClosure{
+				"container_images": {},
+				"nodes":            {},
+				"authentication":   {},
+				"some_function":    {},
+			},
+		},
+		{
+			testName:     "disable complete top-level gatherer",
+			gathererName: "clusterconfig",
+			all: map[string]gatherers.GatheringClosure{
+				"container_images": {},
+				"nodes":            {},
+				"authentication":   {},
+				"some_function":    {},
+			},
+			disabled: []string{
+				"clusterconfig",
+			},
+			expected: map[string]gatherers.GatheringClosure{},
+		},
+		{
+			testName:     "no functions disabled",
+			gathererName: "clusterconfig",
+			all: map[string]gatherers.GatheringClosure{
+				"container_images": {},
+				"nodes":            {},
+				"authentication":   {},
+				"some_function":    {},
+			},
+			disabled: []string{},
+			expected: map[string]gatherers.GatheringClosure{
+				"container_images": {},
+				"nodes":            {},
+				"authentication":   {},
+				"some_function":    {},
+			},
+		},
 	}
 
-	all, functions := getListOfEnabledFunctionForGatherer("clusterconfig", list)
-	assert.False(t, all)
-	assert.ElementsMatch(t, functions, []string{
-		"container_images",
-		"nodes",
-		"authentication",
-	})
-
-	all, functions = getListOfEnabledFunctionForGatherer("othergatherer", list)
-	assert.False(t, all)
-	assert.ElementsMatch(t, functions, []string{
-		"some_function",
-	})
-
-	all, functions = getListOfEnabledFunctionForGatherer("NotExistingGatherer", list)
-	assert.False(t, all)
-	assert.Empty(t, functions)
-
-	all, functions = getListOfEnabledFunctionForGatherer("", list)
-	assert.False(t, all)
-	assert.Empty(t, functions)
-
-	list = []string{
-		"clusterconfig/container_images",
-		AllGatherersConst,
-		"clusterconfig/authentication",
-		"othergatherer/some_function",
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			result := getEnabledGatheringFunctions(tt.gathererName, tt.all, tt.disabled)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
-
-	all, functions = getListOfEnabledFunctionForGatherer("clusterconfig", list)
-	assert.True(t, all)
-	assert.Empty(t, functions)
-
-	all, functions = getListOfEnabledFunctionForGatherer("othergatherer", list)
-	assert.True(t, all)
-	assert.Empty(t, functions)
-
-	all, functions = getListOfEnabledFunctionForGatherer("", list)
-	assert.True(t, all)
-	assert.Empty(t, functions)
-
-	list = []string{}
-
-	all, functions = getListOfEnabledFunctionForGatherer("clusterconfig", list)
-	assert.False(t, all)
-	assert.Empty(t, functions)
 }
 
 // nolint: funlen

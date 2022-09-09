@@ -1,8 +1,7 @@
-package config
+package configobserver
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/openshift/api/config/v1alpha1"
@@ -15,7 +14,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type APIObserver interface {
+type APIConfigObserver interface {
 	factory.Controller
 	GatherConfig() *v1alpha1.GatherConfig
 }
@@ -28,9 +27,9 @@ type APIConfigController struct {
 	gatherConfig      *v1alpha1.GatherConfig
 }
 
-func NewConfigController(kubeConfig *rest.Config,
+func NewAPIConfigObserver(kubeConfig *rest.Config,
 	eventRecorder events.Recorder,
-	configInformer configinformers.SharedInformerFactory) (APIObserver, error) {
+	configInformer configinformers.SharedInformerFactory) (APIConfigObserver, error) {
 	inf := configInformer.Config().V1alpha1().InsightsDataGathers().Informer()
 	configV1Alpha1Cli, err := configCliv1alpha1.NewForConfig(kubeConfig)
 	if err != nil {
@@ -59,33 +58,9 @@ func (c *APIConfigController) sync(ctx context.Context, syncCtx factory.SyncCont
 	if err != nil {
 		return err
 	}
-	fmt.Println("===================================== DISABLED GATHERERS ", insightDataGatherConf.Spec.GatherConfig.DisabledGatherers)
 	c.gatherConfig = &insightDataGatherConf.Spec.GatherConfig
-	for ch := range c.listeners {
-		if ch == nil {
-			continue
-		}
-		select {
-		case ch <- &insightDataGatherConf.Spec.GatherConfig:
-		default:
-		}
-	}
 	return nil
 }
-
-/* func (c *APIConfigController) GatherConfig() (configCh <-chan *v1alpha1.GatherConfig, closeFn func()) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	ch := make(chan *v1alpha1.GatherConfig, 1)
-	c.listeners[ch] = struct{}{}
-	return ch, func() {
-		c.lock.Lock()
-		defer c.lock.Unlock()
-		close(ch)
-		delete(c.listeners, ch)
-	}
-}
-*/
 
 // Config provides the config in a thread-safe way.
 func (c *APIConfigController) GatherConfig() *v1alpha1.GatherConfig {
