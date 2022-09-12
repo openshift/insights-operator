@@ -147,7 +147,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// know any previous last reported time
 	go uploader.Run(ctx)
 
-	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader)
+	reportGatherer := insightsreport.New(insightsClient, configObserver, uploader, operatorClient.InsightsOperators())
 	statusReporter.AddSources(reportGatherer)
 	go reportGatherer.Run(ctx)
 
