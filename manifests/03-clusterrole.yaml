@@ -58,6 +58,7 @@ rules:
       - clusteroperators
       - clusteroperators/status
       - insightsdatagathers
+      - featuregates
     verbs:
       - create
       - get

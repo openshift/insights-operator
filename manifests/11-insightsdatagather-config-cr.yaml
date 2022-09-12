@@ -8,4 +8,5 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     release.openshift.io/feature-gate: TechPreviewNoUpgrade
     capability.openshift.io/name: Insights
+    release.openshift.io/create-only: "true"
 spec: {}
