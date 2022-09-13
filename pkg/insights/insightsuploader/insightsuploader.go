@@ -74,7 +74,7 @@ func (c *Controller) Run(ctx context.Context) {
 	configCh, cancelFn := c.secretConfigurator.ConfigChanged()
 	defer cancelFn()
 
-	enabled := cfg.Report
+	reportingEnabled := cfg.Report
 	endpoint := cfg.Endpoint
 	interval := cfg.Interval
 	lastReported := c.reporter.LastReportedTime()
@@ -95,18 +95,15 @@ func (c *Controller) Run(ctx context.Context) {
 				newCfg := c.secretConfigurator.Config()
 				interval = newCfg.Interval
 				endpoint = newCfg.Endpoint
+				reportingEnabled = newCfg.Report
 				var disabledInAPI bool
 				if c.apiConfigurator != nil {
 					disabledInAPI = c.apiConfigurator.GatherDisabled()
 				}
-				if newCfg.Report != enabled || disabledInAPI {
-					enabled = newCfg.Report
-					if !newCfg.Report {
-						klog.V(2).Infof("Reporting was disabled")
-						c.initialDelay = newCfg.Interval
-						return
-					}
-					klog.V(2).Infof("Reporting was enabled")
+				if !reportingEnabled || disabledInAPI {
+					klog.V(2).Infof("Reporting was disabled")
+					c.initialDelay = newCfg.Interval
+					return
 				}
 			}
 			c.initialDelay = 0
@@ -126,7 +123,7 @@ func (c *Controller) Run(ctx context.Context) {
 			return
 		}
 		defer source.Contents.Close()
-		if enabled && len(endpoint) > 0 {
+		if reportingEnabled && len(endpoint) > 0 {
 			// send the results
 			start := time.Now()
 			id := start.Format(time.RFC3339)

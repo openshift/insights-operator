@@ -44,7 +44,7 @@ func NewAPIConfigObserver(kubeConfig *rest.Config,
 
 	insightDataGatherConf, err := c.configV1Alpha1Cli.InsightsDataGathers().Get(context.Background(), "cluster", metav1.GetOptions{})
 	if err != nil {
-		klog.Error("Cannot read API gathering configuration: %v", err)
+		klog.Errorf("Cannot read API gathering configuration: %v", err)
 	}
 	c.gatherConfig = &insightDataGatherConf.Spec.GatherConfig
 

@@ -257,7 +257,7 @@ func getEnabledGatheringFunctions(gathererName string,
 
 	// disabling a complete gatherer - e.g workloads
 	if utils.StringInSlice(gathererName, disabledFunctions) {
-		klog.Info("Gatherer %s is completely disabled", gathererName)
+		klog.Infof("%s gatherer is completely disabled", gathererName)
 		return enabledGatheringFunctions
 	}
 
