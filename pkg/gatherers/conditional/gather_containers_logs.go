@@ -57,6 +57,12 @@ func (g *Gatherer) BuildGatherContainersLogs(paramsInterface interface{}) (gathe
 	}, nil
 }
 
+type podInfo struct {
+	name      string
+	namespace string
+	container string
+}
+
 func (g *Gatherer) gatherContainersLogs(
 	ctx context.Context,
 	params GatherContainersLogsParams,
@@ -74,37 +80,29 @@ func (g *Gatherer) gatherContainersLogs(
 	var records []record.Record
 
 	for _, alertLabels := range alertInstances {
-		podNamespace, err := getAlertPodNamespace(alertLabels)
+		info, err := parseAlertLabels(alertLabels)
 		if err != nil {
 			klog.Warningf(logMissingAlert, err.Error(), params.AlertName)
 			errs = append(errs, err)
-			continue
 		}
-		podName, err := getAlertPodName(alertLabels)
-		if err != nil {
-			klog.Warningf(logMissingAlert, err.Error(), params.AlertName)
-			errs = append(errs, err)
+		if len(info.namespace) == 0 {
 			continue
-		}
-		var podContainer string
-		if len(params.Container) > 0 {
-			podContainer = params.Container
-		} else {
-			podContainer, err = getAlertPodContainer(alertLabels)
-			if err != nil {
-				klog.Warningf(logMissingAlert, err.Error(), params.AlertName)
-				errs = append(errs, err)
-			}
 		}
 
 		logContainersFilter := common.LogContainersFilter{
-			Namespace:     podNamespace,
-			FieldSelector: fmt.Sprintf("metadata.name=%s", podName),
+			Namespace: info.namespace,
 		}
 
-		// The container label may not be present for all alerts (e.g., KubePodNotReady).
-		if len(podContainer) > 0 {
-			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", podContainer)
+		if len(params.Container) > 0 {
+			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", params.Container)
+		} else if len(info.container) > 0 {
+			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", info.container)
+		}
+
+		if len(params.PodName) > 0 {
+			logContainersFilter.PodNameRegexFilter = fmt.Sprintf("^%s$", params.PodName)
+		} else {
+			logContainersFilter.FieldSelector = fmt.Sprintf("metadata.name=%s", info.name)
 		}
 
 		logRecords, err := common.CollectLogsFromContainers(
@@ -141,4 +139,27 @@ func (g *Gatherer) gatherContainersLogs(
 	}
 
 	return records, errs
+}
+
+func parseAlertLabels(labels AlertLabels) (podInfo, error) {
+	var podInfo podInfo
+	podNamespace, err := getAlertPodNamespace(labels)
+	if err != nil {
+		return podInfo, err
+	}
+	podInfo.namespace = podNamespace
+
+	podName, err := getAlertPodName(labels)
+	if err != nil {
+		return podInfo, err
+	}
+	podInfo.name = podName
+
+	podContainer, err := getAlertPodContainer(labels)
+	if err != nil {
+		return podInfo, err
+	}
+	podInfo.container = podContainer
+
+	return podInfo, nil
 }

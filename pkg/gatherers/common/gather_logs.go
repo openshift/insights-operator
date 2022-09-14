@@ -22,6 +22,7 @@ type LogContainersFilter struct {
 	Namespace                string
 	LabelSelector            string
 	FieldSelector            string
+	PodNameRegexFilter       string
 	ContainerNameRegexFilter string
 	MaxNamespaceContainers   int
 }
@@ -80,6 +81,16 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	var records []record.Record
 
 	for i := range pods.Items {
+		if len(containersFilter.PodNameRegexFilter) > 0 {
+			match, err := regexp.MatchString(containersFilter.PodNameRegexFilter, pods.Items[i].Name)
+			if err != nil {
+				return nil, err
+			}
+			if !match {
+				continue
+			}
+		}
+
 		var containerNames []string
 		for j := range pods.Items[i].Spec.Containers {
 			containerNames = append(containerNames, pods.Items[i].Spec.Containers[j].Name)

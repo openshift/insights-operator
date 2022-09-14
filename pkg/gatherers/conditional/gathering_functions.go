@@ -94,6 +94,7 @@ type GatherAPIRequestCountsParams struct {
 // GatherContainersLogsParams defines parameters for container_logs gatherer
 type GatherContainersLogsParams struct {
 	AlertName string `json:"alert_name"`
+	PodName   string `json:"pod_name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	Container string `json:"container,omitempty"`
 	TailLines int64  `json:"tail_lines"`
