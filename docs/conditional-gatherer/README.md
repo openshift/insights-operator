@@ -22,7 +22,7 @@ E0808 16:38:09.453211  242327 periodic.go:137] conditional failed after 14ms wit
 
 Gathering function missing required parameter:
 ```
-E0808 16:41:35.184585  242636 periodic.go:137] conditional failed after 20ms with: got invalid config for conditional gatherer: 0.gathering_functions.containers_logs.tail_lines: Musft be greater than or equal to 1
+E0808 16:41:35.184585  242636 periodic.go:137] conditional failed after 20ms with: got invalid config for conditional gatherer: 0.gathering_functions.containers_logs.tail_lines: Must be greater than or equal to 1
 ```
 
 Failed to parse the provided cluster version:
