@@ -4,9 +4,237 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/stretchr/testify/assert"
 )
+
+func Test_readInsightsReport(t *testing.T) {
+	tests := []struct {
+		name                          string
+		testController                *Controller
+		report                        types.SmartProxyReport
+		expectedActiveRecommendations []types.InsightsRecommendation
+		expectedHealthStatus          healthStatusCounts
+		expectedGatherTime            string
+	}{
+		{
+			name: "basic test with all rules enabled",
+			testController: &Controller{
+				configurator: config.NewMockConfigurator(&config.Controller{
+					DisableInsightsAlerts: false,
+				}),
+			},
+			report: types.SmartProxyReport{
+				Data: []types.RuleWithContentResponse{
+					{
+						RuleID:      "ccx.dev.magic.recommendation",
+						Description: "test rule description 1",
+						Disabled:    false,
+						TotalRisk:   2,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 1",
+						},
+					},
+					{
+						RuleID:      "ccx.dev.super.recommendation",
+						Description: "test rule description 2",
+						Disabled:    false,
+						TotalRisk:   1,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 2",
+						},
+					},
+					{
+						RuleID:      "ccx.dev.cool.recommendation",
+						Description: "test rule description 3",
+						Disabled:    false,
+						TotalRisk:   3,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 3",
+						},
+					},
+					{
+						RuleID:      "ccx.dev.ultra.recommendation",
+						Description: "test rule description 4",
+						Disabled:    false,
+						TotalRisk:   1,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 4",
+						},
+					},
+				},
+
+				Meta: types.ReportResponseMeta{
+					GatheredAt: types.Timestamp("2022-06-22T15:54:26Z"),
+					Count:      4,
+				},
+			},
+			expectedActiveRecommendations: []types.InsightsRecommendation{
+				{
+					RuleID:      "ccx.dev.magic.recommendation",
+					ErrorKey:    "test error key 1",
+					Description: "test rule description 1",
+					TotalRisk:   2,
+				},
+				{
+					RuleID:      "ccx.dev.super.recommendation",
+					ErrorKey:    "test error key 2",
+					Description: "test rule description 2",
+					TotalRisk:   1,
+				},
+				{
+					RuleID:      "ccx.dev.cool.recommendation",
+					ErrorKey:    "test error key 3",
+					Description: "test rule description 3",
+					TotalRisk:   3,
+				},
+				{
+					RuleID:      "ccx.dev.ultra.recommendation",
+					ErrorKey:    "test error key 4",
+					Description: "test rule description 4",
+					TotalRisk:   1,
+				},
+			},
+			expectedHealthStatus: healthStatusCounts{
+				critical:  0,
+				important: 1,
+				low:       2,
+				moderate:  1,
+				total:     4,
+			},
+			expectedGatherTime: "2022-06-22 15:54:26 +0000 UTC",
+		},
+		{
+			name: "basic test with some rules disabled",
+			testController: &Controller{
+				configurator: config.NewMockConfigurator(&config.Controller{
+					DisableInsightsAlerts: false,
+				}),
+			},
+			report: types.SmartProxyReport{
+				Data: []types.RuleWithContentResponse{
+					{
+						RuleID:      "ccx.dev.magic.recommendation",
+						Description: "test rule description 1",
+						Disabled:    false,
+						TotalRisk:   2,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 1",
+						},
+					},
+					{
+						RuleID:      "ccx.dev.super.recommendation",
+						Description: "test rule description 2",
+						Disabled:    true,
+						TotalRisk:   1,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 2",
+						},
+					},
+					{
+						RuleID:      "ccx.dev.cool.recommendation",
+						Description: "test rule description 3",
+						Disabled:    false,
+						TotalRisk:   3,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 3",
+						},
+					},
+					{
+						RuleID:      "ccx.dev.ultra.recommendation",
+						Description: "test rule description 4",
+						Disabled:    true,
+						TotalRisk:   1,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 4",
+						},
+					},
+				},
+
+				Meta: types.ReportResponseMeta{
+					GatheredAt: types.Timestamp("2022-06-22T15:54:26Z"),
+					Count:      4,
+				},
+			},
+			expectedActiveRecommendations: []types.InsightsRecommendation{
+				{
+					RuleID:      "ccx.dev.magic.recommendation",
+					ErrorKey:    "test error key 1",
+					Description: "test rule description 1",
+					TotalRisk:   2,
+				},
+				{
+					RuleID:      "ccx.dev.cool.recommendation",
+					ErrorKey:    "test error key 3",
+					Description: "test rule description 3",
+					TotalRisk:   3,
+				},
+			},
+			expectedHealthStatus: healthStatusCounts{
+				critical:  0,
+				important: 1,
+				low:       0,
+				moderate:  1,
+				total:     2,
+			},
+			expectedGatherTime: "2022-06-22 15:54:26 +0000 UTC",
+		},
+		{
+			name: "Insights recommendations as alerts are disabled => no active recommendations",
+			testController: &Controller{
+				configurator: config.NewMockConfigurator(&config.Controller{
+					DisableInsightsAlerts: true,
+				}),
+			},
+			report: types.SmartProxyReport{
+				Data: []types.RuleWithContentResponse{
+					{
+						RuleID:      "ccx.dev.magic.recommendation",
+						Description: "test rule description 1",
+						Disabled:    false,
+						TotalRisk:   2,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 1",
+						},
+					},
+					{
+						RuleID:      "ccx.dev.super.recommendation",
+						Description: "test rule description 2",
+						Disabled:    true,
+						TotalRisk:   1,
+						TemplateData: map[string]interface{}{
+							"error_key": "test error key 2",
+						},
+					},
+				},
+
+				Meta: types.ReportResponseMeta{
+					GatheredAt: types.Timestamp("2022-06-22T15:54:26Z"),
+					Count:      2,
+				},
+			},
+			expectedActiveRecommendations: []types.InsightsRecommendation{},
+			expectedHealthStatus: healthStatusCounts{
+				critical:  0,
+				important: 0,
+				low:       0,
+				moderate:  1,
+				total:     1,
+			},
+			expectedGatherTime: "2022-06-22 15:54:26 +0000 UTC",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			activeRecommendations, healthStatus, gatherTime := tc.testController.readInsightsReport(tc.report)
+			assert.Equal(t, tc.expectedActiveRecommendations, activeRecommendations)
+			assert.Equal(t, tc.expectedHealthStatus, healthStatus)
+			assert.Equal(t, tc.expectedGatherTime, gatherTime.String())
+		})
+	}
+}
 
 func Test_extractErrorKeyFromRuleData(t *testing.T) {
 	testRuleID := "test-rule-id"
@@ -60,8 +288,10 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		errorKey, err := extractErrorKeyFromRuleData(tt.ruleResponse)
-		assert.Equal(t, tt.expectedErrorKey, errorKey)
-		assert.Equal(t, tt.expectedError, err)
+		t.Run(tt.name, func(t *testing.T) {
+			errorKey, err := extractErrorKeyFromRuleData(tt.ruleResponse)
+			assert.Equal(t, tt.expectedErrorKey, errorKey)
+			assert.Equal(t, tt.expectedError, err)
+		})
 	}
 }
