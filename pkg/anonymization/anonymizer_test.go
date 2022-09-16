@@ -18,6 +18,7 @@ import (
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	clienttesting "k8s.io/client-go/testing"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -118,7 +119,11 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		"127.0.0.0/8",
 		"192.168.0.0/16",
 	}
-	anonymizer, err := NewAnonymizer(clusterBaseDomain, networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
+	mockConfigurator := config.NewMockSecretConfigurator(&config.Controller{
+		EnableGlobalObfuscation: true,
+	})
+	anonymizer, err := NewAnonymizer(clusterBaseDomain,
+		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockConfigurator)
 	assert.NoError(t, err)
 
 	return anonymizer
@@ -321,6 +326,9 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 		kubeClient,
 		configClient,
 		networkClient,
+		config.NewMockSecretConfigurator(&config.Controller{
+			EnableGlobalObfuscation: true,
+		}),
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, anonymizer)

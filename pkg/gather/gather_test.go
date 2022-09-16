@@ -271,7 +271,10 @@ func Test_CollectAndRecordGatherer(t *testing.T) {
 	}
 	mockRecorder := &recorder.MockRecorder{}
 	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
-	anonymizer, err := anonymization.NewAnonymizer("", nil, nil)
+	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{
+		EnableGlobalObfuscation: true,
+	})
+	anonymizer, err := anonymization.NewAnonymizer("", nil, nil, mockSecretConfigurator)
 	assert.NoError(t, err)
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator.GatherConfig())
@@ -360,8 +363,9 @@ func Test_CollectAndRecordGatherer_Error(t *testing.T) {
 		err,
 		`function "errors" failed with an error`,
 	)
-
-	err = RecordArchiveMetadata(functionReports, mockRecorder, nil)
+	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, config.NewMockSecretConfigurator(nil))
+	assert.NoError(t, err)
+	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
 	assert.NoError(t, err)
 
 	assert.Len(t, mockRecorder.Records, 1)
@@ -440,7 +444,9 @@ func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
 		}},
 	}}
 	mockDriver := &MockDriver{}
-	rec := recorder.New(mockDriver, time.Second, nil)
+	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, config.NewMockSecretConfigurator(nil))
+	assert.NoError(t, err)
+	rec := recorder.New(mockDriver, time.Second, anonymizer)
 	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator.GatherConfig())

@@ -44,6 +44,7 @@ import (
 	k8snet "k8s.io/utils/net"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
 )
@@ -78,11 +79,12 @@ type subnetInformation struct {
 // Config can be used to enable anonymization of cluster base domain
 // and obfuscation of IPv4 addresses
 type Anonymizer struct {
-	clusterBaseDomain string
-	networks          []subnetInformation
-	translationTable  map[string]string
-	ipNetworkRegex    *regexp.Regexp
-	secretsClient     corev1client.SecretInterface
+	clusterBaseDomain  string
+	networks           []subnetInformation
+	translationTable   map[string]string
+	ipNetworkRegex     *regexp.Regexp
+	secretsClient      corev1client.SecretInterface
+	secretConfigurator configobserver.Configurator
 }
 
 type ConfigProvider interface {
@@ -90,7 +92,10 @@ type ConfigProvider interface {
 }
 
 // NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
-func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient corev1client.SecretInterface) (*Anonymizer, error) {
+func NewAnonymizer(clusterBaseDomain string,
+	networks []string,
+	secretsClient corev1client.SecretInterface,
+	secretConfigurator configobserver.Configurator) (*Anonymizer, error) {
 	cidrs, err := k8snet.ParseCIDRs(networks)
 	if err != nil {
 		return nil, err
@@ -106,11 +111,12 @@ func NewAnonymizer(clusterBaseDomain string, networks []string, secretsClient co
 	}
 
 	return &Anonymizer{
-		clusterBaseDomain: strings.TrimSpace(clusterBaseDomain),
-		networks:          networksInformation,
-		translationTable:  make(map[string]string),
-		ipNetworkRegex:    regexp.MustCompile(Ipv4AddressOrNetworkRegex),
-		secretsClient:     secretsClient,
+		clusterBaseDomain:  strings.TrimSpace(clusterBaseDomain),
+		networks:           networksInformation,
+		translationTable:   make(map[string]string),
+		ipNetworkRegex:     regexp.MustCompile(Ipv4AddressOrNetworkRegex),
+		secretsClient:      secretsClient,
+		secretConfigurator: secretConfigurator,
 	}, nil
 }
 
@@ -121,6 +127,7 @@ func NewAnonymizerFromConfigClient(
 	gatherKubeClient kubernetes.Interface,
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
+	secretConfigurator configobserver.Configurator,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
@@ -150,7 +157,7 @@ func NewAnonymizerFromConfigClient(
 
 	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
 
-	return NewAnonymizer(baseDomain, networks, secretsClient)
+	return NewAnonymizer(baseDomain, networks, secretsClient, secretConfigurator)
 }
 
 func GetNetworksForAnonymizerFromRecords(records map[string]*record.MemoryRecord) ([]string, error) {
@@ -276,7 +283,11 @@ func sortNetworks(networks []string) {
 
 // NewAnonymizerFromConfig creates a new instance of anonymizer with a provided kubeconfig
 func NewAnonymizerFromConfig(
-	ctx context.Context, gatherKubeConfig *rest.Config, gatherProtoKubeConfig *rest.Config, protoKubeConfig *rest.Config,
+	ctx context.Context,
+	gatherKubeConfig *rest.Config,
+	gatherProtoKubeConfig *rest.Config,
+	protoKubeConfig *rest.Config,
+	secretConfigurator configobserver.Configurator,
 ) (*Anonymizer, error) {
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
@@ -298,7 +309,7 @@ func NewAnonymizerFromConfig(
 		return nil, err
 	}
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient)
+	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient, secretConfigurator)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
@@ -428,12 +439,8 @@ func (anonymizer *Anonymizer) ResetTranslationTable() {
 }
 
 // IsObfuscationEnabled returns true if obfuscation(hiding IP and domain names) is enabled and false otherwise
-func IsObfuscationEnabled(configObserver ConfigProvider) bool {
-	if configObserver == nil {
-		return false
-	}
-
-	return configObserver.Config().EnableGlobalObfuscation
+func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
+	return anonymizer.secretConfigurator.Config().EnableGlobalObfuscation
 }
 
 // getNextIP returns the next IP address in the current subnetwork and the flag indicating if there was an overflow

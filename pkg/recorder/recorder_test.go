@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -60,8 +61,8 @@ func (d *driverMock) Prune(time.Time) error {
 func newRecorder(maxArchiveSize int64, clusterBaseDomain string) Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
-
-	anonymizer, _ := anonymization.NewAnonymizer(clusterBaseDomain, nil, nil)
+	mockConfigurator := config.NewMockSecretConfigurator(&config.Controller{EnableGlobalObfuscation: true})
+	anonymizer, _ := anonymization.NewAnonymizer(clusterBaseDomain, nil, nil, mockConfigurator)
 
 	interval, _ := time.ParseDuration("1m")
 	return Recorder{
