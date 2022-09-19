@@ -2,89 +2,58 @@ package clusterconfig
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
+	controlplanev1alpha1 "github.com/openshift/api/operatorcontrolplane/v1alpha1"
+	ocpCliFake2 "github.com/openshift/client-go/operatorcontrolplane/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
-	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
 const podnetworkconnectivitychecksPath = "config/podnetworkconnectivitychecks"
 
 func Test_PNCC(t *testing.T) {
-	var pnccYAML = `apiVersion: controlplane.operator.openshift.io/v1alpha1
-kind: PodNetworkConnectivityCheck
-metadata:
-    name: example-pncc
-    namespace: example-namespace
-status:
-    failures:
-      - success: false
-        reason: TestReason
-        message: TestMessage
-`
-
-	pnccClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-		pnccGroupVersionResource: "PodNetworkConnectivityChecksList",
-	})
-
-	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-	testPNCC := &unstructured.Unstructured{}
-
-	_, _, err := decUnstructured.Decode([]byte(pnccYAML), nil, testPNCC)
-	if err != nil {
-		t.Fatal("unable to decode PNCC YAML", err)
+	testPncc := controlplanev1alpha1.PodNetworkConnectivityCheck{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "example-pncc",
+		},
+		Status: controlplanev1alpha1.PodNetworkConnectivityCheckStatus{
+			Failures: []controlplanev1alpha1.LogEntry{
+				{
+					Success: false,
+					Reason:  "TestReason",
+					Message: "TestMessage",
+					Start: metav1.Time{
+						Time: time.Now().Add(-5 * time.Minute),
+					},
+				},
+			},
+		},
 	}
-
+	fakeOCPInterface := ocpCliFake2.NewSimpleClientset()
 	// Check before creating the PNCC.
-	records, errs := gatherPNCC(context.Background(), pnccClient)
-	if len(errs) > 0 {
-		t.Fatalf("unexpected errors in the first run: %#v", errs)
-	}
-	if len(records) != 1 {
-		t.Fatalf("unexpected number or records in the first run: %d", len(records))
-	}
-	rec := records[0]
-	if rec.Name != podnetworkconnectivitychecksPath {
-		t.Fatalf("unexpected name of record in the first run: %q", rec.Name)
-	}
-	recItem, ok := rec.Item.(record.JSONMarshaller)
-	if !ok {
-		t.Fatalf("unexpected type of record item in the first run: %q", rec.Name)
-	}
-	if !reflect.DeepEqual(recItem.Object, map[string]map[string]time.Time{}) {
-		t.Fatalf("unexpected value of record item in the first run: %#v", recItem)
-	}
+	records, errs := gatherPNCC(context.Background(), fakeOCPInterface.ControlplaneV1alpha1())
+	assert.Len(t, errs, 0, "unexpected errors in the first run: %#v", errs)
+	assert.Equal(t, 1, len(records), "unexpected number or records in the first run: %d", len(records))
+	assert.Equal(t, podnetworkconnectivitychecksPath, records[0].Name)
+
+	recItem, ok := records[0].Item.(record.JSONMarshaller)
+	assert.True(t, ok, "unexpected type of record item in the first run: %q", records[0].Name)
+	assert.Equal(t, map[string]map[string]time.Time{}, recItem.Object)
 
 	// Create the PNCC resource.
-	_, _ = pnccClient.
-		Resource(pnccGroupVersionResource).
-		Namespace("example-namespace").
-		Create(context.Background(), testPNCC, metav1.CreateOptions{})
-
+	_, err := fakeOCPInterface.ControlplaneV1alpha1().
+		PodNetworkConnectivityChecks("example-namespace").Create(context.Background(), &testPncc, metav1.CreateOptions{})
+	assert.NoError(t, err)
 	// Check after creating the PNCC.
-	records, errs = gatherPNCC(context.Background(), pnccClient)
-	if len(errs) > 0 {
-		t.Fatalf("unexpected errors in the second run: %#v", errs)
-	}
-	if len(records) != 1 {
-		t.Fatalf("unexpected number or records in the second run: %d", len(records))
-	}
-	rec = records[0]
-	if rec.Name != podnetworkconnectivitychecksPath {
-		t.Fatalf("unexpected name of record in the second run: %q", rec.Name)
-	}
-	recItem, ok = rec.Item.(record.JSONMarshaller)
-	if !ok {
-		t.Fatalf("unexpected type of record item in the second run: %q", rec.Name)
-	}
-	if !reflect.DeepEqual(recItem.Object, map[string]map[string]time.Time{"TestReason": {"TestMessage": time.Time{}}}) {
-		t.Fatalf("unexpected value of record item in the second run: %#v", recItem)
-	}
+	records, errs = gatherPNCC(context.Background(), fakeOCPInterface.ControlplaneV1alpha1())
+	assert.Len(t, errs, 0, "unexpected errors in the second run: %#v", errs)
+	assert.Equal(t, 1, len(records), "unexpected number or records in the second run: %d", len(records))
+	assert.Equal(t, podnetworkconnectivitychecksPath, records[0].Name)
+
+	recItem, ok = records[0].Item.(record.JSONMarshaller)
+	assert.True(t, ok, "unexpected type of record item in second first run: %q", records[0].Name)
+	assert.Equal(t, map[string]map[string]time.Time{"TestReason": {"TestMessage": testPncc.Status.Failures[0].Start.Time}}, recItem.Object)
 }

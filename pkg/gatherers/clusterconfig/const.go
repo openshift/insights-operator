@@ -34,9 +34,6 @@ var (
 	datahubGroupVersionResource = schema.GroupVersionResource{
 		Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs",
 	}
-	pnccGroupVersionResource = schema.GroupVersionResource{
-		Group: "controlplane.operator.openshift.io", Version: "v1alpha1", Resource: "podnetworkconnectivitychecks",
-	}
 	machineConfigGroupVersionResource = schema.GroupVersionResource{
 		Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigs",
 	}

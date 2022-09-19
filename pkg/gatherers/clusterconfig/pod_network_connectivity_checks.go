@@ -2,20 +2,18 @@ package clusterconfig
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	controlplanev1 "github.com/openshift/api/operatorcontrolplane/v1alpha1"
+	ocpV1AlphaCli "github.com/openshift/client-go/operatorcontrolplane/clientset/versioned/typed/operatorcontrolplane/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherPNCC collects a summary of failed PodNetworkConnectivityChecks.
+// GatherPNCC collects a summary of failed PodNetworkConnectivityChecks from
+// last 24 hours.
 // Time of the most recently failed check with each reason and message is recorded.
-// The checks are requested via a dynamic client and
-// then unmarshaled into the appropriate structure.
 //
 // Resource API: podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
 // Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
@@ -25,17 +23,23 @@ import (
 // * Since versions:
 //   - 4.8+
 func (g *Gatherer) GatherPNCC(ctx context.Context) ([]record.Record, []error) {
-	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
+	gatherClient, err := ocpV1AlphaCli.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return gatherPNCC(ctx, gatherDynamicClient)
+	return gatherPNCC(ctx, gatherClient)
 }
 
 func getUnsuccessfulChecks(entries []controlplanev1.LogEntry) []controlplanev1.LogEntry {
 	var unsuccessful []controlplanev1.LogEntry
+	t := &metav1.Time{
+		Time: time.Now().Add(-24 * time.Hour),
+	}
 	for _, entry := range entries {
+		if entry.Start.Before(t) {
+			continue
+		}
 		if !entry.Success {
 			unsuccessful = append(unsuccessful, entry)
 		}
@@ -43,25 +47,14 @@ func getUnsuccessfulChecks(entries []controlplanev1.LogEntry) []controlplanev1.L
 	return unsuccessful
 }
 
-func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	pnccListUnstruct, err := dynamicClient.Resource(pnccGroupVersionResource).List(ctx, metav1.ListOptions{})
+func gatherPNCC(ctx context.Context, cli ocpV1AlphaCli.ControlplaneV1alpha1Interface) ([]record.Record, []error) {
+	pnccList, err := cli.PodNetworkConnectivityChecks("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	jsonBytes, err := pnccListUnstruct.MarshalJSON()
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	pnccListStruct := controlplanev1.PodNetworkConnectivityCheckList{}
-	if err := json.Unmarshal(jsonBytes, &pnccListStruct); err != nil {
-		return nil, []error{err}
-	}
-
 	unsuccessful := []controlplanev1.LogEntry{}
-	for idx := range pnccListStruct.Items {
-		pncc := pnccListStruct.Items[idx]
+	for idx := range pnccList.Items {
+		pncc := pnccList.Items[idx]
 		unsuccessful = append(unsuccessful, getUnsuccessfulChecks(pncc.Status.Failures)...)
 		for _, outage := range pncc.Status.Outages {
 			unsuccessful = append(unsuccessful, getUnsuccessfulChecks(outage.StartLogs)...)
@@ -69,7 +62,7 @@ func gatherPNCC(ctx context.Context, dynamicClient dynamic.Interface) ([]record.
 		}
 	}
 
-	reasons := map[string]map[string]time.Time{}
+	reasons := make(map[string]map[string]time.Time, len(unsuccessful))
 	for _, entry := range unsuccessful {
 		if _, exists := reasons[entry.Reason]; !exists {
 			reasons[entry.Reason] = map[string]time.Time{}
