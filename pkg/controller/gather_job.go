@@ -75,7 +75,8 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	configObserver := configobserver.New(d.Controller, kubeClient)
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver)
+	anonymizer, err := anonymization.NewAnonymizerFromConfig(
+		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, nil)
 	if err != nil {
 		return err
 	}
