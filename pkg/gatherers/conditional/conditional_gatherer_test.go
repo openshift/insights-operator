@@ -299,7 +299,7 @@ func newEmptyGatherer(gathererConfig string) *Gatherer { // nolint:gocritic
 		nil,
 		nil,
 		nil,
-		&config.MockConfigurator{Conf: &config.Controller{ConditionalGathererEndpoint: "/gathering_rules"}},
+		&config.MockSecretConfigurator{Conf: &config.Controller{ConditionalGathererEndpoint: "/gathering_rules"}},
 		&MockGatheringRulesServiceClient{Conf: gathererConfig},
 	)
 }

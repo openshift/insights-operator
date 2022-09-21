@@ -43,46 +43,29 @@ metadata:
     include.release.openshift.io/single-node-developer: "true"
     capability.openshift.io/name: Insights
 rules:
-  # allow the operator to update cluster operator status
-  - apiGroups:
-      - config.openshift.io
-    resources:
-      - clusteroperators
-    resourceNames:
-      - insights
-    verbs:
-      - get
-      - watch
-  - apiGroups:
-      - "config.openshift.io"
-    resources:
-      - clusteroperators
-    verbs:
-      - create
   - apiGroups:
       - "operator.openshift.io"
     resources:
       - insightsoperators/status
-    verbs:
-      - get
-      - update
-      - patch
-  - apiGroups:
-      - "operator.openshift.io"
-    resources:
       - insightsoperators
     verbs:
       - get
+      - update
+      - patch
   - apiGroups:
       - "config.openshift.io"
     resources:
+      - clusteroperators
       - clusteroperators/status
-    resourceNames:
-      - insights
+      - insightsdatagathers
+      - featuregates
     verbs:
+      - create
       - get
       - update
       - patch
+      - list
+      - watch
   # allow the operator to retrieve prometheus metrics
   - apiGroups:
       - ""

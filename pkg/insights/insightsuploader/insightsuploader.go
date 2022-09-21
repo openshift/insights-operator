@@ -33,24 +33,31 @@ type StatusReporter interface {
 type Controller struct {
 	controllerstatus.StatusController
 
-	summarizer      Summarizer
-	client          *insightsclient.Client
-	configurator    configobserver.Configurator
-	reporter        StatusReporter
-	archiveUploaded chan struct{}
-	initialDelay    time.Duration
+	summarizer         Summarizer
+	client             *insightsclient.Client
+	secretConfigurator configobserver.Configurator
+	apiConfigurator    configobserver.APIConfigObserver
+	reporter           StatusReporter
+	archiveUploaded    chan struct{}
+	initialDelay       time.Duration
 }
 
-func New(summarizer Summarizer, client *insightsclient.Client, configurator configobserver.Configurator, statusReporter StatusReporter, initialDelay time.Duration) *Controller {
-	return &Controller{
-		StatusController: controllerstatus.New("insightsuploader"),
+func New(summarizer Summarizer,
+	client *insightsclient.Client,
+	secretconfigurator configobserver.Configurator,
+	apiConfigurator configobserver.APIConfigObserver,
+	statusReporter StatusReporter,
+	initialDelay time.Duration) *Controller {
 
-		summarizer:      summarizer,
-		configurator:    configurator,
-		client:          client,
-		reporter:        statusReporter,
-		archiveUploaded: make(chan struct{}),
-		initialDelay:    initialDelay,
+	return &Controller{
+		StatusController:   controllerstatus.New("insightsuploader"),
+		summarizer:         summarizer,
+		secretConfigurator: secretconfigurator,
+		apiConfigurator:    apiConfigurator,
+		client:             client,
+		reporter:           statusReporter,
+		archiveUploaded:    make(chan struct{}),
+		initialDelay:       initialDelay,
 	}
 }
 
@@ -63,11 +70,11 @@ func (c *Controller) Run(ctx context.Context) {
 	}
 
 	// the controller periodically uploads results to the remote insights endpoint
-	cfg := c.configurator.Config()
-	configCh, cancelFn := c.configurator.ConfigChanged()
+	cfg := c.secretConfigurator.Config()
+	configCh, cancelFn := c.secretConfigurator.ConfigChanged()
 	defer cancelFn()
 
-	enabled := cfg.Report
+	reportingEnabled := cfg.Report
 	endpoint := cfg.Endpoint
 	interval := cfg.Interval
 	lastReported := c.reporter.LastReportedTime()
@@ -85,17 +92,18 @@ func (c *Controller) Run(ctx context.Context) {
 			case <-ctx.Done():
 			case <-time.After(c.initialDelay):
 			case <-configCh:
-				newCfg := c.configurator.Config()
+				newCfg := c.secretConfigurator.Config()
 				interval = newCfg.Interval
 				endpoint = newCfg.Endpoint
-				if newCfg.Report != enabled {
-					enabled = newCfg.Report
-					if !newCfg.Report {
-						klog.V(2).Infof("Reporting was disabled")
-						c.initialDelay = newCfg.Interval
-						return
-					}
-					klog.V(2).Infof("Reporting was enabled")
+				reportingEnabled = newCfg.Report
+				var disabledInAPI bool
+				if c.apiConfigurator != nil {
+					disabledInAPI = c.apiConfigurator.GatherDisabled()
+				}
+				if !reportingEnabled || disabledInAPI {
+					klog.V(2).Infof("Reporting was disabled")
+					c.initialDelay = newCfg.Interval
+					return
 				}
 			}
 			c.initialDelay = 0
@@ -115,7 +123,7 @@ func (c *Controller) Run(ctx context.Context) {
 			return
 		}
 		defer source.Contents.Close()
-		if enabled && len(endpoint) > 0 {
+		if reportingEnabled && len(endpoint) > 0 {
 			// send the results
 			start := time.Now()
 			id := start.Format(time.RFC3339)

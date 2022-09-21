@@ -39,7 +39,8 @@ const (
 // Controller periodically runs gatherers, records their results to the recorder
 // and flushes the recorder to create archives
 type Controller struct {
-	configurator        configobserver.Configurator
+	secretConfigurator  configobserver.Configurator
+	apiConfigurator     configobserver.APIConfigObserver
 	recorder            recorder.FlushInterface
 	gatherers           []gatherers.Interface
 	statuses            map[string]controllerstatus.StatusController
@@ -50,11 +51,12 @@ type Controller struct {
 // New creates a new instance of Controller which periodically invokes the gatherers
 // and flushes the recorder to create archives.
 func New(
-	configurator configobserver.Configurator,
+	secretConfigurator configobserver.Configurator,
 	rec recorder.FlushInterface,
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
+	apiConfigurator configobserver.APIConfigObserver,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -64,7 +66,8 @@ func New(
 	}
 
 	return &Controller{
-		configurator:        configurator,
+		secretConfigurator:  secretConfigurator,
+		apiConfigurator:     apiConfigurator,
 		recorder:            rec,
 		gatherers:           listGatherers,
 		statuses:            statuses,
@@ -109,7 +112,7 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 
 // Gather Runs the gatherers one after the other.
 func (c *Controller) Gather() {
-	if !c.configurator.Config().Report {
+	if c.isGatheringDisabled() {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
 	}
@@ -141,11 +144,17 @@ func (c *Controller) Gather() {
 			name := gatherer.GetName()
 			start := time.Now()
 
-			ctx, cancel := context.WithTimeout(context.Background(), c.configurator.Config().Interval/2)
+			ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval/2)
 			defer cancel()
 
 			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.configurator)
+			var functionReports []gather.GathererFunctionReport
+			var err error
+			if c.apiConfigurator != nil {
+				functionReports, err = gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.apiConfigurator.GatherConfig())
+			} else {
+				functionReports, err = gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, nil)
+			}
 			for i := range functionReports {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
@@ -176,10 +185,10 @@ func (c *Controller) Gather() {
 // Periodically starts the gathering.
 // If there is an initialDelay set then it waits that much for the first gather to happen.
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
-	configCh, closeFn := c.configurator.ConfigChanged()
+	configCh, closeFn := c.secretConfigurator.ConfigChanged()
 	defer closeFn()
 
-	interval := c.configurator.Config().Interval
+	interval := c.secretConfigurator.Config().Interval
 	klog.Infof("Gathering cluster info every %s", interval)
 	for {
 		select {
@@ -187,7 +196,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			return
 
 		case <-configCh:
-			newInterval := c.configurator.Config().Interval
+			newInterval := c.secretConfigurator.Config().Interval
 			if newInterval == interval {
 				continue
 			}
@@ -232,6 +241,21 @@ func (c *Controller) updateOperatorStatusCR(allFunctionReports map[string]gather
 		return err
 	}
 	return nil
+}
+
+func (c *Controller) isGatheringDisabled() bool {
+	// old way of disabling data gathering by removing
+	// the "cloud.openshift.com" token from the pull-secret
+	if !c.secretConfigurator.Config().Report {
+		return true
+	}
+
+	// disabled in the `insightsdatagather.config.openshift.io` API
+	if c.apiConfigurator != nil {
+		return c.apiConfigurator.GatherDisabled()
+	}
+
+	return false
 }
 
 func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus {

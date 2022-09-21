@@ -71,7 +71,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	}, 1*time.Hour)
 
 	// 1 sec interval, 5 gatherers + metadata
-	c.configurator.Config().Interval = 1 * time.Second
+	c.secretConfigurator.Config().Interval = 1 * time.Second
 	stopCh := make(chan struct{})
 	go c.periodicTrigger(stopCh)
 	// 2 intervals
@@ -81,7 +81,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	mockRecorder.Reset()
 
 	// 2 hour interval, stop before delay ends
-	c.configurator.Config().Interval = 2 * time.Hour
+	c.secretConfigurator.Config().Interval = 2 * time.Hour
 	stopCh = make(chan struct{})
 	go c.periodicTrigger(stopCh)
 	time.Sleep(100 * time.Millisecond)
@@ -169,14 +169,14 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 }
 
 func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder) {
-	mockConfigurator := config.MockConfigurator{Conf: &config.Controller{
+	mockConfigurator := config.MockSecretConfigurator{Conf: &config.Controller{
 		Report:   true,
 		Interval: interval,
-		Gather:   []string{gather.AllGatherersConst},
 	}}
+	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 	mockRecorder := recorder.MockRecorder{}
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
-	return New(&mockConfigurator, &mockRecorder, listGatherers, nil, fakeInsightsOperatorCli), &mockRecorder
+	return New(&mockConfigurator, &mockRecorder, listGatherers, nil, fakeInsightsOperatorCli, mockAPIConfigurator), &mockRecorder
 }
 
 func Test_createGathererStatus(t *testing.T) { //nolint: funlen

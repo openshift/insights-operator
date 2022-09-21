@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"os"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/api/config/v1alpha1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
@@ -39,9 +42,27 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		return err
 	}
 
+	configClient, err := configv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return err
+	}
+
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
 		protoKubeConfig, kubeConfig, d.Impersonate,
 	)
+
+	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
+	if err != nil {
+		klog.Error("can't read cluster feature gates: %v", err)
+	}
+	var gatherConfig v1alpha1.GatherConfig
+	if tpEnabled {
+		insightsDataGather, err := configClient.ConfigV1alpha1().InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{}) //nolint: govet
+		if err != nil {
+			return err
+		}
+		gatherConfig = insightsDataGather.Spec.GatherConfig
+	}
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
@@ -81,7 +102,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
-		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, configObserver)
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, &gatherConfig)
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
 		}
