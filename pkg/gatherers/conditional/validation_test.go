@@ -71,7 +71,17 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 			Name:  "nil",
 			Rules: nil,
 			Errors: []string{
-				`(root): Invalid type. Expected: array, given: null`,
+				`there are no conditional rules`,
+			},
+		},
+		{
+			Name: "empty Rules",
+			Rules: []GatheringRule{
+				{},
+			},
+			Errors: []string{
+				`0.conditions: Invalid type. Expected: array, given: null`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
 		{

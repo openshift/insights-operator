@@ -180,7 +180,7 @@ func (g *Gatherer) fetchGatheringRulesFromServer(ctx context.Context) (Gathering
 	if err != nil {
 		return GatheringRules{}, err
 	}
-
+	// if gatheringRulesJson has invalid json format and cannot be unmarshalled no rules will be returned
 	return parseGatheringRules(gatheringRulesJSON)
 }
 

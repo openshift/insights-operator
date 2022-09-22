@@ -37,6 +37,12 @@ One of the common conditions type (see below) is the `alert_is_firing`. This con
 E0809 11:56:48.491346   46838 conditional_gatherer.go:226] unable to update alerts cache: open /var/run/configmaps/service-ca-bundle/service-ca.crt: no such file or directory
 ```
 
+If the error message `there are no conditional rules` is shown, that means that there are no conditional rules or that the format used to assign the conditional rules had an invalid json format. Log message will look something like:
+
+```
+E0915 09:01:03.349317   26966 periodic.go:158] conditional failed after 2ms with: got invalid config for conditional gatherer: there are no conditional rules
+```
+
 ## Basic structure of the conditional rules
 
 From the schemas mentioned above, you can see that each rule consists of `conditions` array and `gathering_functions` object. The `conditions` array defines conditions that must be met and the `gathering_functions` object tells what functions are called in the Insights Operator source code. The current conditions are defined in the [`pkg/gatherers/conditional/conditions.go`](../../pkg/gatherers/conditional/conditions.go) (see the `ConditionType` and its use) and the gathering functions are defined in the [`pkg/gatherers/conditional/gathering_functions.go`](../../pkg/gatherers/conditional/gathering_functions.go)
