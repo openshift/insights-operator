@@ -21,7 +21,7 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "basic test with all rules enabled",
 			testController: &Controller{
-				configurator: config.NewMockConfigurator(&config.Controller{
+				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
 			},
@@ -108,7 +108,7 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "basic test with some rules disabled",
 			testController: &Controller{
-				configurator: config.NewMockConfigurator(&config.Controller{
+				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
 			},
@@ -183,7 +183,7 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "Insights recommendations as alerts are disabled => no active recommendations",
 			testController: &Controller{
-				configurator: config.NewMockConfigurator(&config.Controller{
+				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: true,
 				}),
 			},
