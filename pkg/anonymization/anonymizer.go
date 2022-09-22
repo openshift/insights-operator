@@ -30,6 +30,7 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"sync"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/api/config/v1alpha1"
@@ -87,6 +88,10 @@ type Anonymizer struct {
 	secretsClient      corev1client.SecretInterface
 	secretConfigurator configobserver.Configurator
 	apiConfigurator    configobserver.APIConfigObserver
+	configClient       configv1client.ConfigV1Interface
+	networkClient      networkv1client.NetworkV1Interface
+	gatherKubeClient   kubernetes.Interface
+	runningInCluster   bool
 }
 
 type ConfigProvider interface {
@@ -138,31 +143,56 @@ func NewAnonymizerFromConfigClient(
 	if err != nil {
 		return nil, err
 	}
-
-	networksConfig, err := configClient.Networks().Get(ctx, "cluster", metav1.GetOptions{})
+	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
+	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, secretConfigurator, apiConfigurator)
 	if err != nil {
 		return nil, err
 	}
+	a.runningInCluster = true
+	a.gatherKubeClient = gatherKubeClient
+	a.configClient = configClient
+	a.networkClient = networkClient
+	return a, nil
+}
 
-	clusterConfigV1, err := gatherKubeClient.CoreV1().ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
+func (anonymizer *Anonymizer) readNetworkConfigs() error {
+	if !anonymizer.runningInCluster {
+		return nil
+	}
+	networksConfig, err := anonymizer.configClient.Networks().Get(context.Background(), "cluster", metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return err
+	}
+
+	clusterConfigV1, err := anonymizer.gatherKubeClient.CoreV1().
+		ConfigMaps("kube-system").Get(context.Background(), "cluster-config-v1", metav1.GetOptions{})
+	if err != nil {
+		return err
 	}
 
 	var networks []string
 
 	// hostsubnets are needed for egress subnets (on SDN clusters only)
-	hostSubnets, err := networkClient.HostSubnets().List(ctx, metav1.ListOptions{})
+	hostSubnets, err := anonymizer.networkClient.HostSubnets().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		klog.Infof("unable to find HostSubnets, could be OVN cluster: %v", err)
 		networks = getNetworksForAnonymizer(networksConfig, clusterConfigV1, nil)
 	} else {
 		networks = getNetworksForAnonymizer(networksConfig, clusterConfigV1, hostSubnets.Items)
 	}
+	cidrs, err := k8snet.ParseCIDRs(networks)
+	if err != nil {
+		return err
+	}
 
-	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-
-	return NewAnonymizer(baseDomain, networks, secretsClient, secretConfigurator, apiConfigurator)
+	for _, network := range cidrs {
+		lastIP := network.IP
+		anonymizer.networks = append(anonymizer.networks, subnetInformation{
+			network: *network,
+			lastIP:  lastIP,
+		})
+	}
+	return nil
 }
 
 func GetNetworksForAnonymizerFromRecords(records map[string]*record.MemoryRecord) ([]string, error) {
@@ -320,6 +350,15 @@ func NewAnonymizerFromConfig(
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
 func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryRecord) *record.MemoryRecord {
+	var once sync.Once
+	// lazy init of network information
+	once.Do(func() {
+		err := anonymizer.readNetworkConfigs()
+		if err != nil {
+			klog.Error("failed to read network config: %v", err)
+		}
+	})
+
 	if len(anonymizer.clusterBaseDomain) != 0 {
 		memoryRecord.Data = bytes.ReplaceAll(
 			memoryRecord.Data,

@@ -345,6 +345,8 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 	assert.NotNil(t, anonymizer.ipNetworkRegex)
 	assert.NotNil(t, anonymizer.secretsClient)
 
+	err = anonymizer.readNetworkConfigs()
+	assert.NoError(t, err)
 	assert.Equal(t, len(testNetworks), len(anonymizer.networks))
 	// the networks are already sorted in anonymizer
 	for i, subnetInfo := range anonymizer.networks {
