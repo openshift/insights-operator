@@ -140,7 +140,8 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, fmt.Errorf("report not updated")
 	}
 
-	c.updateInsightsMetrics(reportResponse.Report)
+	recommendations, healthStatus, gatherTime := c.readInsightsReport(reportResponse.Report)
+	updateInsightsMetrics(recommendations, healthStatus, gatherTime)
 	err = c.updateOperatorStatusCR(reportResponse.Report)
 	if err != nil {
 		klog.Errorf("failed to update the Insights Operator CR status: %v", err)
@@ -256,27 +257,30 @@ func (c *Controller) Run(ctx context.Context) {
 	}
 }
 
-// updateInsightsMetrics update the Prometheus metrics from a report
-func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
-	var critical, important, moderate, low, total int
+type healthStatusCounts struct {
+	critical, important, moderate, low, total int
+}
 
-	total = report.Meta.Count
-
+func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time) {
+	healthStatus := healthStatusCounts{}
+	healthStatus.total = report.Meta.Count
 	activeRecommendations := []types.InsightsRecommendation{}
 
 	for _, rule := range report.Data {
 		if rule.Disabled {
+			// total also includes disabled rules
+			healthStatus.total--
 			continue
 		}
 		switch rule.TotalRisk {
 		case 1:
-			low++
+			healthStatus.low++
 		case 2:
-			moderate++
+			healthStatus.moderate++
 		case 3:
-			important++
+			healthStatus.important++
 		case 4:
-			critical++
+			healthStatus.critical++
 		}
 
 		if c.configurator.Config().DisableInsightsAlerts {
@@ -284,7 +288,7 @@ func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 		}
 		errorKeyStr, err := extractErrorKeyFromRuleData(rule)
 		if err != nil {
-			klog.Error("Unable to extract recommandation's error key: %v", err)
+			klog.Errorf("Unable to extract recommendation's error key: %v", err)
 			continue
 		}
 
@@ -295,20 +299,24 @@ func (c *Controller) updateInsightsMetrics(report types.SmartProxyReport) {
 			TotalRisk:   rule.TotalRisk,
 		})
 	}
-	insights.RecommendationCollector.SetActiveRecommendations(activeRecommendations)
-
-	insightsStatus.WithLabelValues("low").Set(float64(low))
-	insightsStatus.WithLabelValues("moderate").Set(float64(moderate))
-	insightsStatus.WithLabelValues("important").Set(float64(important))
-	insightsStatus.WithLabelValues("critical").Set(float64(critical))
-	insightsStatus.WithLabelValues("total").Set(float64(total))
 
 	t, err := time.Parse(time.RFC3339, string(report.Meta.GatheredAt))
 	if err != nil {
 		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTimeName, err)
-		return
 	}
-	insightsLastGatherTime.Set(float64(t.Unix()))
+	return activeRecommendations, healthStatus, t
+}
+
+// updateInsightsMetrics update the Prometheus metrics from a report
+func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation, hsCount healthStatusCounts, gatherTime time.Time) {
+	insights.RecommendationCollector.SetActiveRecommendations(activeRecommendations)
+
+	insightsStatus.WithLabelValues("low").Set(float64(hsCount.low))
+	insightsStatus.WithLabelValues("moderate").Set(float64(hsCount.moderate))
+	insightsStatus.WithLabelValues("important").Set(float64(hsCount.important))
+	insightsStatus.WithLabelValues("critical").Set(float64(hsCount.critical))
+	insightsStatus.WithLabelValues("total").Set(float64(hsCount.total))
+	insightsLastGatherTime.Set(float64(gatherTime.Unix()))
 }
 
 func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error {
@@ -322,7 +330,7 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 	for _, rule := range report.Data {
 		errorKey, err := extractErrorKeyFromRuleData(rule)
 		if err != nil {
-			klog.Error("Unable to extract recommendation's error key: %v", err)
+			klog.Errorf("Unable to extract recommendation's error key: %v", err)
 			continue
 		}
 		ruleIDStr := strings.TrimSuffix(string(rule.RuleID), ".report")
