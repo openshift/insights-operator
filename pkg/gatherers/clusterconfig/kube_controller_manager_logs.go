@@ -40,7 +40,7 @@ func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]recor
 		},
 		IsRegexSearch: true,
 		SinceSeconds:  logDefaultSinceSeconds,
-		LimitBytes:    0,
+		LimitBytes:    5 * logDefaultLimitBytes,
 	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
