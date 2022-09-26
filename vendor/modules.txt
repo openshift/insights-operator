@@ -214,6 +214,13 @@ github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1
 github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1/fake
 github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1
 github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1/fake
+github.com/openshift/client-go/operatorcontrolplane/applyconfigurations/internal
+github.com/openshift/client-go/operatorcontrolplane/applyconfigurations/operatorcontrolplane/v1alpha1
+github.com/openshift/client-go/operatorcontrolplane/clientset/versioned
+github.com/openshift/client-go/operatorcontrolplane/clientset/versioned/fake
+github.com/openshift/client-go/operatorcontrolplane/clientset/versioned/scheme
+github.com/openshift/client-go/operatorcontrolplane/clientset/versioned/typed/operatorcontrolplane/v1alpha1
+github.com/openshift/client-go/operatorcontrolplane/clientset/versioned/typed/operatorcontrolplane/v1alpha1/fake
 github.com/openshift/client-go/security/applyconfigurations/internal
 github.com/openshift/client-go/security/applyconfigurations/security/v1
 github.com/openshift/client-go/security/clientset/versioned
