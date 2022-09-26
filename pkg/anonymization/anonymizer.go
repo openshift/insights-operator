@@ -70,6 +70,7 @@ var (
 	secretAPIVersion           = "v1"
 	secretKind                 = "Secret"
 	secretNamespace            = "openshift-insights"
+	once                       sync.Once
 )
 
 type subnetInformation struct {
@@ -350,7 +351,6 @@ func NewAnonymizerFromConfig(
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
 func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryRecord) *record.MemoryRecord {
-	var once sync.Once
 	// lazy init of network information
 	once.Do(func() {
 		err := anonymizer.readNetworkConfigs()
