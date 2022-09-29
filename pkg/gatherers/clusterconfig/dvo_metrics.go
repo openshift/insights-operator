@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -129,10 +130,21 @@ func gatherDVOMetricsFromEndpoint(
 		}
 	}()
 
-	prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvoMetricsPrefix)
+	prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvoMetricsPrefix, func(b []byte) []byte {
+		filterProps := []string{"name", "namespace"}
+
+		for _, f := range filterProps {
+			re := regexp.MustCompile(fmt.Sprintf(`(?m)(,?%s=[^\,\}]*")`, f))
+			str := re.ReplaceAllString(string(b), "")
+			b = []byte(str)
+		}
+
+		return b
+	})
 	if err != io.EOF {
 		klog.Warningf("Unable to read metrics lines with DVO prefix: %v", err)
 		return prefixedLines, err
 	}
+
 	return prefixedLines, nil
 }
