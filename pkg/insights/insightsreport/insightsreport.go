@@ -292,11 +292,18 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 			continue
 		}
 
+		clusterVersion, err := c.client.GetClusterVersion()
+		if err != nil {
+			klog.Errorf("Unable to extract cluster version")
+			continue
+		}
+
 		activeRecommendations = append(activeRecommendations, types.InsightsRecommendation{
 			RuleID:      rule.RuleID,
 			ErrorKey:    errorKeyStr,
 			Description: rule.Description,
 			TotalRisk:   rule.TotalRisk,
+			ClusterID:   clusterVersion.Name,
 		})
 	}
 

@@ -56,4 +56,5 @@ type InsightsRecommendation struct {
 	ErrorKey    string
 	Description string
 	TotalRisk   int
+	ClusterID   string
 }

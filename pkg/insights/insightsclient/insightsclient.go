@@ -162,7 +162,7 @@ func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv
 	return fmt.Sprintf("insights-operator/%s cluster/%s", gitVersion, cv.Spec.ClusterID)
 }
 
-func (c *Client) getClusterVersion() (*configv1.ClusterVersion, error) {
+func (c *Client) GetClusterVersion() (*configv1.ClusterVersion, error) {
 	if c.clusterVersion != nil {
 		return c.clusterVersion, nil
 	}

@@ -16,7 +16,7 @@ import (
 
 // Send uploads archives to Ingress service
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 
 // RecvReport performs a request to Insights Results Smart Proxy endpoint
 func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 }
 
 func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error) {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +213,7 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 	klog.Infof(
 		`Preparing a request to Insights Operator Gathering Conditions Service at the endpoint "%v"`, endpoint,
 	)
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 // It is a HTTP GET request with the `search` query parameter limiting the result
 // only for the one cluster and only for the `accepted` cluster transfers.
 func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
 	if err != nil {
 		return nil, err
 	}
