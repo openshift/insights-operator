@@ -130,15 +130,17 @@ func gatherDVOMetricsFromEndpoint(
 		}
 	}()
 
+	// precompile regex rules
+	regexString := `(?m)(,?%s=[^\,\}]*")`
+	filterProps := []*regexp.Regexp{
+		regexp.MustCompile(fmt.Sprintf(regexString, "name")),
+		regexp.MustCompile(fmt.Sprintf(regexString, "namespace")),
+	}
 	prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvoMetricsPrefix, func(b []byte) []byte {
-		filterProps := []string{"name", "namespace"}
-
-		for _, f := range filterProps {
-			re := regexp.MustCompile(fmt.Sprintf(`(?m)(,?%s=[^\,\}]*")`, f))
+		for _, re := range filterProps {
 			str := re.ReplaceAllString(string(b), "")
 			b = []byte(str)
 		}
-
 		return b
 	})
 	if err != io.EOF {
