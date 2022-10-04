@@ -266,6 +266,13 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 	healthStatus.total = report.Meta.Count
 	activeRecommendations := []types.InsightsRecommendation{}
 
+	clusterVersion, err := c.client.GetClusterVersion()
+
+	if err != nil {
+		klog.Errorf("Unable to extract cluster version: %v", err)
+		return nil, healthStatus, time.Time{}
+	}
+
 	for _, rule := range report.Data {
 		if rule.Disabled {
 			// total also includes disabled rules
@@ -292,18 +299,12 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 			continue
 		}
 
-		clusterVersion, err := c.client.GetClusterVersion()
-		if err != nil {
-			klog.Errorf("Unable to extract cluster version")
-			continue
-		}
-
 		activeRecommendations = append(activeRecommendations, types.InsightsRecommendation{
 			RuleID:      rule.RuleID,
 			ErrorKey:    errorKeyStr,
 			Description: rule.Description,
 			TotalRisk:   rule.TotalRisk,
-			ClusterID:   clusterVersion.Name,
+			ClusterID:   clusterVersion.Spec.ClusterID,
 		})
 	}
 
@@ -334,6 +335,12 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 
 	updatedOperatorCR := insightsOperatorCR.DeepCopy()
 	var healthChecks []v1.HealthCheck
+
+	clusterVersion, err := c.client.GetClusterVersion()
+	if err != nil {
+		return err
+	}
+
 	for _, rule := range report.Data {
 		errorKey, err := extractErrorKeyFromRuleData(rule)
 		if err != nil {
@@ -345,7 +352,7 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 			Description: rule.Description,
 			TotalRisk:   int32(rule.TotalRisk),
 			State:       v1.HealthCheckEnabled,
-			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/recommendations/%s%%7C%s", ruleIDStr, errorKey),
+			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s%%|%s", clusterVersion.Spec.ClusterID, ruleIDStr, errorKey),
 		}
 
 		if rule.Disabled {

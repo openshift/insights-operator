@@ -1,5 +1,7 @@
 package types
 
+import v1 "github.com/openshift/api/config/v1"
+
 // Timestamp represents any timestamp in a form gathered from database
 type Timestamp string
 
@@ -56,5 +58,5 @@ type InsightsRecommendation struct {
 	ErrorKey    string
 	Description string
 	TotalRisk   int
-	ClusterID   string
+	ClusterID   v1.ClusterID
 }
