@@ -18,6 +18,7 @@ import (
 type APIConfigObserver interface {
 	factory.Controller
 	GatherConfig() *v1alpha1.GatherConfig
+	GatherDataPolicy() *v1alpha1.DataPolicy
 	GatherDisabled() bool
 }
 
@@ -55,32 +56,37 @@ func NewAPIConfigObserver(kubeConfig *rest.Config,
 	return c, nil
 }
 
-func (c *APIConfigController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
-	insightDataGatherConf, err := c.configV1Alpha1Cli.InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{})
+func (a *APIConfigController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	insightDataGatherConf, err := a.configV1Alpha1Cli.InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	c.gatherConfig = &insightDataGatherConf.Spec.GatherConfig
+	a.gatherConfig = &insightDataGatherConf.Spec.GatherConfig
 	return nil
 }
 
 // GatherConfig provides the complete gather config in a thread-safe way.
-func (c *APIConfigController) GatherConfig() *v1alpha1.GatherConfig {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	return c.gatherConfig
+func (a *APIConfigController) GatherConfig() *v1alpha1.GatherConfig {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	return a.gatherConfig
 }
 
 // GatherDisabled tells whether data gathering is disabled or not
-func (c *APIConfigController) GatherDisabled() bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+func (a *APIConfigController) GatherDisabled() bool {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 
-	if c.gatherConfig != nil {
-		if utils.StringInSlice("all", c.gatherConfig.DisabledGatherers) ||
-			utils.StringInSlice("ALL", c.gatherConfig.DisabledGatherers) {
-			return true
-		}
+	if utils.StringInSlice("all", a.gatherConfig.DisabledGatherers) ||
+		utils.StringInSlice("ALL", a.gatherConfig.DisabledGatherers) {
+		return true
 	}
 	return false
+}
+
+// GatherDataPolicy provides DataPolicy attribute value defined in the API
+func (a *APIConfigController) GatherDataPolicy() *v1alpha1.DataPolicy {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	return &a.gatherConfig.DataPolicy
 }

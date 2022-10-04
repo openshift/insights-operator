@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/config/v1alpha1"
 	networkv1 "github.com/openshift/api/network/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -18,6 +19,7 @@ import (
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	clienttesting "k8s.io/client-go/testing"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -118,7 +120,14 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		"127.0.0.0/8",
 		"192.168.0.0/16",
 	}
-	anonymizer, err := NewAnonymizer(clusterBaseDomain, networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
+	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{
+		EnableGlobalObfuscation: true,
+	})
+	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
+		DataPolicy: v1alpha1.ObfuscateNetworking,
+	})
+	anonymizer, err := NewAnonymizer(clusterBaseDomain,
+		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockSecretConfigurator, mockAPIConfigurator)
 	assert.NoError(t, err)
 
 	return anonymizer
@@ -321,6 +330,12 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 		kubeClient,
 		configClient,
 		networkClient,
+		config.NewMockSecretConfigurator(&config.Controller{
+			EnableGlobalObfuscation: true,
+		}),
+		config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
+			DataPolicy: v1alpha1.ObfuscateNetworking,
+		}),
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, anonymizer)
@@ -330,6 +345,8 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 	assert.NotNil(t, anonymizer.ipNetworkRegex)
 	assert.NotNil(t, anonymizer.secretsClient)
 
+	err = anonymizer.readNetworkConfigs()
+	assert.NoError(t, err)
 	assert.Equal(t, len(testNetworks), len(anonymizer.networks))
 	// the networks are already sorted in anonymizer
 	for i, subnetInfo := range anonymizer.networks {

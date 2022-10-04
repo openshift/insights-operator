@@ -207,7 +207,7 @@ func RecordArchiveMetadata(
 			StatusReports:              functionReports,
 			MemoryAlloc:                m.HeapAlloc,
 			Uptime:                     time.Since(programStartTime).Truncate(time.Millisecond).Seconds(),
-			IsGlobalObfuscationEnabled: anonymizer != nil,
+			IsGlobalObfuscationEnabled: anonymizer.IsObfuscationEnabled(),
 		}},
 	}
 	if errs := rec.Record(archiveMetadata); len(errs) > 0 {

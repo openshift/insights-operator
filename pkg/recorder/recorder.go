@@ -83,7 +83,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		At:          at,
 		Data:        data,
 	}
-	if r.anonymizer != nil {
+	if r.anonymizer.IsObfuscationEnabled() {
 		memoryRecord = r.anonymizer.AnonymizeMemoryRecord(memoryRecord)
 	}
 	// we want to record our metadata file anyway

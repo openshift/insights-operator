@@ -111,14 +111,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver, apiConfigObserver, os.Getenv("POD_NAMESPACE"))
 
-	var anonymizer *anonymization.Anonymizer
-	if anonymization.IsObfuscationEnabled(secretConfigObserver) {
-		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig, gatherProtoKubeConfig, controller.ProtoKubeConfig)
-		if err != nil {
-			// in case of an error anonymizer will be nil and anonymization will be just skipped
-			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
-		}
+	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+	anonymizer, err := anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
+		gatherProtoKubeConfig, controller.ProtoKubeConfig, secretConfigObserver, apiConfigObserver)
+	if err != nil {
+		// in case of an error anonymizer will be nil and anonymization will be just skipped
+		klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
+		return err
 	}
 
 	// the recorder periodically flushes any recorded data to disk as tar.gz files

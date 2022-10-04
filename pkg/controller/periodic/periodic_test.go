@@ -9,8 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/openshift/api/config/v1alpha1"
 	v1 "github.com/openshift/api/operator/v1"
 	fakeOperatorCli "github.com/openshift/client-go/operator/clientset/versioned/fake"
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -18,11 +20,11 @@ import (
 )
 
 func Test_Controller_CustomPeriodGatherer(t *testing.T) {
-	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
+	c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockGatherer{},
 		&gather.MockCustomPeriodGatherer{Period: 999 * time.Hour},
 	}, 1*time.Hour)
-
+	assert.NoError(t, err)
 	c.Gather()
 	// 6 gatherers + metadata
 	assert.Len(t, mockRecorder.Records, 7)
@@ -35,10 +37,10 @@ func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 }
 
 func Test_Controller_Run(t *testing.T) {
-	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
+	c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockGatherer{},
 	}, 1*time.Hour)
-
+	assert.NoError(t, err)
 	// No delay, 5 gatherers + metadata
 	stopCh := make(chan struct{})
 	go c.Run(stopCh, 0)
@@ -66,10 +68,10 @@ func Test_Controller_Run(t *testing.T) {
 }
 
 func Test_Controller_periodicTrigger(t *testing.T) {
-	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
+	c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockGatherer{},
 	}, 1*time.Hour)
-
+	assert.NoError(t, err)
 	// 1 sec interval, 5 gatherers + metadata
 	c.secretConfigurator.Config().Interval = 1 * time.Second
 	stopCh := make(chan struct{})
@@ -95,13 +97,13 @@ func Test_Controller_Sources(t *testing.T) {
 	mockGatherer := gather.MockGatherer{}
 	mockCustomPeriodGatherer := gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true}
 	// 1 Gatherer ==> 1 source
-	c, _ := getMocksForPeriodicTest([]gatherers.Interface{
+	c, _, _ := getMocksForPeriodicTest([]gatherers.Interface{
 		&mockGatherer,
 	}, 1*time.Hour)
 	assert.Len(t, c.Sources(), 1)
 
 	// 2 Gatherer ==> 2 source
-	c, _ = getMocksForPeriodicTest([]gatherers.Interface{
+	c, _, _ = getMocksForPeriodicTest([]gatherers.Interface{
 		&mockGatherer,
 		&mockCustomPeriodGatherer,
 	}, 1*time.Hour)
@@ -110,11 +112,11 @@ func Test_Controller_Sources(t *testing.T) {
 
 func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 	mockGatherer := gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true}
-	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
+	c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockGatherer{},
 		&mockGatherer,
 	}, 1*time.Hour)
-
+	assert.NoError(t, err)
 	c.Gather()
 	// 6 gatherers + metadata
 	assert.Len(t, mockRecorder.Records, 7)
@@ -143,10 +145,10 @@ func Test_Controller_CustomPeriodGathererNoPeriod(t *testing.T) {
 
 // Test_Controller_FailingGatherer tests that metadata file doesn't grow with failing gatherer functions
 func Test_Controller_FailingGatherer(t *testing.T) {
-	c, mockRecorder := getMocksForPeriodicTest([]gatherers.Interface{
+	c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
 		&gather.MockFailingGatherer{},
 	}, 3*time.Second)
-
+	assert.NoError(t, err)
 	c.Gather()
 	metadataFound := false
 	assert.Len(t, mockRecorder.Records, 2)
@@ -168,15 +170,20 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 	mockRecorder.Reset()
 }
 
-func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder) {
+func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder, error) {
 	mockConfigurator := config.MockSecretConfigurator{Conf: &config.Controller{
 		Report:   true,
 		Interval: interval,
 	}}
-	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
+	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{})
 	mockRecorder := recorder.MockRecorder{}
+	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, mockAPIConfigurator)
+	if err != nil {
+		return nil, nil, err
+	}
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
-	return New(&mockConfigurator, &mockRecorder, listGatherers, nil, fakeInsightsOperatorCli, mockAPIConfigurator), &mockRecorder
+	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, mockAPIConfigurator)
+	return mockController, &mockRecorder, nil
 }
 
 func Test_createGathererStatus(t *testing.T) { //nolint: funlen
