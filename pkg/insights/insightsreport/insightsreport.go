@@ -140,7 +140,11 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, fmt.Errorf("report not updated")
 	}
 
-	recommendations, healthStatus, gatherTime := c.readInsightsReport(reportResponse.Report)
+	recommendations, healthStatus, gatherTime, err := c.readInsightsReport(reportResponse.Report)
+	if err != nil {
+		klog.Errorf("failed to read the Insights Operator Report")
+		return true, err
+	}
 	updateInsightsMetrics(recommendations, healthStatus, gatherTime)
 	err = c.updateOperatorStatusCR(reportResponse.Report)
 	if err != nil {
@@ -261,16 +265,15 @@ type healthStatusCounts struct {
 	critical, important, moderate, low, total int
 }
 
-func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time) {
+func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time, error) {
 	healthStatus := healthStatusCounts{}
 	healthStatus.total = report.Meta.Count
 	activeRecommendations := []types.InsightsRecommendation{}
 
 	clusterVersion, err := c.client.GetClusterVersion()
-
 	if err != nil {
 		klog.Errorf("Unable to extract cluster version: %v", err)
-		return nil, healthStatus, time.Time{}
+		return nil, healthStatus, time.Time{}, err
 	}
 
 	for _, rule := range report.Data {
@@ -312,7 +315,7 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 	if err != nil {
 		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTimeName, err)
 	}
-	return activeRecommendations, healthStatus, t
+	return activeRecommendations, healthStatus, t, nil
 }
 
 // updateInsightsMetrics update the Prometheus metrics from a report

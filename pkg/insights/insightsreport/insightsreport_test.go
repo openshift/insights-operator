@@ -252,7 +252,7 @@ func Test_readInsightsReport(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			activeRecommendations, healthStatus, gatherTime := tc.testController.readInsightsReport(tc.report)
+			activeRecommendations, healthStatus, gatherTime, _ := tc.testController.readInsightsReport(tc.report)
 			assert.Equal(t, tc.expectedActiveRecommendations, activeRecommendations)
 			assert.Equal(t, tc.expectedHealthStatus, healthStatus)
 			assert.Equal(t, tc.expectedGatherTime, gatherTime.String())
