@@ -355,7 +355,7 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 			Description: rule.Description,
 			TotalRisk:   int32(rule.TotalRisk),
 			State:       v1.HealthCheckEnabled,
-			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s%%|%s", clusterVersion.Spec.ClusterID, ruleIDStr, errorKey),
+			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", clusterVersion.Spec.ClusterID, ruleIDStr, errorKey),
 		}
 
 		if rule.Disabled {

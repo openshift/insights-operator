@@ -57,7 +57,7 @@ func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.NewDesc(c.metricName, "", []string{}, prometheus.Labels{
 				"description": rec.Description,
 				"total_risk":  totalRiskToStr(rec.TotalRisk),
-				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s%%|%s", rec.ClusterID, ruleIDStr, rec.ErrorKey),
+				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", rec.ClusterID, ruleIDStr, rec.ErrorKey),
 			}),
 			prometheus.GaugeValue,
 			1,
