@@ -60,6 +60,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"openshift_sdn_logs":                (*Gatherer).GatherOpenshiftSDNLogs,
 	"openshift_sdn_controller_logs":     (*Gatherer).GatherOpenshiftSDNControllerLogs,
 	"openshift_authentication_logs":     (*Gatherer).GatherOpenshiftAuthenticationLogs,
+	"openshift_ingress_logs":            (*Gatherer).GatherOpenShiftIngressLogs,
 	"sap_config":                        (*Gatherer).GatherSAPConfig,
 	"sap_license_management_logs":       (*Gatherer).GatherSAPVsystemIptablesLogs,
 	"sap_pods":                          (*Gatherer).GatherSAPPods,
