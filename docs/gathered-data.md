@@ -691,6 +691,26 @@ Response see:
 * Id in config: clusterconfig/openshift_apiserver_operator_logs
 
 
+## OpenShiftIngressLogs
+
+collects logs from openshift-ingress:
+  - if the log line is on error level
+  - if the log line is on warning level and contains "error" substring
+
+The Kubernetes API:
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+Response see:
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+* Location in archive: config/pod/openshift-ingress/logs/{pod-name}/errors.log
+* Id in config: cluspoterconfig/openshift_ingress_logs
+* Since version:
+  - 4.12+
+
+
 ## OpenshiftAuthenticationLogs
 
 collects logs from pods in openshift-authentication namespace with following substring:
@@ -733,7 +753,7 @@ from "openshift-machine-api" namespace
 * Location of events in archive: events/
 * Id in config: clusterconfig/openshift_machine_api_events
 * Since versions:
-	 * 4.12+
+  - 4.12+
 
 
 ## OpenshiftSDNControllerLogs
@@ -805,10 +825,9 @@ API Reference:
 
 ## PNCC
 
-collects a summary of failed PodNetworkConnectivityChecks.
+collects a summary of failed PodNetworkConnectivityChecks from
+last 24 hours.
 Time of the most recently failed check with each reason and message is recorded.
-The checks are requested via a dynamic client and
-then unmarshaled into the appropriate structure.
 
 Resource API: podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
 Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
