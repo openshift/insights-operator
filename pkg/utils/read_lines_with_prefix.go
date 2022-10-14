@@ -8,7 +8,7 @@ import (
 
 // ReadAllLinesWithPrefix reads lines from the given reader
 // and returns those that begin with the specified prefix.
-func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
+func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte, lineFunc func(b []byte) []byte) ([]byte, error) {
 	buff := []byte{}
 	tmp := make([]byte, 1024)
 	partialLine := []byte{}
@@ -47,6 +47,9 @@ func ReadAllLinesWithPrefix(reader io.Reader, prefix []byte) ([]byte, error) {
 		// The slice now only contains full lines.
 		for _, line := range lines {
 			buff = appendBufferIfLinePrefixed(buff, prefix, line)
+			if lineFunc != nil {
+				buff = lineFunc(buff)
+			}
 		}
 
 		// If the EOF was reported by the reader.
