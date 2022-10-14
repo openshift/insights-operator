@@ -636,11 +636,11 @@ Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and
 
 ## NodeLogs
 
-fetches the node logs from journal unit
+fetches control plane node logs from journal unit
 
 Response see https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
 
-* Location in archive: config/nodes/logs/
+* Location in archive: config/nodes/logs/<hostname>.log
 * See: docs/insights-archive-sample/config/nodes/logs
 * Id in config: clusterconfig/node_logs
 * Since versions:
@@ -733,7 +733,7 @@ from "openshift-machine-api" namespace
 * Location of events in archive: events/
 * Id in config: clusterconfig/openshift_machine_api_events
 * Since versions:
-	 * 4.12+
+  - 4.12+
 
 
 ## OpenshiftSDNControllerLogs
@@ -805,10 +805,9 @@ API Reference:
 
 ## PNCC
 
-collects a summary of failed PodNetworkConnectivityChecks.
+collects a summary of failed PodNetworkConnectivityChecks from
+last 24 hours.
 Time of the most recently failed check with each reason and message is recorded.
-The checks are requested via a dynamic client and
-then unmarshaled into the appropriate structure.
 
 Resource API: podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
 Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
