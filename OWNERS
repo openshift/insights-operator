@@ -1,16 +1,12 @@
 approvers:
-- derekwaynecarr
-- mfojtik
-- inecas
-- tisnik
 - tremes
 - rluders
+- ncaak
+- rhrmo
 reviewers:
-- derekwaynecarr
-- mfojtik
-- inecas
-- tisnik
 - tremes
 - rluders
+- ncaak
+- rhrmo
 
 component: "Insights operator"
