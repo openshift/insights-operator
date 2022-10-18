@@ -14,7 +14,7 @@ func Test_ReadAllLinesWithPrefix(t *testing.T) {
 		"prefix_fourth_line",
 		"prefix_last_line",
 	}, string(MetricsLineSep)))
-	lines, err := ReadAllLinesWithPrefix(reader, []byte("prefix_"))
+	lines, err := ReadAllLinesWithPrefix(reader, []byte("prefix_"), nil)
 	if err != nil && err != io.EOF {
 		t.Fatal(err)
 	}
