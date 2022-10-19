@@ -98,12 +98,12 @@
                                     "version"
                                 ],
                                 "properties": {
-                                    "name": {
+                                    "version": {
                                         "type": "string",
                                         "title": "Version",
                                         "description": "Version contains a semantic versioning expression",
                                         "minLength": 1,
-                                        "maxLength": 32
+                                        "maxLength": 64
                                     }
                                 }
                             }
