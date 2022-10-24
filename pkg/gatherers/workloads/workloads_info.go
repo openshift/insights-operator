@@ -63,37 +63,63 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient)
 }
 
-// nolint: funlen, gocyclo, gocritic
 func gatherWorkloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
 ) ([]record.Record, []error) {
-	// load images as we find them
-	imageCh := make(chan string, workloadGatherPageSize)
-	imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images(), imageCh)
+	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
-	// load pods in order
 	start := time.Now()
+	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	workloadImageResize(info.PodCount)
+
+	records := []record.Record{
+		{
+			Name: "config/workload_info",
+			Item: record.JSONMarshaller{Object: &info},
+		},
+	}
+
+	// wait for as many images as we can find to load
+	handleWorkloadImageInfo(ctx, &info, start, imagesDoneCh)
+
+	if limitReached {
+		return records, []error{fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit)}
+	}
+	return records, nil
+}
+
+// nolint: funlen, gocritic, gocyclo
+func workloadInfo(
+	ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
+	imageCh chan string,
+) (bool, workloadPods, error) {
+	defer close(imageCh)
 	limitReached := false
 
 	var info workloadPods
-	var namespace string
-	var namespaceHash string
+	var namespace, namespaceHash, continueValue string
 	var namespacePods workloadNamespacePods
 	h := sha256.New()
 
 	// Use the Limit and Continue fields to request the pod information in chunks.
-	var continueValue string
 	for {
 		pods, err := coreClient.Pods("").List(ctx, metav1.ListOptions{
 			Limit:    workloadGatherPageSize,
 			Continue: continueValue,
 		})
 		if err != nil {
-			return nil, []error{err}
+			return false, workloadPods{}, err
 		}
-		for _, pod := range pods.Items {
+
+		for podIdx := range pods.Items {
+			pod := pods.Items[podIdx]
 			// initialize the running state, including the namespace hash
 			if pod.Namespace != namespace {
 				if len(namespace) != 0 {
@@ -117,45 +143,35 @@ func gatherWorkloadInfo(
 			namespacePods.Count++
 
 			switch {
-			case pod.Status.Phase == corev1.PodSucceeded, pod.Status.Phase == corev1.PodFailed:
+			case isPodTerminated(&pod):
 				// track terminal pods but do not report their data
 				namespacePods.TerminalCount++
 				continue
-			case pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodPending,
-				len(pod.Status.InitContainerStatuses) != len(pod.Spec.InitContainers),
-				len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers):
+			case podCanBeIgnored(&pod):
 				// consider pods that are in a known state
 				// or pods without filled out status are invalid
 				namespacePods.IgnoredCount++
 				continue
 			}
 
-			var podShape workloadPodShape
-			var ok bool
-			podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.Spec.InitContainers, pod.Status.InitContainerStatuses)
+			podShape, ok := calculatePodShape(h, &pod)
 			if !ok {
 				namespacePods.InvalidCount++
 				continue
 			}
-			podShape.Containers, ok = calculateWorkloadContainerShapes(h, pod.Spec.Containers, pod.Status.ContainerStatuses)
-			if !ok {
-				namespacePods.InvalidCount++
-				continue
-			}
-
-			podShape.RestartsAlways = pod.Spec.RestartPolicy == corev1.RestartPolicyAlways
 
 			if index := workloadPodShapeIndex(namespacePods.Shapes, podShape); index != -1 {
 				namespacePods.Shapes[index].Duplicates++
-			} else {
-				namespacePods.Shapes = append(namespacePods.Shapes, podShape)
+				continue
+			}
+			namespacePods.Shapes = append(namespacePods.Shapes, podShape)
 
-				for _, container := range podShape.InitContainers {
-					imageCh <- container.ImageID
-				}
-				for _, container := range podShape.Containers {
-					imageCh <- container.ImageID
-				}
+			for _, container := range podShape.InitContainers {
+				imageCh <- container.ImageID
+			}
+
+			for _, container := range podShape.Containers {
+				imageCh <- container.ImageID
 			}
 		}
 
@@ -166,6 +182,7 @@ func gatherWorkloadInfo(
 		}
 		continueValue = pods.Continue
 	}
+
 	// add the last set of pods
 	if len(namespace) != 0 {
 		if info.Namespaces == nil {
@@ -175,23 +192,53 @@ func gatherWorkloadInfo(
 		info.PodCount += namespacePods.Count
 	}
 
-	workloadImageResize(info.PodCount)
+	return limitReached, info, nil
+}
 
-	records := []record.Record{
-		{
-			Name: "config/workload_info",
-			Item: record.JSONMarshaller{Object: &info},
-		},
+func isPodTerminated(pod *corev1.Pod) bool {
+	return pod.Status.Phase == corev1.PodSucceeded ||
+		pod.Status.Phase == corev1.PodFailed
+}
+
+func podCanBeIgnored(pod *corev1.Pod) bool {
+	return pod.Status.Phase != corev1.PodRunning && pod.Status.Phase != corev1.PodPending ||
+		len(pod.Status.InitContainerStatuses) != len(pod.Spec.InitContainers) ||
+		len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers)
+}
+
+func calculatePodShape(h hash.Hash, pod *corev1.Pod) (workloadPodShape, bool) {
+	var podShape workloadPodShape
+	var ok bool
+	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.Spec.InitContainers, pod.Status.InitContainerStatuses)
+	if !ok {
+		return workloadPodShape{}, false
 	}
 
-	// wait for as many images as we can find to load
+	podShape.Containers, ok = calculateWorkloadContainerShapes(h, pod.Spec.Containers, pod.Status.ContainerStatuses)
+	if !ok {
+		return workloadPodShape{}, false
+	}
+
+	podShape.RestartsAlways = pod.Spec.RestartPolicy == corev1.RestartPolicyAlways
+
+	return podShape, true
+}
+
+func handleWorkloadImageInfo(
+	ctx context.Context,
+	info *workloadPods,
+	start time.Time,
+	imagesDoneCh <-chan workloadImageInfo,
+) {
 	var imageInfo workloadImageInfo
+
 	// wait proportional to the number of pods + a floor
 	waitDuration := time.Second*time.Duration(info.PodCount)/10 + 15*time.Second
+
 	klog.V(2).Infof("Loaded pods in %s, will wait %s for image data",
 		time.Since(start).Round(time.Second).String(),
 		waitDuration.Round(time.Second).String())
-	close(imageCh)
+
 	select {
 	case <-ctx.Done():
 		select {
@@ -208,19 +255,15 @@ func gatherWorkloadInfo(
 
 	info.Images = imageInfo.images
 	info.ImageCount = imageInfo.count
-	if limitReached {
-		return records, []error{fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit)}
-	}
-	return records, nil
 }
 
-// nolint: gocyclo
+// nolint: gocritic
 func gatherWorkloadImageInfo(
 	ctx context.Context,
 	imageClient imageclient.ImageInterface,
-	imageCh <-chan string,
-) <-chan workloadImageInfo {
+) (chan string, <-chan workloadImageInfo) {
 	images := make(map[string]workloadImage)
+	imageCh := make(chan string, workloadGatherPageSize)
 	imagesDoneCh := make(chan workloadImageInfo)
 
 	go func() {
@@ -254,17 +297,8 @@ func gatherWorkloadImageInfo(
 				for k := range pendingIDs {
 					delete(pendingIDs, k)
 				}
-				if _, ok := images[imageID]; !ok {
-					pendingIDs[imageID] = struct{}{}
-				}
-				for l := len(imageCh); l > 0; l = len(imageCh) {
-					for i := 0; i < l; i++ {
-						imageID := <-imageCh
-						if _, ok := images[imageID]; !ok {
-							pendingIDs[imageID] = struct{}{}
-						}
-					}
-				}
+
+				readImageSHAs(pendingIDs, images, imageID, imageCh)
 
 				for imageID := range pendingIDs {
 					if _, ok := images[imageID]; ok {
@@ -274,21 +308,12 @@ func gatherWorkloadImageInfo(
 						images[imageID] = image
 						continue
 					}
+
 					images[imageID] = workloadImage{}
-					start := time.Now()
-					image, err := imageClient.Get(ctx, imageID, metav1.GetOptions{})
-					if errors.IsNotFound(err) {
-						klog.V(4).Infof("No image %s (%s)", imageID, time.Since(start).Round(time.Millisecond).String())
+					image := imageFromID(ctx, imageClient, imageID)
+					if image == nil {
 						continue
 					}
-					if err == context.Canceled {
-						return
-					}
-					if err != nil {
-						klog.Errorf("Unable to retrieve image %s", imageID)
-						continue
-					}
-					klog.V(4).Infof("Found image %s (%s)", imageID, time.Since(start).Round(time.Millisecond).String())
 					info := calculateWorkloadInfo(h, image)
 					images[imageID] = info
 					workloadImageAdd(imageID, info)
@@ -296,7 +321,42 @@ func gatherWorkloadImageInfo(
 			}
 		}
 	}()
-	return imagesDoneCh
+	return imageCh, imagesDoneCh
+}
+
+// readImageSHAs drains the channel of any image IDs
+func readImageSHAs(pendingIDs map[string]struct{}, images map[string]workloadImage, id string, imageCh <-chan string) {
+	if _, ok := images[id]; !ok {
+		pendingIDs[id] = struct{}{}
+	}
+	for l := len(imageCh); l > 0; l = len(imageCh) {
+		for i := 0; i < l; i++ {
+			imageID := <-imageCh
+			if _, ok := images[imageID]; !ok {
+				pendingIDs[imageID] = struct{}{}
+			}
+		}
+	}
+}
+
+// imageFromID gets the container image from given ID
+func imageFromID(ctx context.Context, client imageclient.ImageInterface, id string) *imagev1.Image {
+	start := time.Now()
+	image, err := client.Get(ctx, id, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		klog.V(4).Infof("No image %s (%s)", id, time.Since(start).Round(time.Millisecond).String())
+		return nil
+	}
+	if err == context.Canceled {
+		return nil
+	}
+	if err != nil {
+		klog.Errorf("Unable to retrieve image %s", id)
+		return nil
+	}
+
+	klog.V(4).Infof("Found image %s (%s)", id, time.Since(start).Round(time.Millisecond).String())
+	return image
 }
 
 // workloadPodShapeIndex attempts to find an equivalent shape within the current
