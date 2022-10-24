@@ -46,7 +46,7 @@ var (
 	openshiftLoggingResource = schema.GroupVersionResource{
 		Group: "logging.openshift.io", Version: "v1", Resource: "clusterloggings",
 	}
-	openshiftStorageResource = schema.GroupVersionResource{
+	storageClusterResource = schema.GroupVersionResource{
 		Group: "ocs.openshift.io", Version: "v1", Resource: "storageclusters",
 	}
 	cephClustereResource = schema.GroupVersionResource{

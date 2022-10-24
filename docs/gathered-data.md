@@ -59,7 +59,7 @@ API Reference:
 
 	https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 
-* Location in archive: config/storage/<namespace>/<name>.json
+* Location in archive: config/storage/{namespace}/cephclusters/{name}.json
 * Id in config: clusterconfig/ceph_cluster
 * Since versions:
   - 4.12+
@@ -788,21 +788,6 @@ Response see:
   - 4.7+
 
 
-## OpenshiftStorage
-
-collects `storageclusters.ocs.openshift.io` resources
-from Openshift Data Foundation Stack.
-
-API Reference:
-
-	https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
-
-* Location in archive: config/storage/<namespace>/<name>.json
-* Id in config: clusterconfig/openshift_storage
-* Since versions:
-  - 4.11+
-
-
 ## PNCC
 
 collects a summary of failed PodNetworkConnectivityChecks from
@@ -977,6 +962,23 @@ gathers the alerts that have been silenced.
 * Id in config: clusterconfig/silenced_alerts
 * Since version:
   - 4.10+
+
+
+## StorageCluster
+
+collects `storageclusters.ocs.openshift.io` resources
+from Openshift Data Foundation Stack.
+
+API Reference:
+
+	https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+* Location in archive:
+	 - 4.11.z : config/storage/{namespace}/{name}.json
+	 - 4.12+  : config/storage/{namespace}/storageclusters/{name}.json
+* Id in config: clusterconfig/storage_cluster
+* Since versions:
+  - 4.11+
 
 
 ## SupportSecret

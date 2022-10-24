@@ -5,11 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift/insights-operator/pkg/record"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherCephCluster collects statuses of the`cephclusters.ceph.rook.io` resources
@@ -19,7 +20,7 @@ import (
 //
 //	https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 //
-// * Location in archive: config/storage/<namespace>/<name>.json
+// * Location in archive: config/storage/{namespace}/cephclusters/{name}.json
 // * Id in config: clusterconfig/ceph_cluster
 // * Since versions:
 //   - 4.12+
@@ -47,7 +48,7 @@ func gatherCephCluster(ctx context.Context, dynamicClient dynamic.Interface) ([]
 		item := &cephClusterList.Items[i]
 		status := item.Object["status"]
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/storage/%s/%s", item.GetNamespace(), item.GetName()),
+			Name: fmt.Sprintf("config/storage/%s/%s/%s", item.GetNamespace(), cephClustereResource.Resource, item.GetName()),
 			Item: record.JSONMarshaller{Object: status},
 		})
 	}
