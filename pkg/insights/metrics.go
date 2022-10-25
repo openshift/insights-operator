@@ -45,7 +45,7 @@ func (c *InsightsRecommendationCollector) SetClusterID(clusterID v1.ClusterID) {
 	c.clusterID = clusterID
 }
 
-func (c *InsightsRecommendationCollector) GetClusterID() v1.ClusterID {
+func (c *InsightsRecommendationCollector) ClusterID() v1.ClusterID {
 	return c.clusterID
 }
 

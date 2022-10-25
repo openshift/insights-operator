@@ -243,7 +243,10 @@ func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
 	klog.V(2).Infof("Initial config: %v", c.configurator.Config())
-	clusterVersion, _ := c.client.GetClusterVersion()
+	clusterVersion, err := c.client.GetClusterVersion()
+	if err != nil {
+		return
+	}
 	insights.RecommendationCollector.SetClusterID(clusterVersion.Spec.ClusterID)
 	for {
 		// always wait for new uploaded archive or insights-operator ends
@@ -340,7 +343,7 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 			Description: rule.Description,
 			TotalRisk:   int32(rule.TotalRisk),
 			State:       v1.HealthCheckEnabled,
-			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", insights.RecommendationCollector.GetClusterID(), ruleIDStr, errorKey),
+			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", insights.RecommendationCollector.ClusterID(), ruleIDStr, errorKey),
 		}
 
 		if rule.Disabled {

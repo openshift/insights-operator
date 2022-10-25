@@ -27,7 +27,6 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/insights-operator/pkg/insights"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 )
@@ -174,9 +173,6 @@ func (c *Client) GetClusterVersion() (*configv1.ClusterVersion, error) {
 	}
 
 	cv, err := gatherConfigClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
-		return nil, nil
-	}
 	if err != nil {
 		return nil, err
 	}
