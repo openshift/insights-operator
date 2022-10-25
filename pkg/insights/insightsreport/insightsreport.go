@@ -140,11 +140,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, fmt.Errorf("report not updated")
 	}
 
-	recommendations, healthStatus, gatherTime, err := c.readInsightsReport(reportResponse.Report)
-	if err != nil {
-		klog.Errorf("failed to read the Insights Operator Report")
-		return true, err
-	}
+	recommendations, healthStatus, gatherTime := c.readInsightsReport(reportResponse.Report)
 	updateInsightsMetrics(recommendations, healthStatus, gatherTime)
 	err = c.updateOperatorStatusCR(reportResponse.Report)
 	if err != nil {
@@ -247,7 +243,8 @@ func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
 	klog.V(2).Infof("Initial config: %v", c.configurator.Config())
-
+	clusterVersion, _ := c.client.GetClusterVersion()
+	insights.RecommendationCollector.SetClusterID(clusterVersion.Spec.ClusterID)
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
@@ -265,16 +262,10 @@ type healthStatusCounts struct {
 	critical, important, moderate, low, total int
 }
 
-func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time, error) {
+func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time) {
 	healthStatus := healthStatusCounts{}
 	healthStatus.total = report.Meta.Count
 	activeRecommendations := []types.InsightsRecommendation{}
-
-	clusterVersion, err := c.client.GetClusterVersion()
-	if err != nil {
-		klog.Errorf("Unable to extract cluster version: %v", err)
-		return nil, healthStatus, time.Time{}, err
-	}
 
 	for _, rule := range report.Data {
 		if rule.Disabled {
@@ -307,7 +298,6 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 			ErrorKey:    errorKeyStr,
 			Description: rule.Description,
 			TotalRisk:   rule.TotalRisk,
-			ClusterID:   clusterVersion.Spec.ClusterID,
 		})
 	}
 
@@ -315,7 +305,7 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 	if err != nil {
 		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTimeName, err)
 	}
-	return activeRecommendations, healthStatus, t, nil
+	return activeRecommendations, healthStatus, t
 }
 
 // updateInsightsMetrics update the Prometheus metrics from a report
@@ -339,11 +329,6 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 	updatedOperatorCR := insightsOperatorCR.DeepCopy()
 	var healthChecks []v1.HealthCheck
 
-	clusterVersion, err := c.client.GetClusterVersion()
-	if err != nil {
-		return err
-	}
-
 	for _, rule := range report.Data {
 		errorKey, err := extractErrorKeyFromRuleData(rule)
 		if err != nil {
@@ -355,7 +340,7 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 			Description: rule.Description,
 			TotalRisk:   int32(rule.TotalRisk),
 			State:       v1.HealthCheckEnabled,
-			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", clusterVersion.Spec.ClusterID, ruleIDStr, errorKey),
+			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", insights.RecommendationCollector.GetClusterID(), ruleIDStr, errorKey),
 		}
 
 		if rule.Disabled {

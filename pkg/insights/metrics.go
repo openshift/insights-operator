@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	semver "github.com/blang/semver/v4"
+	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/component-base/metrics"
@@ -37,6 +38,15 @@ func init() {
 type InsightsRecommendationCollector struct {
 	activeRecommendations []types.InsightsRecommendation
 	metricName            string
+	clusterID             v1.ClusterID
+}
+
+func (c *InsightsRecommendationCollector) SetClusterID(clusterID v1.ClusterID) {
+	c.clusterID = clusterID
+}
+
+func (c *InsightsRecommendationCollector) GetClusterID() v1.ClusterID {
+	return c.clusterID
 }
 
 func (c *InsightsRecommendationCollector) SetActiveRecommendations(activeRecommendations []types.InsightsRecommendation) {
@@ -57,7 +67,7 @@ func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.NewDesc(c.metricName, "", []string{}, prometheus.Labels{
 				"description": rec.Description,
 				"total_risk":  totalRiskToStr(rec.TotalRisk),
-				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", rec.ClusterID, ruleIDStr, rec.ErrorKey),
+				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", c.clusterID, ruleIDStr, rec.ErrorKey),
 			}),
 			prometheus.GaugeValue,
 			1,

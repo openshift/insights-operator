@@ -4,27 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Test_readInsightsReport(t *testing.T) {
-	tclient := &insightsclient.Client{}
-	tclient.SetClusterVersion(
-		&v1.ClusterVersion{
-			TypeMeta:   metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec: v1.ClusterVersionSpec{
-				ClusterID: v1.ClusterID("0000 0000 0000 0000"),
-			},
-			Status: v1.ClusterVersionStatus{},
-		},
-	)
-
 	tests := []struct {
 		name                          string
 		testController                *Controller
@@ -39,7 +24,6 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
-				client: tclient,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -92,28 +76,24 @@ func Test_readInsightsReport(t *testing.T) {
 					ErrorKey:    "test error key 1",
 					Description: "test rule description 1",
 					TotalRisk:   2,
-					ClusterID:   v1.ClusterID("0000 0000 0000 0000"),
 				},
 				{
 					RuleID:      "ccx.dev.super.recommendation",
 					ErrorKey:    "test error key 2",
 					Description: "test rule description 2",
 					TotalRisk:   1,
-					ClusterID:   v1.ClusterID("0000 0000 0000 0000"),
 				},
 				{
 					RuleID:      "ccx.dev.cool.recommendation",
 					ErrorKey:    "test error key 3",
 					Description: "test rule description 3",
 					TotalRisk:   3,
-					ClusterID:   v1.ClusterID("0000 0000 0000 0000"),
 				},
 				{
 					RuleID:      "ccx.dev.ultra.recommendation",
 					ErrorKey:    "test error key 4",
 					Description: "test rule description 4",
 					TotalRisk:   1,
-					ClusterID:   v1.ClusterID("0000 0000 0000 0000"),
 				},
 			},
 			expectedHealthStatus: healthStatusCounts{
@@ -131,7 +111,6 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
-				client: tclient,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -184,14 +163,12 @@ func Test_readInsightsReport(t *testing.T) {
 					ErrorKey:    "test error key 1",
 					Description: "test rule description 1",
 					TotalRisk:   2,
-					ClusterID:   v1.ClusterID("0000 0000 0000 0000"),
 				},
 				{
 					RuleID:      "ccx.dev.cool.recommendation",
 					ErrorKey:    "test error key 3",
 					Description: "test rule description 3",
 					TotalRisk:   3,
-					ClusterID:   v1.ClusterID("0000 0000 0000 0000"),
 				},
 			},
 			expectedHealthStatus: healthStatusCounts{
@@ -209,7 +186,6 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: true,
 				}),
-				client: tclient,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -252,7 +228,7 @@ func Test_readInsightsReport(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			activeRecommendations, healthStatus, gatherTime, _ := tc.testController.readInsightsReport(tc.report)
+			activeRecommendations, healthStatus, gatherTime := tc.testController.readInsightsReport(tc.report)
 			assert.Equal(t, tc.expectedActiveRecommendations, activeRecommendations)
 			assert.Equal(t, tc.expectedHealthStatus, healthStatus)
 			assert.Equal(t, tc.expectedGatherTime, gatherTime.String())
