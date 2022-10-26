@@ -12,6 +12,7 @@ import (
 	"k8s.io/component-base/metrics"
 	"k8s.io/klog/v2"
 
+	configv1 "github.com/openshift/api/config/v1"
 	v1 "github.com/openshift/api/operator/v1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/authorizer"
@@ -28,7 +29,7 @@ type Controller struct {
 	controllerstatus.StatusController
 
 	configurator          configobserver.Configurator
-	client                *insightsclient.Client
+	client                Client
 	LastReport            types.SmartProxyReport
 	archiveUploadReporter <-chan struct{}
 	insightsOperatorCLI   operatorv1client.InsightsOperatorInterface
@@ -243,11 +244,6 @@ func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
 	klog.V(2).Infof("Initial config: %v", c.configurator.Config())
-	clusterVersion, err := c.client.GetClusterVersion()
-	if err != nil {
-		return
-	}
-	insights.RecommendationCollector.SetClusterID(clusterVersion.Spec.ClusterID)
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
@@ -263,6 +259,12 @@ func (c *Controller) Run(ctx context.Context) {
 
 type healthStatusCounts struct {
 	critical, important, moderate, low, total int
+}
+
+type Client interface {
+	RecvReport(ctx context.Context, endpoint string) (*http.Response, error)
+	IncrementRecvReportMetric(statusCode int)
+	GetClusterVersion() (*configv1.ClusterVersion, error)
 }
 
 func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time) {
@@ -295,6 +297,12 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 			klog.Errorf("Unable to extract recommendation's error key: %v", err)
 			continue
 		}
+		clusterVersion, err := c.client.GetClusterVersion()
+		if err != nil {
+			klog.Errorf("Unable to extract cluster version. Error: %v", err)
+			continue
+		}
+		insights.RecommendationCollector.SetClusterID(clusterVersion.Spec.ClusterID)
 
 		activeRecommendations = append(activeRecommendations, types.InsightsRecommendation{
 			RuleID:      rule.RuleID,

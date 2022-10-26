@@ -1,15 +1,28 @@
 package insightsreport
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"strconv"
 	"testing"
 
+	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/component-base/metrics"
 )
 
 func Test_readInsightsReport(t *testing.T) {
+	client := MockInsightsClient{
+		clusterVersion: &v1.ClusterVersion{
+			Spec: v1.ClusterVersionSpec{
+				ClusterID: v1.ClusterID("0000 0000 0000 0000"),
+			},
+		},
+		metricsName: "yeet",
+	}
 	tests := []struct {
 		name                          string
 		testController                *Controller
@@ -24,6 +37,7 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
+				client: &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -111,6 +125,7 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
+				client: &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -186,6 +201,7 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: true,
 				}),
+				client: &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -295,3 +311,25 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 		})
 	}
 }
+
+type MockInsightsClient struct {
+	clusterVersion *v1.ClusterVersion
+	metricsName    string
+}
+
+func (c *MockInsightsClient) GetClusterVersion() (*v1.ClusterVersion, error) {
+	return c.clusterVersion, nil
+}
+
+func (c *MockInsightsClient) IncrementRecvReportMetric(statusCode int) {
+	counterRequestRecvReport.WithLabelValues(c.metricsName, strconv.Itoa(statusCode)).Inc()
+}
+
+func (c *MockInsightsClient) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
+	return nil, nil
+}
+
+var counterRequestRecvReport = metrics.NewCounterVec(&metrics.CounterOpts{
+	Name: "insightsclient_request_recvreport_total",
+	Help: "Tracks the number of insights reports received/downloaded",
+}, []string{"client", "status_code"})
