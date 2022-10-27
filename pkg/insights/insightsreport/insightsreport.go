@@ -29,7 +29,7 @@ type Controller struct {
 	controllerstatus.StatusController
 
 	configurator          configobserver.Configurator
-	client                Client
+	client                insightsReportClient
 	LastReport            types.SmartProxyReport
 	archiveUploadReporter <-chan struct{}
 	insightsOperatorCLI   operatorv1client.InsightsOperatorInterface
@@ -261,7 +261,7 @@ type healthStatusCounts struct {
 	critical, important, moderate, low, total int
 }
 
-type Client interface {
+type insightsReportClient interface {
 	RecvReport(ctx context.Context, endpoint string) (*http.Response, error)
 	IncrementRecvReportMetric(statusCode int)
 	GetClusterVersion() (*configv1.ClusterVersion, error)
