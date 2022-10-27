@@ -1,8 +1,8 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 24aeaa5b82e3828883faafd351f530abddf484d7-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 04a37c252824112a59efe7caeb2c35b25abacddc-->
 ## 4.11
 
-### Enhancement
+### Data Enhancement
 - [#625](https://github.com/openshift/insights-operator/pull/625) gather io configuration
 - [#627](https://github.com/openshift/insights-operator/pull/627) Console helm metrics
 - [#603](https://github.com/openshift/insights-operator/pull/603) Implement fingerprint for records
@@ -60,7 +60,7 @@
 
 ## 4.10
 
-### Enhancement
+### Data Enhancement
 - [#563](https://github.com/openshift/insights-operator/pull/563) conditional log gathers into a single gather and PrometheusOperatorSyncFailed
 - [#557](https://github.com/openshift/insights-operator/pull/557) limit number of containers per namespace
 - [#558](https://github.com/openshift/insights-operator/pull/558) Collect Info about Openshift scheduler
@@ -123,7 +123,7 @@
 
 ## 4.9
 
-### Enhancement
+### Data Enhancement
 - [#489](https://github.com/openshift/insights-operator/pull/489) Gather installed PSP names
 - [#487](https://github.com/openshift/insights-operator/pull/487) Conditional data gathering validation & refactoring
 - [#476](https://github.com/openshift/insights-operator/pull/476) Gather Openshift Logging Stack Data
@@ -168,7 +168,7 @@
 
 ## 4.8
 
-### Enhancement
+### Data Enhancement
 - [#438](https://github.com/openshift/insights-operator/pull/438) Gather MachineAutoscalers definitions
 - [#442](https://github.com/openshift/insights-operator/pull/442) include full timestamps in the logs
 - [#432](https://github.com/openshift/insights-operator/pull/432) Replace gather-job image without FQDN
@@ -260,7 +260,7 @@
 
 ## 4.7
 
-### Enhancement
+### Data Enhancement
 - [#327](https://github.com/openshift/insights-operator/pull/327) collect invalid resource name error from logs 
 - [#316](https://github.com/openshift/insights-operator/pull/316) Gather list of OLM operator names and versions & minor clean up
 - [#319](https://github.com/openshift/insights-operator/pull/319) Gather PersistentVolume definition (if any) used in Image registry st…

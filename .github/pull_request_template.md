@@ -5,7 +5,8 @@ This PR implements a new data enhancement to...
 <!-- Select the categories that your PR better fits on -->
 
 - [ ] Bugfix
-- [X] Enhancement
+- [X] Data Enhancement
+- [ ] Feature
 - [ ] Backporting
 - [ ] Others (CI, Infrastructure, Documentation)
 
