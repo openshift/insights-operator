@@ -12,16 +12,17 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // Send uploads archives to Ingress service
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
+	if apierrors.IsNotFound(err) {
+		return ErrWaitingForVersion
+	}
 	if err != nil {
 		return err
-	}
-	if cv == nil {
-		return ErrWaitingForVersion
 	}
 
 	req, err := c.prepareRequest(ctx, http.MethodPost, endpoint, cv)
@@ -87,12 +88,12 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 
 // RecvReport performs a request to Insights Results Smart Proxy endpoint
 func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
+	if apierrors.IsNotFound(err) {
+		return nil, ErrWaitingForVersion
+	}
 	if err != nil {
 		return nil, err
-	}
-	if cv == nil {
-		return nil, ErrWaitingForVersion
 	}
 
 	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID)
@@ -169,12 +170,12 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 }
 
 func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error) {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
+	if apierrors.IsNotFound(err) {
+		return nil, ErrWaitingForVersion
+	}
 	if err != nil {
 		return nil, err
-	}
-	if cv == nil {
-		return nil, ErrWaitingForVersion
 	}
 	token, err := c.authorizer.Token()
 	if err != nil {
@@ -213,12 +214,12 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 	klog.Infof(
 		`Preparing a request to Insights Operator Gathering Conditions Service at the endpoint "%v"`, endpoint,
 	)
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
+	if apierrors.IsNotFound(err) {
+		return nil, ErrWaitingForVersion
+	}
 	if err != nil {
 		return nil, err
-	}
-	if cv == nil {
-		return nil, ErrWaitingForVersion
 	}
 
 	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
@@ -251,12 +252,12 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 // It is a HTTP GET request with the `search` query parameter limiting the result
 // only for the one cluster and only for the `accepted` cluster transfers.
 func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
-	cv, err := c.getClusterVersion()
+	cv, err := c.GetClusterVersion()
+	if apierrors.IsNotFound(err) {
+		return nil, ErrWaitingForVersion
+	}
 	if err != nil {
 		return nil, err
-	}
-	if cv == nil {
-		return nil, ErrWaitingForVersion
 	}
 	token, err := c.authorizer.Token()
 	if err != nil {

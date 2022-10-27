@@ -1,15 +1,26 @@
 package insightsreport
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
+	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_readInsightsReport(t *testing.T) {
+	client := mockInsightsClient{
+		clusterVersion: &v1.ClusterVersion{
+			Spec: v1.ClusterVersionSpec{
+				ClusterID: v1.ClusterID("0000 0000 0000 0000"),
+			},
+		},
+		metricsName: "yeet",
+	}
 	tests := []struct {
 		name                          string
 		testController                *Controller
@@ -24,6 +35,7 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
+				client: &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -111,6 +123,7 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: false,
 				}),
+				client: &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -186,6 +199,7 @@ func Test_readInsightsReport(t *testing.T) {
 				configurator: config.NewMockSecretConfigurator(&config.Controller{
 					DisableInsightsAlerts: true,
 				}),
+				client: &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -294,4 +308,20 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 			assert.Equal(t, tt.expectedError, err)
 		})
 	}
+}
+
+type mockInsightsClient struct {
+	clusterVersion *v1.ClusterVersion
+	metricsName    string
+}
+
+func (c *mockInsightsClient) GetClusterVersion() (*v1.ClusterVersion, error) {
+	return c.clusterVersion, nil
+}
+
+func (c *mockInsightsClient) IncrementRecvReportMetric(statusCode int) {
+}
+
+func (c *mockInsightsClient) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
+	return nil, nil
 }
