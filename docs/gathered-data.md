@@ -18,7 +18,7 @@ resources mentioned in the alert provided as a string parameter
 Params is of type AlertIsFiringConditionParams:
   - alert_name string - name of the firing alert
 
-* Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
+* Location in archive: conditional/alerts/{alert_name}/api_request_counts.json
 * Id in config: conditional/api_request_counts_of_resource_from_alert
 * Since versions:
   - 4.10+
@@ -334,7 +334,7 @@ Response see:
 
 collects either current or previous containers logs for pods firing one of the configured alerts.
 
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
+* Location in archive: conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log
 * Id in config: conditional/containers_logs
 * Since versions:
   - 4.10+
@@ -343,7 +343,7 @@ collects either current or previous containers logs for pods firing one of the c
 ## CostManagementMetricsConfigs
 
 collects CostManagementMetricsConfigs definitions.
-* Location in archive: config/cost_management_metrics_configs/<name>.json
+* Location in archive: config/cost_management_metrics_configs/{name}.json
 * Id in config: clusterconfig/cost_management_metrics_configs
 * Since versions:
   - 4.8.27+
@@ -510,7 +510,7 @@ collects MachineConfigs definitions. Following data is intentionally removed fro
 
 Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
 
-* Location in archive: config/machineconfigs/<name>.json
+* Location in archive: config/machineconfigs/{name}.json
 * Id in config: clusterconfig/machine_configs
 * Since versions:
   - 4.8.5+
@@ -640,7 +640,7 @@ fetches control plane node logs from journal unit
 
 Response see https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
 
-* Location in archive: config/nodes/logs/<hostname>.log
+* Location in archive: config/nodes/logs/{hostname}.log
 * See: docs/insights-archive-sample/config/nodes/logs
 * Id in config: clusterconfig/node_logs
 * Since versions:
@@ -719,7 +719,7 @@ API Reference:
 
 	https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 
-* Location in archive: config/logging/<namespace>/<name>.json
+* Location in archive: config/logging/{namespace}/{name}.json
 * Id in config: clusterconfig/openshift_logging
 * Since versions:
   - 4.9+
@@ -807,7 +807,7 @@ Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcon
 
 collects pod definition from pods that are firing one of the configured alerts.
 
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/<pod>.json
+* Location in archive: conditional/namespaces/{namespace}/pods/{pod}/{pod}.json
 * Id in config: conditional/pod_definition
 * Since versions:
   - 4.11+
@@ -851,7 +851,7 @@ Relevant OpenShift API docs:
 
 collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
-* Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+* Location in archive: customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json
 * Id in config: clusterconfig/sap_datahubs
 * Since versions:
   - 4.7.5+
