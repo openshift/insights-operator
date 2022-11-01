@@ -1,0 +1,201 @@
+{
+    "apiVersion": "ocs.openshift.io/v1",
+    "kind": "StorageCluster",
+    "metadata": {
+        "annotations": {
+            "uninstall.ocs.openshift.io/cleanup-policy": "delete",
+            "uninstall.ocs.openshift.io/mode": "graceful"
+        },
+        "creationTimestamp": "2022-11-01T10:26:04Z",
+        "finalizers": [
+            "storagecluster.ocs.openshift.io"
+        ],
+        "generation": 2,
+        "name": "ocs-storagecluster",
+        "namespace": "openshift-storage",
+        "ownerReferences": [
+            {
+                "apiVersion": "odf.openshift.io/v1alpha1",
+                "kind": "StorageSystem",
+                "name": "ocs-storagecluster-storagesystem",
+                "uid": "5457eb7e-3ed2-4345-a85c-0748a74a4f10"
+            }
+        ],
+        "resourceVersion": "38169",
+        "uid": "fba50e66-079e-463b-884c-a8855b88706f"
+    },
+    "spec": {
+        "arbiter": {},
+        "encryption": {
+            "kms": {}
+        },
+        "externalStorage": {},
+        "managedResources": {
+            "cephBlockPools": {},
+            "cephCluster": {},
+            "cephConfig": {},
+            "cephDashboard": {},
+            "cephFilesystems": {},
+            "cephObjectStoreUsers": {},
+            "cephObjectStores": {},
+            "cephToolbox": {}
+        },
+        "mirroring": {},
+        "nodeTopologies": {},
+        "resources": {
+            "mds": {
+                "limits": {
+                    "cpu": "3",
+                    "memory": "8Gi"
+                },
+                "requests": {
+                    "cpu": "1",
+                    "memory": "8Gi"
+                }
+            },
+            "rgw": {
+                "limits": {
+                    "cpu": "2",
+                    "memory": "4Gi"
+                },
+                "requests": {
+                    "cpu": "1",
+                    "memory": "4Gi"
+                }
+            }
+        },
+        "storageDeviceSets": [
+            {
+                "config": {},
+                "count": 1,
+                "dataPVCTemplate": {
+                    "metadata": {},
+                    "spec": {
+                        "accessModes": [
+                            "ReadWriteOnce"
+                        ],
+                        "resources": {
+                            "requests": {
+                                "storage": "512Gi"
+                            }
+                        },
+                        "storageClassName": "gp2",
+                        "volumeMode": "Block"
+                    },
+                    "status": {}
+                },
+                "name": "ocs-deviceset-gp2",
+                "placement": {},
+                "portable": true,
+                "preparePlacement": {},
+                "replica": 3,
+                "resources": {
+                    "limits": {
+                        "cpu": "2",
+                        "memory": "5Gi"
+                    },
+                    "requests": {
+                        "cpu": "1",
+                        "memory": "5Gi"
+                    }
+                }
+            }
+        ],
+        "version": "4.11.0"
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastHeartbeatTime": "2022-11-01T10:26:47Z",
+                "lastTransitionTime": "2022-11-01T10:26:05Z",
+                "message": "Error while reconciling: some StorageClasses [ocs-storagecluster-cephfs,ocs-storagecluster-ceph-rbd] were skipped while waiting for pre-requisites to be met",
+                "reason": "ReconcileFailed",
+                "status": "False",
+                "type": "ReconcileComplete"
+            },
+            {
+                "lastHeartbeatTime": "2022-11-01T10:26:05Z",
+                "lastTransitionTime": "2022-11-01T10:26:05Z",
+                "message": "Initializing StorageCluster",
+                "reason": "Init",
+                "status": "False",
+                "type": "Available"
+            },
+            {
+                "lastHeartbeatTime": "2022-11-01T10:26:05Z",
+                "lastTransitionTime": "2022-11-01T10:26:05Z",
+                "message": "Initializing StorageCluster",
+                "reason": "Init",
+                "status": "True",
+                "type": "Progressing"
+            },
+            {
+                "lastHeartbeatTime": "2022-11-01T10:26:05Z",
+                "lastTransitionTime": "2022-11-01T10:26:05Z",
+                "message": "Initializing StorageCluster",
+                "reason": "Init",
+                "status": "False",
+                "type": "Degraded"
+            },
+            {
+                "lastHeartbeatTime": "2022-11-01T10:26:05Z",
+                "lastTransitionTime": "2022-11-01T10:26:05Z",
+                "message": "Initializing StorageCluster",
+                "reason": "Init",
+                "status": "Unknown",
+                "type": "Upgradeable"
+            }
+        ],
+        "externalStorage": {
+            "grantedCapacity": "0"
+        },
+        "failureDomain": "zone",
+        "failureDomainKey": "topology.kubernetes.io/zone",
+        "failureDomainValues": [
+            "us-east-2b",
+            "us-east-2c",
+            "us-east-2a"
+        ],
+        "images": {
+            "ceph": {
+                "actualImage": "registry.redhat.io/rhceph/rhceph-5-rhel8@sha256:7892e9da0a70b2d7e3efd98d2cb980e485f07eddff6a0dac6d6bd6c516914f3c",
+                "desiredImage": "registry.redhat.io/rhceph/rhceph-5-rhel8@sha256:7892e9da0a70b2d7e3efd98d2cb980e485f07eddff6a0dac6d6bd6c516914f3c"
+            },
+            "noobaaCore": {
+                "desiredImage": "registry.redhat.io/odf4/mcg-core-rhel8@sha256:75e4362cb1e47ef4978b798719491448d5d8f2447a3618d32d4434e83fc7c114"
+            },
+            "noobaaDB": {
+                "desiredImage": "registry.redhat.io/rhel8/postgresql-12@sha256:22d9a196645625a312d0e33d409c063603d5eaa8ebc1db4971a4643d25b01b65"
+            }
+        },
+        "kmsServerConnection": {},
+        "nodeTopologies": {
+            "labels": {
+                "kubernetes.io/hostname": [
+                    "ip-10-0-191-163.us-east-2.compute.internal",
+                    "ip-10-0-217-134.us-east-2.compute.internal",
+                    "ip-10-0-158-62.us-east-2.compute.internal"
+                ],
+                "topology.kubernetes.io/region": [
+                    "us-east-2"
+                ],
+                "topology.kubernetes.io/zone": [
+                    "us-east-2b",
+                    "us-east-2c",
+                    "us-east-2a"
+                ]
+            }
+        },
+        "phase": "Error",
+        "relatedObjects": [
+            {
+                "apiVersion": "ceph.rook.io/v1",
+                "kind": "CephCluster",
+                "name": "ocs-storagecluster-cephcluster",
+                "namespace": "openshift-storage",
+                "resourceVersion": "37853",
+                "uid": "4bbe4d26-7d1d-4ae1-ac1e-5e33c2f965c1"
+            }
+        ]
+    }
+}
