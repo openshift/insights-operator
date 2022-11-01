@@ -52,17 +52,29 @@ The CRD sizes above are in the raw (uncompressed) state.
 
 ## CephCluster
 
-collects statuses of the`cephclusters.ceph.rook.io` resources
+Collects statuses of the`cephclusters.ceph.rook.io` resources
 from Openshift Data Foundation Stack.
 
-API Reference:
+### API Reference:
+https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 
-	https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
+### Sample data:
+docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json
 
-* Location in archive: config/storage/{namespace}/cephclusters/{name}.json
-* Id in config: clusterconfig/ceph_cluster
-* Since versions:
-  - 4.12+
+### Location in archive:
+| Version | Path													 |
+| ------- | ----------------------------------------------------- |
+| <= 4.11 | config/storage/{namespace}/cephclusters/{name}.json 	 |
+| 4.12+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
+
+### Config ID:
+clusterconfig/ceph_cluster
+
+### Since versions:
+* 4.8.24
+* 4.9.23
+* 4.10.17
+* 4.11.0
 
 
 ## CertificateSigningRequests
@@ -966,19 +978,28 @@ gathers the alerts that have been silenced.
 
 ## StorageCluster
 
-collects `storageclusters.ocs.openshift.io` resources
+Collects `storageclusters.ocs.openshift.io` resources
 from Openshift Data Foundation Stack.
 
-API Reference:
+### API Reference:
+https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
 
-	https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+### Sample data
+docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
 
-* Location in archive:
-	 - 4.11.z : config/storage/{namespace}/{name}.json
-	 - 4.12+  : config/storage/{namespace}/storageclusters/{name}.json
-* Id in config: clusterconfig/storage_cluster
-* Since versions:
-  - 4.11+
+### Location in archive:
+| Version | Path														|
+| ------- | --------------------------------------------------------	|
+| <= 4.11 | config/storage/{namespace}/{name}.json 					|
+| 4.12+   | config/storage/{namespace}/storageclusters/{name}.json 	|
+
+### Config ID:
+clusterconfig/storage_cluster
+
+### Since versions:
+* 4.8.49+
+* 4.10.30+
+* 4.11.0+
 
 
 ## SupportSecret

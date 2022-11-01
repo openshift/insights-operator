@@ -14,19 +14,28 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherStorageCluster collects `storageclusters.ocs.openshift.io` resources
+// GatherStorageCluster Collects `storageclusters.ocs.openshift.io` resources
 // from Openshift Data Foundation Stack.
 //
-// API Reference:
+// ### API Reference:
+// https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
 //
-//	https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+// ### Sample data
+// docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
 //
-// * Location in archive:
-//	 - 4.11.z : config/storage/{namespace}/{name}.json
-//	 - 4.12+  : config/storage/{namespace}/storageclusters/{name}.json
-// * Id in config: clusterconfig/storage_cluster
-// * Since versions:
-//   - 4.11+
+// ### Location in archive:
+// | Version | Path														|
+// | ------- | --------------------------------------------------------	|
+// | <= 4.12 | config/storage/{namespace}/{name}.json 					|
+// | >= 4.13 | config/storage/{namespace}/storageclusters/{name}.json 	|
+//
+// ### Config ID:
+// clusterconfig/storage_cluster
+//
+// ### Since versions:
+// * 4.8.49
+// * 4.10.30
+// * 4.11
 func (g *Gatherer) GatherStorageCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
