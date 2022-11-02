@@ -47,6 +47,7 @@ var (
 	categories = map[string]*regexp.Regexp{
 		BUGFIX:          regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BUGFIX)),
 		DATAENHANCEMENT: regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, DATAENHANCEMENT)),
+		ENHANCEMENT:     regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, ENHANCEMENT)),
 		FEATURE:         regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, FEATURE)),
 		OTHER:           regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, OTHER)),
 		BACKPORTING:     regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BACKPORTING)),
@@ -190,6 +191,9 @@ func updateToMarkdownReleaseBlock(releaseBlocks map[ReleaseVersion]MarkdownRelea
 			tmp.others = ch.toMarkdown() + tmp.others
 			releaseBlocks[ch.release] = tmp
 		} else if ch.category == DATAENHANCEMENT {
+			tmp.dataEnhancements = ch.toMarkdown() + tmp.dataEnhancements
+			releaseBlocks[ch.release] = tmp
+		} else if ch.category == ENHANCEMENT {
 			tmp.dataEnhancements = ch.toMarkdown() + tmp.dataEnhancements
 			releaseBlocks[ch.release] = tmp
 		} else if ch.category == FEATURE {
