@@ -999,8 +999,8 @@ docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/oc
 ### Config ID:
 clusterconfig/storage_cluster
 
-### Since versions:
-* 4.11 🚀
+### Released version:
+* 4.11
 
 
 ## SupportSecret
