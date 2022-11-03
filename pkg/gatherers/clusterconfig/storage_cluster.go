@@ -27,12 +27,12 @@ import (
 // | Version | Path														|
 // | ------- | --------------------------------------------------------	|
 // | <= 4.12 | config/storage/{namespace}/{name}.json 					|
-// | >= 4.13 | config/storage/{namespace}/storageclusters/{name}.json 	|
+// | 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
 //
 // ### Config ID:
 // clusterconfig/storage_cluster
 //
-// ### Released version:
+// ### Since versions:
 // * 4.11
 func (g *Gatherer) GatherStorageCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

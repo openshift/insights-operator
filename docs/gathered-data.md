@@ -65,19 +65,17 @@ docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-s
 | Version | Path													 |
 | ------- | ----------------------------------------------------- |
 | <= 4.12 | config/storage/{namespace}/{name}.json 				 |
-| >= 4.13 | config/storage/{namespace}/cephclusters/{name}.json 	 |
+| 4.13+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
 
 ### Config ID:
 clusterconfig/ceph_cluster
 
-### Released version:
-* 4.12
-
-### Backport versions:
+### Since versions:
 * 4.8.49
 * 4.9.48
 * 4.10.31
 * 4.11.2
+* 4.12
 
 
 ## CertificateSigningRequests
@@ -994,12 +992,12 @@ docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/oc
 | Version | Path														|
 | ------- | --------------------------------------------------------	|
 | <= 4.12 | config/storage/{namespace}/{name}.json 					|
-| >= 4.13 | config/storage/{namespace}/storageclusters/{name}.json 	|
+| 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
 
 ### Config ID:
 clusterconfig/storage_cluster
 
-### Released version:
+### Since versions:
 * 4.11
 
 

@@ -26,19 +26,17 @@ import (
 // | Version | Path													 |
 // | ------- | ----------------------------------------------------- |
 // | <= 4.12 | config/storage/{namespace}/{name}.json 				 |
-// | >= 4.13 | config/storage/{namespace}/cephclusters/{name}.json 	 |
+// | 4.13+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
 //
 // ### Config ID:
 // clusterconfig/ceph_cluster
 //
-// ### Released version:
-// * 4.12
-//
-// ### Backport versions:
+// ### Since versions:
 // * 4.8.49
 // * 4.9.48
 // * 4.10.31
 // * 4.11.2
+// * 4.12
 func (g *Gatherer) GatherCephCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
