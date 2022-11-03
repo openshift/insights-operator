@@ -31,11 +31,14 @@ import (
 // ### Config ID:
 // clusterconfig/ceph_cluster
 //
-// ### Since versions:
-// * 4.8.24
-// * 4.9.23
-// * 4.10.17
-// * 4.11
+// ### Released version:
+// * 4.12
+//
+// ### Backport versions:
+// * 4.8.49
+// * 4.9.48
+// * 4.10.31
+// * 4.11.2
 func (g *Gatherer) GatherCephCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

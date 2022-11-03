@@ -33,9 +33,7 @@ import (
 // clusterconfig/storage_cluster
 //
 // ### Since versions:
-// * 4.8.49
-// * 4.10.30
-// * 4.11
+// * 4.11 🚀
 func (g *Gatherer) GatherStorageCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
