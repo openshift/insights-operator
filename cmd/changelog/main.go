@@ -22,7 +22,6 @@ const (
 	ENHANCEMENT     = "Enhancement"
 	FEATURE         = "Feature"
 	OTHER           = "Others"
-	BACKPORTING     = "Backporting"
 	MISC            = "Misc"
 )
 
@@ -35,7 +34,6 @@ var (
 	latestHashRegexp   = regexp.MustCompile(`<!--Latest hash: (.+)-->`)
 
 	versionSectionRegExp         = regexp.MustCompile(`^(\d.\d+)`)
-	backportsSectionRegExp       = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BACKPORTING))
 	dataEnhancementSectionRegExp = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, DATAENHANCEMENT))
 	enhancementSectionRegExp     = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, ENHANCEMENT))
 	featureSectionRegExp         = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, FEATURE))
@@ -50,7 +48,6 @@ var (
 		ENHANCEMENT:     regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, ENHANCEMENT)),
 		FEATURE:         regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, FEATURE)),
 		OTHER:           regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, OTHER)),
-		BACKPORTING:     regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BACKPORTING)),
 	}
 
 	gitHubToken = ""
@@ -124,7 +121,6 @@ func main() {
 }
 
 type MarkdownReleaseBlock struct {
-	backports        string
 	dataEnhancements string
 	features         string
 	bugfixes         string
@@ -148,9 +144,6 @@ func readCHANGELOG() map[ReleaseVersion]MarkdownReleaseBlock {
 		var version ReleaseVersion
 		if match := versionSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			version = stringToReleaseVersion(match[1])
-		}
-		if match := backportsSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
-			releaseBlock.backports = match[1]
 		}
 		if match := dataEnhancementSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			releaseBlock.dataEnhancements = match[1]
@@ -199,9 +192,6 @@ func updateToMarkdownReleaseBlock(releaseBlocks map[ReleaseVersion]MarkdownRelea
 		} else if ch.category == FEATURE {
 			tmp.features = ch.toMarkdown() + tmp.features
 			releaseBlocks[ch.release] = tmp
-		} else if ch.category == BACKPORTING {
-			tmp.backports = ch.toMarkdown() + tmp.backports
-			releaseBlocks[ch.release] = tmp
 		} else {
 			tmp.misc = ch.toMarkdown() + tmp.misc
 			releaseBlocks[ch.release] = tmp
@@ -224,9 +214,6 @@ func createCHANGELOG(releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock) {
 	sort.Sort(sort.Reverse(releases))
 	for _, release := range releases {
 		_, _ = file.WriteString(fmt.Sprintf("## %d.%d\n\n", release.Major, release.Minor))
-
-		backports := releaseBlocks[release].backports
-		createReleaseBlock(file, backports, BACKPORTING)
 
 		dataEnhancements := releaseBlocks[release].dataEnhancements
 		createReleaseBlock(file, dataEnhancements, DATAENHANCEMENT)
@@ -307,7 +294,6 @@ func getPullRequestFromGitHub(id string) *Change {
 	for c := range categories {
 		cats = append(cats, c)
 	}
-	sort.Strings(cats) // Hacky way to make sure that Backports get matched first.
 	for _, cat := range cats {
 		if match := categories[cat].FindStringSubmatch(ch.description); len(match) > 0 {
 			ch.category = cat
