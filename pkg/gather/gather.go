@@ -4,7 +4,9 @@ package gather
 import (
 	"context"
 	"fmt"
-	"runtime"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"k8s.io/client-go/rest"
@@ -47,8 +49,9 @@ type GathererFunctionReport struct {
 type ArchiveMetadata struct {
 	// info about gathering functions.
 	StatusReports []GathererFunctionReport `json:"status_reports"`
-	// MemoryAlloc is the amount of memory taken by heap objects after processing the records
-	MemoryAlloc uint64 `json:"memory_alloc_bytes"`
+	// MemoryBytesUsage is the number of bytes of memory used by the container. The number is obtained
+	// from cgroups and is related to the Prometheus metric with the same name.
+	MemoryBytesUsage uint64 `json:"container_memory_bytes_usage"`
 	// Uptime is the number of seconds from the program start till the point when metadata was created
 	Uptime float64 `json:"uptime_seconds"`
 	// IsGlobalObfuscationEnabled shows if obfuscation(hiding IPs and cluster domain) is enabled
@@ -192,20 +195,31 @@ func recordGatheringFunctionResult(
 	}, allErrors
 }
 
+func readMemoryUsage() (int, error) {
+	b, err := os.ReadFile("/sys/fs/cgroup/memory/memory.usage_in_bytes")
+	if err != nil {
+		return 0, err
+	}
+	memUsage := strings.ReplaceAll(string(b), "\n", "")
+	return strconv.Atoi(memUsage)
+}
+
 // RecordArchiveMetadata records info about archive and gatherers' reports
 func RecordArchiveMetadata(
 	functionReports []GathererFunctionReport,
 	rec recorder.Interface,
 	anonymizer *anonymization.Anonymizer,
 ) error {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
+	memUsage, err := readMemoryUsage()
+	if err != nil {
+		klog.Warningf("can't read cgroups memory usage data: %v", err)
+	}
 
 	archiveMetadata := record.Record{
 		Name: recorder.MetadataRecordName,
 		Item: record.JSONMarshaller{Object: ArchiveMetadata{
 			StatusReports:              functionReports,
-			MemoryAlloc:                m.HeapAlloc,
+			MemoryBytesUsage:           uint64(memUsage),
 			Uptime:                     time.Since(programStartTime).Truncate(time.Millisecond).Seconds(),
 			IsGlobalObfuscationEnabled: anonymizer.IsObfuscationEnabled(),
 		}},
