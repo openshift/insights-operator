@@ -60,7 +60,7 @@ const (
 	UnableToCreateAnonymizerErrorMessage = "Unable to create anonymizer, " +
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
 	clusterNetworksRecordName = "config/network.json"
-	clusterConfigV1RecordName = "config/configmaps/kube-system/cluster-config-v1.json"
+	clusterConfigV1RecordName = "config/configmaps/kube-system/cluster-config-v1/install-config.json"
 	hostSubnetRecordPrefix    = "config/hostsubnet/"
 )
 
@@ -210,16 +210,19 @@ func GetNetworksForAnonymizerFromRecords(records map[string]*record.MemoryRecord
 		return nil, err
 	}
 
-	var clusterConfigV1 *corev1.ConfigMap
+	var clusterConfigV1 corev1.ConfigMap
+	var data string
 
 	clusterConfigV1Record, found := records[clusterConfigV1RecordName]
 	if !found {
 		klog.Warningf("record %v was not found, some networks won't be obfuscated", clusterConfigV1RecordName)
 	} else {
-		err := json.Unmarshal(clusterConfigV1Record.Data, &clusterConfigV1)
+		err := json.Unmarshal(clusterConfigV1Record.Data, &data)
 		if err != nil {
 			return nil, err
 		}
+		clusterConfigV1.Data = make(map[string]string, 1)
+		clusterConfigV1.Data["install-config"] = data
 	}
 
 	// for egress cidrs
@@ -244,7 +247,7 @@ func GetNetworksForAnonymizerFromRecords(records map[string]*record.MemoryRecord
 		klog.Warningf("no record with prefix %v was found, egress IPs won't be obfuscated", hostSubnetRecordPrefix)
 	}
 
-	return getNetworksForAnonymizer(&clusterNetworks, clusterConfigV1, hostSubnets), nil
+	return getNetworksForAnonymizer(&clusterNetworks, &clusterConfigV1, hostSubnets), nil
 }
 
 func getNetworksForAnonymizer(
@@ -402,9 +405,6 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 	isIPv4 := originalIP.To4() != nil
 
 	if !isIPv4 {
-		// TODO: to be implemented later
-		// the problem is that some strings can be incorrectly identified as ip v6
-		// we can try looking only for those which are wrapped by quotes or something
 		return ipStr
 	}
 

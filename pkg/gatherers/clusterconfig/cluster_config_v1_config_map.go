@@ -41,11 +41,13 @@ func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1In
 	}
 
 	configMap.Data = newData
-
-	return []record.Record{{
-		Name: fmt.Sprintf("config/configmaps/%s/%s", configMap.Namespace, configMap.Name),
-		Item: record.JSONMarshaller{Object: configMap},
-	}}, nil
+	var name string
+	var item record.Marshalable
+	for dk, dv := range configMap.Data {
+		name = fmt.Sprintf("config/configmaps/%s/%s/%s", configMap.Namespace, configMap.Name, dk)
+		item = record.JSONMarshaller{Object: dv}
+	}
+	return []record.Record{{Name: name, Item: item}}, nil
 }
 
 func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *installertypes.InstallConfig {

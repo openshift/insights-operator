@@ -30,21 +30,12 @@ func Test_gatherClusterConfigV1(t *testing.T) {
 	assert.Empty(t, errs)
 
 	assert.Len(t, records, 1)
-	assert.Equal(t, "config/configmaps/kube-system/cluster-config-v1", records[0].Name)
+	assert.Equal(t, "config/configmaps/kube-system/cluster-config-v1/install-config", records[0].Name)
 
 	data, err := records[0].Item.Marshal()
 	assert.NoError(t, err)
 
-	installConfig := `baseDomain: \"\"\nmetadata:\n  creationTimestamp: null\nplatform: {}\npullSecret: \"\"\n`
+	installConfig := `"baseDomain: \"\"\nmetadata:\n  creationTimestamp: null\nplatform: {}\npullSecret: \"\"\n"`
 
-	assert.JSONEq(t, `{
-		"metadata": {
-			"name": "cluster-config-v1",
-			"namespace": "kube-system",
-			"creationTimestamp": null
-		},
-		"data": {
-			"install-config": "`+installConfig+`"
-		}
-	}`, string(data))
+	assert.JSONEq(t, installConfig, string(data))
 }
