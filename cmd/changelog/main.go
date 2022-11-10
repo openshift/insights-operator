@@ -17,11 +17,12 @@ import (
 
 // norevive
 const (
-	BUGFIX      = "Bugfix"
-	ENHANCEMENT = "Enhancement"
-	OTHER       = "Others"
-	BACKPORTING = "Backporting"
-	MISC        = "Misc"
+	BUGFIX          = "Bugfix"
+	DATAENHANCEMENT = "Data Enhancement"
+	ENHANCEMENT     = "Enhancement"
+	FEATURE         = "Feature"
+	OTHER           = "Others"
+	MISC            = "Misc"
 )
 
 var (
@@ -32,19 +33,21 @@ var (
 	releaseRegexp      = regexp.MustCompile(`(release-\d\.\d+)`)
 	latestHashRegexp   = regexp.MustCompile(`<!--Latest hash: (.+)-->`)
 
-	versionSectionRegExp     = regexp.MustCompile(`^(\d.\d+)`)
-	backportsSectionRegExp   = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BACKPORTING))
-	enhancementSectionRegExp = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, ENHANCEMENT))
-	bugfixSectionRegExp      = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BUGFIX))
-	otherSectionRegExp       = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, OTHER))
-	miscSectionRegExp        = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, MISC))
+	versionSectionRegExp         = regexp.MustCompile(`^(\d.\d+)`)
+	dataEnhancementSectionRegExp = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, DATAENHANCEMENT))
+	enhancementSectionRegExp     = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, ENHANCEMENT))
+	featureSectionRegExp         = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, FEATURE))
+	bugfixSectionRegExp          = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, BUGFIX))
+	otherSectionRegExp           = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, OTHER))
+	miscSectionRegExp            = regexp.MustCompile(fmt.Sprintf(`### %s\n((.+\n)+)`, MISC))
 
 	// PR categories
 	categories = map[string]*regexp.Regexp{
-		BUGFIX:      regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BUGFIX)),
-		ENHANCEMENT: regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, ENHANCEMENT)),
-		OTHER:       regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, OTHER)),
-		BACKPORTING: regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BACKPORTING)),
+		BUGFIX:          regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, BUGFIX)),
+		DATAENHANCEMENT: regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, DATAENHANCEMENT)),
+		ENHANCEMENT:     regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, ENHANCEMENT)),
+		FEATURE:         regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, FEATURE)),
+		OTHER:           regexp.MustCompile(fmt.Sprintf(`- \[[xX]\] %s`, OTHER)),
 	}
 
 	gitHubToken = ""
@@ -118,11 +121,11 @@ func main() {
 }
 
 type MarkdownReleaseBlock struct {
-	backports    string
-	enhancements string
-	bugfixes     string
-	others       string
-	misc         string
+	dataEnhancements string
+	features         string
+	bugfixes         string
+	others           string
+	misc             string
 }
 
 func readCHANGELOG() map[ReleaseVersion]MarkdownReleaseBlock {
@@ -142,11 +145,14 @@ func readCHANGELOG() map[ReleaseVersion]MarkdownReleaseBlock {
 		if match := versionSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			version = stringToReleaseVersion(match[1])
 		}
-		if match := backportsSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
-			releaseBlock.backports = match[1]
+		if match := dataEnhancementSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
+			releaseBlock.dataEnhancements = match[1]
 		}
 		if match := enhancementSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
-			releaseBlock.enhancements = match[1]
+			releaseBlock.dataEnhancements = match[1]
+		}
+		if match := featureSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
+			releaseBlock.features = match[1]
 		}
 		if match := bugfixSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			releaseBlock.bugfixes = match[1]
@@ -177,11 +183,14 @@ func updateToMarkdownReleaseBlock(releaseBlocks map[ReleaseVersion]MarkdownRelea
 		} else if ch.category == OTHER {
 			tmp.others = ch.toMarkdown() + tmp.others
 			releaseBlocks[ch.release] = tmp
-		} else if ch.category == ENHANCEMENT {
-			tmp.enhancements = ch.toMarkdown() + tmp.enhancements
+		} else if ch.category == DATAENHANCEMENT {
+			tmp.dataEnhancements = ch.toMarkdown() + tmp.dataEnhancements
 			releaseBlocks[ch.release] = tmp
-		} else if ch.category == BACKPORTING {
-			tmp.backports = ch.toMarkdown() + tmp.backports
+		} else if ch.category == ENHANCEMENT {
+			tmp.dataEnhancements = ch.toMarkdown() + tmp.dataEnhancements
+			releaseBlocks[ch.release] = tmp
+		} else if ch.category == FEATURE {
+			tmp.features = ch.toMarkdown() + tmp.features
 			releaseBlocks[ch.release] = tmp
 		} else {
 			tmp.misc = ch.toMarkdown() + tmp.misc
@@ -206,11 +215,11 @@ func createCHANGELOG(releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock) {
 	for _, release := range releases {
 		_, _ = file.WriteString(fmt.Sprintf("## %d.%d\n\n", release.Major, release.Minor))
 
-		backports := releaseBlocks[release].backports
-		createReleaseBlock(file, backports, BACKPORTING)
+		dataEnhancements := releaseBlocks[release].dataEnhancements
+		createReleaseBlock(file, dataEnhancements, DATAENHANCEMENT)
 
-		enhancements := releaseBlocks[release].enhancements
-		createReleaseBlock(file, enhancements, ENHANCEMENT)
+		features := releaseBlocks[release].features
+		createReleaseBlock(file, features, FEATURE)
 
 		bugfixes := releaseBlocks[release].bugfixes
 		createReleaseBlock(file, bugfixes, BUGFIX)
@@ -285,7 +294,6 @@ func getPullRequestFromGitHub(id string) *Change {
 	for c := range categories {
 		cats = append(cats, c)
 	}
-	sort.Strings(cats) // Hacky way to make sure that Backports get matched first.
 	for _, cat := range cats {
 		if match := categories[cat].FindStringSubmatch(ch.description); len(match) > 0 {
 			ch.category = cat
