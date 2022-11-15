@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift/insights-operator/pkg/gatherers"
-	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // APIRequestCount defines a type used when marshaling into JSON
@@ -26,7 +27,7 @@ type APIRequestCount struct {
 // Params is of type AlertIsFiringConditionParams:
 //   - alert_name string - name of the firing alert
 //
-// * Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
+// * Location in archive: conditional/alerts/{alert_name}/api_request_counts.json
 // * Id in config: conditional/api_request_counts_of_resource_from_alert
 // * Since versions:
 //   - 4.10+
