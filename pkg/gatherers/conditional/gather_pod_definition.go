@@ -15,7 +15,7 @@ import (
 
 // BuildGatherPodDefinition collects pod definition from pods that are firing one of the configured alerts.
 //
-// * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/<pod>.json
+// * Location in archive: conditional/namespaces/{namespace}/pods/{pod}/{pod}.json
 // * Id in config: conditional/pod_definition
 // * Since versions:
 //   * 4.11+

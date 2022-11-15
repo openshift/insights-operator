@@ -8,9 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/insights-operator/pkg/record"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/openshift/insights-operator/pkg/record"
 )
 
 // GatherOpenshiftLogging collects `logging.openshift.io` resources
@@ -19,7 +20,7 @@ import (
 // API Reference:
 //   https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 //
-// * Location in archive: config/logging/<namespace>/<name>.json
+// * Location in archive: config/logging/{namespace}/{name}.json
 // * Id in config: clusterconfig/openshift_logging
 // * Since versions:
 //   * 4.9+

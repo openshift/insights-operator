@@ -18,10 +18,22 @@ resources mentioned in the alert provided as a string parameter
 Params is of type AlertIsFiringConditionParams:
   - alert_name string - name of the firing alert
 
-* Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
+* Location in archive: conditional/alerts/{alert_name}/api_request_counts.json
 * Id in config: conditional/api_request_counts_of_resource_from_alert
 * Since versions:
-  * 4.10+
+  - 4.10+
+
+
+## ActiveAlerts
+
+gathers active alerts from the Alertmanager API V2 in the JSON format.
+Alert data is also still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
+
+* Location in archive: config/alerts.json
+* See: docs/insights-archive-sample/config/alerts.json
+* Id in config: active_alerts
+* Since version:
+  - 4.12+
 
 
 ## CRD
@@ -40,16 +52,30 @@ The CRD sizes above are in the raw (uncompressed) state.
 
 ## CephCluster
 
-collects statuses of the`cephclusters.ceph.rook.io` resources
+Collects statuses of the`cephclusters.ceph.rook.io` resources
 from Openshift Data Foundation Stack.
 
-API Reference:
-  https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
+### API Reference:
+https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 
-* Location in archive: config/storage/<namespace>/<name>.json
-* Id in config: clusterconfig/ceph_cluster
-* Since versions:
-  * 4.12+
+### Sample data:
+docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json
+
+### Location in archive:
+| Version | Path													 |
+| ------- | ----------------------------------------------------- |
+| <= 4.12 | config/storage/{namespace}/{name}.json 				 |
+| 4.13+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
+
+### Config ID:
+clusterconfig/ceph_cluster
+
+### Since versions:
+* 4.8.49
+* 4.9.48
+* 4.10.31
+* 4.11.2
+* 4.12
 
 
 ## CertificateSigningRequests
@@ -58,16 +84,19 @@ collects anonymized CertificateSigningRequests.
 Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAfter
 
 The Kubernetes api:
-    https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+
 Response see:
-    https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+
+	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 
 * Location in archive: config/certificatesigningrequests/
 * Id in config: clusterconfig/certificate_signing_requests
 * Since versions:
-  * 4.3.25+
-  * 4.4.12+
-  * 4.5+
+  - 4.3.25+
+  - 4.4.12+
+  - 4.5+
 
 
 ## ClusterAuthentication
@@ -104,8 +133,8 @@ Response see https://docs.openshift.com/container-platform/latest/rest_api/confi
 * Location in archive: config/image.json
 * Id in config: clusterconfig/image
 * Since versions:
-  * 4.10.8
-  * 4.11+
+  - 4.10.8
+  - 4.11+
 
 
 ## ClusterImagePruner
@@ -128,12 +157,13 @@ PersistentVolume definition is gathered
 * Location in older versions: config/imageregistry.json
 * Id in config: clusterconfig/image_registries
 * Since versions:
-  * 4.3.40+
-  * 4.4.12+
-  * 4.5+
+  - 4.3.40+
+  - 4.4.12+
+  - 4.5+
+
 * PV definition since versions:
-  * 4.6.20+
-  * 4.7+
+  - 4.6.20+
+  - 4.7+
 
 
 ## ClusterInfrastructure
@@ -194,16 +224,16 @@ information includes:
 - Previous (if container was terminated) and current logs of all related pod containers
 - Namespace events
 
-* Location of pod definitions: config/pod/{namespace}/{pod}.json
-* Location of pod container current logs:
-  config/pod/{namespace}/logs/{pod}/{container}_current.log
-* Location of pod container previous logs:
-  config/pod/{namespace}/logs/{pod}/{container}_previous.log
-* Location of events in archive: events/
-* Id in config: clusterconfig/operators_pods_and_events
-* Spec config for CO resources since versions:
-  * 4.6.16+
-  * 4.7+
+  - Location of pod definitions: config/pod/{namespace}/{pod}.json
+  - Location of pod container current logs:
+    config/pod/{namespace}/logs/{pod}/{container}_current.log
+  - Location of pod container previous logs:
+    config/pod/{namespace}/logs/{pod}/{container}_previous.log
+  - Location of events in archive: events/
+  - Id in config: clusterconfig/operators_pods_and_events
+  - Spec config for CO resources since versions:
+  - 4.6.16+
+  - 4.7+
 
 
 ## ClusterOperators
@@ -219,8 +249,8 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * See: docs/insights-archive-sample/config/clusteroperator
 * Id in config: clusterconfig/operators
 * Spec config for CO resources since versions:
-  * 4.6.16+
-  * 4.7+
+  - 4.6.16+
+  - 4.7+
 
 
 ## ClusterProxy
@@ -269,14 +299,16 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * See: docs/insights-archive-sample/config/configmaps
 * Id in config: clusterconfig/config_maps
 * Since versions:
-  * 4.3.25+
-  * 4.4.6+
-  * 4.5+
+  - 4.3.25+
+  - 4.4.6+
+  - 4.5+
+
 * "cluster-monitoring-config" ConfigMap data since versions:
-  * 4.6.22+
-  * 4.7+
+  - 4.6.22+
+  - 4.7+
+
 * "cluster-config-v1" ConfigMap since versions:
-  * 4.9+
+  - 4.9+
 
 
 ## ContainerImages
@@ -287,9 +319,9 @@ Specifically, the age of pods, the set of running images and the container names
 * Location in archive: config/running_containers.json
 * Id in config: clusterconfig/container_images
 * Since versions:
-  * 4.5.33+
-  * 4.6.16+
-  * 4.7+
+  - 4.5.33+
+  - 4.6.16+
+  - 4.7+
 
 
 ## ContainerRuntimeConfig
@@ -297,15 +329,18 @@ Specifically, the age of pods, the set of running images and the container names
 collects ContainerRuntimeConfig  information
 
 The Kubernetes api:
-   https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+
+	https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+
 Response see:
-   https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+
+	https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 
 * Location in archive: config/containerruntimeconfigs/
 * Id in config: clusterconfig/container_runtime_configs
 * Since versions:
-  * 4.6.18+
-  * 4.7+
+  - 4.6.18+
+  - 4.7+
 
 
 ## ContainersLogs
@@ -315,18 +350,18 @@ collects either current or previous containers logs for pods firing one of the c
 * Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
 * Id in config: conditional/containers_logs
 * Since versions:
-  * 4.10+
+  - 4.10+
 
 
 ## CostManagementMetricsConfigs
 
 collects CostManagementMetricsConfigs definitions.
-* Location in archive: config/cost_management_metrics_configs/<name>.json
+* Location in archive: config/cost_management_metrics_configs/{name}.json
 * Id in config: clusterconfig/cost_management_metrics_configs
 * Since versions:
-  * 4.8.27+
-  * 4.9.13+
-  * 4.10+
+  - 4.8.27+
+  - 4.9.13+
+  - 4.10+
 
 
 ## DVOMetrics
@@ -352,9 +387,9 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * Location in archive: config/hostsubnet/
 * Id in config: clusterconfig/host_subnets
 * Since versions:
-  * 4.4.29+
-  * 4.5.15+
-  * 4.6+
+  - 4.4.29+
+  - 4.5.15+
+  - 4.6+
 
 
 ## ImageStreamsOfNamespace
@@ -364,12 +399,13 @@ Params is of type GatherImageStreamsOfNamespaceParams:
   - namespace string - namespace from which to collect image streams
 
 API reference:
-  https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
+
+	https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
 
 * Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
 * Id in config: conditional/image_streams_of_namespace
 * Since versions:
-  * 4.9+
+  - 4.9+
 
 
 ## InstallPlans
@@ -384,9 +420,9 @@ The Operators-Framework api https://github.com/operator-framework/api/blob/maste
 * Location in archive: config/installplans/
 * Id in config: clusterconfig/install_plans
 * Since versions:
-  * 4.5.33+
-  * 4.6.16+
-  * 4.7+
+  - 4.5.33+
+  - 4.6.16+
+  - 4.7+
 
 
 ## JaegerCR
@@ -397,7 +433,7 @@ installed in the cluster
 * Location in archive: config/jaegertracing.io/
 * Id in config: clusterconfig/jaegers
 * Since versions:
-  * 4.10+
+  - 4.10+
 
 
 ## KubeControllerManagerLogs
@@ -407,15 +443,18 @@ collects logs from kube-controller-manager pods in the openshift-kube-controller
   - "syncing garbage collector with updated resources from discovery",
 
 The Kubernetes API:
-         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-         https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log
 * Since versions:
-  * 4.9.27
-  * 4.10.6
-  * 4.11+
+  - 4.9.27
+  - 4.10.6
+  - 4.11+
 
 
 ## LogsOfNamespace
@@ -426,14 +465,17 @@ Params is of type GatherLogsOfNamespaceParams:
   - tail_lines int64 - a number of log lines to keep for each container
 
 The Kubernetes API:
-         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
 * Id in config: conditional/logs_of_namespace
 * Since versions:
-  * 4.9+
+  - 4.9+
 
 
 ## MachineAutoscalers
@@ -441,14 +483,17 @@ Response see:
 collects MachineAutoscalers definition
 
 The Kubernetes api:
-      https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
+
+	https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
+
 Response see:
-      https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
+
+	https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
 
 * Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
 * Id in config: clusterconfig/machine_autoscalers
 * Since versions:
-  * 4.8+
+  - 4.8+
 
 
 ## MachineConfigPool
@@ -456,15 +501,18 @@ Response see:
 collects MachineConfigPool information
 
 The Kubernetes api:
-    https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+
+	https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+
 Response see:
-    https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+
+	https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 
 * Location in archive: config/machineconfigpools/
 * Id in config: clusterconfig/machine_config_pools
 * Since versions:
-  * 4.5.33+
-  * 4.6+
+  - 4.5.33+
+  - 4.6+
 
 
 ## MachineConfigs
@@ -475,11 +523,11 @@ collects MachineConfigs definitions. Following data is intentionally removed fro
 
 Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
 
-* Location in archive: config/machineconfigs/<name>.json
+* Location in archive: config/machineconfigs/{name}.json
 * Id in config: clusterconfig/machine_configs
 * Since versions:
-  * 4.8.5+
-  * 4.9+
+  - 4.8.5+
+  - 4.9+
 
 
 ## MachineHealthCheck
@@ -487,14 +535,17 @@ Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_
 collects MachineHealthCheck information
 
 The Kubernetes api:
-      https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
+
+	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
+
 Response see:
-      https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
+
+	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
 
 * Location in archive: config/machinehealthchecks
 * Id in config: clusterconfig/machine_healthchecks
 * Since versions:
-  * 4.8+
+  - 4.8+
 
 
 ## MachineSet
@@ -502,16 +553,19 @@ Response see:
 collects MachineSet information
 
 The Kubernetes api:
-      https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
+
+	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
+
 Response see:
-      https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+
+	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 
 * Location in archive: machinesets/
 * Id in config: clusterconfig/machine_sets
 * Since versions:
-  * 4.4.29+
-  * 4.5.15+
-  * 4.6+
+  - 4.4.29+
+  - 4.5.15+
+  - 4.6+
 
 
 ## MostRecentMetrics
@@ -520,15 +574,16 @@ gathers cluster Federated Monitoring metrics.
 
 The GET REST query to URL /federate
 Gathered metrics:
-	 virt_platform
-  etcd_object_counts
-  cluster_installer
-  vsphere_node_hw_version_total
-  namespace CPU and memory usage
-  console_helm_installs_total
-	 console_helm_upgrades_total
-	 console_helm_uninstalls_total
-  followed by at most 1000 lines of ALERTS metric
+
+	virt_platform
+	etcd_object_counts
+	cluster_installer
+	vsphere_node_hw_version_total
+	namespace CPU and memory usage
+	console_helm_installs_total
+	console_helm_upgrades_total
+	console_helm_uninstalls_total
+	followed by at most 1000 lines of ALERTS metric
 
 * Location in archive: config/metrics
 * See: docs/insights-archive-sample/config/metrics
@@ -542,6 +597,8 @@ Gathered metrics:
   - "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
   - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
   - "console_helm_installs_total": 4.11+
+  - "console_helm_upgrades_total": 4.12+
+  - "console_helm_uninstalls_total": 4.12+
 
 
 ## MutatingWebhookConfigurations
@@ -553,10 +610,10 @@ Relevant OpenShift API docs:
 * Location in archive: config/mutatingwebhookconfigurations
 * Id in config: clusterconfig/mutating_webhook_configurations
 * Since versions:
-  * 4.7.40+
-  * 4.8.24+
-  * 4.9.11+
-  * 4.10+
+  - 4.7.40+
+  - 4.8.24+
+  - 4.9.11+
+  - 4.10+
 
 
 ## NamespacesWithOverlappingUIDs
@@ -570,9 +627,10 @@ from the "openshift.io/sa.scc.uid-range" annotation
 * Location in archive: config/namespaces_with_overlapping_uids
 * Id in config: clusterconfig/overlapping_namespace_uids
 * Since versions:
-  * 4.9.31
-  * 4.10.12
-  * 4.11+
+  - 4.8.41
+  - 4.9.31
+  - 4.10.12
+  - 4.11+
 
 
 ## NetNamespace
@@ -585,21 +643,21 @@ Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and
 * Location in archive: config/netnamespaces
 * Id in config: clusterconfig/netnamespaces
 * Since versions:
-  * 4.6.20+
-  * 4.7+
+  - 4.6.20+
+  - 4.7+
 
 
 ## NodeLogs
 
-fetches the node logs from journal unit
+fetches control plane node logs from journal unit
 
 Response see https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
 
-* Location in archive: config/nodes/logs/
+* Location in archive: config/nodes/logs/{hostname}.log
 * See: docs/insights-archive-sample/config/nodes/logs
 * Id in config: clusterconfig/node_logs
 * Since versions:
-  * 4.10+
+  - 4.10+
 
 
 ## Nodes
@@ -625,7 +683,7 @@ Each OLM operator (in the list) contains following data:
 * Location of in archive: config/olm_operators
 * Id in config: clusterconfig/olm_operators
 * Since versions:
-  * 4.7+
+  - 4.7+
 
 
 ## OpenShiftAPIServerOperatorLogs
@@ -635,9 +693,12 @@ collects logs from openshift-apiserver-operator with following substrings:
   - "because serving request timed out and response had been started"
 
 The Kubernetes API:
-      https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-      https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
 * Id in config: clusterconfig/openshift_apiserver_operator_logs
@@ -649,14 +710,17 @@ collects logs from pods in openshift-authentication namespace with following sub
   - "AuthenticationError: invalid resource name"
 
 The Kubernetes API:
-        https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-        https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
 * Id in config: clusterconfig/openshift_authentication_logs
 * Since versions:
-  * 4.7+
+  - 4.7+
 
 
 ## OpenshiftLogging
@@ -665,12 +729,24 @@ collects `logging.openshift.io` resources
 from Openshift Logging Stack.
 
 API Reference:
-  https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 
-* Location in archive: config/logging/<namespace>/<name>.json
+	https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
+
+* Location in archive: config/logging/{namespace}/{name}.json
 * Id in config: clusterconfig/openshift_logging
 * Since versions:
-  * 4.9+
+  - 4.9+
+
+
+## OpenshiftMachineAPIEvents
+
+collects warning ("abnormal") events
+from "openshift-machine-api" namespace
+
+* Location of events in archive: events/
+* Id in config: clusterconfig/openshift_machine_api_events
+* Since versions:
+  - 4.12+
 
 
 ## OpenshiftSDNControllerLogs
@@ -678,25 +754,28 @@ API Reference:
 collects logs from sdn-controller pod in openshift-sdn namespace with following substrings:
   - "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
   - "Node %s may be offline... retrying": An egress node has failed the egress IP health check once,
-      so it has big chances to be marked as offline soon or, at the very least, there has been a connectivity glitch.
+    so it has big chances to be marked as offline soon or, at the very least, there has been a connectivity glitch.
   - "Node %s is offline": An egress node has failed enough probes to have been marked offline for egress IPs.
-      If it has egress CIDRs assigned, its egress IPs have been moved to other nodes.
-      Indicates issues at either the node or the network between the master and the node.
+    If it has egress CIDRs assigned, its egress IPs have been moved to other nodes.
+    Indicates issues at either the node or the network between the master and the node.
   - "Node %s is back online": This indicates that a node has recovered from the condition described
-      at the previous message, by starting succeeding the egress IP health checks.
-      Useful just in case that previous “Node %s is offline” messages are lost,
-      so that we have a clue that there was failure previously.
+    at the previous message, by starting succeeding the egress IP health checks.
+    Useful just in case that previous “Node %s is offline” messages are lost,
+    so that we have a clue that there was failure previously.
 
 The Kubernetes API:
-       https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-       https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
 * Id in config: clusterconfig/openshift_sdn_controller_logs
 * Since versions:
-  * 4.6.21+
-  * 4.7+
+  - 4.6.21+
+  - 4.7+
 
 
 ## OpenshiftSDNLogs
@@ -708,15 +787,18 @@ collects logs from pods in openshift-sdn namespace with following substrings:
   - "Failed to update proxy firewall for policy",
 
 The Kubernetes API:
-         https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-         https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
 * Id in config: clusterconfig/openshift_sdn_logs
 * Since versions:
-  * 4.6.19+
-  * 4.7+
+  - 4.6.19+
+  - 4.7+
 
 
 ## OpenshiftStorage
@@ -725,20 +807,20 @@ collects `storageclusters.ocs.openshift.io` resources
 from Openshift Data Foundation Stack.
 
 API Reference:
-  https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+	https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
 
 * Location in archive: config/storage/<namespace>/<name>.json
 * Id in config: clusterconfig/openshift_storage
 * Since versions:
-  * 4.11+
+  - 4.11+
 
 
 ## PNCC
 
-collects a summary of failed PodNetworkConnectivityChecks.
+collects a summary of failed PodNetworkConnectivityChecks from
+last 24 hours.
 Time of the most recently failed check with each reason and message is recorded.
-The checks are requested via a dynamic client and
-then unmarshaled into the appropriate structure.
 
 Resource API: podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
 Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
@@ -746,17 +828,17 @@ Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcon
 * Location in archive: config/podnetworkconnectivitychecks.json
 * Id in config: clusterconfig/pod_network_connectivity_checks
 * Since versions:
-  * 4.8+
+  - 4.8+
 
 
 ## PodDefinition
 
 collects pod definition from pods that are firing one of the configured alerts.
 
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/<pod>.json
+* Location in archive: conditional/namespaces/{namespace}/pods/{pod}/{pod}.json
 * Id in config: conditional/pod_definition
 * Since versions:
-  * 4.11+
+  - 4.11+
 
 
 ## PodDisruptionBudgets
@@ -770,9 +852,9 @@ Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget
 * See: docs/insights-archive-sample/config/pdbs
 * Id in config: clusterconfig/pdbs
 * Since versions:
-  * 4.4.30+
-  * 4.5.34+
-  * 4.6+
+  - 4.4.30+
+  - 4.5.34+
+  - 4.6+
 
 
 ## SAPConfig
@@ -789,19 +871,19 @@ Relevant OpenShift API docs:
 * Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
 * Id in config: clusterconfig/sap_config
 * Since versions:
-  * 4.6.20+
-  * 4.7+
+  - 4.6.20+
+  - 4.7+
 
 
 ## SAPDatahubs
 
 collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
-* Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+* Location in archive: customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json
 * Id in config: clusterconfig/sap_datahubs
 * Since versions:
-  * 4.7.5+
-  * 4.8+
+  - 4.7.5+
+  - 4.8+
 
 
 ## SAPPods
@@ -820,9 +902,9 @@ Relevant Kubernetes API docs:
 * Location in archive: config/pod/{namespace}/{pod-name}.json
 * Id in config: clusterconfig/sap_pods
 * Since versions:
-  * 4.6.24+
-  * 4.7.5+
-  * 4.8+
+  - 4.6.24+
+  - 4.7.5+
+  - 4.8+
 
 
 ## SAPVsystemIptablesLogs
@@ -834,16 +916,19 @@ including one from license management pods with the following substring:
 **Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
 
 The Kubernetes API:
-       https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-       https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
 * Id in config: clusterconfig/sap_license_management_logs
 * Since versions:
-  * 4.6.25+
-  * 4.7.5+
-  * 4.8+
+  - 4.6.25+
+  - 4.7.5+
+  - 4.8+
 
 
 ## SchedulerLogs
@@ -853,14 +938,17 @@ with following substring:
   - "PodTopologySpread"
 
 The Kubernetes API:
-        https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
+	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+
 Response see:
-        https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+
+	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
 * Location in archive: config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log
 * Id in config: clusterconfig/scheduler_logs
 * Since versions:
-  * 4.10+
+  - 4.10+
 
 
 ## Schedulers
@@ -868,11 +956,12 @@ Response see:
 collects information about schedulers
 
 The API:
-        https://docs.openshift.com/container-platform/4.9/rest_api/config_apis/scheduler-config-openshift-io-v1.html
+
+	https://docs.openshift.com/container-platform/4.9/rest_api/config_apis/scheduler-config-openshift-io-v1.html
 
 * Location in archive: config/schedulers/cluster.json
 * Since versions:
-  * 4.10+
+  - 4.10+
 
 
 ## ServiceAccounts
@@ -887,9 +976,9 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * See: docs/insights-archive-sample/config/serviceaccounts
 * Id in config: clusterconfig/service_accounts
 * Since versions:
-  * 4.5.34+
-  * 4.6.20+
-  * 4.7+
+  - 4.5.34+
+  - 4.6.20+
+  - 4.7+
 
 
 ## SilencedAlerts
@@ -900,18 +989,42 @@ gathers the alerts that have been silenced.
 * See: docs/insights-archive-sample/config/silenced_alerts
 * Id in config: clusterconfig/silenced_alerts
 * Since version:
-  * 4.10+
+  - 4.10+
+
+
+## StorageCluster
+
+Collects `storageclusters.ocs.openshift.io` resources
+from Openshift Data Foundation Stack.
+
+### API Reference:
+https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+### Sample data
+docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
+
+### Location in archive:
+| Version | Path														|
+| ------- | --------------------------------------------------------	|
+| <= 4.12 | config/storage/{namespace}/{name}.json 					|
+| 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
+
+### Config ID:
+clusterconfig/storage_cluster
+
+### Since versions:
+* 4.11
 
 
 ## SupportSecret
 
 gathers anonymized support secret if there is any
 
-* Location in archive: config/secrets/openshift-config/support/data.json
+  - Location in archive: config/secrets/openshift-config/support/data.json
     (can be omitted if the secret doesn't exist)
-* Id in config: support_secret
-* Since version:
-  * 4.11+
+  - Id in config: support_secret
+  - Since version:
+  - 4.11+
 
 
 ## TSDBStatus
@@ -922,7 +1035,7 @@ gathers the Prometheus TSDB status.
 * See: docs/insights-archive-sample/config/metrics
 * Id in config: clusterconfig/tsdb_status
 * Since version:
-   * 4.10+
+  - 4.10+
 
 
 ## ValidatingWebhookConfigurations
@@ -934,10 +1047,10 @@ Relevant OpenShift API docs:
 * Location in archive: config/validatingwebhookconfigurations
 * Id in config: clusterconfig/validating_webhook_configurations
 * Since versions:
-  * 4.7.40+
-  * 4.8.24+
-  * 4.9.11+
-  * 4.10+
+  - 4.7.40+
+  - 4.8.24+
+  - 4.9.11+
+  - 4.10+
 
 
 ## WorkloadInfo
@@ -948,6 +1061,6 @@ in a generic fashion
 * Location in archive: config/workload_info
 * Id in config: workloads/workload_info
 * Since versions:
-  * 4.8+
+  - 4.8+
 
 
