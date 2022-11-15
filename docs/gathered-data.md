@@ -1870,6 +1870,30 @@ clusterconfig/storage_cluster
 * 4.11
 
 
+## StorageCluster
+
+Collects `storageclusters.ocs.openshift.io` resources
+from Openshift Data Foundation Stack.
+
+### API Reference:
+https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+### Sample data
+docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
+
+### Location in archive:
+| Version | Path														|
+| ------- | --------------------------------------------------------	|
+| <= 4.12 | config/storage/{namespace}/{name}.json 					|
+| 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
+
+### Config ID:
+clusterconfig/storage_cluster
+
+### Since versions:
+* 4.11
+
+
 ## SupportSecret
 
 Collects anonymized support secret if there is any
