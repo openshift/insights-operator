@@ -12,7 +12,7 @@ import (
 )
 
 // GatherCostManagementMetricsConfigs collects CostManagementMetricsConfigs definitions.
-// * Location in archive: config/cost_management_metrics_configs/<name>.json
+// * Location in archive: config/cost_management_metrics_configs/{name}.json
 // * Id in config: clusterconfig/cost_management_metrics_configs
 // * Since versions:
 //   - 4.8.27+
