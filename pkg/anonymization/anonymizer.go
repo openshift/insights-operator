@@ -60,7 +60,7 @@ const (
 	UnableToCreateAnonymizerErrorMessage = "Unable to create anonymizer, " +
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
 	clusterNetworksRecordName = "config/network.json"
-	clusterConfigV1RecordName = "config/configmaps/kube-system/cluster-config-v1/install-config.json"
+	clusterConfigV1RecordName = "config/configmaps/kube-system/cluster-config-v1/install-config"
 	hostSubnetRecordPrefix    = "config/hostsubnet/"
 )
 
@@ -211,18 +211,13 @@ func GetNetworksForAnonymizerFromRecords(records map[string]*record.MemoryRecord
 	}
 
 	var clusterConfigV1 corev1.ConfigMap
-	var data string
 
 	clusterConfigV1Record, found := records[clusterConfigV1RecordName]
 	if !found {
 		klog.Warningf("record %v was not found, some networks won't be obfuscated", clusterConfigV1RecordName)
 	} else {
-		err := json.Unmarshal(clusterConfigV1Record.Data, &data)
-		if err != nil {
-			return nil, err
-		}
 		clusterConfigV1.Data = make(map[string]string, 1)
-		clusterConfigV1.Data["install-config"] = data
+		clusterConfigV1.Data["install-config"] = string(clusterConfigV1Record.Data)
 	}
 
 	// for egress cidrs
