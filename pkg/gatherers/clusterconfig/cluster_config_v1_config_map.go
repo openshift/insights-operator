@@ -21,7 +21,7 @@ func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1In
 		return nil, []error{err}
 	}
 
-	newData := make(map[string]string)
+	var installConfigBytes []byte
 
 	if installConfigStr, found := configMap.Data["install-config"]; found {
 		installConfig := &installertypes.InstallConfig{}
@@ -32,20 +32,14 @@ func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1In
 
 		installConfig = anonymizeInstallConfig(installConfig)
 
-		installConfigBytes, err := yaml.Marshal(installConfig)
+		installConfigBytes, err = yaml.Marshal(installConfig)
 		if err != nil {
 			return nil, []error{err}
 		}
-
-		newData["install-config"] = string(installConfigBytes)
 	}
 
-	configMap.Data = newData
-
-	return []record.Record{{
-		Name: fmt.Sprintf("config/configmaps/%s/%s", configMap.Namespace, configMap.Name),
-		Item: record.JSONMarshaller{Object: configMap},
-	}}, nil
+	return []record.Record{{Name: fmt.Sprintf("config/configmaps/%s/%s/install-config", configMap.Namespace, configMap.Name),
+		Item: ConfigMapAnonymizer{v: installConfigBytes, encodeBase64: false}}}, nil
 }
 
 func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *installertypes.InstallConfig {
