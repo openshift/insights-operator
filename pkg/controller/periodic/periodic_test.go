@@ -206,9 +206,9 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 				},
 				Conditions: []metav1.Condition{
 					{
-						Type:    DataGatheredCondition,
+						Type:    dataGatheredCondition,
 						Status:  metav1.ConditionTrue,
-						Reason:  GatheredOKReason,
+						Reason:  gatheredOKReason,
 						Message: "Created 5 records in the archive.",
 					},
 				},
@@ -228,9 +228,9 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 				},
 				Conditions: []metav1.Condition{
 					{
-						Type:   DataGatheredCondition,
+						Type:   dataGatheredCondition,
 						Status: metav1.ConditionFalse,
-						Reason: NoDataGatheredReason,
+						Reason: noDataGatheredReason,
 					},
 				},
 			},
@@ -250,9 +250,9 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 				},
 				Conditions: []metav1.Condition{
 					{
-						Type:    DataGatheredCondition,
+						Type:    dataGatheredCondition,
 						Status:  metav1.ConditionFalse,
-						Reason:  GatherErrorReason,
+						Reason:  gatherErrorReason,
 						Message: "unable to read the data",
 					},
 				},
@@ -273,9 +273,9 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 				},
 				Conditions: []metav1.Condition{
 					{
-						Type:    DataGatheredCondition,
+						Type:    dataGatheredCondition,
 						Status:  metav1.ConditionTrue,
-						Reason:  GatheredWithErrorReason,
+						Reason:  gatheredWithErrorReason,
 						Message: "Created 2 records in the archive. Error: didn't find xyz configmap",
 					},
 				},
@@ -296,9 +296,9 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 				},
 				Conditions: []metav1.Condition{
 					{
-						Type:    DataGatheredCondition,
+						Type:    dataGatheredCondition,
 						Status:  metav1.ConditionFalse,
-						Reason:  GatherPanicReason,
+						Reason:  gatherPanicReason,
 						Message: "quz gatherer panicked",
 					},
 				},

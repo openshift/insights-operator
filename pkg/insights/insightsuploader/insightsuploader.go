@@ -17,12 +17,17 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 )
 
+type Uploader interface {
+	//TODO
+}
+
 type Authorizer interface {
 	IsAuthorizationError(error) bool
 }
 
 type Summarizer interface {
 	Summary(ctx context.Context, since time.Time) (*insightsclient.Source, bool, error)
+	LastArchive() (*insightsclient.Source, error)
 }
 
 type StatusReporter interface {
@@ -59,6 +64,35 @@ func New(summarizer Summarizer,
 		archiveUploaded:    make(chan struct{}),
 		initialDelay:       initialDelay,
 	}
+}
+
+func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) error {
+	bo := wait.Backoff{
+		Duration: c.secretConfigurator.Config().Interval / 4, // 30 min as first wait by default
+		Steps:    4,
+		Factor:   2,
+	}
+	start := time.Now()
+	s.ID = start.Format(time.RFC3339)
+	s.Type = "application/vnd.redhat.openshift.periodic"
+	err := wait.ExponentialBackoff(bo, func() (done bool, err error) {
+		err = c.client.Send(ctx, c.secretConfigurator.Config().Endpoint, *s)
+		if err != nil {
+			klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
+			klog.Errorf("%v. Trying again in %s", err, bo.Step())
+			if authorizer.IsAuthorizationError(err) {
+				return false, nil
+			}
+			// TODO what other errors?
+		}
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+	klog.Infof("Uploaded report successfully in %s", time.Since(start))
+	//c.archiveUploaded <- struct{}{}
+	return nil
 }
 
 func (c *Controller) Run(ctx context.Context) {

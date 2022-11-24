@@ -4,36 +4,41 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog/v2"
-
-	v1 "github.com/openshift/api/operator/v1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
-	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 const (
-	DataGatheredCondition = "DataGathered"
+	dataGatheredCondition = "DataGathered"
 	// NoDataGathered is a reason when there is no data gathered - e.g the resource is not in a cluster
-	NoDataGatheredReason = "NoData"
+	noDataGatheredReason = "NoData"
 	// Error is a reason when there is some error and no data gathered
-	GatherErrorReason = "GatherError"
+	gatherErrorReason = "GatherError"
 	// Panic is a reason when there is some error and no data gathered
-	GatherPanicReason = "GatherPanic"
+	gatherPanicReason = "GatherPanic"
 	// GatheredOK is a reason when data is gathered as expected
-	GatheredOKReason = "GatheredOK"
+	gatheredOKReason = "GatheredOK"
 	// GatheredWithError is a reason when data is gathered partially or with another error message
-	GatheredWithErrorReason = "GatheredWithError"
+	gatheredWithErrorReason = "GatheredWithError"
+)
+
+var (
+	serviceCABundle     = "service-ca-bundle"
+	serviceCABundlePath = "/var/run/configmaps/service-ca-bundle"
+	insightsNamespace   = "openshift-insights"
 )
 
 // Controller periodically runs gatherers, records their results to the recorder
@@ -46,6 +51,7 @@ type Controller struct {
 	statuses            map[string]controllerstatus.StatusController
 	anonymizer          *anonymization.Anonymizer
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface
+	kubeClient          kubernetes.Clientset
 }
 
 // New creates a new instance of Controller which periodically invokes the gatherers
@@ -57,6 +63,7 @@ func New(
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
 	apiConfigurator configobserver.APIConfigObserver,
+	kubeClient *kubernetes.Clientset,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -73,6 +80,7 @@ func New(
 		statuses:            statuses,
 		anonymizer:          anonymizer,
 		insightsOperatorCLI: insightsOperatorCLI,
+		kubeClient:          *kubeClient,
 	}
 }
 
@@ -99,10 +107,10 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 		case <-stopCh:
 			return
 		case <-time.After(initialDelay):
-			c.Gather()
+			c.GatherJob()
 		}
 	} else {
-		c.Gather()
+		c.GatherJob()
 	}
 
 	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
@@ -110,7 +118,80 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	<-stopCh
 }
 
-// Gather Runs the gatherers one after the other.
+func (c *Controller) GatherJob() {
+	if c.isGatheringDisabled() {
+		klog.V(3).Info("Gather is disabled by configuration.")
+		return
+	}
+
+	image, err := c.getInsightsImage()
+	if err != nil {
+		klog.Errorf("Can't get operator image. Gathering will not run: %v", err)
+		return
+	}
+
+	now := time.Now()
+	gatherJobName := fmt.Sprintf("gather-%d-%d-%d-%d-%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute())
+	optional := true
+	gj := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      gatherJobName,
+			Namespace: insightsNamespace,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					RestartPolicy:      corev1.RestartPolicyNever,
+					ServiceAccountName: "operator",
+					Volumes: []corev1.Volume{
+						{
+							Name: "archives-path",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
+						{
+							Name: serviceCABundle,
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: serviceCABundle,
+									},
+									Optional: &optional,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name: "insights-gathering",
+							// TODO read image from container ?
+							Image: image,
+							Args:  []string{"gather", "-v=4", "--config=/etc/insights-operator/server.yaml"},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "archives-path",
+									MountPath: c.secretConfigurator.Config().StoragePath,
+								},
+								{
+									Name:      serviceCABundle,
+									MountPath: serviceCABundlePath,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	klog.Infof("Creating gathering job %v", gj.Name)
+	_, err = c.kubeClient.BatchV1().Jobs(insightsNamespace).Create(context.Background(), gj, metav1.CreateOptions{})
+	if err != nil {
+		klog.Error(err)
+	}
+}
+
+/* // Gather Runs the gatherers one after the other.
 func (c *Controller) Gather() {
 	if c.isGatheringDisabled() {
 		klog.V(3).Info("Gather is disabled by configuration.")
@@ -181,7 +262,7 @@ func (c *Controller) Gather() {
 		klog.Errorf("unable to record archive metadata because of error: %v", err)
 	}
 }
-
+*/
 // Periodically starts the gathering.
 // If there is an initialDelay set then it waits that much for the first gather to happen.
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
@@ -204,12 +285,12 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			c.Gather()
+			c.GatherJob()
 		}
 	}
 }
 
-// updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last
+/* // updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last
 // gathering details.
 func (c *Controller) updateOperatorStatusCR(allFunctionReports map[string]gather.GathererFunctionReport, gatherTime metav1.Time) error {
 	insightsOperatorCR, err := c.insightsOperatorCLI.Get(context.Background(), "cluster", metav1.GetOptions{})
@@ -242,7 +323,7 @@ func (c *Controller) updateOperatorStatusCR(allFunctionReports map[string]gather
 	}
 	return nil
 }
-
+*/
 func (c *Controller) isGatheringDisabled() bool {
 	// old way of disabling data gathering by removing
 	// the "cloud.openshift.com" token from the pull-secret
@@ -258,7 +339,19 @@ func (c *Controller) isGatheringDisabled() bool {
 	return false
 }
 
-func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus {
+func (c *Controller) getInsightsImage() (string, error) {
+	insightsDeployment, err := c.kubeClient.AppsV1().Deployments(insightsNamespace).Get(context.Background(), "insights-operator", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	containers := insightsDeployment.Spec.Template.Spec.Containers
+	if len(containers) == 0 {
+		return "", fmt.Errorf("no container defined in the deployment")
+	}
+	return containers[0].Image, nil
+}
+
+/* func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus {
 	gs := v1.GathererStatus{
 		Name: gfr.FuncName,
 		LastGatherDuration: metav1.Duration{
@@ -309,3 +402,4 @@ func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFun
 	}
 	return a
 }
+*/

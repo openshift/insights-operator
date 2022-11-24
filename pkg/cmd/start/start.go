@@ -58,7 +58,12 @@ func NewGather() *cobra.Command {
 		Controller: config.Controller{
 			ConditionalGathererEndpoint: "https://console.redhat.com/api/gathering/gathering_rules",
 			StoragePath:                 "/var/lib/insights-operator",
-			Interval:                    30 * time.Minute,
+			Interval:                    2 * time.Hour,
+			Endpoint:                    "https://console.redhat.com/api/ingress/v1/upload",
+			ReportEndpoint:              "https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports",
+			ReportPullingDelay:          60 * time.Second,
+			ReportMinRetryTime:          10 * time.Second,
+			ReportPullingTimeout:        30 * time.Minute,
 		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil)

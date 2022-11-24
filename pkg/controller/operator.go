@@ -28,8 +28,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
-	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
-	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/ocm/clustertransfer"
 	"github.com/openshift/insights-operator/pkg/ocm/sca"
 	"github.com/openshift/insights-operator/pkg/recorder"
@@ -124,7 +122,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// in s.StoragePath, and also prunes files above a certain age
 	recdriver := diskrecorder.New(s.StoragePath)
 	rec := recorder.New(recdriver, s.Interval, anonymizer)
-	go rec.PeriodicallyPrune(ctx, statusReporter)
+	//go rec.PeriodicallyPrune(ctx, statusReporter)
 
 	authorizer := clusterauthorizer.New(secretConfigObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
@@ -135,8 +133,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		secretConfigObserver, insightsClient,
 	)
-	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), apiConfigObserver)
-	statusReporter.AddSources(periodicGather.Sources()...)
+	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), apiConfigObserver, kubeClient)
+	//statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
 	initialCheckTimeout := s.Controller.Interval / 24
@@ -151,8 +149,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
-	statusReporter.AddSources(uploader)
+	/* 	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
+	   	statusReporter.AddSources(uploader) */
 
 	// start reporting status now that all controller loops are added as sources
 	if err = statusReporter.Start(ctx); err != nil {
@@ -160,11 +158,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 	// start uploading status, so that we
 	// know any previous last reported time
-	go uploader.Run(ctx)
+	//go uploader.Run(ctx)
 
-	reportGatherer := insightsreport.New(insightsClient, secretConfigObserver, uploader, operatorClient.InsightsOperators())
-	statusReporter.AddSources(reportGatherer)
-	go reportGatherer.Run(ctx)
+	/* 	reportGatherer := insightsreport.New(insightsClient, secretConfigObserver, uploader, operatorClient.InsightsOperators())
+	   	statusReporter.AddSources(reportGatherer)
+	   	go reportGatherer.Run(ctx) */
 
 	scaController := initiateSCAController(ctx, kubeClient, secretConfigObserver, insightsClient)
 	if scaController != nil {

@@ -175,6 +175,38 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (*insightscli
 	return &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}, true, nil
 }
 
+func (d *DiskRecorder) LastArchive() (*insightsclient.Source, error) {
+	files, err := os.ReadDir(d.basePath)
+	if err != nil {
+		return nil, err
+	}
+	if len(files) == 0 {
+		return nil, nil
+	}
+	var lastTime time.Time
+	var lastArchive string
+	for _, file := range files {
+		fileInfo, err := file.Info()
+		if err != nil {
+			return nil, err
+		}
+		if isNotArchiveFile(fileInfo) {
+			continue
+		}
+		if fileInfo.ModTime().After(lastTime) {
+			lastTime = fileInfo.ModTime()
+			lastArchive = file.Name()
+		}
+	}
+	f, err := os.Open(filepath.Join(d.basePath, lastArchive))
+	if err != nil {
+		return nil, err
+	}
+
+	return &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}, nil
+
+}
+
 func isNotArchiveFile(file os.FileInfo) bool {
 	return file.IsDir() || !strings.HasPrefix(file.Name(), "insights-") || !strings.HasSuffix(file.Name(), ".tar.gz")
 }
