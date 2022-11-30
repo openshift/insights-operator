@@ -9,7 +9,6 @@ import (
 	v1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
-	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,18 +19,14 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
-	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/ocm/clustertransfer"
 	"github.com/openshift/insights-operator/pkg/ocm/sca"
-	"github.com/openshift/insights-operator/pkg/recorder"
-	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
 // Operator is the type responsible for controlling the start up of the Insights Operator
@@ -64,12 +59,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	operatorClient, err := operatorv1client.NewForConfig(controller.KubeConfig)
-	if err != nil {
-		return err
-	}
-
-	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
+	gatherProtoKubeConfig, gatherKubeConfig, _, _ := prepareGatherConfigs(
 		controller.ProtoKubeConfig, controller.KubeConfig, s.Impersonate,
 	)
 
@@ -108,33 +98,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver, apiConfigObserver, os.Getenv("POD_NAMESPACE"))
-
-	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
-		gatherProtoKubeConfig, controller.ProtoKubeConfig, secretConfigObserver, apiConfigObserver)
-	if err != nil {
-		// in case of an error anonymizer will be nil and anonymization will be just skipped
-		klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
-		return err
-	}
-
-	// the recorder periodically flushes any recorded data to disk as tar.gz files
-	// in s.StoragePath, and also prunes files above a certain age
-	recdriver := diskrecorder.New(s.StoragePath)
-	rec := recorder.New(recdriver, s.Interval, anonymizer)
-	//go rec.PeriodicallyPrune(ctx, statusReporter)
-
 	authorizer := clusterauthorizer.New(secretConfigObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
-
-	// the gatherers are periodically called to collect the data from the cluster
-	// and provide the results for the recorder
-	gatherers := gather.CreateAllGatherers(
-		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		secretConfigObserver, insightsClient,
-	)
-	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), apiConfigObserver, kubeClient)
-	//statusReporter.AddSources(periodicGather.Sources()...)
+	periodicJobOrchestrator := periodic.New(secretConfigObserver, apiConfigObserver, kubeClient)
 
 	// check we can read IO container status and we are not in crash loop
 	initialCheckTimeout := s.Controller.Interval / 24
@@ -145,24 +111,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		initialDelay = wait.Jitter(baseInitialDelay, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
-	go periodicGather.Run(ctx.Done(), initialDelay)
-
-	// upload results to the provided client - if no client is configured reporting
-	// is permanently disabled, but if a client does exist the server may still disable reporting
-	/* 	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
-	   	statusReporter.AddSources(uploader) */
+	go periodicJobOrchestrator.PeriodicPrune(ctx)
+	go periodicJobOrchestrator.Run(ctx.Done(), initialDelay)
 
 	// start reporting status now that all controller loops are added as sources
 	if err = statusReporter.Start(ctx); err != nil {
 		return fmt.Errorf("unable to set initial cluster status: %v", err)
 	}
-	// start uploading status, so that we
-	// know any previous last reported time
-	//go uploader.Run(ctx)
-
-	/* 	reportGatherer := insightsreport.New(insightsClient, secretConfigObserver, uploader, operatorClient.InsightsOperators())
-	   	statusReporter.AddSources(reportGatherer)
-	   	go reportGatherer.Run(ctx) */
 
 	scaController := initiateSCAController(ctx, kubeClient, secretConfigObserver, insightsClient)
 	if scaController != nil {

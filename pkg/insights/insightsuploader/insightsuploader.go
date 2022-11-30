@@ -1,17 +1,12 @@
 package insightsuploader
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"context"
-	"fmt"
-	"io"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/insights-operator/pkg/authorizer"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
@@ -21,69 +16,43 @@ type Uploader interface {
 	//TODO
 }
 
-type Authorizer interface {
-	IsAuthorizationError(error) bool
-}
-
-type Summarizer interface {
-	Summary(ctx context.Context, since time.Time) (*insightsclient.Source, bool, error)
-	LastArchive() (*insightsclient.Source, error)
-}
-
-type StatusReporter interface {
-	LastReportedTime() time.Time
-	SetLastReportedTime(time.Time)
-}
-
 type Controller struct {
 	controllerstatus.StatusController
 
-	summarizer         Summarizer
 	client             *insightsclient.Client
 	secretConfigurator configobserver.Configurator
 	apiConfigurator    configobserver.APIConfigObserver
-	reporter           StatusReporter
-	archiveUploaded    chan struct{}
-	initialDelay       time.Duration
+	bo                 wait.Backoff
 }
 
-func New(summarizer Summarizer,
-	client *insightsclient.Client,
+func New(client *insightsclient.Client,
 	secretconfigurator configobserver.Configurator,
-	apiConfigurator configobserver.APIConfigObserver,
-	statusReporter StatusReporter,
-	initialDelay time.Duration) *Controller {
-
-	return &Controller{
-		StatusController:   controllerstatus.New("insightsuploader"),
-		summarizer:         summarizer,
+	apiConfigurator configobserver.APIConfigObserver) *Controller {
+	controller := &Controller{
 		secretConfigurator: secretconfigurator,
 		apiConfigurator:    apiConfigurator,
 		client:             client,
-		reporter:           statusReporter,
-		archiveUploaded:    make(chan struct{}),
-		initialDelay:       initialDelay,
 	}
-}
-
-func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) error {
-	bo := wait.Backoff{
-		Duration: c.secretConfigurator.Config().Interval / 4, // 30 min as first wait by default
+	controller.bo = wait.Backoff{
+		Duration: controller.secretConfigurator.Config().Interval / 4, // 30 min as first wait by default
 		Steps:    4,
 		Factor:   2,
 	}
+	return controller
+}
+
+func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) error {
+	defer s.Contents.Close()
 	start := time.Now()
 	s.ID = start.Format(time.RFC3339)
 	s.Type = "application/vnd.redhat.openshift.periodic"
-	err := wait.ExponentialBackoff(bo, func() (done bool, err error) {
+	err := wait.ExponentialBackoff(c.bo, func() (done bool, err error) {
 		err = c.client.Send(ctx, c.secretConfigurator.Config().Endpoint, *s)
 		if err != nil {
 			klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
-			klog.Errorf("%v. Trying again in %s", err, bo.Step())
-			if authorizer.IsAuthorizationError(err) {
-				return false, nil
-			}
-			// TODO what other errors?
+			klog.Errorf("%v. Trying again in %s %d", err, c.bo.Step(), c.bo.Steps)
+			return false, nil
+			// TODO we would need to propagate the error as HTTP
 		}
 		return true, nil
 	})
@@ -91,11 +60,10 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) error
 		return err
 	}
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
-	//c.archiveUploaded <- struct{}{}
 	return nil
 }
 
-func (c *Controller) Run(ctx context.Context) {
+/* func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 
 	if c.client == nil {
@@ -230,3 +198,4 @@ func reportToLogs(source io.Reader, klog klog.Verbose) error {
 	}
 	return nil
 }
+*/

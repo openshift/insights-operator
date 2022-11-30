@@ -67,11 +67,6 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		return err
 	}
 
-	operatorClient, err := operatorv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		return err
-	}
-
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
 		protoKubeConfig, kubeConfig, d.Impersonate,
 	)
@@ -109,11 +104,11 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(d.StoragePath)
 	rec := recorder.New(recdriver, d.Interval, anonymizer)
-	/* 	defer func() {
+	defer func() {
 		if err := rec.Flush(); err != nil {
 			klog.Error(err)
 		}
-	}() */
+	}()
 
 	authorizer := clusterauthorizer.New(configObserver)
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
@@ -122,12 +117,99 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,
 	)
-	uploader := insightsuploader.New(recdriver, insightsClient, configObserver, nil, nil, 0)
 
+	allFunctionReports := make(map[string]gather.GathererFunctionReport)
+	for _, gatherer := range gatherers {
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, &gatherConfig)
+		if err != nil {
+			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
+		}
+
+		for i := range functionReports {
+			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+		}
+	}
+
+	return gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
+}
+
+// Gather runs a single gather and stores the generated archive, without uploading it.
+// 1. Creates the necessary configs/clients
+// 2. Creates the configobserver to get more configs
+// 3. Initiates the recorder
+// 4. Executes a Gather
+// 5. Flushes the results
+func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error {
+	klog.Infof("Starting insights-operator %s", version.Get().String())
+	// these are operator clients
+	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
+	if err != nil {
+		return err
+	}
+
+	configClient, err := configv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return err
+	}
+
+	operatorClient, err := operatorv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return err
+	}
+
+	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
+		protoKubeConfig, kubeConfig, d.Impersonate,
+	)
+
+	// The reason for using longer context is that the upload can fail and then there is the exponential backoff
+	// See the insightsuploader Upload method
+	ctx, cancel := context.WithTimeout(context.Background(), d.Interval*4)
+	defer cancel()
+
+	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
+	if err != nil {
+		klog.Error("can't read cluster feature gates: %v", err)
+	}
+	var gatherConfig v1alpha1.GatherConfig
+	if tpEnabled {
+		insightsDataGather, err := configClient.ConfigV1alpha1().InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{}) //nolint: govet
+		if err != nil {
+			return err
+		}
+		gatherConfig = insightsDataGather.Spec.GatherConfig
+	}
+
+	// ensure the insight snapshot directory exists
+	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
+		if err = os.MkdirAll(d.StoragePath, 0777); err != nil {
+			return fmt.Errorf("can't create --path: %v", err)
+		}
+	}
+
+	// configobserver synthesizes all config into the status reporter controller
+	configObserver := configobserver.New(d.Controller, kubeClient)
+
+	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+	anonymizer, err := anonymization.NewAnonymizerFromConfig(
+		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, nil)
+	if err != nil {
+		return err
+	}
+
+	// the recorder stores the collected data and we flush at the end.
+	recdriver := diskrecorder.New(d.StoragePath)
+	rec := recorder.New(recdriver, d.Interval, anonymizer)
+	authorizer := clusterauthorizer.New(configObserver)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
+
+	gatherers := gather.CreateAllGatherers(
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
+		configObserver, insightsClient,
+	)
+	uploader := insightsuploader.New(insightsClient, configObserver, nil)
 	reporter := insightsreport.New(insightsClient, configObserver, operatorClient.InsightsOperators())
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
-	gatherTime := metav1.Now()
 	for _, gatherer := range gatherers {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, &gatherConfig)
 		if err != nil {
@@ -141,23 +223,22 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	err = gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
 	if err != nil {
 		klog.Error(err)
+		return err
 	}
 	err = rec.Flush()
 	if err != nil {
 		klog.Error(err)
-	}
-
-	err = updateOperatorStatusCR(operatorClient.InsightsOperators(), allFunctionReports, gatherTime)
-	if err != nil {
-		klog.Error(err)
+		return err
 	}
 	lastArchive, err := recdriver.LastArchive()
 	if err != nil {
 		klog.Error(err)
+		return err
 	}
 	err = uploader.Upload(ctx, lastArchive)
 	if err != nil {
 		klog.Error(err)
+		return err
 	}
 	reporter.RetrieveReport()
 	return nil
