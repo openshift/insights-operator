@@ -40,6 +40,7 @@ type Controller struct {
 	reporter           StatusReporter
 	archiveUploaded    chan struct{}
 	initialDelay       time.Duration
+	backoff            wait.Backoff
 }
 
 func New(summarizer Summarizer,
@@ -49,7 +50,7 @@ func New(summarizer Summarizer,
 	statusReporter StatusReporter,
 	initialDelay time.Duration) *Controller {
 
-	return &Controller{
+	ctrl := &Controller{
 		StatusController:   controllerstatus.New("insightsuploader"),
 		summarizer:         summarizer,
 		secretConfigurator: secretconfigurator,
@@ -59,6 +60,12 @@ func New(summarizer Summarizer,
 		archiveUploaded:    make(chan struct{}),
 		initialDelay:       initialDelay,
 	}
+	ctrl.backoff = wait.Backoff{
+		Duration: ctrl.secretConfigurator.Config().Interval / 4, // 30 min as first wait by default
+		Steps:    4,
+		Factor:   2,
+	}
+	return ctrl
 }
 
 func (c *Controller) Run(ctx context.Context) {
@@ -173,6 +180,29 @@ func (c *Controller) Run(ctx context.Context) {
 // ArchiveUploaded returns a channel that indicates when an archive is uploaded
 func (c *Controller) ArchiveUploaded() <-chan struct{} {
 	return c.archiveUploaded
+}
+
+// Upload is an alternative simple upload method used only in TechPreview clusters
+func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) error {
+	defer s.Contents.Close()
+	start := time.Now()
+	s.ID = start.Format(time.RFC3339)
+	s.Type = "application/vnd.redhat.openshift.periodic"
+	err := wait.ExponentialBackoff(c.backoff, func() (done bool, err error) {
+		err = c.client.Send(ctx, c.secretConfigurator.Config().Endpoint, *s)
+		if err != nil {
+			klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
+			klog.Errorf("%v. Trying again in %s %d", err, c.backoff.Step(), c.backoff.Steps)
+			return false, nil
+			// TODO we would need to propagate the error as HTTP
+		}
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+	klog.Infof("Uploaded report successfully in %s", time.Since(start))
+	return nil
 }
 
 func reportToLogs(source io.Reader, klog klog.Verbose) error {

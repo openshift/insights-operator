@@ -205,7 +205,7 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		return nil, nil, err
 	}
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
-	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, mockAPIConfigurator)
+	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, mockAPIConfigurator, nil)
 	return mockController, &mockRecorder, nil
 }
 

@@ -7,8 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
 	v1 "github.com/openshift/api/operator/v1"
@@ -19,6 +21,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,6 +40,15 @@ const (
 	GatheredWithErrorReason = "GatheredWithError"
 )
 
+var (
+	serviceCABundle             = "service-ca-bundle"
+	serviceCABundlePath         = "/var/run/configmaps/service-ca-bundle"
+	insightsNamespace           = "openshift-insights"
+	falseB                      = new(bool)
+	trueB                       = true
+	deletePropagationBackground = metav1.DeletePropagationBackground
+)
+
 // Controller periodically runs gatherers, records their results to the recorder
 // and flushes the recorder to create archives
 type Controller struct {
@@ -46,6 +59,8 @@ type Controller struct {
 	statuses            map[string]controllerstatus.StatusController
 	anonymizer          *anonymization.Anonymizer
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface
+	kubeClient          *kubernetes.Clientset
+	image               string
 }
 
 // New creates a new instance of Controller which periodically invokes the gatherers
@@ -57,6 +72,7 @@ func New(
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
 	apiConfigurator configobserver.APIConfigObserver,
+	kubeClient *kubernetes.Clientset,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -73,6 +89,7 @@ func New(
 		statuses:            statuses,
 		anonymizer:          anonymizer,
 		insightsOperatorCLI: insightsOperatorCLI,
+		kubeClient:          kubeClient,
 	}
 }
 
@@ -89,7 +106,7 @@ func (c *Controller) Sources() []controllerstatus.StatusController {
 	return sources
 }
 
-func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
+func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration, techPreview bool) {
 	defer utilruntime.HandleCrash()
 	defer klog.Info("Shutting down")
 
@@ -99,13 +116,21 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 		case <-stopCh:
 			return
 		case <-time.After(initialDelay):
-			c.Gather()
+			if techPreview {
+				c.GatherJob()
+			} else {
+				c.Gather()
+			}
 		}
 	} else {
-		c.Gather()
+		if techPreview {
+			c.GatherJob()
+		} else {
+			c.Gather()
+		}
 	}
 
-	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
+	go wait.Until(func() { c.periodicTrigger(stopCh, techPreview) }, time.Second, stopCh)
 
 	<-stopCh
 }
@@ -184,7 +209,7 @@ func (c *Controller) Gather() {
 
 // Periodically starts the gathering.
 // If there is an initialDelay set then it waits that much for the first gather to happen.
-func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
+func (c *Controller) periodicTrigger(stopCh <-chan struct{}, techPreview bool) {
 	configCh, closeFn := c.secretConfigurator.ConfigChanged()
 	defer closeFn()
 
@@ -204,9 +229,118 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			c.Gather()
+			if techPreview {
+				c.GatherJob()
+			} else {
+				c.Gather()
+			}
 		}
 	}
+}
+
+func (c *Controller) GatherJob() {
+	if c.isGatheringDisabled() {
+		klog.V(3).Info("Gather is disabled by configuration.")
+		return
+	}
+	if c.image == "" {
+		image, err := c.getInsightsImage()
+		if err != nil {
+			klog.Errorf("Can't get operator image. Gathering will not run: %v", err)
+			return
+		}
+		c.image = image
+	}
+
+	now := time.Now()
+	gatherJobName := fmt.Sprintf("periodic-gather-%d-%d-%d-%d-%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute())
+	gj := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      gatherJobName,
+			Namespace: insightsNamespace,
+		},
+		Spec: batchv1.JobSpec{
+			// backoff limit is 0 - we dont' want to restart the gathering immediately in case of failure
+			BackoffLimit: new(int32),
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					RestartPolicy:      corev1.RestartPolicyNever,
+					ServiceAccountName: "operator",
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsNonRoot: &trueB,
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "archives-path",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						},
+						{
+							Name: serviceCABundle,
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: serviceCABundle,
+									},
+									Optional: &trueB,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:  "insights-gathering",
+							Image: c.image,
+							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml"},
+							Env: []corev1.EnvVar{
+								// this is to pair job with corresponding CR having the same name
+								{
+									Name:  "JOB_NAME",
+									Value: gatherJobName,
+								},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: falseB,
+								Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "archives-path",
+									MountPath: c.secretConfigurator.Config().StoragePath,
+								},
+								{
+									Name:      serviceCABundle,
+									MountPath: serviceCABundlePath,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	klog.Infof("Creating gathering job %v", gj.Name)
+	gj, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).Create(context.Background(), gj, metav1.CreateOptions{})
+	if err != nil {
+		klog.Error(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)
+	defer cancel()
+	err = c.waitForJobCompletion(ctx, gj)
+	if err != nil {
+		if err == context.DeadlineExceeded {
+			klog.Errorf("Failed to read job status: %v", err)
+			return
+		}
+		klog.Error(err)
+	}
+	klog.Infof("Job completed %s", gj.Name)
+	// TODO read the status of the CR and copy to insightsoperator CR
 }
 
 // updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last
@@ -258,6 +392,37 @@ func (c *Controller) isGatheringDisabled() bool {
 	return false
 }
 
+// getInsightsImage reads "insights-operator" deployment and gets the image from the first container
+func (c *Controller) getInsightsImage() (string, error) {
+	insightsDeployment, err := c.kubeClient.AppsV1().Deployments(insightsNamespace).
+		Get(context.Background(), "insights-operator", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	containers := insightsDeployment.Spec.Template.Spec.Containers
+	if len(containers) == 0 {
+		return "", fmt.Errorf("no container defined in the deployment")
+	}
+	return containers[0].Image, nil
+}
+
+func (c *Controller) waitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
+	return wait.PollUntil(20*time.Second, func() (done bool, err error) {
+		j, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).Get(ctx, job.Name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return false, err
+		}
+		if j.Status.Succeeded > 0 {
+			return true, nil
+		}
+		if j.Status.Failed > 0 {
+			return true, fmt.Errorf("job %s failed", job.Name)
+		}
+		// TODO check job conditions ?
+		return false, nil
+	}, ctx.Done())
+}
+
 func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus {
 	gs := v1.GathererStatus{
 		Name: gfr.FuncName,
@@ -300,6 +465,38 @@ func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus 
 	gs.Conditions = append(gs.Conditions, con)
 
 	return gs
+}
+
+// PeriodicPrune runs periodically and deletes jobs (including the related pods) older
+// than given time
+func (c *Controller) PeriodicPrune(ctx context.Context) {
+	pruneInterval := 1 * time.Hour
+	klog.Infof("Pruning old jobs every %s", pruneInterval)
+	for {
+		select {
+		case <-ctx.Done():
+		// TODO change time
+		case <-time.After(pruneInterval):
+			jobs, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).List(ctx, metav1.ListOptions{})
+			if err != nil {
+				klog.Error(err)
+			}
+			for i := range jobs.Items {
+				job := jobs.Items[i]
+				// TODO the time duration should be configurable
+				if time.Since(job.CreationTimestamp.Time) > 8*time.Hour {
+					err = c.kubeClient.BatchV1().Jobs(insightsNamespace).Delete(ctx, job.Name, metav1.DeleteOptions{
+						PropagationPolicy: &deletePropagationBackground,
+					})
+					if err != nil {
+						klog.Errorf("Failed to delete job %s: %v", job.Name, err)
+						continue
+					}
+					klog.Infof("Job %s successfully removed", job.Name)
+				}
+			}
+		}
+	}
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
