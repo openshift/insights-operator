@@ -14,20 +14,33 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherSAPConfig collects selected security context constraints
+// GatherSAPConfig Collects selected security context constraints
 // and cluster role bindings from clusters running a SAP payload.
 //
-// **Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+// ### API Reference
+// - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
+// - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 //
-// Relevant OpenShift API docs:
-//   - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
-//   - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
+// ### Sample data
+// - docs/insights-archive-sample/config/.json
 //
-// * Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
-// * Id in config: clusterconfig/sap_config
-// * Since versions:
-//   - 4.6.20+
-//   - 4.7+
+// ### Location in archive
+// | Version   | Path																   |
+// | --------- | --------------------------------------------------------------------- |
+// | >= 4.7    | config/{securitycontentconstraint|clusterrolebinding}/{name}.json     |
+//
+// ### Config ID
+// `clusterconfig/sap_config`
+//
+// ### Released version
+// - 4.7
+//
+// ### Backported versions
+// - 4.6.20+
+//
+// ### Notes
+// **Conditional data**: This data is collected only if the `installers.datahub.sap.com`
+// resource is found in the cluster.
 func (g *Gatherer) GatherSAPConfig(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

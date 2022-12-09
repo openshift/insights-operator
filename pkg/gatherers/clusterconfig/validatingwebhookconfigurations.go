@@ -14,17 +14,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherValidatingWebhookConfigurations collects ValidatingWebhookConfiguration resources
-// Relevant OpenShift API docs:
-//   - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/validatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+// GatherValidatingWebhookConfigurations Collects `ValidatingWebhookConfiguration` resources
 //
-// * Location in archive: config/validatingwebhookconfigurations
-// * Id in config: clusterconfig/validating_webhook_configurations
-// * Since versions:
-//   - 4.7.40+
-//   - 4.8.24+
-//   - 4.9.11+
-//   - 4.10+
+// ### API Reference
+// - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/validatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/validatingwebhookconfigurations/
+//
+// ### Location in archive
+// | Version      | Path														|
+// | ------------ | --------------------------------------------------------	|
+// |  >= 4.10.13  | config/validatingwebhookconfigurations/{name}.json          |
+//
+// ### Config ID
+// `clusterconfig/validating_webhook_configurations`
+//
+// ### Released version
+// - 4.10.13
+//
+// ### Backported versions
+// - 4.9.11+
+// - 4.8.24+
+// - 4.7.40+
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherValidatingWebhookConfigurations(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

@@ -829,47 +829,93 @@ collects pod definition from pods that are firing one of the configured alerts.
 
 ## PodDisruptionBudgets
 
-gathers the cluster's PodDisruptionBudgets.
+Collects the cluster's `PodDisruptionBudgets`.
 
-The Kubernetes api https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
-Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
+### API Reference
+- https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
+- https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
 
-* Location in archive: config/pdbs/
-* See: docs/insights-archive-sample/config/pdbs
-* Id in config: clusterconfig/pdbs
-* Since versions:
-  - 4.4.30+
-  - 4.5.34+
-  - 4.6+
+### Sample data
+- docs/insights-archive-sample/config/pdbs/openshift-machine-config-operator/etcd-quorum-guard.json
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+|  >= 4.6   | config/pdbs/{namespace}/{name}.json	                    |
+
+### Config ID
+`clusterconfig/pdbs`
+
+### Released version
+- 4.6
+
+### Backported versions
+- 4.5.15+
+- 4.4.30+
+
+### Notes
+None
 
 
 ## SAPConfig
 
-collects selected security context constraints
+Collects selected security context constraints
 and cluster role bindings from clusters running a SAP payload.
 
-**Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+### API Reference
+- https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
+- https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
-Relevant OpenShift API docs:
-  - https://pkg.go.dev/github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1
-  - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
+### Sample data
+- docs/insights-archive-sample/config/.json
 
-* Location in archive: config/securitycontentconstraint/, config/clusterrolebinding/
-* Id in config: clusterconfig/sap_config
-* Since versions:
-  - 4.6.20+
-  - 4.7+
+### Location in archive
+| Version   | Path																   |
+| --------- | --------------------------------------------------------------------- |
+| >= 4.7    | config/{securitycontentconstraint|clusterrolebinding}/{name}.json     |
+
+### Config ID
+`clusterconfig/sap_config`
+
+### Released version
+- 4.7
+
+### Backported versions
+- 4.6.20+
+
+### Notes
+**Conditional data**: This data is collected only if the `installers.datahub.sap.com`
+resource is found in the cluster.
 
 
 ## SAPDatahubs
 
-collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
+Collects `datahubs.installers.datahub.sap.com`
+resources from SAP/SDI clusters.
 
-* Location in archive: customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json
-* Id in config: clusterconfig/sap_datahubs
-* Since versions:
-  - 4.7.5+
-  - 4.8+
+### API Reference
+None
+
+### Sample data
+- docs/insights-archive-sample/customresources/installers.datahub.sap.com/datahubs/sdi/default.json
+
+### Location in archive
+| Version   | Path	 			  														 |
+| --------- | --------------------------------------------------------------------------- |
+| >= 4.8.2  | customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json |
+
+### Config ID
+`clusterconfig/sap_datahubs`
+
+### Released version
+- 4.8.2
+
+### Backported versions
+- 4.7.5+
+- 4.6.26+
+
+### Notes
+None
 
 
 ## SAPPods
@@ -952,19 +998,33 @@ The API:
 
 ## ServiceAccounts
 
-collects ServiceAccount stats
+Collects `ServiceAccount` stats
 from kubernetes default and namespaces starting with openshift.
 
-The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
 
-* Location of serviceaccounts in archive: config/serviceaccounts
-* See: docs/insights-archive-sample/config/serviceaccounts
-* Id in config: clusterconfig/service_accounts
-* Since versions:
-  - 4.5.34+
-  - 4.6.20+
-  - 4.7+
+### Sample data
+- docs/insights-archive-sample/config/serviceaccounts.json
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+|  >= 4.7   | config/serviceaccounts.json		                        |
+
+### Config ID
+`clusterconfig/service_accounts`
+
+### Released version
+- 4.7
+
+### Backported versions
+- 4.6.20+
+- 4.5.34+
+
+### Notes
+None
 
 
 ## SilencedAlerts
@@ -981,36 +1041,59 @@ gathers the alerts that have been silenced.
 ## StorageCluster
 
 Collects `storageclusters.ocs.openshift.io` resources
-from Openshift Data Foundation Stack.
 
-### API Reference:
-https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+### API Reference
+- https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
 
 ### Sample data
-docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
+- docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
 
-### Location in archive:
 | Version | Path														|
 | ------- | --------------------------------------------------------	|
 | <= 4.12 | config/storage/{namespace}/{name}.json 					|
 | 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
 
-### Config ID:
-clusterconfig/storage_cluster
+### Config ID
+`clusterconfig/storage_cluster`
 
-### Since versions:
-* 4.11
+### Released version
+- 4.11
+
+### Backported versions
+None
+
+### Notes
+**Changes for >= 4.12**:
+- renamed from `OpenshiftStorage` to `StorageCluster`
+- config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster`
 
 
 ## SupportSecret
 
-gathers anonymized support secret if there is any
+Collects anonymized support secret if there is any
 
-  - Location in archive: config/secrets/openshift-config/support/data.json
-    (can be omitted if the secret doesn't exist)
-  - Id in config: support_secret
-  - Since version:
-  - 4.11+
+### API Reference
+None
+
+### Sample data
+- docs/insights-archive-sample/config/secrets/openshift-config/support/data.json
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.11   | config/secrets/openshift-config/support/data.json 	        |
+
+### Config ID
+`clusterconfig/support_secret`
+
+### Released version
+- 4.11
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## TSDBStatus
@@ -1026,27 +1109,60 @@ gathers the Prometheus TSDB status.
 
 ## ValidatingWebhookConfigurations
 
-collects ValidatingWebhookConfiguration resources
-Relevant OpenShift API docs:
-  - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/validatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+Collects `ValidatingWebhookConfiguration` resources
 
-* Location in archive: config/validatingwebhookconfigurations
-* Id in config: clusterconfig/validating_webhook_configurations
-* Since versions:
-  - 4.7.40+
-  - 4.8.24+
-  - 4.9.11+
-  - 4.10+
+### API Reference
+- https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/validatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+
+### Sample data
+- docs/insights-archive-sample/config/validatingwebhookconfigurations/
+
+### Location in archive
+| Version      | Path														|
+| ------------ | --------------------------------------------------------	|
+|  >= 4.10.13  | config/validatingwebhookconfigurations/{name}.json          |
+
+### Config ID
+`clusterconfig/validating_webhook_configurations`
+
+### Released version
+- 4.10.13
+
+### Backported versions
+- 4.9.11+
+- 4.8.24+
+- 4.7.40+
+
+### Notes
+None
 
 
 ## WorkloadInfo
 
-collects summarized info about the workloads on a cluster
+Collects summarized info about the workloads on a cluster
 in a generic fashion
 
-* Location in archive: config/workload_info
-* Id in config: workloads/workload_info
-* Since versions:
-  - 4.8+
+### API Reference
+None
+
+### Sample data
+- docs/insights-archive-sample/config/workload_info.json
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+|  >= 4.8   | config/workload_info.json      	                        |
+
+### Config ID
+`workloads/workload_info`
+
+### Released version
+- 4.8
+
+### Backported versions
+None
+
+### Notes
+None
 
 

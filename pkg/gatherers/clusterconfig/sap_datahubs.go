@@ -11,13 +11,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherSAPDatahubs collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
+// GatherSAPDatahubs Collects `datahubs.installers.datahub.sap.com`
+// resources from SAP/SDI clusters.
 //
-// * Location in archive: customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json
-// * Id in config: clusterconfig/sap_datahubs
-// * Since versions:
-//   - 4.7.5+
-//   - 4.8+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/customresources/installers.datahub.sap.com/datahubs/sdi/default.json
+//
+// ### Location in archive
+// | Version   | Path	 			  														 |
+// | --------- | --------------------------------------------------------------------------- |
+// | >= 4.8.2  | customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json |
+//
+// ### Config ID
+// `clusterconfig/sap_datahubs`
+//
+// ### Released version
+// - 4.8.2
+//
+// ### Backported versions
+// - 4.7.5+
+// - 4.6.26+
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherSAPDatahubs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

@@ -14,18 +14,32 @@ const (
 	gatherPodDisruptionBudgetLimit = 5000
 )
 
-// GatherPodDisruptionBudgets gathers the cluster's PodDisruptionBudgets.
+// GatherPodDisruptionBudgets Collects the cluster's `PodDisruptionBudgets`.
 //
-// The Kubernetes api https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
-// Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
+// - https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
 //
-// * Location in archive: config/pdbs/
-// * See: docs/insights-archive-sample/config/pdbs
-// * Id in config: clusterconfig/pdbs
-// * Since versions:
-//   - 4.4.30+
-//   - 4.5.34+
-//   - 4.6+
+// ### Sample data
+// - docs/insights-archive-sample/config/pdbs/openshift-machine-config-operator/etcd-quorum-guard.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// |  >= 4.6   | config/pdbs/{namespace}/{name}.json	                    |
+//
+// ### Config ID
+// `clusterconfig/pdbs`
+//
+// ### Released version
+// - 4.6
+//
+// ### Backported versions
+// - 4.5.15+
+// - 4.4.30+
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

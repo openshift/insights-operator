@@ -19,19 +19,33 @@ import (
 // Maximal total number of service accounts
 const maxServiceAccountsLimit = 1000
 
-// GatherServiceAccounts collects ServiceAccount stats
+// GatherServiceAccounts Collects `ServiceAccount` stats
 // from kubernetes default and namespaces starting with openshift.
 //
-// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#serviceaccount-v1-core
 //
-// * Location of serviceaccounts in archive: config/serviceaccounts
-// * See: docs/insights-archive-sample/config/serviceaccounts
-// * Id in config: clusterconfig/service_accounts
-// * Since versions:
-//   - 4.5.34+
-//   - 4.6.20+
-//   - 4.7+
+// ### Sample data
+// - docs/insights-archive-sample/config/serviceaccounts.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// |  >= 4.7   | config/serviceaccounts.json		                        |
+//
+// ### Config ID
+// `clusterconfig/service_accounts`
+//
+// ### Released version
+// - 4.7
+//
+// ### Backported versions
+// - 4.6.20+
+// - 4.5.34+
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherServiceAccounts(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
