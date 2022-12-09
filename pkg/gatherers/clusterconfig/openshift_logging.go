@@ -14,17 +14,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherOpenshiftLogging collects `logging.openshift.io` resources
+// GatherOpenshiftLogging Collects `logging.openshift.io` resources
 // from Openshift Logging Stack.
 //
-// API Reference:
+// ### API Reference
+// - https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 //
-//	https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
+// ### Sample data
+// - docs/insights-archive-sample/config/logging/openshift-logging/instance.json
 //
-// * Location in archive: config/logging/{namespace}/{name}.json
-// * Id in config: clusterconfig/openshift_logging
-// * Since versions:
-//   - 4.9+
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.9    | config/logging/{namespace}/{name}.json 		            |
+//
+// ### Config ID
+// `clusterconfig/openshift_logging`
+//
+// ### Released version
+// - 4.9
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherOpenshiftLogging(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
