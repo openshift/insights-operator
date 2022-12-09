@@ -15,26 +15,34 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherSAPVsystemIptablesLogs collects logs from SAP vsystem-iptables containers
+// GatherSAPVsystemIptablesLogs Collects logs from SAP `vsystem-iptables` containers
 // including one from license management pods with the following substring:
 //   - "can't initialize iptables table",
 //
-// **Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-// The Kubernetes API:
+// ### Sample data
+// - docs/insights-archive-sample/config/pod/sdi/logs/license-manager-da1d2e8fadfb8dd7022f08-4hjh7-6887768c5b-qzxb6/errors.log
 //
-//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.8.2  | config/pod/{namespace}/logs/{pod-name}/errors.log 			|
 //
-// Response see:
+// ### Config ID
+// `clusterconfig/sap_license_management_logs`
 //
-//	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+// ### Released version
+// - 4.8.2
 //
-// * Location in archive: config/pod/{namespace}/logs/{pod-name}/errors.log
-// * Id in config: clusterconfig/sap_license_management_logs
-// * Since versions:
-//   - 4.6.25+
-//   - 4.7.5+
-//   - 4.8+
+// ### Backported versions
+// - 4.7.5+
+// - 4.6.25+
+//
+// ### Notes
+// **Conditional data**: This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
 func (g *Gatherer) GatherSAPVsystemIptablesLogs(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
