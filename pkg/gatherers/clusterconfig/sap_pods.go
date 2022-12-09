@@ -16,23 +16,35 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherSAPPods collects information about pods running in SAP/SDI namespaces.
-// Only pods with a failing status are collected.
-// Failed pods belonging to a job that has later succeeded are ignored.
+// GatherSAPPods Collects information about pods running in SAP/SDI namespaces.
 //
-// **Conditional data**: This data is collected only if the "installers.datahub.sap.com" resource is found in the cluster.
+// ### API Reference
+// - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
+// - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
+// - https://pkg.go.dev/k8s.io/client-go/dynamic
 //
-// Relevant Kubernetes API docs:
-//   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
-//   - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
-//   - https://pkg.go.dev/k8s.io/client-go/dynamic
+// ### Sample data
+// None
 //
-// * Location in archive: config/pod/{namespace}/{pod-name}.json
-// * Id in config: clusterconfig/sap_pods
-// * Since versions:
-//   - 4.6.24+
-//   - 4.7.5+
-//   - 4.8+
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.8.2  | config/pod/{namespace}/{name}.json 					                        |
+//
+// ### Config ID
+// `clusterconfig/sap_pods`
+//
+// ### Released version
+// - 4.8.2
+//
+// ### Backported versions
+// - 4.7.5+
+// - 4.6.25+
+//
+// ### Notes
+// - Only pods with a failing status are collected.
+// - Failed pods belonging to a job that has later succeeded are ignored.
+// **Conditional data**: This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
 func (g *Gatherer) GatherSAPPods(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
