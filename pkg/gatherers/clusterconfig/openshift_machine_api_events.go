@@ -10,13 +10,31 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-// GatherOpenshiftMachineAPIEvents collects warning ("abnormal") events
-// from "openshift-machine-api" namespace
+// GatherOpenshiftMachineAPIEvents Collects warning ("abnormal") events
+// from `openshift-machine-api` namespace
 //
-// * Location of events in archive: events/
-// * Id in config: clusterconfig/openshift_machine_api_events
-// * Since versions:
-//   - 4.12+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/events/openshift-machine-api.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.12   | events/openshift-machine-api.json 	                      	|
+//
+// ### Config ID
+// `clusterconfig/openshift_machine_api_events`
+//
+// ### Released version
+// - 4.12
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherOpenshiftMachineAPIEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
