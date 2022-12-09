@@ -726,28 +726,60 @@ Response see:
 
 ## OpenshiftLogging
 
-collects `logging.openshift.io` resources
+Collects `logging.openshift.io` resources
 from Openshift Logging Stack.
 
-API Reference:
+### API Reference
+- https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 
-	https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
+### Sample data
+- docs/insights-archive-sample/config/logging/openshift-logging/instance.json
 
-* Location in archive: config/logging/{namespace}/{name}.json
-* Id in config: clusterconfig/openshift_logging
-* Since versions:
-  - 4.9+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.9    | config/logging/{namespace}/{name}.json 		            |
+
+### Config ID
+`clusterconfig/openshift_logging`
+
+### Released version
+- 4.9
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## OpenshiftMachineAPIEvents
 
-collects warning ("abnormal") events
-from "openshift-machine-api" namespace
+Collects warning ("abnormal") events
+from `openshift-machine-api` namespace
 
-* Location of events in archive: events/
-* Id in config: clusterconfig/openshift_machine_api_events
-* Since versions:
-  - 4.12+
+### API Reference
+None
+
+### Sample data
+- docs/insights-archive-sample/events/openshift-machine-api.json
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.12   | events/openshift-machine-api.json 	                      	|
+
+### Config ID
+`clusterconfig/openshift_machine_api_events`
+
+### Released version
+- 4.12
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## OpenshiftSDNControllerLogs
@@ -781,25 +813,35 @@ Response see:
 
 ## OpenshiftSDNLogs
 
-collects logs from pods in openshift-sdn namespace with following substrings:
-  - "Got OnEndpointsUpdate for unknown Endpoints",
-  - "Got OnEndpointsDelete for unknown Endpoints",
-  - "Unable to update proxy firewall for policy",
-  - "Failed to update proxy firewall for policy",
+Collects logs from pods in `openshift-sdn` namespace with following substrings:
+- "Got OnEndpointsUpdate for unknown Endpoints",
+- "Got OnEndpointsDelete for unknown Endpoints",
+- "Unable to update proxy firewall for policy",
+- "Failed to update proxy firewall for policy",
 
-The Kubernetes API:
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+### Sample data
+- docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log
 
-Response see:
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.7	   | config/pod/openshift-sdn/logs/{name}/errors.log 			|
 
-	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+### Config ID
+`clusterconfig/openshift_sdn_logs`
 
-* Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
-* Id in config: clusterconfig/openshift_sdn_logs
-* Since versions:
-  - 4.6.19+
-  - 4.7+
+### Released version
+- 4.7
+
+### Backported versions
+- 4.6.21+
+
+### Notes
+None
 
 
 ## PNCC
