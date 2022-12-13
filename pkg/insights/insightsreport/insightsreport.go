@@ -127,6 +127,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	}()
 
 	klog.V(4).Info("Report retrieved")
+	downloadTime := metav1.Now()
 	reportResponse := Response{}
 
 	if err = json.NewDecoder(resp.Body).Decode(&reportResponse); err != nil {
@@ -143,7 +144,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 
 	recommendations, healthStatus, gatherTime := c.readInsightsReport(reportResponse.Report)
 	updateInsightsMetrics(recommendations, healthStatus, gatherTime)
-	err = c.updateOperatorStatusCR(reportResponse.Report)
+	err = c.updateOperatorStatusCR(reportResponse.Report, downloadTime)
 	if err != nil {
 		klog.Errorf("failed to update the Insights Operator CR status: %v", err)
 	}
@@ -331,7 +332,7 @@ func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation,
 	insightsLastGatherTime.Set(float64(gatherTime.Unix()))
 }
 
-func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error {
+func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport, reportDownloadTime metav1.Time) error {
 	insightsOperatorCR, err := c.insightsOperatorCLI.Get(context.Background(), "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -359,7 +360,7 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport) error
 		}
 		healthChecks = append(healthChecks, healthCheck)
 	}
-
+	updatedOperatorCR.Status.InsightsReport.DownloadedAt = reportDownloadTime
 	updatedOperatorCR.Status.InsightsReport.HealthChecks = healthChecks
 	_, err = c.insightsOperatorCLI.UpdateStatus(context.Background(), updatedOperatorCR, metav1.UpdateOptions{})
 	if err != nil {
