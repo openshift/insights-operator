@@ -150,7 +150,7 @@ github.com/openshift/api/operator/v1alpha1
 github.com/openshift/api/operatorcontrolplane/v1alpha1
 github.com/openshift/api/pkg/serialization
 github.com/openshift/api/security/v1
-# github.com/openshift/build-machinery-go v0.0.0-20220720161851-9b4f0386f6b0
+# github.com/openshift/build-machinery-go v0.0.0-20220913142420-e25cf57ea46d
 ## explicit; go 1.13
 github.com/openshift/build-machinery-go
 github.com/openshift/build-machinery-go/make
@@ -160,7 +160,7 @@ github.com/openshift/build-machinery-go/make/targets/golang
 github.com/openshift/build-machinery-go/make/targets/openshift
 github.com/openshift/build-machinery-go/make/targets/openshift/operator
 github.com/openshift/build-machinery-go/scripts
-# github.com/openshift/client-go v0.0.0-20220905192401-849f725bff84
+# github.com/openshift/client-go v0.0.0-20221213131518-7aec8d54188a
 ## explicit; go 1.18
 github.com/openshift/client-go/authorization/applyconfigurations/authorization/v1
 github.com/openshift/client-go/authorization/applyconfigurations/internal
@@ -1134,7 +1134,7 @@ k8s.io/component-base/metrics/testutil
 k8s.io/component-base/tracing
 k8s.io/component-base/tracing/api/v1
 k8s.io/component-base/version
-# k8s.io/klog/v2 v2.80.0
+# k8s.io/klog/v2 v2.80.1
 ## explicit; go 1.13
 k8s.io/klog/v2
 k8s.io/klog/v2/internal/buffer

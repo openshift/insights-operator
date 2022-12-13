@@ -7,8 +7,8 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/openshift/api v0.0.0-20221209105451-d85cfcef97b7
-	github.com/openshift/build-machinery-go v0.0.0-20220720161851-9b4f0386f6b0
-	github.com/openshift/client-go v0.0.0-20220905192401-849f725bff84
+	github.com/openshift/build-machinery-go v0.0.0-20220913142420-e25cf57ea46d
+	github.com/openshift/client-go v0.0.0-20221213131518-7aec8d54188a
 	github.com/openshift/installer v0.9.0-master.0.20191219195746-103098955ced
 	github.com/openshift/library-go v0.0.0-20220902131052-245d1ca16d15
 	github.com/prometheus/client_golang v1.12.1
@@ -23,7 +23,7 @@ require (
 	k8s.io/apimachinery v0.25.0
 	k8s.io/client-go v0.25.0
 	k8s.io/component-base v0.25.0
-	k8s.io/klog/v2 v2.80.0
+	k8s.io/klog/v2 v2.80.1
 	k8s.io/utils v0.0.0-20220823124924-e9cbc92d1a73
 	sigs.k8s.io/yaml v1.2.0
 )
