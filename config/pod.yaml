@@ -8,7 +8,7 @@ endpoint: https://console.redhat.com/api/ingress/v1/upload
 conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules
 impersonate: system:serviceaccount:openshift-insights:gather
 pull_report:
-  endpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports?get_disabled=true
+  endpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports
   delay: "60s"
   timeout: "3000s"
   min_retry: "30s"
