@@ -42,7 +42,7 @@ type csvRef struct {
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.7    | config/olm_operators 					                    |
+// | >= 4.6.26 | config/olm_operators 					                    |
 //
 // ### Config ID
 // `clusterconfig/olm_operators`
@@ -51,7 +51,7 @@ type csvRef struct {
 // - 4.7
 //
 // ### Backported versions
-// - 4.6
+// - 4.6.26
 //
 // ### Notes
 // None
