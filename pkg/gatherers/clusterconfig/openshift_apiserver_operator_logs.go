@@ -9,20 +9,33 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherOpenShiftAPIServerOperatorLogs collects logs from openshift-apiserver-operator with following substrings:
-//   - "the server has received too many requests and has asked us"
-//   - "because serving request timed out and response had been started"
+// GatherOpenShiftAPIServerOperatorLogs Collects logs from `openshift-apiserver-operator` with following substrings:
+// - "the server has received too many requests and has asked us"
+// - "because serving request timed out and response had been started"
 //
-// The Kubernetes API:
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// ### Sample data
+// - docs/insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log
 //
-// Response see:
+// ### Location in archive
+// | Version   | Path													 	|
+// | --------- | ---------------------------------------------------------- |
+// | >= 4.7    | config/pod/{namespace-name}/logs/{pod-name}/errors.log   	|
 //
-//	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+// ### Config ID
+// `clusterconfig/openshift_apiserver_operator_logs`
 //
-// * Location in archive: config/pod/{namespace-name}/logs/{pod-name}/errors.log
-// * Id in config: clusterconfig/openshift_apiserver_operator_logs
+// ### Released version
+// - 4.7
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{
 		Namespace:     "openshift-apiserver-operator",
