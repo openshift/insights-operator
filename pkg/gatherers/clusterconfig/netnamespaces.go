@@ -17,16 +17,30 @@ type netNamespace struct {
 	NetID     uint32                           `json:"netID"`
 }
 
-// GatherNetNamespace collects NetNamespaces networking information
+// GatherNetNamespace Collects NetNamespaces networking information.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
-// Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and NetID attributes.
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
 //
-// * Location in archive: config/netnamespaces
-// * Id in config: clusterconfig/netnamespaces
-// * Since versions:
-//   - 4.6.20+
-//   - 4.7+
+// ### Sample data
+// - docs/insights-archive-sample/config/netnamespaces.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.6.20 | config/netnamespaces.json				                    |
+//
+// ### Config ID
+// `clusterconfig/netnamespaces`
+//
+// ### Released version
+// - 4.7
+//
+// ### Backported versions
+// - 4.6.20
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherNetNamespace(ctx context.Context) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
