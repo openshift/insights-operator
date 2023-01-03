@@ -7,19 +7,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
-)
-
-var (
-	operatorGVR              = schema.GroupVersionResource{Group: "operators.coreos.com", Version: "v1", Resource: "operators"}
-	clusterServiceVersionGVR = schema.GroupVersionResource{
-		Group:    "operators.coreos.com",
-		Version:  "v1alpha1",
-		Resource: "clusterserviceversions"}
 )
 
 type olmOperator struct {
@@ -36,17 +27,34 @@ type csvRef struct {
 	Version   string
 }
 
-// GatherOLMOperators collects list of installed OLM operators.
-// Each OLM operator (in the list) contains following data:
+// GatherOLMOperators Collects the list of installed OLM operators. Each OLM operator (in the list) contains
+// following data:
 // - OLM operator name
 // - OLM operator version
 // - related ClusterServiceVersion conditions
 //
-// * See: docs/insights-archive-sample/config/olm_operators
-// * Location of in archive: config/olm_operators
-// * Id in config: clusterconfig/olm_operators
-// * Since versions:
-//   - 4.7+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/olm_operators
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.7    | config/olm_operators 					                    |
+//
+// ### Config ID
+// `clusterconfig/olm_operators`
+//
+// ### Released version
+// - 4.7
+//
+// ### Backported versions
+// - 4.6
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherOLMOperators(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
