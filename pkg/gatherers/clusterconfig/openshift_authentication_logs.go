@@ -10,7 +10,8 @@ import (
 )
 
 // GatherOpenshiftAuthenticationLogs Collects logs from pods in `openshift-authentication` namespace with following
-// substring: `AuthenticationError: invalid resource name`
+// substring:
+// - "AuthenticationError: invalid resource name"
 //
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48

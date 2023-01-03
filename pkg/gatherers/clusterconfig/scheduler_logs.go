@@ -11,7 +11,8 @@ import (
 )
 
 // GatherSchedulerLogs Collects logs from pods in `openshift-kube-scheduler-namespace` from app
-// `openshift-kube-scheduler` with following substring `PodTopologySpread`
+// `openshift-kube-scheduler` with following substring:
+// - "PodTopologySpread"
 //
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
