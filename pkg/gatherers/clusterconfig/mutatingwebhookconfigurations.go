@@ -14,17 +14,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherMutatingWebhookConfigurations collects MutatingWebhookConfiguration resources
-// Relevant OpenShift API docs:
-//   - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/mutatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+// GatherMutatingWebhookConfigurations Collects MutatingWebhookConfiguration resources.
 //
-// * Location in archive: config/mutatingwebhookconfigurations
-// * Id in config: clusterconfig/mutating_webhook_configurations
-// * Since versions:
-//   - 4.7.40+
-//   - 4.8.24+
-//   - 4.9.11+
-//   - 4.10+
+// ### API Reference
+// - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/mutatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/mutatingwebhookconfigurations
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.7.40 | config/mutatingwebhookconfigurations/{resource}.json 		|
+//
+// ### Config ID
+// `clusterconfig/mutating_webhook_configurations`
+//
+// ### Released version
+// - 4.10.13
+//
+// ### Backported versions
+// - 4.7.40+
+// - 4.8.24+
+// - 4.9.11+
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherMutatingWebhookConfigurations(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
