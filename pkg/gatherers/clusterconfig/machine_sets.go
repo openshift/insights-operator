@@ -27,7 +27,7 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.4.29 | config//machinesets/{resource}								|
+// | >= 4.6    | config//machinesets/{resource}								|
 //
 // ### Config ID
 // `clusterconfig/machine_sets`

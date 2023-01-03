@@ -589,7 +589,7 @@ Collects MachineSet information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.4.29 | config//machinesets/{resource}								|
+| >= 4.6    | config//machinesets/{resource}								|
 
 ### Config ID
 `clusterconfig/machine_sets`
@@ -651,7 +651,7 @@ Collects MutatingWebhookConfiguration resources.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.7.40 | config/mutatingwebhookconfigurations/{resource}.json 		|
+| >= 4.10   | config/mutatingwebhookconfigurations/{resource}.json 		|
 
 ### Config ID
 `clusterconfig/mutating_webhook_configurations`
@@ -698,7 +698,7 @@ Collects NetNamespaces networking information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.6.20 | config/netnamespaces.json				                    |
+| >= 4.7    | config/netnamespaces.json				                    |
 
 ### Config ID
 `clusterconfig/netnamespaces`
@@ -707,7 +707,7 @@ Collects NetNamespaces networking information.
 - 4.7
 
 ### Backported versions
-- 4.6.20
+- 4.6.20+
 
 ### Notes
 None
@@ -787,7 +787,7 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.6.26 | config/olm_operators 					                    |
+| >= 4.7    | config/olm_operators 					                    |
 
 ### Config ID
 `clusterconfig/olm_operators`
@@ -796,7 +796,7 @@ None
 - 4.7
 
 ### Backported versions
-- 4.6.26
+- 4.6.26+
 
 ### Notes
 None
@@ -855,7 +855,7 @@ substring:
 `clusterconfig/openshift_authentication_logs`
 
 ### Released version
-4.7
+- 4.7
 
 ### Backported versions
 None
@@ -1220,7 +1220,7 @@ None
 `clusterconfig/scheduler_logs`
 
 ### Released version
-4.10
+- 4.10
 
 ### Backported versions
 None

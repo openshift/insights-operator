@@ -25,7 +25,7 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.7.40 | config/mutatingwebhookconfigurations/{resource}.json 		|
+// | >= 4.10   | config/mutatingwebhookconfigurations/{resource}.json 		|
 //
 // ### Config ID
 // `clusterconfig/mutating_webhook_configurations`

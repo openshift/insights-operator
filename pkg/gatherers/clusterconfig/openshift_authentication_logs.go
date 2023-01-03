@@ -29,7 +29,7 @@ import (
 // `clusterconfig/openshift_authentication_logs`
 //
 // ### Released version
-// 4.7
+// - 4.7
 //
 // ### Backported versions
 // None

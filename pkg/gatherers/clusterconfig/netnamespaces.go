@@ -28,7 +28,7 @@ type netNamespace struct {
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.6.20 | config/netnamespaces.json				                    |
+// | >= 4.7    | config/netnamespaces.json				                    |
 //
 // ### Config ID
 // `clusterconfig/netnamespaces`
@@ -37,7 +37,7 @@ type netNamespace struct {
 // - 4.7
 //
 // ### Backported versions
-// - 4.6.20
+// - 4.6.20+
 //
 // ### Notes
 // None

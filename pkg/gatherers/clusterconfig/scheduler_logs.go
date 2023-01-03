@@ -30,7 +30,7 @@ import (
 // `clusterconfig/scheduler_logs`
 //
 // ### Released version
-// 4.10
+// - 4.10
 //
 // ### Backported versions
 // None
