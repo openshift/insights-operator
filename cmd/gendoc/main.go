@@ -18,12 +18,13 @@ import (
 )
 
 var (
-	inPath     string
-	outPath    string
-	mdf        *os.File
-	randSource = rand.NewSource(time.Now().UnixNano())
-	reGather   = regexp.MustCompile(`^((Build)?Gather)(.*)`)
-	reExample  = regexp.MustCompile(`^(Example)(.*)`)
+	inPath          string
+	outPath         string
+	mdf             *os.File
+	randSource      = rand.NewSource(time.Now().UnixNano())
+	reGather        = regexp.MustCompile(`^((Build)?Gather)(.*)`)
+	reExample       = regexp.MustCompile(`^(Example)(.*)`)
+	reSampleArchive = regexp.MustCompile(`docs\/(insights-archive-sample\/.*)`)
 )
 
 type DocBlock struct {
@@ -50,13 +51,14 @@ func main() {
 	if err != nil {
 		fmt.Print(err)
 	}
-	// second pass will gather Sample..
+	// second pass will gather Sample...
 	err = walkDir(cleanRoot, md)
 	if err != nil {
 		fmt.Print(err)
 	}
 	keys := make([]string, 0, len(md))
 	for k := range md {
+
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -337,7 +339,8 @@ func parseDoc(method, doc string) *DocBlock {
 		doc = strings.TrimLeft(doc, method)
 	}
 	doc = strings.TrimLeft(doc, " ")
-
+	// generates the link to the sample archive
+	doc = reSampleArchive.ReplaceAllString(doc, "[$0](./$1)")
 	db := &DocBlock{Doc: doc}
 	return db
 }
