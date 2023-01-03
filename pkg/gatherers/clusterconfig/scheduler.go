@@ -9,15 +9,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GatherSchedulers collects information about schedulers
+// GatherSchedulers Collects information about schedulers
 //
-// The API:
+// ### API Reference
+// - https://docs.openshift.com/container-platform/4.9/rest_api/config_apis/scheduler-config-openshift-io-v1.html
 //
-//	https://docs.openshift.com/container-platform/4.9/rest_api/config_apis/scheduler-config-openshift-io-v1.html
+// ### Sample data
+// - docs/insights-archive-sample/config/schedulers/cluster.json
 //
-// * Location in archive: config/schedulers/cluster.json
-// * Since versions:
-//   - 4.10+
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.10   | config/schedulers/cluster.json 					        |
+//
+// ### Config ID
+// `clusterconfig/schedulers`
+//
+// ### Released version
+// - 4.10
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherSchedulers(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
