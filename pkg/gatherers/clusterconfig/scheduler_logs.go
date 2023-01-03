@@ -10,22 +10,32 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-// GatherSchedulerLogs collects logs from pods in openshift-kube-scheduler-namespace from app openshift-kube-scheduler
-// with following substring:
-//   - "PodTopologySpread"
+// GatherSchedulerLogs Collects logs from pods in `openshift-kube-scheduler-namespace` from app
+// `openshift-kube-scheduler` with following substring `PodTopologySpread`
 //
-// The Kubernetes API:
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// ### Sample data
+// None
 //
-// Response see:
+// ### Location in archive
+// | Version   | Path															  |
+// | --------- | ---------------------------------------------------------------- |
+// | >= 4.10   | config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log |
 //
-//	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+// ### Config ID
+// `clusterconfig/scheduler_logs`
 //
-// * Location in archive: config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log
-// * Id in config: clusterconfig/scheduler_logs
-// * Since versions:
-//   - 4.10+
+// ### Released version
+// 4.10
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherSchedulerLogs(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
