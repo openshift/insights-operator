@@ -9,21 +9,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherOpenshiftAuthenticationLogs collects logs from pods in openshift-authentication namespace with following substring:
-//   - "AuthenticationError: invalid resource name"
+// GatherOpenshiftAuthenticationLogs Collects logs from pods in `openshift-authentication` namespace with following
+// substring: `AuthenticationError: invalid resource name`
 //
-// The Kubernetes API:
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// ### Sample data
+// - docs/insights-archive-sample/config/pod/openshift-authentication/logs/oauth-openshift-6c98668d5b-ftt5n/errors.log
 //
-// Response see:
+// ### Location in archive
+// | Version   | Path															|
+// | --------- | -------------------------------------------------------------- |
+// | >= 4.7    | config/pod/openshift-authentication/logs/{pod-name}/errors.log |
 //
-//	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+// ### Config ID
+// `clusterconfig/openshift_authentication_logs`
 //
-// * Location in archive: config/pod/openshift-authentication/logs/{pod-name}/errors.log
-// * Id in config: clusterconfig/openshift_authentication_logs
-// * Since versions:
-//   - 4.7+
+// ### Released version
+// 4.7
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{
 		Namespace:     "openshift-authentication",
