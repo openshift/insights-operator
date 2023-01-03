@@ -19,15 +19,30 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// GatherNodeLogs fetches control plane node logs from journal unit
+// GatherNodeLogs Collects control plane node logs from journal unit.
 //
-// Response see https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
+// ### API Reference
+// - https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
 //
-// * Location in archive: config/nodes/logs/{hostname}.log
-// * See: docs/insights-archive-sample/config/nodes/logs
-// * Id in config: clusterconfig/node_logs
-// * Since versions:
-//   - 4.10+
+// ### Sample data
+// - docs/insights-archive-sample/config/nodes/logs
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.10   | config/nodes/logs/{hostname}.log							|
+//
+// ### Config ID
+// `clusterconfig/node_logs`
+//
+// ### Released version
+// - 4.10
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherNodeLogs(ctx context.Context) ([]record.Record, []error) {
 	clientSet, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
