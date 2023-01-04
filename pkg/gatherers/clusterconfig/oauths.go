@@ -11,14 +11,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterOAuth fetches the cluster OAuth - the OAuth with name cluster.
+// GatherClusterOAuth Collects the cluster OAuth - the OAuth with name cluster.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#oauth-v1-config-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#oauth-v1-config-openshift-io
 //
-// * Location in archive: config/oauth/
-// * See: docs/insights-archive-sample/config/oauth
-// * Id in config: clusterconfig/oauths
+// ### Sample data
+// - docs/insights-archive-sample/config/oauth.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.2    | config/oauth.json 					                        |
+//
+// ### Config ID
+// `clusterconfig/oauths`
+//
+// ### Released version
+// - 4.2
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherClusterOAuth(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
