@@ -109,13 +109,13 @@ func Test_InstallPlans_Gather(t *testing.T) {
 			if len(records) != 1 {
 				t.Fatalf("unexpected number or records %d", len(records))
 			}
-			m, ok := records[0].Item.(InstallPlanAnonymizer)
+			m, ok := records[0].Item.(installPlanAnonymizer)
 			if !ok {
-				t.Fatalf("returned item is not of type InstallPlanAnonymizer")
+				t.Fatalf("returned item is not of type installPlanAnonymizer")
 			}
 			if test.limit != 0 {
 				// copy to new anonymizer with limited max
-				m = InstallPlanAnonymizer{limit: 1, total: m.total, v: m.v}
+				m = installPlanAnonymizer{limit: 1, total: m.total, v: m.v}
 			}
 			b, _ := m.Marshal()
 			sb := string(b)
