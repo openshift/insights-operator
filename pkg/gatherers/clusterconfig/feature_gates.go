@@ -11,14 +11,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterFeatureGates fetches the cluster FeatureGate - the FeatureGate with name cluster.
+// GatherClusterFeatureGates Collects the cluster FeatureGate - the FeatureGate with name cluster.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
 //
-// * Location in archive: config/featuregate.json
-// * See: docs/insights-archive-sample/config/featuregate.json
-// * Id in config: clusterconfig/feature_gates
+// ### Sample data
+// - docs/insights-archive-sample/config/featuregate.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.2    | config/featuregate.json 					                |
+//
+// ### Config ID
+// `clusterconfig/feature_gates`
+//
+// ### Released version
+// - 4.2
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherClusterFeatureGates(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
