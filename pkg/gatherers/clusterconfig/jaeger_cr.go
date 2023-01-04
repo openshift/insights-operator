@@ -10,16 +10,30 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// limit the number of gathered jaegers.jaegertracing.io resources
-var limit = 5
-
-// GatherJaegerCR collects maximum of 5 jaegers.jaegertracing.io custom resources
-// installed in the cluster
+// GatherJaegerCR Collects maximum of 5 `jaegers.jaegertracing.io` custom resources installed in the cluster.
 //
-// * Location in archive: config/jaegertracing.io/
-// * Id in config: clusterconfig/jaegers
-// * Since versions:
-//   - 4.10+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/jaegertracing.io/jaeger1.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.10   | config/.json 					                        	|
+//
+// ### Config ID
+// `clusterconfig/jaegers`
+//
+// ### Released version
+// - 4.10
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherJaegerCR(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -38,6 +52,8 @@ func gatherJaegerCR(ctx context.Context, dynamicClient dynamic.Interface) ([]rec
 		return nil, []error{err}
 	}
 	var errs []error
+	// Limit the number of gathered jaegers.jaegertracing.io resources
+	var limit = 5
 	records := make([]record.Record, 0, limit)
 	for i := range jaegersList.Items {
 		j := jaegersList.Items[i]
