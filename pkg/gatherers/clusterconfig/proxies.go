@@ -12,14 +12,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherClusterProxy fetches the cluster Proxy - the Proxy with name cluster.
+// GatherClusterProxy Collects the cluster Proxy - the Proxy with name cluster.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
 //
-// * Location in archive: config/proxy.json
-// * See: docs/insights-archive-sample/config/proxy.json
-// * Id in config: clusterconfig/proxies
+// ### Sample data
+// - docs/insights-archive-sample/config/proxy.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.3    | config/proxy.json 					                        |
+//
+// ### Config ID
+// `clusterconfig/proxies`
+//
+// ### Released version
+// - 4.3
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherClusterProxy(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
