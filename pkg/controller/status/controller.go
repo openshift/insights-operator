@@ -32,7 +32,13 @@ const (
 	// as InsightsUploadDegraded
 	uploadFailuresCountThreshold = 5
 
+	asExpectedReason         = "AsExpected"
+	upgradeableReason        = "InsightsUpgradeable"
+	disabledReason           = "Disabled"
 	insightsAvailableMessage = "Insights works as expected"
+	reportingDisabledMsg     = "Health reporting is disabled"
+	monitoringMsg            = "Monitoring the cluster"
+	canBeUpgradedMsg         = "Insights operator can be upgraded"
 )
 
 type Reported struct {
@@ -155,7 +161,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	// cluster operator conditions
 	cs := newConditions(&clusterOperator.Status, metav1.Time{Time: now})
 	c.updateControllerConditions(cs, isInitializing, lastTransition)
-	updateControllerConditionsByStatus(cs, c.ctrlStatus, isInitializing)
+	c.updateControllerConditionsByStatus(cs, isInitializing)
 
 	// all status conditions from conditions to cluster operator
 	clusterOperator.Status.Conditions = cs.entries()
@@ -246,7 +252,7 @@ func (c *Controller) currentControllerStatus() (allReady bool, lastTransition ti
 
 	// disabled state only when it's disabled by config. It means that gathering will not happen
 	if !c.configurator.Config().Report {
-		c.ctrlStatus.setStatus(DisabledStatus, "Disabled", "Health reporting is disabled")
+		c.ctrlStatus.setStatus(DisabledStatus, disabledReason, reportingDisabledMsg)
 	}
 
 	return allReady, lastTransition
@@ -333,23 +339,24 @@ func (c *Controller) updateControllerConditions(cs *conditions,
 			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
 		}
 		if !cs.hasCondition(configv1.OperatorDegraded) {
-			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
+			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, asExpectedReason, "", metav1.Now())
 		}
 	}
 
 	// once we've initialized set Failing and Disabled as best we know
 	// handle when disabled
 	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil {
+		klog.V(4).Infof("The operator is marked as disabled")
 		cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message, metav1.Now())
 	} else {
-		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, "AsExpected", "", metav1.Now())
+		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, asExpectedReason, "", metav1.Now())
 	}
 
 	// handle when has errors
 	if es := c.ctrlStatus.getStatus(ErrorStatus); es != nil && !c.ctrlStatus.isDisabled() {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message, metav1.Time{Time: lastTransition})
 	} else {
-		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, "AsExpected", insightsAvailableMessage, metav1.Now())
+		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, asExpectedReason, insightsAvailableMessage, metav1.Now())
 	}
 
 	// handle when upload fails
@@ -397,8 +404,7 @@ func (c *Controller) updateControllerConditionByReason(cs *conditions,
 }
 
 // update the current controller state by it status
-func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerStatus,
-	isInitializing bool) {
+func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitializing bool) {
 	if isInitializing {
 		klog.V(4).Infof("The operator is still being initialized")
 		// if we're still starting up and some sources are not ready, initialize the conditions
@@ -408,27 +414,18 @@ func updateControllerConditionsByStatus(cs *conditions, ctrlStatus *controllerSt
 		}
 	}
 
-	if es := ctrlStatus.getStatus(ErrorStatus); es != nil && !ctrlStatus.isDisabled() {
+	if es := c.ctrlStatus.getStatus(ErrorStatus); es != nil && !c.ctrlStatus.isDisabled() {
 		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "Degraded", "An error has occurred", metav1.Now())
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, es.reason, es.message, metav1.Now())
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionFalse, "InsightsNotUpgradeable", es.message, metav1.Now())
 	}
 
-	if ds := ctrlStatus.getStatus(DisabledStatus); ds != nil {
-		klog.V(4).Infof("The operator is marked as disabled")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, ds.reason, ds.message, metav1.Now())
-		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, ds.reason, ds.message, metav1.Now())
-		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, "InsightsUpgradeable",
-			"Insights operator can be upgraded", metav1.Now())
-	}
-
-	if ctrlStatus.isHealthy() {
+	if c.ctrlStatus.isHealthy() {
 		klog.V(4).Infof("The operator is healthy")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, "AsExpected", "Monitoring the cluster", metav1.Now())
-		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, "AsExpected", insightsAvailableMessage, metav1.Now())
-		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, "InsightsUpgradeable",
-			"Insights operator can be upgraded", metav1.Now())
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg, metav1.Now())
+		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, asExpectedReason, insightsAvailableMessage, metav1.Now())
+		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg, metav1.Now())
 	}
 }
 
