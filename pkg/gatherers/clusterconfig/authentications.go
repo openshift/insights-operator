@@ -11,14 +11,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterAuthentication fetches the cluster Authentication - the Authentication with name cluster.
+// GatherClusterAuthentication Collects the cluster Authentication - the Authentication with name cluster.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#authentication-v1operator-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#authentication-v1operator-openshift-io
 //
-// * Location in archive: config/authentication/
-// * See: docs/insights-archive-sample/config/authentication
-// * Id in config: clusterconfig/authentication
+// ### Sample data
+// - docs/insights-archive-sample/config/authentication.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.2    | config/authentication.json 								|
+//
+// ### Config ID
+// `clusterconfig/authentication`
+//
+// ### Released version
+// - 4.2
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherClusterAuthentication(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
