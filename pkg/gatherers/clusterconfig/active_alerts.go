@@ -10,11 +10,6 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const (
-	// alertLimit is the maximal number of recorded alerts
-	alertLimit = 1000
-)
-
 // we could use e.g https://pkg.go.dev/github.com/prometheus/alertmanager@v0.23.0/api/v2/models#GettableAlert,
 // but this allows us to control what attributes we want to include in the alert definition
 type alert struct {
@@ -26,14 +21,33 @@ type alert struct {
 	Status      map[string]interface{} `json:"status"`
 }
 
-// GatherActiveAlerts gathers active alerts from the Alertmanager API V2 in the JSON format.
-// Alert data is also still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
+// GatherActiveAlerts Collects active alerts from the Alertmanager API V2 in the JSON format. Alert data is also
+// still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
 //
-// * Location in archive: config/alerts.json
-// * See: docs/insights-archive-sample/config/alerts.json
-// * Id in config: active_alerts
-// * Since version:
-//   - 4.12+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/alerts.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.12   | config/alerts.json				                        	|
+//
+// ### Config ID
+// `clusterconfig/active_alerts`
+//
+// ### Released version
+// - 4.12
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// This adds new gatherer for gathering firing/active Prometheus alerts in JSON format as well. The original recent
+// metrics gatherer still continues to gather the alerts (not in JSON) as well, but this can be removed in the future,
+// and we will keep the data only in JSON.
 func (g *Gatherer) GatherActiveAlerts(ctx context.Context) ([]record.Record, []error) {
 	alertsRESTClient, err := rest.RESTClientFor(g.alertsGatherKubeConfig)
 	if err != nil {
@@ -51,6 +65,9 @@ func gatherActiveAlerts(ctx context.Context, alertsClient rest.Interface) ([]rec
 		return nil, []error{err}
 	}
 
+	// the maximal number of recorded alerts
+	var limit = 1000
+
 	var alerts []alert
 	err = json.Unmarshal(alertsData, &alerts)
 	if err != nil {
@@ -58,10 +75,10 @@ func gatherActiveAlerts(ctx context.Context, alertsClient rest.Interface) ([]rec
 		return nil, []error{err}
 	}
 	var errs []error
-	if len(alerts) > alertLimit {
+	if len(alerts) > limit {
 		originalCount := len(alerts)
-		alerts = alerts[:alertLimit]
-		errs = append(errs, fmt.Errorf("alert limit %d was exceeded! There were %d alerts", alertLimit, originalCount))
+		alerts = alerts[:limit]
+		errs = append(errs, fmt.Errorf("alert limit %d was exceeded! There were %d alerts", limit, originalCount))
 	}
 	records := []record.Record{
 		{Name: "config/alerts", Item: record.JSONMarshaller{Object: alerts}},
