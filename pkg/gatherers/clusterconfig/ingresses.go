@@ -11,14 +11,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterIngress fetches the cluster Ingress - the Ingress with name cluster.
+// GatherClusterIngress Collects the cluster Ingress - the Ingress with name cluster.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
 //
-// * Location in archive: config/ingress.json
-// * See: docs/insights-archive-sample/config/ingress.json
-// * Id in config: clusterconfig/ingress
+// ### Sample data
+// - docs/insights-archive-sample/config/ingress.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.2    | config/ingress.json 					                    |
+//
+// ### Config ID
+// `clusterconfig/ingress`
+//
+// ### Released version
+// - 4.2
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherClusterIngress(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
