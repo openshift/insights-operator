@@ -90,7 +90,7 @@ func (c *conditions) findCondition(condition configv1.ClusterStatusConditionType
 }
 
 // entries returns a sorted list of status conditions from the mapped values.
-// The list is sorted by  by type ClusterStatusConditionType to ensure consistent ordering for deep equal checks.
+// The list is sorted by type ClusterStatusConditionType to ensure consistent ordering for deep equal checks.
 func (c *conditions) entries() []configv1.ClusterOperatorStatusCondition {
 	var res []configv1.ClusterOperatorStatusCondition
 	for _, v := range c.entryMap {
