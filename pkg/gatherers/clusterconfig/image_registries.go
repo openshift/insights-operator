@@ -19,8 +19,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-var lacAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
-
 // GatherClusterImageRegistry fetches the cluster Image Registry configuration
 //
 // **Conditional data**: If the Image Registry configuration uses any PersistentVolumeClaim for the storage, the corresponding
@@ -157,6 +155,7 @@ func anonymizeImageRegistry(config *registryv1.Config) *registryv1.Config {
 
 	// kubectl.kubernetes.io/last-applied-configuration annotation contains complete previous resource definition
 	// including the sensitive information as bucket, keyIDs, etc.
+	var lacAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
 	if lac, ok := config.Annotations[lacAnnotation]; ok {
 		config.Annotations[lacAnnotation] = anonymize.String(lac)
 	}
