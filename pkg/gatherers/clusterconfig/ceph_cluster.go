@@ -16,27 +16,32 @@ import (
 // GatherCephCluster Collects statuses of the`cephclusters.ceph.rook.io` resources
 // from Openshift Data Foundation Stack.
 //
-// ### API Reference:
-// https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
+// ### API Reference
+// - https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 //
-// ### Sample data:
-// docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json
+// ### Sample data
+// - docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json
 //
-// ### Location in archive:
+// ### Location in archive
 // | Version | Path													 |
 // | ------- | ----------------------------------------------------- |
 // | <= 4.12 | config/storage/{namespace}/{name}.json 				 |
 // | 4.13+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
 //
-// ### Config ID:
-// clusterconfig/ceph_cluster
+// ### Config ID
+// `clusterconfig/ceph_cluster`
 //
-// ### Since versions:
-// * 4.8.49
-// * 4.9.48
-// * 4.10.31
-// * 4.11.2
-// * 4.12
+// ### Released version
+// - 4.12
+//
+// ### Backported versions
+// - 4.8.49+
+// - 4.9.48+
+// - 4.10.31+
+// - 4.11.2+
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherCephCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
