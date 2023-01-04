@@ -12,14 +12,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherClusterInfrastructure fetches the cluster Infrastructure - the Infrastructure with name cluster.
+// GatherClusterInfrastructure Collects the cluster Infrastructure - the Infrastructure with name cluster.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
 //
-// * Location in archive: config/infrastructure/
-// * See: docs/insights-archive-sample/config/infrastructure
-// * Id in config: clusterconfig/infrastructures
+// ### Sample data
+// - docs/insights-archive-sample/config/infrastructure/.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.2    | config/infrastructure.json 					            |
+//
+// ### Config ID
+// `clusterconfig/infrastructures`
+//
+// ### Released version
+// - 4.2
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherClusterInfrastructure(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
