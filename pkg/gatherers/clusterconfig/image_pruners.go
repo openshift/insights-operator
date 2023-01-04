@@ -14,11 +14,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterImagePruner fetches the image pruner configuration
+// GatherClusterImagePruner Collects the image pruner configuration.
 //
-// * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
-// * Location in older versions: config/imagepruner.json
-// * Id in config: clusterconfig/image_pruners
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
+//
+// ### Location in archive
+// | Version   | Path																			     |
+// | --------- | ----------------------------------------------------------------------------------- |
+// | <= 4.5    | config/imagepruner.json														 	 |
+// | >= 4.6    | config/clusteroperator/{group}/{kind}/{name}.json |
+//
+// ### Config ID
+// `clusterconfig/image_pruners`
+//
+// ### Released version
+// - 4.5
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherClusterImagePruner(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
