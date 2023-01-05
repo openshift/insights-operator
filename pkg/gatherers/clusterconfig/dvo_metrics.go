@@ -21,15 +21,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// GatherDVOMetrics collects metrics from the Deployment Validation Operator's
+// GatherDVOMetrics Collects metrics from the Deployment Validation Operator's
 // metrics service. The metrics are fetched via the /metrics endpoint and
 // filtered to only include those with a deployment_validation_operator_ prefix.
 //
-// * Location in archive: config/dvo_metrics
-// * See: docs/insights-archive-sample/config/dvo_metrics
-// * Id in config: clusterconfig/dvo_metrics
-// * Since version:
-//   - 4.10
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/dvo_metrics
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.10   | config/dvo_metrics 					                    |
+//
+// ### Config ID
+// `clusterconfig/dvo_metrics`
+//
+// ### Released version
+// - 4.10
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
