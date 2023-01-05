@@ -68,7 +68,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"pod_network_connectivity_checks":   (*Gatherer).GatherPNCC,
 	"machine_autoscalers":               (*Gatherer).GatherMachineAutoscalers,
 	"openshift_logging":                 (*Gatherer).GatherOpenshiftLogging,
-	"openshift_storage":                 (*Gatherer).GatherOpenshiftStorage,
+	"storage_cluster":                   (*Gatherer).GatherStorageCluster,
 	"jaegers":                           (*Gatherer).GatherJaegerCR,
 	"validating_webhook_configurations": (*Gatherer).GatherValidatingWebhookConfigurations,
 	"mutating_webhook_configurations":   (*Gatherer).GatherMutatingWebhookConfigurations,
