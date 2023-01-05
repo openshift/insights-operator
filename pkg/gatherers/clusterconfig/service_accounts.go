@@ -16,9 +16,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
-// Maximal total number of service accounts
-const maxServiceAccountsLimit = 1000
-
 // GatherServiceAccounts Collects `ServiceAccount` stats
 // from kubernetes default and namespaces starting with openshift.
 //
@@ -73,9 +70,11 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 			namespaces = append(namespaces, config.Items[i].Name)
 		}
 	}
+	// Maximal total number of service accounts
+	var maxServiceAccountsLimit = 1000
 	for _, namespace := range namespaces {
 		// fetching service accounts from namespace
-		svca, err := coreClient.ServiceAccounts(namespace).List(ctx, metav1.ListOptions{Limit: maxServiceAccountsLimit})
+		svca, err := coreClient.ServiceAccounts(namespace).List(ctx, metav1.ListOptions{Limit: int64(maxServiceAccountsLimit)})
 		if err != nil {
 			klog.V(2).Infof("Unable to read ServiceAccounts in namespace %s error %s", namespace, err)
 			continue
