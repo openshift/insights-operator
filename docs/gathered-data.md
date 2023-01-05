@@ -26,14 +26,33 @@ Params is of type AlertIsFiringConditionParams:
 
 ## ActiveAlerts
 
-gathers active alerts from the Alertmanager API V2 in the JSON format.
-Alert data is also still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
+Collects active alerts from the Alertmanager API V2 in the JSON format. Alert data is also
+still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
 
-* Location in archive: config/alerts.json
-* See: [docs/insights-archive-sample/config/alerts.json](./insights-archive-sample/config/alerts.json)
-* Id in config: active_alerts
-* Since version:
-  - 4.12+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/alerts.json](./insights-archive-sample/config/alerts.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.12   | config/alerts.json				                        	|
+
+### Config ID
+`clusterconfig/active_alerts`
+
+### Released version
+- 4.12
+
+### Backported versions
+None
+
+### Notes
+This adds new gatherer for gathering firing/active Prometheus alerts in JSON format as well. The original recent
+metrics gatherer still continues to gather the alerts (not in JSON) as well, but this can be removed in the future,
+and we will keep the data only in JSON.
 
 
 ## CRD
@@ -55,95 +74,179 @@ The CRD sizes above are in the raw (uncompressed) state.
 Collects statuses of the`cephclusters.ceph.rook.io` resources
 from Openshift Data Foundation Stack.
 
-### API Reference:
-https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
+### API Reference
+- https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 
-### Sample data:
-[docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json](./insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json)
+### Sample data
+- [docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json](./insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json)
 
-### Location in archive:
+### Location in archive
 | Version | Path													 |
 | ------- | ----------------------------------------------------- |
 | <= 4.12 | config/storage/{namespace}/{name}.json 				 |
 | 4.13+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
 
-### Config ID:
-clusterconfig/ceph_cluster
+### Config ID
+`clusterconfig/ceph_cluster`
 
-### Since versions:
-* 4.8.49
-* 4.9.48
-* 4.10.31
-* 4.11.2
-* 4.12
+### Released version
+- 4.12
+
+### Backported versions
+- 4.8.49+
+- 4.9.48+
+- 4.10.31+
+- 4.11.2+
+
+### Notes
+None
 
 
 ## CertificateSigningRequests
 
-collects anonymized CertificateSigningRequests.
-Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAfter
+Collects anonymized CertificateSigningRequests which weren't Verified, or
+when Now < ValidBefore or Now > ValidAfter
 
-The Kubernetes api:
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 
-	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+### Sample data
+- [docs/insights-archive-sample/config/storage/openshift-storage/ocs-storagecluster-cephcluster.json](./insights-archive-sample/config/storage/openshift-storage/ocs-storagecluster-cephcluster.json)
 
-Response see:
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.5    | config/certificatesigningrequests 					        |
 
-	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+### Config ID
+`clusterconfig/certificate_signing_requests`
 
-* Location in archive: config/certificatesigningrequests/
-* Id in config: clusterconfig/certificate_signing_requests
-* Since versions:
-  - 4.3.25+
-  - 4.4.12+
-  - 4.5+
+### Released version
+- 4.5
+
+### Backported versions
+- 4.3.25+
+- 4.4.12+
+
+### Notes
+None
 
 
 ## ClusterAuthentication
 
-fetches the cluster Authentication - the Authentication with name cluster.
+Collects the cluster Authentication - the Authentication with name cluster.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#authentication-v1operator-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#authentication-v1operator-openshift-io
 
-* Location in archive: config/authentication/
-* See: [docs/insights-archive-sample/config/authentication](./insights-archive-sample/config/authentication)
-* Id in config: clusterconfig/authentication
+### Sample data
+- [docs/insights-archive-sample/config/authentication.json](./insights-archive-sample/config/authentication.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.2    | config/authentication.json 								|
+
+### Config ID
+`clusterconfig/authentication`
+
+### Released version
+- 4.2
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterFeatureGates
 
-fetches the cluster FeatureGate - the FeatureGate with name cluster.
+Collects the cluster FeatureGate - the FeatureGate with name cluster.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#featuregate-v1-config-openshift-io
 
-* Location in archive: config/featuregate.json
-* See: [docs/insights-archive-sample/config/featuregate.json](./insights-archive-sample/config/featuregate.json)
-* Id in config: clusterconfig/feature_gates
+### Sample data
+- [docs/insights-archive-sample/config/featuregate.json](./insights-archive-sample/config/featuregate.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.2    | config/featuregate.json 					                |
+
+### Config ID
+`clusterconfig/feature_gates`
+
+### Released version
+- 4.2
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterImage
 
-gathers cluster "images.config.openshift.io" resource definition
+Collects cluster `images.config.openshift.io` resource definition.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/config_client.go#L72
-Response see https://docs.openshift.com/container-platform/latest/rest_api/config_apis/image-config-openshift-io-v1.html#image-config-openshift-io-v1
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/config_client.go#L72
+- https://docs.openshift.com/container-platform/latest/rest_api/config_apis/image-config-openshift-io-v1.html#image-config-openshift-io-v1
 
-* Location in archive: config/image.json
-* Id in config: clusterconfig/image
-* Since versions:
-  - 4.10.8
-  - 4.11+
+### Sample data
+- [docs/insights-archive-sample/config/image.json](./insights-archive-sample/config/image.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| > 4.11    | config/image.json					                        |
+
+### Config ID
+`clusterconfig/image`
+
+### Released version
+- 4.11
+
+### Backported versions
+- 4.10.8+
+
+### Notes
+None
 
 
 ## ClusterImagePruner
 
-fetches the image pruner configuration
+Collects the image pruner configuration.
 
-* Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json
-* Location in older versions: config/imagepruner.json
-* Id in config: clusterconfig/image_pruners
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json](./insights-archive-sample/clusteroperator/imageregistry.operator.openshift.io/imagepruner/cluster.json)
+
+### Location in archive
+| Version   | Path																			     |
+| --------- | ----------------------------------------------------------------------------------- |
+| <= 4.5    | config/imagepruner.json														 	 |
+| >= 4.6    | config/clusteroperator/{group}/{kind}/{name}.json |
+
+### Config ID
+`clusterconfig/image_pruners`
+
+### Released version
+- 4.5
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterImageRegistry
@@ -168,50 +271,118 @@ PersistentVolume definition is gathered
 
 ## ClusterInfrastructure
 
-fetches the cluster Infrastructure - the Infrastructure with name cluster.
+Collects the cluster Infrastructure - the Infrastructure with name cluster.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
 
-* Location in archive: config/infrastructure/
-* See: [docs/insights-archive-sample/config/infrastructure](./insights-archive-sample/config/infrastructure)
-* Id in config: clusterconfig/infrastructures
+### Sample data
+- [docs/insights-archive-sample/config/infrastructure/.json](./insights-archive-sample/config/infrastructure/.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.2    | config/infrastructure.json 					            |
+
+### Config ID
+`clusterconfig/infrastructures`
+
+### Released version
+- 4.2
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterIngress
 
-fetches the cluster Ingress - the Ingress with name cluster.
+Collects the cluster Ingress - the Ingress with name cluster.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#ingress-v1-config-openshift-io
 
-* Location in archive: config/ingress.json
-* See: [docs/insights-archive-sample/config/ingress.json](./insights-archive-sample/config/ingress.json)
-* Id in config: clusterconfig/ingress
+### Sample data
+- [docs/insights-archive-sample/config/ingress.json](./insights-archive-sample/config/ingress.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.2    | config/ingress.json 					                    |
+
+### Config ID
+`clusterconfig/ingress`
+
+### Released version
+- 4.2
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterNetwork
 
-fetches the cluster Network - the Network with name cluster.
+Collects the cluster Network - the Network with name cluster.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/network.go#L50
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#network-v1-config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/network.go#L50
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#network-v1-config-openshift-io
 
-* Location in archive: config/network/
-* See: [docs/insights-archive-sample/config/network](./insights-archive-sample/config/network)
-* Id in config: clusterconfig/networks
+### Sample data
+- [docs/insights-archive-sample/config/.json](./insights-archive-sample/config/.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.2    | config/network.json 					                    |
+
+### Config ID
+`clusterconfig/networks`
+
+### Released version
+- 4.2
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterOAuth
 
-fetches the cluster OAuth - the OAuth with name cluster.
+Collects the cluster OAuth - the OAuth with name cluster.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#oauth-v1-config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#oauth-v1-config-openshift-io
 
-* Location in archive: config/oauth/
-* See: [docs/insights-archive-sample/config/oauth](./insights-archive-sample/config/oauth)
-* Id in config: clusterconfig/oauths
+### Sample data
+- [docs/insights-archive-sample/config/oauth.json](./insights-archive-sample/config/oauth.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.2    | config/oauth.json 					                        |
+
+### Config ID
+`clusterconfig/oauths`
+
+### Released version
+- 4.2
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterOperatorPodsAndEvents
@@ -256,14 +427,31 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 ## ClusterProxy
 
-fetches the cluster Proxy - the Proxy with name cluster.
+Collects the cluster Proxy - the Proxy with name cluster.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#proxy-v1-config-openshift-io
 
-* Location in archive: config/proxy.json
-* See: [docs/insights-archive-sample/config/proxy.json](./insights-archive-sample/config/proxy.json)
-* Id in config: clusterconfig/proxies
+### Sample data
+- [docs/insights-archive-sample/config/proxy.json](./insights-archive-sample/config/proxy.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.3    | config/proxy.json 					                        |
+
+### Config ID
+`clusterconfig/proxies`
+
+### Released version
+- 4.3
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ClusterVersion
@@ -411,51 +599,94 @@ API reference:
 
 ## InstallPlans
 
-collects Top x InstallPlans from all openshift namespaces.
-Because InstallPlans have unique generated names, it groups them by namespace and the "template"
-for name generation from field generateName.
+Collects top X InstallPlans from all openshift namespaces. Because InstallPlans have
+unique generated names, it groups them by namespace and the "template" for name generation from field generateName.
 It also collects Total number of all installplans and all non-unique installplans.
 
-The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
+### API Reference
+- https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 
-* Location in archive: config/installplans/
-* Id in config: clusterconfig/install_plans
-* Since versions:
-  - 4.5.33+
-  - 4.6.16+
-  - 4.7+
+### Sample data
+- [docs/insights-archive-sample/config/instalplans.json](./insights-archive-sample/config/instalplans.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.7    | config/instalplans.json									|
+
+### Config ID
+`clusterconfig/install_plans`
+
+### Released version
+- 4.7
+
+### Backported versions
+- 4.5.33+
+- 4.6.16+
+
+### Notes
+None
 
 
 ## JaegerCR
 
-collects maximum of 5 jaegers.jaegertracing.io custom resources
-installed in the cluster
+Collects maximum of 5 `jaegers.jaegertracing.io` custom resources installed in the cluster.
 
-* Location in archive: config/jaegertracing.io/
-* Id in config: clusterconfig/jaegers
-* Since versions:
-  - 4.10+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/jaegertracing.io/jaeger1.json](./insights-archive-sample/config/jaegertracing.io/jaeger1.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.10   | config/.json 					                        	|
+
+### Config ID
+`clusterconfig/jaegers`
+
+### Released version
+- 4.10
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## KubeControllerManagerLogs
 
-collects logs from kube-controller-manager pods in the openshift-kube-controller-manager namespace with following substrings:
-  - "Internal error occurred: error resolving resource",
-  - "syncing garbage collector with updated resources from discovery",
+Collects ogs from kube-controller-manager pods in the
+`openshift-kube-controller-manager` namespace with following substrings:
+- "Internal error occurred: error resolving resource",
+- "syncing garbage collector with updated resources from discovery",
 
-The Kubernetes API:
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+- https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
 
-	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+### Sample data
+- [docs/insights-archive-sample/config/pod/openshift-kube-controller-manager/logs/kube-controller-manager-ip-10-0-168-11.us-east-2.compute.internal/errors.log](./insights-archive-sample/config/pod/openshift-kube-controller-manager/logs/kube-controller-manager-ip-10-0-168-11.us-east-2.compute.internal/errors.log)
 
-Response see:
+### Location in archive
+| Version   | Path																	 |
+| --------- | ----------------------------------------------------------------------- |
+|  >= 4.11  | config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log |
 
-	https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
+### Config ID
+`clusterconfig/kube_controller_manager_logs`
 
-* Location in archive: config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log
-* Since versions:
-  - 4.9.27
-  - 4.10.6
-  - 4.11+
+### Released version
+- 4.11
+
+### Backported versions
+- 4.10.6+
+- 4.9.27+
+
+### Notes
+None
 
 
 ## LogsOfNamespace
@@ -481,39 +712,61 @@ Response see:
 
 ## MachineAutoscalers
 
-collects MachineAutoscalers definition
+Collects MachineAutoscalers definition.
 
-The Kubernetes api:
+### API Reference
+- https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
+- https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
 
-	https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
+### Sample data
+- [docs/insights-archive-sample/config/machineautoscalers/openshift-machine-api/worker-us-east-1a.json](./insights-archive-sample/config/machineautoscalers/openshift-machine-api/worker-us-east-1a.json)
 
-Response see:
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.8.2  | config/machineautoscalers/{namespace}/{resource}.json		|
 
-	https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
+### Config ID
+`clusterconfig/machine_autoscalers`
 
-* Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
-* Id in config: clusterconfig/machine_autoscalers
-* Since versions:
-  - 4.8+
+### Released version
+- 4.8.2
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## MachineConfigPool
 
-collects MachineConfigPool information
+Collects MachineConfigPool information.
 
-The Kubernetes api:
+### API Reference
+- https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+- https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 
-	https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+### Sample data
+- [docs/insights-archive-sample/config/machineconfigpools](./insights-archive-sample/config/machineconfigpools)
 
-Response see:
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.7    | config/machineconfigpools 									|
 
-	https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+### Config ID
+`clusterconfig/machine_config_pools`
 
-* Location in archive: config/machineconfigpools/
-* Id in config: clusterconfig/machine_config_pools
-* Since versions:
-  - 4.5.33+
-  - 4.6+
+### Released version
+- 4.7
+
+### Backported versions
+- 4.5.33+
+- 4.6.16+
+
+### Notes
+None
 
 
 ## MachineConfigs
