@@ -21,13 +21,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-var (
-	// Only metrics with the DVO prefix should be gathered.
-	dvoMetricsPrefix = []byte("deployment_validation_operator_")
-	// label selector used for searching the required service
-	serviceLabelSelector = "name=deployment-validation-operator"
-)
-
 // GatherDVOMetrics collects metrics from the Deployment Validation Operator's
 // metrics service. The metrics are fetched via the /metrics endpoint and
 // filtered to only include those with a deployment_validation_operator_ prefix.
@@ -52,7 +45,7 @@ func gatherDVOMetrics(
 	rateLimiter flowcontrol.RateLimiter,
 ) ([]record.Record, []error) {
 	serviceList, err := coreClient.Services("").List(ctx, metav1.ListOptions{
-		LabelSelector: serviceLabelSelector,
+		LabelSelector: "name=deployment-validation-operator",
 	})
 	if err != nil {
 		return nil, []error{err}
@@ -130,6 +123,8 @@ func gatherDVOMetricsFromEndpoint(
 		}
 	}()
 
+	// only metrics with the DVO prefix should be gathered.
+	dvoMetricsPrefix := []byte("deployment_validation_operator_")
 	// precompile regex rules
 	regexString := `(?m)(,?%s=[^\,\}]*")`
 	filterProps := []*regexp.Regexp{
