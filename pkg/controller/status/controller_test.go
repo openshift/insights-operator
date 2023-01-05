@@ -239,7 +239,6 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	assert.Equal(t, degradedCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorDegraded))
 	assert.Equal(t, upgradeableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
 	assert.Equal(t, disabledCondition, getConditionByType(updatedCO.Status.Conditions, OperatorDisabled))
-
 }
 
 func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
