@@ -17,28 +17,31 @@ import (
 	"github.com/openshift/library-go/pkg/image/reference"
 )
 
-const (
-	// imageGatherPodLimit is the maximum number of pods that
-	// will be listed in a single request to reduce memory usage.
-	imageGatherPodLimit = 200
-
-	// containerImageLimit is the maximum number of container images to collect.
-	// On average, information about one image takes up roughly 100 raw bytes.
-	containerImageLimit = 1000
-
-	// yyyyMmDateFormat is the date format used to get a YYYY-MM string.
-	yyyyMmDateFormat = "2006-01"
-)
-
-// GatherContainerImages collects essential information about running containers.
-// Specifically, the age of pods, the set of running images and the container names are collected.
+// GatherContainerImages Collects essential information about running containers. Specifically, the age of pods,
+// the set of running images and the container names are collected.
 //
-// * Location in archive: config/running_containers.json
-// * Id in config: clusterconfig/container_images
-// * Since versions:
-//   - 4.5.33+
-//   - 4.6.16+
-//   - 4.7+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/running_containers.json
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.6    | config/running_containers.json 							|
+//
+// ### Config ID
+// `clusterconfig/container_images`
+//
+// ### Released version
+// - 4.6
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) GatherContainerImages(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -49,6 +52,14 @@ func (g *Gatherer) GatherContainerImages(ctx context.Context) ([]record.Record, 
 
 func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	var records []record.Record
+	// imageGatherPodLimit is the maximum number of pods that
+	// will be listed in a single request to reduce memory usage.
+	var imageGatherPodLimit = 200
+	// containerImageLimit is the maximum number of container images to collect.
+	// On average, information about one image takes up roughly 100 raw bytes.
+	var containerImageLimit = 1000
+	// yyyyMmDateFormat is the date format used to get a YYYY-MM string.
+	var yyyyMmDateFormat = "2006-01"
 
 	// Cache for the temporary image count list.
 	img2month2count := img2Month2CountMap{}
@@ -57,7 +68,7 @@ func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1In
 	continueValue := ""
 	for {
 		pods, err := coreClient.Pods("").List(ctx, metav1.ListOptions{
-			Limit:    imageGatherPodLimit,
+			Limit:    int64(imageGatherPodLimit),
 			Continue: continueValue,
 			// FieldSelector: "status.phase=Running",
 		})
