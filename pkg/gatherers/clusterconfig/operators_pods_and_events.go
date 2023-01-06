@@ -43,7 +43,7 @@ type CompactedEventList struct {
 // Used to detect the possible stack trace on logs
 var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 
-// GatherClusterOperatorPodsAndEvents collects information about pods
+// GatherClusterOperatorPodsAndEvents Collects information about pods
 // and events from namespaces of degraded cluster operators. The collected
 // information includes:
 //
@@ -51,16 +51,36 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // - Previous (if container was terminated) and current logs of all related pod containers
 // - Namespace events
 //
-//   - Location of pod definitions: config/pod/{namespace}/{pod}.json
-//   - Location of pod container current logs:
-//     config/pod/{namespace}/logs/{pod}/{container}_current.log
-//   - Location of pod container previous logs:
-//     config/pod/{namespace}/logs/{pod}/{container}_previous.log
-//   - Location of events in archive: events/
-//   - Id in config: clusterconfig/operators_pods_and_events
-//   - Spec config for CO resources since versions:
-//   - 4.6.16+
-//   - 4.7+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/pod
+// - docs/insights-archive-sample/events
+//
+// ### Location in archive
+// | Version   | Path																    |
+// | --------- | ---------------------------------------------------------------------- |
+// | >= 4.3    | config/pod/{namespace}/{pod}.json										|
+// | >= 4.8.2  | config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log   |
+// | >= 4.8.2  | events/																|
+//
+// > **Note**
+// > This Gatherer generates 3 types of reports.
+//
+// ### Config ID
+// `clusterconfig/operators_pods_and_events`
+//
+// ### Released version
+// - 4.3
+//
+// ### Backported versions
+// - 4.6.35+
+// - 4.7.11+
+//
+// ### Notes
+// This used to be part of `ClusterOperators`, it was split generating this gather at `4.8.2`.
+// It used to be Specs for `ClusterOperators`, and it was initially included at `4.3` and backported to `4.2.10`.
 func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
