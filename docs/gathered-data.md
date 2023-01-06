@@ -57,16 +57,32 @@ and we will keep the data only in JSON.
 
 ## CRD
 
-collects the specified Custom Resource Definitions.
+Collects the specified Custom Resource Definitions.
 
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/crd](./insights-archive-sample/config/crd)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.6    | config/crd/{name}.json 					                |
+
+### Config ID
+`clusterconfig/crds`
+
+### Released version
+- 4.6
+
+### Backported versions
+None
+
+### Notes
 The following CRDs are gathered:
 - volumesnapshots.snapshot.storage.k8s.io (10745 bytes)
 - volumesnapshotcontents.snapshot.storage.k8s.io (13149 bytes)
-
-The CRD sizes above are in the raw (uncompressed) state.
-
-* Location in archive: config/crd/
-* Id in config: clusterconfig/crds
 
 
 ## CephCluster
@@ -387,7 +403,7 @@ None
 
 ## ClusterOperatorPodsAndEvents
 
-collects information about pods
+Collects information about pods
 and events from namespaces of degraded cluster operators. The collected
 information includes:
 
@@ -395,16 +411,36 @@ information includes:
 - Previous (if container was terminated) and current logs of all related pod containers
 - Namespace events
 
-  - Location of pod definitions: config/pod/{namespace}/{pod}.json
-  - Location of pod container current logs:
-    config/pod/{namespace}/logs/{pod}/{container}_current.log
-  - Location of pod container previous logs:
-    config/pod/{namespace}/logs/{pod}/{container}_previous.log
-  - Location of events in archive: events/
-  - Id in config: clusterconfig/operators_pods_and_events
-  - Spec config for CO resources since versions:
-  - 4.6.16+
-  - 4.7+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/pod](./insights-archive-sample/pod)
+- [docs/insights-archive-sample/events](./insights-archive-sample/events)
+
+### Location in archive
+| Version   | Path																    |
+| --------- | ---------------------------------------------------------------------- |
+| >= 4.3    | config/pod/{namespace}/{pod}.json										|
+| >= 4.8.2  | config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log   |
+| >= 4.8.2  | events/																|
+
+> **Note**
+> This Gatherer generates 3 types of reports.
+
+### Config ID
+`clusterconfig/operators_pods_and_events`
+
+### Released version
+- 4.3
+
+### Backported versions
+- 4.6.35+
+- 4.7.11+
+
+### Notes
+This used to be part of `ClusterOperators`, it was split generating this gather at `4.8.2`.
+It used to be Specs for `ClusterOperators`, and it was initially included at `4.3` and backported to `4.2.10`.
 
 
 ## ClusterOperators
@@ -502,34 +538,60 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 
 ## ContainerImages
 
-collects essential information about running containers.
-Specifically, the age of pods, the set of running images and the container names are collected.
+Collects essential information about running containers. Specifically, the age of pods,
+the set of running images and the container names are collected.
 
-* Location in archive: config/running_containers.json
-* Id in config: clusterconfig/container_images
-* Since versions:
-  - 4.5.33+
-  - 4.6.16+
-  - 4.7+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/running_containers.json](./insights-archive-sample/config/running_containers.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.6    | config/running_containers.json 							|
+
+### Config ID
+`clusterconfig/container_images`
+
+### Released version
+- 4.6
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ContainerRuntimeConfig
 
-collects ContainerRuntimeConfig  information
+Collects ContainerRuntimeConfig information.
 
-The Kubernetes api:
+### API Reference
+- https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+- https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 
-	https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+### Sample data
+- [docs/insights-archive-sample/config/containerruntimeconfigs/set-log-and-pid.json](./insights-archive-sample/config/containerruntimeconfigs/set-log-and-pid.json)
 
-Response see:
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.7    | config/containerruntimeconfigs/{name}.json	    			|
 
-	https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+### Config ID
+`clusterconfig/container_runtime_configs`
 
-* Location in archive: config/containerruntimeconfigs/
-* Id in config: clusterconfig/container_runtime_configs
-* Since versions:
-  - 4.6.18+
-  - 4.7+
+### Released version
+- 4.7
+
+### Backported versions
+- 4.6.18+
+
+### Notes
+None
 
 
 ## ContainersLogs
@@ -544,41 +606,91 @@ collects either current or previous containers logs for pods firing one of the c
 
 ## CostManagementMetricsConfigs
 
-collects CostManagementMetricsConfigs definitions.
-* Location in archive: config/cost_management_metrics_configs/{name}.json
-* Id in config: clusterconfig/cost_management_metrics_configs
-* Since versions:
-  - 4.8.27+
-  - 4.9.13+
-  - 4.10+
+Collects CostManagementMetricsConfigs definitions.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/cost_management_metrics_configs](./insights-archive-sample/config/cost_management_metrics_configs)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.10   | config/cost_management_metrics_configs/{name}.json 		|
+
+### Config ID
+`clusterconfig/cost_management_metrics_configs`
+
+### Released version
+- 4.10
+
+### Backported versions
+- 4.8.27+
+- 4.9.13+
+
+### Notes
+None
 
 
 ## DVOMetrics
 
-collects metrics from the Deployment Validation Operator's
+Collects metrics from the Deployment Validation Operator's
 metrics service. The metrics are fetched via the /metrics endpoint and
 filtered to only include those with a deployment_validation_operator_ prefix.
 
-* Location in archive: config/dvo_metrics
-* See: [docs/insights-archive-sample/config/dvo_metrics](./insights-archive-sample/config/dvo_metrics)
-* Id in config: clusterconfig/dvo_metrics
-* Since version:
-  - 4.10
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/dvo_metrics](./insights-archive-sample/config/dvo_metrics)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.10   | config/dvo_metrics 					                    |
+
+### Config ID
+`clusterconfig/dvo_metrics`
+
+### Released version
+- 4.10
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## HostSubnet
 
-collects HostSubnet information
+Collects HostSubnet information.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 
-* Location in archive: config/hostsubnet/
-* Id in config: clusterconfig/host_subnets
-* Since versions:
-  - 4.4.29+
-  - 4.5.15+
-  - 4.6+
+### Sample data
+- [docs/insights-archive-sample/config/hostsubnet](./insights-archive-sample/config/hostsubnet)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.6    | config/hostsubnet/{name}.json				                |
+
+### Config ID
+`clusterconfig/host_subnets`
+
+### Released version
+- 4.6
+
+### Backported versions
+- 4.4.29+
+- 4.5.15+
+
+### Notes
+None
 
 
 ## ImageStreamsOfNamespace
