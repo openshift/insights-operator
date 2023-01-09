@@ -35,20 +35,37 @@ type clusterOperatorResource struct {
 	namespace  string
 }
 
-// GatherClusterOperators collects all the ClusterOperators definitions and their related resources
+// GatherClusterOperators Collects all the ClusterOperators definitions and their related resources
 // from the `operator.openshift.io` group.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
 //
-// * Location of operators related resources: config/clusteroperator/{group}/{kind}/{name}
-// * Location of operators in archive: config/clusteroperator/
-// * Location of operators related resources in older versions: config/clusteroperator/{kind}-{name}
-// * See: docs/insights-archive-sample/config/clusteroperator
-// * Id in config: clusterconfig/operators
-// * Spec config for CO resources since versions:
-//   - 4.6.16+
-//   - 4.7+
+// ### Sample data
+// - docs/insights-archive-sample/config/clusteroperator
+//
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.3    | config/clusteroperator/ 									|
+// | < 4.7	   | config/clusteroperator/{kind}-{name}.json 					|
+// | >= 4.7    | config/clusteroperator/{group}/{kind}/{name}.json 			|
+//
+// ### Config ID
+// `clusterconfig/`
+//
+// ### Released version
+// - 4.2.0
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// The `ClusterOperators` were used to also collect `pods` and `events`, it changed at the `4.8.2` release. The `pods`
+// and `events` gathering were introduced in `4.3` and backported to `4.2.10`.
+//
+// * Spec config for CO resources was introduced at `4.7.0` and backported to`4.6.16+`
 func (g *Gatherer) GatherClusterOperators(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
