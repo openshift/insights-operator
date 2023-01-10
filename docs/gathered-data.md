@@ -13,15 +13,34 @@ archives are packaged as `.tar.gz` files in `/var/lib/insights-operator`.
 
 ## APIRequestCounts
 
-BuildGatherApiRequestCounts creates a gathering closure which collects API requests counts for the
-resources mentioned in the alert provided as a string parameter
-Params is of type AlertIsFiringConditionParams:
-  - alert_name string - name of the firing alert
+Creates a gathering closure which collects API requests counts for the
+resources mentioned in the alert provided as a string parameter.
 
-* Location in archive: conditional/alerts/{alert_name}/api_request_counts.json
-* Id in config: conditional/api_request_counts_of_resource_from_alert
-* Since versions:
-  - 4.10+
+Params is of type AlertIsFiringConditionParams:
+- alert_name string - name of the firing alert
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/conditional/alerts/APIRemovedInNextEUSReleaseInUse/api_request_counts.json](./insights-archive-sample/conditional/alerts/APIRemovedInNextEUSReleaseInUse/api_request_counts.json)
+
+### Location in archive
+| Version   | Path												 	 |
+| --------- | ------------------------------------------------------- |
+| >= 4.10.0 | conditional/alerts/{alert_name}/api_request_counts.json |
+
+### Config ID
+`conditional/api_request_counts_of_resource_from_alert`
+
+### Released version
+- 4.10.0
+
+### Backported versions
+- 4.9.6+
+
+### Notes
+None
 
 
 ## ActiveAlerts
@@ -38,13 +57,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.12   | config/alerts.json				                        	|
+| >= 4.12.0 | config/alerts.json				                        	|
 
 ### Config ID
 `clusterconfig/active_alerts`
 
 ### Released version
-- 4.12
+- 4.12.0
 
 ### Backported versions
 None
@@ -68,13 +87,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.6    | config/crd/{name}.json 					                |
+| >= 4.6.0  | config/crd/{name}.json 					                |
 
 ### Config ID
 `clusterconfig/crds`
 
 ### Released version
-- 4.6
+- 4.6.0
 
 ### Backported versions
 None
@@ -97,16 +116,16 @@ from Openshift Data Foundation Stack.
 - [docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json](./insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json)
 
 ### Location in archive
-| Version | Path													 |
-| ------- | ----------------------------------------------------- |
-| <= 4.12 | config/storage/{namespace}/{name}.json 				 |
-| 4.13+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
+| Version   | Path													 |
+| --------- | ----------------------------------------------------- |
+| <= 4.12.0 | config/storage/{namespace}/{name}.json 				 |
+| 4.13.0+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
 
 ### Config ID
 `clusterconfig/ceph_cluster`
 
 ### Released version
-- 4.12
+- 4.12.0
 
 ### Backported versions
 - 4.8.49+
@@ -133,13 +152,13 @@ when Now < ValidBefore or Now > ValidAfter
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.5    | config/certificatesigningrequests 					        |
+| >= 4.5.0  | config/certificatesigningrequests 					        |
 
 ### Config ID
 `clusterconfig/certificate_signing_requests`
 
 ### Released version
-- 4.5
+- 4.5.0
 
 ### Backported versions
 - 4.3.25+
@@ -163,13 +182,13 @@ Collects the cluster Authentication - the Authentication with name cluster.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2    | config/authentication.json 								|
+| >= 4.2.0  | config/authentication.json 								|
 
 ### Config ID
 `clusterconfig/authentication`
 
 ### Released version
-- 4.2
+- 4.2.0
 
 ### Backported versions
 None
@@ -192,13 +211,13 @@ Collects the cluster FeatureGate - the FeatureGate with name cluster.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2    | config/featuregate.json 					                |
+| >= 4.2.0  | config/featuregate.json 					                |
 
 ### Config ID
 `clusterconfig/feature_gates`
 
 ### Released version
-- 4.2
+- 4.2.0
 
 ### Backported versions
 None
@@ -221,13 +240,13 @@ Collects cluster `images.config.openshift.io` resource definition.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| > 4.11    | config/image.json					                        |
+| > 4.11.0  | config/image.json					                        |
 
 ### Config ID
 `clusterconfig/image`
 
 ### Released version
-- 4.11
+- 4.11.0
 
 ### Backported versions
 - 4.10.8+
@@ -249,14 +268,14 @@ None
 ### Location in archive
 | Version   | Path																			     |
 | --------- | ----------------------------------------------------------------------------------- |
-| <= 4.5    | config/imagepruner.json														 	 |
-| >= 4.6    | config/clusteroperator/{group}/{kind}/{name}.json |
+| <= 4.5.0  | config/imagepruner.json														 	 |
+| >= 4.6.0  | config/clusteroperator/{group}/{kind}/{name}.json |
 
 ### Config ID
 `clusterconfig/image_pruners`
 
 ### Released version
-- 4.5
+- 4.5.0
 
 ### Backported versions
 None
@@ -267,22 +286,36 @@ None
 
 ## ClusterImageRegistry
 
-fetches the cluster Image Registry configuration
+Collects the cluster Image Registry configuration
 
-**Conditional data**: If the Image Registry configuration uses any PersistentVolumeClaim for the storage, the corresponding
-PersistentVolume definition is gathered
+### API Reference
+None
 
-* Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
-* Location in older versions: config/imageregistry.json
-* Id in config: clusterconfig/image_registries
-* Since versions:
-  - 4.3.40+
-  - 4.4.12+
-  - 4.5+
+### Sample data
+- [docs/insights-archive-sample/config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json](./insights-archive-sample/config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json)
 
-* PV definition since versions:
-  - 4.6.20+
-  - 4.7+
+### Location in archive
+| Version   | Path																			|
+| --------- | ------------------------------------------------------------------------------ |
+| < 4.7.0   | config/imageregistry.json 					                        			|
+| >= 4.7.0  | config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json |
+| >= 4.6.20 | config/persistentvolumes/{name}.json 											|
+
+### Config ID
+`clusterconfig/image_registries`
+
+### Released version
+- 4.5.0
+
+### Backported versions
+- 4.3.40+
+- 4.4.12+
+
+### Notes
+PersistentVolumes was included at `4.7.0` and backported to `4.6.20+`.
+
+**Conditional data**: If the Image Registry configuration uses any PersistentVolumeClaim for the storage,
+the corresponding PersistentVolume definition is gathered
 
 
 ## ClusterInfrastructure
@@ -299,13 +332,13 @@ Collects the cluster Infrastructure - the Infrastructure with name cluster.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2    | config/infrastructure.json 					            |
+| >= 4.2.0  | config/infrastructure.json 					            |
 
 ### Config ID
 `clusterconfig/infrastructures`
 
 ### Released version
-- 4.2
+- 4.2.0
 
 ### Backported versions
 None
@@ -328,13 +361,13 @@ Collects the cluster Ingress - the Ingress with name cluster.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2    | config/ingress.json 					                    |
+| >= 4.2.0  | config/ingress.json 					                    |
 
 ### Config ID
 `clusterconfig/ingress`
 
 ### Released version
-- 4.2
+- 4.2.0
 
 ### Backported versions
 None
@@ -352,18 +385,18 @@ Collects the cluster Network - the Network with name cluster.
 - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#network-v1-config-openshift-io
 
 ### Sample data
-- [docs/insights-archive-sample/config/.json](./insights-archive-sample/config/.json)
+- [docs/insights-archive-sample/config/network.json](./insights-archive-sample/config/network.json)
 
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2    | config/network.json 					                    |
+| >= 4.2.0  | config/network.json 					                    |
 
 ### Config ID
 `clusterconfig/networks`
 
 ### Released version
-- 4.2
+- 4.2.0
 
 ### Backported versions
 None
@@ -386,13 +419,13 @@ Collects the cluster OAuth - the OAuth with name cluster.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2    | config/oauth.json 					                        |
+| >= 4.2.0  | config/oauth.json 					                        |
 
 ### Config ID
 `clusterconfig/oauths`
 
 ### Released version
-- 4.2
+- 4.2.0
 
 ### Backported versions
 None
@@ -421,7 +454,7 @@ None
 ### Location in archive
 | Version   | Path																    |
 | --------- | ---------------------------------------------------------------------- |
-| >= 4.3    | config/pod/{namespace}/{pod}.json										|
+| >= 4.3.0  | config/pod/{namespace}/{pod}.json										|
 | >= 4.8.2  | config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log   |
 | >= 4.8.2  | events/																|
 
@@ -432,7 +465,7 @@ None
 `clusterconfig/operators_pods_and_events`
 
 ### Released version
-- 4.3
+- 4.3.0
 
 ### Backported versions
 - 4.6.35+
@@ -445,20 +478,36 @@ It used to be Specs for `ClusterOperators`, and it was initially included at `4.
 
 ## ClusterOperators
 
-collects all the ClusterOperators definitions and their related resources
-from the `operator.openshift.io` group.
+Collects all the ClusterOperators definitions and their resources.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
 
-* Location of operators related resources: config/clusteroperator/{group}/{kind}/{name}
-* Location of operators in archive: config/clusteroperator/
-* Location of operators related resources in older versions: config/clusteroperator/{kind}-{name}
-* See: [docs/insights-archive-sample/config/clusteroperator](./insights-archive-sample/config/clusteroperator)
-* Id in config: clusterconfig/operators
-* Spec config for CO resources since versions:
-  - 4.6.16+
-  - 4.7+
+### Sample data
+- [docs/insights-archive-sample/config/clusteroperator](./insights-archive-sample/config/clusteroperator)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.3.0  | config/clusteroperator/ 									|
+| < 4.7.0   | config/clusteroperator/{kind}-{name}.json 					|
+| >= 4.7.0  | config/clusteroperator/{group}/{kind}/{name}.json 			|
+
+### Config ID
+`clusterconfig/`
+
+### Released version
+- 4.2.0
+
+### Backported versions
+None
+
+### Notes
+The `ClusterOperators` were used to also collect `pods` and `events`, it changed at the `4.8.2` release. The `pods`
+and `events` gathering were introduced in `4.3.0` and backported to `4.2.10`.
+
+* Spec config for CO resources was introduced at `4.7.0` and backported to`4.6.16+`
 
 
 ## ClusterProxy
@@ -475,13 +524,13 @@ Collects the cluster Proxy - the Proxy with name cluster.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.3    | config/proxy.json 					                        |
+| >= 4.3.0  | config/proxy.json 					                        |
 
 ### Config ID
 `clusterconfig/proxies`
 
 ### Released version
-- 4.3
+- 4.3.0
 
 ### Backported versions
 None
@@ -492,47 +541,80 @@ None
 
 ## ClusterVersion
 
-fetches the ClusterVersion (including the cluster ID) with the name 'version' and its resources.
+Collects the ClusterVersion (including the cluster ID) with the name 'version' and its resources.
 
-The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusterversion-v1config-openshift-io
+### API Reference
+- https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusterversion-v1config-openshift-io
 
-* Location in archive: config/version/
-* See: [docs/insights-archive-sample/config/version](./insights-archive-sample/config/version)
-* Location of pods in archive: config/pod/
-* Location of events in archive: events/
-* Location of cluster ID: config/id
-* See: [docs/insights-archive-sample/config/id](./insights-archive-sample/config/id)
-* Id in config: clusterconfig/version
+### Sample data
+- [docs/insights-archive-sample/config/version.json](./insights-archive-sample/config/version.json)
+- [docs/insights-archive-sample/config/pod](./insights-archive-sample/config/pod)
+- [docs/insights-archive-sample/events/](./insights-archive-sample/events/)
+- [docs/insights-archive-sample/config/id](./insights-archive-sample/config/id)
+
+### Location in archive
+| Version   | Path														|
+| --------- | ---------------------------------------------------------- |
+| >= 4.2.0  | config/version.json										|
+| >- 4.2.0  | config/id													|
+| >= 4.8.2  | config/pod/openshift-cluster-version/{name}.json			|
+| >= 4.8.2  | events/{namespace}.json									|
+
+### Config ID
+`clusterconfig/version`
+
+### Released version
+- 4.2.0
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## ConfigMaps
 
-fetches the ConfigMaps from namespace openshift-config
+Collects the ConfigMaps from namespace openshift-config
 and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitoring namespace.
 
-Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
-For ConfigMap of type BinaryData it is encoded as standard base64.
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
+- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
+
+### Sample data
+- [docs/insights-archive-sample/config/configmaps](./insights-archive-sample/config/configmaps)
+
+### Location in archive
+| Version   | Path														|
+| --------- | ---------------------------------------------------------- |
+| < 4.7.0   | config/configmaps/{configmap}								|
+| >= 4.7.0  | config/configmaps/{namespace}/{name}/{configmap}         	|
+
+### Config ID
+`clusterconfig/config_maps`
+
+### Released version
+- 4.5.0
+
+### Backported versions
+- 4.3.23+
+- 4.4.6+
+
+### Notes
+**Anonymization**:
+If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes
+the inside of PEM blocks. For ConfigMap of type BinaryData it is encoded as standard base64.
 In the archive under configmaps we store name of the namespace, name of the ConfigMap and then each ConfigMap Key.
 For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
 
-The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
-Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
-
-* Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
-* Location in older versions: config/configmaps/{configmap-name}/
-* See: [docs/insights-archive-sample/config/configmaps](./insights-archive-sample/config/configmaps)
-* Id in config: clusterconfig/config_maps
-* Since versions:
-  - 4.3.25+
-  - 4.4.6+
-  - 4.5+
-
-* "cluster-monitoring-config" ConfigMap data since versions:
+**Additional data**:
+- "cluster-monitoring-config" ConfigMap data since versions:
   - 4.6.22+
   - 4.7+
 
-* "cluster-config-v1" ConfigMap since versions:
+- "cluster-config-v1" ConfigMap since versions:
   - 4.9+
 
 
@@ -550,13 +632,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.6    | config/running_containers.json 							|
+| >= 4.6.0  | config/running_containers.json 							|
 
 ### Config ID
 `clusterconfig/container_images`
 
 ### Released version
-- 4.6
+- 4.6.0
 
 ### Backported versions
 None
@@ -579,13 +661,13 @@ Collects ContainerRuntimeConfig information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.7    | config/containerruntimeconfigs/{name}.json	    			|
+| >= 4.7.0  | config/containerruntimeconfigs/{name}.json	    			|
 
 ### Config ID
 `clusterconfig/container_runtime_configs`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.6.18+
@@ -596,12 +678,31 @@ None
 
 ## ContainersLogs
 
-collects either current or previous containers logs for pods firing one of the configured alerts.
+Collects either current or previous containers logs for pods firing one of the
+configured alerts.
 
-* Location in archive: conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log
-* Id in config: conditional/containers_logs
-* Since versions:
-  - 4.10+
+### API Reference
+-
+
+### Sample data
+- [docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log](./insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log)
+
+### Location in archive
+| Version   | Path																										   			|
+| --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| >= 4.10.0 | conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log |
+
+### Config ID
+`conditional/containers_logs`
+
+### Released version
+- 4.10.0
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## CostManagementMetricsConfigs
@@ -617,13 +718,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.10   | config/cost_management_metrics_configs/{name}.json 		|
+| >= 4.10.0 | config/cost_management_metrics_configs/{name}.json 		|
 
 ### Config ID
 `clusterconfig/cost_management_metrics_configs`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 - 4.8.27+
@@ -648,13 +749,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.10   | config/dvo_metrics 					                    |
+| >= 4.10.0 | config/dvo_metrics 					                    |
 
 ### Config ID
 `clusterconfig/dvo_metrics`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 None
@@ -677,13 +778,13 @@ Collects HostSubnet information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.6    | config/hostsubnet/{name}.json				                |
+| >= 4.6.0  | config/hostsubnet/{name}.json				                |
 
 ### Config ID
 `clusterconfig/host_subnets`
 
 ### Released version
-- 4.6
+- 4.6.0
 
 ### Backported versions
 - 4.4.29+
@@ -695,18 +796,33 @@ None
 
 ## ImageStreamsOfNamespace
 
-creates a gathering closure which collects image streams from the provided namespace
+Creates a gathering closure which collects image streams from the provided namespace
+
 Params is of type GatherImageStreamsOfNamespaceParams:
-  - namespace string - namespace from which to collect image streams
+- namespace string - namespace from which to collect image streams
 
-API reference:
+### API Reference
+- https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
 
-	https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
+### Sample data
+- [docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/imagestreams/example.json](./insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/imagestreams/example.json)
 
-* Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
-* Id in config: conditional/image_streams_of_namespace
-* Since versions:
-  - 4.9+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.9.0  | conditional/namespaces/{namespace}/imagestreams/{name}.json |
+
+### Config ID
+`conditional/image_streams_of_namespace`
+
+### Released version
+- 4.9.0
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## InstallPlans
@@ -724,13 +840,13 @@ It also collects Total number of all installplans and all non-unique installplan
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.7    | config/instalplans.json									|
+| >= 4.7.0  | config/instalplans.json									|
 
 ### Config ID
 `clusterconfig/install_plans`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.5.33+
@@ -753,13 +869,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.10   | config/.json 					                        	|
+| >= 4.10.0 | config/.json 					                        	|
 
 ### Config ID
 `clusterconfig/jaegers`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 None
@@ -785,13 +901,13 @@ Collects ogs from kube-controller-manager pods in the
 ### Location in archive
 | Version   | Path																	 |
 | --------- | ----------------------------------------------------------------------- |
-|  >= 4.11  | config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log |
+| >= 4.11.0 | config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log |
 
 ### Config ID
 `clusterconfig/kube_controller_manager_logs`
 
 ### Released version
-- 4.11
+- 4.11.0
 
 ### Backported versions
 - 4.10.6+
@@ -803,23 +919,35 @@ None
 
 ## LogsOfNamespace
 
-creates a gathering closure which collects logs from pods in the provided namespace
+Creates a gathering closure which collects logs from pods in the provided namespace.
+
 Params is of type GatherLogsOfNamespaceParams:
-  - namespace string - namespace from which to collect logs
-  - tail_lines int64 - a number of log lines to keep for each container
+- namespace string - namespace from which to collect logs
+- tail_lines int64 - a number of log lines to keep for each container
 
-The Kubernetes API:
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+### Sample data
+- [docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator/logs/last-100-lines.log](./insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator/logs/last-100-lines.log)
 
-Response see:
+### Location in archive
+| Version   | Path																									|
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| >= 4.9.0  | conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log |
 
-	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+### Config ID
+`conditional/logs_of_namespace`
 
-* Location in archive: conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log
-* Id in config: conditional/logs_of_namespace
-* Since versions:
-  - 4.9+
+### Released version
+- 4.9.0
+
+### Backported versions
+None
+
+### Notes
+None
 
 
 ## MachineAutoscalers
@@ -865,13 +993,13 @@ Collects MachineConfigPool information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.7    | config/machineconfigpools 									|
+| >= 4.7.0  | config/machineconfigpools 									|
 
 ### Config ID
 `clusterconfig/machine_config_pools`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.5.33+
@@ -925,13 +1053,13 @@ Collects MachineHealthCheck information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.8    | config/machinehealthchecks/{namespace}/{resource}.json 	|
+| >= 4.8.0  | config/machinehealthchecks/{namespace}/{resource}.json 	|
 
 ### Config ID
 `clusterconfig/machine_healthchecks`
 
 ### Released version
-- 4.8
+- 4.8.0
 
 ### Backported versions
 None
@@ -954,13 +1082,13 @@ Collects MachineSet information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.6    | config//machinesets/{resource}								|
+| >= 4.6.0  | config//machinesets/{resource}								|
 
 ### Config ID
 `clusterconfig/machine_sets`
 
 ### Released version
-- 4.6
+- 4.6.0
 
 ### Backported versions
 - 4.4.29+
@@ -972,35 +1100,52 @@ None
 
 ## MostRecentMetrics
 
-gathers cluster Federated Monitoring metrics.
+Collects cluster Federated Monitoring metrics.
 
 The GET REST query to URL /federate
 Gathered metrics:
+  - virt_platform
+  - etcd_object_counts
+  - cluster_installer
+  - vsphere_node_hw_version_total
+  - namespace CPU and memory usage
+  - console_helm_installs_total
+  - console_helm_upgrades_total
+  - console_helm_uninstalls_total
+  - followed by at most 1000 lines of ALERTS metric
 
-	virt_platform
-	etcd_object_counts
-	cluster_installer
-	vsphere_node_hw_version_total
-	namespace CPU and memory usage
-	console_helm_installs_total
-	console_helm_upgrades_total
-	console_helm_uninstalls_total
-	followed by at most 1000 lines of ALERTS metric
+### API Reference
+None
 
-* Location in archive: config/metrics
-* See: [docs/insights-archive-sample/config/metrics](./insights-archive-sample/config/metrics)
-* Id in config: clusterconfig/metrics
-* Since version:
-  - "etcd_object_counts": 4.3+
-  - "cluster_installer": 4.3+
-  - "ALERTS": 4.3+
-  - "namespace:container_cpu_usage_seconds_total:sum_rate": 4.5+
-  - "namespace:container_memory_usage_bytes:sum": 4.5+
-  - "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
-  - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
-  - "console_helm_installs_total": 4.11+
-  - "console_helm_upgrades_total": 4.12+
-  - "console_helm_uninstalls_total": 4.12+
+### Sample data
+- [docs/insights-archive-sample/config/metrics](./insights-archive-sample/config/metrics)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.3.0  | config/metrics 					                        |
+
+### Config ID
+`clusterconfig/metrics`
+
+### Released version
+- 4.3.0
+
+### Backported versions
+None
+
+### Notes
+**Additional data**:
+- "etcd_object_counts": 4.3+
+- "cluster_installer": 4.3+
+- "ALERTS": 4.3+
+- "namespace:container_cpu_usage_seconds_total:sum_rate": 4.5+
+- "namespace:container_memory_usage_bytes:sum": 4.5+
+- "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
+- "vsphere_node_hw_version_total": 4.7.11+, 4.8+
+- "console_helm_installs_total": 4.11+
+- "console_helm_upgrades_total": 4.12+
+- "console_helm_uninstalls_total": 4.12+
 
 
 ## MutatingWebhookConfigurations
@@ -1014,9 +1159,9 @@ Collects MutatingWebhookConfiguration resources.
 - [docs/insights-archive-sample/config/mutatingwebhookconfigurations](./insights-archive-sample/config/mutatingwebhookconfigurations)
 
 ### Location in archive
-| Version   | Path														|
-| --------- | --------------------------------------------------------	|
-| >= 4.10   | config/mutatingwebhookconfigurations/{resource}.json 		|
+| Version    | Path														|
+| ---------- | --------------------------------------------------------	|
+| >= 4.10.13 | config/mutatingwebhookconfigurations/{resource}.json 		|
 
 ### Config ID
 `clusterconfig/mutating_webhook_configurations`
@@ -1035,19 +1180,34 @@ None
 
 ## NamespacesWithOverlappingUIDs
 
-gathers namespaces with overlapping UID ranges
+Collects namespaces with overlapping UID ranges.
 
-The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/namespace.go
-Response is an array of arrays of namespaces with overlapping UIDs. Each namespace is represented by its name and the UID range value
-from the "openshift.io/sa.scc.uid-range" annotation
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/namespace.go
+- Response is an array of arrays of namespaces with overlapping UIDs. Each namespace is represented by its name
+and the UID range value from the "openshift.io/sa.scc.uid-range" annotation
 
-* Location in archive: config/namespaces_with_overlapping_uids
-* Id in config: clusterconfig/overlapping_namespace_uids
-* Since versions:
-  - 4.8.41
-  - 4.9.31
-  - 4.10.12
-  - 4.11+
+### Sample data
+- [docs/insights-archive-sample/config/namespaces_with_overlapping_uids.json](./insights-archive-sample/config/namespaces_with_overlapping_uids.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.11.0 | config/namespaces_with_overlapping_uids.json  				|
+
+### Config ID
+`clusterconfig/overlapping_namespace_uids`
+
+### Released version
+- 4.11.0
+
+### Backported versions
+- 4.8.41+
+- 4.9.31+
+- 4.10.12+
+
+### Notes
+None
 
 
 ## NetNamespace
@@ -1063,13 +1223,13 @@ Collects NetNamespaces networking information.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.7    | config/netnamespaces.json				                    |
+| >= 4.7.0  | config/netnamespaces.json				                    |
 
 ### Config ID
 `clusterconfig/netnamespaces`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.6.20+
@@ -1091,13 +1251,13 @@ Collects control plane node logs from journal unit.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.10   | config/nodes/logs/{hostname}.log							|
+| >= 4.10.0 | config/nodes/logs/{hostname}.log							|
 
 ### Config ID
 `clusterconfig/node_logs`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 None
@@ -1120,13 +1280,13 @@ Collects all cluster nodes.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2    | config/node/{node}.json									|
+| >= 4.2.0  | config/node/{node}.json									|
 
 ### Config ID
 `clusterconfig/nodes`
 
 ### Released version
-- 4.2
+- 4.2.0
 
 ### Backported versions
 None
@@ -1152,13 +1312,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.7    | config/olm_operators 					                    |
+| >= 4.7.0  | config/olm_operators 					                    |
 
 ### Config ID
 `clusterconfig/olm_operators`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.6.26+
@@ -1183,13 +1343,13 @@ Collects logs from `openshift-apiserver-operator` with following substrings:
 ### Location in archive
 | Version   | Path													 	|
 | --------- | ---------------------------------------------------------- |
-| >= 4.7    | config/pod/{namespace-name}/logs/{pod-name}/errors.log   	|
+| >= 4.7.0  | config/pod/{namespace-name}/logs/{pod-name}/errors.log   	|
 
 ### Config ID
 `clusterconfig/openshift_apiserver_operator_logs`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 None
@@ -1214,13 +1374,13 @@ substring:
 ### Location in archive
 | Version   | Path															|
 | --------- | -------------------------------------------------------------- |
-| >= 4.7    | config/pod/openshift-authentication/logs/{pod-name}/errors.log |
+| >= 4.7.0  | config/pod/openshift-authentication/logs/{pod-name}/errors.log |
 
 ### Config ID
 `clusterconfig/openshift_authentication_logs`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 None
@@ -1243,13 +1403,13 @@ from Openshift Logging Stack.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.9    | config/logging/{namespace}/{name}.json 		            |
+| >= 4.9.0  | config/logging/{namespace}/{name}.json 		            |
 
 ### Config ID
 `clusterconfig/openshift_logging`
 
 ### Released version
-- 4.9
+- 4.9.0
 
 ### Backported versions
 None
@@ -1272,13 +1432,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.12   | events/openshift-machine-api.json 	                      	|
+| >= 4.12.0 | events/openshift-machine-api.json 	                      	|
 
 ### Config ID
 `clusterconfig/openshift_machine_api_events`
 
 ### Released version
-- 4.12
+- 4.12.0
 
 ### Backported versions
 None
@@ -1289,31 +1449,43 @@ None
 
 ## OpenshiftSDNControllerLogs
 
-collects logs from sdn-controller pod in openshift-sdn namespace with following substrings:
-  - "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
-  - "Node %s may be offline... retrying": An egress node has failed the egress IP health check once,
-    so it has big chances to be marked as offline soon or, at the very least, there has been a connectivity glitch.
-  - "Node %s is offline": An egress node has failed enough probes to have been marked offline for egress IPs.
-    If it has egress CIDRs assigned, its egress IPs have been moved to other nodes.
-    Indicates issues at either the node or the network between the master and the node.
-  - "Node %s is back online": This indicates that a node has recovered from the condition described
-    at the previous message, by starting succeeding the egress IP health checks.
-    Useful just in case that previous “Node %s is offline” messages are lost,
-    so that we have a clue that there was failure previously.
+Collects logs from sdn-controller pod in openshift-sdn namespace with
+following substrings:
 
-The Kubernetes API:
+- "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
+- "Node %s may be offline... retrying": An egress node has failed the egress IP health check once,
+so it has big chances to be marked as offline soon or, at the very least, there has been a connectivity glitch.
+- "Node %s is offline": An egress node has failed enough probes to have been marked offline for egress IPs.
+If it has egress CIDRs assigned, its egress IPs have been moved to other nodes. Indicate issues at either the node
+or the network between the master and the node.
+- "Node %s is back online": This indicates that a node has recovered from the condition described
+at the previous message, by starting succeeding the egress IP health checks. Useful just in case that previous
+“Node %s is offline” messages are lost, so that we have a clue that there was failure previously.
 
-	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 
-Response see:
+### Sample data
+- [docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log](./insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log)
+- [docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-controller-l8gq9/errors.log](./insights-archive-sample/config/pod/openshift-sdn/logs/sdn-controller-l8gq9/errors.log)
 
-	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.7.0  | config/pod/openshift-sdn/logs/{pod-name}/errors.log		|
 
-* Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
-* Id in config: clusterconfig/openshift_sdn_controller_logs
-* Since versions:
-  - 4.6.21+
-  - 4.7+
+### Config ID
+`clusterconfig/openshift_sdn_controller_logs`
+
+### Released version
+- 4.7.0
+
+### Backported versions
+- 4.6.21+
+
+### Notes
+None
 
 
 ## OpenshiftSDNLogs
@@ -1334,13 +1506,13 @@ Collects logs from pods in `openshift-sdn` namespace with following substrings:
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.7	   | config/pod/openshift-sdn/logs/{name}/errors.log 			|
+| >= 4.7.0  | config/pod/openshift-sdn/logs/{name}/errors.log 			|
 
 ### Config ID
 `clusterconfig/openshift_sdn_logs`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.6.21+
@@ -1392,13 +1564,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.11   | conditional/namespaces/{namespace}/pods/{name}/{name}.json |
+| >= 4.11.0 | conditional/namespaces/{namespace}/pods/{name}/{name}.json |
 
 ### Config ID
 `conditional/pod_definition`
 
 ### Released version
-- 4.11
+- 4.11.0
 
 ### Backported versions
 None
@@ -1421,13 +1593,13 @@ Collects the cluster's `PodDisruptionBudgets`.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-|  >= 4.6   | config/pdbs/{namespace}/{name}.json	                    |
+|  >= 4.6.0 | config/pdbs/{namespace}/{name}.json	                    |
 
 ### Config ID
 `clusterconfig/pdbs`
 
 ### Released version
-- 4.6
+- 4.6.0
 
 ### Backported versions
 - 4.5.15+
@@ -1447,18 +1619,19 @@ and cluster role bindings from clusters running a SAP payload.
 - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 
 ### Sample data
-- [docs/insights-archive-sample/config/.json](./insights-archive-sample/config/.json)
+- [docs/insights-archive-sample/config/securitycontextconstraint](./insights-archive-sample/config/securitycontextconstraint)
+- [docs/insights-archive-sample/config/clusterrolebinding](./insights-archive-sample/config/clusterrolebinding)
 
 ### Location in archive
 | Version   | Path																   |
 | --------- | --------------------------------------------------------------------- |
-| >= 4.7    | config/{securitycontentconstraint|clusterrolebinding}/{name}.json     |
+| >= 4.7.0  | config/{securitycontentconstraint|clusterrolebinding}/{name}.json     |
 
 ### Config ID
 `clusterconfig/sap_config`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.6.20+
@@ -1579,13 +1752,13 @@ None
 ### Location in archive
 | Version   | Path															  |
 | --------- | ---------------------------------------------------------------- |
-| >= 4.10   | config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log |
+| >= 4.10.0 | config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log |
 
 ### Config ID
 `clusterconfig/scheduler_logs`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 None
@@ -1607,13 +1780,13 @@ Collects information about schedulers
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.10   | config/schedulers/cluster.json 					        |
+| >= 4.10.0 | config/schedulers/cluster.json 					        |
 
 ### Config ID
 `clusterconfig/schedulers`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 None
@@ -1637,13 +1810,13 @@ from kubernetes default and namespaces starting with openshift.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-|  >= 4.7   | config/serviceaccounts.json		                        |
+|  >= 4.7.0 | config/serviceaccounts.json		                        |
 
 ### Config ID
 `clusterconfig/service_accounts`
 
 ### Released version
-- 4.7
+- 4.7.0
 
 ### Backported versions
 - 4.6.20+
@@ -1666,13 +1839,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.10   | config/silenced_alerts.json 					            |
+| >= 4.10.0 | config/silenced_alerts.json 					            |
 
 ### Config ID
 `config/silenced_alerts`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 None
@@ -1691,22 +1864,22 @@ Collects `storageclusters.ocs.openshift.io` resources
 ### Sample data
 - [docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json](./insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json)
 
-| Version | Path														|
-| ------- | --------------------------------------------------------	|
-| <= 4.12 | config/storage/{namespace}/{name}.json 					|
-| 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| <= 4.12.0 | config/storage/{namespace}/{name}.json 					|
+| 4.13.0+   | config/storage/{namespace}/storageclusters/{name}.json 	|
 
 ### Config ID
 `clusterconfig/storage_cluster`
 
 ### Released version
-- 4.11
+- 4.11.0
 
 ### Backported versions
 None
 
 ### Notes
-**Changes for >= 4.12**:
+**Changes for >= 4.12.0**:
 - renamed from `OpenshiftStorage` to `StorageCluster`
 - config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster`
 
@@ -1724,13 +1897,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.11   | config/secrets/openshift-config/support/data.json 	        |
+| >= 4.11.0 | config/secrets/openshift-config/support/data.json 	        |
 
 ### Config ID
 `clusterconfig/support_secret`
 
 ### Released version
-- 4.11
+- 4.11.0
 
 ### Backported versions
 None
@@ -1752,13 +1925,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.10   | config/tsdb.json  			   							    |
+| >= 4.10.0 | config/tsdb.json  			   							    |
 
 ### Config ID
 `clusterconfig/tsdb_status`
 
 ### Released version
-- 4.10
+- 4.10.0
 
 ### Backported versions
 None
@@ -1811,13 +1984,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-|  >= 4.8   | config/workload_info.json      	                        |
+| >= 4.8.0  | config/workload_info.json      	                        |
 
 ### Config ID
 `workloads/workload_info`
 
 ### Released version
-- 4.8
+- 4.8.0
 
 ### Backported versions
 None

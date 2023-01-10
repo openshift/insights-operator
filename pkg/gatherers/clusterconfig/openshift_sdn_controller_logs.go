@@ -37,7 +37,7 @@ import (
 // | >= 4.7.0  | config/pod/openshift-sdn/logs/{pod-name}/errors.log		|
 //
 // ### Config ID
-// `clusterconfig/`
+// `clusterconfig/openshift_sdn_controller_logs`
 //
 // ### Released version
 // - 4.7.0
