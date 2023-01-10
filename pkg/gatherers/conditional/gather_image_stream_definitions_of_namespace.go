@@ -14,18 +14,33 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// BuildGatherImageStreamsOfNamespace creates a gathering closure which collects image streams from the provided namespace
+// BuildGatherImageStreamsOfNamespace Creates a gathering closure which collects image streams from the provided namespace
+//
 // Params is of type GatherImageStreamsOfNamespaceParams:
-//   - namespace string - namespace from which to collect image streams
+// - namespace string - namespace from which to collect image streams
 //
-// API reference:
+// ### API Reference
+// - https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
 //
-//	https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
+// ### Sample data
+// - docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/imagestreams/example.json
 //
-// * Location in archive: conditional/namespaces/{namespace}/imagestreams/{name}
-// * Id in config: conditional/image_streams_of_namespace
-// * Since versions:
-//   - 4.9+
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | >= 4.9    | conditional/namespaces/{namespace}/imagestreams/{name}.json |
+//
+// ### Config ID
+// `clusterconfig/image_streams_of_namespace`
+//
+// ### Released version
+// - 4.9.0
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) BuildGatherImageStreamsOfNamespace(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherImageStreamsOfNamespaceParams)
 	if !ok {
