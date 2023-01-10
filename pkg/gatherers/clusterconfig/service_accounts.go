@@ -29,13 +29,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// |  >= 4.7   | config/serviceaccounts.json		                        |
+// |  >= 4.7.0 | config/serviceaccounts.json		                        |
 //
 // ### Config ID
 // `clusterconfig/service_accounts`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // - 4.6.20+

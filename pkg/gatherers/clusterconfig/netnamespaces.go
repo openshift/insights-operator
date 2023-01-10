@@ -28,13 +28,13 @@ type netNamespace struct {
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.7    | config/netnamespaces.json				                    |
+// | >= 4.7.0  | config/netnamespaces.json				                    |
 //
 // ### Config ID
 // `clusterconfig/netnamespaces`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // - 4.6.20+

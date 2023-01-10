@@ -27,7 +27,7 @@ import (
 // ### Location in archive
 // | Version   | Path																									|
 // | --------- | ------------------------------------------------------------------------------------------------------ |
-// | >= 4.9    | conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log |
+// | >= 4.9.0  | conditional/namespaces/{namespace}/pods/{pod_name}/containers/{container_name}/logs/last-{n}-lines.log |
 //
 // ### Config ID
 // `conditional/logs_of_namespace`

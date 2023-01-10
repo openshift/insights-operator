@@ -27,13 +27,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.6    | config//machinesets/{resource}								|
+// | >= 4.6.0  | config//machinesets/{resource}								|
 //
 // ### Config ID
 // `clusterconfig/machine_sets`
 //
 // ### Released version
-// - 4.6
+// - 4.6.0
 //
 // ### Backported versions
 // - 4.4.29+

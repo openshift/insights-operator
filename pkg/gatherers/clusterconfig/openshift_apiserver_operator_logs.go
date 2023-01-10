@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path													 	|
 // | --------- | ---------------------------------------------------------- |
-// | >= 4.7    | config/pod/{namespace-name}/logs/{pod-name}/errors.log   	|
+// | >= 4.7.0  | config/pod/{namespace-name}/logs/{pod-name}/errors.log   	|
 //
 // ### Config ID
 // `clusterconfig/openshift_apiserver_operator_logs`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // None

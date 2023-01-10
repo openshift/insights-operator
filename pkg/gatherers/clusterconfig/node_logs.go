@@ -30,13 +30,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.10   | config/nodes/logs/{hostname}.log							|
+// | >= 4.10.0 | config/nodes/logs/{hostname}.log							|
 //
 // ### Config ID
 // `clusterconfig/node_logs`
 //
 // ### Released version
-// - 4.10
+// - 4.10.0
 //
 // ### Backported versions
 // None

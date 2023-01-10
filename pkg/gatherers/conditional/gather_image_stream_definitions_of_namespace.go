@@ -28,7 +28,7 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.9    | conditional/namespaces/{namespace}/imagestreams/{name}.json |
+// | >= 4.9.0  | conditional/namespaces/{namespace}/imagestreams/{name}.json |
 //
 // ### Config ID
 // `conditional/image_streams_of_namespace`

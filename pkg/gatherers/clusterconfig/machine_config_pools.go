@@ -25,13 +25,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.7    | config/machineconfigpools 									|
+// | >= 4.7.0  | config/machineconfigpools 									|
 //
 // ### Config ID
 // `clusterconfig/machine_config_pools`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // - 4.5.33+

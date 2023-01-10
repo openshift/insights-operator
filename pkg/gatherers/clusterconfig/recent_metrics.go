@@ -44,7 +44,7 @@ const (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// |  | config/metrics 					                        |
+// | >= 4.3.0  | config/metrics 					                        |
 //
 // ### Config ID
 // `clusterconfig/metrics`

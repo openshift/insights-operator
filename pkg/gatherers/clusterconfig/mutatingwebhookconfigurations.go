@@ -23,9 +23,9 @@ import (
 // - docs/insights-archive-sample/config/mutatingwebhookconfigurations
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10   | config/mutatingwebhookconfigurations/{resource}.json 		|
+// | Version    | Path														|
+// | ---------- | --------------------------------------------------------	|
+// | >= 4.10.13 | config/mutatingwebhookconfigurations/{resource}.json 		|
 //
 // ### Config ID
 // `clusterconfig/mutating_webhook_configurations`

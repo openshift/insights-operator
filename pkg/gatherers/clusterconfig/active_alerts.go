@@ -33,13 +33,13 @@ type alert struct {
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.12   | config/alerts.json				                        	|
+// | >= 4.12.0 | config/alerts.json				                        	|
 //
 // ### Config ID
 // `clusterconfig/active_alerts`
 //
 // ### Released version
-// - 4.12
+// - 4.12.0
 //
 // ### Backported versions
 // None

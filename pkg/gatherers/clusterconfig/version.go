@@ -35,8 +35,8 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | ---------------------------------------------------------- |
-// | >= 4.2    | config/version.json										|
-// | >- 4.2    | config/id													|
+// | >= 4.2.0  | config/version.json										|
+// | >- 4.2.0  | config/id													|
 // | >= 4.8.2  | config/pod/openshift-cluster-version/{name}.json			|
 // | >= 4.8.2  | events/{namespace}.json									|
 //

@@ -22,13 +22,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.12   | events/openshift-machine-api.json 	                      	|
+// | >= 4.12.0 | events/openshift-machine-api.json 	                      	|
 //
 // ### Config ID
 // `clusterconfig/openshift_machine_api_events`
 //
 // ### Released version
-// - 4.12
+// - 4.12.0
 //
 // ### Backported versions
 // None

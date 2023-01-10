@@ -26,13 +26,13 @@ const (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// |  >= 4.6   | config/pdbs/{namespace}/{name}.json	                    |
+// |  >= 4.6.0 | config/pdbs/{namespace}/{name}.json	                    |
 //
 // ### Config ID
 // `clusterconfig/pdbs`
 //
 // ### Released version
-// - 4.6
+// - 4.6.0
 //
 // ### Backported versions
 // - 4.5.15+

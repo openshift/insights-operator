@@ -33,13 +33,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.5    | config/certificatesigningrequests 					        |
+// | >= 4.5.0  | config/certificatesigningrequests 					        |
 //
 // ### Config ID
 // `clusterconfig/certificate_signing_requests`
 //
 // ### Released version
-// - 4.5
+// - 4.5.0
 //
 // ### Backported versions
 // - 4.3.25+

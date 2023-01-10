@@ -26,13 +26,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.7	   | config/pod/openshift-sdn/logs/{name}/errors.log 			|
+// | >= 4.7.0  | config/pod/openshift-sdn/logs/{name}/errors.log 			|
 //
 // ### Config ID
 // `clusterconfig/openshift_sdn_logs`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // - 4.6.21+

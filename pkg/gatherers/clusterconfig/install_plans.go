@@ -46,13 +46,13 @@ type installPlanAnonymizer struct {
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.7    | config/instalplans.json									|
+// | >= 4.7.0  | config/instalplans.json									|
 //
 // ### Config ID
 // `clusterconfig/install_plans`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // - 4.5.33+

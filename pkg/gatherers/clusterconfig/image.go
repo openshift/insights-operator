@@ -22,13 +22,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | > 4.11    | config/image.json					                        |
+// | > 4.11.0  | config/image.json					                        |
 //
 // ### Config ID
 // `clusterconfig/image`
 //
 // ### Released version
-// - 4.11
+// - 4.11.0
 //
 // ### Backported versions
 // - 4.10.8+

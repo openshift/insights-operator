@@ -22,13 +22,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.10   | config/cost_management_metrics_configs/{name}.json 		|
+// | >= 4.10.0 | config/cost_management_metrics_configs/{name}.json 		|
 //
 // ### Config ID
 // `clusterconfig/cost_management_metrics_configs`
 //
 // ### Released version
-// - 4.10
+// - 4.10.0
 //
 // ### Backported versions
 // - 4.8.27+

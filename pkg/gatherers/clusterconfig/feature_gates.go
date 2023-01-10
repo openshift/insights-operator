@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.2    | config/featuregate.json 					                |
+// | >= 4.2.0  | config/featuregate.json 					                |
 //
 // ### Config ID
 // `clusterconfig/feature_gates`
 //
 // ### Released version
-// - 4.2
+// - 4.2.0
 //
 // ### Backported versions
 // None

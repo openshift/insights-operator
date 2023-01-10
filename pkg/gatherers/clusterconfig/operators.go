@@ -48,9 +48,9 @@ type clusterOperatorResource struct {
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.3    | config/clusteroperator/ 									|
-// | < 4.7	   | config/clusteroperator/{kind}-{name}.json 					|
-// | >= 4.7    | config/clusteroperator/{group}/{kind}/{name}.json 			|
+// | >= 4.3.0  | config/clusteroperator/ 									|
+// | < 4.7.0   | config/clusteroperator/{kind}-{name}.json 					|
+// | >= 4.7.0  | config/clusteroperator/{group}/{kind}/{name}.json 			|
 //
 // ### Config ID
 // `clusterconfig/`
@@ -63,7 +63,7 @@ type clusterOperatorResource struct {
 //
 // ### Notes
 // The `ClusterOperators` were used to also collect `pods` and `events`, it changed at the `4.8.2` release. The `pods`
-// and `events` gathering were introduced in `4.3` and backported to `4.2.10`.
+// and `events` gathering were introduced in `4.3.0` and backported to `4.2.10`.
 //
 // * Spec config for CO resources was introduced at `4.7.0` and backported to`4.6.16+`
 func (g *Gatherer) GatherClusterOperators(ctx context.Context) ([]record.Record, []error) {

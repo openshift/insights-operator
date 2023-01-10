@@ -26,13 +26,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.2    | config/node/{node}.json									|
+// | >= 4.2.0  | config/node/{node}.json									|
 //
 // ### Config ID
 // `clusterconfig/nodes`
 //
 // ### Released version
-// - 4.2
+// - 4.2.0
 //
 // ### Backported versions
 // None

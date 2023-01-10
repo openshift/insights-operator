@@ -25,13 +25,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.7    | config/containerruntimeconfigs/{name}.json	    			|
+// | >= 4.7.0  | config/containerruntimeconfigs/{name}.json	    			|
 //
 // ### Config ID
 // `clusterconfig/container_runtime_configs`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // - 4.6.18+

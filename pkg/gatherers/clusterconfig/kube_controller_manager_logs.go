@@ -25,13 +25,13 @@ import (
 // ### Location in archive
 // | Version   | Path																	 |
 // | --------- | ----------------------------------------------------------------------- |
-// |  >= 4.11  | config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log |
+// | >= 4.11.0 | config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log |
 //
 // ### Config ID
 // `clusterconfig/kube_controller_manager_logs`
 //
 // ### Released version
-// - 4.11
+// - 4.11.0
 //
 // ### Backported versions
 // - 4.10.6+

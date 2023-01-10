@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.6    | config/hostsubnet/{name}.json				                |
+// | >= 4.6.0  | config/hostsubnet/{name}.json				                |
 //
 // ### Config ID
 // `clusterconfig/host_subnets`
 //
 // ### Released version
-// - 4.6
+// - 4.6.0
 //
 // ### Backported versions
 // - 4.4.29+

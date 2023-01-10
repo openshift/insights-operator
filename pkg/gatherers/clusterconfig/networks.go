@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.2    | config/network.json 					                    |
+// | >= 4.2.0  | config/network.json 					                    |
 //
 // ### Config ID
 // `clusterconfig/networks`
 //
 // ### Released version
-// - 4.2
+// - 4.2.0
 //
 // ### Backported versions
 // None

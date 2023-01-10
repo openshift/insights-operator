@@ -21,13 +21,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.10   | config/.json 					                        	|
+// | >= 4.10.0 | config/.json 					                        	|
 //
 // ### Config ID
 // `clusterconfig/jaegers`
 //
 // ### Released version
-// - 4.10
+// - 4.10.0
 //
 // ### Backported versions
 // None

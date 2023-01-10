@@ -26,13 +26,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.9    | config/logging/{namespace}/{name}.json 		            |
+// | >= 4.9.0  | config/logging/{namespace}/{name}.json 		            |
 //
 // ### Config ID
 // `clusterconfig/openshift_logging`
 //
 // ### Released version
-// - 4.9
+// - 4.9.0
 //
 // ### Backported versions
 // None

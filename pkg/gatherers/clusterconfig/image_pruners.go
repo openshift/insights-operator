@@ -25,14 +25,14 @@ import (
 // ### Location in archive
 // | Version   | Path																			     |
 // | --------- | ----------------------------------------------------------------------------------- |
-// | <= 4.5    | config/imagepruner.json														 	 |
-// | >= 4.6    | config/clusteroperator/{group}/{kind}/{name}.json |
+// | <= 4.5.0  | config/imagepruner.json														 	 |
+// | >= 4.6.0  | config/clusteroperator/{group}/{kind}/{name}.json |
 //
 // ### Config ID
 // `clusterconfig/image_pruners`
 //
 // ### Released version
-// - 4.5
+// - 4.5.0
 //
 // ### Backported versions
 // None

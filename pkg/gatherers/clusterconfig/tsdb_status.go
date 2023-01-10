@@ -21,13 +21,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.10   | config/tsdb.json  			   							    |
+// | >= 4.10.0 | config/tsdb.json  			   							    |
 //
 // ### Config ID
 // `clusterconfig/tsdb_status`
 //
 // ### Released version
-// - 4.10
+// - 4.10.0
 //
 // ### Backported versions
 // None

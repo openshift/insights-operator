@@ -28,8 +28,8 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | ---------------------------------------------------------- |
-// | < 4.7     | config/configmaps/{configmap}								|
-// | >= 4.7    | config/configmaps/{namespace}/{name}/{configmap}         	|
+// | < 4.7.0   | config/configmaps/{configmap}								|
+// | >= 4.7.0  | config/configmaps/{namespace}/{name}/{configmap}         	|
 //
 // ### Config ID
 // `clusterconfig/config_maps`

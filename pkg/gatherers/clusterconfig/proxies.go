@@ -24,13 +24,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.3    | config/proxy.json 					                        |
+// | >= 4.3.0  | config/proxy.json 					                        |
 //
 // ### Config ID
 // `clusterconfig/proxies`
 //
 // ### Released version
-// - 4.3
+// - 4.3.0
 //
 // ### Backported versions
 // None

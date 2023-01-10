@@ -37,7 +37,7 @@ type APIRequestCount struct {
 // ### Location in archive
 // | Version   | Path												 	 |
 // | --------- | ------------------------------------------------------- |
-// | >= 4.10   | conditional/alerts/{alert_name}/api_request_counts.json |
+// | >= 4.10.0 | conditional/alerts/{alert_name}/api_request_counts.json |
 //
 // ### Config ID
 // `conditional/api_request_counts_of_resource_from_alert`

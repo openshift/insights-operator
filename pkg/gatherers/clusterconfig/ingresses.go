@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.2    | config/ingress.json 					                    |
+// | >= 4.2.0  | config/ingress.json 					                    |
 //
 // ### Config ID
 // `clusterconfig/ingress`
 //
 // ### Released version
-// - 4.2
+// - 4.2.0
 //
 // ### Backported versions
 // None

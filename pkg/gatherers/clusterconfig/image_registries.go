@@ -30,8 +30,8 @@ import (
 // ### Location in archive
 // | Version   | Path																			|
 // | --------- | ------------------------------------------------------------------------------ |
-// | < 4.7	   | config/imageregistry.json 					                        			|
-// | >= 4.7    | config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json |
+// | < 4.7.0   | config/imageregistry.json 					                        			|
+// | >= 4.7.0  | config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json |
 // | >= 4.6.20 | config/persistentvolumes/{name}.json 											|
 //
 // ### Config ID

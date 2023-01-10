@@ -25,7 +25,7 @@ import (
 // ### Location in archive
 // | Version   | Path																										   			|
 // | --------- | ---------------------------------------------------------------------------------------------------------------------- |
-// | >= 4.10   | conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log |
+// | >= 4.10.0 | conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log |
 //
 // ### Config ID
 // `conditional/containers_logs`

@@ -24,13 +24,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.2    | config/infrastructure.json 					            |
+// | >= 4.2.0  | config/infrastructure.json 					            |
 //
 // ### Config ID
 // `clusterconfig/infrastructures`
 //
 // ### Released version
-// - 4.2
+// - 4.2.0
 //
 // ### Backported versions
 // None

@@ -28,13 +28,13 @@ import (
 // ### Location in archive
 // | Version   | Path																   |
 // | --------- | --------------------------------------------------------------------- |
-// | >= 4.7    | config/{securitycontentconstraint|clusterrolebinding}/{name}.json     |
+// | >= 4.7.0  | config/{securitycontentconstraint|clusterrolebinding}/{name}.json     |
 //
 // ### Config ID
 // `clusterconfig/sap_config`
 //
 // ### Released version
-// - 4.7
+// - 4.7.0
 //
 // ### Backported versions
 // - 4.6.20+

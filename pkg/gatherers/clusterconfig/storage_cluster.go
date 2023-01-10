@@ -22,22 +22,22 @@ import (
 // ### Sample data
 // - docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
 //
-// | Version | Path														|
-// | ------- | --------------------------------------------------------	|
-// | <= 4.12 | config/storage/{namespace}/{name}.json 					|
-// | 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
+// | Version   | Path														|
+// | --------- | --------------------------------------------------------	|
+// | <= 4.12.0 | config/storage/{namespace}/{name}.json 					|
+// | 4.13.0+   | config/storage/{namespace}/storageclusters/{name}.json 	|
 //
 // ### Config ID
 // `clusterconfig/storage_cluster`
 //
 // ### Released version
-// - 4.11
+// - 4.11.0
 //
 // ### Backported versions
 // None
 //
 // ### Notes
-// **Changes for >= 4.12**:
+// **Changes for >= 4.12.0**:
 // - renamed from `OpenshiftStorage` to `StorageCluster`
 // - config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster`
 func (g *Gatherer) GatherStorageCluster(ctx context.Context) ([]record.Record, []error) {

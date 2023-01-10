@@ -24,13 +24,13 @@ import (
 // ### Location in archive
 // | Version   | Path															  |
 // | --------- | ---------------------------------------------------------------- |
-// | >= 4.10   | config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log |
+// | >= 4.10.0 | config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log |
 //
 // ### Config ID
 // `clusterconfig/scheduler_logs`
 //
 // ### Released version
-// - 4.10
+// - 4.10.0
 //
 // ### Backported versions
 // None

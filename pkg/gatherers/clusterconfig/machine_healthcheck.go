@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.8    | config/machinehealthchecks/{namespace}/{resource}.json 	|
+// | >= 4.8.0  | config/machinehealthchecks/{namespace}/{resource}.json 	|
 //
 // ### Config ID
 // `clusterconfig/machine_healthchecks`
 //
 // ### Released version
-// - 4.8
+// - 4.8.0
 //
 // ### Backported versions
 // None

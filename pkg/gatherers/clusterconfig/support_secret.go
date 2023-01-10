@@ -19,13 +19,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.11   | config/secrets/openshift-config/support/data.json 	        |
+// | >= 4.11.0 | config/secrets/openshift-config/support/data.json 	        |
 //
 // ### Config ID
 // `clusterconfig/support_secret`
 //
 // ### Released version
-// - 4.11
+// - 4.11.0
 //
 // ### Backported versions
 // None

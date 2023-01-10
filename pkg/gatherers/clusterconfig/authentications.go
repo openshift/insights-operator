@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.2    | config/authentication.json 								|
+// | >= 4.2.0  | config/authentication.json 								|
 //
 // ### Config ID
 // `clusterconfig/authentication`
 //
 // ### Released version
-// - 4.2
+// - 4.2.0
 //
 // ### Backported versions
 // None

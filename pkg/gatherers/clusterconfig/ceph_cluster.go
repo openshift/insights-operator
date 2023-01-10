@@ -23,16 +23,16 @@ import (
 // - docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json
 //
 // ### Location in archive
-// | Version | Path													 |
-// | ------- | ----------------------------------------------------- |
-// | <= 4.12 | config/storage/{namespace}/{name}.json 				 |
-// | 4.13+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
+// | Version   | Path													 |
+// | --------- | ----------------------------------------------------- |
+// | <= 4.12.0 | config/storage/{namespace}/{name}.json 				 |
+// | 4.13.0+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
 //
 // ### Config ID
 // `clusterconfig/ceph_cluster`
 //
 // ### Released version
-// - 4.12
+// - 4.12.0
 //
 // ### Backported versions
 // - 4.8.49+

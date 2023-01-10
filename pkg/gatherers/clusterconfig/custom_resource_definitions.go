@@ -23,13 +23,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.6    | config/crd/{name}.json 					                |
+// | >= 4.6.0  | config/crd/{name}.json 					                |
 //
 // ### Config ID
 // `clusterconfig/crds`
 //
 // ### Released version
-// - 4.6
+// - 4.6.0
 //
 // ### Backported versions
 // None

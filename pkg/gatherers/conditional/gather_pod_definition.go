@@ -25,13 +25,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.11   | conditional/namespaces/{namespace}/pods/{name}/{name}.json |
+// | >= 4.11.0 | conditional/namespaces/{namespace}/pods/{name}/{name}.json |
 //
 // ### Config ID
 // `conditional/pod_definition`
 //
 // ### Released version
-// - 4.11
+// - 4.11.0
 //
 // ### Backported versions
 // None

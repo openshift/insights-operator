@@ -34,13 +34,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.10   | config/dvo_metrics 					                    |
+// | >= 4.10.0 | config/dvo_metrics 					                    |
 //
 // ### Config ID
 // `clusterconfig/dvo_metrics`
 //
 // ### Released version
-// - 4.10
+// - 4.10.0
 //
 // ### Backported versions
 // None

@@ -50,13 +50,13 @@ const (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// |  >= 4.8   | config/workload_info.json      	                        |
+// | >= 4.8.0  | config/workload_info.json      	                        |
 //
 // ### Config ID
 // `workloads/workload_info`
 //
 // ### Released version
-// - 4.8
+// - 4.8.0
 //
 // ### Backported versions
 // None

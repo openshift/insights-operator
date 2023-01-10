@@ -61,7 +61,7 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // ### Location in archive
 // | Version   | Path																    |
 // | --------- | ---------------------------------------------------------------------- |
-// | >= 4.3    | config/pod/{namespace}/{pod}.json										|
+// | >= 4.3.0  | config/pod/{namespace}/{pod}.json										|
 // | >= 4.8.2  | config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log   |
 // | >= 4.8.2  | events/																|
 //
@@ -72,7 +72,7 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // `clusterconfig/operators_pods_and_events`
 //
 // ### Released version
-// - 4.3
+// - 4.3.0
 //
 // ### Backported versions
 // - 4.6.35+

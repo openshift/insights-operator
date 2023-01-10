@@ -21,13 +21,13 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.10   | config/silenced_alerts.json 					            |
+// | >= 4.10.0 | config/silenced_alerts.json 					            |
 //
 // ### Config ID
 // `config/silenced_alerts`
 //
 // ### Released version
-// - 4.10
+// - 4.10.0
 //
 // ### Backported versions
 // None
