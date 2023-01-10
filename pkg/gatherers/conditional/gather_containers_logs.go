@@ -13,12 +13,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// BuildGatherContainersLogs collects either current or previous containers logs for pods firing one of the configured alerts.
+// BuildGatherContainersLogs Collects either current or previous containers logs for pods firing one of the
+// configured alerts.
 //
-// * Location in archive: conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log
-// * Id in config: conditional/containers_logs
-// * Since versions:
-//   - 4.10+
+// ### API Reference
+// -
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/.json
+//
+// ### Location in archive
+// | Version   | Path																										   			|
+// | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+// | >= 4.10   | conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log |
+//
+// ### Config ID
+// `conditional/containers_logs`
+//
+// ### Released version
+// - 4.10.0
+//
+// ### Backported versions
+// None
+//
+// ### Notes
+// None
 func (g *Gatherer) BuildGatherContainersLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherContainersLogsParams)
 	if !ok {
