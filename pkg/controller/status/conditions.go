@@ -70,11 +70,12 @@ func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *condi
 }
 
 func (c *conditions) setCondition(conditionType configv1.ClusterStatusConditionType,
-	status configv1.ConditionStatus, reason, message string, lastTime metav1.Time) {
+	status configv1.ConditionStatus, reason, message string) {
 	originalCondition, ok := c.entryMap[conditionType]
+	transitionTime := metav1.Now()
 	// if condition is defined and there is not new status then don't update transition time
 	if ok && originalCondition.Status == status {
-		lastTime = originalCondition.LastTransitionTime
+		transitionTime = originalCondition.LastTransitionTime
 	}
 
 	c.entryMap[conditionType] = configv1.ClusterOperatorStatusCondition{
@@ -82,7 +83,7 @@ func (c *conditions) setCondition(conditionType configv1.ClusterStatusConditionT
 		Reason:             reason,
 		Status:             status,
 		Message:            message,
-		LastTransitionTime: lastTime,
+		LastTransitionTime: transitionTime,
 	}
 }
 
