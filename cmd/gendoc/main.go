@@ -24,7 +24,7 @@ var (
 	randSource      = rand.NewSource(time.Now().UnixNano())
 	reGather        = regexp.MustCompile(`^((Build)?Gather)(.*)`)
 	reExample       = regexp.MustCompile(`^(Example)(.*)`)
-	reSampleArchive = regexp.MustCompile(`docs\/(insights-archive-sample\/.*)`)
+	reSampleArchive = regexp.MustCompile(`docs/(insights-archive-sample/.*)`)
 )
 
 type DocBlock struct {
