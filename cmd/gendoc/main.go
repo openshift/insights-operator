@@ -58,7 +58,6 @@ func main() {
 	}
 	keys := make([]string, 0, len(md))
 	for k := range md {
-
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
