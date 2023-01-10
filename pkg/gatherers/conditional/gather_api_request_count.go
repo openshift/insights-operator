@@ -22,15 +22,34 @@ type APIRequestCount struct {
 	LastDayRequestCount int64  `json:"last_day_request_count"`
 }
 
-// BuildGatherApiRequestCounts creates a gathering closure which collects API requests counts for the
-// resources mentioned in the alert provided as a string parameter
-// Params is of type AlertIsFiringConditionParams:
-//   - alert_name string - name of the firing alert
+// BuildGatherAPIRequestCounts Creates a gathering closure which collects API requests counts for the
+// resources mentioned in the alert provided as a string parameter.
 //
-// * Location in archive: conditional/alerts/{alert_name}/api_request_counts.json
-// * Id in config: conditional/api_request_counts_of_resource_from_alert
-// * Since versions:
-//   - 4.10+
+// Params is of type AlertIsFiringConditionParams:
+// - alert_name string - name of the firing alert
+//
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/conditional/alerts/APIRemovedInNextEUSReleaseInUse/api_request_counts.json
+//
+// ### Location in archive
+// | Version   | Path												 	 |
+// | --------- | ------------------------------------------------------- |
+// | >= 4.10   | conditional/alerts/{alert_name}/api_request_counts.json |
+//
+// ### Config ID
+// `conditional/api_request_counts_of_resource_from_alert`
+//
+// ### Released version
+// - 4.10.0
+//
+// ### Backported versions
+// - 4.9.6+
+//
+// ### Notes
+// None
 func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherAPIRequestCountsParams)
 	if !ok {
