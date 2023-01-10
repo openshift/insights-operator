@@ -20,7 +20,7 @@ import (
 // -
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/.json
+// - docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log
 //
 // ### Location in archive
 // | Version   | Path																										   			|

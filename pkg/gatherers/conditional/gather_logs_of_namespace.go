@@ -22,7 +22,7 @@ import (
 // - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/.json
+// - docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator/logs/last-100-lines.log
 //
 // ### Location in archive
 // | Version   | Path																									|

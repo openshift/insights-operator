@@ -31,7 +31,7 @@ import (
 // | >= 4.9    | conditional/namespaces/{namespace}/imagestreams/{name}.json |
 //
 // ### Config ID
-// `clusterconfig/image_streams_of_namespace`
+// `conditional/image_streams_of_namespace`
 //
 // ### Released version
 // - 4.9.0

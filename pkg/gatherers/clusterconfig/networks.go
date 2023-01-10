@@ -18,7 +18,7 @@ import (
 // - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#network-v1-config-openshift-io
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/.json
+// - docs/insights-archive-sample/config/network.json
 //
 // ### Location in archive
 // | Version   | Path														|

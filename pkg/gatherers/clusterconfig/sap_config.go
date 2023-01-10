@@ -22,7 +22,8 @@ import (
 // - https://pkg.go.dev/github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/.json
+// - docs/insights-archive-sample/config/securitycontextconstraint
+// - docs/insights-archive-sample/config/clusterrolebinding
 //
 // ### Location in archive
 // | Version   | Path																   |
