@@ -89,13 +89,6 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 func Test_updatingConditionsInDisabledState(t *testing.T) {
 	lastTransitionTime := metav1.Date(2022, 3, 21, 16, 20, 30, 0, time.UTC)
 
-	availableCondition := configv1.ClusterOperatorStatusCondition{
-		Type:               configv1.OperatorAvailable,
-		Status:             configv1.ConditionTrue,
-		Reason:             asExpectedReason,
-		Message:            insightsAvailableMessage,
-		LastTransitionTime: lastTransitionTime,
-	}
 	progressingCondition := configv1.ClusterOperatorStatusCondition{
 		Type:               configv1.OperatorProgressing,
 		Status:             configv1.ConditionFalse,
@@ -121,7 +114,13 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 	testCO := configv1.ClusterOperator{
 		Status: configv1.ClusterOperatorStatus{
 			Conditions: []configv1.ClusterOperatorStatusCondition{
-				availableCondition,
+				{
+					Type:               configv1.OperatorAvailable,
+					Status:             configv1.ConditionTrue,
+					Reason:             asExpectedReason,
+					Message:            insightsAvailableMessage,
+					LastTransitionTime: lastTransitionTime,
+				},
 				progressingCondition,
 				degradedCondition,
 				upgradeableCondition,
@@ -141,8 +140,7 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 		apiConfigurator:    config.NewMockAPIConfigurator(nil),
 	}
 	updatedCO := testController.merge(&testCO)
-	// check that all the conditions are not touched except the disabled one
-	assert.Equal(t, availableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable))
+	// check that all the conditions are not touched except the disabled and available conditions
 	assert.Equal(t, progressingCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorProgressing))
 	assert.Equal(t, degradedCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorDegraded))
 	assert.Equal(t, upgradeableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
@@ -153,10 +151,16 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 	assert.Equal(t, reportingDisabledMsg, disabledCondition.Message)
 	assert.True(t, disabledCondition.LastTransitionTime.After(lastTransitionTime.Time))
 
+	availableCondition := getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable)
+	assert.Equal(t, configv1.ConditionFalse, availableCondition.Status)
+	assert.Equal(t, noTokenReason, availableCondition.Reason)
+	assert.Equal(t, reportingDisabledMsg, availableCondition.Message)
+	assert.True(t, availableCondition.LastTransitionTime.After(lastTransitionTime.Time))
+
 	// upgrade status again and nothing should change
 	updatedCO = testController.merge(updatedCO)
 	// check that all the conditions are not touched including the disabled one
-	assert.Equal(t, availableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable))
+	assert.Equal(t, availableCondition, getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable))
 	assert.Equal(t, progressingCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorProgressing))
 	assert.Equal(t, degradedCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorDegraded))
 	assert.Equal(t, upgradeableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
@@ -212,15 +216,17 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	updatedCO := testController.merge(&testCO)
 	// check that all conditions changed except the Progressing since it's still False
 	availableCondition := *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable)
-	assert.Equal(t, availableCondition.Status, configv1.ConditionTrue)
-	assert.True(t, availableCondition.LastTransitionTime.After(lastTransitionTime.Time))
+	assert.Equal(t, configv1.ConditionFalse, availableCondition.Status)
+	assert.Equal(t, noTokenReason, availableCondition.Reason)
+	assert.Equal(t, reportingDisabledMsg, availableCondition.Message)
+	assert.Equal(t, lastTransitionTime, availableCondition.LastTransitionTime)
 
 	degradedCondition := *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorDegraded)
-	assert.Equal(t, degradedCondition.Status, configv1.ConditionFalse)
+	assert.Equal(t, configv1.ConditionFalse, degradedCondition.Status)
 	assert.True(t, degradedCondition.LastTransitionTime.After(lastTransitionTime.Time))
 
 	upgradeableCondition := *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable)
-	assert.Equal(t, upgradeableCondition.Status, configv1.ConditionTrue)
+	assert.Equal(t, configv1.ConditionTrue, upgradeableCondition.Status)
 	assert.True(t, upgradeableCondition.LastTransitionTime.After(lastTransitionTime.Time))
 
 	assert.Equal(t, progressingCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorProgressing))
