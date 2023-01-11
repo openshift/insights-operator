@@ -142,24 +142,24 @@ func (g *Gatherer) gatherContainersLogs(
 }
 
 func parseAlertLabels(labels AlertLabels) (podInfo, error) {
-	var podInfo podInfo
+	var info podInfo
 	podNamespace, err := getAlertPodNamespace(labels)
 	if err != nil {
-		return podInfo, err
+		return info, err
 	}
-	podInfo.namespace = podNamespace
+	info.namespace = podNamespace
 
 	podName, err := getAlertPodName(labels)
 	if err != nil {
-		return podInfo, err
+		return info, err
 	}
-	podInfo.name = podName
+	info.name = podName
 
 	podContainer, err := getAlertPodContainer(labels)
 	if err != nil {
-		return podInfo, err
+		return info, err
 	}
-	podInfo.container = podContainer
+	info.container = podContainer
 
-	return podInfo, nil
+	return info, nil
 }
