@@ -124,6 +124,12 @@ issues:
     - linters:
         - lll
       source: "^// "
+    # Excluding *_test.go files
+    - path: _test\.go
+      linters:
+        - funlen
+        - gosec
+        - dupl
 
 run:
   timeout: 5m

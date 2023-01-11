@@ -23,7 +23,7 @@ import (
 //
 // Response see https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
 //
-// * Location in archive: config/nodes/logs/<hostname>.log
+// * Location in archive: config/nodes/logs/{hostname}.log
 // * See: docs/insights-archive-sample/config/nodes/logs
 // * Id in config: clusterconfig/node_logs
 // * Since versions:
