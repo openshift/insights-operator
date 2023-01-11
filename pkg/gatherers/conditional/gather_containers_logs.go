@@ -89,7 +89,7 @@ func (g *Gatherer) gatherContainersLogs(
 			continue
 		}
 
-		logContainersFilter := common.LogContainersFilter{
+		logContainersFilter := &common.LogContainersFilter{
 			Namespace: info.namespace,
 		}
 
@@ -109,7 +109,7 @@ func (g *Gatherer) gatherContainersLogs(
 			ctx,
 			coreClient,
 			logContainersFilter,
-			common.LogMessagesFilter{
+			&common.LogMessagesFilter{
 				TailLines: params.TailLines,
 				Previous:  params.Previous,
 			},

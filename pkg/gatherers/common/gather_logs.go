@@ -59,8 +59,8 @@ type LogMessagesFilter struct {
 func CollectLogsFromContainers( //nolint:gocyclo
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
-	containersFilter LogContainersFilter,
-	messagesFilter LogMessagesFilter,
+	containersFilter *LogContainersFilter,
+	messagesFilter *LogMessagesFilter,
 	buildLogFileName func(namespace string, podName string, containerName string) string,
 ) ([]record.Record, error) {
 	if buildLogFileName == nil {
@@ -212,7 +212,7 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, reg
 	return strings.Join(result, "\n"), nil
 }
 
-func podLogOptions(containerName string, messagesFilter LogMessagesFilter) *corev1.PodLogOptions {
+func podLogOptions(containerName string, messagesFilter *LogMessagesFilter) *corev1.PodLogOptions {
 	sinceSeconds := &messagesFilter.SinceSeconds
 	if messagesFilter.SinceSeconds == 0 {
 		sinceSeconds = nil

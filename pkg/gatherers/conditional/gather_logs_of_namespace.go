@@ -67,11 +67,11 @@ func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, 
 	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
-		common.LogContainersFilter{
+		&common.LogContainersFilter{
 			Namespace:              namespace,
 			MaxNamespaceContainers: 64, // arbitrary fixed value
 		},
-		common.LogMessagesFilter{
+		&common.LogMessagesFilter{
 			TailLines: tailLines,
 		},
 		func(namespace string, podName string, containerName string) string {
