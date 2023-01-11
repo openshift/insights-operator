@@ -46,9 +46,6 @@ import (
 //
 // ### Notes
 // PersistentVolumes was included at `4.7.0` and backported to `4.6.20+`.
-//
-// **Conditional data**: If the Image Registry configuration uses any PersistentVolumeClaim for the storage,
-// the corresponding PersistentVolume definition is gathered
 func (g *Gatherer) GatherClusterImageRegistry(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

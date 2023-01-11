@@ -40,8 +40,7 @@ import (
 // - 4.6.20+
 //
 // ### Notes
-// **Conditional data**: This data is collected only if the `installers.datahub.sap.com`
-// resource is found in the cluster.
+// None
 func (g *Gatherer) GatherSAPConfig(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

@@ -42,7 +42,7 @@ import (
 // - 4.6.25+
 //
 // ### Notes
-// **Conditional data**: This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
+// None
 func (g *Gatherer) GatherSAPVsystemIptablesLogs(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

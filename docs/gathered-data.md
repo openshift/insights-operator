@@ -314,9 +314,6 @@ None
 ### Notes
 PersistentVolumes was included at `4.7.0` and backported to `4.6.20+`.
 
-**Conditional data**: If the Image Registry configuration uses any PersistentVolumeClaim for the storage,
-the corresponding PersistentVolume definition is gathered
-
 
 ## ClusterInfrastructure
 
@@ -1637,8 +1634,7 @@ and cluster role bindings from clusters running a SAP payload.
 - 4.6.20+
 
 ### Notes
-**Conditional data**: This data is collected only if the `installers.datahub.sap.com`
-resource is found in the cluster.
+None
 
 
 ## SAPDatahubs
@@ -1701,7 +1697,6 @@ None
 ### Notes
 - Only pods with a failing status are collected.
 - Failed pods belonging to a job that has later succeeded are ignored.
-**Conditional data**: This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
 
 
 ## SAPVsystemIptablesLogs
@@ -1733,7 +1728,7 @@ including one from license management pods with the following substring:
 - 4.6.25+
 
 ### Notes
-**Conditional data**: This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
+None
 
 
 ## SchedulerLogs

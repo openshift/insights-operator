@@ -44,7 +44,6 @@ import (
 // ### Notes
 // - Only pods with a failing status are collected.
 // - Failed pods belonging to a job that has later succeeded are ignored.
-// **Conditional data**: This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
 func (g *Gatherer) GatherSAPPods(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
