@@ -431,16 +431,14 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionFalse, degradedReason, es.message)
 	}
 
-	// when the operator is already healthy then it doesn't make sense to set those, but when it's degraded and then
-	// marked as disabled then it's reasonable to set Available=True
-	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil && !c.ctrlStatus.isHealthy() {
+	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		klog.V(4).Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg)
-		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, asExpectedReason, insightsAvailableMessage)
+		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, noTokenReason, reportingDisabledMsg)
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg)
 	}
 
-	if c.ctrlStatus.isHealthy() {
+	if c.ctrlStatus.isHealthy() && !c.ctrlStatus.isDisabled() {
 		klog.V(4).Infof("The operator is healthy")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, asExpectedReason, insightsAvailableMessage)
