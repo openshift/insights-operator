@@ -25,7 +25,7 @@ import (
 // ### Location in archive
 // | Version   | Path																			     |
 // | --------- | ----------------------------------------------------------------------------------- |
-// | <= 4.5.0  | config/imagepruner.json														 	 |
+// | < 4.6.0   | config/imagepruner.json														 	 |
 // | >= 4.6.0  | config/clusteroperator/{group}/{kind}/{name}.json |
 //
 // ### Config ID
