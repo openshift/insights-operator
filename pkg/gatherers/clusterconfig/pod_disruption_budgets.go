@@ -38,7 +38,7 @@ const (
 // - 4.5.15+
 // - 4.4.30+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)

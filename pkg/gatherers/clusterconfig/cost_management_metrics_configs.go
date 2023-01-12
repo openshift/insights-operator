@@ -34,7 +34,7 @@ import (
 // - 4.8.27+
 // - 4.9.13+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherCostManagementMetricsConfigs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

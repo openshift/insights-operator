@@ -45,7 +45,7 @@ import (
 // - 4.3.25+
 // - 4.4.12+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherCertificateSigningRequests(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

@@ -4,14 +4,11 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
-
+	"github.com/openshift/insights-operator/pkg/record"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/klog/v2"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
-
-	"github.com/openshift/insights-operator/pkg/record"
+	"k8s.io/klog/v2"
 )
 
 // GatherStorageCluster Collects `storageclusters.ocs.openshift.io` resources
@@ -36,10 +33,9 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
-// **Changes for >= 4.12.0**:
-// - renamed from `OpenshiftStorage` to `StorageCluster`
-// - config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster`
+// ### Changes
+// - Renamed from `OpenshiftStorage` to `StorageCluster` in version `4.12.0+`
+// - Config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster` in version `4.12.0+`
 func (g *Gatherer) GatherStorageCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

@@ -32,7 +32,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherTSDBStatus(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)

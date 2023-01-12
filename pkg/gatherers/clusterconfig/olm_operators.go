@@ -53,7 +53,7 @@ type csvRef struct {
 // ### Backported versions
 // - 4.6.26+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherOLMOperators(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

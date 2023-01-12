@@ -41,7 +41,7 @@ import (
 // - 4.7.5+
 // - 4.6.25+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherSAPVsystemIptablesLogs(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

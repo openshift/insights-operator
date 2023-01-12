@@ -40,7 +40,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherContainerImages(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

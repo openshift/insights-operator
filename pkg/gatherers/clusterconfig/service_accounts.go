@@ -41,7 +41,7 @@ import (
 // - 4.6.20+
 // - 4.5.34+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherServiceAccounts(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

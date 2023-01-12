@@ -36,7 +36,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) BuildGatherPodDefinition(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherPodDefinitionParams)

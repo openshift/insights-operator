@@ -40,7 +40,7 @@ import (
 // - 4.10.31+
 // - 4.11.2+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherCephCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

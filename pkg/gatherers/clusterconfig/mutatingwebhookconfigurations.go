@@ -38,7 +38,7 @@ import (
 // - 4.8.24+
 // - 4.9.11+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherMutatingWebhookConfigurations(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

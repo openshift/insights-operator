@@ -37,7 +37,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherOpenshiftLogging(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

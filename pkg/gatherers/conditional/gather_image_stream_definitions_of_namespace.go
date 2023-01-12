@@ -39,7 +39,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) BuildGatherImageStreamsOfNamespace(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherImageStreamsOfNamespaceParams)

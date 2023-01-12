@@ -34,7 +34,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherMachineAutoscalers(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

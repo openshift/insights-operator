@@ -18,6 +18,9 @@ import (
 
 // GatherSAPPods Collects information about pods running in SAP/SDI namespaces.
 //
+// - Only pods with a failing status are collected.
+// - Failed pods belonging to a job that has later succeeded are ignored.
+//
 // ### API Reference
 // - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
 // - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
@@ -41,9 +44,8 @@ import (
 // - 4.7.5+
 // - 4.6.25+
 //
-// ### Notes
-// - Only pods with a failing status are collected.
-// - Failed pods belonging to a job that has later succeeded are ignored.
+// ### Changes
+// None
 func (g *Gatherer) GatherSAPPods(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

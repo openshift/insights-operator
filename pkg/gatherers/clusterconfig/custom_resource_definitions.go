@@ -14,6 +14,10 @@ import (
 
 // GatherCRD Collects the specified Custom Resource Definitions.
 //
+// The following CRDs are gathered:
+// - `volumesnapshots.snapshot.storage.k8s.io` (10745 bytes)
+// - `volumesnapshotcontents.snapshot.storage.k8s.io` (13149 bytes)
+//
 // ### API Reference
 // None
 //
@@ -34,10 +38,8 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
-// The following CRDs are gathered:
-// - volumesnapshots.snapshot.storage.k8s.io (10745 bytes)
-// - volumesnapshotcontents.snapshot.storage.k8s.io (13149 bytes)
+// ### Changes
+// None
 func (g *Gatherer) GatherCRD(ctx context.Context) ([]record.Record, []error) {
 	crdClient, err := apixv1.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

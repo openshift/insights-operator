@@ -41,7 +41,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherNodeLogs(ctx context.Context) ([]record.Record, []error) {
 	clientSet, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

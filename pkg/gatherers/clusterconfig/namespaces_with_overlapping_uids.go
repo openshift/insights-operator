@@ -50,7 +50,7 @@ type namespaceWithRange struct {
 // - 4.9.31+
 // - 4.10.12+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherNamespacesWithOverlappingUIDs(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)

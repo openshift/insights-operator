@@ -34,7 +34,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherMachineHealthCheck(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

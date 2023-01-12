@@ -32,7 +32,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherSilencedAlerts(ctx context.Context) ([]record.Record, []error) {
 	alertsRESTClient, err := rest.RESTClientFor(g.alertsGatherKubeConfig)

@@ -37,7 +37,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherClusterImagePruner(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)

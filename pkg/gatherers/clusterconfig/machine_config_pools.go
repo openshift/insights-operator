@@ -37,7 +37,7 @@ import (
 // - 4.5.33+
 // - 4.6.16+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherMachineConfigPool(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

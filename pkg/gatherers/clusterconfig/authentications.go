@@ -34,7 +34,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherClusterAuthentication(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)

@@ -30,7 +30,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherSupportSecret(context.Context) ([]record.Record, []error) {
 	if g.configObserver == nil {

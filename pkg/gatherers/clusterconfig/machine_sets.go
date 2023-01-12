@@ -39,7 +39,7 @@ import (
 // - 4.4.29+
 // - 4.5.15+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherMachineSet(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

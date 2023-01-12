@@ -78,9 +78,10 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // - 4.6.35+
 // - 4.7.11+
 //
-// ### Notes
-// This used to be part of `ClusterOperators`, it was split generating this gather at `4.8.2`.
-// It used to be Specs for `ClusterOperators`, and it was initially included at `4.3` and backported to `4.2.10`.
+// ### Changes
+// - This gather used to be part of `ClusterOperators`, it was split generating this gather at `4.8.2`.
+// - The collected data was previously included as specifications for ClusterOperators and it was initially
+// introduced in version 4.3.0 and later backported to version 4.2.10+.
 func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

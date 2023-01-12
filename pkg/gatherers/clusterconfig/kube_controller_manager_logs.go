@@ -37,7 +37,7 @@ import (
 // - 4.10.6+
 // - 4.9.27+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{

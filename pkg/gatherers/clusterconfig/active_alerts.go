@@ -24,6 +24,10 @@ type alert struct {
 // GatherActiveAlerts Collects active alerts from the Alertmanager API V2 in the JSON format. Alert data is also
 // still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
 //
+// This adds new gatherer for gathering firing/active Prometheus alerts in JSON format as well. The original recent
+// metrics gatherer still continues to gather the alerts (not in JSON) as well, but this can be removed in the future,
+// and we will keep the data only in JSON.
+//
 // ### API Reference
 // None
 //
@@ -44,10 +48,8 @@ type alert struct {
 // ### Backported versions
 // None
 //
-// ### Notes
-// This adds new gatherer for gathering firing/active Prometheus alerts in JSON format as well. The original recent
-// metrics gatherer still continues to gather the alerts (not in JSON) as well, but this can be removed in the future,
-// and we will keep the data only in JSON.
+// ### Changes
+// None
 func (g *Gatherer) GatherActiveAlerts(ctx context.Context) ([]record.Record, []error) {
 	alertsRESTClient, err := rest.RESTClientFor(g.alertsGatherKubeConfig)
 	if err != nil {

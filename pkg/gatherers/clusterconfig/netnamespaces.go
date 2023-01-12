@@ -39,7 +39,7 @@ type netNamespace struct {
 // ### Backported versions
 // - 4.6.20+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherNetNamespace(ctx context.Context) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)

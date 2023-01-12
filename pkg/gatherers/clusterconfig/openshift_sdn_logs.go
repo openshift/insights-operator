@@ -37,7 +37,7 @@ import (
 // ### Backported versions
 // - 4.6.21+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{

@@ -35,7 +35,7 @@ import (
 // - 4.4.29+
 // - 4.5.15+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherHostSubnet(ctx context.Context) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)

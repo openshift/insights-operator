@@ -36,7 +36,7 @@ import (
 // ### Backported versions
 // - 4.6.18+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherContainerRuntimeConfig(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

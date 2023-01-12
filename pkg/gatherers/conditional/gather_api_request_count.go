@@ -48,7 +48,7 @@ type APIRequestCount struct {
 // ### Backported versions
 // - 4.9.6+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) BuildGatherAPIRequestCounts(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherAPIRequestCountsParams)

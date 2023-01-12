@@ -41,20 +41,16 @@ import (
 // - 4.3.23+
 // - 4.4.6+
 //
-// ### Notes
-// **Anonymization**:
-// If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes
-// the inside of PEM blocks. For ConfigMap of type BinaryData it is encoded as standard base64.
-// In the archive under configmaps we store name of the namespace, name of the ConfigMap and then each ConfigMap Key.
-// For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
+// ### Changes
+// - "cluster-monitoring-config" ConfigMap data since versions 4.6.22+ and 4.7.0+
+// - "cluster-config-v1" ConfigMap since versions 4.9+
 //
-// **Additional data**:
-// - "cluster-monitoring-config" ConfigMap data since versions:
-//   - 4.6.22+
-//   - 4.7+
+// ### Anonymization
+// If the content of a ConfigMap contains a parseable PEM structure (like a certificate), it removes the inside of
+// PEM blocks. For ConfigMap of type BinaryData, it is encoded as standard base64. In the archive under configmaps,
+// we store the name of the namespace, the name of the ConfigMap, and then each ConfigMap Key.
 //
-// - "cluster-config-v1" ConfigMap since versions:
-//   - 4.9+
+// For example: ```config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1```
 func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

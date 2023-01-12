@@ -61,11 +61,10 @@ type clusterOperatorResource struct {
 // ### Backported versions
 // None
 //
-// ### Notes
-// The `ClusterOperators` were used to also collect `pods` and `events`, it changed at the `4.8.2` release. The `pods`
-// and `events` gathering were introduced in `4.3.0` and backported to `4.2.10`.
-//
-// * Spec config for CO resources was introduced at `4.7.0` and backported to`4.6.16+`
+// ### Changes
+// - The gathering of pods and events was moved to a separate gatherer, ClusterOperatorPodsAndEvents, in 4.8.2.
+// - Spec config for CO resources was introduced at 4.7.0 and backported to 4.6.16+.
+// - The pods and events gathering were introduced in 4.3.0 and backported to 4.2.10+.
 func (g *Gatherer) GatherClusterOperators(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

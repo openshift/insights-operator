@@ -34,7 +34,7 @@ import (
 // ### Backported versions
 // None
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{

@@ -33,7 +33,7 @@ import (
 // ### Backported versions
 // - 4.10.8+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherClusterImage(ctx context.Context) ([]record.Record, []error) {
 	configCli, err := configv1client.NewForConfig(g.gatherKubeConfig)

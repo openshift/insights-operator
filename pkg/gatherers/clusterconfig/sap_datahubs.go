@@ -35,7 +35,7 @@ import (
 // - 4.7.5+
 // - 4.6.26+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherSAPDatahubs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)

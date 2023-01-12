@@ -39,7 +39,7 @@ import (
 // ### Backported versions
 // - 4.6.20+
 //
-// ### Notes
+// ### Changes
 // None
 func (g *Gatherer) GatherSAPConfig(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
