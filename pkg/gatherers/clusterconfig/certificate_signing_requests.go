@@ -21,14 +21,14 @@ import (
 )
 
 // GatherCertificateSigningRequests Collects anonymized CertificateSigningRequests which weren't Verified, or
-// when Now < ValidBefore or Now > ValidAfter
+// when `Now < ValidBefore` or `Now > ValidAfter`
 //
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
 // - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/storage/openshift-storage/ocs-storagecluster-cephcluster.json
+// None
 //
 // ### Location in archive
 // | Version   | Path														|
