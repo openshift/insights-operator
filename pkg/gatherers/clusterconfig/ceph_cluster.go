@@ -24,9 +24,9 @@ import (
 //
 // ### Location in archive
 // | Version   | Path													 |
-// | --------- | ----------------------------------------------------- |
-// | <= 4.12.0 | config/storage/{namespace}/{name}.json 				 |
-// | 4.13.0+   | config/storage/{namespace}/cephclusters/{name}.json 	 |
+// | --------- | ------------------------------------------------------- |
+// | < 4.13.0  | config/storage/{namespace}/{name}.json 				 |
+// | >= 4.13.0 | config/storage/{namespace}/cephclusters/{name}.json 	 |
 //
 // ### Config ID
 // `clusterconfig/ceph_cluster`
