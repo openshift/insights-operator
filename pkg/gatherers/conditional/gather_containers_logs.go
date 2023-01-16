@@ -96,6 +96,8 @@ func (g *Gatherer) gatherContainersLogs(
 		if len(params.Container) > 0 {
 			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", params.Container)
 		} else if len(info.container) > 0 {
+			// KubePod* conditions does not have the container so, we need to verify it first,
+			// and then we can apply it to the creation of the regex rule.
 			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", info.container)
 		}
 
