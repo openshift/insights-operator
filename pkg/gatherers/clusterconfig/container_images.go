@@ -29,16 +29,17 @@ import (
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.6.0  | config/running_containers.json 							|
+// | >= 4.7.0  | config/running_containers.json 							|
 //
 // ### Config ID
 // `clusterconfig/container_images`
 //
 // ### Released version
-// - 4.6.0
+// - 4.7.0
 //
 // ### Backported versions
-// None
+// - 4.5.33+
+// - 4.6.1+
 //
 // ### Changes
 // None
