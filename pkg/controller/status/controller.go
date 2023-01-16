@@ -432,7 +432,10 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 	}
 
 	// when the operator is already healthy then it doesn't make sense to set those, but when it's degraded and then
-	// marked as disabled then it's reasonable to set Available=True
+	// marked as disabled then it's OK to set the conditions.
+	// Historically we have the state when there are conditions Disabled=True and Available=True, which does not make
+	// much sense, but having Available=False since cluster installation (disconnected cluster with no token in the pull-secret)
+	// is not possible right now, because the CVO will cancel such installation.
 	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil && !c.ctrlStatus.isHealthy() {
 		klog.V(4).Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg)
