@@ -53,7 +53,7 @@ type clusterOperatorResource struct {
 // | >= 4.7.0  | config/clusteroperator/{group}/{kind}/{name}.json 			|
 //
 // ### Config ID
-// `clusterconfig/`
+// `clusterconfig/operators`
 //
 // ### Released version
 // - 4.2.0
