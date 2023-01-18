@@ -19,9 +19,7 @@ import (
 // - docs/insights-archive-sample/config/silenced_alerts.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10.0 | config/silenced_alerts.json 					            |
+// - `config/silenced_alerts.json`
 //
 // ### Config ID
 // `config/silenced_alerts`

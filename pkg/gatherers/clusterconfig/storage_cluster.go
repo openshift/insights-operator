@@ -4,6 +4,7 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
+
 	"github.com/openshift/insights-operator/pkg/record"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,8 +22,8 @@ import (
 //
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | <= 4.12.0 | config/storage/{namespace}/{name}.json 					|
-// | 4.13.0+   | config/storage/{namespace}/storageclusters/{name}.json 	|
+// | < 4.12.0  | config/storage/{namespace}/{name}.json 					|
+// | >= 4.12.0 | config/storage/{namespace}/storageclusters/{name}.json 	|
 //
 // ### Config ID
 // `clusterconfig/storage_cluster`

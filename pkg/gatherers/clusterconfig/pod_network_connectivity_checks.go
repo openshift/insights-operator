@@ -23,9 +23,7 @@ import (
 // - docs/insights-archive-sample/config/podnetworkconnectivitychecks.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.8.2  | config/podnetworkconnectivitychecks.json 					|
+// - `config/podnetworkconnectivitychecks.json`
 //
 // ### Config ID
 // `clusterconfig/pod_network_connectivity_checks`

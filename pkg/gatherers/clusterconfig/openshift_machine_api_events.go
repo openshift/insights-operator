@@ -20,9 +20,7 @@ import (
 // - docs/insights-archive-sample/events/openshift-machine-api.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.12.0 | events/openshift-machine-api.json 	                      	|
+// - `events/openshift-machine-api.json`
 //
 // ### Config ID
 // `clusterconfig/openshift_machine_api_events`

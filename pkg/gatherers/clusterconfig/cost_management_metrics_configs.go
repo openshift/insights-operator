@@ -20,9 +20,7 @@ import (
 // - docs/insights-archive-sample/config/cost_management_metrics_configs
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10.0 | config/cost_management_metrics_configs/{name}.json 		|
+// - `config/cost_management_metrics_configs/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/cost_management_metrics_configs`

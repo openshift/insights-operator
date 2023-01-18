@@ -59,29 +59,24 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // - docs/insights-archive-sample/events
 //
 // ### Location in archive
-// | Version   | Path																    |
-// | --------- | ---------------------------------------------------------------------- |
-// | >= 4.3.0  | config/pod/{namespace}/{pod}.json										|
-// | >= 4.8.2  | config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log   |
-// | >= 4.8.2  | events/																|
-//
-// > **Note**
-// > This Gatherer generates 3 types of reports.
+// - `config/pod/{namespace}/{pod}.json`
+// - `events/`
+// - `config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log`
 //
 // ### Config ID
 // `clusterconfig/operators_pods_and_events`
 //
 // ### Released version
-// - 4.3.0
+// - 4.8.2
 //
 // ### Backported versions
 // - 4.6.35+
 // - 4.7.11+
 //
 // ### Changes
-// - This gather used to be part of `ClusterOperators`, it was split generating this gather at `4.8.2`.
-// - The collected data was previously included as specifications for ClusterOperators and it was initially
-// introduced in version 4.3.0 and later backported to version 4.2.10+.
+// - This gather used to be part of [ClusterOperators](#ClusterOperators), it was split generating this gather at `4.8.2`.
+// - The collected data was previously included as specifications for `ClusterOperators`, and it was initially
+// introduced in version `4.3.0` and later backported to version `4.2.10+`.
 func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

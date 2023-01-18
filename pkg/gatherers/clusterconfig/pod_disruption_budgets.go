@@ -24,9 +24,7 @@ const (
 // - docs/insights-archive-sample/config/pdbs/openshift-machine-config-operator/etcd-quorum-guard.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// |  >= 4.6.0 | config/pdbs/{namespace}/{name}.json	                    |
+// - `config/pdbs/{namespace}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/pdbs`

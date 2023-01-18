@@ -24,9 +24,7 @@ import (
 // - docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.7.0  | config/pod/openshift-sdn/logs/{name}/errors.log 			|
+// - `config/pod/openshift-sdn/logs/{name}/errors.log`
 //
 // ### Config ID
 // `clusterconfig/openshift_sdn_logs`

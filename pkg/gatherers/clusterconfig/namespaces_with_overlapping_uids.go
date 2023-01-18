@@ -35,9 +35,7 @@ type namespaceWithRange struct {
 // - docs/insights-archive-sample/config/namespaces_with_overlapping_uids.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.11.0 | config/namespaces_with_overlapping_uids.json  				|
+// - `config/namespaces_with_overlapping_uids.json`
 //
 // ### Config ID
 // `clusterconfig/overlapping_namespace_uids`

@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/customresources/installers.datahub.sap.com/datahubs/sdi/default.json
 //
 // ### Location in archive
-// | Version   | Path	 			  														 |
-// | --------- | --------------------------------------------------------------------------- |
-// | >= 4.8.2  | customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json |
+// - `customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/sap_datahubs`

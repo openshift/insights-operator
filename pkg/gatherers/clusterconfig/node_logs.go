@@ -28,9 +28,7 @@ import (
 // - docs/insights-archive-sample/config/nodes/logs
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10.0 | config/nodes/logs/{hostname}.log							|
+// - `config/nodes/logs/{hostname}.log`
 //
 // ### Config ID
 // `clusterconfig/node_logs`

@@ -23,9 +23,7 @@ import (
 // - docs/insights-archive-sample/config/validatingwebhookconfigurations/
 //
 // ### Location in archive
-// | Version      | Path														|
-// | ------------ | --------------------------------------------------------	|
-// |  >= 4.10.13  | config/validatingwebhookconfigurations/{name}.json          |
+// - `config/validatingwebhookconfigurations/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/validating_webhook_configurations`

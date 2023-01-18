@@ -19,9 +19,7 @@ import (
 // - docs/insights-archive-sample/config/tsdb.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10.0 | config/tsdb.json  			   							    |
+// - `config/tsdb.json`
 //
 // ### Config ID
 // `clusterconfig/tsdb_status`

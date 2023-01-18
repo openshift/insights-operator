@@ -19,9 +19,7 @@ import (
 // - docs/insights-archive-sample/config/jaegertracing.io/jaeger1.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10.0 | config/.json 					                        	|
+// - `config/jaegers.jaegertracing.io/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/jaegers`

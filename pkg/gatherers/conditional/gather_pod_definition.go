@@ -23,9 +23,7 @@ import (
 // - docs/insights-archive-sample/conditional/namespaces/openshift-monitoring/pods/alertmanager-main-0/alertmanager-main-0.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.11.0 | conditional/namespaces/{namespace}/pods/{name}/{name}.json |
+// - `conditional/namespaces/{namespace}/pods/{name}/{name}.json`
 //
 // ### Config ID
 // `conditional/pod_definition`

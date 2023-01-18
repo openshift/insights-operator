@@ -24,9 +24,7 @@ import (
 // - docs/insights-archive-sample/config/node
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.2.0  | config/node/{node}.json									|
+// - `config/node/{node}.json`
 //
 // ### Config ID
 // `clusterconfig/nodes`

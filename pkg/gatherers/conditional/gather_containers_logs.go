@@ -23,9 +23,7 @@ import (
 // - docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log
 //
 // ### Location in archive
-// | Version   | Path																										   			|
-// | --------- | ---------------------------------------------------------------------------------------------------------------------- |
-// | >= 4.10.0 | conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log |
+// - `conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log`
 //
 // ### Config ID
 // `conditional/containers_logs`

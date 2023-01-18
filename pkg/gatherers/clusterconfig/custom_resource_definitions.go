@@ -25,9 +25,7 @@ import (
 // - docs/insights-archive-sample/config/crd
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.6.0  | config/crd/{name}.json 					                |
+// - `config/crd/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/crds`

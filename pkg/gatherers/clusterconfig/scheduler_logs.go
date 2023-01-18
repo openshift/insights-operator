@@ -22,9 +22,7 @@ import (
 // None
 //
 // ### Location in archive
-// | Version   | Path															  |
-// | --------- | ---------------------------------------------------------------- |
-// | >= 4.10.0 | config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log |
+// - `config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log`
 //
 // ### Config ID
 // `clusterconfig/scheduler_logs`

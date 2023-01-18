@@ -23,9 +23,7 @@ import (
 // - docs/insights-archive-sample/config/containerruntimeconfigs/set-log-and-pid.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.7.0  | config/containerruntimeconfigs/{name}.json	    			|
+// - `config/containerruntimeconfigs/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/container_runtime_configs`

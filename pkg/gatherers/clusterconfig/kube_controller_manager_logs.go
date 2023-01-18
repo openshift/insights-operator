@@ -23,9 +23,7 @@ import (
 // - docs/insights-archive-sample/config/pod/openshift-kube-controller-manager/logs/kube-controller-manager-ip-10-0-168-11.us-east-2.compute.internal/errors.log
 //
 // ### Location in archive
-// | Version   | Path																	 |
-// | --------- | ----------------------------------------------------------------------- |
-// | >= 4.11.0 | config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log |
+// - `config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log`
 //
 // ### Config ID
 // `clusterconfig/kube_controller_manager_logs`

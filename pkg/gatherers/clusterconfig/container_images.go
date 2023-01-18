@@ -27,9 +27,7 @@ import (
 // - docs/insights-archive-sample/config/running_containers.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.7.0  | config/running_containers.json 							|
+// - `config/running_containers.json`
 //
 // ### Config ID
 // `clusterconfig/container_images`

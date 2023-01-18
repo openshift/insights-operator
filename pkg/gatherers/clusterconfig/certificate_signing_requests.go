@@ -31,9 +31,7 @@ import (
 // None
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.5.0  | config/certificatesigningrequests 					        |
+// - `config/certificatesigningrequests`
 //
 // ### Config ID
 // `clusterconfig/certificate_signing_requests`

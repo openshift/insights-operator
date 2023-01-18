@@ -42,9 +42,7 @@ const (
 // - docs/insights-archive-sample/config/metrics
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.3.0  | config/metrics 					                        |
+// - `config/metrics`
 //
 // ### Config ID
 // `clusterconfig/metrics`

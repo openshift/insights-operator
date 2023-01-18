@@ -24,9 +24,7 @@ import (
 // - docs/insights-archive-sample/config/logging/openshift-logging/instance.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.9.0  | config/logging/{namespace}/{name}.json 		            |
+// - `config/logging/{namespace}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/openshift_logging`

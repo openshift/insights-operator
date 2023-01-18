@@ -44,9 +44,7 @@ type installPlanAnonymizer struct {
 // - docs/insights-archive-sample/config/instalplans.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.7.0  | config/instalplans.json									|
+// - `config/instalplans.json`
 //
 // ### Config ID
 // `clusterconfig/install_plans`

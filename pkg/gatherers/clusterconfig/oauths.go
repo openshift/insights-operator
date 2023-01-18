@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/oauth.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.2.0  | config/oauth.json 					                        |
+// - `config/oauth.json`
 //
 // ### Config ID
 // `clusterconfig/oauths`

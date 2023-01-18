@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/pod/openshift-authentication/logs/oauth-openshift-6c98668d5b-ftt5n/errors.log
 //
 // ### Location in archive
-// | Version   | Path															|
-// | --------- | -------------------------------------------------------------- |
-// | >= 4.7.0  | config/pod/openshift-authentication/logs/{pod-name}/errors.log |
+// - `config/pod/openshift-authentication/logs/{pod-name}/errors.log`
 //
 // ### Config ID
 // `clusterconfig/openshift_authentication_logs`

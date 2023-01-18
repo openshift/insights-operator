@@ -26,9 +26,7 @@ import (
 // - docs/insights-archive-sample/config/clusterrolebinding
 //
 // ### Location in archive
-// | Version   | Path																   |
-// | --------- | --------------------------------------------------------------------- |
-// | >= 4.7.0  | config/{securitycontentconstraint|clusterrolebinding}/{name}.json     |
+// - `config/{securitycontentconstraint|clusterrolebinding}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/sap_config`

@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/featuregate.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.2.0  | config/featuregate.json 					                |
+// - `config/featuregate.json`
 //
 // ### Config ID
 // `clusterconfig/feature_gates`

@@ -30,9 +30,7 @@ import (
 // None
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.8.2  | config/pod/{namespace}/{name}.json 					                        |
+// - `config/pod/{namespace}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/sap_pods`

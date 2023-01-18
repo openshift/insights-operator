@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/network.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.2.0  | config/network.json 					                    |
+// - `config/network.json`
 //
 // ### Config ID
 // `clusterconfig/networks`

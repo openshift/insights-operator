@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
-
-	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherMachineSet Collects MachineSet information.
@@ -25,9 +24,7 @@ import (
 // - docs/insights-archive-sample/d50d0126-c90b-4428-a75f-dc08cd02960a-worker-test
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.6.0  | config//machinesets/{resource}								|
+// - `config//machinesets/{resource}`
 //
 // ### Config ID
 // `clusterconfig/machine_sets`

@@ -27,9 +27,7 @@ import (
 // - docs/insights-archive-sample/config/serviceaccounts.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// |  >= 4.7.0 | config/serviceaccounts.json		                        |
+// - `config/serviceaccounts.json`
 //
 // ### Config ID
 // `clusterconfig/service_accounts`

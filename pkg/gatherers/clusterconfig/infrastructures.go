@@ -22,9 +22,7 @@ import (
 // - docs/insights-archive-sample/config/infrastructure/.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.2.0  | config/infrastructure.json 					            |
+// - `config/infrastructure.json`
 //
 // ### Config ID
 // `clusterconfig/infrastructures`

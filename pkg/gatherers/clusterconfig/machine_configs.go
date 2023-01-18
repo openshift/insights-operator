@@ -24,9 +24,7 @@ import (
 // - docs/insights-archive-sample/config/machineconfigs/75-worker-sap-data-intelligence.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.8.2  | config/machineconfigs/{resource}.json 							|
+// - `config/machineconfigs/{resource}.json`
 //
 // ### Config ID
 // `clusterconfig/machine_configs`

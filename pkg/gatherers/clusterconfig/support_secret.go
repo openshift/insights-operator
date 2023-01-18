@@ -17,9 +17,7 @@ import (
 // - docs/insights-archive-sample/config/secrets/openshift-config/support/data.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.11.0 | config/secrets/openshift-config/support/data.json 	        |
+// - `config/secrets/openshift-config/support/data.json`
 //
 // ### Config ID
 // `clusterconfig/support_secret`

@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/hostsubnet
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.6.0  | config/hostsubnet/{name}.json				                |
+// - `config/hostsubnet/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/host_subnets`

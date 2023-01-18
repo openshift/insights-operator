@@ -20,9 +20,7 @@ import (
 // - docs/insights-archive-sample/config/image.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | > 4.11.0  | config/image.json					                        |
+// - `config/image.json`
 //
 // ### Config ID
 // `clusterconfig/image`

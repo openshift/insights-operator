@@ -26,9 +26,7 @@ type netNamespace struct {
 // - docs/insights-archive-sample/config/netnamespaces.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.7.0  | config/netnamespaces.json				                    |
+// - `config/netnamespaces.json`
 //
 // ### Config ID
 // `clusterconfig/netnamespaces`

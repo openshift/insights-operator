@@ -48,9 +48,7 @@ const (
 // - docs/insights-archive-sample/config/workload_info.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.8.0  | config/workload_info.json      	                        |
+// - `config/workload_info.json`
 //
 // ### Config ID
 // `workloads/workload_info`

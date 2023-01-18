@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/ingress.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.2.0  | config/ingress.json 					                    |
+// - `config/ingress.json`
 //
 // ### Config ID
 // `clusterconfig/ingress`

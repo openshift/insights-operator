@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/machineautoscalers/openshift-machine-api/worker-us-east-1a.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.8.2  | config/machineautoscalers/{namespace}/{resource}.json		|
+// - `config/machineautoscalers/{namespace}/{resource}.json`
 //
 // ### Config ID
 // `clusterconfig/machine_autoscalers`

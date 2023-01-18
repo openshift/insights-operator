@@ -27,9 +27,7 @@ import (
 // - docs/insights-archive-sample/config/pod/sdi/logs/license-manager-da1d2e8fadfb8dd7022f08-4hjh7-6887768c5b-qzxb6/errors.log
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.8.2  | config/pod/{namespace}/logs/{pod-name}/errors.log 			|
+// - `config/pod/{namespace}/logs/{pod-name}/errors.log`
 //
 // ### Config ID
 // `clusterconfig/sap_license_management_logs`

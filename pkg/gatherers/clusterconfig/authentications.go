@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/authentication.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.2.0  | config/authentication.json 								|
+// - `config/authentication.json`
 //
 // ### Config ID
 // `clusterconfig/authentication`

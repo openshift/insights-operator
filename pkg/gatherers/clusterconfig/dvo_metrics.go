@@ -32,9 +32,7 @@ import (
 // - docs/insights-archive-sample/config/dvo_metrics
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10.0 | config/dvo_metrics 					                    |
+// - `config/dvo_metrics`
 //
 // ### Config ID
 // `clusterconfig/dvo_metrics`

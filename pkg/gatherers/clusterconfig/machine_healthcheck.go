@@ -21,9 +21,7 @@ import (
 // - docs/insights-archive-sample/config/machinehealthchecks/openshift-machine-api/machine-api-termination-handler.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.8.0  | config/machinehealthchecks/{namespace}/{resource}.json 	|
+// - `config/machinehealthchecks/{namespace}/{resource}.json`
 //
 // ### Config ID
 // `clusterconfig/machine_healthchecks`

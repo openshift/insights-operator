@@ -32,9 +32,7 @@ import (
 // - docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-controller-l8gq9/errors.log
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.7.0  | config/pod/openshift-sdn/logs/{pod-name}/errors.log		|
+// - `config/pod/openshift-sdn/logs/{pod-name}/errors.log`
 //
 // ### Config ID
 // `clusterconfig/openshift_sdn_controller_logs`

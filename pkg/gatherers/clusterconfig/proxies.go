@@ -22,9 +22,7 @@ import (
 // - docs/insights-archive-sample/config/proxy.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.3.0  | config/proxy.json 					                        |
+// - `config/proxy.json`
 //
 // ### Config ID
 // `clusterconfig/proxies`

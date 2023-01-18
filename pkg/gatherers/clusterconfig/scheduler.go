@@ -18,9 +18,7 @@ import (
 // - docs/insights-archive-sample/config/schedulers/cluster.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.10.0 | config/schedulers/cluster.json 					        |
+// - `config/schedulers/cluster.json`
 //
 // ### Config ID
 // `clusterconfig/schedulers`

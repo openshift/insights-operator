@@ -40,9 +40,7 @@ type csvRef struct {
 // - docs/insights-archive-sample/config/olm_operators
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.7.0  | config/olm_operators 					                    |
+// - `config/olm_operators`
 //
 // ### Config ID
 // `clusterconfig/olm_operators`

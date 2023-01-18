@@ -35,9 +35,7 @@ type alert struct {
 // - docs/insights-archive-sample/config/alerts.json
 //
 // ### Location in archive
-// | Version   | Path														|
-// | --------- | --------------------------------------------------------	|
-// | >= 4.12.0 | config/alerts.json				                        	|
+// - `config/alerts.json`
 //
 // ### Config ID
 // `clusterconfig/active_alerts`
