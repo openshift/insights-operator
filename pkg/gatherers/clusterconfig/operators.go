@@ -32,9 +32,11 @@ type clusterOperatorResource struct {
 	Kind       string      `json:"kind"`
 	Name       string      `json:"name"`
 	Spec       interface{} `json:"spec"`
+	namespace  string
 }
 
-// GatherClusterOperators collects all the ClusterOperators definitions and their resources.
+// GatherClusterOperators collects all the ClusterOperators definitions and their related resources
+// from the `operator.openshift.io` group.
 //
 // The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 // Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
@@ -94,7 +96,10 @@ func clusterOperatorsRecords(ctx context.Context,
 	items []configv1.ClusterOperator,
 	dynamicClient dynamic.Interface,
 	discoveryClient discovery.DiscoveryInterface) []record.Record {
-	resVer, _ := getOperatorResourcesVersions(discoveryClient)
+	resVer, err := getOperatorResourcesVersions(discoveryClient)
+	if err != nil {
+		klog.Warning("Can't read operator resource versions: %v", err)
+	}
 	records := make([]record.Record, 0, len(items))
 
 	for idx := range items {
@@ -106,7 +111,7 @@ func clusterOperatorsRecords(ctx context.Context,
 			continue
 		}
 
-		relRes := collectClusterOperatorResources(ctx, dynamicClient, items[idx], resVer)
+		relRes := collectClusterOperatorRelatedObjects(ctx, dynamicClient, items[idx], resVer)
 		for _, rr := range relRes {
 			// imageregistry resources (config, pruner) are gathered in image_registries.go, image_pruners.go
 			if strings.Contains(rr.APIVersion, "imageregistry") {
@@ -116,8 +121,12 @@ func clusterOperatorsRecords(ctx context.Context,
 			if err != nil {
 				klog.Warningf("Unable to parse group version %s: %s", rr.APIVersion, err)
 			}
+			recName := fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name)
+			if rr.namespace != "" {
+				recName = fmt.Sprintf("config/clusteroperator/%s/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.namespace, rr.Name)
+			}
 			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/clusteroperator/%s/%s/%s", gv.Group, strings.ToLower(rr.Kind), rr.Name),
+				Name: recName,
 				Item: record.JSONMarshaller{Object: rr},
 			})
 		}
@@ -126,11 +135,13 @@ func clusterOperatorsRecords(ctx context.Context,
 	return records
 }
 
-// collectClusterOperatorResources list all cluster operator resources
-func collectClusterOperatorResources(ctx context.Context,
+// collectClusterOperatorRelatedObjects iterates over all the clusteroperator relatedObjects
+// and stores all the objects from "operator.openshift.io" group. Then it tries to read all
+// found resources in this group and store it in the archive.
+func collectClusterOperatorRelatedObjects(ctx context.Context,
 	dynamicClient dynamic.Interface,
 	co configv1.ClusterOperator, //nolint: gocritic
-	resVer map[string][]string) []clusterOperatorResource {
+	resVer map[schema.GroupResource]string) []clusterOperatorResource {
 	var relObj []configv1.ObjectReference
 	for _, ro := range co.Status.RelatedObjects {
 		if strings.Contains(ro.Group, "operator.openshift.io") {
@@ -142,47 +153,54 @@ func collectClusterOperatorResources(ctx context.Context,
 	}
 	var res []clusterOperatorResource
 	for _, ro := range relObj {
-		key := fmt.Sprintf("%s-%s", ro.Group, strings.ToLower(ro.Resource))
-		versions := resVer[key]
-		for _, v := range versions {
-			gvr := schema.GroupVersionResource{Group: ro.Group, Version: v, Resource: strings.ToLower(ro.Resource)}
-			clusterResource, err := dynamicClient.Resource(gvr).Get(ctx, ro.Name, metav1.GetOptions{})
-			if err != nil {
-				klog.V(2).Infof("Unable to list %s resource due to: %s", gvr, err)
-			}
-			if clusterResource == nil {
-				continue
-			}
-			kind, err := utils.NestedStringWrapper(clusterResource.Object, "kind")
-			if err != nil {
-				continue
-			}
-			apiVersion, err := utils.NestedStringWrapper(clusterResource.Object, "apiVersion")
-			if err != nil {
-				continue
-			}
-			name, err := utils.NestedStringWrapper(clusterResource.Object, "metadata", "name")
-			if err != nil {
-				continue
-			}
-			spec, ok := clusterResource.Object["spec"]
-			if !ok {
-				klog.Warningf("Can't find spec for cluster operator resource %s", name)
-			}
-			anonymizeIdentityProviders(clusterResource.Object)
-			res = append(res, clusterOperatorResource{Spec: spec, Kind: kind, Name: name, APIVersion: apiVersion})
+		gr := schema.GroupResource{
+			Group:    ro.Group,
+			Resource: ro.Resource,
 		}
+		version := resVer[gr]
+		gvr := gr.WithVersion(version)
+		clusterResource, err := getRelatedObjectResource(ctx, dynamicClient, ro, co.Name, gvr)
+		if err != nil {
+			klog.V(2).Infof("Unable to get %s resource due to: %s", fmt.Sprintf("%s.%s", ro.Resource, ro.Group), err)
+			continue
+		}
+		spec, ok := clusterResource.Object["spec"]
+		if !ok {
+			klog.Warningf("Can't find spec for cluster operator resource %s", clusterResource.GetName())
+		}
+		anonymizeIdentityProviders(clusterResource.Object)
+		res = append(res, clusterOperatorResource{
+			Spec:       spec,
+			Kind:       clusterResource.GetKind(),
+			Name:       clusterResource.GetName(),
+			APIVersion: clusterResource.GetAPIVersion(),
+			namespace:  clusterResource.GetNamespace(),
+		})
 	}
 	return res
 }
 
+// getRelatedObjectResource gets/reads the related object (based on the attribtues passed in the ObjectReference)
+// from the cluster API using the dynamic Interface. It handles some extra cases, when the relatedObject name is not availab.e
+func getRelatedObjectResource(ctx context.Context,
+	dynamicClient dynamic.Interface,
+	ro configv1.ObjectReference,
+	coName string, gvr schema.GroupVersionResource) (*unstructured.Unstructured, error) {
+	// ingress cluster operator has related object ingresscontroller, but the name is not provided
+	// there is the default one with name "default"
+	if ro.Name == "" && coName == "ingress" {
+		ro.Name = "default"
+	}
+	return dynamicClient.Resource(gvr).Namespace(ro.Namespace).Get(ctx, ro.Name, metav1.GetOptions{})
+}
+
 // getOperatorResourcesVersions get all the operator resource versions
-func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) (map[string][]string, error) {
+func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) (map[schema.GroupResource]string, error) {
 	resources, err := discoveryClient.ServerPreferredResources()
 	if err != nil {
 		return nil, err
 	}
-	resourceVersionMap := make(map[string][]string)
+	resourceVersionMap := make(map[schema.GroupResource]string)
 	for _, v := range resources {
 		if strings.Contains(v.GroupVersion, "operator.openshift.io") {
 			gv, err := schema.ParseGroupVersion(v.GroupVersion)
@@ -190,13 +208,11 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 				continue
 			}
 			for i := range v.APIResources {
-				key := fmt.Sprintf("%s-%s", gv.Group, v.APIResources[i].Name)
-				_, ok := resourceVersionMap[key]
-				if !ok {
-					resourceVersionMap[key] = []string{gv.Version}
-					continue
+				gr := schema.GroupResource{
+					Group:    gv.Group,
+					Resource: v.APIResources[i].Name,
 				}
-				resourceVersionMap[key] = append(resourceVersionMap[key], gv.Version)
+				resourceVersionMap[gr] = gv.Version
 			}
 		}
 	}
