@@ -347,7 +347,7 @@ func Test_conditions_setCondition(t *testing.T) {
 			args: args{
 				condition: configv1.OperatorDegraded,
 				status:    configv1.ConditionUnknown,
-				reason:    "degraded reason",
+				reason:    degradedReason,
 				message:   "degraded message",
 				lastTime:  time,
 			},
@@ -363,7 +363,7 @@ func Test_conditions_setCondition(t *testing.T) {
 						Type:               configv1.OperatorDegraded,
 						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
-						Reason:             "degraded reason",
+						Reason:             degradedReason,
 						Message:            "degraded message",
 					},
 				},
@@ -374,8 +374,8 @@ func Test_conditions_setCondition(t *testing.T) {
 			fields: fields{entryMap: map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{
 				configv1.OperatorAvailable: {
 					Type:               configv1.OperatorAvailable,
-					Status:             configv1.ConditionUnknown,
 					LastTransitionTime: time,
+					Status:             configv1.ConditionTrue,
 					Reason:             "",
 				},
 				configv1.OperatorDegraded: {
@@ -386,11 +386,11 @@ func Test_conditions_setCondition(t *testing.T) {
 				},
 			}},
 			args: args{
-				condition: configv1.OperatorAvailable,
+				condition: configv1.OperatorDegraded,
 				status:    configv1.ConditionTrue,
-				reason:    "available reason",
-				message:   "",
 				lastTime:  time,
+				reason:    degradedReason,
+				message:   "error",
 			},
 			want: &conditions{
 				entryMap: map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition{
@@ -398,13 +398,14 @@ func Test_conditions_setCondition(t *testing.T) {
 						Type:               configv1.OperatorAvailable,
 						Status:             configv1.ConditionTrue,
 						LastTransitionTime: time,
-						Reason:             "available reason",
+						Reason:             "",
 					},
 					configv1.OperatorDegraded: {
 						Type:               configv1.OperatorDegraded,
-						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
-						Reason:             "",
+						Status:             configv1.ConditionTrue,
+						Reason:             degradedReason,
+						Message:            "error",
 					},
 				},
 			},
@@ -415,10 +416,20 @@ func Test_conditions_setCondition(t *testing.T) {
 			c := &conditions{
 				entryMap: tt.fields.entryMap,
 			}
-			c.setCondition(tt.args.condition, tt.args.status, tt.args.reason, tt.args.message, time)
-			if !reflect.DeepEqual(c, tt.want) {
-				t.Errorf("setConditions() = %v, want %v", c, tt.want)
-			}
+			c.setCondition(tt.args.condition, tt.args.status, tt.args.reason, tt.args.message)
+
+			actualAvailableCon := tt.fields.entryMap[configv1.OperatorAvailable]
+			expectedAvailableCon := tt.want.entryMap[configv1.OperatorAvailable]
+			assert.Equal(t, expectedAvailableCon, actualAvailableCon)
+
+			actualDegradedCon := tt.fields.entryMap[configv1.OperatorDegraded]
+			expectedDegradedCon := tt.want.entryMap[configv1.OperatorDegraded]
+			assert.Equal(t, expectedDegradedCon.Status, actualDegradedCon.Status)
+			assert.Equal(t, expectedDegradedCon.Reason, actualDegradedCon.Reason)
+			assert.Equal(t, expectedDegradedCon.Message, actualDegradedCon.Message)
+			// we expect transition time update only in degraded condition, because in the first case
+			// it was introduced as a new condition and in the second case the status has been updated
+			assert.True(t, expectedDegradedCon.LastTransitionTime.Before(&actualDegradedCon.LastTransitionTime))
 		})
 	}
 }
