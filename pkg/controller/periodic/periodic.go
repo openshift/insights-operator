@@ -44,8 +44,8 @@ var (
 // Controller periodically runs gatherers, records their results to the recorder
 // and flushes the recorder to create archives
 type Controller struct {
-	secretConfigurator  configobserver.Configurator
 	apiConfigurator     configobserver.InsightsDataGatherObserver
+	configAggregator    configobserver.Interface
 	recorder            recorder.FlushInterface
 	gatherers           []gatherers.Interface
 	statuses            map[string]controllerstatus.StatusController
@@ -63,7 +63,7 @@ type Controller struct {
 
 func NewWithTechPreview(
 	reportRetriever *insightsreport.Controller,
-	secretConfigurator configobserver.Configurator,
+	configAggregator configobserver.Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	listGatherers []gatherers.Interface,
 	kubeClient kubernetes.Interface,
@@ -78,7 +78,7 @@ func NewWithTechPreview(
 	jobController := NewJobController(kubeClient)
 	return &Controller{
 		reportRetriever:     reportRetriever,
-		secretConfigurator:  secretConfigurator,
+		configAggregator:    configAggregator,
 		apiConfigurator:     apiConfigurator,
 		gatherers:           listGatherers,
 		statuses:            statuses,
@@ -95,7 +95,7 @@ func NewWithTechPreview(
 // New creates a new instance of Controller which periodically invokes the gatherers
 // and flushes the recorder to create archives.
 func New(
-	secretConfigurator configobserver.Configurator,
+	configAggregator configobserver.Interface,
 	rec recorder.FlushInterface,
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
@@ -110,7 +110,7 @@ func New(
 	}
 
 	return &Controller{
-		secretConfigurator:  secretConfigurator,
+		configAggregator:    configAggregator,
 		recorder:            rec,
 		gatherers:           listGatherers,
 		statuses:            statuses,
@@ -189,8 +189,8 @@ func (c *Controller) Gather() {
 			gatherersToProcess = append(gatherersToProcess, gatherer)
 		}
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval)
+	interval := c.configAggregator.Config().DataReporting.Interval
+	ctx, cancel := context.WithTimeout(context.Background(), interval)
 	defer cancel()
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
@@ -232,10 +232,43 @@ func (c *Controller) Gather() {
 // Periodically starts the gathering.
 // If there is an initialDelay set then it waits that much for the first gather to happen.
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
-	configCh, closeFn := c.secretConfigurator.ConfigChanged()
+	configCh, closeFn := c.configAggregator.ConfigChanged()
 	defer closeFn()
 
-	interval := c.secretConfigurator.Config().Interval
+	interval := c.configAggregator.Config().DataReporting.Interval
+	klog.Infof("Gathering cluster info every %s", interval)
+	t := time.NewTicker(interval)
+	for {
+		select {
+		case <-stopCh:
+			t.Stop()
+			return
+		case <-configCh:
+			newInterval := c.configAggregator.Config().DataReporting.Interval
+			if newInterval == interval {
+				continue
+			}
+
+			interval = newInterval
+			t.Reset(interval)
+			klog.Infof("Gathering cluster info every %s", interval)
+		case <-t.C:
+			c.Gather()
+		}
+	}
+}
+
+// periodicTriggerTechPreview is a techpreview alternative to the same function above,
+// but this adds a listerner for the dataGatherInforme, which is nil (not initialized) in
+// non-techpreview clusters.
+func (c *Controller) periodicTriggerTechPreview(stopCh <-chan struct{}) {
+	configCh, closeFn := c.configAggregator.ConfigChanged()
+	defer closeFn()
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
+	defer cancel()
+
+	interval := c.configAggregator.Config().DataReporting.Interval
 	klog.Infof("Gathering cluster info every %s", interval)
 	for {
 		select {
@@ -243,7 +276,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			return
 
 		case <-configCh:
-			newInterval := c.secretConfigurator.Config().Interval
+			newInterval := c.configAggregator.Config().DataReporting.Interval
 			if newInterval == interval {
 				continue
 			}
@@ -251,24 +284,9 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			if c.techPreview {
-				c.GatherJob()
-			} else {
-				c.Gather()
-			}
-		}
-	}
-}
+			c.GatherJob()
 
-// onDemandGather listens to newly created DataGather resources and checks
-// the state of each resource. If the state is not an empty string, it means that
-// the corresponding job is already running or has been started and new data gathering
-// is not triggered.
-func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
-	for {
-		select {
-		case <-stopCh:
-			return
+		// lister to on-demand dataGather creations
 		case dgName := <-c.dgInf.DataGatherCreated():
 			go func() {
 				ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)
@@ -300,7 +318,7 @@ func (c *Controller) GatherJob() {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)
+	ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
 	defer cancel()
 
 	if c.image == "" {
@@ -329,7 +347,7 @@ func (c *Controller) GatherJob() {
 
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGatherName, c.image, c.secretConfigurator.Config().StoragePath)
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGatherName, c.image, c.configAggregator.Config().DataReporting.StoragePath)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -401,7 +419,7 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 		dg.Status.InsightsReport.HealthChecks = append(dg.Status.InsightsReport.HealthChecks, healthCheck)
 	}
 	dg.Status.InsightsReport.DownloadedAt = report.DownloadedAt
-	uri := fmt.Sprintf(c.secretConfigurator.Config().ReportEndpointTechPreview, report.ClusterID, report.RequestID)
+	uri := fmt.Sprintf(c.configAggregator.Config().DataReporting.DownloadEndpointTechPreview, report.ClusterID, report.RequestID)
 	dg.Status.InsightsReport.URI = uri
 	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, dg, metav1.UpdateOptions{})
 	return err
@@ -468,7 +486,7 @@ func (c *Controller) updateOperatorStatusCR(ctx context.Context, allFunctionRepo
 func (c *Controller) isGatheringDisabled() bool {
 	// old way of disabling data gathering by removing
 	// the "cloud.openshift.com" token from the pull-secret
-	if !c.secretConfigurator.Config().Report {
+	if !c.configAggregator.Config().DataReporting.Enabled {
 		return true
 	}
 

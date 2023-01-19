@@ -14,6 +14,7 @@ import (
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -150,9 +151,20 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		go insightsInformersfactory.Start(ctx.Done())
 	}
 
+	kubeInf := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
+	configMapObserver, err := configobserver.NewConfigMapObserver(gatherKubeConfig, controller.EventRecorder, kubeInf)
+	if err != nil {
+		return err
+	}
+	go kubeInf.Start(ctx.Done())
+	go configMapObserver.Run(ctx, 1)
+
 	// secretConfigObserver synthesizes all config into the status reporter controller
 	secretConfigObserver := configobserver.New(s.Controller, kubeClient)
 	go secretConfigObserver.Start(ctx)
+
+	configAggregator := configobserver.NewConfigAggregator(secretConfigObserver, configMapObserver)
+	go configAggregator.Listen(ctx)
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
@@ -200,12 +212,12 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		secretConfigObserver, insightsClient,
 	)
 	if !insightsConfigAPIEnabled {
-		periodicGather = periodic.New(secretConfigObserver, rec, gatherers, anonymizer,
+		periodicGather = periodic.New(configAggregator, rec, gatherers, anonymizer,
 			operatorClient.InsightsOperators(), kubeClient)
 		statusReporter.AddSources(periodicGather.Sources()...)
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver)
-		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver,
+		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
 			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(), operatorClient.InsightsOperators(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)
@@ -226,7 +238,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if !insightsConfigAPIEnabled {
 		// upload results to the provided client - if no client is configured reporting
 		// is permanently disabled, but if a client does exist the server may still disable reporting
-		uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver,
+		uploader := insightsuploader.New(recdriver, insightsClient, configAggregator,
 			insightsDataGatherObserver, statusReporter, initialDelay)
 		statusReporter.AddSources(uploader)
 

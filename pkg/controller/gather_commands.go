@@ -179,7 +179,8 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsHTTPCli,
 	)
-	uploader := insightsuploader.New(nil, insightsHTTPCli, configObserver, nil, nil, 0)
+	// TODO FIX??
+	uploader := insightsuploader.New(nil, insightsHTTPCli, nil, nil, nil, 0)
 
 	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)
 	if err != nil {
