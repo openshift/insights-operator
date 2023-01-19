@@ -4,11 +4,16 @@ import (
 	"fmt"
 )
 
+var (
+	ErrAlertPodNameMissing      = fmt.Errorf("alert is missing 'pod' label")
+	ErrAlertPodNamespaceMissing = fmt.Errorf("alert is missing 'namespace' label")
+	ErrAlertPodContainerMissing = fmt.Errorf("alert is missing 'container' label")
+)
+
 func getAlertPodName(labels AlertLabels) (string, error) {
 	name, ok := labels["pod"]
 	if !ok {
-		newErr := fmt.Errorf("alert is missing 'pod' label")
-		return "", newErr
+		return "", ErrAlertPodNameMissing
 	}
 	return name, nil
 }
@@ -16,17 +21,15 @@ func getAlertPodName(labels AlertLabels) (string, error) {
 func getAlertPodNamespace(labels AlertLabels) (string, error) {
 	namespace, ok := labels["namespace"]
 	if !ok {
-		newErr := fmt.Errorf("alert is missing 'namespace' label")
-		return "", newErr
+		return "", ErrAlertPodNamespaceMissing
 	}
 	return namespace, nil
 }
 
 func getAlertPodContainer(labels AlertLabels) (string, error) {
 	container, ok := labels["container"]
-	if !ok && len(container) > 0 {
-		newErr := fmt.Errorf("alert is missing 'container' label")
-		return "", newErr
+	if !ok || len(container) == 0 {
+		return "", ErrAlertPodContainerMissing
 	}
 	return container, nil
 }

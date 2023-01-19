@@ -67,7 +67,7 @@ func TestGatherer_gatherContainersLogs(t *testing.T) {
 				Captured: time.Time{},
 				Item:     marshal.Raw{Str: "fake logs"},
 			}},
-			wantErr: nil,
+			wantErr: []error{ErrAlertPodContainerMissing},
 		},
 	}
 	for _, tt := range tests {

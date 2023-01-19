@@ -104,6 +104,7 @@ func (g *Gatherer) gatherContainersLogs(
 		if len(params.PodName) > 0 {
 			logContainersFilter.PodNameRegexFilter = fmt.Sprintf("^%s$", params.PodName)
 		} else {
+			// If we are not overwriting the PodName with params, we use the one from the alert.
 			logContainersFilter.FieldSelector = fmt.Sprintf("metadata.name=%s", info.name)
 		}
 
@@ -159,6 +160,8 @@ func parseAlertLabels(labels AlertLabels) (podInfo, error) {
 
 	podContainer, err := getAlertPodContainer(labels)
 	if err != nil {
+		// Some alerts don't have container, so it isn't actually an error, but let's log it
+		// (e.g.: AlertmanagerFailedToSendAlerts)
 		return info, err
 	}
 	info.container = podContainer
