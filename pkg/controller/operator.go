@@ -11,6 +11,7 @@ import (
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -88,6 +89,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
+	kubeInf := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
+	configMapObserver, err := configobserver.NewConfigObserver(ctx, gatherKubeConfig, controller.EventRecorder, kubeInf)
+	if err != nil {
+		return err
+	}
+	kubeInf.Start(ctx.Done())
+	go configMapObserver.Run(ctx, 1)
+
 	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
 	if err != nil {
 		klog.Error("can't read cluster feature gates: %v", err)
@@ -151,7 +160,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
+	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, configMapObserver,
+		statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
 
 	// start reporting status now that all controller loops are added as sources

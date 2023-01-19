@@ -37,6 +37,7 @@ type Controller struct {
 	client             *insightsclient.Client
 	secretConfigurator configobserver.Configurator
 	apiConfigurator    configobserver.APIConfigObserver
+	configMapObserver  configobserver.ConfigMapObserver
 	reporter           StatusReporter
 	archiveUploaded    chan struct{}
 	initialDelay       time.Duration
@@ -46,6 +47,7 @@ func New(summarizer Summarizer,
 	client *insightsclient.Client,
 	secretconfigurator configobserver.Configurator,
 	apiConfigurator configobserver.APIConfigObserver,
+	configMapObserver configobserver.ConfigMapObserver,
 	statusReporter StatusReporter,
 	initialDelay time.Duration) *Controller {
 
@@ -54,6 +56,7 @@ func New(summarizer Summarizer,
 		summarizer:         summarizer,
 		secretConfigurator: secretconfigurator,
 		apiConfigurator:    apiConfigurator,
+		configMapObserver:  configMapObserver,
 		client:             client,
 		reporter:           statusReporter,
 		archiveUploaded:    make(chan struct{}),
@@ -70,13 +73,10 @@ func (c *Controller) Run(ctx context.Context) {
 	}
 
 	// the controller periodically uploads results to the remote insights endpoint
-	cfg := c.secretConfigurator.Config()
+	//secretConfig := c.secretConfigurator.Config()
 	configCh, cancelFn := c.secretConfigurator.ConfigChanged()
 	defer cancelFn()
-
-	reportingEnabled := cfg.Report
-	endpoint := cfg.Endpoint
-	interval := cfg.Interval
+	reportingEnabled, endpoint, interval := c.readConfig()
 	lastReported := c.reporter.LastReportedTime()
 	if !lastReported.IsZero() {
 		next := lastReported.Add(interval)
@@ -84,7 +84,7 @@ func (c *Controller) Run(ctx context.Context) {
 			c.initialDelay = wait.Jitter(now.Sub(next), 1.2)
 		}
 	}
-	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", cfg.Endpoint, interval, c.initialDelay.Truncate(time.Second))
+	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", endpoint, interval, c.initialDelay.Truncate(time.Second))
 
 	wait.Until(func() {
 		if c.initialDelay > 0 {
@@ -92,17 +92,14 @@ func (c *Controller) Run(ctx context.Context) {
 			case <-ctx.Done():
 			case <-time.After(c.initialDelay):
 			case <-configCh:
-				newCfg := c.secretConfigurator.Config()
-				interval = newCfg.Interval
-				endpoint = newCfg.Endpoint
-				reportingEnabled = newCfg.Report
+				reportingEnabled, endpoint, interval = c.readConfig()
 				var disabledInAPI bool
 				if c.apiConfigurator != nil {
 					disabledInAPI = c.apiConfigurator.GatherDisabled()
 				}
 				if !reportingEnabled || disabledInAPI {
 					klog.V(2).Infof("Reporting was disabled")
-					c.initialDelay = newCfg.Interval
+					c.initialDelay = interval
 					return
 				}
 			}
@@ -195,4 +192,28 @@ func reportToLogs(source io.Reader, klog klog.Verbose) error {
 		klog.Infof("Dry-run: %s %7d %s", hdr.ModTime.Format(time.RFC3339), hdr.Size, hdr.Name)
 	}
 	return nil
+}
+
+func (c *Controller) readConfig() (bool, string, time.Duration) {
+	secretConfig := c.secretConfigurator.Config()
+	configMapConfig := c.configMapObserver.Config()
+
+	reportingEnabled := secretConfig.Report
+	var endpoint string
+	// if "support" secret doesn't declare endpoint then
+	// use the configmap
+	if secretConfig.Endpoint == "" {
+		endpoint = configMapConfig.DataReporting.UploadEndpoint
+	} else {
+		endpoint = secretConfig.Endpoint
+	}
+	if configMapConfig.DataReporting.Interval == "" {
+		return reportingEnabled, endpoint, secretConfig.Interval
+	}
+	interval, err := time.ParseDuration(configMapConfig.DataReporting.Interval)
+	if err != nil {
+		klog.Errorf("Cannot parse interval time duration: %v. Using default value 2h", err)
+		return reportingEnabled, endpoint, secretConfig.Interval
+	}
+	return reportingEnabled, endpoint, interval
 }

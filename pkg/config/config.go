@@ -11,10 +11,10 @@ import (
 
 // Serialized defines the standard config for this operator.
 type Serialized struct {
-	Report                      bool   `json:"report"`
-	StoragePath                 string `json:"storagePath"`
-	Interval                    string `json:"interval"`
-	Endpoint                    string `json:"endpoint"`
+	Report      bool   `json:"report"`
+	StoragePath string `json:"storagePath"`
+	Interval    string `json:"interval"`
+	//Endpoint                    string `json:"endpoint"`
 	ConditionalGathererEndpoint string `json:"conditionalGathererEndpoint"`
 	PullReport                  struct {
 		Endpoint     string `json:"endpoint"`
@@ -182,7 +182,6 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	}
 	cfg.Report = s.Report
 	cfg.StoragePath = s.StoragePath
-	cfg.Endpoint = s.Endpoint
 	cfg.ConditionalGathererEndpoint = s.ConditionalGathererEndpoint
 	cfg.Impersonate = s.Impersonate
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation

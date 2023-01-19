@@ -1,0 +1,17 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: insights-config
+  namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+data:
+  config.yaml: |
+    dataReporting:
+      interval: "2h"
+      uploadEndpoint: "https://console.redhat.com/api/ingress/v1/upload"
+      downloadEndpoint: "https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports"
+
