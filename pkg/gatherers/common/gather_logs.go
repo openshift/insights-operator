@@ -79,14 +79,22 @@ func CollectLogsFromContainers( //nolint:gocyclo
 
 	var skippedContainers int
 	var records []record.Record
+	var regexErrorMessage = "fails to compile regex '%s' to filter '%s'"
+
+	podNameRegex, err := regexp.Compile(resourceFilter.PodNameRegexFilter)
+	if err != nil {
+		klog.Warningf(regexErrorMessage, resourceFilter.PodNameRegexFilter, "pod name")
+		return nil, err
+	}
+	containerNameRegex, err := regexp.Compile(resourceFilter.ContainerNameRegexFilter)
+	if err != nil {
+		klog.Warningf(regexErrorMessage, resourceFilter.ContainerNameRegexFilter, "container")
+		return nil, err
+	}
 
 	for i := range pods.Items {
 		if len(resourceFilter.PodNameRegexFilter) > 0 {
-			match, err := regexp.MatchString(resourceFilter.PodNameRegexFilter, pods.Items[i].Name)
-			if err != nil {
-				return nil, err
-			}
-			if !match {
+			if !podNameRegex.MatchString(pods.Items[i].Name) {
 				continue
 			}
 		}
@@ -109,11 +117,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 
 		for _, containerName := range containerNames {
 			if len(resourceFilter.ContainerNameRegexFilter) > 0 {
-				match, err := regexp.MatchString(resourceFilter.ContainerNameRegexFilter, containerName)
-				if err != nil {
-					return nil, err
-				}
-				if !match {
+				if !containerNameRegex.MatchString(containerName) {
 					continue
 				}
 			}
