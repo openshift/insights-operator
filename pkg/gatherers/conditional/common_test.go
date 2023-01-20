@@ -1,6 +1,7 @@
 package conditional
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -28,13 +29,8 @@ func Test_getAlertPodName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getAlertPodName(tt.labels)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getAlertPodName() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("getAlertPodName() got = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, err != nil)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -63,13 +59,8 @@ func Test_getAlertPodNamespace(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getAlertPodNamespace(tt.labels)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getAlertPodNamespace() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("getAlertPodNamespace() got = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.wantErr, err != nil)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -123,12 +114,8 @@ func TestGetAlertPodContainer(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			container, err := getAlertPodContainer(tc.labels)
-			if container != tc.expectedResult {
-				t.Errorf("Expected result to be %s but got %s", tc.expectedResult, container)
-			}
-			if err != tc.expectedErr {
-				t.Errorf("Expected error to be %v but got %v", tc.expectedErr, err)
-			}
+			assert.Equal(t, tc.expectedResult, container)
+			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
 }
