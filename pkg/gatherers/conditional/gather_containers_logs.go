@@ -93,29 +93,29 @@ func (g *Gatherer) gatherContainersLogs(
 			continue
 		}
 
-		logContainersFilter := &common.LogContainersFilter{
+		resourceFilter := &common.LogResourceFilter{
 			Namespace: info.namespace,
 		}
 
 		if len(params.Container) > 0 {
-			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", params.Container)
+			resourceFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", params.Container)
 		} else if len(info.container) > 0 {
 			// KubePod* conditions does not have the container so, we need to verify it first,
 			// and then we can apply it to the creation of the regex rule.
-			logContainersFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", info.container)
+			resourceFilter.ContainerNameRegexFilter = fmt.Sprintf("^%s$", info.container)
 		}
 
 		if len(params.PodName) > 0 {
-			logContainersFilter.PodNameRegexFilter = fmt.Sprintf("^%s$", params.PodName)
+			resourceFilter.PodNameRegexFilter = fmt.Sprintf("^%s$", params.PodName)
 		} else {
 			// If we are not overwriting the PodName with params, we use the one from the alert.
-			logContainersFilter.FieldSelector = fmt.Sprintf("metadata.name=%s", info.name)
+			resourceFilter.FieldSelector = fmt.Sprintf("metadata.name=%s", info.name)
 		}
 
 		logRecords, err := common.CollectLogsFromContainers(
 			ctx,
 			coreClient,
-			logContainersFilter,
+			resourceFilter,
 			&common.LogMessagesFilter{
 				TailLines: params.TailLines,
 				Previous:  params.Previous,

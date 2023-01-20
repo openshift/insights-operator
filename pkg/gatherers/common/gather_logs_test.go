@@ -74,7 +74,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 	records, err := CollectLogsFromContainers(
 		ctx,
 		coreClient,
-		&LogContainersFilter{
+		&LogResourceFilter{
 			Namespace: testPodName,
 		},
 		&LogMessagesFilter{

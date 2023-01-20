@@ -17,8 +17,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// LogContainersFilter allows you to filter containers
-type LogContainersFilter struct {
+// LogResourceFilter allows you to filter containers
+type LogResourceFilter struct {
 	Namespace                string
 	LabelSelector            string
 	FieldSelector            string
@@ -59,7 +59,7 @@ type LogMessagesFilter struct {
 func CollectLogsFromContainers( //nolint:gocyclo
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
-	containersFilter *LogContainersFilter,
+	resourceFilter *LogResourceFilter,
 	messagesFilter *LogMessagesFilter,
 	buildLogFileName func(namespace string, podName string, containerName string) string,
 ) ([]record.Record, error) {
@@ -69,9 +69,9 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		}
 	}
 
-	pods, err := coreClient.Pods(containersFilter.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: containersFilter.LabelSelector,
-		FieldSelector: containersFilter.FieldSelector,
+	pods, err := coreClient.Pods(resourceFilter.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: resourceFilter.LabelSelector,
+		FieldSelector: resourceFilter.FieldSelector,
 	})
 	if err != nil {
 		return nil, err
@@ -81,8 +81,8 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	var records []record.Record
 
 	for i := range pods.Items {
-		if len(containersFilter.PodNameRegexFilter) > 0 {
-			match, err := regexp.MatchString(containersFilter.PodNameRegexFilter, pods.Items[i].Name)
+		if len(resourceFilter.PodNameRegexFilter) > 0 {
+			match, err := regexp.MatchString(resourceFilter.PodNameRegexFilter, pods.Items[i].Name)
 			if err != nil {
 				return nil, err
 			}
@@ -99,7 +99,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 			containerNames = append(containerNames, pods.Items[i].Spec.InitContainers[j].Name)
 		}
 
-		containersLimited := containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers
+		containersLimited := resourceFilter.MaxNamespaceContainers > 0 && len(records) >= resourceFilter.MaxNamespaceContainers
 		if containersLimited {
 			skippedContainers += len(containerNames)
 			continue
@@ -108,8 +108,8 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		pod := &pods.Items[i]
 
 		for _, containerName := range containerNames {
-			if len(containersFilter.ContainerNameRegexFilter) > 0 {
-				match, err := regexp.MatchString(containersFilter.ContainerNameRegexFilter, containerName)
+			if len(resourceFilter.ContainerNameRegexFilter) > 0 {
+				match, err := regexp.MatchString(resourceFilter.ContainerNameRegexFilter, containerName)
 				if err != nil {
 					return nil, err
 				}
@@ -119,11 +119,11 @@ func CollectLogsFromContainers( //nolint:gocyclo
 			}
 
 			if containersLimited {
-				skippedContainers = len(containerNames) - containersFilter.MaxNamespaceContainers
+				skippedContainers = len(containerNames) - resourceFilter.MaxNamespaceContainers
 				break
 			}
 
-			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
+			request := coreClient.Pods(resourceFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
 			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
 			if err != nil {
@@ -140,12 +140,12 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	}
 
 	if len(pods.Items) == 0 {
-		klog.Infof("no pods in %v namespace were found", containersFilter.Namespace)
+		klog.Infof("no pods in %v namespace were found", resourceFilter.Namespace)
 	}
 
 	if skippedContainers > 0 {
 		return records, fmt.Errorf("skipping %d containers on namespace %s (max: %d)",
-			skippedContainers, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
+			skippedContainers, resourceFilter.Namespace, resourceFilter.MaxNamespaceContainers)
 	}
 
 	return records, nil
