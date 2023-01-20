@@ -63,6 +63,10 @@ type podInfo struct {
 	container string
 }
 
+// gatherContainersLogs gathers logs from a pod's container in response to an alert firing.
+// It takes in a context, parameters for gathering logs, and a client for interacting with the Kubernetes API.
+// The parameters passed in will overwrite any information obtained from the alert labels.
+// It returns gathered logs and any errors that occurred during execution.
 func (g *Gatherer) gatherContainersLogs(
 	ctx context.Context,
 	params GatherContainersLogsParams,
