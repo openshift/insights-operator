@@ -29,12 +29,12 @@ import (
 // `clusterconfig/validating_webhook_configurations`
 //
 // ### Released version
-// - 4.10.13
+// - 4.10.3
 //
 // ### Backported versions
-// - 4.9.11+
-// - 4.8.24+
 // - 4.7.40+
+// - 4.8.24+
+// - 4.9.11+
 //
 // ### Changes
 // None
