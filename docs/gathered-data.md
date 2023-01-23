@@ -577,7 +577,7 @@ and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitori
 - 4.5.0
 
 ### Backported versions
-- 4.3.23+
+- 4.3.25+
 - 4.4.6+
 
 ### Changes
