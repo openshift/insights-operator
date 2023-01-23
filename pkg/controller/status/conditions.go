@@ -1,6 +1,8 @@
 package status
 
 import (
+	"sort"
+
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -53,28 +55,22 @@ func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *condi
 	}
 }
 
-func (c *conditions) setCondition(condition configv1.ClusterStatusConditionType,
-	status configv1.ConditionStatus, reason, message string, lastTime metav1.Time) {
-	entries := make(conditionsMap)
-	for k, v := range c.entryMap {
-		entries[k] = v
+func (c *conditions) setCondition(conditionType configv1.ClusterStatusConditionType,
+	status configv1.ConditionStatus, reason, message string) {
+	originalCondition, ok := c.entryMap[conditionType]
+	transitionTime := metav1.Now()
+	// if condition is defined and there is not new status then don't update transition time
+	if ok && originalCondition.Status == status {
+		transitionTime = originalCondition.LastTransitionTime
 	}
 
-	existing, ok := c.entryMap[condition]
-	if !ok || existing.Status != status || existing.Reason != reason {
-		if lastTime.IsZero() {
-			lastTime = metav1.Now()
-		}
-		entries[condition] = configv1.ClusterOperatorStatusCondition{
-			Type:               condition,
-			Status:             status,
-			Reason:             reason,
-			Message:            message,
-			LastTransitionTime: lastTime,
-		}
+	c.entryMap[conditionType] = configv1.ClusterOperatorStatusCondition{
+		Type:               conditionType,
+		Reason:             reason,
+		Status:             status,
+		Message:            message,
+		LastTransitionTime: transitionTime,
 	}
-
-	c.entryMap = entries
 }
 
 func (c *conditions) removeCondition(condition configv1.ClusterStatusConditionType) {
@@ -94,10 +90,15 @@ func (c *conditions) findCondition(condition configv1.ClusterStatusConditionType
 	return nil
 }
 
+// entries returns a sorted list of status conditions from the mapped values.
+// The list is sorted by  by type ClusterStatusConditionType to ensure consistent ordering for deep equal checks.
 func (c *conditions) entries() []configv1.ClusterOperatorStatusCondition {
 	var res []configv1.ClusterOperatorStatusCondition
 	for _, v := range c.entryMap {
 		res = append(res, v)
 	}
+	sort.SliceStable(res, func(i, j int) bool {
+		return string(res[i].Type) < string(res[j].Type)
+	})
 	return res
 }
