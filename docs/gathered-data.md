@@ -1107,7 +1107,7 @@ Collects MutatingWebhookConfiguration resources.
 `clusterconfig/mutating_webhook_configurations`
 
 ### Released version
-- 4.10.13
+- 4.10.3
 
 ### Backported versions
 - 4.7.40+
