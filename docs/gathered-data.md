@@ -1433,7 +1433,7 @@ Collects logs from pods in `openshift-sdn` namespace with following substrings:
 - 4.7.0
 
 ### Backported versions
-- 4.6.21+
+- 4.6.19+
 
 ### Changes
 None
