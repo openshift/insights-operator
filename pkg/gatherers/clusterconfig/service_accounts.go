@@ -36,8 +36,8 @@ import (
 // - 4.7.0
 //
 // ### Backported versions
-// - 4.6.20+
 // - 4.5.34+
+// - 4.6.20+
 //
 // ### Changes
 // None
