@@ -1516,8 +1516,8 @@ Collects the cluster's `PodDisruptionBudgets`.
 - 4.6.0
 
 ### Backported versions
-- 4.5.15+
 - 4.4.30+
+- 4.5.15+
 
 ### Changes
 None
