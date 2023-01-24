@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherOpenshiftSDNControllerLogs Collects logs from sdn-controller pod in openshift-sdn namespace with
+// GatherOpenshiftSDNControllerLogs Collects logs from `sdn-controller` pod in `openshift-sdn` namespace with
 // following substrings:
 //
 // - "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API

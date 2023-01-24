@@ -33,9 +33,9 @@ type installPlanAnonymizer struct {
 	limit int
 }
 
-// GatherInstallPlans Collects top X InstallPlans from all openshift namespaces. Because InstallPlans have
-// unique generated names, it groups them by namespace and the "template" for name generation from field generateName.
-// It also collects Total number of all installplans and all non-unique installplans.
+// GatherInstallPlans Collects top 100 `InstallPlans` from `openshift-*` namespaces. Because `InstallPlans` have
+// unique generated names, it groups them by namespace and the "template" for name generation from field `generateName`.
+// It also collects total number of all `InstallPlans` and all non-unique `InstallPlans`.
 //
 // ### API Reference
 // - https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26

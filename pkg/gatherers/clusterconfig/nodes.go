@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherNodes Collects all cluster nodes.
+// GatherNodes Collects all Node resources.
 //
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78

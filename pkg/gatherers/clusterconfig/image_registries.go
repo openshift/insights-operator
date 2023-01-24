@@ -45,7 +45,7 @@ import (
 // - 4.4.12+
 //
 // ### Changes
-// - "PersistentVolumes" were introduced in version 4.7.0 and backported to 4.6.20+.
+// - `PersistentVolumes` were introduced in version 4.7.0 and backported to 4.6.20+.
 // - If the Image Registry configuration uses any `PersistentVolumeClaim` for the storage, the corresponding
 // `PersistentVolume` definition is gathered.
 func (g *Gatherer) GatherClusterImageRegistry(ctx context.Context) ([]record.Record, []error) {

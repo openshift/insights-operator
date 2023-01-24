@@ -52,7 +52,7 @@ type clusterOperatorResource struct {
 // | < 4.7.0   | config/clusteroperator/{kind}-{name}.json 					|
 // | >= 4.7.0  | config/clusteroperator/{group}/{kind}/{name}.json 			|
 // | < 4.8.2   | config/pod/{namespace}/{pod}.json							|
-// | < 4.8.2   | events/													|
+// | < 4.8.2   | events/{namespace}.json									|
 //
 // ### Config ID
 // `clusterconfig/operators`

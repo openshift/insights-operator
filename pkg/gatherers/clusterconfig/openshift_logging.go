@@ -14,8 +14,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherOpenshiftLogging Collects `logging.openshift.io` resources
-// from Openshift Logging Stack.
+// GatherOpenshiftLogging Collects `clusterlogging.logging.openshift.io` resources.
 //
 // ### API Reference
 // - https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go

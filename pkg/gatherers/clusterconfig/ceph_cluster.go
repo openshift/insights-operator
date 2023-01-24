@@ -41,7 +41,9 @@ import (
 // - 4.11.2+
 //
 // ### Changes
-// None
+// In OCP 4.11 and OCP 4.12, the location of gathered data collides with data gathered by the
+// [StorageCluster](#StorageCluster) gatherer. It is practically impossible to tell the two resources apart.
+// Use with caution.
 func (g *Gatherer) GatherCephCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

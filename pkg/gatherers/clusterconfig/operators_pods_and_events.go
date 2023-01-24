@@ -60,7 +60,7 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 //
 // ### Location in archive
 // - `config/pod/{namespace}/{pod}.json`
-// - `events/`
+// - `events/{namespace}.json`
 // - `config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log`
 //
 // ### Config ID

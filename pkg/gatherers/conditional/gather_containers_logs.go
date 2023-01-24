@@ -14,7 +14,7 @@ import (
 )
 
 // BuildGatherContainersLogs Collects either current or previous containers logs for pods firing one of the
-// configured alerts.
+// alerts from the conditions fetched from insights conditions service.
 //
 // ### API Reference
 // -

@@ -37,6 +37,8 @@ import (
 // ### Changes
 // - Renamed from `OpenshiftStorage` to `StorageCluster` in version `4.12.0+`
 // - Config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster` in version `4.12.0+`
+// - In OCP 4.11 and OCP 4.12, the location of gathered data collides with data gathered by the
+// CephCluster](#CephCluster) gatherer. It is practically impossible to tell the two resources apart. Use with caution.
 func (g *Gatherer) GatherStorageCluster(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

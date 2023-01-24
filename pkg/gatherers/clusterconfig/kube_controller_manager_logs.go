@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherKubeControllerManagerLogs Collects ogs from kube-controller-manager pods in the
+// GatherKubeControllerManagerLogs Collects logs from `kube-controller-manager` pods in the
 // `openshift-kube-controller-manager` namespace with following substrings:
 // - "Internal error occurred: error resolving resource",
 // - "syncing garbage collector with updated resources from discovery",

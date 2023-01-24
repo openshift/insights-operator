@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// GatherMachineAutoscalers Collects MachineAutoscalers definition.
+// GatherMachineAutoscalers Collects `MachineAutoscalers` definition.
 //
 // ### API Reference
 // - https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
@@ -21,7 +21,7 @@ import (
 // - docs/insights-archive-sample/config/machineautoscalers/openshift-machine-api/worker-us-east-1a.json
 //
 // ### Location in archive
-// - `config/machineautoscalers/{namespace}/{resource}.json`
+// - `config/machineautoscalers/{namespace}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/machine_autoscalers`
