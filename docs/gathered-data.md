@@ -132,7 +132,9 @@ from Openshift Data Foundation Stack.
 - 4.11.2+
 
 ### Changes
-None
+In OCP 4.11 and OCP 4.12, the location of gathered data collides with data gathered by the
+[StorageCluster](#StorageCluster) gatherer. It is practically impossible to tell the two resources apart.
+Use with caution.
 
 
 ## CertificateSigningRequests
@@ -302,7 +304,7 @@ None
 - 4.4.12+
 
 ### Changes
-- "PersistentVolumes" were introduced in version 4.7.0 and backported to 4.6.20+.
+- `PersistentVolumes` were introduced in version 4.7.0 and backported to 4.6.20+.
 - If the Image Registry configuration uses any `PersistentVolumeClaim` for the storage, the corresponding
 `PersistentVolume` definition is gathered.
 
@@ -434,7 +436,7 @@ None
 
 ### Location in archive
 - `config/pod/{namespace}/{pod}.json`
-- `events/`
+- `events/{namespace}.json`
 - `config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log`
 
 ### Config ID
@@ -472,7 +474,7 @@ from the `operator.openshift.io` group.
 | < 4.7.0   | config/clusteroperator/{kind}-{name}.json 					|
 | >= 4.7.0  | config/clusteroperator/{group}/{kind}/{name}.json 			|
 | < 4.8.2   | config/pod/{namespace}/{pod}.json							|
-| < 4.8.2   | events/													|
+| < 4.8.2   | events/{namespace}.json									|
 
 ### Config ID
 `clusterconfig/operators`
@@ -650,7 +652,7 @@ None
 ## ContainersLogs
 
 Collects either current or previous containers logs for pods firing one of the
-configured alerts.
+alerts from the conditions fetched from insights conditions service.
 
 ### API Reference
 -
@@ -790,9 +792,9 @@ None
 
 ## InstallPlans
 
-Collects top X InstallPlans from all openshift namespaces. Because InstallPlans have
-unique generated names, it groups them by namespace and the "template" for name generation from field generateName.
-It also collects Total number of all installplans and all non-unique installplans.
+Collects top 100 `InstallPlans` from `openshift-*` namespaces. Because `InstallPlans` have
+unique generated names, it groups them by namespace and the "template" for name generation from field `generateName`.
+It also collects total number of all `InstallPlans` and all non-unique `InstallPlans`.
 
 ### API Reference
 - https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
@@ -907,7 +909,7 @@ None
 
 ## MachineAutoscalers
 
-Collects MachineAutoscalers definition.
+Collects `MachineAutoscalers` definition.
 
 ### API Reference
 - https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
@@ -1202,7 +1204,7 @@ None
 
 ## Nodes
 
-Collects all cluster nodes.
+Collects all Node resources.
 
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
@@ -1317,8 +1319,7 @@ None
 
 ## OpenshiftLogging
 
-Collects `logging.openshift.io` resources
-from Openshift Logging Stack.
+Collects `clusterlogging.logging.openshift.io` resources.
 
 ### API Reference
 - https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
@@ -1371,7 +1372,7 @@ None
 
 ## OpenshiftSDNControllerLogs
 
-Collects logs from sdn-controller pod in openshift-sdn namespace with
+Collects logs from `sdn-controller` pod in `openshift-sdn` namespace with
 following substrings:
 
 - "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
@@ -1537,7 +1538,8 @@ and cluster role bindings from clusters running a SAP payload.
 - [docs/insights-archive-sample/config/clusterrolebinding](./insights-archive-sample/config/clusterrolebinding)
 
 ### Location in archive
-- `config/{securitycontentconstraint|clusterrolebinding}/{name}.json`
+- `config/clusterrolebinding/{name}.json`
+- `config/securitycontentconstraint/{name}.json`
 
 ### Config ID
 `clusterconfig/sap_config`
@@ -1587,6 +1589,9 @@ Collects information about pods running in SAP/SDI namespaces.
 - Only pods with a failing status are collected.
 - Failed pods belonging to a job that has later succeeded are ignored.
 
+> **Note**
+> This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
+
 ### API Reference
 - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/core/v1
 - https://pkg.go.dev/k8s.io/client-go/kubernetes/typed/batch/v1
@@ -1617,6 +1622,9 @@ None
 Collects logs from SAP `vsystem-iptables` containers
 including one from license management pods with the following substring:
   - "can't initialize iptables table",
+
+> **Note**
+> This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
 
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
@@ -1779,7 +1787,9 @@ None
 ### Changes
 - Renamed from `OpenshiftStorage` to `StorageCluster` in version `4.12.0+`
 - Config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster` in version `4.12.0+`
-- In OCP 4.11 and OCP 4.12, the location of gathered data collides with data gathered by the [GatherCephCluster](#cephcluster) gatherer. It is practically impossible to tell the two resources apart. Use with caution.
+- In OCP 4.11 and OCP 4.12, the location of gathered data collides with data gathered by the
+CephCluster](#CephCluster) gatherer. It is practically impossible to tell the two resources apart. Use with caution.
+
 
 ## SupportSecret
 
