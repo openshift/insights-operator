@@ -917,7 +917,7 @@ Collects MachineAutoscalers definition.
 - [docs/insights-archive-sample/config/machineautoscalers/openshift-machine-api/worker-us-east-1a.json](./insights-archive-sample/config/machineautoscalers/openshift-machine-api/worker-us-east-1a.json)
 
 ### Location in archive
-- `config/machineautoscalers/{namespace}/{resource}.json`
+- `config/machineautoscalers/{namespace}/{name}.json`
 
 ### Config ID
 `clusterconfig/machine_autoscalers`
