@@ -30,10 +30,10 @@ import (
 // `clusterconfig/machine_configs`
 //
 // ### Released version
-// - 4.8.2
+// - 4.9.0
 //
 // ### Backported versions
-// None
+// - 4.8.5
 //
 // ### Changes
 // None
