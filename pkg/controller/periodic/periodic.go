@@ -39,13 +39,14 @@ const (
 // Controller periodically runs gatherers, records their results to the recorder
 // and flushes the recorder to create archives
 type Controller struct {
-	secretConfigurator  configobserver.Configurator
-	apiConfigurator     configobserver.APIConfigObserver
-	recorder            recorder.FlushInterface
-	gatherers           []gatherers.Interface
-	statuses            map[string]controllerstatus.StatusController
-	anonymizer          *anonymization.Anonymizer
-	insightsOperatorCLI operatorv1client.InsightsOperatorInterface
+	secretConfigurator    configobserver.Configurator
+	apiConfigurator       configobserver.APIConfigObserver
+	configMapConfigurator configobserver.ConfigMapObserver
+	recorder              recorder.FlushInterface
+	gatherers             []gatherers.Interface
+	statuses              map[string]controllerstatus.StatusController
+	anonymizer            *anonymization.Anonymizer
+	insightsOperatorCLI   operatorv1client.InsightsOperatorInterface
 }
 
 // New creates a new instance of Controller which periodically invokes the gatherers
@@ -57,6 +58,7 @@ func New(
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
 	apiConfigurator configobserver.APIConfigObserver,
+	configMapConfigurator configobserver.ConfigMapObserver,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -66,13 +68,14 @@ func New(
 	}
 
 	return &Controller{
-		secretConfigurator:  secretConfigurator,
-		apiConfigurator:     apiConfigurator,
-		recorder:            rec,
-		gatherers:           listGatherers,
-		statuses:            statuses,
-		anonymizer:          anonymizer,
-		insightsOperatorCLI: insightsOperatorCLI,
+		secretConfigurator:    secretConfigurator,
+		apiConfigurator:       apiConfigurator,
+		configMapConfigurator: configMapConfigurator,
+		recorder:              rec,
+		gatherers:             listGatherers,
+		statuses:              statuses,
+		anonymizer:            anonymizer,
+		insightsOperatorCLI:   insightsOperatorCLI,
 	}
 }
 
@@ -185,17 +188,32 @@ func (c *Controller) Gather() {
 // Periodically starts the gathering.
 // If there is an initialDelay set then it waits that much for the first gather to happen.
 func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
-	configCh, closeFn := c.secretConfigurator.ConfigChanged()
+	secretConfigCh, closeFn := c.secretConfigurator.ConfigChanged()
 	defer closeFn()
 
-	interval := c.secretConfigurator.Config().Interval
+	cmConfigCh, cmCloseFn := c.configMapConfigurator.ConfigChanged()
+	defer cmCloseFn()
+
+	var interval time.Duration
+	if c.configMapConfigurator.Config().DataReporting.Interval == 0*time.Minute {
+		interval = c.secretConfigurator.Config().Interval
+	} else {
+		interval = c.configMapConfigurator.Config().DataReporting.Interval
+	}
 	klog.Infof("Gathering cluster info every %s", interval)
 	for {
 		select {
 		case <-stopCh:
 			return
+		case <-cmConfigCh:
+			newInterval := c.configMapConfigurator.Config().DataReporting.Interval
+			if newInterval == interval {
+				continue
+			}
+			interval = newInterval
+			klog.Infof("Gathering cluster info every %s - from config map", interval)
 
-		case <-configCh:
+		case <-secretConfigCh:
 			newInterval := c.secretConfigurator.Config().Interval
 			if newInterval == interval {
 				continue

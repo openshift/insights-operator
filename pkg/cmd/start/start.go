@@ -25,9 +25,8 @@ const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 func NewOperator() *cobra.Command {
 	operator := &controller.Operator{
 		Controller: config.Controller{
-			StoragePath: "/var/lib/insights-operator",
-			Interval:    10 * time.Minute,
-			//Endpoint:                    "https://console.redhat.com/api/ingress/v1/upload",
+			StoragePath:                 "/var/lib/insights-operator",
+			Interval:                    10 * time.Minute,
 			ReportEndpoint:              "https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports",
 			ConditionalGathererEndpoint: "https://console.redhat.com/api/gathering/gathering_rules",
 			ReportPullingDelay:          60 * time.Second,

@@ -144,7 +144,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		secretConfigObserver, insightsClient,
 	)
-	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), apiConfigObserver)
+	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(),
+		apiConfigObserver, configMapObserver)
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop

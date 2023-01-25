@@ -176,13 +176,17 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		Interval: interval,
 	}}
 	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{})
+	mockConfigMapCOonfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{},
+	})
 	mockRecorder := recorder.MockRecorder{}
 	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, mockAPIConfigurator)
 	if err != nil {
 		return nil, nil, err
 	}
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
-	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, mockAPIConfigurator)
+	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli,
+		mockAPIConfigurator, mockConfigMapCOonfigurator)
 	return mockController, &mockRecorder, nil
 }
 

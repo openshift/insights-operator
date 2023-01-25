@@ -4,7 +4,6 @@ leaderElection:
   disable: true
 interval: "2h"
 storagePath: /var/lib/insights-operator
-#endpoint: https://console.redhat.com/api/ingress/v1/upload
 conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules
 impersonate: system:serviceaccount:openshift-insights:gather
 pull_report:

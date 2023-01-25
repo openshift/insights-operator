@@ -11,10 +11,9 @@ import (
 
 // Serialized defines the standard config for this operator.
 type Serialized struct {
-	Report      bool   `json:"report"`
-	StoragePath string `json:"storagePath"`
-	Interval    string `json:"interval"`
-	//Endpoint                    string `json:"endpoint"`
+	Report                      bool   `json:"report"`
+	StoragePath                 string `json:"storagePath"`
+	Interval                    string `json:"interval"`
 	ConditionalGathererEndpoint string `json:"conditionalGathererEndpoint"`
 	PullReport                  struct {
 		Endpoint     string `json:"endpoint"`

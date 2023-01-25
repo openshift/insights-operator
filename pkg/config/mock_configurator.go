@@ -62,3 +62,23 @@ func (mc *MockAPIConfigurator) GatherDataPolicy() *v1alpha1.DataPolicy {
 	}
 	return nil
 }
+
+type MockConfigMapConfigurator struct {
+	factory.Controller
+	insightsConfig *InsightsConfiguration
+}
+
+func NewMockConfigMapConfigurator(config *InsightsConfiguration) *MockConfigMapConfigurator {
+	return &MockConfigMapConfigurator{
+		insightsConfig: config,
+	}
+}
+
+func (m *MockConfigMapConfigurator) Config() *InsightsConfiguration {
+	return m.insightsConfig
+}
+
+func (m *MockConfigMapConfigurator) ConfigChanged() (configCh <-chan struct{}, closeFn func()) {
+	// noop
+	return nil, func() {}
+}

@@ -11,7 +11,6 @@ metadata:
 data:
   config.yaml: |
     dataReporting:
-      interval: "2h"
       uploadEndpoint: "https://console.redhat.com/api/ingress/v1/upload"
       downloadEndpoint: "https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports"
 

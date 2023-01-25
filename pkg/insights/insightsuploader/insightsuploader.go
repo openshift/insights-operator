@@ -73,8 +73,9 @@ func (c *Controller) Run(ctx context.Context) {
 	}
 
 	// the controller periodically uploads results to the remote insights endpoint
-	//secretConfig := c.secretConfigurator.Config()
-	configCh, cancelFn := c.secretConfigurator.ConfigChanged()
+	configMapCh, configMapCancelFn := c.configMapObserver.ConfigChanged()
+	defer configMapCancelFn()
+	secretConfigCh, cancelFn := c.secretConfigurator.ConfigChanged()
 	defer cancelFn()
 	reportingEnabled, endpoint, interval := c.readConfig()
 	lastReported := c.reporter.LastReportedTime()
@@ -91,7 +92,18 @@ func (c *Controller) Run(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 			case <-time.After(c.initialDelay):
-			case <-configCh:
+			case <-configMapCh:
+				reportingEnabled, endpoint, interval = c.readConfig()
+				var disabledInAPI bool
+				if c.apiConfigurator != nil {
+					disabledInAPI = c.apiConfigurator.GatherDisabled()
+				}
+				if !reportingEnabled || disabledInAPI {
+					klog.V(2).Infof("Reporting was disabled")
+					c.initialDelay = interval
+					return
+				}
+			case <-secretConfigCh:
 				reportingEnabled, endpoint, interval = c.readConfig()
 				var disabledInAPI bool
 				if c.apiConfigurator != nil {
@@ -194,6 +206,11 @@ func reportToLogs(source io.Reader, klog klog.Verbose) error {
 	return nil
 }
 
+// readConfig reads current configuration from the "support" secret
+// as well as from the "insights-config" configmap. The values defined
+// in the secret take precedence over values defined in the config map.
+// It returns bool flag telling whether the Insights reporting is enabled or disabled,
+// upload endpoint and gathering interval.
 func (c *Controller) readConfig() (bool, string, time.Duration) {
 	secretConfig := c.secretConfigurator.Config()
 	configMapConfig := c.configMapObserver.Config()
@@ -207,13 +224,9 @@ func (c *Controller) readConfig() (bool, string, time.Duration) {
 	} else {
 		endpoint = secretConfig.Endpoint
 	}
-	if configMapConfig.DataReporting.Interval == "" {
+	// if there's no interval in config map then use default
+	if configMapConfig.DataReporting.Interval == 0*time.Minute {
 		return reportingEnabled, endpoint, secretConfig.Interval
 	}
-	interval, err := time.ParseDuration(configMapConfig.DataReporting.Interval)
-	if err != nil {
-		klog.Errorf("Cannot parse interval time duration: %v. Using default value 2h", err)
-		return reportingEnabled, endpoint, secretConfig.Interval
-	}
-	return reportingEnabled, endpoint, interval
+	return reportingEnabled, endpoint, configMapConfig.DataReporting.Interval
 }
