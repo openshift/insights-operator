@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherClusterProxy Collects the cluster Proxy - the Proxy with name cluster.
+// GatherClusterProxy Collects the cluster `Proxy` with cluster name.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30

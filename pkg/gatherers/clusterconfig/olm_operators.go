@@ -31,7 +31,7 @@ type csvRef struct {
 // following data:
 // - OLM operator name
 // - OLM operator version
-// - related ClusterServiceVersion conditions
+// - related `ClusterServiceVersion` conditions
 //
 // ### API Reference
 // None

@@ -20,7 +20,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherCertificateSigningRequests Collects anonymized CertificateSigningRequests which weren't Verified, or
+// GatherCertificateSigningRequests Collects anonymized `CertificateSigningRequests` which weren't Verified, or
 // when `Now < ValidBefore` or `Now > ValidAfter`
 //
 // ### API Reference

@@ -35,7 +35,7 @@ type clusterOperatorResource struct {
 	namespace  string
 }
 
-// GatherClusterOperators Collects all the ClusterOperators definitions and their related resources
+// GatherClusterOperators Collects all the `ClusterOperators` definitions and their related resources
 // from the `operator.openshift.io` group.
 //
 // ### API Reference

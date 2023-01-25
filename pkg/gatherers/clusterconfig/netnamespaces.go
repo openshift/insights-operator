@@ -17,7 +17,7 @@ type netNamespace struct {
 	NetID     uint32                           `json:"netID"`
 }
 
-// GatherNetNamespace Collects NetNamespaces networking information.
+// GatherNetNamespace Collects `NetNamespaces` networking information.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go

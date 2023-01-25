@@ -15,8 +15,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherConfigMaps Collects the ConfigMaps from namespace openshift-config
-// and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitoring namespace.
+// GatherConfigMaps Collects the `ConfigMaps` from namespace `openshift-config`
+// and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` namespace.
 //
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
@@ -42,13 +42,13 @@ import (
 // - 4.4.6+
 //
 // ### Changes
-// - "cluster-monitoring-config" ConfigMap data since versions 4.6.22+ and 4.7.0+
-// - "cluster-config-v1" ConfigMap since versions 4.9+
+// - `cluster-monitoring-config` data since versions 4.6.22+ and 4.7.0+
+// - `cluster-config-v1` since versions 4.9.0+
 //
 // ### Anonymization
-// If the content of a ConfigMap contains a parseable PEM structure (like a certificate), it removes the inside of
-// PEM blocks. For ConfigMap of type BinaryData, it is encoded as standard base64. In the archive under configmaps,
-// we store the name of the namespace, the name of the ConfigMap, and then each ConfigMap Key.
+// If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
+// PEM blocks. For `ConfigMap` of type `BinaryData`, it is encoded as standard base64. In the archive under configmaps,
+// we store the name of the namespace, the name of the `ConfigMap`, and then each key.
 //
 // For example: ```config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1```
 func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []error) {

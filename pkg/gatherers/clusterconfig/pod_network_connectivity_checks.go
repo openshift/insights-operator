@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherPNCC Collects a summary of failed PodNetworkConnectivityChecks from last 24 hours.
+// GatherPNCC Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
 //
 // Time of the most recently failed check with each reason and message is recorded.
 //

@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherMutatingWebhookConfigurations Collects MutatingWebhookConfiguration resources.
+// GatherMutatingWebhookConfigurations Collects `MutatingWebhookConfiguration` resources.
 //
 // ### API Reference
 // - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/mutatingwebhookconfiguration-admissionregistration-k8s-io-v1.html

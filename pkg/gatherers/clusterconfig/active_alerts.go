@@ -21,7 +21,7 @@ type alert struct {
 	Status      map[string]interface{} `json:"status"`
 }
 
-// GatherActiveAlerts Collects active alerts from the Alertmanager API V2 in the JSON format. Alert data is also
+// GatherActiveAlerts Collects active alerts from the `Alertmanager` API V2 in the JSON format. Alert data is also
 // still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
 //
 // This adds new gatherer for gathering firing/active Prometheus alerts in JSON format as well. The original recent

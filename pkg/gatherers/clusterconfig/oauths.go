@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterOAuth Collects the cluster OAuth - the OAuth with name cluster.
+// GatherClusterOAuth Collects the cluster OAuth with cluster name.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50

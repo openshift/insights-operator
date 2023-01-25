@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherMachineConfigPool Collects MachineConfigPool information.
+// GatherMachineConfigPool Collects `MachineConfigPool` information.
 //
 // ### API Reference
 // - https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197

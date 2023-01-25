@@ -14,7 +14,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// GatherMachineSet Collects MachineSet information.
+// GatherMachineSet Collects `MachineSet` information.
 //
 // ### API Reference
 // - https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go

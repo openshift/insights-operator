@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherMachineConfigs Collects MachineConfigs definitions. Following data is intentionally removed from the definitions:
+// GatherMachineConfigs Collects `MachineConfigs` definitions. Following data is intentionally removed from the definitions:
 // - `spec.config.storage.files`
 // - `spec.config.passwd.users`
 //

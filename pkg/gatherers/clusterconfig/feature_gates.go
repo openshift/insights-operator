@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterFeatureGates Collects the cluster FeatureGate - the FeatureGate with name cluster.
+// GatherClusterFeatureGates Collects the cluster `FeatureGate` with cluster name.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50

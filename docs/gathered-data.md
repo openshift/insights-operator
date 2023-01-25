@@ -16,9 +16,6 @@ archives are packaged as `.tar.gz` files in `/var/lib/insights-operator`.
 Collects API requests counts for the resources mentioned in
 the alert provided as a string parameter.
 
-Params is of type AlertIsFiringConditionParams:
-- alert_name string - name of the firing alert
-
 ### API Reference
 None
 
@@ -43,7 +40,7 @@ None
 
 ## ActiveAlerts
 
-Collects active alerts from the Alertmanager API V2 in the JSON format. Alert data is also
+Collects active alerts from the `Alertmanager` API V2 in the JSON format. Alert data is also
 still included in the [GatherMostRecentMetrics](#mostrecentmetrics) gatherer.
 
 This adds new gatherer for gathering firing/active Prometheus alerts in JSON format as well. The original recent
@@ -139,7 +136,7 @@ Use with caution.
 
 ## CertificateSigningRequests
 
-Collects anonymized CertificateSigningRequests which weren't Verified, or
+Collects anonymized `CertificateSigningRequests` which weren't Verified, or
 when `Now < ValidBefore` or `Now > ValidAfter`
 
 ### API Reference
@@ -168,7 +165,7 @@ None
 
 ## ClusterAuthentication
 
-Collects the cluster Authentication - the Authentication with name cluster.
+Collects the cluster `Authentication` with cluster name.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50
@@ -195,7 +192,7 @@ None
 
 ## ClusterFeatureGates
 
-Collects the cluster FeatureGate - the FeatureGate with name cluster.
+Collects the cluster `FeatureGate` with cluster name.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/featuregate.go#L50
@@ -311,7 +308,7 @@ None
 
 ## ClusterInfrastructure
 
-Collects the cluster Infrastructure - the Infrastructure with name cluster.
+Collects the cluster `Infrastructure` with cluster name.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50
@@ -338,7 +335,7 @@ None
 
 ## ClusterIngress
 
-Collects the cluster Ingress - the Ingress with name cluster.
+Collects the cluster `Ingress` with cluster name.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50
@@ -365,7 +362,7 @@ None
 
 ## ClusterNetwork
 
-Collects the cluster Network - the Network with name cluster.
+Collects the cluster Network with cluster name.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/network.go#L50
@@ -392,7 +389,7 @@ None
 
 ## ClusterOAuth
 
-Collects the cluster OAuth - the OAuth with name cluster.
+Collects the cluster OAuth with cluster name.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/oauth.go#L50
@@ -459,7 +456,7 @@ introduced in version `4.3.0` and later backported to version `4.2.10+`.
 
 ## ClusterOperators
 
-Collects all the ClusterOperators definitions and their related resources
+Collects all the `ClusterOperators` definitions and their related resources
 from the `operator.openshift.io` group.
 
 ### API Reference
@@ -494,7 +491,7 @@ both were introduced at `4.3.0` as part of this gatherer and backported to `4.2.
 
 ## ClusterProxy
 
-Collects the cluster Proxy - the Proxy with name cluster.
+Collects the cluster `Proxy` with cluster name.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/proxy.go#L30
@@ -521,7 +518,8 @@ None
 
 ## ClusterVersion
 
-Collects the ClusterVersion (including the cluster ID) with the name 'version' and its resources.
+Collects the `ClusterVersion` (including the cluster ID) with the name
+'version' and its resources.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50
@@ -556,8 +554,8 @@ None
 
 ## ConfigMaps
 
-Collects the ConfigMaps from namespace openshift-config
-and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitoring namespace.
+Collects the `ConfigMaps` from namespace `openshift-config`
+and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` namespace.
 
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
@@ -583,13 +581,13 @@ and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitori
 - 4.4.6+
 
 ### Changes
-- "cluster-monitoring-config" ConfigMap data since versions 4.6.22+ and 4.7.0+
-- "cluster-config-v1" ConfigMap since versions 4.9+
+- `cluster-monitoring-config` data since versions 4.6.22+ and 4.7.0+
+- `cluster-config-v1` since versions 4.9.0+
 
 ### Anonymization
-If the content of a ConfigMap contains a parseable PEM structure (like a certificate), it removes the inside of
-PEM blocks. For ConfigMap of type BinaryData, it is encoded as standard base64. In the archive under configmaps,
-we store the name of the namespace, the name of the ConfigMap, and then each ConfigMap Key.
+If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
+PEM blocks. For `ConfigMap` of type `BinaryData`, it is encoded as standard base64. In the archive under configmaps,
+we store the name of the namespace, the name of the `ConfigMap`, and then each key.
 
 For example: ```config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1```
 
@@ -624,7 +622,7 @@ None
 
 ## ContainerRuntimeConfig
 
-Collects ContainerRuntimeConfig information.
+Collects `ContainerRuntimeConfig` information.
 
 ### API Reference
 - https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
@@ -655,7 +653,7 @@ Collects either current or previous containers logs for pods firing one of the
 alerts from the conditions fetched from insights conditions service.
 
 ### API Reference
--
+None
 
 ### Sample data
 - [docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log](./insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log)
@@ -678,7 +676,7 @@ None
 
 ## CostManagementMetricsConfigs
 
-Collects CostManagementMetricsConfigs definitions.
+Collects `CostManagementMetricsConfigs` definitions.
 
 ### API Reference
 None
@@ -707,7 +705,7 @@ None
 
 Collects metrics from the Deployment Validation Operator's
 metrics service. The metrics are fetched via the /metrics endpoint and
-filtered to only include those with a deployment_validation_operator_ prefix.
+filtered to only include those with a `deployment_validation_operator_` prefix.
 
 ### API Reference
 None
@@ -733,7 +731,7 @@ None
 
 ## HostSubnet
 
-Collects HostSubnet information.
+Collects `HostSubnet` information.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
@@ -762,9 +760,6 @@ None
 ## ImageStreamsOfNamespace
 
 Closure which collects image streams from the provided namespace
-
-Params is of type GatherImageStreamsOfNamespaceParams:
-- namespace string - namespace from which to collect image streams
 
 ### API Reference
 - https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
@@ -880,10 +875,6 @@ None
 
 Collects logs from pods in the provided namespace.
 
-Params is of type GatherLogsOfNamespaceParams:
-- namespace string - namespace from which to collect logs
-- tail_lines int64 - a number of log lines to keep for each container
-
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
@@ -936,7 +927,7 @@ None
 
 ## MachineConfigPool
 
-Collects MachineConfigPool information.
+Collects `MachineConfigPool` information.
 
 ### API Reference
 - https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
@@ -964,7 +955,7 @@ None
 
 ## MachineConfigs
 
-Collects MachineConfigs definitions. Following data is intentionally removed from the definitions:
+Collects `MachineConfigs` definitions. Following data is intentionally removed from the definitions:
 - `spec.config.storage.files`
 - `spec.config.passwd.users`
 
@@ -992,7 +983,7 @@ None
 
 ## MachineHealthCheck
 
-Collects MachineHealthCheck information.
+Collects `MachineHealthCheck` information.
 
 ### API Reference
 - https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
@@ -1019,7 +1010,7 @@ None
 
 ## MachineSet
 
-Collects MachineSet information.
+Collects `MachineSet` information.
 
 ### API Reference
 - https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
@@ -1051,15 +1042,15 @@ Collects cluster Federated Monitoring metrics.
 
 The GET REST query to URL /federate
 Gathered metrics:
-  - virt_platform
-  - etcd_object_counts
-  - cluster_installer
-  - vsphere_node_hw_version_total
+  - `virt_platform`
+  - `etcd_object_counts`
+  - `cluster_installer`
+  - `vsphere_node_hw_version_total`
   - namespace CPU and memory usage
-  - console_helm_installs_total
-  - console_helm_upgrades_total
-  - console_helm_uninstalls_total
-  - followed by at most 1000 lines of ALERTS metric
+  - `console_helm_installs_total`
+  - `console_helm_upgrades_total`
+  - `console_helm_uninstalls_total`
+  - followed by at most 1000 lines of `ALERTS` metric
 
 ### API Reference
 None
@@ -1080,21 +1071,21 @@ None
 None
 
 ### Changes
-- "etcd_object_counts" introduced in version 4.3+
-- "cluster_installer" introduced in version 4.3+
-- "ALERTS" introduced in version 4.3+
-- "namespace:container_cpu_usage_seconds_total:sum_rate" introduced in version 4.5+
-- "namespace:container_memory_usage_bytes:sum" introduced in version 4.5+
-- "virt_platform metric" introduced in version 4.6.34+, 4.7.16+, 4.8+
-- "vsphere_node_hw_version_total" introduced in version 4.7.11+, 4.8+
-- "console_helm_installs_total" introduced in version 4.11+
-- "console_helm_upgrades_total" introduced in version 4.12+
-- "console_helm_uninstalls_total" introduced in version 4.12+
+- `etcd_object_counts` introduced in version 4.3+
+- `cluster_installer` introduced in version 4.3+
+- `ALERTS` introduced in version 4.3+
+- `namespace:container_cpu_usage_seconds_total:sum_rate` introduced in version 4.5+
+- `namespace:container_memory_usage_bytes:sum` introduced in version 4.5+
+- `virt_platform metric` introduced in version 4.6.34+, 4.7.16+, 4.8+
+- `vsphere_node_hw_version_total` introduced in version 4.7.11+, 4.8+
+- `console_helm_installs_total` introduced in version 4.11+
+- `console_helm_upgrades_total` introduced in version 4.12+
+- `console_helm_uninstalls_total` introduced in version 4.12+
 
 
 ## MutatingWebhookConfigurations
 
-Collects MutatingWebhookConfiguration resources.
+Collects `MutatingWebhookConfiguration` resources.
 
 ### API Reference
 - https://docs.openshift.com/container-platform/4.8/rest_api/extension_apis/mutatingwebhookconfiguration-admissionregistration-k8s-io-v1.html
@@ -1127,7 +1118,7 @@ Collects namespaces with overlapping UID ranges.
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/namespace.go
 - Response is an array of arrays of namespaces with overlapping UIDs. Each namespace is represented by its name
-and the UID range value from the "openshift.io/sa.scc.uid-range" annotation
+and the UID range value from the `openshift.io/sa.scc.uid-range` annotation
 
 ### Sample data
 - [docs/insights-archive-sample/config/namespaces_with_overlapping_uids.json](./insights-archive-sample/config/namespaces_with_overlapping_uids.json)
@@ -1152,7 +1143,7 @@ None
 
 ## NetNamespace
 
-Collects NetNamespaces networking information.
+Collects `NetNamespaces` networking information.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
@@ -1204,7 +1195,7 @@ None
 
 ## Nodes
 
-Collects all Node resources.
+Collects all node resources.
 
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
@@ -1235,7 +1226,7 @@ Collects the list of installed OLM operators. Each OLM operator (in the list) co
 following data:
 - OLM operator name
 - OLM operator version
-- related ClusterServiceVersion conditions
+- related `ClusterServiceVersion` conditions
 
 ### API Reference
 None
@@ -1442,7 +1433,7 @@ None
 
 ## PNCC
 
-Collects a summary of failed PodNetworkConnectivityChecks from last 24 hours.
+Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
 
 Time of the most recently failed check with each reason and message is recorded.
 
@@ -1708,7 +1699,7 @@ None
 ## ServiceAccounts
 
 Collects `ServiceAccount` stats
-from kubernetes default and namespaces starting with openshift.
+from kubernetes default and `openshift-*` namespaces.
 
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83

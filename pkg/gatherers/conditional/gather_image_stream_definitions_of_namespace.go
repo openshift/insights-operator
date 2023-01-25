@@ -16,9 +16,6 @@ import (
 
 // BuildGatherImageStreamsOfNamespace Closure which collects image streams from the provided namespace
 //
-// Params is of type GatherImageStreamsOfNamespaceParams:
-// - namespace string - namespace from which to collect image streams
-//
 // ### API Reference
 // - https://docs.openshift.com/container-platform/4.7/rest_api/image_apis/imagestream-image-openshift-io-v1.html#apisimage-openshift-iov1namespacesnamespaceimagestreams
 //

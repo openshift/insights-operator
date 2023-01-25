@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherClusterInfrastructure Collects the cluster Infrastructure - the Infrastructure with name cluster.
+// GatherClusterInfrastructure Collects the cluster `Infrastructure` with cluster name.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/infrastructure.go#L50

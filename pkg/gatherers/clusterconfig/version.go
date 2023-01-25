@@ -20,7 +20,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// GatherClusterVersion Collects the ClusterVersion (including the cluster ID) with the name 'version' and its resources.
+// GatherClusterVersion Collects the `ClusterVersion` (including the cluster ID) with the name
+// 'version' and its resources.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusterversion.go#L50

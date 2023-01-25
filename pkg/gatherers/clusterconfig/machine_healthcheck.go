@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// GatherMachineHealthCheck Collects MachineHealthCheck information.
+// GatherMachineHealthCheck Collects `MachineHealthCheck` information.
 //
 // ### API Reference
 // - https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go

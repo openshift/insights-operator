@@ -25,9 +25,6 @@ type APIRequestCount struct {
 // BuildGatherAPIRequestCounts Collects API requests counts for the resources mentioned in
 // the alert provided as a string parameter.
 //
-// Params is of type AlertIsFiringConditionParams:
-// - alert_name string - name of the firing alert
-//
 // ### API Reference
 // None
 //

@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherContainerRuntimeConfig Collects ContainerRuntimeConfig information.
+// GatherContainerRuntimeConfig Collects `ContainerRuntimeConfig` information.
 //
 // ### API Reference
 // - https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402

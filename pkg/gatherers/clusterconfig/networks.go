@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterNetwork Collects the cluster Network - the Network with name cluster.
+// GatherClusterNetwork Collects the cluster Network with cluster name.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/network.go#L50

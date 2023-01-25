@@ -23,7 +23,7 @@ import (
 
 // GatherDVOMetrics Collects metrics from the Deployment Validation Operator's
 // metrics service. The metrics are fetched via the /metrics endpoint and
-// filtered to only include those with a deployment_validation_operator_ prefix.
+// filtered to only include those with a `deployment_validation_operator_` prefix.
 //
 // ### API Reference
 // None

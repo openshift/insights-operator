@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherHostSubnet Collects HostSubnet information.
+// GatherHostSubnet Collects `HostSubnet` information.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go

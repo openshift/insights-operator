@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterIngress Collects the cluster Ingress - the Ingress with name cluster.
+// GatherClusterIngress Collects the cluster `Ingress` with cluster name.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/ingress.go#L50

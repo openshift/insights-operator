@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherClusterAuthentication Collects the cluster Authentication - the Authentication with name cluster.
+// GatherClusterAuthentication Collects the cluster `Authentication` with cluster name.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/authentication.go#L50

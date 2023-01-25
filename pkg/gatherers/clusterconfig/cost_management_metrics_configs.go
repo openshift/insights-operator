@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherCostManagementMetricsConfigs Collects CostManagementMetricsConfigs definitions.
+// GatherCostManagementMetricsConfigs Collects `CostManagementMetricsConfigs` definitions.
 //
 // ### API Reference
 // None

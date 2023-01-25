@@ -29,7 +29,7 @@ type namespaceWithRange struct {
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/namespace.go
 // - Response is an array of arrays of namespaces with overlapping UIDs. Each namespace is represented by its name
-// and the UID range value from the "openshift.io/sa.scc.uid-range" annotation
+// and the UID range value from the `openshift.io/sa.scc.uid-range` annotation
 //
 // ### Sample data
 // - docs/insights-archive-sample/config/namespaces_with_overlapping_uids.json

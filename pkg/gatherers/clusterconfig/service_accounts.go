@@ -17,7 +17,7 @@ import (
 )
 
 // GatherServiceAccounts Collects `ServiceAccount` stats
-// from kubernetes default and namespaces starting with openshift.
+// from kubernetes default and `openshift-*` namespaces.
 //
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/serviceaccount.go#L83

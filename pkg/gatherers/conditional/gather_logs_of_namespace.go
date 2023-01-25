@@ -13,10 +13,6 @@ import (
 
 // BuildGatherLogsOfNamespace Collects logs from pods in the provided namespace.
 //
-// Params is of type GatherLogsOfNamespaceParams:
-// - namespace string - namespace from which to collect logs
-// - tail_lines int64 - a number of log lines to keep for each container
-//
 // ### API Reference
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
 // - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog

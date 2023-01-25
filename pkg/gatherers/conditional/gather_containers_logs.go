@@ -17,7 +17,7 @@ import (
 // alerts from the conditions fetched from insights conditions service.
 //
 // ### API Reference
-// -
+// None
 //
 // ### Sample data
 // - docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log
