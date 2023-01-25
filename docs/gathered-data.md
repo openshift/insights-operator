@@ -472,9 +472,8 @@ from the `operator.openshift.io` group.
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.2.0  | config/clusteroperator/ 									|
-| < 4.7.0   | config/clusteroperator/{kind}-{name}.json 					|
-| >= 4.7.0  | config/clusteroperator/{group}/{kind}/{name}.json 			|
+| < 4.6.16  | config/clusteroperator/{kind}-{name}.json 					|
+| >= 4.6.16 | config/clusteroperator/{group}/{kind}/{name}.json 			|
 | < 4.8.2   | config/pod/{namespace}/{pod}.json							|
 | < 4.8.2   | events/{namespace}.json									|
 
@@ -491,7 +490,6 @@ None
 - `config/pod/{namespace}/{pod}.json` and `events/` were moved to
 [ClusterOperatorPodsAndEvents](#ClusterOperatorPodsAndEvents) since `4.8.2`,
 both were introduced at `4.3.0` as part of this gatherer and backported to `4.2.10+`.
-- ClusterOperator resources was included at `4.7.0` and backported to `4.6.16+`.
 
 
 ## ClusterProxy
