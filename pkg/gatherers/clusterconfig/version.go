@@ -37,8 +37,8 @@ import (
 // | --------- | ---------------------------------------------------------- |
 // | >= 4.2.0  | config/version.json										|
 // | >= 4.2.0  | config/id													|
-// | >= 4.8.2  | config/pod/openshift-cluster-version/{name}.json			|
-// | >= 4.8.2  | events/{namespace}.json									|
+// | >= 4.8.2  | config/pod/openshift-cluster-version/version.json			|
+// | >= 4.8.2  | events/openshift-cluster-version.json						|
 //
 // ### Config ID
 // `clusterconfig/version`
