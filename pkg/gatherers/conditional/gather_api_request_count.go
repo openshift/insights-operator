@@ -22,8 +22,8 @@ type APIRequestCount struct {
 	LastDayRequestCount int64  `json:"last_day_request_count"`
 }
 
-// BuildGatherAPIRequestCounts Creates a gathering closure which collects API requests counts for the
-// resources mentioned in the alert provided as a string parameter.
+// BuildGatherAPIRequestCounts Collects API requests counts for the resources mentioned in
+// the alert provided as a string parameter.
 //
 // Params is of type AlertIsFiringConditionParams:
 // - alert_name string - name of the firing alert

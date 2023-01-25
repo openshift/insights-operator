@@ -13,8 +13,8 @@ archives are packaged as `.tar.gz` files in `/var/lib/insights-operator`.
 
 ## APIRequestCounts
 
-Creates a gathering closure which collects API requests counts for the
-resources mentioned in the alert provided as a string parameter.
+Collects API requests counts for the resources mentioned in
+the alert provided as a string parameter.
 
 Params is of type AlertIsFiringConditionParams:
 - alert_name string - name of the firing alert
@@ -761,7 +761,7 @@ None
 
 ## ImageStreamsOfNamespace
 
-Creates a gathering closure which collects image streams from the provided namespace
+Closure which collects image streams from the provided namespace
 
 Params is of type GatherImageStreamsOfNamespaceParams:
 - namespace string - namespace from which to collect image streams
@@ -878,7 +878,7 @@ None
 
 ## LogsOfNamespace
 
-Creates a gathering closure which collects logs from pods in the provided namespace.
+Collects logs from pods in the provided namespace.
 
 Params is of type GatherLogsOfNamespaceParams:
 - namespace string - namespace from which to collect logs

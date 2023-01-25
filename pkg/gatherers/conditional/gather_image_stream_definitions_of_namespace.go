@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// BuildGatherImageStreamsOfNamespace Creates a gathering closure which collects image streams from the provided namespace
+// BuildGatherImageStreamsOfNamespace Closure which collects image streams from the provided namespace
 //
 // Params is of type GatherImageStreamsOfNamespaceParams:
 // - namespace string - namespace from which to collect image streams

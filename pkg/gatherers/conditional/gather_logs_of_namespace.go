@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// BuildGatherLogsOfNamespace Creates a gathering closure which collects logs from pods in the provided namespace.
+// BuildGatherLogsOfNamespace Collects logs from pods in the provided namespace.
 //
 // Params is of type GatherLogsOfNamespaceParams:
 // - namespace string - namespace from which to collect logs
