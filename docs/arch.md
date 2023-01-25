@@ -244,7 +244,9 @@ oc get co insights -o=json | jq '.status.conditions'
 A condition is defined by its type. You may notice that there are some non-standard clusteroperator conditions. They are:
 - `SCAAvailable` - based on the SCA (Simple Content Access) controller in `pkg/ocm/sca/sca.go` and provides information about the status of downloading the SCA entitlements.
 - `ClusterTransferAvailable` - based on the cluster transfer controller in `pkg/ocm/clustertransfer/cluster_transfer.go` and provides information about the availability of cluster transfers.
-- `Disabled` - indicates whether data gathering is disabled or enabled.
+- `Disabled` - indicates whether data gathering is disabled or enabled. Note that when the operator is `Disabled=True`, it is still also `Available=True`, which is weird at first glance, but the Cluster Version Operator (CVO) checks that all the clusteroperators are `Available=True` during the OpenShift installation. If they are not, the installation will fail, which happens in disconnected environments/clusters where the Insights operator is usually `Disabled=True` (because there is no `cloud.openshift.com` token in the `pull-secret`). You can find more about this topic in:
+  - https://pkg.go.dev/github.com/openshift/api/config/v1#ClusterStatusConditionType - note that when the Insights Operator is `Disabled=True` then it does not require immediate administrator intervention (and thus it still reports `Available=True`) - i.e nobody should be paged in this situation
+  - https://github.com/openshift/enhancements/blob/master/dev-guide/cluster-version-operator/dev/clusteroperator.md#conditions
 
 In addition to the above clusteroperator conditions, there are some intermediate clusteroperator conditions. These are:
 - `UploadDegraded` - this condition occurs when there is any unsuccessful upload of the Insights data (if the number of the upload attemp is equal or greater than 5 then the operator is marked as **Degraded**). Example is:
