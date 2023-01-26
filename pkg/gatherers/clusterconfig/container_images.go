@@ -3,7 +3,7 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
-	"log"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -69,16 +69,9 @@ func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1In
 		for podIndex, pod := range pods.Items { //nolint:gocritic
 			podPtr := &pods.Items[podIndex]
 			if strings.HasPrefix(pod.Namespace, "openshift-") && check.HasContainerInCrashloop(podPtr) {
-				containers := podPtr.Spec.Containers
-				for i, cont := range containers {
-					if len(cont.Env) >= 0 {
-						for j, env := range cont.Env {
-							log.Printf("\n\n\n/////////// %s: %s ///////////\n\n", env.Name, env.Value)
-							podPtr.Spec.Containers[i].Env[j].Value = "patatato"
-						}
 
-					}
-				}
+				obfuscateContainerEnvVars(podPtr.Spec.Containers)
+
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
 					Item: record.ResourceMarshaller{Resource: podPtr},
@@ -209,6 +202,21 @@ func gatherImages(startMonth string, img2month2count img2Month2CountMap, contain
 		} else {
 			img2month2count[imgMinimal] = map[string]int{
 				startMonth: 1,
+			}
+		}
+	}
+}
+
+// obfuscateContainerEnvVars finds env variables withing the given container list
+// and, if they are a target, it will obfuscate their value
+func obfuscateContainerEnvVars(containers []corev1.Container) {
+	targets := []string{"HTTP_PROXY", "HTTPS_PROXY"}
+	search := regexp.MustCompile(strings.Join(targets, "|"))
+
+	for i, c := range containers {
+		for j, env := range c.Env {
+			if search.MatchString(env.Name) {
+				containers[i].Env[j].Value = "xxxxx"
 			}
 		}
 	}
