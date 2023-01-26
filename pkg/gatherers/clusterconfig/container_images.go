@@ -69,7 +69,6 @@ func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1In
 		for podIndex, pod := range pods.Items { //nolint:gocritic
 			podPtr := &pods.Items[podIndex]
 			if strings.HasPrefix(pod.Namespace, "openshift-") && check.HasContainerInCrashloop(podPtr) {
-
 				obfuscateContainerEnvVars(podPtr.Spec.Containers)
 
 				records = append(records, record.Record{
@@ -207,16 +206,16 @@ func gatherImages(startMonth string, img2month2count img2Month2CountMap, contain
 	}
 }
 
-// obfuscateContainerEnvVars finds env variables withing the given container list
+// obfuscateContainerEnvVars finds env variables within the given container list
 // and, if they are a target, it will obfuscate their value
 func obfuscateContainerEnvVars(containers []corev1.Container) {
 	targets := []string{"HTTP_PROXY", "HTTPS_PROXY"}
 	search := regexp.MustCompile(strings.Join(targets, "|"))
 
-	for i, c := range containers {
-		for j, env := range c.Env {
-			if search.MatchString(env.Name) {
-				containers[i].Env[j].Value = "xxxxx"
+	for i := range containers {
+		for j := range containers[i].Env {
+			if search.MatchString(containers[i].Env[j].Name) {
+				containers[i].Env[j].Value = "<obfuscated>"
 			}
 		}
 	}
