@@ -195,7 +195,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	defer cmCloseFn()
 
 	var interval time.Duration
-	if c.configMapConfigurator.Config().DataReporting.Interval == 0*time.Minute {
+	if c.configMapConfigurator.Config().DataReporting.Interval == 0*time.Second {
 		interval = c.secretConfigurator.Config().Interval
 	} else {
 		interval = c.configMapConfigurator.Config().DataReporting.Interval
