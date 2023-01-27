@@ -48,6 +48,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"certificate_signing_requests":      (*Gatherer).GatherCertificateSigningRequests,
 	"crds":                              (*Gatherer).GatherCRD,
 	"host_subnets":                      (*Gatherer).GatherHostSubnet,
+	"machine_objects":                   (*Gatherer).GatherMachineObject,
 	"machine_sets":                      (*Gatherer).GatherMachineSet,
 	"machine_configs":                   (*Gatherer).GatherMachineConfigs,
 	"machine_healthchecks":              (*Gatherer).GatherMachineHealthCheck,
