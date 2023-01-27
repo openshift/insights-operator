@@ -14,18 +14,18 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func (g *Gatherer) GatherMachineObject(ctx context.Context) ([]record.Record, []error) {
+func (g *Gatherer) GatherMachine(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return gatherMachineObject(ctx, dynamicClient)
+	return gatherMachine(ctx, dynamicClient)
 }
 
-func gatherMachineObject(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
+func gatherMachine(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machines"}
-	machineObjects, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
+	machines, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -33,21 +33,21 @@ func gatherMachineObject(ctx context.Context, dynamicClient dynamic.Interface) (
 		return nil, []error{err}
 	}
 	var records []record.Record
-	for i, ms := range machineObjects.Items {
-		recordName := fmt.Sprintf("machineobjects/%s", ms.GetName())
+	for i, ms := range machines.Items {
+		recordName := fmt.Sprintf("machines/%s", ms.GetName())
 		if ms.GetNamespace() != "" {
-			recordName = fmt.Sprintf("machineobjects/%s/%s", ms.GetNamespace(), ms.GetName())
+			recordName = fmt.Sprintf("machines/%s/%s", ms.GetNamespace(), ms.GetName())
 		}
 		records = append(records, record.Record{
 			Name: recordName,
-			Item: record.ResourceMarshaller{Resource: anonymizeMachineObject(&machineObjects.Items[i])},
+			Item: record.ResourceMarshaller{Resource: anonymizeMachine(&machines.Items[i])},
 		})
 	}
 
 	return records, nil
 }
 
-func anonymizeMachineObject(data *unstructured.Unstructured) *unstructured.Unstructured {
+func anonymizeMachine(data *unstructured.Unstructured) *unstructured.Unstructured {
 	fieldsToAnonymize := [][]string{
 		{"spec", "providerID"},
 		{"spec", "providerSpec", "value", "placement", "availabilityZone"},
@@ -58,7 +58,7 @@ func anonymizeMachineObject(data *unstructured.Unstructured) *unstructured.Unstr
 	for _, fieldToAnonymize := range fieldsToAnonymize {
 		err := anonymize.UnstructuredNestedStringField(data.Object, fieldToAnonymize...)
 		if err != nil {
-			klog.Infof("error during anonymizing machineobject: %v", err)
+			klog.Infof("error during anonymizing machine: %v", err)
 		}
 	}
 
