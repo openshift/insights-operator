@@ -1008,6 +1008,24 @@ None
 None
 
 
+## Machine
+
+collects Machine information
+
+The Kubernetes api:
+
+	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machine.go
+
+Response see:
+
+	https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
+
+* Location in archive: machines/
+* Id in config: clusterconfig/machines
+* Since versions:
+  - 4.13+
+
+
 ## MachineSet
 
 Collects `MachineSet` information.
