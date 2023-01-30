@@ -208,7 +208,8 @@ information includes:
 
 ## ClusterOperators
 
-collects all the ClusterOperators definitions and their resources.
+collects all the ClusterOperators definitions and their related resources
+from the `operator.openshift.io` group.
 
 The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
 Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#clusteroperatorlist-v1config-openshift-io
