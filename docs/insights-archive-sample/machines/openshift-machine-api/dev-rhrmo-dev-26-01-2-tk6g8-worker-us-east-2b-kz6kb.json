@@ -1,1 +1,165 @@
-{"apiVersion":"machine.openshift.io/v1beta1","kind":"Machine","metadata":{"annotations":{"machine.openshift.io/instance-state":"running"},"creationTimestamp":"2023-01-26T09:08:30Z","finalizers":["machine.machine.openshift.io"],"generateName":"dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b-","generation":2,"labels":{"machine.openshift.io/cluster-api-cluster":"dev-rhrmo-dev-26-01-2-tk6g8","machine.openshift.io/cluster-api-machine-role":"worker","machine.openshift.io/cluster-api-machine-type":"worker","machine.openshift.io/cluster-api-machineset":"dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b","machine.openshift.io/instance-type":"m6i.xlarge","machine.openshift.io/region":"xxxxxxxxx","machine.openshift.io/zone":"us-east-2b"},"name":"dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b-kz6kb","namespace":"openshift-machine-api","ownerReferences":[{"apiVersion":"machine.openshift.io/v1beta1","blockOwnerDeletion":true,"controller":true,"kind":"MachineSet","name":"dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b","uid":"fc15a158-504e-499e-b245-01eb1e26c787"}],"resourceVersion":"23052","uid":"a0dd1fad-5609-4b00-a1b6-8f50dc7a1d42"},"spec":{"lifecycleHooks":{},"metadata":{},"providerID":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","providerSpec":{"value":{"ami":{"id":"ami-0ff64f495c7e977cf"},"apiVersion":"machine.openshift.io/v1beta1","blockDevices":[{"ebs":{"encrypted":true,"iops":0,"kmsKey":{"arn":""},"volumeSize":120,"volumeType":"gp3"}}],"credentialsSecret":{"name":"aws-cloud-credentials"},"deviceIndex":0,"iamInstanceProfile":{"id":"dev-rhrmo-dev-26-01-2-tk6g8-worker-profile"},"instanceType":"m6i.xlarge","kind":"AWSMachineProviderConfig","metadata":{"creationTimestamp":null},"metadataServiceOptions":{},"placement":{"availabilityZone":"xxxxxxxxxx","region":"xxxxxxxxx"},"securityGroups":[{"filters":[{"name":"tag:Name","values":["dev-rhrmo-dev-26-01-2-tk6g8-worker-sg"]}]}],"subnet":{"filters":[{"name":"tag:Name","values":["dev-rhrmo-dev-26-01-2-tk6g8-private-us-east-2b"]}]},"tags":[{"name":"kubernetes.io/cluster/dev-rhrmo-dev-26-01-2-tk6g8","value":"owned"}],"userDataSecret":{"name":"worker-user-data"}}}},"status":{"addresses":[{"address":"10.0.0.5","type":"InternalIP"},{"address":"ip-10-0-189-138.us-east-2.compute.internal","type":"InternalDNS"},{"address":"ip-10-0-189-138.us-east-2.compute.internal","type":"Hostname"}],"conditions":[{"lastTransitionTime":"2023-01-26T09:08:33Z","status":"True","type":"Drainable"},{"lastTransitionTime":"2023-01-26T09:09:39Z","status":"True","type":"InstanceExists"},{"lastTransitionTime":"2023-01-26T09:08:33Z","status":"True","type":"Terminable"}],"lastUpdated":"2023-01-26T09:15:22Z","nodeRef":{"kind":"Node","name":"ip-10-0-189-138.us-east-2.compute.internal","uid":"387e9fd6-541b-4f18-96af-5c0b3c3fcb53"},"phase":"Running","providerStatus":{"conditions":[{"lastTransitionTime":"2023-01-26T09:09:16Z","message":"Machine successfully created","reason":"MachineCreationSucceeded","status":"True","type":"MachineCreation"}],"instanceId":"i-071b1d7f45682c2b1","instanceState":"running"}}}
+{
+    "apiVersion": "machine.openshift.io/v1beta1",
+    "kind": "Machine",
+    "metadata": {
+        "annotations": {
+            "machine.openshift.io/instance-state": "running"
+        },
+        "creationTimestamp": "2023-01-26T09:08:30Z",
+        "finalizers": [
+            "machine.machine.openshift.io"
+        ],
+        "generateName": "dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b-",
+        "generation": 2,
+        "labels": {
+            "machine.openshift.io/cluster-api-cluster": "dev-rhrmo-dev-26-01-2-tk6g8",
+            "machine.openshift.io/cluster-api-machine-role": "worker",
+            "machine.openshift.io/cluster-api-machine-type": "worker",
+            "machine.openshift.io/cluster-api-machineset": "dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b",
+            "machine.openshift.io/instance-type": "m6i.xlarge",
+            "machine.openshift.io/region": "xxxxxxxxx",
+            "machine.openshift.io/zone": "us-east-2b"
+        },
+        "name": "dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b-kz6kb",
+        "namespace": "openshift-machine-api",
+        "ownerReferences": [
+            {
+                "apiVersion": "machine.openshift.io/v1beta1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "MachineSet",
+                "name": "dev-rhrmo-dev-26-01-2-tk6g8-worker-us-east-2b",
+                "uid": "fc15a158-504e-499e-b245-01eb1e26c787"
+            }
+        ],
+        "resourceVersion": "23052",
+        "uid": "a0dd1fad-5609-4b00-a1b6-8f50dc7a1d42"
+    },
+    "spec": {
+        "lifecycleHooks": {},
+        "metadata": {},
+        "providerID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "providerSpec": {
+            "value": {
+                "ami": {
+                    "id": "ami-0ff64f495c7e977cf"
+                },
+                "apiVersion": "machine.openshift.io/v1beta1",
+                "blockDevices": [
+                    {
+                        "ebs": {
+                            "encrypted": true,
+                            "iops": 0,
+                            "kmsKey": {
+                                "arn": ""
+                            },
+                            "volumeSize": 120,
+                            "volumeType": "gp3"
+                        }
+                    }
+                ],
+                "credentialsSecret": {
+                    "name": "aws-cloud-credentials"
+                },
+                "deviceIndex": 0,
+                "iamInstanceProfile": {
+                    "id": "dev-rhrmo-dev-26-01-2-tk6g8-worker-profile"
+                },
+                "instanceType": "m6i.xlarge",
+                "kind": "AWSMachineProviderConfig",
+                "metadata": {
+                    "creationTimestamp": null
+                },
+                "metadataServiceOptions": {},
+                "placement": {
+                    "availabilityZone": "xxxxxxxxxx",
+                    "region": "xxxxxxxxx"
+                },
+                "securityGroups": [
+                    {
+                        "filters": [
+                            {
+                                "name": "tag:Name",
+                                "values": [
+                                    "dev-rhrmo-dev-26-01-2-tk6g8-worker-sg"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "subnet": {
+                    "filters": [
+                        {
+                            "name": "tag:Name",
+                            "values": [
+                                "dev-rhrmo-dev-26-01-2-tk6g8-private-us-east-2b"
+                            ]
+                        }
+                    ]
+                },
+                "tags": [
+                    {
+                        "name": "kubernetes.io/cluster/dev-rhrmo-dev-26-01-2-tk6g8",
+                        "value": "owned"
+                    }
+                ],
+                "userDataSecret": {
+                    "name": "worker-user-data"
+                }
+            }
+        }
+    },
+    "status": {
+        "addresses": [
+            {
+                "address": "10.0.0.5",
+                "type": "InternalIP"
+            },
+            {
+                "address": "ip-10-0-189-138.us-east-2.compute.internal",
+                "type": "InternalDNS"
+            },
+            {
+                "address": "ip-10-0-189-138.us-east-2.compute.internal",
+                "type": "Hostname"
+            }
+        ],
+        "conditions": [
+            {
+                "lastTransitionTime": "2023-01-26T09:08:33Z",
+                "status": "True",
+                "type": "Drainable"
+            },
+            {
+                "lastTransitionTime": "2023-01-26T09:09:39Z",
+                "status": "True",
+                "type": "InstanceExists"
+            },
+            {
+                "lastTransitionTime": "2023-01-26T09:08:33Z",
+                "status": "True",
+                "type": "Terminable"
+            }
+        ],
+        "lastUpdated": "2023-01-26T09:15:22Z",
+        "nodeRef": {
+            "kind": "Node",
+            "name": "ip-10-0-189-138.us-east-2.compute.internal",
+            "uid": "387e9fd6-541b-4f18-96af-5c0b3c3fcb53"
+        },
+        "phase": "Running",
+        "providerStatus": {
+            "conditions": [
+                {
+                    "lastTransitionTime": "2023-01-26T09:09:16Z",
+                    "message": "Machine successfully created",
+                    "reason": "MachineCreationSucceeded",
+                    "status": "True",
+                    "type": "MachineCreation"
+                }
+            ],
+            "instanceId": "i-071b1d7f45682c2b1",
+            "instanceState": "running"
+        }
+    }
+}
