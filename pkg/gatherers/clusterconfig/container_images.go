@@ -3,7 +3,6 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/library-go/pkg/image/reference"
 )
@@ -69,7 +69,7 @@ func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1In
 		for podIndex, pod := range pods.Items { //nolint:gocritic
 			podPtr := &pods.Items[podIndex]
 			if strings.HasPrefix(pod.Namespace, "openshift-") && check.HasContainerInCrashloop(podPtr) {
-				obfuscateContainerEnvVars(podPtr.Spec.Containers)
+				anonymize.SensitiveEnvVars(podPtr.Spec.Containers)
 
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
@@ -201,21 +201,6 @@ func gatherImages(startMonth string, img2month2count img2Month2CountMap, contain
 		} else {
 			img2month2count[imgMinimal] = map[string]int{
 				startMonth: 1,
-			}
-		}
-	}
-}
-
-// obfuscateContainerEnvVars finds env variables within the given container list
-// and, if they are a target, it will obfuscate their value
-func obfuscateContainerEnvVars(containers []corev1.Container) {
-	targets := []string{"HTTP_PROXY", "HTTPS_PROXY"}
-	search := regexp.MustCompile(strings.Join(targets, "|"))
-
-	for i := range containers {
-		for j := range containers[i].Env {
-			if search.MatchString(containers[i].Env[j].Name) {
-				containers[i].Env[j].Value = "<obfuscated>"
 			}
 		}
 	}
