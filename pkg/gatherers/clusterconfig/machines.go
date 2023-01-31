@@ -14,6 +14,20 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// GatherMachine collects Machine information
+//
+// The Kubernetes api:
+//
+//	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machine.go
+//
+// Response see:
+//
+//	https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
+//
+// * Location in archive: config/machines/
+// * Id in config: clusterconfig/machines
+// * Since versions:
+//   - 4.13+
 func (g *Gatherer) GatherMachine(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -33,10 +47,10 @@ func gatherMachine(ctx context.Context, dynamicClient dynamic.Interface) ([]reco
 		return nil, []error{err}
 	}
 	var records []record.Record
-	for i, ms := range machines.Items {
-		recordName := fmt.Sprintf("machines/%s", ms.GetName())
-		if ms.GetNamespace() != "" {
-			recordName = fmt.Sprintf("machines/%s/%s", ms.GetNamespace(), ms.GetName())
+	for i := range machines.Items {
+		recordName := fmt.Sprintf("config/machines/%s", machines.Items[i].GetName())
+		if machines.Items[i].GetNamespace() != "" {
+			recordName = fmt.Sprintf("config/machines/%s/%s", machines.Items[i].GetNamespace(), machines.Items[i].GetName())
 		}
 		records = append(records, record.Record{
 			Name: recordName,
