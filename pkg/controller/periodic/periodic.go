@@ -207,7 +207,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			return
 		case <-cmConfigCh:
 			newInterval := c.configMapConfigurator.Config().DataReporting.Interval
-			if newInterval == interval {
+			if newInterval == interval || newInterval == 0*time.Second {
 				continue
 			}
 			interval = newInterval
