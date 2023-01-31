@@ -479,6 +479,24 @@ Response see:
   - 4.9+
 
 
+## Machine
+
+collects Machine information
+
+The Kubernetes api:
+
+	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machine.go
+
+Response see:
+
+	https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
+
+* Location in archive: config/machines/
+* Id in config: clusterconfig/machines
+* Since versions:
+  - 4.13+
+
+
 ## MachineAutoscalers
 
 collects MachineAutoscalers definition
@@ -547,24 +565,6 @@ Response see:
 * Id in config: clusterconfig/machine_healthchecks
 * Since versions:
   - 4.8+
-
-
-## Machine
-
-collects Machine information
-
-The Kubernetes api:
-
-	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machine.go
-
-Response see:
-
-	https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
-
-* Location in archive: machines/
-* Id in config: clusterconfig/machines
-* Since versions:
-  - 4.13+
 
 
 ## MachineSet
