@@ -2,6 +2,9 @@
 	Please see OpenShift release notes for official changes\n<!--Latest hash: 76cc46b739c27281db0f7b2a23eb091b2a70f698-->
 ## 4.13
 
+### Data Enhancement
+- [#723](https://github.com/openshift/insights-operator/pull/723) Obfuscate HTTP_PROXY and HTTPS_PROXY env variables on containers
+
 ### Others
 - [#693](https://github.com/openshift/insights-operator/pull/693) Use cgroups memory usage data in the archive metadata
 
