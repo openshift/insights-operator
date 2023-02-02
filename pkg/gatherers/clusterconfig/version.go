@@ -78,6 +78,7 @@ func getClusterVersion(ctx context.Context,
 	}
 	for i := range pods.Items {
 		pod := &pods.Items[i]
+		anonymize.SensitiveEnvVars(pod.Spec.Containers)
 
 		// TODO: shift after IsHealthyPod
 		records = append(records, record.Record{
