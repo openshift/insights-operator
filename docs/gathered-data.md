@@ -1873,25 +1873,32 @@ clusterconfig/storage_cluster
 ## StorageCluster
 
 Collects `storageclusters.ocs.openshift.io` resources
-from Openshift Data Foundation Stack.
 
-### API Reference:
-https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+### API Reference
+- https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
 
 ### Sample data
-docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
+- [docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json](./insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json)
 
-### Location in archive:
-| Version | Path														|
-| ------- | --------------------------------------------------------	|
-| <= 4.12 | config/storage/{namespace}/{name}.json 					|
-| 4.13+   | config/storage/{namespace}/storageclusters/{name}.json 	|
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| < 4.12.0  | config/storage/{namespace}/{name}.json 					|
+| >= 4.12.0 | config/storage/{namespace}/storageclusters/{name}.json 	|
 
-### Config ID:
-clusterconfig/storage_cluster
+### Config ID
+`clusterconfig/storage_cluster`
 
-### Since versions:
-* 4.11
+### Released version
+- 4.11.0
+
+### Backported versions
+None
+
+### Changes
+- Renamed from `OpenshiftStorage` to `StorageCluster` in version `4.12.0+`
+- Config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster` in version `4.12.0+`
+- In OCP 4.11 and OCP 4.12, the location of gathered data collides with data gathered by the
+CephCluster](#CephCluster) gatherer. It is practically impossible to tell the two resources apart. Use with caution.
 
 
 ## SupportSecret
