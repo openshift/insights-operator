@@ -13,7 +13,7 @@ import (
 
 // GatherSAPDatahubs collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 //
-// * Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+// * Location in archive: customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json
 // * Id in config: clusterconfig/sap_datahubs
 // * Since versions:
 //   * 4.7.5+

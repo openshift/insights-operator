@@ -40,11 +40,11 @@ metadata:
 			args: args{
 				ctx: context.TODO(),
 				dynamicClient: dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-					openshiftStorageResource: "StorageClusterList",
+					storageClusterResource: "StorageClusterList",
 				}),
 			},
 			totalRecords:  1,
-			recordName:    "config/storage/openshift-storage/ocs-storagecluster",
+			recordName:    "config/storage/openshift-storage/storageclusters/ocs-storagecluster",
 			expectedError: nil,
 		},
 	}
@@ -61,24 +61,24 @@ metadata:
 				t.Fatal("unable to decode storagecluster ", err)
 			}
 			_, err = tt.args.dynamicClient.
-				Resource(openshiftStorageResource).
+				Resource(storageClusterResource).
 				Namespace("openshift-storage").
 				Create(context.Background(), testOpenshiftStorageResource, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatalf("unable to create fake resource %s", err)
 			}
 
-			records, errs := gatherOpenshiftStorage(tt.args.ctx, tt.args.dynamicClient)
+			records, errs := gatherStorageCluster(tt.args.ctx, tt.args.dynamicClient)
 			if len(errs) > 0 {
 				if errs[0].Error() != tt.expectedError.Error() {
 					t.Fatalf("unexpected errors: %v", errs[0].Error())
 				}
 			}
 			if len(records) != tt.totalRecords {
-				t.Errorf("gatherOpenshiftStorage() got = %v, want %v", len(records), tt.totalRecords)
+				t.Errorf("gatherStorageCluster() got = %v, want %v", len(records), tt.totalRecords)
 			}
 			if records[0].Name != tt.recordName {
-				t.Errorf("gatherOpenshiftStorage() name = %v, want %v ", records[0].Name, tt.recordName)
+				t.Errorf("gatherStorageCluster() name = %v, want %v ", records[0].Name, tt.recordName)
 			}
 		})
 	}

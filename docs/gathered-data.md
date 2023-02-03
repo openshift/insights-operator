@@ -18,7 +18,7 @@ resources mentioned in the alert provided as a string parameter
 Params is of type AlertIsFiringConditionParams:
   - alert_name string - name of the firing alert
 
-* Location in archive: conditional/alerts/<alert_name>/api_request_counts.json
+* Location in archive: conditional/alerts/{alert_name}/api_request_counts.json
 * Id in config: conditional/api_request_counts_of_resource_from_alert
 * Since versions:
   * 4.10+
@@ -43,13 +43,17 @@ The CRD sizes above are in the raw (uncompressed) state.
 collects statuses of the`cephclusters.ceph.rook.io` resources
 from Openshift Data Foundation Stack.
 
-API Reference:
-  https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
+The Kubernetes API https://github.com/rook/rook/blob/master/pkg/apis/ceph.rook.io/v1/types.go
 
-* Location in archive: config/storage/<namespace>/<name>.json
+* Location of serviceaccounts in archive: config/storage/{namespace}/cephclusters/{name}.json
+* See: docs/insights-archive-sample/config/storage/openshift-storage/cephclusters/ocs-storagecluster-cephcluster.json
 * Id in config: clusterconfig/ceph_cluster
 * Since versions:
-  * 4.12+
+  - 4.8.49
+  - 4.9.48
+  - 4.10.31
+  - 4.11.2
+  - 4.12
 
 
 ## CertificateSigningRequests
@@ -313,7 +317,7 @@ Response see:
 
 collects either current or previous containers logs for pods firing one of the configured alerts.
 
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/containers/<container>/<logs|logs-previous>/last-<tail length>-lines.log
+* Location in archive: conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log
 * Id in config: conditional/containers_logs
 * Since versions:
   * 4.10+
@@ -322,7 +326,7 @@ collects either current or previous containers logs for pods firing one of the c
 ## CostManagementMetricsConfigs
 
 collects CostManagementMetricsConfigs definitions.
-* Location in archive: config/cost_management_metrics_configs/<name>.json
+* Location in archive: config/cost_management_metrics_configs/{name}.json
 * Id in config: clusterconfig/cost_management_metrics_configs
 * Since versions:
   * 4.8.27+
@@ -476,7 +480,7 @@ collects MachineConfigs definitions. Following data is intentionally removed fro
 
 Response see https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
 
-* Location in archive: config/machineconfigs/<name>.json
+* Location in archive: config/machineconfigs/{name}.json
 * Id in config: clusterconfig/machine_configs
 * Since versions:
   * 4.8.5+
@@ -592,15 +596,15 @@ Response is an array of netNamespaces. Netnamespace contains Name, EgressIPs and
 
 ## NodeLogs
 
-fetches the node logs from journal unit
+fetches control plane node logs from journal unit
 
 Response see https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
 
-* Location in archive: config/nodes/logs/
+* Location in archive: config/nodes/logs/{hostname}.log
 * See: docs/insights-archive-sample/config/nodes/logs
 * Id in config: clusterconfig/node_logs
 * Since versions:
-  * 4.10+
+  - 4.10+
 
 
 ## Nodes
@@ -668,7 +672,7 @@ from Openshift Logging Stack.
 API Reference:
   https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
 
-* Location in archive: config/logging/<namespace>/<name>.json
+* Location in archive: config/logging/{namespace}/{name}.json
 * Id in config: clusterconfig/openshift_logging
 * Since versions:
   * 4.9+
@@ -720,20 +724,6 @@ Response see:
   * 4.7+
 
 
-## OpenshiftStorage
-
-collects `storageclusters.ocs.openshift.io` resources
-from Openshift Data Foundation Stack.
-
-API Reference:
-  https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
-
-* Location in archive: config/storage/<namespace>/<name>.json
-* Id in config: clusterconfig/openshift_storage
-* Since versions:
-  * 4.11+
-
-
 ## PNCC
 
 collects a summary of failed PodNetworkConnectivityChecks.
@@ -754,7 +744,7 @@ Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcon
 
 collects pod definition from pods that are firing one of the configured alerts.
 
-* Location in archive: conditional/namespaces/<namespace>/pods/<pod>/<pod>.json
+* Location in archive: conditional/namespaces/{namespace}/pods/{pod}/{pod}.json
 * Id in config: conditional/pod_definition
 * Since versions:
   * 4.11+
@@ -798,7 +788,7 @@ Relevant OpenShift API docs:
 
 collects `datahubs.installers.datahub.sap.com` resources from SAP/SDI clusters.
 
-* Location in archive: customresources/installers.datahub.sap.com/datahubs/<namespace>/<name>.json
+* Location in archive: customresources/installers.datahub.sap.com/datahubs/{namespace}/{name}.json
 * Id in config: clusterconfig/sap_datahubs
 * Since versions:
   * 4.7.5+
@@ -902,6 +892,19 @@ gathers the alerts that have been silenced.
 * Id in config: clusterconfig/silenced_alerts
 * Since version:
   * 4.10+
+
+
+## StorageCluster
+
+collects `storageclusters.ocs.openshift.io` resources
+
+The Kubernetes API https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+* Location of serviceaccounts in archive: config/storage/{namespace}/storageclusters/{name}.json
+* See: docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json
+* Id in config: clusterconfig/storage_cluster
+* Since versions:
+  - 4.11.0
 
 
 ## SupportSecret
