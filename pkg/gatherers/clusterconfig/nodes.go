@@ -14,13 +14,29 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherNodes collects all Nodes.
+// GatherNodes Collects all node resources.
 //
-// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/node.go#L78
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#nodelist-v1core
 //
-// * Location in archive: config/node/
-// * Id in config: clusterconfig/nodes
+// ### Sample data
+// - docs/insights-archive-sample/config/node
+//
+// ### Location in archive
+// - `config/node/{node}.json`
+//
+// ### Config ID
+// `clusterconfig/nodes`
+//
+// ### Released version
+// - 4.2.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherNodes(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

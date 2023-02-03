@@ -10,16 +10,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GatherClusterImages gathers cluster "images.config.openshift.io" resource definition
+// GatherClusterImages Collects cluster `images.config.openshift.io` resource definition.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/config_client.go#L72
-// Response see https://docs.openshift.com/container-platform/latest/rest_api/config_apis/image-config-openshift-io-v1.html#image-config-openshift-io-v1
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/config_client.go#L72
+// - https://docs.openshift.com/container-platform/latest/rest_api/config_apis/image-config-openshift-io-v1.html#image-config-openshift-io-v1
 //
-// * Location in archive: config/image.json
-// * Id in config: clusterconfig/image
-// * Since versions:
-//   - 4.10.8
-//   - 4.11+
+// ### Sample data
+// - docs/insights-archive-sample/config/image.json
+//
+// ### Location in archive
+// - `config/image.json`
+//
+// ### Config ID
+// `clusterconfig/image`
+//
+// ### Released version
+// - 4.11.0
+//
+// ### Backported versions
+// - 4.10.8+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherClusterImage(ctx context.Context) ([]record.Record, []error) {
 	configCli, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

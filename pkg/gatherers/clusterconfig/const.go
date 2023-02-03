@@ -58,6 +58,14 @@ var (
 	costManagementMetricsConfigResource = schema.GroupVersionResource{
 		Group: "costmanagement-metrics-cfg.openshift.io", Version: "v1beta1", Resource: "costmanagementmetricsconfigs",
 	}
+	operatorGVR = schema.GroupVersionResource{
+		Group: "operators.coreos.com", Version: "v1", Resource: "operators",
+	}
+	clusterServiceVersionGVR = schema.GroupVersionResource{
+		Group:    "operators.coreos.com",
+		Version:  "v1alpha1",
+		Resource: "clusterserviceversions",
+	}
 )
 
 func init() { //nolint: gochecknoinits

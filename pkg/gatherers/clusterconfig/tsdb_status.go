@@ -10,13 +10,28 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// GatherTSDBStatus gathers the Prometheus TSDB status.
+// GatherTSDBStatus Collects Prometheus TSDB status.
 //
-// * Location in archive: config/tsdb
-// * See: docs/insights-archive-sample/config/metrics
-// * Id in config: clusterconfig/tsdb_status
-// * Since version:
-//   - 4.10+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/tsdb.json
+//
+// ### Location in archive
+// - `config/tsdb.json`
+//
+// ### Config ID
+// `clusterconfig/tsdb_status`
+//
+// ### Released version
+// - 4.10.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherTSDBStatus(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {

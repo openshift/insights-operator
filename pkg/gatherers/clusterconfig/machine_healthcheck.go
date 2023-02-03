@@ -11,20 +11,29 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// GatherMachineHealthCheck collects MachineHealthCheck information
+// GatherMachineHealthCheck Collects `MachineHealthCheck` information.
 //
-// The Kubernetes api:
+// ### API Reference
+// - https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
 //
-//	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machinehealthcheck.go
+// ### Sample data
+// - docs/insights-archive-sample/config/machinehealthchecks/openshift-machine-api/machine-api-termination-handler.json
 //
-// Response see:
+// ### Location in archive
+// - `config/machinehealthchecks/{namespace}/{resource}.json`
 //
-//	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machinehealthcheck-v1beta1-machine-openshift-io
+// ### Config ID
+// `clusterconfig/machine_healthchecks`
 //
-// * Location in archive: config/machinehealthchecks
-// * Id in config: clusterconfig/machine_healthchecks
-// * Since versions:
-//   - 4.8+
+// ### Released version
+// - 4.8.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherMachineHealthCheck(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

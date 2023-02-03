@@ -19,9 +19,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
-// InstallPlansTopX is the Maximal number of Install plans by non-unique instances count
-const InstallPlansTopX = 100
-
 type collectedPlan struct {
 	Namespace string
 	Name      string
@@ -29,26 +26,38 @@ type collectedPlan struct {
 	Count     int
 }
 
-// InstallPlanAnonymizer implements serialization of top x installplans
-type InstallPlanAnonymizer struct {
+// installPlanAnonymizer implements serialization of top x installplans
+type installPlanAnonymizer struct {
 	v     map[string]*collectedPlan
 	total int
 	limit int
 }
 
-// GatherInstallPlans collects Top x InstallPlans from all openshift namespaces.
-// Because InstallPlans have unique generated names, it groups them by namespace and the "template"
-// for name generation from field generateName.
-// It also collects Total number of all installplans and all non-unique installplans.
+// GatherInstallPlans Collects top 100 `InstallPlans` from `openshift-*` namespaces. Because `InstallPlans` have
+// unique generated names, it groups them by namespace and the "template" for name generation from field `generateName`.
+// It also collects total number of all `InstallPlans` and all non-unique `InstallPlans`.
 //
-// The Operators-Framework api https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
+// ### API Reference
+// - https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 //
-// * Location in archive: config/installplans/
-// * Id in config: clusterconfig/install_plans
-// * Since versions:
-//   - 4.5.33+
-//   - 4.6.16+
-//   - 4.7+
+// ### Sample data
+// - docs/insights-archive-sample/config/instalplans.json
+//
+// ### Location in archive
+// - `config/instalplans.json`
+//
+// ### Config ID
+// `clusterconfig/install_plans`
+//
+// ### Released version
+// - 4.7.0
+//
+// ### Backported versions
+// - 4.5.33+
+// - 4.6.16+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherInstallPlans(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -115,7 +124,7 @@ func gatherInstallPlans(ctx context.Context,
 		}
 	}
 
-	return []record.Record{{Name: "config/installplans", Item: InstallPlanAnonymizer{v: recs, total: total}}}, nil
+	return []record.Record{{Name: "config/installplans", Item: installPlanAnonymizer{v: recs, total: total}}}, nil
 }
 
 func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []error {
@@ -155,9 +164,10 @@ func collectInstallPlan(recs map[string]*collectedPlan, item interface{}) []erro
 }
 
 // Marshal implements serialization of InstallPlan
-func (a InstallPlanAnonymizer) Marshal() ([]byte, error) {
+func (a installPlanAnonymizer) Marshal() ([]byte, error) {
 	if a.limit == 0 {
-		a.limit = InstallPlansTopX
+		// default to the maximal number of Install plans by non-unique instances count
+		a.limit = 100
 	}
 
 	var cnts []int
@@ -204,6 +214,6 @@ func (a InstallPlanAnonymizer) Marshal() ([]byte, error) {
 }
 
 // GetExtension returns extension for anonymized openshift objects
-func (a InstallPlanAnonymizer) GetExtension() string {
+func (a installPlanAnonymizer) GetExtension() string {
 	return record.JSONExtension
 }

@@ -11,17 +11,30 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherHostSubnet collects HostSubnet information
+// GatherHostSubnet Collects `HostSubnet` information.
 //
-// The Kubernetes api https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
+// ### API Reference
+// - https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
 //
-// * Location in archive: config/hostsubnet/
-// * Id in config: clusterconfig/host_subnets
-// * Since versions:
-//   - 4.4.29+
-//   - 4.5.15+
-//   - 4.6+
+// ### Sample data
+// - docs/insights-archive-sample/config/hostsubnet
+//
+// ### Location in archive
+// - `config/hostsubnet/{name}.json`
+//
+// ### Config ID
+// `clusterconfig/host_subnets`
+//
+// ### Released version
+// - 4.6.0
+//
+// ### Backported versions
+// - 4.4.29+
+// - 4.5.15+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherHostSubnet(ctx context.Context) ([]record.Record, []error) {
 	gatherNetworkClient, err := networkv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

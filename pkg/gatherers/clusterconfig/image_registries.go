@@ -19,24 +19,35 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-var lacAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
-
-// GatherClusterImageRegistry fetches the cluster Image Registry configuration
+// GatherClusterImageRegistry Collects the cluster Image Registry configuration
 //
-// **Conditional data**: If the Image Registry configuration uses any PersistentVolumeClaim for the storage, the corresponding
-// PersistentVolume definition is gathered
+// ### API Reference
+// None
 //
-// * Location in archive: config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
-// * Location in older versions: config/imageregistry.json
-// * Id in config: clusterconfig/image_registries
-// * Since versions:
-//   - 4.3.40+
-//   - 4.4.12+
-//   - 4.5+
+// ### Sample data
+// - docs/insights-archive-sample/config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json
 //
-// * PV definition since versions:
-//   - 4.6.20+
-//   - 4.7+
+// ### Location in archive
+// | Version   | Path																			|
+// | --------- | ------------------------------------------------------------------------------ |
+// | < 4.7.0   | config/imageregistry.json 					                        			|
+// | >= 4.7.0  | config/clusteroperator/imageregistry.operator.openshift.io/config/cluster.json |
+// | >= 4.6.20 | config/persistentvolumes/{name}.json 											|
+//
+// ### Config ID
+// `clusterconfig/image_registries`
+//
+// ### Released version
+// - 4.5.0
+//
+// ### Backported versions
+// - 4.3.40+
+// - 4.4.12+
+//
+// ### Changes
+// - `PersistentVolumes` were introduced in version 4.7.0 and backported to 4.6.20+.
+// - If the Image Registry configuration uses any `PersistentVolumeClaim` for the storage, the corresponding
+// `PersistentVolume` definition is gathered.
 func (g *Gatherer) GatherClusterImageRegistry(ctx context.Context) ([]record.Record, []error) {
 	registryClient, err := imageregistryv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -157,6 +168,7 @@ func anonymizeImageRegistry(config *registryv1.Config) *registryv1.Config {
 
 	// kubectl.kubernetes.io/last-applied-configuration annotation contains complete previous resource definition
 	// including the sensitive information as bucket, keyIDs, etc.
+	var lacAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
 	if lac, ok := config.Annotations[lacAnnotation]; ok {
 		config.Annotations[lacAnnotation] = anonymize.String(lac)
 	}

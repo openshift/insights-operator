@@ -24,30 +24,32 @@ type namespaceWithRange struct {
 	uidRange
 }
 
-// IsOverlappingWith checks if the UIDRange is overlapping with the provided one
-func (u uidRange) IsOverlappingWith(r uidRange) bool {
-	uSum := u.starting + u.length
-	rSum := r.starting + r.length
-	return (uSum > r.starting && uSum <= rSum) || (rSum > u.starting && rSum <= uSum)
-}
-
-func (u uidRange) String() string {
-	return fmt.Sprintf("%d/%d", u.starting, u.length)
-}
-
-// GatherNamespacesWithOverlappingUIDs gathers namespaces with overlapping UID ranges
+// GatherNamespacesWithOverlappingUIDs Collects namespaces with overlapping UID ranges.
 //
-// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/namespace.go
-// Response is an array of arrays of namespaces with overlapping UIDs. Each namespace is represented by its name and the UID range value
-// from the "openshift.io/sa.scc.uid-range" annotation
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/namespace.go
+// - Response is an array of arrays of namespaces with overlapping UIDs. Each namespace is represented by its name
+// and the UID range value from the `openshift.io/sa.scc.uid-range` annotation
 //
-// * Location in archive: config/namespaces_with_overlapping_uids
-// * Id in config: clusterconfig/overlapping_namespace_uids
-// * Since versions:
-//   - 4.8.41
-//   - 4.9.31
-//   - 4.10.12
-//   - 4.11+
+// ### Sample data
+// - docs/insights-archive-sample/config/namespaces_with_overlapping_uids.json
+//
+// ### Location in archive
+// - `config/namespaces_with_overlapping_uids.json`
+//
+// ### Config ID
+// `clusterconfig/overlapping_namespace_uids`
+//
+// ### Released version
+// - 4.11.0
+//
+// ### Backported versions
+// - 4.8.41+
+// - 4.9.31+
+// - 4.10.12+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherNamespacesWithOverlappingUIDs(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -171,4 +173,15 @@ func (ss SetOfNamespaceSets) Marshal() ([]byte, error) {
 
 func (ss SetOfNamespaceSets) GetExtension() string {
 	return "json"
+}
+
+// IsOverlappingWith checks if the UIDRange is overlapping with the provided one
+func (u uidRange) IsOverlappingWith(r uidRange) bool {
+	uSum := u.starting + u.length
+	rSum := r.starting + r.length
+	return (uSum > r.starting && uSum <= rSum) || (rSum > u.starting && rSum <= uSum)
+}
+
+func (u uidRange) String() string {
+	return fmt.Sprintf("%d/%d", u.starting, u.length)
 }
