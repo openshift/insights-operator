@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
 )
@@ -47,8 +46,7 @@ func (g *Gatherer) GatherMachine(ctx context.Context) ([]record.Record, []error)
 }
 
 func gatherMachine(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machines"}
-	machines, err := dynamicClient.Resource(gvr).List(ctx, metav1.ListOptions{})
+	machines, err := dynamicClient.Resource(machinesGVR).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}

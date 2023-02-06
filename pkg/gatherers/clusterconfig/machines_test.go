@@ -99,13 +99,8 @@ metadata:
 
 			ctx := context.Background()
 			records, errs := gatherMachine(ctx, client)
-			if len(errs) > 0 {
-				t.Errorf("unexpected errors: %#v", errs)
-				return
-			}
-			if len(records) != test.expLen {
-				t.Fatalf("unexpected number of records %d", len(records))
-			}
+			assert.Emptyf(t, errs, "Unexpected errors: %#v", errs)
+			assert.Equal(t, len(records), test.expLen)
 			tmp := []string{}
 			for i := range records {
 				tmp = append(tmp, records[i].Name)
