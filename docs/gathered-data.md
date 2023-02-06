@@ -900,20 +900,29 @@ None
 
 ## Machine
 
-collects Machine information
+Collects `Machine` information.
 
-The Kubernetes api:
+### API Reference
+- https://github.com/openshift/api/blob/master/machine/v1beta1/types_machine.go
+- https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
 
-	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machine.go
+### Sample data
+- [docs/insights-archive-sample/config/machines/openshift-machine-api/](./insights-archive-sample/config/machines/openshift-machine-api/)
 
-Response see:
+### Location in archive
+- `config/machines/`
 
-	https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
+### Config ID
+- `clusterconfig/machines`
 
-* Location in archive: config/machines/
-* Id in config: clusterconfig/machines
-* Since versions:
-  - 4.13+
+### Released version
+- 4.13.0
+
+### Backported versions
+None
+
+### Changes
+None
 
 
 ## MachineAutoscalers
