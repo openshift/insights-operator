@@ -494,7 +494,7 @@ Collects `Machine` information.
 - `config/machines/`
 
 ### Config ID
-- `clusterconfig/machines`
+`clusterconfig/machines`
 
 ### Released version
 - 4.13.0
