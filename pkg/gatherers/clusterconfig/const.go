@@ -34,6 +34,9 @@ var (
 	datahubGroupVersionResource = schema.GroupVersionResource{
 		Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs",
 	}
+	machinesGVR = schema.GroupVersionResource{
+		Group: "machine.openshift.io", Version: "v1beta1", Resource: "machines",
+	}
 	machineConfigGroupVersionResource = schema.GroupVersionResource{
 		Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigs",
 	}
