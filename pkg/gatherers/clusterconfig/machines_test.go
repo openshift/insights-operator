@@ -95,7 +95,7 @@ metadata:
 			ctx := context.Background()
 			records, errs := gatherMachine(ctx, client)
 			assert.Emptyf(t, errs, "Unexpected errors: %#v", errs)
-			recordNames := []string{}
+			var recordNames []string
 			for i := range records {
 				recordNames = append(recordNames, records[i].Name)
 			}
