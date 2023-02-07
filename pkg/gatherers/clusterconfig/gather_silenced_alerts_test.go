@@ -6,25 +6,65 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/openshift/insights-operator/pkg/utils/marshal"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/openshift/insights-operator/pkg/record"
+	"k8s.io/client-go/rest"
+
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-func Test_gatherSilencedAlerts(t *testing.T) {
+type mockAlertsClient struct {
+	data []byte
+}
+
+func (c *mockAlertsClient) RestClient(t *testing.T) *rest.RESTClient {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		dummyData := []byte(`{"silenced": true, "active": false, "inhibited": false}`)
-		w.Write(dummyData)
+		if c.data == nil {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusOK)
+			// nolint: errcheck
+			w.Write(c.data)
+		}
 	}))
-	defer ts.Close()
-	rc := testRESTClient(t, ts)
+	return testRESTClient(t, ts)
+}
 
-	records, errs := gatherSilencedAlerts(context.Background(), rc)
-	assert.Len(t, errs, 0)
-	assert.NotEmpty(t, records)
+func TestGatherSilencedAlerts(t *testing.T) {
+	tests := []struct {
+		name             string
+		mockAlertsClient *mockAlertsClient
+		wantRecords      []record.Record
+		wantErrsCount    int
+	}{
+		{
+			name: "Get silenced alerts successfully",
+			mockAlertsClient: &mockAlertsClient{
+				data: []byte(`[{"status": {"state": "suppressed"}}]`),
+			},
+			wantRecords: []record.Record{
+				{
+					Name: "config/silenced_alerts.json",
+					Item: marshal.RawByte(`[{"status": {"state": "suppressed"}}]`),
+				},
+			},
+			wantErrsCount: 0,
+		},
+		{
+			name:             "Get silenced alerts with error",
+			mockAlertsClient: &mockAlertsClient{data: nil},
+			wantRecords:      nil,
+			wantErrsCount:    1,
+		},
+	}
 
-	assert.Equal(t, "config/silenced_alerts.json", records[0].Name)
-	assert.NotNil(t, records[0].Captured)
-	assert.Equal(t, marshal.RawByte([]byte(`{"silenced": true, "active": false, "inhibited": false}`)), records[0].Item)
+	ctx := context.Background()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			records, errs := gatherSilencedAlerts(ctx, tt.mockAlertsClient.RestClient(t))
+			assert.Len(t, errs, tt.wantErrsCount)
+			assert.Equal(t, tt.wantRecords, records)
+		})
+	}
 }
