@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"context"
-	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,16 +70,14 @@ metadata:
 				"config/machines/machine-three",
 				"config/machines/machine-four",
 				"config/machines/machine-five"},
-			expLen: 5,
 		},
 	}
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			gvr := schema.GroupVersionResource{Group: "machine.openshift.io", Version: "v1beta1", Resource: "machines"}
 			client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
-				gvr: "MachineList",
+				machinesGVR: "MachineList",
 			})
 			decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
@@ -91,23 +88,18 @@ metadata:
 				if err != nil {
 					t.Fatal("unable to decode machine ", err)
 				}
-				_, err = client.Resource(gvr).Create(context.Background(), testMachine, metav1.CreateOptions{})
-				if err != nil {
-					t.Fatal("unable to create fake machine ", err)
-				}
+				_, err = client.Resource(machinesGVR).Create(context.Background(), testMachine, metav1.CreateOptions{})
+				assert.NoError(t, err)
 			}
 
 			ctx := context.Background()
 			records, errs := gatherMachine(ctx, client)
 			assert.Emptyf(t, errs, "Unexpected errors: %#v", errs)
-			assert.Equal(t, len(records), test.expLen)
-			tmp := []string{}
+			recordNames := []string{}
 			for i := range records {
-				tmp = append(tmp, records[i].Name)
+				recordNames = append(recordNames, records[i].Name)
 			}
-			sort.Strings(tmp)
-			sort.Strings(test.exp)
-			assert.Equal(t, test.exp, tmp)
+			assert.ElementsMatch(t, test.exp, recordNames)
 		})
 	}
 }
