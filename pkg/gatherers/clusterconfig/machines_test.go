@@ -18,7 +18,6 @@ func Test_Machine_Gather(t *testing.T) {
 		name        string
 		machineYAML []string
 		exp         []string
-		expLen      int
 	}{
 		{
 			name: "one machine",
@@ -28,14 +27,12 @@ kind: Machine
 metadata:
     name: test-master
 `},
-			exp:    []string{"config/machines/test-master"},
-			expLen: 1,
+			exp: []string{"config/machines/test-master"},
 		},
 		{
 			name:        "no machine",
 			machineYAML: []string{},
 			exp:         []string{},
-			expLen:      0,
 		},
 		{
 			name: "multiple machines",
@@ -85,9 +82,7 @@ metadata:
 
 			for i := range test.machineYAML {
 				_, _, err := decUnstructured.Decode([]byte(test.machineYAML[i]), nil, testMachine)
-				if err != nil {
-					t.Fatal("unable to decode machine ", err)
-				}
+				assert.NoError(t, err)
 				_, err = client.Resource(machinesGVR).Create(context.Background(), testMachine, metav1.CreateOptions{})
 				assert.NoError(t, err)
 			}
