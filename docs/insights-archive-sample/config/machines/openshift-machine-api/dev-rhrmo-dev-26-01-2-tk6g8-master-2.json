@@ -1,0 +1,183 @@
+{
+    "apiVersion": "machine.openshift.io/v1beta1",
+    "kind": "Machine",
+    "metadata": {
+        "annotations": {
+            "machine.openshift.io/instance-state": "running"
+        },
+        "creationTimestamp": "2023-01-26T09:05:13Z",
+        "finalizers": [
+            "machine.machine.openshift.io"
+        ],
+        "generation": 3,
+        "labels": {
+            "machine.openshift.io/cluster-api-cluster": "dev-rhrmo-dev-26-01-2-tk6g8",
+            "machine.openshift.io/cluster-api-machine-role": "master",
+            "machine.openshift.io/cluster-api-machine-type": "master",
+            "machine.openshift.io/instance-type": "m6i.xlarge",
+            "machine.openshift.io/region": "xxxxxxxxx",
+            "machine.openshift.io/zone": "us-east-2c"
+        },
+        "name": "dev-rhrmo-dev-26-01-2-tk6g8-master-2",
+        "namespace": "openshift-machine-api",
+        "ownerReferences": [
+            {
+                "apiVersion": "machine.openshift.io/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "ControlPlaneMachineSet",
+                "name": "cluster",
+                "uid": "7d68aa4d-7bdb-44bf-b31c-c232412d303c"
+            }
+        ],
+        "resourceVersion": "10881",
+        "uid": "eedcd285-07cc-46f7-95e6-0ee23258c785"
+    },
+    "spec": {
+        "lifecycleHooks": {
+            "preDrain": [
+                {
+                    "name": "EtcdQuorumOperator",
+                    "owner": "clusteroperator/etcd"
+                }
+            ]
+        },
+        "metadata": {},
+        "providerID": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "providerSpec": {
+            "value": {
+                "ami": {
+                    "id": "ami-0ff64f495c7e977cf"
+                },
+                "apiVersion": "machine.openshift.io/v1beta1",
+                "blockDevices": [
+                    {
+                        "ebs": {
+                            "encrypted": true,
+                            "iops": 0,
+                            "kmsKey": {
+                                "arn": ""
+                            },
+                            "volumeSize": 120,
+                            "volumeType": "gp3"
+                        }
+                    }
+                ],
+                "credentialsSecret": {
+                    "name": "aws-cloud-credentials"
+                },
+                "deviceIndex": 0,
+                "iamInstanceProfile": {
+                    "id": "dev-rhrmo-dev-26-01-2-tk6g8-master-profile"
+                },
+                "instanceType": "m6i.xlarge",
+                "kind": "AWSMachineProviderConfig",
+                "loadBalancers": [
+                    {
+                        "name": "dev-rhrmo-dev-26-01-2-tk6g8-int",
+                        "type": "network"
+                    },
+                    {
+                        "name": "dev-rhrmo-dev-26-01-2-tk6g8-ext",
+                        "type": "network"
+                    }
+                ],
+                "metadata": {
+                    "creationTimestamp": null
+                },
+                "metadataServiceOptions": {},
+                "placement": {
+                    "availabilityZone": "xxxxxxxxxx",
+                    "region": "xxxxxxxxx"
+                },
+                "securityGroups": [
+                    {
+                        "filters": [
+                            {
+                                "name": "tag:Name",
+                                "values": [
+                                    "dev-rhrmo-dev-26-01-2-tk6g8-master-sg"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "subnet": {
+                    "filters": [
+                        {
+                            "name": "tag:Name",
+                            "values": [
+                                "dev-rhrmo-dev-26-01-2-tk6g8-private-us-east-2c"
+                            ]
+                        }
+                    ]
+                },
+                "tags": [
+                    {
+                        "name": "kubernetes.io/cluster/dev-rhrmo-dev-26-01-2-tk6g8",
+                        "value": "owned"
+                    }
+                ],
+                "userDataSecret": {
+                    "name": "master-user-data"
+                }
+            }
+        }
+    },
+    "status": {
+        "addresses": [
+            {
+                "address": "10.0.0.1",
+                "type": "InternalIP"
+            },
+            {
+                "address": "ip-10-0-208-177.us-east-2.compute.internal",
+                "type": "InternalDNS"
+            },
+            {
+                "address": "ip-10-0-208-177.us-east-2.compute.internal",
+                "type": "Hostname"
+            }
+        ],
+        "conditions": [
+            {
+                "lastTransitionTime": "2023-01-26T09:10:07Z",
+                "message": "Drain operation currently blocked by: [{Name:EtcdQuorumOperator Owner:clusteroperator/etcd}]",
+                "reason": "HookPresent",
+                "severity": "Warning",
+                "status": "False",
+                "type": "Drainable"
+            },
+            {
+                "lastTransitionTime": "2023-01-26T09:09:17Z",
+                "status": "True",
+                "type": "InstanceExists"
+            },
+            {
+                "lastTransitionTime": "2023-01-26T09:08:34Z",
+                "status": "True",
+                "type": "Terminable"
+            }
+        ],
+        "lastUpdated": "2023-01-26T09:10:07Z",
+        "nodeRef": {
+            "kind": "Node",
+            "name": "ip-10-0-208-177.us-east-2.compute.internal",
+            "uid": "e0b258d3-6d93-45a8-b126-9d8457744f0c"
+        },
+        "phase": "Running",
+        "providerStatus": {
+            "conditions": [
+                {
+                    "lastTransitionTime": "2023-01-26T09:09:17Z",
+                    "message": "Machine successfully created",
+                    "reason": "MachineCreationSucceeded",
+                    "status": "True",
+                    "type": "MachineCreation"
+                }
+            ],
+            "instanceId": "i-0c4ccdbcbf5fb59ea",
+            "instanceState": "running"
+        }
+    }
+}
