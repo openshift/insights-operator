@@ -50,17 +50,6 @@ func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]reco
 		Namespace:     "openshift-sdn",
 		LabelSelector: "app=sdn-controller",
 	}
-	messagesFilter := common.LogMessagesFilter{
-		MessagesToSearch: []string{
-			"Node.+is not Ready",
-			"Node.+may be offline\\.\\.\\. retrying",
-			"Node.+is offline",
-			"Node.+is back online",
-		},
-		IsRegexSearch: true,
-		SinceSeconds:  logDefaultSinceSeconds,
-		LimitBytes:    logDefaultLimitBytes,
-	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -73,7 +62,7 @@ func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]reco
 		ctx,
 		coreClient,
 		containersFilter,
-		messagesFilter,
+		getMessagesFilter(),
 		nil,
 	)
 	if err != nil {
@@ -81,4 +70,18 @@ func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]reco
 	}
 
 	return records, nil
+}
+
+func getMessagesFilter() common.LogMessagesFilter {
+	return common.LogMessagesFilter{
+		MessagesToSearch: []string{
+			`Node.+is not Ready`,
+			`Node.+may be offline... retrying`,
+			`Node.+is offline`,
+			`Node.+is back online`,
+		},
+		IsRegexSearch: true,
+		SinceSeconds:  logDefaultSinceSeconds,
+		LimitBytes:    logDefaultLimitBytes,
+	}
 }
