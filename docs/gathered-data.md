@@ -898,6 +898,33 @@ None
 None
 
 
+## Machine
+
+Collects `Machine` information.
+
+### API Reference
+- https://github.com/openshift/api/blob/master/machine/v1beta1/types_machine.go
+- https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
+
+### Sample data
+- [docs/insights-archive-sample/config/machines/openshift-machine-api/](./insights-archive-sample/config/machines/openshift-machine-api/)
+
+### Location in archive
+- `config/machines/`
+
+### Config ID
+`clusterconfig/machines`
+
+### Released version
+- 4.13.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## MachineAutoscalers
 
 Collects `MachineAutoscalers` definition.
