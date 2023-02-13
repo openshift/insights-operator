@@ -4,6 +4,7 @@
 
 ### Others
 - [#693](https://github.com/openshift/insights-operator/pull/693) Use cgroups memory usage data in the archive metadata
+- [#733](https://github.com/openshift/insights-operator/pull/733) Renamed log gatherer file (SDN controller) and unit tests
 
 ## 4.12
 
