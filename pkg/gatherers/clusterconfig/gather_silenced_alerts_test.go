@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,11 +25,20 @@ func (c *mockAlertsClient) RestClient(t *testing.T) *rest.RESTClient {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			w.WriteHeader(http.StatusOK)
-			// nolint: errcheck
-			w.Write(c.data)
+			_, err := w.Write(c.data)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 		}
 	}))
-	return testRESTClient(t, ts)
+
+	baseURL, _ := url.Parse(ts.URL)
+	client, err := rest.NewRESTClient(baseURL, "", rest.ClientContentConfig{}, nil, nil)
+	if err != nil {
+		t.Fatalf("failed to create a client: %v", err)
+	}
+
+	return client
 }
 
 func TestGatherSilencedAlerts(t *testing.T) {
