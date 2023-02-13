@@ -13,7 +13,7 @@ func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
 	t.Run("No log line matches the messages to search", func(t *testing.T) {
 		// Given
 		mock := "logline"
-		test := getMessagesFilter()
+		test := getSDNControllerLogsMessagesFilter()
 		logline := bufio.NewScanner(strings.NewReader(mock))
 
 		// When
@@ -27,7 +27,7 @@ func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
 	t.Run("'Node is not Ready' search matches successfully", func(t *testing.T) {
 		// Given
 		mock := "Node 'test' is not Ready"
-		test := getMessagesFilter()
+		test := getSDNControllerLogsMessagesFilter()
 		logline := bufio.NewScanner(strings.NewReader(mock))
 
 		// When
@@ -41,7 +41,7 @@ func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
 	t.Run("'Node may be offline' search matches successfully", func(t *testing.T) {
 		// Given
 		mock := "Node 'test' may be offline... retrying"
-		test := getMessagesFilter()
+		test := getSDNControllerLogsMessagesFilter()
 		logline := bufio.NewScanner(strings.NewReader(mock))
 
 		// When
@@ -55,7 +55,7 @@ func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
 	t.Run("'Node is offline' search matches successfully", func(t *testing.T) {
 		// Given
 		mock := "Node 'test' is offline"
-		test := getMessagesFilter()
+		test := getSDNControllerLogsMessagesFilter()
 		logline := bufio.NewScanner(strings.NewReader(mock))
 
 		// When
@@ -69,7 +69,7 @@ func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
 	t.Run("'Node is back online' search matches successfully", func(t *testing.T) {
 		// Given
 		mock := "Node 'test' is back online"
-		test := getMessagesFilter()
+		test := getSDNControllerLogsMessagesFilter()
 		logline := bufio.NewScanner(strings.NewReader(mock))
 
 		// When

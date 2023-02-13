@@ -62,7 +62,7 @@ func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]reco
 		ctx,
 		coreClient,
 		containersFilter,
-		getMessagesFilter(),
+		getSDNControllerLogsMessagesFilter(),
 		nil,
 	)
 	if err != nil {
@@ -72,7 +72,7 @@ func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]reco
 	return records, nil
 }
 
-func getMessagesFilter() common.LogMessagesFilter {
+func getSDNControllerLogsMessagesFilter() common.LogMessagesFilter {
 	return common.LogMessagesFilter{
 		MessagesToSearch: []string{
 			`Node.+is not Ready`,
