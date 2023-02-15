@@ -21,32 +21,51 @@ const (
 	metricsAlertsLinesLimit = 1000
 )
 
-// GatherMostRecentMetrics gathers cluster Federated Monitoring metrics.
+// GatherMostRecentMetrics Collects cluster Federated Monitoring metrics.
 //
 // The GET REST query to URL /federate
 // Gathered metrics:
-// 	 virt_platform
-//   etcd_object_counts
-//   cluster_installer
-//   vsphere_node_hw_version_total
-//   namespace CPU and memory usage
-//   console_helm_installs_total
-//   console_helm_upgrades_total
-//   console_helm_uninstalls_total
-//   followed by at most 1000 lines of ALERTS metric
+//   - `virt_platform`
+//   - `etcd_object_counts`
+//   - `cluster_installer`
+//   - `vsphere_node_hw_version_total`
+//   - namespace CPU and memory usage
+//   - `console_helm_installs_total`
+//   - `console_helm_upgrades_total`
+//   - `console_helm_uninstalls_total`
+//   - `openshift_apps_deploymentconfigs_strategy_total`
+//   - followed by at most 1000 lines of `ALERTS` metric
 //
-// * Location in archive: config/metrics
-// * See: docs/insights-archive-sample/config/metrics
-// * Id in config: metrics
-// * Since version:
-//   - "etcd_object_counts": 4.3+
-//   - "cluster_installer": 4.3+
-//   - "ALERTS": 4.3+
-//   - "namespace:container_cpu_usage_seconds_total:sum_rate": 4.5+
-//   - "namespace:container_memory_usage_bytes:sum": 4.5+
-//   - "virt_platform metric": 4.6.34+, 4.7.16+, 4.8+
-//   - "vsphere_node_hw_version_total": 4.7.11+, 4.8+
-//   - "console_helm_installs_total": 4.10+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/metrics
+//
+// ### Location in archive
+// - `config/metrics`
+//
+// ### Config ID
+// `clusterconfig/metrics`
+//
+// ### Released version
+// - 4.3.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// - `etcd_object_counts` introduced in version 4.3+
+// - `cluster_installer` introduced in version 4.3+
+// - `ALERTS` introduced in version 4.3+
+// - `namespace:container_cpu_usage_seconds_total:sum_rate` introduced in version 4.5+
+// - `namespace:container_memory_usage_bytes:sum` introduced in version 4.5+
+// - `virt_platform metric` introduced in version 4.6.34+, 4.7.16+, 4.8+
+// - `vsphere_node_hw_version_total` introduced in version 4.7.11+, 4.8+
+// - `console_helm_installs_total` introduced in version 4.11+
+// - `console_helm_upgrades_total` introduced in version 4.12+
+// - `console_helm_uninstalls_total` introduced in version 4.12+
+// - `openshift_apps_deploymentconfigs_strategy_total` introduced in version 4.13+
 func (g *Gatherer) GatherMostRecentMetrics(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
@@ -68,6 +87,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "console_helm_installs_total").
 		Param("match[]", "console_helm_upgrades_total").
 		Param("match[]", "console_helm_uninstalls_total").
+		Param("match[]", "openshift_apps_deploymentconfigs_strategy_total").
 		DoRaw(ctx)
 	if err != nil {
 		klog.Errorf("Unable to retrieve most recent metrics: %v", err)
