@@ -1108,6 +1108,7 @@ None
 - `console_helm_installs_total` introduced in version 4.11+
 - `console_helm_upgrades_total` introduced in version 4.12+
 - `console_helm_uninstalls_total` introduced in version 4.12+
+- `openshift_apps_deploymentconfigs_strategy_total` introduced in version 4.13+
 
 
 ## MutatingWebhookConfigurations
