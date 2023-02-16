@@ -7,6 +7,9 @@ import (
 	"net/url"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -32,11 +35,10 @@ func (c *mockAlertsClient) RestClient(t *testing.T) *rest.RESTClient {
 		}
 	}))
 
-	baseURL, _ := url.Parse(ts.URL)
+	baseURL, err := url.Parse(ts.URL)
+	assert.NoError(t, err, "failed to parse server URL")
 	client, err := rest.NewRESTClient(baseURL, "", rest.ClientContentConfig{}, nil, nil)
-	if err != nil {
-		t.Fatalf("failed to create a client: %v", err)
-	}
+	assert.NoError(t, err, "failed to create the client")
 
 	return client
 }
@@ -46,7 +48,7 @@ func TestGatherSilencedAlerts(t *testing.T) {
 		name             string
 		mockAlertsClient *mockAlertsClient
 		wantRecords      []record.Record
-		wantErrsCount    int
+		wantErrs         []error
 	}{
 		{
 			name: "Get silenced alerts successfully",
@@ -59,13 +61,29 @@ func TestGatherSilencedAlerts(t *testing.T) {
 					Item: marshal.RawByte(`[{"status": {"state": "suppressed"}}]`),
 				},
 			},
-			wantErrsCount: 0,
+			wantErrs: nil,
 		},
 		{
 			name:             "Get silenced alerts with error",
 			mockAlertsClient: &mockAlertsClient{data: nil},
 			wantRecords:      nil,
-			wantErrsCount:    1,
+			wantErrs: []error{
+				&errors.StatusError{ErrStatus: metav1.Status{
+					Status:  metav1.StatusFailure,
+					Message: "the server could not find the requested resource",
+					Reason:  metav1.StatusReasonNotFound,
+					Details: &metav1.StatusDetails{
+						Causes: []metav1.StatusCause{
+							{
+								Type:    metav1.CauseTypeUnexpectedServerResponse,
+								Message: "",
+								Field:   "",
+							},
+						},
+					},
+					Code: http.StatusNotFound,
+				}},
+			},
 		},
 	}
 
@@ -73,7 +91,7 @@ func TestGatherSilencedAlerts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			records, errs := gatherSilencedAlerts(ctx, tt.mockAlertsClient.RestClient(t))
-			assert.Len(t, errs, tt.wantErrsCount)
+			assert.Equal(t, tt.wantErrs, errs)
 			assert.Equal(t, tt.wantRecords, records)
 		})
 	}
