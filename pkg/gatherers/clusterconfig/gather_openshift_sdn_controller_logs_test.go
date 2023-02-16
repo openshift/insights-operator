@@ -10,73 +10,59 @@ import (
 )
 
 func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
-	t.Run("No log line matches the messages to search", func(t *testing.T) {
-		// Given
-		mock := "logline"
-		test := getSDNControllerLogsMessagesFilter()
-		logline := bufio.NewScanner(strings.NewReader(mock))
+	// Helper func
+	mockLogline := func(s string) *bufio.Scanner {
+		return bufio.NewScanner(strings.NewReader(s))
+	}
 
-		// When
-		result, err := common.FilterLogFromScanner(logline, test.MessagesToSearch, test.IsRegexSearch, nil)
+	// Unit Tests
+	tests := []struct {
+		name     string
+		logline  *bufio.Scanner
+		expected string
+	}{
+		{
+			name:     "No log line matches the messages to search",
+			logline:  mockLogline("mock logline"),
+			expected: "",
+		},
+		{
+			name:     "'Node is not Ready' search matches successfully",
+			logline:  mockLogline("Node 'test' is not Ready"),
+			expected: "Node 'test' is not Ready",
+		},
+		{
+			name:     "'Node may be offline' search matches successfully",
+			logline:  mockLogline("Node 'test' may be offline... retrying"),
+			expected: "Node 'test' may be offline... retrying",
+		},
+		{
+			name:     "'Node is offline' search matches successfully",
+			logline:  mockLogline("Node 'test' is offline"),
+			expected: "Node 'test' is offline",
+		},
+		{
+			name:     "'Node is back online' search matches successfully",
+			logline:  mockLogline("Node 'test' is back online"),
+			expected: "Node 'test' is back online",
+		},
+	}
 
-		// Assert
-		assert.NoError(t, err)
-		assert.Empty(t, result)
-	})
+	for _, unitTest := range tests {
+		t.Run(unitTest.name, func(t *testing.T) {
+			// Given
+			msgFilter := getSDNControllerLogsMessagesFilter()
 
-	t.Run("'Node is not Ready' search matches successfully", func(t *testing.T) {
-		// Given
-		mock := "Node 'test' is not Ready"
-		test := getSDNControllerLogsMessagesFilter()
-		logline := bufio.NewScanner(strings.NewReader(mock))
+			// When
+			test, err := common.FilterLogFromScanner(
+				unitTest.logline,
+				msgFilter.MessagesToSearch,
+				msgFilter.IsRegexSearch,
+				nil)
 
-		// When
-		result, err := common.FilterLogFromScanner(logline, test.MessagesToSearch, test.IsRegexSearch, nil)
-
-		// Assert
-		assert.NoError(t, err)
-		assert.Equal(t, mock, result)
-	})
-
-	t.Run("'Node may be offline' search matches successfully", func(t *testing.T) {
-		// Given
-		mock := "Node 'test' may be offline... retrying"
-		test := getSDNControllerLogsMessagesFilter()
-		logline := bufio.NewScanner(strings.NewReader(mock))
-
-		// When
-		result, err := common.FilterLogFromScanner(logline, test.MessagesToSearch, test.IsRegexSearch, nil)
-
-		// Assert
-		assert.NoError(t, err)
-		assert.Equal(t, mock, result)
-	})
-
-	t.Run("'Node is offline' search matches successfully", func(t *testing.T) {
-		// Given
-		mock := "Node 'test' is offline"
-		test := getSDNControllerLogsMessagesFilter()
-		logline := bufio.NewScanner(strings.NewReader(mock))
-
-		// When
-		result, err := common.FilterLogFromScanner(logline, test.MessagesToSearch, test.IsRegexSearch, nil)
-
-		// Assert
-		assert.NoError(t, err)
-		assert.Equal(t, mock, result)
-	})
-
-	t.Run("'Node is back online' search matches successfully", func(t *testing.T) {
-		// Given
-		mock := "Node 'test' is back online"
-		test := getSDNControllerLogsMessagesFilter()
-		logline := bufio.NewScanner(strings.NewReader(mock))
-
-		// When
-		result, err := common.FilterLogFromScanner(logline, test.MessagesToSearch, test.IsRegexSearch, nil)
-
-		// Assert
-		assert.NoError(t, err)
-		assert.Equal(t, mock, result)
-	})
+			// Assert
+			assert.NoError(t, err)
+			assert.Equal(t, unitTest.expected, test)
+		})
+	}
 }
