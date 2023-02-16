@@ -5,6 +5,9 @@
 ### Data Enhancement
 - [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
 
+### Bugfix
+- [#723](https://github.com/openshift/insights-operator/pull/723) Obfuscate HTTP_PROXY and HTTPS_PROXY env variables on containers
+
 ### Others
 - [#756](https://github.com/openshift/insights-operator/pull/756) add unit tests for cluster proxy gatherer
 
