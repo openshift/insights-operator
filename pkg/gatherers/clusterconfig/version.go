@@ -97,6 +97,7 @@ func getClusterVersion(ctx context.Context,
 	}
 	for i := range pods.Items {
 		pod := &pods.Items[i]
+		anonymize.SensitiveEnvVars(pod.Spec.Containers)
 
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),

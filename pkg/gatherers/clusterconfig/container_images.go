@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/library-go/pkg/image/reference"
 )
@@ -78,6 +79,8 @@ func gatherContainerImages(ctx context.Context, coreClient corev1client.CoreV1In
 		for podIndex, pod := range pods.Items { //nolint:gocritic
 			podPtr := &pods.Items[podIndex]
 			if strings.HasPrefix(pod.Namespace, "openshift-") && check.HasContainerInCrashloop(podPtr) {
+				anonymize.SensitiveEnvVars(podPtr.Spec.Containers)
+
 				records = append(records, record.Record{
 					Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
 					Item: record.ResourceMarshaller{Resource: podPtr},

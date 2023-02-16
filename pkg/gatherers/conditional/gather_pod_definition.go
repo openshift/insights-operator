@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // BuildGatherPodDefinition Collects pod definition from pods that are
@@ -93,6 +94,7 @@ func (g *Gatherer) gatherPodDefinition(
 			errs = append(errs, err)
 			continue
 		}
+		anonymize.SensitiveEnvVars(pod.Spec.Containers)
 
 		records = append(records, record.Record{
 			Name: fmt.Sprintf(
