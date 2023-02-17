@@ -450,7 +450,7 @@ Collects `Machine` information.
 - https://docs.openshift.com/container-platform/4.12/rest_api/machine_apis/machine-machine-openshift-io-v1beta1.html
 
 ### Sample data
-- [docs/insights-archive-sample/config/machines/openshift-machine-api/](./insights-archive-sample/config/machines/openshift-machine-api/)
+- docs/insights-archive-sample/config/machines/openshift-machine-api/
 
 ### Location in archive
 - `config/machines/`
