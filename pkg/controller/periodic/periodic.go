@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -60,7 +61,24 @@ type Controller struct {
 	anonymizer          *anonymization.Anonymizer
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface
 	kubeClient          *kubernetes.Clientset
+	reportRetriever     *insightsreport.Controller
 	image               string
+}
+
+func NewWithTechPreview(
+	reportRetriever *insightsreport.Controller,
+	secretConfigurator configobserver.Configurator,
+	apiConfigurator configobserver.APIConfigObserver,
+	kubeClient *kubernetes.Clientset,
+) *Controller {
+	statuses := make(map[string]controllerstatus.StatusController)
+	return &Controller{
+		reportRetriever:    reportRetriever,
+		secretConfigurator: secretConfigurator,
+		apiConfigurator:    apiConfigurator,
+		statuses:           statuses,
+		kubeClient:         kubeClient,
+	}
 }
 
 // New creates a new instance of Controller which periodically invokes the gatherers
@@ -252,12 +270,10 @@ func (c *Controller) GatherJob() {
 		c.image = image
 	}
 
-	now := time.Now()
-	gatherJobName := fmt.Sprintf("periodic-gather-%d-%d-%d-%d-%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute())
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      gatherJobName,
-			Namespace: insightsNamespace,
+			GenerateName: "periodic-gathering-",
+			Namespace:    insightsNamespace,
 		},
 		Spec: batchv1.JobSpec{
 			// backoff limit is 0 - we dont' want to restart the gathering immediately in case of failure
@@ -296,13 +312,6 @@ func (c *Controller) GatherJob() {
 							Name:  "insights-gathering",
 							Image: c.image,
 							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml"},
-							Env: []corev1.EnvVar{
-								// this is to pair job with corresponding CR having the same name
-								{
-									Name:  "JOB_NAME",
-									Value: gatherJobName,
-								},
-							},
 							SecurityContext: &corev1.SecurityContext{
 								AllowPrivilegeEscalation: falseB,
 								Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
@@ -341,6 +350,7 @@ func (c *Controller) GatherJob() {
 	}
 	klog.Infof("Job completed %s", gj.Name)
 	// TODO read the status of the CR and copy to insightsoperator CR
+	c.reportRetriever.RetrieveReport()
 }
 
 // updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last

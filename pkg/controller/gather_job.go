@@ -13,14 +13,12 @@ import (
 
 	"github.com/openshift/api/config/v1alpha1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
-	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
-	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
@@ -147,11 +145,6 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	operatorClient, err := operatorv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		return err
-	}
-
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
 		protoKubeConfig, kubeConfig, d.Impersonate,
 	)
@@ -202,7 +195,6 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		configObserver, insightsClient,
 	)
 	uploader := insightsuploader.New(nil, insightsClient, configObserver, nil, nil, 0)
-	reporter := insightsreport.NewWithTechPreview(insightsClient, configObserver, operatorClient.InsightsOperators())
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
@@ -230,12 +222,14 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		klog.Error(err)
 		return err
 	}
-	err = uploader.Upload(ctx, lastArchive)
+	insightsRequestID, err := uploader.Upload(ctx, lastArchive)
 	if err != nil {
 		klog.Error(err)
 		return err
 	}
-	reporter.RetrieveReport()
+	klog.Info("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
+	// TODO use the InsightsRequestID to query the new aggregator API
+	// TODO set the InisghtsRequestID to corresponding CR
 	return nil
 }
 

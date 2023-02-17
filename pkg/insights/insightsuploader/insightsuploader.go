@@ -182,14 +182,16 @@ func (c *Controller) ArchiveUploaded() <-chan struct{} {
 	return c.archiveUploaded
 }
 
-// Upload is an alternative simple upload method used only in TechPreview clusters
-func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) error {
+// Upload is an alternative simple upload method used only in TechPreview clusters.
+// Returns Insights request ID and error=nil in case of successful data upload.
+func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (string, error) {
 	defer s.Contents.Close()
 	start := time.Now()
 	s.ID = start.Format(time.RFC3339)
 	s.Type = "application/vnd.redhat.openshift.periodic"
+	var requestID string
 	err := wait.ExponentialBackoff(c.backoff, func() (done bool, err error) {
-		err = c.client.Send(ctx, c.secretConfigurator.Config().Endpoint, *s)
+		requestID, err = c.client.SendAndGetID(ctx, c.secretConfigurator.Config().Endpoint, *s)
 		if err != nil {
 			klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
 			klog.Errorf("%v. Trying again in %s %d", err, c.backoff.Step(), c.backoff.Steps)
@@ -199,10 +201,10 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) error
 		return true, nil
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
-	return nil
+	return requestID, nil
 }
 
 func reportToLogs(source io.Reader, klog klog.Verbose) error {

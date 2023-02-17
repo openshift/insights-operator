@@ -19,7 +19,11 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller"
 )
 
-const serviceCACertPath = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
+const (
+	serviceCACertPath    = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
+	pbContentType        = "application/vnd.kubernetes.protobuf"
+	pbAcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+)
 
 // NewOperator create the commad for running the Insights Operator.
 func NewOperator() *cobra.Command {
@@ -132,8 +136,8 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 			}
 		}
 		protoConfig := rest.CopyConfig(clientConfig)
-		protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
-		protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
+		protoConfig.AcceptContentTypes = pbAcceptContentTypes
+		protoConfig.ContentType = pbContentType
 
 		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
 		err = operator.Gather(ctx, clientConfig, protoConfig)
@@ -237,8 +241,8 @@ func runGatherAndUpload(operator *controller.GatherJob,
 			}
 		}
 		protoConfig := rest.CopyConfig(clientConfig)
-		protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
-		protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
+		protoConfig.AcceptContentTypes = pbAcceptContentTypes
+		protoConfig.ContentType = pbContentType
 
 		err = operator.GatherAndUpload(clientConfig, protoConfig)
 		if err != nil {
