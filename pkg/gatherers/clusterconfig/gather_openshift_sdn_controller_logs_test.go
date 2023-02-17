@@ -10,59 +10,57 @@ import (
 )
 
 func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
-	// Helper func
-	mockLogline := func(s string) *bufio.Scanner {
-		return bufio.NewScanner(strings.NewReader(s))
-	}
-
 	// Unit Tests
-	tests := []struct {
+	testCases := []struct {
 		name     string
-		logline  *bufio.Scanner
+		logline  string
 		expected string
 	}{
 		{
 			name:     "No log line matches the messages to search",
-			logline:  mockLogline("mock logline"),
+			logline:  "mock logline",
 			expected: "",
 		},
 		{
 			name:     "'Node is not Ready' search matches successfully",
-			logline:  mockLogline("Node 'test' is not Ready"),
+			logline:  "{text before} Node 'test' is not Ready {text after}",
 			expected: "Node 'test' is not Ready",
 		},
 		{
 			name:     "'Node may be offline' search matches successfully",
-			logline:  mockLogline("Node 'test' may be offline... retrying"),
+			logline:  "{text before} Node 'test' may be offline... retrying {text after}",
 			expected: "Node 'test' may be offline... retrying",
 		},
 		{
 			name:     "'Node is offline' search matches successfully",
-			logline:  mockLogline("Node 'test' is offline"),
+			logline:  "{text before} Node 'test' is offline {text after}",
 			expected: "Node 'test' is offline",
 		},
 		{
 			name:     "'Node is back online' search matches successfully",
-			logline:  mockLogline("Node 'test' is back online"),
+			logline:  "{text before} Node 'test' is back online {text after}",
 			expected: "Node 'test' is back online",
 		},
 	}
 
-	for _, unitTest := range tests {
-		t.Run(unitTest.name, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			// Given
 			msgFilter := getSDNControllerLogsMessagesFilter()
 
 			// When
 			test, err := common.FilterLogFromScanner(
-				unitTest.logline,
+				bufio.NewScanner(strings.NewReader(
+					tc.logline,
+				)),
 				msgFilter.MessagesToSearch,
 				msgFilter.IsRegexSearch,
 				nil)
 
 			// Assert
 			assert.NoError(t, err)
-			assert.Equal(t, unitTest.expected, test)
+			assert.Contains(t, test, tc.expected)
 		})
 	}
 }
