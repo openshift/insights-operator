@@ -5,40 +5,38 @@ import (
 	"fmt"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	coreV1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	coreV1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+// TODO - documentation
 func (g *Gatherer) GatherMonitoring(ctx context.Context) ([]record.Record, []error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
-	coreClient := kubeClient.CoreV1()
-	pvcs := coreClient.PersistentVolumeClaims("openshift-monitoring")
-	list, _ := pvcs.List(ctx, v1.ListOptions{})
 
-	var pvs []coreV1.PersistentVolume
-	pvint := coreClient.PersistentVolumes()
+	return gatherPVsByNamespace(ctx, kubeClient.CoreV1(), "openshift-monitoring")
+}
 
-	var records []record.Record
-
-	for _, pvc := range list.Items {
-		PV, _ := pvint.Get(ctx, pvc.Spec.VolumeName, v1.GetOptions{})
-		pvs = append(pvs, *PV)
-
-		records = append(records, record.Record{
-			Name: fmt.Sprintf(
-				"%s/config/pod/%s/%s",
-				g.GetName(),
-				PV.Namespace,
-				PV.Name),
-			Item: record.ResourceMarshaller{Resource: PV},
-		})
+func gatherPVsByNamespace(ctx context.Context, client coreV1.CoreV1Interface, namespace string) ([]record.Record, []error) {
+	PVCs := client.PersistentVolumeClaims(namespace)
+	pvList, err := PVCs.List(ctx, metaV1.ListOptions{})
+	if err != nil {
+		return []record.Record{}, []error{err}
 	}
 
-	fmt.Printf("pvs: %v\n", pvs)
+	var records []record.Record
+	pvInterface := client.PersistentVolumes()
+	for i := range pvList.Items {
+		pv, _ := pvInterface.Get(ctx, pvList.Items[i].Spec.VolumeName, metaV1.GetOptions{})
+
+		records = append(records, record.Record{
+			Name: fmt.Sprintf("config/pod/%s/%s", namespace, pv.Name),
+			Item: record.ResourceMarshaller{Resource: pv},
+		})
+	}
 
 	return records, []error{}
 }
