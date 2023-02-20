@@ -11,7 +11,7 @@ import (
 )
 
 // TODO - documentation
-func (g *Gatherer) GatherMonitoring(ctx context.Context) ([]record.Record, []error) {
+func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
