@@ -480,12 +480,11 @@ func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus 
 // PeriodicPrune runs periodically and deletes jobs (including the related pods) older
 // than given time
 func (c *Controller) PeriodicPrune(ctx context.Context) {
-	pruneInterval := 1 * time.Hour
+	pruneInterval := 12 * time.Hour
 	klog.Infof("Pruning old jobs every %s", pruneInterval)
 	for {
 		select {
 		case <-ctx.Done():
-		// TODO change time
 		case <-time.After(pruneInterval):
 			jobs, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
@@ -494,7 +493,7 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 			for i := range jobs.Items {
 				job := jobs.Items[i]
 				// TODO the time duration should be configurable
-				if time.Since(job.CreationTimestamp.Time) > 8*time.Hour {
+				if time.Since(job.CreationTimestamp.Time) > 24*time.Hour {
 					err = c.kubeClient.BatchV1().Jobs(insightsNamespace).Delete(ctx, job.Name, metav1.DeleteOptions{
 						PropagationPolicy: &deletePropagationBackground,
 					})

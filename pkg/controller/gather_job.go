@@ -227,7 +227,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		klog.Error(err)
 		return err
 	}
-	klog.Info("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
+	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
 	// TODO use the InsightsRequestID to query the new aggregator API
 	// TODO set the InisghtsRequestID to corresponding CR
 	return nil
