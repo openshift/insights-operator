@@ -19,7 +19,7 @@ func Test_gatherClusterOAuth(t *testing.T) {
 		wantErrCount    int
 	}{
 		{
-			name:            "successful retrieval oauth",
+			name:            "successful retrieval cluster oauth",
 			oAuthDefinition: &configv1.OAuth{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}},
 			wantRecords: []record.Record{
 				{
@@ -32,9 +32,9 @@ func Test_gatherClusterOAuth(t *testing.T) {
 			wantErrCount: 0,
 		},
 		{
-			name:            "no oauth",
+			name:            "empty oauth",
 			oAuthDefinition: &configv1.OAuth{},
-			wantRecords:     []record.Record(nil),
+			wantRecords:     nil,
 			wantErrCount:    0,
 		},
 	}
