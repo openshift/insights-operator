@@ -28,15 +28,20 @@ func gatherPVsByNamespace(ctx context.Context, client coreV1.CoreV1Interface, na
 	}
 
 	var records []record.Record
+	var errors []error
 	pvInterface := client.PersistentVolumes()
 	for i := range pvList.Items {
-		pv, _ := pvInterface.Get(ctx, pvList.Items[i].Spec.VolumeName, metaV1.GetOptions{})
+		pv, err := pvInterface.Get(ctx, pvList.Items[i].Spec.VolumeName, metaV1.GetOptions{})
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
 
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/pod/%s/%s", namespace, pv.Name),
+			Name: fmt.Sprintf("config/persistentvolumes/%s", pv.Name),
 			Item: record.ResourceMarshaller{Resource: pv},
 		})
 	}
 
-	return records, []error{}
+	return records, errors
 }
