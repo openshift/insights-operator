@@ -1,0 +1,151 @@
+{
+    "apiVersion": "kubevirt.io/v1alpha3",
+    "kind": "VirtualMachineInstance",
+    "metadata": {
+        "annotations": {
+            "kubevirt.io/latest-observed-api-version": "v1",
+            "kubevirt.io/storage-observed-api-version": "v1alpha3",
+            "vm.kubevirt.io/flavor": "small",
+            "vm.kubevirt.io/os": "fedora",
+            "vm.kubevirt.io/workload": "server"
+        },
+        "creationTimestamp": "2023-02-27T10:33:34Z",
+        "finalizers": [
+            "kubevirt.io/virtualMachineControllerFinalize",
+            "foregroundDeleteVirtualMachine"
+        ],
+        "generation": 2,
+        "labels": {
+            "kubevirt.io/domain": "fedora-r2nf0eocvxbkmqjy",
+            "kubevirt.io/size": "small"
+        },
+        "name": "fedora-r2nf0eocvxbkmqjy",
+        "namespace": "default",
+        "ownerReferences": [
+            {
+                "apiVersion": "kubevirt.io/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "VirtualMachine",
+                "name": "fedora-r2nf0eocvxbkmqjy",
+                "uid": "ece0419f-a83f-43bc-bcdf-8787e5a11cfb"
+            }
+        ],
+        "resourceVersion": "22338",
+        "uid": "dbd1e61d-91bd-4dfe-9205-5f979e9f4a03"
+    },
+    "spec": {
+        "domain": {
+            "cpu": {
+                "cores": 1,
+                "model": "host-model",
+                "sockets": 1,
+                "threads": 1
+            },
+            "devices": {
+                "disks": [
+                    {
+                        "disk": {
+                            "bus": "virtio"
+                        },
+                        "name": "rootdisk"
+                    },
+                    {
+                        "disk": {
+                            "bus": "virtio"
+                        },
+                        "name": "cloudinitdisk"
+                    }
+                ],
+                "interfaces": [
+                    {
+                        "macAddress": "02:4a:4f:00:00:00",
+                        "masquerade": {},
+                        "model": "virtio",
+                        "name": "default"
+                    }
+                ],
+                "networkInterfaceMultiqueue": true,
+                "rng": {}
+            },
+            "features": {
+                "acpi": {
+                    "enabled": true
+                },
+                "smm": {
+                    "enabled": true
+                }
+            },
+            "firmware": {
+                "bootloader": {
+                    "efi": {}
+                },
+                "uuid": "63c6ddbd-72e4-5fe0-8b63-6bb8bef8e1ac"
+            },
+            "machine": {
+                "type": "pc-q35-rhel8.6.0"
+            },
+            "resources": {
+                "requests": {
+                    "memory": "2Gi"
+                }
+            }
+        },
+        "evictionStrategy": "LiveMigrate",
+        "networks": [
+            {
+                "name": "default",
+                "pod": {}
+            }
+        ],
+        "terminationGracePeriodSeconds": 180,
+        "volumes": [
+            {
+                "dataVolume": {
+                    "name": "fedora-r2nf0eocvxbkmqjy"
+                },
+                "name": "rootdisk"
+            },
+            {
+                "cloudInitNoCloud": "",
+                "name": "cloudinitdisk"
+            }
+        ]
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastProbeTime": "2023-02-27T10:33:34Z",
+                "lastTransitionTime": "2023-02-27T10:33:34Z",
+                "message": "virt-launcher pod has not yet been scheduled",
+                "reason": "PodNotExists",
+                "status": "False",
+                "type": "Ready"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": null,
+                "status": "True",
+                "type": "Provisioning"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2023-02-27T10:33:34Z",
+                "message": "failed to create virtual machine pod: pods \"virt-launcher-fedora-r2nf0eocvxbkmqjy-jxkcs\" is forbidden: violates PodSecurity \"restricted:latest\": seLinuxOptions (pod set forbidden securityContext.seLinuxOptions: type \"virt_launcher.process\"), allowPrivilegeEscalation != false (container \"compute\" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container \"compute\" must set securityContext.capabilities.drop=[\"ALL\"]; container \"compute\" must not include \"SYS_PTRACE\" in securityContext.capabilities.add), seccompProfile (pod or container \"compute\" must set securityContext.seccompProfile.type to \"RuntimeDefault\" or \"Localhost\")",
+                "reason": "FailedCreate",
+                "status": "False",
+                "type": "Synchronized"
+            }
+        ],
+        "guestOSInfo": {},
+        "phase": "Pending",
+        "phaseTransitionTimestamps": [
+            {
+                "phase": "Pending",
+                "phaseTransitionTimestamp": "2023-02-27T10:33:34Z"
+            }
+        ],
+        "runtimeUser": 107,
+        "virtualMachineRevisionName": "revision-start-vm-ece0419f-a83f-43bc-bcdf-8787e5a11cfb-2"
+    }
+}
