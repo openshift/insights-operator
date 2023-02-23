@@ -164,6 +164,11 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, reg
 	cb func(lines []string) []string) (string, error) {
 	var result []string
 
+	var messagesRegexp *regexp.Regexp
+	if regexSearch {
+		messagesRegexp = regexp.MustCompile(strings.Join(messagesToSearch, "|"))
+	}
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(messagesToSearch) == 0 {
@@ -171,17 +176,16 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, reg
 			continue
 		}
 
-		for _, messageToSearch := range messagesToSearch {
-			if regexSearch {
-				matches, err := regexp.MatchString(messageToSearch, line)
-				if err != nil {
-					return "", err
-				}
-				if matches {
+		if regexSearch && messagesRegexp != nil {
+			matches := messagesRegexp.MatchString(line)
+			if matches {
+				result = append(result, line)
+			}
+		} else {
+			for _, messageToSearch := range messagesToSearch {
+				if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
 					result = append(result, line)
 				}
-			} else if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
-				result = append(result, line)
 			}
 		}
 	}
