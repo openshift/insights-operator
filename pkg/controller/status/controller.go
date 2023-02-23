@@ -442,11 +442,11 @@ func handleControllerStatusError(errs []string, errorReason string) (reason, mes
 		sort.Strings(errs)
 		message = fmt.Sprintf("There are multiple errors blocking progress:\n* %s", strings.Join(errs, "\n* "))
 	} else if len(errs) == 1 {
+		message = errs[0]
+		reason = errorReason
 		if len(errorReason) == 0 {
 			reason = "UnknownError"
 		}
-		message = errs[0]
-		reason = errorReason
 	}
 	return reason, message
 }
