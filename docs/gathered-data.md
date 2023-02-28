@@ -1898,7 +1898,7 @@ Collects `VirtualMachineInstance` resources from cluster if available.
 None
 
 ### Sample data
-- [docs/insights-archive-sample/config/virtualmachineinstances/default/fedora-r2nf0eocvxbkmqjy.json](./insights-archive-sample/config/virtualmachineinstances/default/fedora-r2nf0eocvxbkmqjy.json)
+- [docs/insights-archive-sample/config/virtualmachineinstances/openshift-cnv/fedora-r2nf0eocvxbkmqjy.json](./insights-archive-sample/config/virtualmachineinstances/openshift-cnv/fedora-r2nf0eocvxbkmqjy.json)
 
 ### Location in archive
 | Version   | Path														|

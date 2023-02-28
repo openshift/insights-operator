@@ -24,7 +24,7 @@ apiVersion: kubevirt.io/v1alpha3
 kind: VirtualMachineInstance
 metadata:
   name: testmachine
-  namespace: default
+  namespace: openshift-cnv
 spec:
   volumes:
   - cloudInitNoCloud:
@@ -55,7 +55,7 @@ spec:
 			dataUnstructured: testDataUnstructured,
 			want: []record.Record{
 				{
-					Name: "config/virtualmachineinstances/default/testmachine",
+					Name: "config/virtualmachineinstances/openshift-cnv/testmachine",
 					Item: record.ResourceMarshaller{Resource: anonymizeVirtualMachineInstances(testDataUnstructured)},
 				},
 			},
@@ -70,7 +70,7 @@ spec:
 
 			dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), tt.gvrList)
 			_, err := dynamicClient.Resource(virtualMachineInstancesResource).
-				Namespace("default").
+				Namespace("openshift-cnv").
 				Create(ctx, tt.dataUnstructured, metav1.CreateOptions{})
 			assert.NoErrorf(t, err, "unable to create fake virtualmachineinstances")
 

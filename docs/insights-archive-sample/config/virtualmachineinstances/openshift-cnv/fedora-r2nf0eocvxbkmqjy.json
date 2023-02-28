@@ -20,7 +20,7 @@
             "kubevirt.io/size": "small"
         },
         "name": "fedora-r2nf0eocvxbkmqjy",
-        "namespace": "default",
+        "namespace": "openshift-cnv",
         "ownerReferences": [
             {
                 "apiVersion": "kubevirt.io/v1",
