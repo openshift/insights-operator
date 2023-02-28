@@ -85,7 +85,7 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 
 // ServiceAccountsMarshaller implements serialization of Service Accounts
 type ServiceAccountsMarshaller struct {
-	sa                   []corev1.ServiceAccount
+	serviceAccounts      []corev1.ServiceAccount
 	totalServiceAccounts int
 }
 
@@ -99,20 +99,19 @@ func (a ServiceAccountsMarshaller) Marshal() ([]byte, error) {
 		"namespaces":  namespaces,
 	}
 
-	for i := range a.sa {
-		if _, ok := namespaces[a.sa[i].Namespace]; !ok {
-			namespaces[a.sa[i].Namespace] = []map[string]any{
-				{
-					"name":    a.sa[i].Name,
-					"secrets": len(a.sa[i].Secrets),
-				},
-			}
-		} else {
-			namespaces[a.sa[i].Namespace] = append(namespaces[a.sa[i].Namespace], map[string]any{
-				"name":    a.sa[i].Name,
-				"secrets": len(a.sa[i].Secrets),
-			})
+	for i := range a.serviceAccounts {
+		serviceAccount := []map[string]any{
+			{
+				"name":    a.serviceAccounts[i].Name,
+				"secrets": len(a.serviceAccounts[i].Secrets),
+			},
 		}
+		_, ok := namespaces[a.serviceAccounts[i].Namespace]
+		if !ok {
+			namespaces[a.serviceAccounts[i].Namespace] = serviceAccount
+			continue
+		}
+		namespaces[a.serviceAccounts[i].Namespace] = append(namespaces[a.serviceAccounts[i].Namespace], serviceAccount[0])
 	}
 	return json.Marshal(serviceAccounts)
 }
