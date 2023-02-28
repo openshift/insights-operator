@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/openshift/insights-operator/pkg/utils"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/klog/v2"
@@ -81,9 +83,9 @@ func gatherVirtualMachineInstances(ctx context.Context, dynamicClient dynamic.In
 
 func anonymizeVirtualMachineInstances(data *unstructured.Unstructured) *unstructured.Unstructured {
 	const errMsg = "error during anonymizing virtualmachineinstances:"
-	volumes, found, err := unstructured.NestedSlice(data.Object, "spec", "volumes")
-	if !found || err != nil {
-		klog.Infof("%s unable to find volumes %v %v", errMsg, found, err)
+	volumes, err := utils.NestedSliceWrapper(data.Object, "spec", "volumes")
+	if err != nil {
+		klog.Infof("%s unable to find volumes %v", errMsg, err)
 		return data
 	}
 
