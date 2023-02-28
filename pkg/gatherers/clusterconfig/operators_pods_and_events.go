@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
@@ -217,6 +218,8 @@ func gatherPodsAndTheirContainersLogs(ctx context.Context,
 	for _, pod := range pods {
 		// if pod is not healthy then record its definition and try to get previous log
 		if !check.IsHealthyPod(pod, time.Now()) {
+			anonymize.SensitiveEnvVars(pod.Spec.Containers)
+
 			records = append(records, record.Record{
 				Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
 				Item: record.ResourceMarshaller{Resource: pod},
