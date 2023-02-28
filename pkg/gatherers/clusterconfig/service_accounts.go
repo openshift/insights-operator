@@ -103,25 +103,29 @@ type ServiceAccountsMarshaller struct {
 // Marshal implements serialization of ServiceAccount
 func (a ServiceAccountsMarshaller) Marshal() ([]byte, error) {
 	// Creates map for marshal
-	sr := map[string]interface{}{}
-	st := map[string]interface{}{}
-	st["TOTAL_COUNT"] = a.totalServiceAccounts
-	sr["serviceAccounts"] = st
-	nss := map[string]interface{}{}
-	st["namespaces"] = nss
-	for i := range a.sa {
-		var ns map[string]interface{}
-		var ok bool
-		if _, ok = nss[a.sa[i].Namespace]; !ok {
-			ns = map[string]interface{}{}
-			nss[a.sa[i].Namespace] = ns
-		} else {
-			ns = nss[a.sa[i].Namespace].(map[string]interface{})
-		}
-		ns["name"] = a.sa[i].Name
-		ns["secrets"] = len(a.sa[i].Secrets)
+	serviceAccounts := map[string]any{}
+	namespaces := map[string][]map[string]any{}
+	serviceAccounts["serviceAccounts"] = map[string]any{
+		"TOTAL_COUNT": a.totalServiceAccounts,
+		"namespaces":  namespaces,
 	}
-	return json.Marshal(sr)
+
+	for i := range a.sa {
+		if _, ok := namespaces[a.sa[i].Namespace]; !ok {
+			namespaces[a.sa[i].Namespace] = []map[string]any{
+				{
+					"name":    a.sa[i].Name,
+					"secrets": len(a.sa[i].Secrets),
+				},
+			}
+		} else {
+			namespaces[a.sa[i].Namespace] = append(namespaces[a.sa[i].Namespace], map[string]any{
+				"name":    a.sa[i].Name,
+				"secrets": len(a.sa[i].Secrets),
+			})
+		}
+	}
+	return json.Marshal(serviceAccounts)
 }
 
 // GetExtension returns extension for anonymized openshift objects
