@@ -72,7 +72,8 @@ func gatherVirtualMachineInstances(ctx context.Context, dynamicClient dynamic.In
 		})
 		// limit the gathered records
 		if len(records) == limit {
-			err = fmt.Errorf("limit %d for number of gathered %s resources exceeded", limit, virtualMachineInstancesResource.GroupResource())
+			err = fmt.Errorf("limit %d for number of gathered %s resources exceeded (found: %d)",
+				limit, virtualMachineInstancesResource.GroupResource(), len(virtualizationList.Items))
 			errs = append(errs, err)
 			break
 		}
