@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/klog/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,20 +51,32 @@ func (g *Gatherer) GatherVirtualMachineInstances(ctx context.Context) ([]record.
 
 func gatherVirtualMachineInstances(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	virtualizationList, err := dynamicClient.Resource(virtualMachineInstancesResource).List(ctx, metav1.ListOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	var records []record.Record
+	var errs []error
+	// Limit the number of gathered virtualmachineinstances.kubevirt.io
+	var limit = 5
+	records := make([]record.Record, 0, limit)
 	for i := range virtualizationList.Items {
 		item := &virtualizationList.Items[i]
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/virtualmachineinstances/%s/%s", item.GetNamespace(), item.GetName()),
 			Item: record.ResourceMarshaller{Resource: anonymizeVirtualMachineInstances(item)},
 		})
+		// limit the gathered records
+		if len(records) == limit {
+			err = fmt.Errorf("limit %d for number of gathered %s resources exceeded", limit, virtualMachineInstancesResource.GroupResource())
+			errs = append(errs, err)
+			break
+		}
 	}
 
-	return records, nil
+	return records, errs
 }
 
 func anonymizeVirtualMachineInstances(data *unstructured.Unstructured) *unstructured.Unstructured {
