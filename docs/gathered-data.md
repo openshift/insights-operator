@@ -919,7 +919,8 @@ Collects `Machine` information.
 - 4.13.0
 
 ### Backported versions
-None
+- 4.11.29+
+- 4.12.5+
 
 ### Changes
 None
@@ -1098,7 +1099,7 @@ None
 None
 
 ### Changes
-- `etcd_object_counts` introduced in version 4.3+
+- `etcd_object_counts` introduced in version 4.3+ and removed in 4.12.0
 - `cluster_installer` introduced in version 4.3+
 - `ALERTS` introduced in version 4.3+
 - `namespace:container_cpu_usage_seconds_total:sum_rate` introduced in version 4.5+
@@ -1108,7 +1109,7 @@ None
 - `console_helm_installs_total` introduced in version 4.11+
 - `console_helm_upgrades_total` introduced in version 4.12+
 - `console_helm_uninstalls_total` introduced in version 4.12+
-- `openshift_apps_deploymentconfigs_strategy_total` introduced in version 4.13+
+- `openshift_apps_deploymentconfigs_strategy_total` introduced in version 4.12.5+, 4.13+
 
 
 ## MutatingWebhookConfigurations
