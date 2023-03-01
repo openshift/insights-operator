@@ -13,7 +13,31 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// TODO - documentation
+// GatherMonitoringPVs Collects Persistent Volumes from openshift-monitoring namespace
+// which matches with ConfigMap configuration yaml
+//
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/persistentvolume.go
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/persistentvolumes/pvc-{hash-id}.json
+//
+// ### Location in archive
+// - `config/persistentvolumes/{persistent_volume_name}.json`
+//
+// ### Config ID
+// `clusterconfig/monitoring_persistent_volumes`
+//
+// ### Released version
+// - 4.13
+//
+// ### Backported versions (TODO: update backported releases)
+// - 4.12
+// - 4.11
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -37,7 +61,8 @@ type MonitoringPVGatherer struct {
 	client coreV1.CoreV1Interface
 }
 
-// TODO - documentation
+// getDefaultPrometheusName returns prometheus name as it's described on the configmap
+// or an error collection from the attempts to retrieve that information
 func (mg MonitoringPVGatherer) getDefaultPrometheusName() (string, []error) {
 	const CMO = "cluster-monitoring-config"
 	const NAMESPACE = "openshift-monitoring"
@@ -61,9 +86,10 @@ func (mg MonitoringPVGatherer) getDefaultPrometheusName() (string, []error) {
 	return "", errors
 }
 
-// TODO - documentation
+// unmarshalDefaultPath returns prometheus name from a given raw data (yaml format)
+// or an error if the raw data is not unmarshalable or it lacks the default path
 func (mg MonitoringPVGatherer) unmarshalDefaultPath(raw string) (string, error) {
-	var DEFAULT_PATH = []string{"prometheusK8s", "volumeClaimTemplate", "metadata", "name"}
+	var default_path = []string{"prometheusK8s", "volumeClaimTemplate", "metadata", "name"}
 	var configYaml map[string]interface{}
 
 	err := yaml.Unmarshal([]byte(raw), &configYaml)
@@ -71,7 +97,7 @@ func (mg MonitoringPVGatherer) unmarshalDefaultPath(raw string) (string, error) 
 		return "", err
 	}
 
-	target, err := utils.NestedStringWrapper(configYaml, DEFAULT_PATH...)
+	target, err := utils.NestedStringWrapper(configYaml, default_path...)
 	if err != nil {
 		return "", err
 	}
@@ -79,7 +105,8 @@ func (mg MonitoringPVGatherer) unmarshalDefaultPath(raw string) (string, error) 
 	return target, nil
 }
 
-// TODO - documentation
+// gather returns the persistent volumes found as records for its gathering
+// and a collection of errors
 func (mg MonitoringPVGatherer) gather(prefix string) ([]record.Record, []error) {
 	const NAMESPACE = "openshift-monitoring"
 
