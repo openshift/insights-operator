@@ -39,6 +39,22 @@ func Test_GatherMonitoring(t *testing.T) {
 			assertRecord:       true,
 		},
 		{
+			name: "Existent Persistent Volume with unmatching prefix is not gathered",
+			pvc: &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{Name: "mockFail", Namespace: "openshift-monitoring"},
+				Spec:       corev1.PersistentVolumeClaimSpec{VolumeName: "test"},
+			},
+			pv: &corev1.PersistentVolume{
+				ObjectMeta: metav1.ObjectMeta{Name: "test"},
+				Status:     corev1.PersistentVolumeStatus{Phase: "Available"},
+				Spec: corev1.PersistentVolumeSpec{
+					PersistentVolumeSource: corev1.PersistentVolumeSource{},
+				},
+			},
+			assertErrorsNumber: 0,
+			assertRecordNumber: 0,
+		},
+		{
 			name: "Non-existent Persistent Volume within the namespace throws an error",
 			pvc: &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{Name: "mockName", Namespace: "openshift-monitoring"},
