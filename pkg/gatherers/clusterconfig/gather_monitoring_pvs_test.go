@@ -24,7 +24,7 @@ func Test_GatherMonitoring(t *testing.T) {
 		{
 			name: "Existent Persistent Volume within the namespace is gathered",
 			pvc: &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{Name: "mockName", Namespace: "mockNamespace"},
+				ObjectMeta: metav1.ObjectMeta{Name: "mockName", Namespace: "openshift-monitoring"},
 				Spec:       corev1.PersistentVolumeClaimSpec{VolumeName: "test"},
 			},
 			pv: &corev1.PersistentVolume{
@@ -41,7 +41,7 @@ func Test_GatherMonitoring(t *testing.T) {
 		{
 			name: "Non-existent Persistent Volume within the namespace throws an error",
 			pvc: &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{Name: "mockName", Namespace: "mockNamespace"},
+				ObjectMeta: metav1.ObjectMeta{Name: "mockName", Namespace: "openshift-monitoring"},
 				Spec:       corev1.PersistentVolumeClaimSpec{VolumeName: "test"},
 			},
 			pv:                 &corev1.PersistentVolume{},
@@ -62,9 +62,10 @@ func Test_GatherMonitoring(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Given
 			coreclient := kubefake.NewSimpleClientset([]runtime.Object{testCase.pvc, testCase.pv}...)
+			gatherer := MonitoringPVGatherer{ctx: context.TODO(), client: coreclient.CoreV1()}
 
 			// When
-			records, errors := gatherPVsByNamespace(context.TODO(), coreclient.CoreV1(), "mockNamespace")
+			records, errors := gatherer.gather("mockName")
 
 			// Assert
 			assert.Len(t, records, testCase.assertRecordNumber)
