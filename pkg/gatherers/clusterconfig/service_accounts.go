@@ -109,7 +109,8 @@ func (a ServiceAccountsMarshaller) Marshal() ([]byte, error) {
 			Name:            a.serviceAccounts[i].Name,
 			NumberOfSecrets: len(a.serviceAccounts[i].Secrets),
 		}
-		namespaces[a.serviceAccounts[i].Namespace] = append(namespaces[a.serviceAccounts[i].Namespace], saInfo)
+		namespace := a.serviceAccounts[i].Namespace
+		namespaces[namespace] = append(namespaces[namespace], saInfo)
 	}
 	return json.Marshal(serviceAccounts)
 }
