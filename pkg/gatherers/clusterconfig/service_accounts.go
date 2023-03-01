@@ -89,29 +89,27 @@ type ServiceAccountsMarshaller struct {
 	totalServiceAccounts int
 }
 
+type serviceAccountInfo struct {
+	Name            string `json:"name"`
+	NumberOfSecrets int    `json:"secrets"`
+}
+
 // Marshal implements serialization of ServiceAccount
 func (a ServiceAccountsMarshaller) Marshal() ([]byte, error) {
 	// Creates map for marshal
 	serviceAccounts := map[string]any{}
-	namespaces := map[string][]map[string]any{}
+	namespaces := map[string][]serviceAccountInfo{}
 	serviceAccounts["serviceAccounts"] = map[string]any{
 		"TOTAL_COUNT": a.totalServiceAccounts,
 		"namespaces":  namespaces,
 	}
 
 	for i := range a.serviceAccounts {
-		serviceAccount := []map[string]any{
-			{
-				"name":    a.serviceAccounts[i].Name,
-				"secrets": len(a.serviceAccounts[i].Secrets),
-			},
+		saInfo := serviceAccountInfo{
+			Name:            a.serviceAccounts[i].Name,
+			NumberOfSecrets: len(a.serviceAccounts[i].Secrets),
 		}
-		_, ok := namespaces[a.serviceAccounts[i].Namespace]
-		if !ok {
-			namespaces[a.serviceAccounts[i].Namespace] = serviceAccount
-			continue
-		}
-		namespaces[a.serviceAccounts[i].Namespace] = append(namespaces[a.serviceAccounts[i].Namespace], serviceAccount[0])
+		namespaces[a.serviceAccounts[i].Namespace] = append(namespaces[a.serviceAccounts[i].Namespace], saInfo)
 	}
 	return json.Marshal(serviceAccounts)
 }
