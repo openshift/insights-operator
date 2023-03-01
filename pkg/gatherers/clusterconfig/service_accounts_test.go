@@ -12,13 +12,15 @@ import (
 
 func Test_ServiceAccounts_Gather(t *testing.T) {
 	tests := []struct {
-		name string
-		data []*corev1.ServiceAccount
-		exp  string
+		name            string
+		namespaces      []string
+		serviceAccounts []*corev1.ServiceAccount
+		exp             string
 	}{
 		{
-			name: "one account",
-			data: []*corev1.ServiceAccount{{
+			name:       "one account",
+			namespaces: []string{"default"},
+			serviceAccounts: []*corev1.ServiceAccount{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "local-storage-operator",
 					Namespace: "default",
@@ -28,8 +30,9 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":1,"namespaces":{"default":[{"name":"local-storage-operator","secrets":1}]}}}`,
 		},
 		{
-			name: "multiple accounts",
-			data: []*corev1.ServiceAccount{
+			name:       "multiple accounts",
+			namespaces: []string{"openshift", "openshift-apiserver"},
+			serviceAccounts: []*corev1.ServiceAccount{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "deployer",
@@ -48,8 +51,9 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":2,"namespaces":{"openshift":[{"name":"deployer","secrets":1}],"openshift-apiserver":[{"name":"openshift-apiserver-sa","secrets":1}]}}}`, // nolint: lll
 		},
 		{
-			name: "multiple accounts on the same namespace",
-			data: []*corev1.ServiceAccount{
+			name:       "multiple accounts on the same namespace",
+			namespaces: []string{"openshift"},
+			serviceAccounts: []*corev1.ServiceAccount{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "deployer",
@@ -74,6 +78,25 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			},
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":3,"namespaces":{"openshift":[{"name":"builder","secrets":1},{"name":"default","secrets":1},{"name":"deployer","secrets":1}]}}}`, // nolint: lll
 		},
+		{
+			name:       "multiple secrets",
+			namespaces: []string{"default"},
+			serviceAccounts: []*corev1.ServiceAccount{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "local-storage-operator",
+					Namespace: "default",
+				},
+				Secrets: []corev1.ObjectReference{
+					{
+						Name: "secret1",
+					},
+					{
+						Name: "secret2",
+					},
+				},
+			}},
+			exp: `{"serviceAccounts":{"TOTAL_COUNT":1,"namespaces":{"default":[{"name":"local-storage-operator","secrets":2}]}}}`,
+		},
 	}
 
 	for _, test := range tests {
@@ -81,15 +104,14 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			coreClient := kubefake.NewSimpleClientset()
-			for _, d := range test.data {
-				namespace, _ := coreClient.CoreV1().Namespaces().Get(context.Background(), d.Namespace, metav1.GetOptions{})
-				if namespace == nil {
-					_, err := coreClient.CoreV1().Namespaces().Create(
-						context.Background(),
-						&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: d.Namespace}}, metav1.CreateOptions{},
-					)
-					assert.NoError(t, err)
-				}
+			for _, namespace := range test.namespaces {
+				_, err := coreClient.CoreV1().Namespaces().Create(
+					context.Background(),
+					&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}, metav1.CreateOptions{},
+				)
+				assert.NoError(t, err)
+			}
+			for _, d := range test.serviceAccounts {
 				_, err := coreClient.CoreV1().ServiceAccounts(d.Namespace).
 					Create(context.Background(), d, metav1.CreateOptions{})
 				assert.NoError(t, err)
