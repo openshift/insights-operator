@@ -89,7 +89,7 @@ func (mg MonitoringPVGatherer) getDefaultPrometheusName() (string, []error) {
 // unmarshalDefaultPath returns prometheus name from a given raw data (yaml format)
 // or an error if the raw data is not unmarshalable or it lacks the default path
 func (mg MonitoringPVGatherer) unmarshalDefaultPath(raw string) (string, error) {
-	var default_path = []string{"prometheusK8s", "volumeClaimTemplate", "metadata", "name"}
+	var defaultPath = []string{"prometheusK8s", "volumeClaimTemplate", "metadata", "name"}
 	var configYaml map[string]interface{}
 
 	err := yaml.Unmarshal([]byte(raw), &configYaml)
@@ -97,7 +97,7 @@ func (mg MonitoringPVGatherer) unmarshalDefaultPath(raw string) (string, error) 
 		return "", err
 	}
 
-	target, err := utils.NestedStringWrapper(configYaml, default_path...)
+	target, err := utils.NestedStringWrapper(configYaml, defaultPath...)
 	if err != nil {
 		return "", err
 	}
