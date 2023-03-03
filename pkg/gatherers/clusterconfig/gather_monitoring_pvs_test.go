@@ -152,12 +152,21 @@ func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
 func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
 	testCases := []struct {
 		name     string
-		yamlMock string
+		cm       *corev1.ConfigMap
 		expected string
 		wantErr  bool
 		errMsg   string
-		cm       *corev1.ConfigMap
 	}{
+		{
+			name: "ConfigMap with valid data returns prometheus name",
+			cm: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config", Namespace: "openshift-monitoring"},
+				Data: map[string]string{
+					"config.yaml": "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n",
+				},
+			},
+			expected: "mock",
+		},
 		{
 			name:    "No cluster-monitoring-config configmap is defined returns an error",
 			cm:      &corev1.ConfigMap{},
@@ -171,16 +180,6 @@ func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "no config.yaml data on cluster-monitoring-config ConfigMap",
-		},
-		{
-			name: "ConfigMap with valid data returns prometheus name",
-			cm: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config", Namespace: "openshift-monitoring"},
-				Data: map[string]string{
-					"config.yaml": "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n",
-				},
-			},
-			expected: "mock",
 		},
 		{
 			name: "ConfigMap with unvalid data returns an error",
