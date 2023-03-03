@@ -78,10 +78,10 @@ func Test_GatherMonitoring(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Given
 			coreclient := kubefake.NewSimpleClientset([]runtime.Object{testCase.pvc, testCase.pv}...)
-			gatherer := MonitoringPVGatherer{ctx: context.TODO(), client: coreclient.CoreV1()}
+			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
 
 			// When
-			records, errors := gatherer.gather("mockName")
+			records, errors := gatherer.gather(context.TODO(), "mockName")
 
 			// Assert
 			assert.Len(t, records, testCase.assertRecordNumber)

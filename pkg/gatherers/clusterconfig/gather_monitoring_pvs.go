@@ -44,30 +44,29 @@ func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []
 		return nil, []error{err}
 	}
 
-	mg := MonitoringPVGatherer{ctx: ctx, client: kubeClient.CoreV1()}
+	mg := MonitoringPVGatherer{client: kubeClient.CoreV1()}
 
-	name, errors := mg.getDefaultPrometheusName()
+	name, errors := mg.getDefaultPrometheusName(ctx)
 	if len(errors) > 0 {
 		return nil, errors
 	}
 
 	fmt.Printf("name: %v\n", name)
 
-	return mg.gather(name)
+	return mg.gather(ctx, name)
 }
 
 type MonitoringPVGatherer struct {
-	ctx    context.Context
 	client coreV1.CoreV1Interface
 }
 
 // getDefaultPrometheusName returns prometheus name as it's described on the configmap
 // or an error collection from the attempts to retrieve that information
-func (mg MonitoringPVGatherer) getDefaultPrometheusName() (string, []error) {
+func (mg MonitoringPVGatherer) getDefaultPrometheusName(ctx context.Context) (string, []error) {
 	const CMO = "cluster-monitoring-config"
 	const NAMESPACE = "openshift-monitoring"
 
-	cm, err := mg.client.ConfigMaps(NAMESPACE).Get(mg.ctx, CMO, metaV1.GetOptions{})
+	cm, err := mg.client.ConfigMaps(NAMESPACE).Get(ctx, CMO, metaV1.GetOptions{})
 	if err != nil {
 		return "", []error{err}
 	}
@@ -107,10 +106,10 @@ func (mg MonitoringPVGatherer) unmarshalDefaultPath(raw string) (string, error) 
 
 // gather returns the persistent volumes found as records for its gathering
 // and a collection of errors
-func (mg MonitoringPVGatherer) gather(prefix string) ([]record.Record, []error) {
+func (mg MonitoringPVGatherer) gather(ctx context.Context, prefix string) ([]record.Record, []error) {
 	const NAMESPACE = "openshift-monitoring"
 
-	pvcList, err := mg.client.PersistentVolumeClaims(NAMESPACE).List(mg.ctx, metaV1.ListOptions{})
+	pvcList, err := mg.client.PersistentVolumeClaims(NAMESPACE).List(ctx, metaV1.ListOptions{})
 	if err != nil {
 		return []record.Record{}, []error{err}
 	}
@@ -125,7 +124,7 @@ func (mg MonitoringPVGatherer) gather(prefix string) ([]record.Record, []error) 
 		if strings.HasPrefix(pvcName, prefix) {
 			pvName := pvcList.Items[i].Spec.VolumeName
 
-			pv, err := pvInterface.Get(mg.ctx, pvName, metaV1.GetOptions{})
+			pv, err := pvInterface.Get(ctx, pvName, metaV1.GetOptions{})
 			if err != nil {
 				errors = append(errors, err)
 				continue
