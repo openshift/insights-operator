@@ -21,7 +21,7 @@ import (
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/persistentvolume.go
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/persistentvolumes/pvc-{hash-id}.json
+// - docs/insights-archive-sample/config/persistentvolumes/monitoring-persistent-volume.json
 //
 // ### Location in archive
 // - `config/persistentvolumes/{persistent_volume_name}.json`
