@@ -1063,6 +1063,36 @@ Collects `MachineSet` information.
 None
 
 
+## MonitoringPVs
+
+Collects Persistent Volumes from openshift-monitoring namespace
+which matches with ConfigMap configuration yaml
+
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/persistentvolume.go
+
+### Sample data
+- [docs/insights-archive-sample/config/persistentvolumes/monitoring-persistent-volume.json](./insights-archive-sample/config/persistentvolumes/monitoring-persistent-volume.json)
+
+### Location in archive
+- `config/persistentvolumes/{persistent_volume_name}.json`
+
+### Config ID
+`clusterconfig/monitoring_persistent_volumes`
+
+### Released version
+- 4.14
+
+### Backported versions (tentative)
+- +4.13.0
+- +4.12.6
+- +4.11.30
+
+### Changes
+None
+
+
 ## MostRecentMetrics
 
 Collects cluster Federated Monitoring metrics.
