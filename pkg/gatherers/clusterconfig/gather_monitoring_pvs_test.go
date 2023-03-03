@@ -98,6 +98,9 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 }
 
 func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
+	longValidMock := "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n" +
+		"    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n"
+
 	testCases := []struct {
 		name     string
 		yamlMock string
@@ -107,13 +110,13 @@ func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
 	}{
 		{
 			name:     "Trying to unmarshal expected data returns prometheus name",
-			yamlMock: "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n",
+			yamlMock: longValidMock,
 			expected: "mock",
 			wantErr:  false,
 		},
 		{
 			name:     "Trying to unmarshal unexpected data returns an error",
-			yamlMock: "prometheusK8s:\n  volumeClaimTemplate:\n    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n",
+			yamlMock: "otherdata:\n  volumeClaimTemplate:\n    spec:\n",
 			wantErr:  true,
 			errMsg:   "can't find prometheusK8s.volumeClaimTemplate.metadata.name",
 		},
@@ -139,17 +142,18 @@ func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
 			if testCase.wantErr {
 				assert.Error(t, err)
 				assert.ErrorContains(t, err, testCase.errMsg)
-
 			} else {
 				assert.Equal(t, testCase.expected, test)
 				assert.NoError(t, err)
 			}
-
 		})
 	}
 }
 
 func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
+	tooLongMock := "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n" +
+		"    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n"
+
 	testCases := []struct {
 		name     string
 		cm       *corev1.ConfigMap
@@ -162,7 +166,7 @@ func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
 			cm: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config", Namespace: "openshift-monitoring"},
 				Data: map[string]string{
-					"config.yaml": "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n",
+					"config.yaml": tooLongMock,
 				},
 			},
 			expected: "mock",
@@ -206,12 +210,10 @@ func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
 			if testCase.wantErr {
 				assert.Error(t, err)
 				assert.ErrorContains(t, err, testCase.errMsg)
-
 			} else {
 				assert.Equal(t, testCase.expected, test)
 				assert.NoError(t, err)
 			}
-
 		})
 	}
 }
