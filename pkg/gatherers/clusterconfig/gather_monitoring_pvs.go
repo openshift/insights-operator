@@ -51,8 +51,6 @@ func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []
 		return nil, errors
 	}
 
-	fmt.Printf("name: %v\n", name)
-
 	return mg.gather(ctx, name)
 }
 
