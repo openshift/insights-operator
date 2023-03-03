@@ -30,11 +30,12 @@ import (
 // `clusterconfig/monitoring_persistent_volumes`
 //
 // ### Released version
-// - 4.13
+// - 4.14
 //
-// ### Backported versions (TODO: update backported releases)
-// - 4.12
-// - 4.11
+// ### Backported versions (tentative)
+// - +4.13.0
+// - +4.12.6
+// - +4.11.30
 //
 // ### Changes
 // None
@@ -46,9 +47,9 @@ func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []
 
 	mg := MonitoringPVGatherer{client: kubeClient.CoreV1()}
 
-	name, errors := mg.getDefaultPrometheusName(ctx)
-	if len(errors) > 0 {
-		return nil, errors
+	name, err := mg.getDefaultPrometheusName(ctx)
+	if err != nil {
+		return nil, []error{err}
 	}
 
 	return mg.gather(ctx, name)
@@ -60,27 +61,27 @@ type MonitoringPVGatherer struct {
 
 // getDefaultPrometheusName returns prometheus name as it's described on the configmap
 // or an error collection from the attempts to retrieve that information
-func (mg MonitoringPVGatherer) getDefaultPrometheusName(ctx context.Context) (string, []error) {
+func (mg MonitoringPVGatherer) getDefaultPrometheusName(ctx context.Context) (string, error) {
 	const CMO = "cluster-monitoring-config"
 	const NAMESPACE = "openshift-monitoring"
+	const CONFIG = "config.yaml"
 
 	cm, err := mg.client.ConfigMaps(NAMESPACE).Get(ctx, CMO, metaV1.GetOptions{})
 	if err != nil {
-		return "", []error{err}
+		return "", err
 	}
 
-	var errors []error
-	for i := range cm.Data {
-		name, err := mg.unmarshalDefaultPath(cm.Data[i])
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		return name, nil
+	rawData, exists := cm.Data[CONFIG]
+	if !exists {
+		return "", fmt.Errorf("no %s data on %s ConfigMap", CONFIG, CMO)
 	}
 
-	return "", errors
+	name, err := mg.unmarshalDefaultPath(rawData)
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
 }
 
 // unmarshalDefaultPath returns prometheus name from a given raw data (yaml format)
