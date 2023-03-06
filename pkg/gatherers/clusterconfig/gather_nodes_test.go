@@ -70,7 +70,7 @@ func Test_gatherNodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			coreClient := fake.NewSimpleClientset(tt.nodes)
-			records, errs := gatherNodes(context.TODO(), coreClient.CoreV1())
+			records, errs := gatherNodes(context.Background(), coreClient.CoreV1())
 			assert.Equal(t, tt.wantRecords, records)
 			assert.Len(t, errs, tt.wantErrsCount)
 		})
