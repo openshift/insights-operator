@@ -21,18 +21,35 @@ import (
 
 func Test_getClusterVersion(t *testing.T) {
 	lastTimestampEvent := metav1.Time{Time: time.Now().Add(2)}
-	compactEvents := eventListToCompactedEventList(&v1.EventList{
-		Items: []v1.Event{
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "openshift-cluster-version",
-				},
-				Reason:        "Unit test",
-				Message:       "This is a unit test event",
-				LastTimestamp: lastTimestampEvent,
-				Count:         1,
-			},
+	clusterVersion := &configv1.ClusterVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "version",
 		},
+		Spec: configv1.ClusterVersionSpec{
+			ClusterID: "cluster-id",
+			Channel:   "stable-4.13",
+		},
+	}
+	pod := v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "version",
+			Namespace: "openshift-cluster-version",
+		},
+		Status: v1.PodStatus{
+			InitContainerStatuses: []v1.ContainerStatus{{RestartCount: 1}},
+		},
+	}
+	event := v1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "openshift-cluster-version",
+		},
+		Reason:        "Unit test",
+		Message:       "This is a unit test event",
+		LastTimestamp: lastTimestampEvent,
+		Count:         1,
+	}
+	compactEvents := eventListToCompactedEventList(&v1.EventList{
+		Items: []v1.Event{event},
 	})
 
 	tests := []struct {
@@ -45,55 +62,19 @@ func Test_getClusterVersion(t *testing.T) {
 		interval                 time.Duration
 	}{
 		{
-			name: "successful retrieve node version",
-			clusterVersionDefinition: &configv1.ClusterVersion{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "version",
-				},
-				Spec: configv1.ClusterVersionSpec{
-					ClusterID: "cluster-id",
-					Channel:   "stable-4.13",
-				},
-			},
+			name:                     "successful retrieve node version",
+			clusterVersionDefinition: clusterVersion,
 			pods: &v1.PodList{
-				Items: []v1.Pod{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "version",
-							Namespace: "openshift-cluster-version",
-						},
-						Status: v1.PodStatus{
-							InitContainerStatuses: []v1.ContainerStatus{{RestartCount: 1}},
-						},
-					},
-				},
+				Items: []v1.Pod{pod},
 			},
 			events: &v1.EventList{
-				Items: []v1.Event{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Namespace: "openshift-cluster-version",
-						},
-						Reason:        "Unit test",
-						Message:       "This is a unit test event",
-						LastTimestamp: lastTimestampEvent,
-						Count:         1,
-					},
-				},
+				Items: []v1.Event{event},
 			},
 			wantRecords: []record.Record{
 				{
 					Name: "config/version",
 					Item: record.ResourceMarshaller{
-						Resource: anonymizeClusterVersion(&configv1.ClusterVersion{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "version",
-							},
-							Spec: configv1.ClusterVersionSpec{
-								ClusterID: "cluster-id",
-								Channel:   "stable-4.13",
-							},
-						}),
+						Resource: anonymizeClusterVersion(clusterVersion),
 					},
 				},
 				{
@@ -102,15 +83,7 @@ func Test_getClusterVersion(t *testing.T) {
 				},
 				{
 					Name: "config/pod/openshift-cluster-version/version",
-					Item: record.ResourceMarshaller{Resource: &v1.Pod{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "version",
-							Namespace: "openshift-cluster-version",
-						},
-						Status: v1.PodStatus{
-							InitContainerStatuses: []v1.ContainerStatus{{RestartCount: 1}},
-						},
-					}},
+					Item: record.ResourceMarshaller{Resource: &pod},
 				},
 				{
 					Name: "events/openshift-cluster-version",
