@@ -1247,6 +1247,16 @@ None
 ### Changes
 None
 
+### Anonymization
+- Removes any annotation that does not match specific namespaces (`openshift.io/`, `k8s.io/`, `kubernetes.io/`).
+- Replaces the values of any label that matches the previously listed namespaces and not a region label
+(`failure-domain.beta.kubernetes.io/region`, `topology.kubernetes.io/region`) with a random string while preserving
+its length and character type.
+- Replaces the values of the node's status object fields such as `BootID`, `SystemUUID`, and `MachineID`
+with random strings.
+- Clears the `Images` field of the node's status object, removing any information about the container
+images running on the node.
+
 
 ## OLMOperators
 
