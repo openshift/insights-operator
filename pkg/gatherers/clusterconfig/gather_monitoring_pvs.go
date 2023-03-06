@@ -32,11 +32,6 @@ import (
 // ### Released version
 // - 4.14
 //
-// ### Backported versions (tentative)
-// - +4.13.0
-// - +4.12.6
-// - +4.11.30
-//
 // ### Changes
 // None
 func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []error) {
