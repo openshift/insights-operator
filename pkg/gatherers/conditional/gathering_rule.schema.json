@@ -217,6 +217,81 @@
                             "pattern": "^[a-zA-Z0-9_]{1,128}$"
                         }
                     }
+                },
+                "^pod_logs$": {
+                    "type": "object",
+                    "title": "GatherPodLogsParams",
+                    "required": [
+                        "resource_filter"
+                    ],
+                    "properties": {
+                        "resource_filter": {
+                            "type": "object",
+                            "title": "ResourceFilter",
+                            "properties": {
+                                "namespace": {
+                                    "type": "string",
+                                    "title": "Namespace",
+                                    "pattern": "^openshift-[a-zA-Z0-9_.-]{1,128}$"
+                                },
+                                "label_selector": {
+                                    "type": "string",
+                                    "title": "LabelSelector",
+                                    "pattern": "^[a-zA-Z0-9_]{1,128}$"
+                                },
+                                "field_selector": {
+                                    "type": "string",
+                                    "title": "FieldSelector",
+                                    "pattern": "^[a-zA-Z0-9_.-]{1,128}$"
+                                },
+                                "container_name_regex_filter": {
+                                    "type": "string",
+                                    "title": "ContainerNameRegexFilter",
+                                    "pattern": "^[a-zA-Z0-9_.-]{1,128}$"
+                                },
+                                "max_namespace_containers": {
+                                    "type": "integer",
+                                    "title": "MaxNamespaceContainers",
+                                    "minimum": 1,
+                                    "maximum": 4096
+                                }
+                            }
+                        },
+                        "log_filter": {
+                            "type": "object",
+                            "title": "LogFilter",
+                            "properties": {
+                                "message_to_search": {
+                                    "type": "array",
+                                    "title": "MessageToSearch"
+                                },
+                                "is_regex_search": {
+                                    "type": "boolean",
+                                    "title": "IsRegexSearch"
+                                },
+                                "since_seconds": {
+                                    "type": "integer",
+                                    "title": "SinceSeconds"
+                                },
+                                "limit_bytes": {
+                                    "type": "integer",
+                                    "title": "LimitBytes",
+                                    "minimum": 1,
+                                    "maximum": 4096
+                                },
+                                "tail_lines": {
+                                    "type": "integer",
+                                    "title": "TailLines",
+                                    "minimum": 1,
+                                    "maximum": 4096
+                                },
+                                "previous": {
+                                    "type": "boolean",
+                                    "title": "If true, the previous logs will be gathered instead of the current"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

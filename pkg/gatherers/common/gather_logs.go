@@ -19,21 +19,21 @@ import (
 
 // LogContainersFilter allows you to filter containers
 type LogContainersFilter struct {
-	Namespace                string
-	LabelSelector            string
-	FieldSelector            string
-	ContainerNameRegexFilter string
-	MaxNamespaceContainers   int
+	Namespace                string `json:"namespace"`
+	LabelSelector            string `json:"label_selector,omitempty"`
+	FieldSelector            string `json:"field_selector,omitempty"`
+	ContainerNameRegexFilter string `json:"container_name_regex_filter,omitempty"`
+	MaxNamespaceContainers   int    `json:"max_namespace_containers,omitempty"`
 }
 
 // LogMessagesFilter allows you to filter messages
 type LogMessagesFilter struct {
-	MessagesToSearch []string
-	IsRegexSearch    bool
-	SinceSeconds     int64
-	LimitBytes       int64
-	TailLines        int64
-	Previous         bool
+	MessagesToSearch []string `json:"messages_to_search,omitempty"`
+	IsRegexSearch    bool     `json:"is_regex_search,omitempty"`
+	SinceSeconds     int64    `json:"since_seconds,omitempty"`
+	LimitBytes       int64    `json:"limit_bytes,omitempty"`
+	TailLines        int64    `json:"tail_lines,omitempty"`
+	Previous         bool     `json:"previous,omitempty"`
 }
 
 // CollectLogsFromContainers collects logs from containers
