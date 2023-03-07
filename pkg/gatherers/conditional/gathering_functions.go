@@ -3,6 +3,8 @@ package conditional
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/openshift/insights-operator/pkg/gatherers/common"
 )
 
 // To add a new gathering function, follow the next steps:
@@ -42,6 +44,10 @@ const (
 	// GatherPodDefinition is a function that collects the pod definitions
 	// See file gather_pod_definition.go
 	GatherPodDefinition GatheringFunctionName = "pod_definition"
+
+	// GatherPodLogs is a function that collects logs from pods given specified parameters
+	// See file gather_pod_logs.go
+	GatherPodLogs GatheringFunctionName = "pod_logs"
 )
 
 func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
@@ -64,6 +70,10 @@ func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, err
 		return params, err
 	case GatherPodDefinition:
 		var params GatherPodDefinitionParams
+		err := json.Unmarshal(jsonParams, &params)
+		return params, err
+	case GatherPodLogs:
+		var params GatherPodLogsParams
 		err := json.Unmarshal(jsonParams, &params)
 		return params, err
 	}
@@ -105,6 +115,12 @@ type GatherPodDefinitionParams struct {
 	AlertName string `json:"alert_name"`
 }
 
+// GatherPodLogsParams defines parameters for pod_logs gatherer
+type GatherPodLogsParams struct {
+	ResourceFilter   common.LogContainersFilter `json:"resource_filter"`
+	LogMessageFilter common.LogMessagesFilter   `json:"log_filter,omitempty"`
+}
+
 // registered builders:
 
 // gatheringFunctionBuilders lists all the gatherers which can be run on some condition. Gatherers can have parameters,
@@ -115,4 +131,5 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
 	GatherContainersLogs:          (*Gatherer).BuildGatherContainersLogs,
 	GatherPodDefinition:           (*Gatherer).BuildGatherPodDefinition,
+	GatherPodLogs:                 (*Gatherer).BuildGatherPodLogs,
 }
