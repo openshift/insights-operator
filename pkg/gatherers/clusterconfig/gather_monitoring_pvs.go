@@ -42,7 +42,7 @@ func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []
 
 	mg := MonitoringPVGatherer{client: kubeClient.CoreV1()}
 
-	name, err := mg.getDefaultPrometheusName(ctx)
+	name, err := mg.getVolumeClaimName(ctx)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -54,9 +54,10 @@ type MonitoringPVGatherer struct {
 	client coreV1.CoreV1Interface
 }
 
-// getDefaultPrometheusName returns prometheus name as it's described on the configmap
-// or an error collection from the attempts to retrieve that information
-func (mg MonitoringPVGatherer) getDefaultPrometheusName(ctx context.Context) (string, error) {
+// getVolumeClaimName returns VolumeClaim name used on prometheus configuration
+// as it's described on the ConfigMap
+// or an error from retrieving that information
+func (mg MonitoringPVGatherer) getVolumeClaimName(ctx context.Context) (string, error) {
 	const CMO = "cluster-monitoring-config"
 	const NAMESPACE = "openshift-monitoring"
 	const CONFIG = "config.yaml"
@@ -71,7 +72,7 @@ func (mg MonitoringPVGatherer) getDefaultPrometheusName(ctx context.Context) (st
 		return "", fmt.Errorf("no %s data on %s ConfigMap", CONFIG, CMO)
 	}
 
-	name, err := mg.unmarshalDefaultPath(rawData)
+	name, err := mg.unmarshalVCTemplateName(rawData)
 	if err != nil {
 		return "", err
 	}
@@ -79,9 +80,9 @@ func (mg MonitoringPVGatherer) getDefaultPrometheusName(ctx context.Context) (st
 	return name, nil
 }
 
-// unmarshalDefaultPath returns prometheus name from a given raw data (yaml format)
+// unmarshalVCTemplateName returns VC name from configuration raw data (yaml format)
 // or an error if the raw data is not unmarshalable or it lacks the default path
-func (mg MonitoringPVGatherer) unmarshalDefaultPath(raw string) (string, error) {
+func (mg MonitoringPVGatherer) unmarshalVCTemplateName(raw string) (string, error) {
 	var defaultPath = []string{"prometheusK8s", "volumeClaimTemplate", "metadata", "name"}
 	var configYaml map[string]interface{}
 
