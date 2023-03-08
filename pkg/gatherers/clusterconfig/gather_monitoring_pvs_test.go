@@ -2,6 +2,7 @@ package clusterconfig
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,9 +98,9 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 	}
 }
 
-func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
-	longValidMock := "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n" +
-		"    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n"
+func Test_GatherMonitoringunmarshalVCTemplateName(t *testing.T) {
+	b, _ := os.ReadFile("testdata/monitoring_pvs_vctemplate.yaml")
+	mock := string(b)
 
 	testCases := []struct {
 		name     string
@@ -110,7 +111,7 @@ func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
 	}{
 		{
 			name:     "Trying to unmarshal expected data returns prometheus name",
-			yamlMock: longValidMock,
+			yamlMock: mock,
 			expected: "mock",
 			wantErr:  false,
 		},
@@ -136,7 +137,7 @@ func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
 			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
 
 			// When
-			test, err := gatherer.unmarshalDefaultPath(data)
+			test, err := gatherer.unmarshalVCTemplateName(data)
 
 			// Assert
 			if testCase.wantErr {
@@ -150,9 +151,9 @@ func Test_GatherMonitoring_unmarshalDefaultPath(t *testing.T) {
 	}
 }
 
-func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
-	tooLongMock := "prometheusK8s:\n  volumeClaimTemplate:\n    metadata:\n      name: mock\n" +
-		"    spec:\n      storageClassName: local-storage\n      resources:\n        requests:\n          storage: 2Gi\n"
+func Test_GatherMonitoring_getVolumeClaimName(t *testing.T) {
+	b, _ := os.ReadFile("testdata/monitoring_pvs_vctemplate.yaml")
+	mock := string(b)
 
 	testCases := []struct {
 		name     string
@@ -166,7 +167,7 @@ func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
 			cm: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config", Namespace: "openshift-monitoring"},
 				Data: map[string]string{
-					"config.yaml": tooLongMock,
+					"config.yaml": mock,
 				},
 			},
 			expected: "mock",
@@ -204,7 +205,7 @@ func Test_GatherMonitoring_getDefaultPrometheusName(t *testing.T) {
 			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
 
 			// When
-			test, err := gatherer.getDefaultPrometheusName(context.TODO())
+			test, err := gatherer.getVolumeClaimName(context.Background())
 
 			// Assert
 			if testCase.wantErr {
