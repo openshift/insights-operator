@@ -82,7 +82,7 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
 
 			// When
-			records, errors := gatherer.gather(context.TODO(), "mockName")
+			records, errors := gatherer.gather(context.Background(), "mockName")
 
 			// Assert
 			assert.Len(t, records, testCase.assertRecordNumber)
