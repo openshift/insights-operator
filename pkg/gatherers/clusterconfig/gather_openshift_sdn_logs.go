@@ -42,17 +42,6 @@ func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record,
 		Namespace:     "openshift-sdn",
 		LabelSelector: "app=sdn",
 	}
-	messagesFilter := common.LogMessagesFilter{
-		MessagesToSearch: []string{
-			"Got OnEndpointsUpdate for unknown Endpoints",
-			"Got OnEndpointsDelete for unknown Endpoints",
-			"Unable to update proxy firewall for policy",
-			"Failed to update proxy firewall for policy",
-		},
-		IsRegexSearch: false,
-		SinceSeconds:  logDefaultSinceSeconds,
-		LimitBytes:    logDefaultLimitBytes,
-	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -65,7 +54,7 @@ func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record,
 		ctx,
 		coreClient,
 		containersFilter,
-		messagesFilter,
+		getGatherOpenshiftSDNLogsMessageFilter(),
 		nil,
 	)
 	if err != nil {
@@ -73,4 +62,18 @@ func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record,
 	}
 
 	return records, nil
+}
+
+func getGatherOpenshiftSDNLogsMessageFilter() common.LogMessagesFilter {
+	return common.LogMessagesFilter{
+		MessagesToSearch: []string{
+			"Got OnEndpointsUpdate for unknown Endpoints",
+			"Got OnEndpointsDelete for unknown Endpoints",
+			"Unable to update proxy firewall for policy",
+			"Failed to update proxy firewall for policy",
+		},
+		IsRegexSearch: false,
+		SinceSeconds:  logDefaultSinceSeconds,
+		LimitBytes:    logDefaultLimitBytes,
+	}
 }
