@@ -50,10 +50,10 @@ type MonitoringPVGatherer struct {
 // gather returns the persistent volumes found as records for its gathering
 // and a collection of errors
 func (mg MonitoringPVGatherer) gather(ctx context.Context) ([]record.Record, []error) {
-	const NAMESPACE = "openshift-monitoring"
-	const PROMETHEUS_DEFAULT = "prometheus-k8s"
+	const Namespace = "openshift-monitoring"
+	const PrometheusDefault = "prometheus-k8s"
 
-	pvcList, err := mg.client.PersistentVolumeClaims(NAMESPACE).List(ctx, metaV1.ListOptions{})
+	pvcList, err := mg.client.PersistentVolumeClaims(Namespace).List(ctx, metaV1.ListOptions{})
 	if err != nil {
 		return []record.Record{}, []error{err}
 	}
@@ -65,7 +65,7 @@ func (mg MonitoringPVGatherer) gather(ctx context.Context) ([]record.Record, []e
 	for i := range pvcList.Items {
 		pvcName := pvcList.Items[i].Name
 
-		if strings.Contains(pvcName, PROMETHEUS_DEFAULT) {
+		if strings.Contains(pvcName, PrometheusDefault) {
 			pvName := pvcList.Items[i].Spec.VolumeName
 
 			pv, err := pvInterface.Get(ctx, pvName, metaV1.GetOptions{})
