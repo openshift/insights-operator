@@ -6,11 +6,9 @@ import (
 	"strings"
 
 	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	coreV1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"sigs.k8s.io/yaml"
 )
 
 // GatherMonitoringPVs Collects Persistent Volumes from openshift-monitoring namespace
@@ -42,67 +40,18 @@ func (g *Gatherer) GatherMonitoringPVs(ctx context.Context) ([]record.Record, []
 
 	mg := MonitoringPVGatherer{client: kubeClient.CoreV1()}
 
-	name, err := mg.getVolumeClaimName(ctx)
-	if err != nil {
-		return nil, []error{err}
-	}
-
-	return mg.gather(ctx, name)
+	return mg.gather(ctx)
 }
 
 type MonitoringPVGatherer struct {
 	client coreV1.CoreV1Interface
 }
 
-// getVolumeClaimName returns VolumeClaim name used on prometheus configuration
-// as it's described on the ConfigMap
-// or an error from retrieving that information
-func (mg MonitoringPVGatherer) getVolumeClaimName(ctx context.Context) (string, error) {
-	const CMO = "cluster-monitoring-config"
-	const NAMESPACE = "openshift-monitoring"
-	const CONFIG = "config.yaml"
-
-	cm, err := mg.client.ConfigMaps(NAMESPACE).Get(ctx, CMO, metaV1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	rawData, exists := cm.Data[CONFIG]
-	if !exists {
-		return "", fmt.Errorf("no %s data on %s ConfigMap", CONFIG, CMO)
-	}
-
-	name, err := mg.unmarshalVCTemplateName(rawData)
-	if err != nil {
-		return "", err
-	}
-
-	return name, nil
-}
-
-// unmarshalVCTemplateName returns VC name from configuration raw data (yaml format)
-// or an error if the raw data is not unmarshalable or it lacks the default path
-func (mg MonitoringPVGatherer) unmarshalVCTemplateName(raw string) (string, error) {
-	var defaultPath = []string{"prometheusK8s", "volumeClaimTemplate", "metadata", "name"}
-	var configYaml map[string]interface{}
-
-	err := yaml.Unmarshal([]byte(raw), &configYaml)
-	if err != nil {
-		return "", err
-	}
-
-	target, err := utils.NestedStringWrapper(configYaml, defaultPath...)
-	if err != nil {
-		return "", err
-	}
-
-	return target, nil
-}
-
 // gather returns the persistent volumes found as records for its gathering
 // and a collection of errors
-func (mg MonitoringPVGatherer) gather(ctx context.Context, prefix string) ([]record.Record, []error) {
+func (mg MonitoringPVGatherer) gather(ctx context.Context) ([]record.Record, []error) {
 	const NAMESPACE = "openshift-monitoring"
+	const PROMETHEUS_DEFAULT = "prometheus-k8s"
 
 	pvcList, err := mg.client.PersistentVolumeClaims(NAMESPACE).List(ctx, metaV1.ListOptions{})
 	if err != nil {
@@ -116,7 +65,7 @@ func (mg MonitoringPVGatherer) gather(ctx context.Context, prefix string) ([]rec
 	for i := range pvcList.Items {
 		pvcName := pvcList.Items[i].Name
 
-		if strings.HasPrefix(pvcName, prefix) {
+		if strings.Contains(pvcName, PROMETHEUS_DEFAULT) {
 			pvName := pvcList.Items[i].Spec.VolumeName
 
 			pv, err := pvInterface.Get(ctx, pvName, metaV1.GetOptions{})

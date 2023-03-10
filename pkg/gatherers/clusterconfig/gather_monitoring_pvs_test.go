@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 		{
 			name: "Existent Persistent Volume within the namespace is gathered",
 			pvc: &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{Name: "mockName", Namespace: "openshift-monitoring"},
+				ObjectMeta: metav1.ObjectMeta{Name: "prometheus-k8s-0", Namespace: "openshift-monitoring"},
 				Spec:       corev1.PersistentVolumeClaimSpec{VolumeName: "test"},
 			},
 			pv: &corev1.PersistentVolume{
@@ -58,7 +57,7 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 		{
 			name: "Non-existent Persistent Volume within the namespace throws an error",
 			pvc: &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{Name: "mockName", Namespace: "openshift-monitoring"},
+				ObjectMeta: metav1.ObjectMeta{Name: "prometheus-k8s-0", Namespace: "openshift-monitoring"},
 				Spec:       corev1.PersistentVolumeClaimSpec{VolumeName: "test"},
 			},
 			pv:                 &corev1.PersistentVolume{},
@@ -82,7 +81,7 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
 
 			// When
-			records, errors := gatherer.gather(context.Background(), "mockName")
+			records, errors := gatherer.gather(context.Background())
 
 			// Assert
 			assert.Len(t, records, testCase.assertRecordNumber)
@@ -93,127 +92,6 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 			assert.Len(t, errors, testCase.assertErrorsNumber)
 			if testCase.assertError {
 				assert.ErrorContains(t, errors[0], "not found")
-			}
-		})
-	}
-}
-
-func Test_GatherMonitoringunmarshalVCTemplateName(t *testing.T) {
-	b, _ := os.ReadFile("testdata/monitoring_pvs_vctemplate.yaml")
-	mock := string(b)
-
-	testCases := []struct {
-		name     string
-		yamlMock string
-		expected string
-		wantErr  bool
-		errMsg   string
-	}{
-		{
-			name:     "Trying to unmarshal expected data returns prometheus name",
-			yamlMock: mock,
-			expected: "mock",
-			wantErr:  false,
-		},
-		{
-			name:     "Trying to unmarshal unexpected data returns an error",
-			yamlMock: "otherdata:\n  volumeClaimTemplate:\n    spec:\n",
-			wantErr:  true,
-			errMsg:   "can't find prometheusK8s.volumeClaimTemplate.metadata.name",
-		},
-		{
-			name:     "Trying to unmarshal malformed yaml returns an error",
-			yamlMock: "prometheusK8s:\n  volumeClaimTemplate:  dd: dfs:\n",
-			wantErr:  true,
-			errMsg:   "error converting YAML to JSON",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			// Given
-			data := testCase.yamlMock
-			coreclient := kubefake.NewSimpleClientset()
-			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
-
-			// When
-			test, err := gatherer.unmarshalVCTemplateName(data)
-
-			// Assert
-			if testCase.wantErr {
-				assert.Error(t, err)
-				assert.ErrorContains(t, err, testCase.errMsg)
-			} else {
-				assert.Equal(t, testCase.expected, test)
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func Test_GatherMonitoring_getVolumeClaimName(t *testing.T) {
-	b, _ := os.ReadFile("testdata/monitoring_pvs_vctemplate.yaml")
-	mock := string(b)
-
-	testCases := []struct {
-		name     string
-		cm       *corev1.ConfigMap
-		expected string
-		wantErr  bool
-		errMsg   string
-	}{
-		{
-			name: "ConfigMap with valid data returns prometheus name",
-			cm: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config", Namespace: "openshift-monitoring"},
-				Data: map[string]string{
-					"config.yaml": mock,
-				},
-			},
-			expected: "mock",
-		},
-		{
-			name:    "No cluster-monitoring-config configmap is defined returns an error",
-			cm:      &corev1.ConfigMap{},
-			wantErr: true,
-			errMsg:  "configmaps \"cluster-monitoring-config\" not found",
-		},
-		{
-			name: "ConfigMap having not config.yaml data entry returns an error",
-			cm: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config", Namespace: "openshift-monitoring"},
-			},
-			wantErr: true,
-			errMsg:  "no config.yaml data on cluster-monitoring-config ConfigMap",
-		},
-		{
-			name: "ConfigMap with unvalid data returns an error",
-			cm: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{Name: "cluster-monitoring-config", Namespace: "openshift-monitoring"},
-				Data: map[string]string{
-					"config.yaml": "otherdata:\n  ",
-				},
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			// Given
-			coreclient := kubefake.NewSimpleClientset([]runtime.Object{testCase.cm}...)
-			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
-
-			// When
-			test, err := gatherer.getVolumeClaimName(context.Background())
-
-			// Assert
-			if testCase.wantErr {
-				assert.Error(t, err)
-				assert.ErrorContains(t, err, testCase.errMsg)
-			} else {
-				assert.Equal(t, testCase.expected, test)
-				assert.NoError(t, err)
 			}
 		})
 	}

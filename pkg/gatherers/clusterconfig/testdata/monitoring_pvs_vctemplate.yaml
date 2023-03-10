@@ -1,9 +1,0 @@
-prometheusK8s:
-  volumeClaimTemplate:
-    metadata:
-      name: mock
-    spec:
-      storageClassName: local-storage
-      resources:
-        requests:
-          storage: 2Gi
