@@ -96,32 +96,34 @@ func gatherServiceAccounts(ctx context.Context, coreClient corev1client.CoreV1In
 
 // ServiceAccountsMarshaller implements serialization of Service Accounts
 type ServiceAccountsMarshaller struct {
-	sa                   []corev1.ServiceAccount
+	serviceAccounts      []corev1.ServiceAccount
 	totalServiceAccounts int
+}
+
+type serviceAccountInfo struct {
+	Name            string `json:"name"`
+	NumberOfSecrets int    `json:"secrets"`
 }
 
 // Marshal implements serialization of ServiceAccount
 func (a ServiceAccountsMarshaller) Marshal() ([]byte, error) {
 	// Creates map for marshal
-	sr := map[string]interface{}{}
-	st := map[string]interface{}{}
-	st["TOTAL_COUNT"] = a.totalServiceAccounts
-	sr["serviceAccounts"] = st
-	nss := map[string]interface{}{}
-	st["namespaces"] = nss
-	for i := range a.sa {
-		var ns map[string]interface{}
-		var ok bool
-		if _, ok = nss[a.sa[i].Namespace]; !ok {
-			ns = map[string]interface{}{}
-			nss[a.sa[i].Namespace] = ns
-		} else {
-			ns = nss[a.sa[i].Namespace].(map[string]interface{})
-		}
-		ns["name"] = a.sa[i].Name
-		ns["secrets"] = len(a.sa[i].Secrets)
+	serviceAccounts := map[string]any{}
+	namespaces := map[string][]serviceAccountInfo{}
+	serviceAccounts["serviceAccounts"] = map[string]any{
+		"TOTAL_COUNT": a.totalServiceAccounts,
+		"namespaces":  namespaces,
 	}
-	return json.Marshal(sr)
+
+	for i := range a.serviceAccounts {
+		saInfo := serviceAccountInfo{
+			Name:            a.serviceAccounts[i].Name,
+			NumberOfSecrets: len(a.serviceAccounts[i].Secrets),
+		}
+		namespace := a.serviceAccounts[i].Namespace
+		namespaces[namespace] = append(namespaces[namespace], saInfo)
+	}
+	return json.Marshal(serviceAccounts)
 }
 
 // GetExtension returns extension for anonymized openshift objects

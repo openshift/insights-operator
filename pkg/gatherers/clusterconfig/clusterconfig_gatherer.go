@@ -52,6 +52,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"machine_sets":                      (*Gatherer).GatherMachineSet,
 	"machine_configs":                   (*Gatherer).GatherMachineConfigs,
 	"machine_healthchecks":              (*Gatherer).GatherMachineHealthCheck,
+	"monitoring_persistent_volumes":     (*Gatherer).GatherMonitoringPVs,
 	"install_plans":                     (*Gatherer).GatherInstallPlans,
 	"service_accounts":                  (*Gatherer).GatherServiceAccounts,
 	"machine_config_pools":              (*Gatherer).GatherMachineConfigPool,
