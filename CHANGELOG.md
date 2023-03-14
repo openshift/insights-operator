@@ -1,5 +1,10 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
 	Please see OpenShift release notes for official changes\n<!--Latest hash: 76cc46b739c27281db0f7b2a23eb091b2a70f698-->
+## 4.14
+
+### Data Enhancement
+- [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
+
 ## 4.13
 
 ### Bugfix
