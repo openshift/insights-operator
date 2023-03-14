@@ -45,19 +45,27 @@ func (g *Gatherer) GatherSchedulerLogs(ctx context.Context) ([]record.Record, []
 }
 
 func gatherSchedulerLogs(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
-	records, err := common.CollectLogsFromContainers(ctx, coreClient, common.LogContainersFilter{
-		Namespace:     "openshift-kube-scheduler",
-		LabelSelector: "app=openshift-kube-scheduler",
-	}, common.LogMessagesFilter{
-		MessagesToSearch: []string{"PodTopologySpread"},
-		SinceSeconds:     logDefaultSinceSeconds,
-		LimitBytes:       logDefaultLimitBytes,
-	}, func(namespace string, podName string, containerName string) string {
-		return fmt.Sprintf("config/pod/%s/logs/%s/messages.log", namespace, podName)
-	})
+	records, err := common.CollectLogsFromContainers(ctx, coreClient,
+		common.LogContainersFilter{
+			Namespace:     "openshift-kube-scheduler",
+			LabelSelector: "app=openshift-kube-scheduler",
+		},
+		getSchedulerLogsMessagesFilter(),
+		func(namespace string, podName string, containerName string) string {
+			return fmt.Sprintf("config/pod/%s/logs/%s/messages.log", namespace, podName)
+		},
+	)
 	if err != nil {
 		return nil, []error{err}
 	}
 
 	return records, nil
+}
+
+func getSchedulerLogsMessagesFilter() common.LogMessagesFilter {
+	return common.LogMessagesFilter{
+		MessagesToSearch: []string{"PodTopologySpread"},
+		SinceSeconds:     logDefaultSinceSeconds,
+		LimitBytes:       logDefaultLimitBytes,
+	}
 }
