@@ -5,6 +5,10 @@
 ### Data Enhancement
 - [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
 
+### Others
+
+- [#751](https://github.com/openshift/insights-operator/pull/751) Add unit tests for SAP vsystem, APIServer operator, OAuthentication and Scheduler gatherers
+
 ## 4.13
 
 ### Bugfix
