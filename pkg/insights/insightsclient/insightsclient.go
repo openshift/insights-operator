@@ -162,11 +162,7 @@ func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv
 }
 
 func (c *Client) GetClusterVersion() (*configv1.ClusterVersion, error) {
-	if c.clusterVersion != nil {
-		return c.clusterVersion, nil
-	}
 	ctx := context.Background()
-
 	gatherConfigClient, err := configv1client.NewForConfig(c.gatherKubeConfig)
 	if err != nil {
 		return nil, err
