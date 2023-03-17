@@ -3,7 +3,7 @@
 ## 4.13
 
 ### Data Enhancement
-- [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
+- [#753](https://github.com/openshift/insights-operator/pull/753) Gather openshift-monitoring persistent volumes
 
 ### Bugfix
 - [#723](https://github.com/openshift/insights-operator/pull/723) Obfuscate HTTP_PROXY and HTTPS_PROXY env variables on containers
