@@ -39,7 +39,7 @@ func Test_GatherClusterProxy(t *testing.T) {
 			errorCount: 0,
 		},
 		{
-			name: "Proxy status HTTPPROXY returns obfuscated string instead real value",
+			name: "Check Proxy 'Status' property value returns obfuscated string instead real value",
 			proxy: &v1.Proxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
 				Status:     v1.ProxyStatus{HTTPProxy: "0.0.0.0:8443"},
@@ -58,7 +58,7 @@ func Test_GatherClusterProxy(t *testing.T) {
 			errorCount: 0,
 		},
 		{
-			name: "Proxy spec HTTPPROXY returns obfuscated string instead real value",
+			name: "Check Proxy 'Spec' property value returns obfuscated string instead real value",
 			proxy: &v1.Proxy{
 				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
 				Spec:       v1.ProxySpec{HTTPProxy: "0.0.0.0:8443"},
