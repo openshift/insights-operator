@@ -264,23 +264,22 @@ func mustGetPackageName(astRoot string, f *ast.Package) string {
 	}
 	if firstKey == "" {
 		log.Fatalf("Package %q is composed of %d source files", f.Name, len(f.Files))
-	} else {
-		pkgAbs, err := filepath.Abs(filepath.Join(astRoot, filepath.Dir(firstKey)))
-		if err != nil {
-			log.Fatal(err)
-		}
-		goModPath, relPkgPath, err := findGoMod(pkgAbs)
-		if err != nil {
-			log.Fatal(err)
-		}
-		moduleName, err := getModuleNameFromGoMod(goModPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		importPath := filepath.Join(moduleName, relPkgPath)
-		return importPath
 	}
-	return ""
+
+	pkgAbs, err := filepath.Abs(filepath.Join(astRoot, filepath.Dir(firstKey)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	goModPath, relPkgPath, err := findGoMod(pkgAbs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	moduleName, err := getModuleNameFromGoMod(goModPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	importPath := filepath.Join(moduleName, relPkgPath)
+	return importPath
 }
 
 // execExampleMethod executes the method by starting go run and capturing the produced standard output

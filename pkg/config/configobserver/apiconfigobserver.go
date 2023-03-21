@@ -56,7 +56,7 @@ func NewAPIConfigObserver(kubeConfig *rest.Config,
 	return c, nil
 }
 
-func (a *APIConfigController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+func (a *APIConfigController) sync(ctx context.Context, _ factory.SyncContext) error {
 	insightDataGatherConf, err := a.configV1Alpha1Cli.InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
