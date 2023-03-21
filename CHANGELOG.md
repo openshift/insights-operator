@@ -1,8 +1,56 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 24aeaa5b82e3828883faafd351f530abddf484d7-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 76cc46b739c27281db0f7b2a23eb091b2a70f698-->
+## 4.13
+
+### Others
+- [#693](https://github.com/openshift/insights-operator/pull/693) Use cgroups memory usage data in the archive metadata
+
+## 4.12
+
+### Data Enhancement
+- [#685](https://github.com/openshift/insights-operator/pull/685) remove name and namespace from dvo metrics
+- [#658](https://github.com/openshift/insights-operator/pull/658) openshift-machine-api warning events gatherer
+- [#646](https://github.com/openshift/insights-operator/pull/646) adding insights capability annotations
+- [#657](https://github.com/openshift/insights-operator/pull/657) helm upgrade and uninstall metric gathering
+- [#654](https://github.com/openshift/insights-operator/pull/654) Gather status of the cephclusters.ceph.rook.io resources
+- [#652](https://github.com/openshift/insights-operator/pull/652) Gather & store firing alerts in JSON too
+
+### Bugfix
+- [#683](https://github.com/openshift/insights-operator/pull/683) Updated info link in insights recommendations
+- [#687](https://github.com/openshift/insights-operator/pull/687) fix the schema checking conditional gathering rules
+- [#681](https://github.com/openshift/insights-operator/pull/681) limit the size of logs loaded into memory
+- [#679](https://github.com/openshift/insights-operator/pull/679) Update PNCC gatherer
+- [#678](https://github.com/openshift/insights-operator/pull/678) do not include disabled rules in the total metric
+- [#670](https://github.com/openshift/insights-operator/pull/670) updated conditional gathering rules checking
+- [#674](https://github.com/openshift/insights-operator/pull/674) fix alert namespace label
+- [#672](https://github.com/openshift/insights-operator/pull/672) Explicitly clear run-level label
+- [#664](https://github.com/openshift/insights-operator/pull/664) update the DVO metrics gatherer
+- [#667](https://github.com/openshift/insights-operator/pull/667) order conditions by type to limit un-needed updates
+
+### Others
+- [#650](https://github.com/openshift/insights-operator/pull/650) reduce cognitive complexity
+- [#690](https://github.com/openshift/insights-operator/pull/690) Improve GatherNodeLogs docs
+- [#688](https://github.com/openshift/insights-operator/pull/688) Update owners list
+- [#680](https://github.com/openshift/insights-operator/pull/680) read DataPolicy attribute from the config API
+- [#673](https://github.com/openshift/insights-operator/pull/673) read new config API and disable gatherers based on the API values
+- [#669](https://github.com/openshift/insights-operator/pull/669) Implement insights report updating in the insightsoperators.operator.openshift.io resource
+- [#671](https://github.com/openshift/insights-operator/pull/671) K8s & OpenShift version updates
+- [#666](https://github.com/openshift/insights-operator/pull/666) Introduce insightsoperators.openshift.io CR & implement its gather st…
+- [#661](https://github.com/openshift/insights-operator/pull/661) Update K8s & OpenShift versions + vendoring
+- [#660](https://github.com/openshift/insights-operator/pull/660) Remove Bugzilla references
+- [#656](https://github.com/openshift/insights-operator/pull/656) Extend the conditional gatherer docs
+- [#653](https://github.com/openshift/insights-operator/pull/653) Enable Insights recommendations as alerts by default
+- [#644](https://github.com/openshift/insights-operator/pull/644) Expose Insights recommendations as alerts
+- [#647](https://github.com/openshift/insights-operator/pull/647) Minor gatherer's docs & OWNERS update
+- [#645](https://github.com/openshift/insights-operator/pull/645) adding list of insights generated metrics
+
+### Misc
+- [#682](https://github.com/openshift/insights-operator/pull/682) Updating ose-insights-operator images to be consistent with ART
+- [#649](https://github.com/openshift/insights-operator/pull/649) Updating ose-insights-operator images to be consistent with ART
+
 ## 4.11
 
-### Enhancement
+### Data Enhancement
 - [#625](https://github.com/openshift/insights-operator/pull/625) gather io configuration
 - [#627](https://github.com/openshift/insights-operator/pull/627) Console helm metrics
 - [#603](https://github.com/openshift/insights-operator/pull/603) Implement fingerprint for records
@@ -14,6 +62,7 @@
 - [#580](https://github.com/openshift/insights-operator/pull/580) Gather cluster images.config.openshift.io resource definition
 
 ### Bugfix
+- [#641](https://github.com/openshift/insights-operator/pull/641) insightsclient - do not format OCM error message twice
 - [#640](https://github.com/openshift/insights-operator/pull/640) Fix permissions for OCS for the storage gatherer
 - [#633](https://github.com/openshift/insights-operator/pull/633) make cluster version condition more flexible
 - [#620](https://github.com/openshift/insights-operator/pull/620) save conditional gatherer endpoint and firing alerts in the metadata
@@ -27,6 +76,7 @@
 - [#578](https://github.com/openshift/insights-operator/pull/578) defer in loop
 
 ### Others
+- [#642](https://github.com/openshift/insights-operator/pull/642) Update CHANGELOG
 - [#639](https://github.com/openshift/insights-operator/pull/639) Do not use the kube-rbac-proxy container
 - [#637](https://github.com/openshift/insights-operator/pull/637) Implement Prometheus Collector pattern
 - [#626](https://github.com/openshift/insights-operator/pull/626) update of the arch.md document
@@ -60,7 +110,7 @@
 
 ## 4.10
 
-### Enhancement
+### Data Enhancement
 - [#563](https://github.com/openshift/insights-operator/pull/563) conditional log gathers into a single gather and PrometheusOperatorSyncFailed
 - [#557](https://github.com/openshift/insights-operator/pull/557) limit number of containers per namespace
 - [#558](https://github.com/openshift/insights-operator/pull/558) Collect Info about Openshift scheduler
@@ -123,7 +173,7 @@
 
 ## 4.9
 
-### Enhancement
+### Data Enhancement
 - [#489](https://github.com/openshift/insights-operator/pull/489) Gather installed PSP names
 - [#487](https://github.com/openshift/insights-operator/pull/487) Conditional data gathering validation & refactoring
 - [#476](https://github.com/openshift/insights-operator/pull/476) Gather Openshift Logging Stack Data
@@ -168,7 +218,7 @@
 
 ## 4.8
 
-### Enhancement
+### Data Enhancement
 - [#438](https://github.com/openshift/insights-operator/pull/438) Gather MachineAutoscalers definitions
 - [#442](https://github.com/openshift/insights-operator/pull/442) include full timestamps in the logs
 - [#432](https://github.com/openshift/insights-operator/pull/432) Replace gather-job image without FQDN
@@ -260,7 +310,7 @@
 
 ## 4.7
 
-### Enhancement
+### Data Enhancement
 - [#327](https://github.com/openshift/insights-operator/pull/327) collect invalid resource name error from logs 
 - [#316](https://github.com/openshift/insights-operator/pull/316) Gather list of OLM operator names and versions & minor clean up
 - [#319](https://github.com/openshift/insights-operator/pull/319) Gather PersistentVolume definition (if any) used in Image registry st…

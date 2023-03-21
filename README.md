@@ -231,6 +231,7 @@ the provided time frame.
 ```shell script
 go run cmd/changelog/main.go 2021-01-10 2021-01-20
 ```
+In case of changelog not being generated properly, try switching to release branch you want to generate.
 
 # Reported data
 
