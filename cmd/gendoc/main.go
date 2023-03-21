@@ -77,9 +77,9 @@ func main() {
 		fmt.Print(err)
 	}
 	for _, k := range keys {
-		_, err = mdf.WriteString(fmt.Sprintf(
+		_, err := fmt.Fprintf(mdf,
 			"## %s\n\n"+
-				"%s\n\n", k, md[k].Doc))
+				"%s\n\n", k, md[k].Doc)
 		if err != nil {
 			fmt.Print(err)
 		}
@@ -90,16 +90,16 @@ func main() {
 				size = len(e)
 			}
 			size /= len(md[k].Examples)
-			_, err := mdf.WriteString(fmt.Sprintf(
+			_, err := fmt.Fprintf(mdf,
 				"Output raw size: %d\n\n"+
-					"### Examples\n\n", size))
+					"### Examples\n\n", size)
 			if err != nil {
 				fmt.Print(err)
 			}
 			for n, e := range md[k].Examples {
-				_, err := mdf.WriteString(fmt.Sprintf(
+				_, err := fmt.Fprintf(mdf,
 					"#### %s\n"+
-						"```%s```\n\n", n, e))
+						"```%s```\n\n", n, e)
 				if err != nil {
 					fmt.Print(err)
 				}
@@ -299,8 +299,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 			fmt.Print(err)
 		}
 	}()
-
-	_, err = tf.WriteString(fmt.Sprintf(`package main
+	_, err = fmt.Fprintf(tf, `package main
 	import "%s"
 	import "fmt"
 
@@ -308,7 +307,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 		str, _ := %s.%s()
 		fmt.Print(str)
 	}
-		`, methodFullPackage, methodPackage, methodName))
+		`, methodFullPackage, methodPackage, methodName)
 	if err != nil {
 		fmt.Print(err)
 	}
