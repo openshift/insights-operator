@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
-	configfake "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1/fake"
+	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -40,16 +40,21 @@ const testRules = `{
 }`
 
 func TestClient_RecvGatheringRules(t *testing.T) {
-	httpClient := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	httpServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 		_, err := writer.Write([]byte(testRules))
 		if err != nil {
 			assert.NoError(t, err)
 		}
 	}))
-	defer httpClient.Close()
-
-	endpoint := httpClient.URL
+	endpoint := httpServer.URL
+	http.HandleFunc("/apis/config.openshift.io/v1/clusterversions/version", http.HandlerFunc(func(writer http.ResponseWriter,
+		request *http.Request) {
+		writer.WriteHeader(http.StatusOK)
+		_, err := writer.Write([]byte("test"))
+		assert.NoError(t, err)
+	}))
+	defer httpServer.Close()
 	clusterVersion := &configv1.ClusterVersion{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "version",
@@ -59,7 +64,6 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 			Channel:   "stable-4.9",
 		},
 	}
-	fakeApiServers := configfake.FakeAPIServers{}
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "clusterversions", clusterVersion)
 
@@ -68,20 +72,19 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 			Kind:       "clusterversion",
 			APIVersion: "cluster",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:         "version",
-			Namespace:    "clusterversions",
-			GenerateName: "version",
-		},
-		Spec:   configv1.APIServerSpec{},
-		Status: configv1.APIServerStatus{},
 	}
 
-	_, err := fakeApiServers.Create(ctx, apiServer, metav1.CreateOptions{})
+	config := configfake.NewSimpleClientset()
+	_, err := config.ConfigV1().APIServers().Create(ctx, apiServer, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	client := New(http.DefaultClient, 0, "", &MockAuthorizer{}, &rest.Config{})
+	_, err = config.ConfigV1().ClusterVersions().Create(ctx, clusterVersion, metav1.CreateOptions{})
+	assert.NoError(t, err)
 
-	gatheringRulesBytes, err := client.RecvGatheringRules(ctx, endpoint)
+	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, &rest.Config{})
+	insightsClient.gatherKubeConfig = &rest.Config{
+		Host: endpoint,
+	}
+	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(ctx, endpoint)
 	assert.NoError(t, err)
 
 	assert.JSONEq(t, testRules, string(gatheringRulesBytes))
