@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -68,7 +68,7 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewReader(cv)),
+				Body:       io.NopCloser(bytes.NewReader(cv)),
 			}
 			return resp, nil
 		}),
