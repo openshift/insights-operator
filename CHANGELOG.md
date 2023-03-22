@@ -6,7 +6,9 @@
 - [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
 
 ### Others
+
 - [#747](https://github.com/openshift/insights-operator/pull/747) Unit tests and file formatting for kube ctrl manager logs gatherer
+- [#756](https://github.com/openshift/insights-operator/pull/756) add unit tests for cluster proxy gatherer
 
 ## 4.13
 

@@ -159,7 +159,7 @@ func handleTasksConcurrentlyGatherTasks(tasks []Task) []GatheringFunctionResult 
 	return results
 }
 
-func Test_worker(t *testing.T) {
+func Test_worker(_ *testing.T) {
 	var wg sync.WaitGroup
 	tasksChan := make(chan Task)
 	resultsChan := make(chan GatheringFunctionResult)
