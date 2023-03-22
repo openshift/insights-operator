@@ -47,9 +47,7 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 		_, err := writer.Write([]byte(testRules))
-		if err != nil {
-			assert.NoError(t, err)
-		}
+		assert.NoError(t, err)
 	}))
 	endpoint := httpServer.URL
 	defer httpServer.Close()
@@ -80,12 +78,9 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 	}
 
 	gatherConfigClient := configv1client.New(fakeClient)
-	assert.NoError(t, err)
 	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, gatherConfigClient)
-
 	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(context.TODO(), endpoint)
 	assert.NoError(t, err)
-
 	assert.JSONEq(t, testRules, string(gatheringRulesBytes))
 }
 
