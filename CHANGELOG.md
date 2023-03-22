@@ -5,6 +5,9 @@
 ### Data Enhancement
 - [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
 
+### Others
+- [#756](https://github.com/openshift/insights-operator/pull/756) add unit tests for cluster proxy gatherer
+
 ## 4.13
 
 ### Bugfix
