@@ -12,7 +12,8 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/api/config/v1alpha1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned"
+	configclient "github.com/openshift/client-go/config/clientset/versioned"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
@@ -42,7 +43,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		return err
 	}
 
-	configClient, err := configv1client.NewForConfig(kubeConfig)
+	configClient, err := configclient.NewForConfig(kubeConfig)
 	if err != nil {
 		return err
 	}
@@ -85,13 +86,17 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	recdriver := diskrecorder.New(d.StoragePath)
 	rec := recorder.New(recdriver, d.Interval, anonymizer)
 	defer func() {
-		if err := rec.Flush(); err != nil {
+		if err = rec.Flush(); err != nil {
 			klog.Error(err)
 		}
 	}()
 
 	authorizer := clusterauthorizer.New(configObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
+	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,

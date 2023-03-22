@@ -1,17 +1,21 @@
 package insightsclient
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
-	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes/scheme"
+	fakerest "k8s.io/client-go/rest/fake"
 )
 
 const testRules = `{
@@ -48,13 +52,8 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 		}
 	}))
 	endpoint := httpServer.URL
-	http.HandleFunc("/apis/config.openshift.io/v1/clusterversions/version", http.HandlerFunc(func(writer http.ResponseWriter,
-		request *http.Request) {
-		writer.WriteHeader(http.StatusOK)
-		_, err := writer.Write([]byte("test"))
-		assert.NoError(t, err)
-	}))
 	defer httpServer.Close()
+
 	clusterVersion := &configv1.ClusterVersion{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "version",
@@ -64,27 +63,27 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 			Channel:   "stable-4.9",
 		},
 	}
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "clusterversions", clusterVersion)
-
-	apiServer := &configv1.APIServer{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "clusterversion",
-			APIVersion: "cluster",
-		},
-	}
-
-	config := configfake.NewSimpleClientset()
-	_, err := config.ConfigV1().APIServers().Create(ctx, apiServer, metav1.CreateOptions{})
-	assert.NoError(t, err)
-	_, err = config.ConfigV1().ClusterVersions().Create(ctx, clusterVersion, metav1.CreateOptions{})
+	cv, err := json.Marshal(clusterVersion)
 	assert.NoError(t, err)
 
-	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, &rest.Config{})
-	insightsClient.gatherKubeConfig = &rest.Config{
-		Host: endpoint,
+	fakeClient := &fakerest.RESTClient{
+		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
+			resp := &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewReader(cv)),
+			}
+			return resp, nil
+		}),
+		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
+		GroupVersion:         configv1.GroupVersion,
+		VersionedAPIPath:     "/apis/config.openshift.io/v1/clusterversions/version",
 	}
-	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(ctx, endpoint)
+
+	gatherConfigClient := configv1client.New(fakeClient)
+	assert.NoError(t, err)
+	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, gatherConfigClient)
+
+	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(context.TODO(), endpoint)
 	assert.NoError(t, err)
 
 	assert.JSONEq(t, testRules, string(gatheringRulesBytes))
