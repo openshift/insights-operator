@@ -70,7 +70,7 @@ func Test_Controller_Run(t *testing.T) {
 			}, 1*time.Hour)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.Run(stopCh, tt.initialDelay)
+			go c.Run(stopCh, tt.initialDelay, false)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}
@@ -107,7 +107,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 			}, tt.interval)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.periodicTrigger(stopCh)
+			go c.periodicTrigger(stopCh, false)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}

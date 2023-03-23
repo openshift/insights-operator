@@ -13,7 +13,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/api/insights/v1alpha1"
 	v1 "github.com/openshift/api/operator/v1"
+	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
@@ -60,6 +62,7 @@ type Controller struct {
 	statuses            map[string]controllerstatus.StatusController
 	anonymizer          *anonymization.Anonymizer
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface
+	dataGatherClient    *insightsv1alpha1cli.InsightsV1alpha1Client
 	kubeClient          *kubernetes.Clientset
 	reportRetriever     *insightsreport.Controller
 	image               string
@@ -70,6 +73,7 @@ func NewWithTechPreview(
 	secretConfigurator configobserver.Configurator,
 	apiConfigurator configobserver.APIConfigObserver,
 	kubeClient *kubernetes.Clientset,
+	dataGatherClient *insightsv1alpha1cli.InsightsV1alpha1Client,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 	return &Controller{
@@ -78,6 +82,7 @@ func NewWithTechPreview(
 		apiConfigurator:    apiConfigurator,
 		statuses:           statuses,
 		kubeClient:         kubeClient,
+		dataGatherClient:   dataGatherClient,
 	}
 }
 
@@ -269,7 +274,6 @@ func (c *Controller) GatherJob() {
 		}
 		c.image = image
 	}
-
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "periodic-gathering-",
@@ -332,9 +336,31 @@ func (c *Controller) GatherJob() {
 			},
 		},
 	}
+	periodicDataGatherCR := v1alpha1.DataGather{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "periodic-gathering",
+		},
+		Spec: v1alpha1.DataGatherSpec{
+			DataPolicy: v1alpha1.DataPolicy(*c.apiConfigurator.GatherDataPolicy()),
+		},
+		Status: v1alpha1.DataGatherStatus{
+			RelatedObjects: []v1alpha1.ObjectReference{
+				{
+					Name:      gj.Name,
+					Resource:  gj.Kind,
+					Namespace: gj.Namespace,
+					Group:     gj.GroupVersionKind().Group,
+				},
+			},
+		},
+	}
+	_, err := c.dataGatherClient.DataGathers("openshift-insights").Create(context.Background(), &periodicDataGatherCR, metav1.CreateOptions{})
+	if err != nil {
+		klog.Error("Failed to create DataGather %s: %v", periodicDataGatherCR.Name, err)
+	}
 
 	klog.Infof("Creating gathering job %v", gj.Name)
-	gj, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).Create(context.Background(), gj, metav1.CreateOptions{})
+	gj, err = c.kubeClient.BatchV1().Jobs(insightsNamespace).Create(context.Background(), gj, metav1.CreateOptions{})
 	if err != nil {
 		klog.Error(err)
 	}

@@ -9,6 +9,7 @@ import (
 	v1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
+	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -67,6 +68,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 
 	operatorClient, err := operatorv1client.NewForConfig(controller.KubeConfig)
+	if err != nil {
+		return err
+	}
+	insightClient, err := insightsv1alpha1cli.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -157,7 +162,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		statusReporter.AddSources(periodicGather.Sources()...)
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver, operatorClient.InsightsOperators())
-		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver, apiConfigObserver, kubeClient)
+		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver, apiConfigObserver, kubeClient, insightClient)
 		go periodicGather.PeriodicPrune(ctx)
 	}
 
