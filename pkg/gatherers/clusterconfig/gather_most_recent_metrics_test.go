@@ -88,8 +88,8 @@ test`),
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			records, errs := gatherMostRecentMetrics(ctx, tt.metricsClient.RestClient(t))
-			assert.Equalf(t, tt.wantRecords, records, "gatherMostRecentMetrics(%v, %v)", ctx, tt.metricsClient)
-			assert.Equalf(t, tt.wantErrors, errs, "gatherMostRecentMetrics(%v, %v)", ctx, tt.metricsClient)
+			assert.Equal(t, tt.wantRecords, records)
+			assert.Equal(t, tt.wantErrors, errs)
 		})
 	}
 }
