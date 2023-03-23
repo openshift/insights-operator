@@ -37,9 +37,33 @@ func Test_GatherClusterInfrastructure(t *testing.T) {
 			},
 		},
 		{
-			name:   "Retrieving no infraestructure returns no error/no record",
+			name:   "Retrieving no infrastructure returns no error/no record",
 			infra:  &v1.Infrastructure{},
 			result: nil,
+		},
+		{
+			name: "Check 'Status' InfrastructureName property value returns obfuscated",
+			infra: &v1.Infrastructure{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+				Status: v1.InfrastructureStatus{
+					InfrastructureName: "test",
+					PlatformStatus:     &v1.PlatformStatus{},
+				},
+			},
+			result: []record.Record{
+				{
+					Name: "config/infrastructure",
+					Item: record.ResourceMarshaller{
+						Resource: &v1.Infrastructure{
+							ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+							Status: v1.InfrastructureStatus{
+								InfrastructureName: "xxxx",
+								PlatformStatus:     &v1.PlatformStatus{}},
+						},
+					},
+				},
+			},
+			errorCount: 0,
 		},
 	}
 
