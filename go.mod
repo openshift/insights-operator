@@ -6,9 +6,9 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/openshift/api v0.0.0-20230320192226-1fc631efd341
+	github.com/openshift/api v0.0.0-20230323200117-1339ccc8302e
 	github.com/openshift/build-machinery-go v0.0.0-20220913142420-e25cf57ea46d
-	github.com/openshift/client-go v0.0.0-20230321154630-2eef5a3d6b2b
+	github.com/openshift/client-go v0.0.0-20230324103026-3f1513df25e0
 	github.com/openshift/installer v0.9.0-master.0.20191219195746-103098955ced
 	github.com/openshift/library-go v0.0.0-20230321160537-6ac65c5454f9
 	github.com/prometheus/client_golang v1.14.0
