@@ -274,10 +274,16 @@ func (c *Controller) GatherJob() {
 		}
 		c.image = image
 	}
+
+	dgName, err := c.createNewDataGatherCR()
+	if err != nil {
+		klog.Errorf("Failed to create DataGather %s: %v", dgName, err)
+	}
+
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "periodic-gathering-",
-			Namespace:    insightsNamespace,
+			Name:      dgName,
+			Namespace: insightsNamespace,
 		},
 		Spec: batchv1.JobSpec{
 			// backoff limit is 0 - we dont' want to restart the gathering immediately in case of failure
@@ -316,6 +322,12 @@ func (c *Controller) GatherJob() {
 							Name:  "insights-gathering",
 							Image: c.image,
 							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml"},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "DATAGATHER_NAME",
+									Value: dgName,
+								},
+							},
 							SecurityContext: &corev1.SecurityContext{
 								AllowPrivilegeEscalation: falseB,
 								Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
@@ -336,29 +348,6 @@ func (c *Controller) GatherJob() {
 			},
 		},
 	}
-	periodicDataGatherCR := v1alpha1.DataGather{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "periodic-gathering",
-		},
-		Spec: v1alpha1.DataGatherSpec{
-			DataPolicy: v1alpha1.DataPolicy(*c.apiConfigurator.GatherDataPolicy()),
-		},
-		Status: v1alpha1.DataGatherStatus{
-			RelatedObjects: []v1alpha1.ObjectReference{
-				{
-					Name:      gj.Name,
-					Resource:  gj.Kind,
-					Namespace: gj.Namespace,
-					Group:     gj.GroupVersionKind().Group,
-				},
-			},
-		},
-	}
-	_, err := c.dataGatherClient.DataGathers("openshift-insights").Create(context.Background(), &periodicDataGatherCR, metav1.CreateOptions{})
-	if err != nil {
-		klog.Error("Failed to create DataGather %s: %v", periodicDataGatherCR.Name, err)
-	}
-
 	klog.Infof("Creating gathering job %v", gj.Name)
 	gj, err = c.kubeClient.BatchV1().Jobs(insightsNamespace).Create(context.Background(), gj, metav1.CreateOptions{})
 	if err != nil {
@@ -506,12 +495,13 @@ func createGathererStatus(gfr *gather.GathererFunctionReport) v1.GathererStatus 
 // PeriodicPrune runs periodically and deletes jobs (including the related pods) older
 // than given time
 func (c *Controller) PeriodicPrune(ctx context.Context) {
-	pruneInterval := 12 * time.Hour
+	pruneInterval := 1 * time.Hour
 	klog.Infof("Pruning old jobs every %s", pruneInterval)
 	for {
 		select {
 		case <-ctx.Done():
 		case <-time.After(pruneInterval):
+			// prune old jobs
 			jobs, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				klog.Error(err)
@@ -530,8 +520,47 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 					klog.Infof("Job %s successfully removed", job.Name)
 				}
 			}
+			// prune old DataGather custom resources
+			dataGatherCRs, err := c.dataGatherClient.DataGathers().List(ctx, metav1.ListOptions{})
+			if err != nil {
+				klog.Error(err)
+			}
+			for i := range dataGatherCRs.Items {
+				dataGatherCR := dataGatherCRs.Items[i]
+				if time.Since(dataGatherCR.CreationTimestamp.Time) > 24*time.Hour {
+					err = c.dataGatherClient.DataGathers().Delete(ctx, dataGatherCR.Name, metav1.DeleteOptions{})
+					if err != nil {
+						klog.Errorf("Failed to DataGather custom resources %s: %v", dataGatherCR.Name, err)
+						continue
+					}
+				}
+				klog.Infof("DataGather %s resource successfully removed", dataGatherCR.Name)
+			}
 		}
 	}
+}
+
+// createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
+// with generate name prefux "periodic-gathering-". Returns the name of the newly created
+// resource
+func (c *Controller) createNewDataGatherCR() (string, error) {
+	dataGatherCR := v1alpha1.DataGather{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "periodic-gathering-",
+		},
+		Spec: v1alpha1.DataGatherSpec{
+			DataPolicy: v1alpha1.DataPolicy(*c.apiConfigurator.GatherDataPolicy()),
+		},
+		Status: v1alpha1.DataGatherStatus{
+			State: v1alpha1.Pending,
+		},
+	}
+	dataGather, err := c.dataGatherClient.DataGathers().Create(context.Background(), &dataGatherCR, metav1.CreateOptions{})
+	if err != nil {
+		return "", nil
+	}
+	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
+	return dataGather.Name, nil
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {

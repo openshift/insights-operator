@@ -71,6 +71,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
+
 	insightClient, err := insightsv1alpha1cli.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
