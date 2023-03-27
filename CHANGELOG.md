@@ -16,13 +16,12 @@
 - [#714](https://github.com/openshift/insights-operator/pull/714) operators gatherer - handle ingresscontroller relatedObject & simplify
 
 ### Bugfix
-- [#723](https://github.com/openshift/insights-operator/pull/723) HTTP_PROXY, HTTPS_PROXY
+- [#723](https://github.com/openshift/insights-operator/pull/723) Obfuscate HTTP_PROXY and HTTPS_PROXY env variables on containers
 - [#716](https://github.com/openshift/insights-operator/pull/716) additional fix
 - [#709](https://github.com/openshift/insights-operator/pull/709) do not periodically update Available clusteroperator co…
 - [#706](https://github.com/openshift/insights-operator/pull/706) do not get disabled rules
 - [#694](https://github.com/openshift/insights-operator/pull/694) Change of kube-system namespace configmap location according to docs. 
 - [#691](https://github.com/openshift/insights-operator/pull/691) storage/ceph path structure
-- [#723](https://github.com/openshift/insights-operator/pull/723) Obfuscate HTTP_PROXY and HTTPS_PROXY env variables on containers
 
 ### Others
 - [#728](https://github.com/openshift/insights-operator/pull/728) add unit test for silenced_alerts.go and rename it to gather_silenced_alerts.go
