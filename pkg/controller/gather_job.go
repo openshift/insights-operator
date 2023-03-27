@@ -13,9 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/api/config/v1alpha1"
 	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
@@ -61,27 +59,9 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		return err
 	}
 
-	configClient, err := configv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		return err
-	}
-
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
 		protoKubeConfig, kubeConfig, d.Impersonate,
 	)
-
-	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
-	if err != nil {
-		klog.Error("can't read cluster feature gates: %v", err)
-	}
-	var gatherConfig v1alpha1.GatherConfig
-	if tpEnabled {
-		insightsDataGather, err := configClient.ConfigV1alpha1().InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{}) //nolint: govet
-		if err != nil {
-			return err
-		}
-		gatherConfig = insightsDataGather.Spec.GatherConfig
-	}
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
@@ -127,7 +107,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
-		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, &gatherConfig)
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, nil)
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
 		}
@@ -158,10 +138,6 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	configClient, err := configv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		return err
-	}
 	insightClient, err := insightsv1alpha1cli.NewForConfig(kubeConfig)
 	if err != nil {
 		return err
@@ -190,19 +166,6 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
-	if err != nil {
-		klog.Error("can't read cluster feature gates: %v", err)
-	}
-	var gatherConfig v1alpha1.GatherConfig
-	if tpEnabled {
-		insightsDataGather, err := configClient.ConfigV1alpha1().InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{}) //nolint: govet
-		if err != nil {
-			return err
-		}
-		gatherConfig = insightsDataGather.Spec.GatherConfig
-	}
-
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
 		if err = os.MkdirAll(d.StoragePath, 0777); err != nil {
@@ -214,6 +177,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	configObserver := configobserver.New(d.Controller, kubeClient)
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+	// TODO fix obfuscation config
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
 		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, nil)
 	if err != nil {
@@ -234,7 +198,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
-		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, &gatherConfig)
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers)
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
 		}

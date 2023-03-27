@@ -13,7 +13,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
+	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
 	v1 "github.com/openshift/api/operator/v1"
 	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
@@ -72,6 +73,7 @@ func NewWithTechPreview(
 	reportRetriever *insightsreport.Controller,
 	secretConfigurator configobserver.Configurator,
 	apiConfigurator configobserver.APIConfigObserver,
+	listGatherers []gatherers.Interface,
 	kubeClient *kubernetes.Clientset,
 	dataGatherClient *insightsv1alpha1cli.InsightsV1alpha1Client,
 ) *Controller {
@@ -80,6 +82,7 @@ func NewWithTechPreview(
 		reportRetriever:    reportRetriever,
 		secretConfigurator: secretConfigurator,
 		apiConfigurator:    apiConfigurator,
+		gatherers:          listGatherers,
 		statuses:           statuses,
 		kubeClient:         kubeClient,
 		dataGatherClient:   dataGatherClient,
@@ -94,7 +97,6 @@ func New(
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
-	apiConfigurator configobserver.APIConfigObserver,
 	kubeClient *kubernetes.Clientset,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
@@ -106,7 +108,6 @@ func New(
 
 	return &Controller{
 		secretConfigurator:  secretConfigurator,
-		apiConfigurator:     apiConfigurator,
 		recorder:            rec,
 		gatherers:           listGatherers,
 		statuses:            statuses,
@@ -196,13 +197,7 @@ func (c *Controller) Gather() {
 			defer cancel()
 
 			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
-			var functionReports []gather.GathererFunctionReport
-			var err error
-			if c.apiConfigurator != nil {
-				functionReports, err = gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, c.apiConfigurator.GatherConfig())
-			} else {
-				functionReports, err = gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, nil)
-			}
+			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, nil)
 			for i := range functionReports {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
@@ -274,8 +269,29 @@ func (c *Controller) GatherJob() {
 		}
 		c.image = image
 	}
+	// TODO gatherers which should not be processed based on time
+	gatherConfig := c.apiConfigurator.GatherConfig()
 
-	dgName, err := c.createNewDataGatherCR()
+	var dp insightsv1alpha1.DataPolicy
+	switch gatherConfig.DataPolicy {
+	case configv1alpha1.NoPolicy:
+		dp = insightsv1alpha1.NoPolicy
+	case configv1alpha1.ObfuscateNetworking:
+		dp = insightsv1alpha1.ObfuscateNetworking
+	}
+
+	disabledGatherers := gatherConfig.DisabledGatherers
+	for _, gatherer := range c.gatherers {
+		if g, ok := gatherer.(gatherers.CustomPeriodGatherer); ok {
+			if !g.ShouldBeProcessedNow() {
+				disabledGatherers = append(disabledGatherers, g.GetName())
+			} else {
+				g.UpdateLastProcessingTime()
+			}
+		}
+	}
+
+	dgName, err := c.createNewDataGatherCR(disabledGatherers, dp)
 	if err != nil {
 		klog.Errorf("Failed to create DataGather %s: %v", dgName, err)
 	}
@@ -530,11 +546,11 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 				if time.Since(dataGatherCR.CreationTimestamp.Time) > 24*time.Hour {
 					err = c.dataGatherClient.DataGathers().Delete(ctx, dataGatherCR.Name, metav1.DeleteOptions{})
 					if err != nil {
-						klog.Errorf("Failed to DataGather custom resources %s: %v", dataGatherCR.Name, err)
+						klog.Errorf("Failed to delete DataGather custom resources %s: %v", dataGatherCR.Name, err)
 						continue
 					}
+					klog.Infof("DataGather %s resource successfully removed", dataGatherCR.Name)
 				}
-				klog.Infof("DataGather %s resource successfully removed", dataGatherCR.Name)
 			}
 		}
 	}
@@ -543,21 +559,29 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 // createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
 // with generate name prefux "periodic-gathering-". Returns the name of the newly created
 // resource
-func (c *Controller) createNewDataGatherCR() (string, error) {
-	dataGatherCR := v1alpha1.DataGather{
+func (c *Controller) createNewDataGatherCR(disabledGatherers []string, dataPolicy insightsv1alpha1.DataPolicy) (string, error) {
+	dataGatherCR := insightsv1alpha1.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "periodic-gathering-",
 		},
-		Spec: v1alpha1.DataGatherSpec{
-			DataPolicy: v1alpha1.DataPolicy(*c.apiConfigurator.GatherDataPolicy()),
+		Spec: insightsv1alpha1.DataGatherSpec{
+			DataPolicy: dataPolicy,
 		},
-		Status: v1alpha1.DataGatherStatus{
-			State: v1alpha1.Pending,
+		// TODO this shouldn't be here probably
+		Status: insightsv1alpha1.DataGatherStatus{
+			State: insightsv1alpha1.Pending,
 		},
 	}
+	for _, g := range disabledGatherers {
+		dataGatherCR.Spec.Gatherers = append(dataGatherCR.Spec.Gatherers, insightsv1alpha1.GathererConfig{
+			Name:  g,
+			State: insightsv1alpha1.Disabled,
+		})
+	}
+
 	dataGather, err := c.dataGatherClient.DataGathers().Create(context.Background(), &dataGatherCR, metav1.CreateOptions{})
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
 	return dataGather.Name, nil

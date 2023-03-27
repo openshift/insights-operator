@@ -151,19 +151,20 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 
 	var periodicGather *periodic.Controller
+	// the gatherers are periodically called to collect the data from the cluster
+	// and provide the results for the recorder
+	gatherers := gather.CreateAllGatherers(
+		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
+		secretConfigObserver, insightsClient,
+	)
 	if !tpEnabled {
-		// the gatherers are periodically called to collect the data from the cluster
-		// and provide the results for the recorder
-		gatherers := gather.CreateAllGatherers(
-			gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-			secretConfigObserver, insightsClient,
-		)
 		periodicGather = periodic.New(secretConfigObserver, rec, gatherers, anonymizer,
-			operatorClient.InsightsOperators(), apiConfigObserver, kubeClient)
+			operatorClient.InsightsOperators(), kubeClient)
 		statusReporter.AddSources(periodicGather.Sources()...)
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver, operatorClient.InsightsOperators())
-		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver, apiConfigObserver, kubeClient, insightClient)
+		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver,
+			apiConfigObserver, gatherers, kubeClient, insightClient)
 		go periodicGather.PeriodicPrune(ctx)
 	}
 
