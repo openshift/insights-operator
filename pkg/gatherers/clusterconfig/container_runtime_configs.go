@@ -13,21 +13,29 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherContainerRuntimeConfig collects ContainerRuntimeConfig  information
+// GatherContainerRuntimeConfig Collects `ContainerRuntimeConfig` information.
 //
-// The Kubernetes api:
+// ### API Reference
+// - https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+// - https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
 //
-//	https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L402
+// ### Sample data
+// - docs/insights-archive-sample/config/containerruntimeconfigs/set-log-and-pid.json
 //
-// Response see:
+// ### Location in archive
+// - `config/containerruntimeconfigs/{name}.json`
 //
-//	https://docs.okd.io/latest/rest_api/machine_apis/containerruntimeconfig-machineconfiguration-openshift-io-v1.html
+// ### Config ID
+// `clusterconfig/container_runtime_configs`
 //
-// * Location in archive: config/containerruntimeconfigs/
-// * Id in config: clusterconfig/container_runtime_configs
-// * Since versions:
-//   - 4.6.18+
-//   - 4.7+
+// ### Released version
+// - 4.7.0
+//
+// ### Backported versions
+// - 4.6.18+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherContainerRuntimeConfig(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

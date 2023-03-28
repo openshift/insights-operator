@@ -38,13 +38,29 @@ const (
 	podsLimit = 8000
 )
 
-// GatherWorkloadInfo collects summarized info about the workloads on a cluster
+// GatherWorkloadInfo Collects summarized info about the workloads on a cluster
 // in a generic fashion
 //
-// * Location in archive: config/workload_info
-// * Id in config: workloads/workload_info
-// * Since versions:
-//   - 4.8+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/workload_info.json
+//
+// ### Location in archive
+// - `config/workload_info.json`
+//
+// ### Config ID
+// `workloads/workload_info`
+//
+// ### Released version
+// - 4.8.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

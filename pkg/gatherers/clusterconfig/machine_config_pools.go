@@ -13,21 +13,30 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherMachineConfigPool collects MachineConfigPool information
+// GatherMachineConfigPool Collects `MachineConfigPool` information.
 //
-// The Kubernetes api:
+// ### API Reference
+// - https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+// - https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
 //
-//	https://github.com/openshift/machine-config-operator/blob/master/pkg/apis/machineconfiguration.openshift.io/v1/types.go#L197
+// ### Sample data
+// - docs/insights-archive-sample/config/machineconfigpools
 //
-// Response see:
+// ### Location in archive
+// - `config/machineconfigpools`
 //
-//	https://docs.okd.io/latest/rest_api/machine_apis/machineconfigpool-machineconfiguration-openshift-io-v1.html
+// ### Config ID
+// `clusterconfig/machine_config_pools`
 //
-// * Location in archive: config/machineconfigpools/
-// * Id in config: clusterconfig/machine_config_pools
-// * Since versions:
-//   - 4.5.33+
-//   - 4.6+
+// ### Released version
+// - 4.7.0
+//
+// ### Backported versions
+// - 4.5.33+
+// - 4.6.16+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherMachineConfigPool(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

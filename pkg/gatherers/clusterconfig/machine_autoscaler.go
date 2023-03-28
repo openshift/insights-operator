@@ -11,20 +11,29 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
-// GatherMachineAutoscalers collects MachineAutoscalers definition
+// GatherMachineAutoscalers Collects `MachineAutoscalers` definition.
 //
-// The Kubernetes api:
+// ### API Reference
+// - https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
+// - https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
 //
-//	https://github.com/openshift/cluster-autoscaler-operator/blob/master/pkg/apis/autoscaling/v1beta1/machineautoscaler_types.go
+// ### Sample data
+// - docs/insights-archive-sample/config/machineautoscalers/openshift-machine-api/worker-us-east-1a.json
 //
-// Response see:
+// ### Location in archive
+// - `config/machineautoscalers/{namespace}/{name}.json`
 //
-//	https://docs.openshift.com/container-platform/4.7/rest_api/autoscale_apis/machineautoscaler-autoscaling-openshift-io-v1beta1.html#machineautoscaler-autoscaling-openshift-io-v1beta1
+// ### Config ID
+// `clusterconfig/machine_autoscalers`
 //
-// * Location in archive: config/machineautoscalers/{namespace}/{machineautoscaler-name}.json
-// * Id in config: clusterconfig/machine_autoscalers
-// * Since versions:
-//   - 4.8+
+// ### Released version
+// - 4.8.2
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherMachineAutoscalers(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

@@ -58,7 +58,7 @@ test: unit ## Run all the tests
 # Run the unit tests
 .PHONY: unit
 unit: ## Run the unit tests
-	go test $(GO_TEST_FLAGS) -coverprofile $(COVER_PROFILE) ./...
+	go test -race $(GO_TEST_FLAGS) -coverprofile $(COVER_PROFILE) ./...
 
 .PHONY: coverage
 coverage:

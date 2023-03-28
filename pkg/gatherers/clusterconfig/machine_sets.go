@@ -4,33 +4,40 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
-
-	"github.com/openshift/insights-operator/pkg/record"
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherMachineSet collects MachineSet information
+// GatherMachineSet Collects `MachineSet` information.
 //
-// The Kubernetes api:
+// ### API Reference
+// - https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
 //
-//	https://github.com/openshift/api/blob/master/machine/v1beta1/types_machineset.go
+// ### Sample data
+// - docs/insights-archive-sample/d50d0126-c90b-4428-a75f-dc08cd02960a-worker-test
 //
-// Response see:
+// ### Location in archive
+// - `config//machinesets/{resource}`
 //
-//	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#machineset-v1beta1-machine-openshift-io
+// ### Config ID
+// `clusterconfig/machine_sets`
 //
-// * Location in archive: machinesets/
-// * Id in config: clusterconfig/machine_sets
-// * Since versions:
-//   - 4.4.29+
-//   - 4.5.15+
-//   - 4.6+
+// ### Released version
+// - 4.6.0
+//
+// ### Backported versions
+// - 4.4.29+
+// - 4.5.15+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherMachineSet(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

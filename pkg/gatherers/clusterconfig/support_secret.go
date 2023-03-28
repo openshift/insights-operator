@@ -8,13 +8,28 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherSupportSecret gathers anonymized support secret if there is any
+// GatherSupportSecret Collects anonymized support secret if there is any
 //
-//   - Location in archive: config/secrets/openshift-config/support/data.json
-//     (can be omitted if the secret doesn't exist)
-//   - Id in config: support_secret
-//   - Since version:
-//   - 4.11+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/secrets/openshift-config/support/data.json
+//
+// ### Location in archive
+// - `config/secrets/openshift-config/support/data.json`
+//
+// ### Config ID
+// `clusterconfig/support_secret`
+//
+// ### Released version
+// - 4.11.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherSupportSecret(context.Context) ([]record.Record, []error) {
 	if g.configObserver == nil {
 		return nil, []error{fmt.Errorf("configObserver is nil")}
