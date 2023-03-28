@@ -269,7 +269,6 @@ func (c *Controller) GatherJob() {
 		}
 		c.image = image
 	}
-	// TODO gatherers which should not be processed based on time
 	gatherConfig := c.apiConfigurator.GatherConfig()
 
 	var dp insightsv1alpha1.DataPolicy

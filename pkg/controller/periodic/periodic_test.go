@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift/api/config/v1alpha1"
 	v1 "github.com/openshift/api/operator/v1"
 	fakeOperatorCli "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/anonymization"
@@ -198,9 +197,8 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		Report:   true,
 		Interval: interval,
 	}}
-	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{})
 	mockRecorder := recorder.MockRecorder{}
-	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, mockAPIConfigurator)
+	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, "")
 	if err != nil {
 		return nil, nil, err
 	}
