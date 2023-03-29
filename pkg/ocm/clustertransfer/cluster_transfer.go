@@ -209,7 +209,7 @@ func (c *Controller) updatePullSecret(newData []byte) error {
 // The exponential backoff is applied only for HTTP errors >= 500.
 func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
-		Duration: c.configurator.Config().OCMConfig.ClusterTransferInterval / 48, // 30 min as the first waiting
+		Duration: c.configurator.Config().OCMConfig.ClusterTransferInterval / 24, // 30 min as the first waiting
 		Factor:   2,
 		Jitter:   0,
 		Steps:    ocm.OCMAPIFailureCountThreshold,
