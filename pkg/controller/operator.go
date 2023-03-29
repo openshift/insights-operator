@@ -7,8 +7,7 @@ import (
 	"time"
 
 	v1 "github.com/openshift/api/config/v1"
-	configclient "github.com/openshift/client-go/config/clientset/versioned"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -62,7 +61,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
-	configClient, err := configclient.NewForConfig(controller.KubeConfig)
+	configClient, err := configv1client.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -128,11 +127,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	go rec.PeriodicallyPrune(ctx, statusReporter)
 
 	authorizer := clusterauthorizer.New(secretConfigObserver)
-	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
-	if err != nil {
-		return err
-	}
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configClient)
 
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
@@ -227,7 +222,7 @@ func initiateSCAController(ctx context.Context,
 }
 
 // featureEnabled checks if the feature is enabled in the "cluster" FeatureGate
-func isTechPreviewEnabled(ctx context.Context, client *configclient.Clientset) (bool, error) {
+func isTechPreviewEnabled(ctx context.Context, client *configv1client.Clientset) (bool, error) {
 	fg, err := client.ConfigV1().FeatureGates().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return false, err

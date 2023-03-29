@@ -24,7 +24,7 @@ import (
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	"github.com/openshift/insights-operator/pkg/insights"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
@@ -37,11 +37,11 @@ const (
 )
 
 type Client struct {
-	client             *http.Client
-	maxBytes           int64
-	metricsName        string
-	authorizer         Authorizer
-	gatherConfigClient *configv1client.ConfigV1Client
+	client       *http.Client
+	maxBytes     int64
+	metricsName  string
+	authorizer   Authorizer
+	configClient *configv1client.Clientset
 }
 
 type Authorizer interface {
@@ -89,7 +89,7 @@ func IsHttpError(err error) bool {
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
 // New creates a Client
-func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, gatherConfigClient *configv1client.ConfigV1Client) *Client {
+func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, configClient *configv1client.Clientset) *Client {
 	if client == nil {
 		client = &http.Client{}
 	}
@@ -97,11 +97,11 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 		maxBytes = 10 * 1024 * 1024
 	}
 	return &Client{
-		client:             client,
-		maxBytes:           maxBytes,
-		metricsName:        metricsName,
-		authorizer:         authorizer,
-		gatherConfigClient: gatherConfigClient,
+		client:       client,
+		maxBytes:     maxBytes,
+		metricsName:  metricsName,
+		authorizer:   authorizer,
+		configClient: configClient,
 	}
 }
 
@@ -161,7 +161,7 @@ func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv
 func (c *Client) GetClusterVersion() (*configv1.ClusterVersion, error) {
 	ctx := context.Background()
 
-	cv, err := c.gatherConfigClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
+	cv, err := c.configClient.ConfigV1().ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

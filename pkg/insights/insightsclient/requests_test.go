@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -77,8 +77,8 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 		VersionedAPIPath:     "/apis/config.openshift.io/v1/clusterversions/version",
 	}
 
-	gatherConfigClient := configv1client.New(fakeClient)
-	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, gatherConfigClient)
+	configClient := configv1client.New(fakeClient)
+	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient)
 	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(context.TODO(), endpoint)
 	assert.NoError(t, err)
 	assert.JSONEq(t, testRules, string(gatheringRulesBytes))
