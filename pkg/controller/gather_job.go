@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -19,25 +17,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
-)
-
-const (
-	DataGatheredCondition = "DataGathered"
-	// NoDataGathered is a reason when there is no data gathered - e.g the resource is not in a cluster
-	NoDataGatheredReason = "NoData"
-	// Error is a reason when there is some error and no data gathered
-	GatherErrorReason = "GatherError"
-	// Panic is a reason when there is some error and no data gathered
-	GatherPanicReason = "GatherPanic"
-	// GatheredOK is a reason when data is gathered as expected
-	GatheredOKReason = "GatheredOK"
-	// GatheredWithError is a reason when data is gathered partially or with another error message
-	GatheredWithErrorReason = "GatheredWithError"
 )
 
 // GatherJob is the type responsible for controlling a non-periodic Gather execution
@@ -245,7 +230,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 			continue
 		}
 
-		gs := createGathererStatus(&fr)
+		gs := status.CreateDataGatherGathererStatus(&fr)
 		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
 	}
 	_, err = insightClient.DataGathers().UpdateStatus(ctx, dataGatherCR, metav1.UpdateOptions{})
@@ -255,50 +240,6 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 	// TODO use the InsightsRequestID to query the new aggregator API
 	return nil
-}
-
-func createGathererStatus(gfr *gather.GathererFunctionReport) insightsv1alpha1.GathererStatus {
-	gs := insightsv1alpha1.GathererStatus{
-		Name: gfr.FuncName,
-		LastGatherDuration: metav1.Duration{
-			// v.Duration is in milliseconds and we need nanoseconds
-			Duration: time.Duration(gfr.Duration * 1000000),
-		},
-	}
-	con := metav1.Condition{
-		Type:               DataGatheredCondition,
-		LastTransitionTime: metav1.Now(),
-		Status:             metav1.ConditionFalse,
-		Reason:             NoDataGatheredReason,
-	}
-
-	if gfr.Panic != nil {
-		con.Reason = GatherPanicReason
-		con.Message = gfr.Panic.(string)
-	}
-
-	if gfr.RecordsCount > 0 {
-		con.Status = metav1.ConditionTrue
-		con.Reason = GatheredOKReason
-		con.Message = fmt.Sprintf("Created %d records in the archive.", gfr.RecordsCount)
-
-		if len(gfr.Errors) > 0 {
-			con.Reason = GatheredWithErrorReason
-			con.Message = fmt.Sprintf("%s Error: %s", con.Message, strings.Join(gfr.Errors, ","))
-		}
-
-		gs.Conditions = append(gs.Conditions, con)
-		return gs
-	}
-
-	if len(gfr.Errors) > 0 {
-		con.Reason = GatherErrorReason
-		con.Message = strings.Join(gfr.Errors, ",")
-	}
-
-	gs.Conditions = append(gs.Conditions, con)
-
-	return gs
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
