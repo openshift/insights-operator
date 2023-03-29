@@ -115,7 +115,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 // 6. Get the latest archive
 // 7. Uploads the archive
 // 8. Waits for the corresponding Insights analysis download
-func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error {
+func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen, gocyclo
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
@@ -181,7 +181,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
-		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers)
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers) // nolint: govet
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
 		}

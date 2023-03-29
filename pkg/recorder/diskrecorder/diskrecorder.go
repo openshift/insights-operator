@@ -192,7 +192,7 @@ func (d *DiskRecorder) LastArchive() (*insightsclient.Source, error) {
 	var lastTime time.Time
 	var lastArchive string
 	for _, file := range files {
-		fileInfo, err := file.Info()
+		fileInfo, err := file.Info() // nolint: govet
 		if err != nil {
 			return nil, err
 		}
