@@ -74,12 +74,11 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 		}),
 		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
 		GroupVersion:         configv1.GroupVersion,
-		VersionedAPIPath:     "/apis/config.openshift.io/v1/clusterversions/version",
 	}
 
 	configClient := configv1client.New(fakeClient)
 	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient)
-	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(context.TODO(), endpoint)
+	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(context.Background(), endpoint)
 	assert.NoError(t, err)
 	assert.JSONEq(t, testRules, string(gatheringRulesBytes))
 }
