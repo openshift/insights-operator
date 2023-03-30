@@ -94,3 +94,24 @@ func createGathererConditions(gfr *gather.GathererFunctionReport) []metav1.Condi
 	conditions = append(conditions, con)
 	return conditions
 }
+
+// DataGatherStatusToOperatorGatherStatus copies "DataGatherStatus" from "datagather.openshift.io" and creates
+// "GatherStatus" for "insightsoperator.operator.openshift.io"
+func DataGatherStatusToOperatorGatherStatus(dgGatherStatus *v1alpha1.DataGatherStatus) v1.GatherStatus {
+	operatorGatherStatus := v1.GatherStatus{}
+	operatorGatherStatus.LastGatherTime = dgGatherStatus.FinishTime
+	operatorGatherStatus.LastGatherDuration = metav1.Duration{
+		Duration: dgGatherStatus.FinishTime.Sub(dgGatherStatus.StartTime.Time),
+	}
+
+	for _, g := range dgGatherStatus.Gatherers {
+		gs := v1.GathererStatus{
+			Name:               g.Name,
+			LastGatherDuration: g.LastGatherDuration,
+			Conditions:         g.Conditions,
+		}
+		operatorGatherStatus.Gatherers = append(operatorGatherStatus.Gatherers, gs)
+	}
+
+	return operatorGatherStatus
+}

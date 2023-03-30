@@ -6,7 +6,6 @@ import (
 	"sort"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -25,7 +24,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/recorder"
-	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,11 +46,12 @@ type Controller struct {
 	statuses            map[string]controllerstatus.StatusController
 	anonymizer          *anonymization.Anonymizer
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface
-	dataGatherClient    *insightsv1alpha1cli.InsightsV1alpha1Client
-	kubeClient          *kubernetes.Clientset
+	dataGatherClient    insightsv1alpha1cli.InsightsV1alpha1Interface
+	kubeClient          kubernetes.Interface
 	reportRetriever     *insightsreport.Controller
 	image               string
 	jobController       *JobController
+	pruneInterval       time.Duration
 }
 
 func NewWithTechPreview(
@@ -60,20 +59,23 @@ func NewWithTechPreview(
 	secretConfigurator configobserver.Configurator,
 	apiConfigurator configobserver.APIConfigObserver,
 	listGatherers []gatherers.Interface,
-	kubeClient *kubernetes.Clientset,
-	dataGatherClient *insightsv1alpha1cli.InsightsV1alpha1Client,
+	kubeClient kubernetes.Interface,
+	dataGatherClient insightsv1alpha1cli.InsightsV1alpha1Interface,
+	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 	jobController := NewJobController(kubeClient)
 	return &Controller{
-		reportRetriever:    reportRetriever,
-		secretConfigurator: secretConfigurator,
-		apiConfigurator:    apiConfigurator,
-		gatherers:          listGatherers,
-		statuses:           statuses,
-		kubeClient:         kubeClient,
-		dataGatherClient:   dataGatherClient,
-		jobController:      jobController,
+		reportRetriever:     reportRetriever,
+		secretConfigurator:  secretConfigurator,
+		apiConfigurator:     apiConfigurator,
+		gatherers:           listGatherers,
+		statuses:            statuses,
+		kubeClient:          kubeClient,
+		dataGatherClient:    dataGatherClient,
+		jobController:       jobController,
+		insightsOperatorCLI: insightsOperatorCLI,
+		pruneInterval:       1 * time.Hour,
 	}
 }
 
@@ -261,39 +263,23 @@ func (c *Controller) GatherJob() {
 		c.image = image
 	}
 
-	gatherConfig := c.apiConfigurator.GatherConfig()
-
-	var dp insightsv1alpha1.DataPolicy
-	switch gatherConfig.DataPolicy {
-	case configv1alpha1.NoPolicy:
-		dp = insightsv1alpha1.NoPolicy
-	case configv1alpha1.ObfuscateNetworking:
-		dp = insightsv1alpha1.ObfuscateNetworking
-	}
-
-	disabledGatherers := gatherConfig.DisabledGatherers
-	for _, gatherer := range c.gatherers {
-		if g, ok := gatherer.(gatherers.CustomPeriodGatherer); ok {
-			if !g.ShouldBeProcessedNow() {
-				disabledGatherers = append(disabledGatherers, g.GetName())
-			} else {
-				g.UpdateLastProcessingTime()
-			}
-		}
-	}
-
-	dgName, err := c.createNewDataGatherCR(ctx, disabledGatherers, dp)
+	// create a new datagather.insights.openshift.io custom resource
+	disabledGatherers, dp := c.createDataGatherAttributeValues()
+	dataGatherCR, err := c.createNewDataGatherCR(ctx, disabledGatherers, dp)
 	if err != nil {
-		klog.Errorf("Failed to create a new DataGather %s resource: %v", dgName, err)
+		klog.Errorf("Failed to create a new DataGather %s resource: %v", dataGatherCR.Name, err)
+		return
 	}
 
-	gj, err := c.jobController.CreateGathererJob(ctx, dgName, c.image, c.secretConfigurator.Config().StoragePath)
+	// create a new periodic gathering job
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGatherCR.Name, c.image, c.secretConfigurator.Config().StoragePath)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
+		return
 	}
-	klog.Infof("Created new gathering job %v", gj.Name)
 
-	err = c.waitForJobCompletion(ctx, gj)
+	klog.Infof("Created new gathering job %v", gj.Name)
+	err = c.jobController.WaitForJobCompletion(ctx, gj)
 	if err != nil {
 		if err == context.DeadlineExceeded {
 			klog.Errorf("Failed to read job status: %v", err)
@@ -302,8 +288,36 @@ func (c *Controller) GatherJob() {
 		klog.Error(err)
 	}
 	klog.Infof("Job completed %s", gj.Name)
-	// TODO read the status of the  dataGather CR and copy to insightsoperator CR
 	c.reportRetriever.RetrieveReport()
+	_, err = c.copyDataGatherStatusToOperatorStatus(ctx, dataGatherCR.Name)
+	if err != nil {
+		klog.Errorf("Failed to copy the last DataGather status to \"cluster\" operator status: %v", err)
+		return
+	}
+	klog.Info("Operator status in \"insightsoperator.operator.openshift.io\" successfully updated")
+}
+
+// copyDataGatherStatusToOperatorStatus gets the "cluster" "insightsoperator.operator.openshift.io" resource
+// and updates its status with values from the provided "dgName" "datagather.insights.openshift.io" resource.
+func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context, dgName string) (*v1.InsightsOperator, error) {
+	operator, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	statusToUpdate := operator.Status.DeepCopy()
+
+	dataGather, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	statusToUpdate.GatherStatus = status.DataGatherStatusToOperatorGatherStatus(&dataGather.Status)
+	operator.Status = *statusToUpdate
+
+	_, err = c.insightsOperatorCLI.UpdateStatus(ctx, operator, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return operator, nil
 }
 
 // updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last
@@ -341,6 +355,10 @@ func (c *Controller) updateOperatorStatusCR(ctx context.Context, allFunctionRepo
 	return nil
 }
 
+// isGatheringDisabled checks and returns whether the data gathering
+// is disabled or not. There are two options to disable it:
+// - removing the corresponding token from pull-secret (the first and original option)
+// - configure it in the "insightsdatagather.config.openshift.io" CR
 func (c *Controller) isGatheringDisabled() bool {
 	// old way of disabling data gathering by removing
 	// the "cloud.openshift.com" token from the pull-secret
@@ -370,32 +388,16 @@ func (c *Controller) getInsightsImage(ctx context.Context) (string, error) {
 	return containers[0].Image, nil
 }
 
-func (c *Controller) waitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
-	return wait.PollUntil(20*time.Second, func() (done bool, err error) {
-		j, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).Get(ctx, job.Name, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return false, err
-		}
-		if j.Status.Succeeded > 0 {
-			return true, nil
-		}
-		if j.Status.Failed > 0 {
-			return true, fmt.Errorf("job %s failed", job.Name)
-		}
-		// TODO check job conditions ?
-		return false, nil
-	}, ctx.Done())
-}
-
 // PeriodicPrune runs periodically and deletes jobs (including the related pods)
 // and "datagather.insights.openshift.io" resources older than 24 hours
 func (c *Controller) PeriodicPrune(ctx context.Context) {
-	pruneInterval := 1 * time.Hour
-	klog.Infof("Pruning old jobs every %s", pruneInterval)
+	klog.Infof("Pruning old jobs every %s", c.pruneInterval)
 	for {
 		select {
 		case <-ctx.Done():
-		case <-time.After(pruneInterval):
+			return
+		case <-time.After(c.pruneInterval):
+			klog.Info("Pruning the jobs and datagather resources")
 			// prune old jobs
 			jobs, err := c.kubeClient.BatchV1().Jobs(insightsNamespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
@@ -436,10 +438,10 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 }
 
 // createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
-// with generate name prefux "periodic-gathering-". Returns the name of the newly created
+// with generate name prefix "periodic-gathering-". Returns the name of the newly created
 // resource
 func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherers []string,
-	dataPolicy insightsv1alpha1.DataPolicy) (string, error) {
+	dataPolicy insightsv1alpha1.DataPolicy) (*insightsv1alpha1.DataGather, error) {
 	dataGatherCR := insightsv1alpha1.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "periodic-gathering-",
@@ -454,13 +456,41 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherer
 			State: insightsv1alpha1.Disabled,
 		})
 	}
-
 	dataGather, err := c.dataGatherClient.DataGathers().Create(ctx, &dataGatherCR, metav1.CreateOptions{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
-	return dataGather.Name, nil
+	return dataGather, nil
+}
+
+// createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
+// and checks custom period gatherers and returns list of disabled gatherers based on this two values
+// and also data policy set in the "insightsdatagather.config.openshift.io"
+func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alpha1.DataPolicy) {
+	gatherConfig := c.apiConfigurator.GatherConfig()
+
+	var dp insightsv1alpha1.DataPolicy
+	switch gatherConfig.DataPolicy {
+	case "":
+		dp = insightsv1alpha1.NoPolicy
+	case configv1alpha1.NoPolicy:
+		dp = insightsv1alpha1.NoPolicy
+	case configv1alpha1.ObfuscateNetworking:
+		dp = insightsv1alpha1.ObfuscateNetworking
+	}
+
+	disabledGatherers := gatherConfig.DisabledGatherers
+	for _, gatherer := range c.gatherers {
+		if g, ok := gatherer.(gatherers.CustomPeriodGatherer); ok {
+			if !g.ShouldBeProcessedNow() {
+				disabledGatherers = append(disabledGatherers, g.GetName())
+			} else {
+				g.UpdateLastProcessingTime()
+			}
+		}
+	}
+	return disabledGatherers, dp
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {

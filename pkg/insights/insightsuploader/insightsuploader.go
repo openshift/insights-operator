@@ -198,7 +198,7 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 			return false, nil
 			// TODO we would need to propagate the error as HTTP
 		}
-		return true, nil
+		return true, err
 	})
 	if err != nil {
 		return "", err

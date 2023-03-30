@@ -2,23 +2,31 @@ package periodic
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
+// JobController type responsible for
+// creating a new gathering jobs
 type JobController struct {
-	kubeClient *kubernetes.Clientset
+	kubeClient kubernetes.Interface
 }
 
-func NewJobController(kubeClient *kubernetes.Clientset) *JobController {
+func NewJobController(kubeClient kubernetes.Interface) *JobController {
 	return &JobController{
 		kubeClient: kubeClient,
 	}
 }
 
+// CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
+// derived from the provided data gather name
 func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, image, archiveVolumeMountPath string) (*batchv1.Job, error) {
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -90,4 +98,21 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 	}
 
 	return j.kubeClient.BatchV1().Jobs(insightsNamespace).Create(ctx, gj, metav1.CreateOptions{})
+}
+
+// WaitForJobCompletion polls the Kubernetes API every 20 seconds and checks if the job finished.
+func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
+	return wait.PollUntil(20*time.Second, func() (done bool, err error) {
+		j, err := j.kubeClient.BatchV1().Jobs(insightsNamespace).Get(ctx, job.Name, metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			return false, err
+		}
+		if j.Status.Succeeded > 0 {
+			return true, nil
+		}
+		if j.Status.Failed > 0 {
+			return true, fmt.Errorf("job %s failed", job.Name)
+		}
+		return false, nil
+	}, ctx.Done())
 }

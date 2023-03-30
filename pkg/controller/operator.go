@@ -164,7 +164,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver, operatorClient.InsightsOperators())
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver,
-			apiConfigObserver, gatherers, kubeClient, insightClient)
+			apiConfigObserver, gatherers, kubeClient, insightClient, operatorClient.InsightsOperators())
 		go periodicGather.PeriodicPrune(ctx)
 	}
 
