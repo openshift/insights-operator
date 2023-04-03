@@ -43,15 +43,6 @@ func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]recor
 		LabelSelector:            "app=kube-controller-manager",
 		ContainerNameRegexFilter: "kube-controller-manager",
 	}
-	messagesFilter := common.LogMessagesFilter{
-		MessagesToSearch: []string{
-			"Internal error occurred: error resolving resource",
-			"syncing garbage collector with updated resources from discovery",
-		},
-		IsRegexSearch: true,
-		SinceSeconds:  logDefaultSinceSeconds,
-		LimitBytes:    5 * logDefaultLimitBytes,
-	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -64,7 +55,7 @@ func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]recor
 		ctx,
 		coreClient,
 		containersFilter,
-		messagesFilter,
+		getKubeControllerManagerLogsMessagesFilter(),
 		nil,
 	)
 	if err != nil {
@@ -72,4 +63,16 @@ func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]recor
 	}
 
 	return records, nil
+}
+
+func getKubeControllerManagerLogsMessagesFilter() common.LogMessagesFilter {
+	return common.LogMessagesFilter{
+		MessagesToSearch: []string{
+			"Internal error occurred: error resolving resource",
+			"syncing garbage collector with updated resources from discovery",
+		},
+		IsRegexSearch: true,
+		SinceSeconds:  logDefaultSinceSeconds,
+		LimitBytes:    5 * logDefaultLimitBytes,
+	}
 }

@@ -39,15 +39,6 @@ func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]
 		Namespace:     "openshift-apiserver-operator",
 		LabelSelector: "app=openshift-apiserver-operator",
 	}
-	messagesFilter := common.LogMessagesFilter{
-		MessagesToSearch: []string{
-			"the server has received too many requests and has asked us",
-			"because serving request timed out and response had been started",
-		},
-		IsRegexSearch: false,
-		SinceSeconds:  logDefaultSinceSeconds,
-		LimitBytes:    logDefaultLimitBytes,
-	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -60,7 +51,7 @@ func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]
 		ctx,
 		coreClient,
 		containersFilter,
-		messagesFilter,
+		getAPIServerOperatorLogsMessagesFilter(),
 		nil,
 	)
 	if err != nil {
@@ -68,4 +59,16 @@ func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]
 	}
 
 	return records, nil
+}
+
+func getAPIServerOperatorLogsMessagesFilter() common.LogMessagesFilter {
+	return common.LogMessagesFilter{
+		MessagesToSearch: []string{
+			"the server has received too many requests and has asked us",
+			"because serving request timed out and response had been started",
+		},
+		IsRegexSearch: false,
+		SinceSeconds:  logDefaultSinceSeconds,
+		LimitBytes:    logDefaultLimitBytes,
+	}
 }

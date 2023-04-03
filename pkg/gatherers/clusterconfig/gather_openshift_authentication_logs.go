@@ -39,14 +39,6 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 		Namespace:     "openshift-authentication",
 		LabelSelector: "app=oauth-openshift",
 	}
-	messagesFilter := common.LogMessagesFilter{
-		MessagesToSearch: []string{
-			"AuthenticationError: invalid resource name",
-		},
-		IsRegexSearch: false,
-		SinceSeconds:  logDefaultSinceSeconds,
-		LimitBytes:    logDefaultLimitBytes,
-	}
 
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -59,7 +51,7 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 		ctx,
 		coreClient,
 		containersFilter,
-		messagesFilter,
+		getOpenshiftAuthenticationLogsMessagesFilter(),
 		nil,
 	)
 	if err != nil {
@@ -67,4 +59,15 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 	}
 
 	return records, nil
+}
+
+func getOpenshiftAuthenticationLogsMessagesFilter() common.LogMessagesFilter {
+	return common.LogMessagesFilter{
+		MessagesToSearch: []string{
+			"AuthenticationError: invalid resource name",
+		},
+		IsRegexSearch: false,
+		SinceSeconds:  logDefaultSinceSeconds,
+		LimitBytes:    logDefaultLimitBytes,
+	}
 }
