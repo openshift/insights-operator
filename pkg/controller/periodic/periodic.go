@@ -267,7 +267,7 @@ func (c *Controller) GatherJob() {
 	disabledGatherers, dp := c.createDataGatherAttributeValues()
 	dataGatherCR, err := c.createNewDataGatherCR(ctx, disabledGatherers, dp)
 	if err != nil {
-		klog.Errorf("Failed to create a new DataGather %s resource: %v", dataGatherCR.Name, err)
+		klog.Errorf("Failed to create a new DataGather resource: %v", err)
 		return
 	}
 
