@@ -263,8 +263,8 @@ func (c *Controller) GatherJob() {
 		c.image = image
 	}
 
-	// create a new datagather.insights.openshift.io custom resource
 	disabledGatherers, dp := c.createDataGatherAttributeValues()
+	// create a new datagather.insights.openshift.io custom resource
 	dataGatherCR, err := c.createNewDataGatherCR(ctx, disabledGatherers, dp)
 	if err != nil {
 		klog.Errorf("Failed to create a new DataGather resource: %v", err)
