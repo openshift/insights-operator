@@ -38,7 +38,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogContainersFilter{
+	containersFilter := &common.LogResourceFilter{
 		Namespace:     "openshift-sdn",
 		LabelSelector: "app=sdn",
 	}
@@ -64,8 +64,8 @@ func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record,
 	return records, nil
 }
 
-func getGatherOpenshiftSDNLogsMessageFilter() common.LogMessagesFilter {
-	return common.LogMessagesFilter{
+func getGatherOpenshiftSDNLogsMessageFilter() *common.LogMessagesFilter {
+	return &common.LogMessagesFilter{
 		MessagesToSearch: []string{
 			"Got OnEndpointsUpdate for unknown Endpoints",
 			"Got OnEndpointsDelete for unknown Endpoints",

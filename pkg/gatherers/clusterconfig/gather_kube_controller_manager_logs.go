@@ -38,7 +38,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogContainersFilter{
+	containersFilter := &common.LogResourceFilter{
 		Namespace:                "openshift-kube-controller-manager",
 		LabelSelector:            "app=kube-controller-manager",
 		ContainerNameRegexFilter: "kube-controller-manager",
@@ -65,8 +65,8 @@ func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]recor
 	return records, nil
 }
 
-func getKubeControllerManagerLogsMessagesFilter() common.LogMessagesFilter {
-	return common.LogMessagesFilter{
+func getKubeControllerManagerLogsMessagesFilter() *common.LogMessagesFilter {
+	return &common.LogMessagesFilter{
 		MessagesToSearch: []string{
 			"Internal error occurred: error resolving resource",
 			"syncing garbage collector with updated resources from discovery",

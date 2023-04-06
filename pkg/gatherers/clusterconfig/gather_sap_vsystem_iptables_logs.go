@@ -85,7 +85,7 @@ func gatherSAPLicenseManagementLogs(
 	var errs []error
 
 	for _, item := range datahubs {
-		containersFilter := common.LogContainersFilter{
+		containersFilter := &common.LogResourceFilter{
 			Namespace:                item.GetNamespace(),
 			ContainerNameRegexFilter: "^vsystem-iptables$",
 		}
@@ -107,8 +107,8 @@ func gatherSAPLicenseManagementLogs(
 	return records, errs
 }
 
-func getSAPLicenseManagementLogsMessageFilter() common.LogMessagesFilter {
-	return common.LogMessagesFilter{
+func getSAPLicenseManagementLogsMessageFilter() *common.LogMessagesFilter {
+	return &common.LogMessagesFilter{
 		MessagesToSearch: []string{
 			"can't initialize iptables table",
 		},

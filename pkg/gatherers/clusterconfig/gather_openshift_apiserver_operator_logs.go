@@ -35,7 +35,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogContainersFilter{
+	containersFilter := &common.LogResourceFilter{
 		Namespace:     "openshift-apiserver-operator",
 		LabelSelector: "app=openshift-apiserver-operator",
 	}
@@ -61,8 +61,8 @@ func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]
 	return records, nil
 }
 
-func getAPIServerOperatorLogsMessagesFilter() common.LogMessagesFilter {
-	return common.LogMessagesFilter{
+func getAPIServerOperatorLogsMessagesFilter() *common.LogMessagesFilter {
+	return &common.LogMessagesFilter{
 		MessagesToSearch: []string{
 			"the server has received too many requests and has asked us",
 			"because serving request timed out and response had been started",
