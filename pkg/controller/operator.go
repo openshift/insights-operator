@@ -185,10 +185,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
 		statusReporter.AddSources(uploader)
 
-		// start reporting status now that all controller loops are added as sources
-		if err = statusReporter.Start(ctx); err != nil {
-			return fmt.Errorf("unable to set initial cluster status: %v", err)
-		}
 		// start uploading status, so that we
 		// know any previous last reported time
 		go uploader.Run(ctx)
@@ -196,6 +192,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		reportGatherer := insightsreport.New(insightsClient, secretConfigObserver, uploader, operatorClient.InsightsOperators())
 		statusReporter.AddSources(reportGatherer)
 		go reportGatherer.Run(ctx)
+	}
+
+	// start reporting status now that all controller loops are added as sources
+	if err = statusReporter.Start(ctx); err != nil {
+		return fmt.Errorf("unable to set initial cluster status: %v", err)
 	}
 
 	scaController := initiateSCAController(ctx, kubeClient, secretConfigObserver, insightsClient)
