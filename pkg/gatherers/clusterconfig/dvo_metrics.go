@@ -21,22 +21,30 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-var (
-	// Only metrics with the DVO prefix should be gathered.
-	dvoMetricsPrefix = []byte("deployment_validation_operator_")
-	// label selector used for searching the required service
-	serviceLabelSelector = "name=deployment-validation-operator"
-)
-
-// GatherDVOMetrics collects metrics from the Deployment Validation Operator's
+// GatherDVOMetrics Collects metrics from the Deployment Validation Operator's
 // metrics service. The metrics are fetched via the /metrics endpoint and
-// filtered to only include those with a deployment_validation_operator_ prefix.
+// filtered to only include those with a `deployment_validation_operator_` prefix.
 //
-// * Location in archive: config/dvo_metrics
-// * See: docs/insights-archive-sample/config/dvo_metrics
-// * Id in config: clusterconfig/dvo_metrics
-// * Since version:
-//   - 4.10
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/dvo_metrics
+//
+// ### Location in archive
+// - `config/dvo_metrics`
+//
+// ### Config ID
+// `clusterconfig/dvo_metrics`
+//
+// ### Released version
+// - 4.10.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -52,7 +60,7 @@ func gatherDVOMetrics(
 	rateLimiter flowcontrol.RateLimiter,
 ) ([]record.Record, []error) {
 	serviceList, err := coreClient.Services("").List(ctx, metav1.ListOptions{
-		LabelSelector: serviceLabelSelector,
+		LabelSelector: "name=deployment-validation-operator",
 	})
 	if err != nil {
 		return nil, []error{err}
@@ -130,6 +138,8 @@ func gatherDVOMetricsFromEndpoint(
 		}
 	}()
 
+	// only metrics with the DVO prefix should be gathered.
+	dvoMetricsPrefix := []byte("deployment_validation_operator_")
 	// precompile regex rules
 	regexString := `(?m)(,?%s=[^\,\}]*")`
 	filterProps := []*regexp.Regexp{

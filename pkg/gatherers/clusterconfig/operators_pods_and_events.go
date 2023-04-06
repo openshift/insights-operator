@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"github.com/openshift/insights-operator/pkg/utils/check"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
@@ -43,7 +44,7 @@ type CompactedEventList struct {
 // Used to detect the possible stack trace on logs
 var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 
-// GatherClusterOperatorPodsAndEvents collects information about pods
+// GatherClusterOperatorPodsAndEvents Collects information about pods
 // and events from namespaces of degraded cluster operators. The collected
 // information includes:
 //
@@ -51,16 +52,34 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // - Previous (if container was terminated) and current logs of all related pod containers
 // - Namespace events
 //
-//   - Location of pod definitions: config/pod/{namespace}/{pod}.json
-//   - Location of pod container current logs:
-//     config/pod/{namespace}/logs/{pod}/{container}_current.log
-//   - Location of pod container previous logs:
-//     config/pod/{namespace}/logs/{pod}/{container}_previous.log
-//   - Location of events in archive: events/
-//   - Id in config: clusterconfig/operators_pods_and_events
-//   - Spec config for CO resources since versions:
-//   - 4.6.16+
-//   - 4.7+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/pod
+// - docs/insights-archive-sample/events
+//
+// ### Location in archive
+// - `config/pod/{namespace}/{pod}.json`
+// - `events/{namespace}.json`
+// - `config/pod/{namespace}/logs/{pod}/{container}_{current|previous}.log`
+//
+// ### Config ID
+// `clusterconfig/operators_pods_and_events`
+//
+// ### Released version
+// - 4.8.2
+//
+// ### Backported versions
+// - 4.6.35+
+// - 4.7.11+
+//
+// ### Changes
+// - The data gathered by `ClusterOperatorPodsAndEvents` were originally gathered by
+// [`ClusterOperators`](#ClusterOperators). The [`ClusterOperators`](#ClusterOperators) gather was split at 4.8.2
+// and the change was backported to 4.7.11 and 4.6.35.
+// - The collected data was previously included as specifications for `ClusterOperators`, and it was initially
+// introduced in version `4.3.0` and later backported to version `4.2.10+`.
 func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -217,6 +236,8 @@ func gatherPodsAndTheirContainersLogs(ctx context.Context,
 	for _, pod := range pods {
 		// if pod is not healthy then record its definition and try to get previous log
 		if !check.IsHealthyPod(pod, time.Now()) {
+			anonymize.SensitiveEnvVars(pod.Spec.Containers)
+
 			records = append(records, record.Record{
 				Name: fmt.Sprintf("config/pod/%s/%s", pod.Namespace, pod.Name),
 				Item: record.ResourceMarshaller{Resource: pod},

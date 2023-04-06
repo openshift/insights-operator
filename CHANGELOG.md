@@ -1,9 +1,48 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 76cc46b739c27281db0f7b2a23eb091b2a70f698-->
-## 4.13
+	Please see OpenShift release notes for official changes\n<!--Latest hash: e761abf647746c56fb8c2a59fb683984795a0624-->
+## 4.14
+
+### Data Enhancement
+- [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
 
 ### Others
+- [#756](https://github.com/openshift/insights-operator/pull/756) add unit tests for cluster proxy gatherer
+
+## 4.13
+
+### Data Enhancement
+- [#726](https://github.com/openshift/insights-operator/pull/726) feat(recent_metrics) adds openshift_apps_deploymentconfigs_strategy_total
+- [#725](https://github.com/openshift/insights-operator/pull/725) Create gatherer for gathering machines.
+- [#714](https://github.com/openshift/insights-operator/pull/714) operators gatherer - handle ingresscontroller relatedObject & simplify
+
+### Bugfix
+- [#723](https://github.com/openshift/insights-operator/pull/723) Obfuscate HTTP_PROXY and HTTPS_PROXY env variables on containers
+- [#716](https://github.com/openshift/insights-operator/pull/716) additional fix
+- [#709](https://github.com/openshift/insights-operator/pull/709) do not periodically update Available clusteroperator co…
+- [#706](https://github.com/openshift/insights-operator/pull/706) do not get disabled rules
+- [#694](https://github.com/openshift/insights-operator/pull/694) Change of kube-system namespace configmap location according to docs. 
+- [#691](https://github.com/openshift/insights-operator/pull/691) storage/ceph path structure
+
+### Others
+- [#728](https://github.com/openshift/insights-operator/pull/728) add unit test for silenced_alerts.go and rename it to gather_silenced_alerts.go
+- [#729](https://github.com/openshift/insights-operator/pull/729) add unit test for ingresses.go and rename it to gather_cluster_ingress.go 
+- [#738](https://github.com/openshift/insights-operator/pull/738) add unit test for oauth.go and rename it to gather_cluster_oauth.go 
+- [#735](https://github.com/openshift/insights-operator/pull/735) gather logs - update "FilterLogFromScanner" function and add some tests
+- [#733](https://github.com/openshift/insights-operator/pull/733) Add unit tests to openshift sdn controller logs gatherer
+- [#704](https://github.com/openshift/insights-operator/pull/704) update gathered documentation
+- [#721](https://github.com/openshift/insights-operator/pull/721) arch docs update - explain disabled=true status more
+- [#712](https://github.com/openshift/insights-operator/pull/712) Update operator name in the OWNERS file
+- [#702](https://github.com/openshift/insights-operator/pull/702) remove asset method and split tests
+- [#701](https://github.com/openshift/insights-operator/pull/701) move GatherSchedulerLogs to its own file
+- [#703](https://github.com/openshift/insights-operator/pull/703) chore(golanglint-ci) disabling some linters for *_test.go files
+- [#705](https://github.com/openshift/insights-operator/pull/705) Update OpenShift versions & new Download time field
+- [#692](https://github.com/openshift/insights-operator/pull/692) PR template preview and changelog update
 - [#693](https://github.com/openshift/insights-operator/pull/693) Use cgroups memory usage data in the archive metadata
+- [#733](https://github.com/openshift/insights-operator/pull/733) Renamed log gatherer file (SDN controller) and unit tests
+
+### Misc
+- [#717](https://github.com/openshift/insights-operator/pull/717) additional fix"
+- [#700](https://github.com/openshift/insights-operator/pull/700) Updating ose-insights-operator images to be consistent with ART
 
 ## 4.12
 

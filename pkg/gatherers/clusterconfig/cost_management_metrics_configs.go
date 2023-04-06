@@ -11,13 +11,29 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherCostManagementMetricsConfigs collects CostManagementMetricsConfigs definitions.
-// * Location in archive: config/cost_management_metrics_configs/{name}.json
-// * Id in config: clusterconfig/cost_management_metrics_configs
-// * Since versions:
-//   - 4.8.27+
-//   - 4.9.13+
-//   - 4.10+
+// GatherCostManagementMetricsConfigs Collects `CostManagementMetricsConfigs` definitions.
+//
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/cost_management_metrics_configs
+//
+// ### Location in archive
+// - `config/cost_management_metrics_configs/{name}.json`
+//
+// ### Config ID
+// `clusterconfig/cost_management_metrics_configs`
+//
+// ### Released version
+// - 4.10.0
+//
+// ### Backported versions
+// - 4.8.27+
+// - 4.9.13+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherCostManagementMetricsConfigs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

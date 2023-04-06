@@ -12,16 +12,32 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherCRD collects the specified Custom Resource Definitions.
+// GatherCRD Collects the specified Custom Resource Definitions.
 //
 // The following CRDs are gathered:
-// - volumesnapshots.snapshot.storage.k8s.io (10745 bytes)
-// - volumesnapshotcontents.snapshot.storage.k8s.io (13149 bytes)
+// - `volumesnapshots.snapshot.storage.k8s.io` (10745 bytes)
+// - `volumesnapshotcontents.snapshot.storage.k8s.io` (13149 bytes)
 //
-// The CRD sizes above are in the raw (uncompressed) state.
+// ### API Reference
+// None
 //
-// * Location in archive: config/crd/
-// * Id in config: clusterconfig/crds
+// ### Sample data
+// - docs/insights-archive-sample/config/crd
+//
+// ### Location in archive
+// - `config/crd/{name}.json`
+//
+// ### Config ID
+// `clusterconfig/crds`
+//
+// ### Released version
+// - 4.6.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherCRD(ctx context.Context) ([]record.Record, []error) {
 	crdClient, err := apixv1.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

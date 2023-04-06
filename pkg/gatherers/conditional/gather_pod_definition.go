@@ -11,14 +11,32 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// BuildGatherPodDefinition collects pod definition from pods that are firing one of the configured alerts.
+// BuildGatherPodDefinition Collects pod definition from pods that are
+// firing one of the configured alerts.
 //
-// * Location in archive: conditional/namespaces/{namespace}/pods/{pod}/{pod}.json
-// * Id in config: conditional/pod_definition
-// * Since versions:
-//   - 4.11+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/conditional/namespaces/openshift-monitoring/pods/alertmanager-main-0/alertmanager-main-0.json
+//
+// ### Location in archive
+// - `conditional/namespaces/{namespace}/pods/{name}/{name}.json`
+//
+// ### Config ID
+// `conditional/pod_definition`
+//
+// ### Released version
+// - 4.11.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) BuildGatherPodDefinition(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherPodDefinitionParams)
 	if !ok {
@@ -76,6 +94,7 @@ func (g *Gatherer) gatherPodDefinition(
 			errs = append(errs, err)
 			continue
 		}
+		anonymize.SensitiveEnvVars(pod.Spec.Containers)
 
 		records = append(records, record.Record{
 			Name: fmt.Sprintf(

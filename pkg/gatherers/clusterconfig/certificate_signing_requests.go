@@ -20,27 +20,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// csrGatherLimit is the maximum number of crs that
-// will be listed in a single request to reduce memory usage.
-const csrGatherLimit = 5000
-
-// GatherCertificateSigningRequests collects anonymized CertificateSigningRequests.
-// Collects CSRs which werent Verified, or when Now < ValidBefore or Now > ValidAfter
+// GatherCertificateSigningRequests Collects anonymized `CertificateSigningRequests` which weren't Verified, or
+// when `Now < ValidBefore` or `Now > ValidAfter`
 //
-// The Kubernetes api:
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
-//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/certificates/v1beta1/certificatesigningrequest.go#L78
+// ### Sample data
+// None
 //
-// Response see:
+// ### Location in archive
+// - `config/certificatesigningrequests`
 //
-//	https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
+// ### Config ID
+// `clusterconfig/certificate_signing_requests`
 //
-// * Location in archive: config/certificatesigningrequests/
-// * Id in config: clusterconfig/certificate_signing_requests
-// * Since versions:
-//   - 4.3.25+
-//   - 4.4.12+
-//   - 4.5+
+// ### Released version
+// - 4.5.0
+//
+// ### Backported versions
+// - 4.3.25+
+// - 4.4.12+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherCertificateSigningRequests(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -53,7 +57,9 @@ func (g *Gatherer) GatherCertificateSigningRequests(ctx context.Context) ([]reco
 func gatherCertificateSigningRequests(ctx context.Context,
 	certClient certificatesv1.CertificateSigningRequestsGetter) ([]record.Record, []error) {
 	requests, err := certClient.CertificateSigningRequests().List(ctx, metav1.ListOptions{
-		Limit: csrGatherLimit,
+		// limit the maximum number of crs that
+		// will be listed in a single request to reduce memory usage.
+		Limit: 5000,
 	})
 	if errors.IsNotFound(err) {
 		return nil, nil

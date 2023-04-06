@@ -10,3 +10,6 @@ devspace.yaml
 
 cover.out
 _output
+
+# MacOS
+.DS_Store

@@ -206,14 +206,14 @@ func createCHANGELOG(releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock) {
 	defer file.Close()
 	_, _ = file.WriteString(`# Note: This CHANGELOG is only for the changes in insights operator.
 	Please see OpenShift release notes for official changes\n`)
-	_, _ = file.WriteString(fmt.Sprintf("<!--Latest hash: %s-->\n", latestHash))
+	_, _ = fmt.Fprintf(file, "<!--Latest hash: %s-->\n", latestHash)
 	var releases ReleaseVersions
 	for k := range releaseBlocks {
 		releases = append(releases, k)
 	}
 	sort.Sort(sort.Reverse(releases))
 	for _, release := range releases {
-		_, _ = file.WriteString(fmt.Sprintf("## %d.%d\n\n", release.Major, release.Minor))
+		_, _ = fmt.Fprintf(file, "## %d.%d\n\n", release.Major, release.Minor)
 
 		dataEnhancements := releaseBlocks[release].dataEnhancements
 		createReleaseBlock(file, dataEnhancements, DATAENHANCEMENT)
@@ -234,8 +234,8 @@ func createCHANGELOG(releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock) {
 
 func createReleaseBlock(file *os.File, release, title string) {
 	if len(release) > 0 {
-		_, _ = file.WriteString(fmt.Sprintf("### %s\n", title))
-		_, _ = file.WriteString(fmt.Sprintf("%s\n", release))
+		_, _ = fmt.Fprintf(file, "### %s\n", title)
+		_, _ = fmt.Fprintf(file, "%s\n", release)
 	}
 }
 

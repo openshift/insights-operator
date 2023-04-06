@@ -15,32 +15,42 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherConfigMaps fetches the ConfigMaps from namespace openshift-config
-// and tries to fetch "cluster-monitoring-config" ConfigMap from openshift-monitoring namespace.
+// GatherConfigMaps Collects the `ConfigMaps` from namespace `openshift-config`
+// and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` namespace.
 //
-// Anonymization: If the content of ConfigMap contains a parseable PEM structure (like certificate) it removes the inside of PEM blocks.
-// For ConfigMap of type BinaryData it is encoded as standard base64.
-// In the archive under configmaps we store name of the namespace, name of the ConfigMap and then each ConfigMap Key.
-// For example config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
+// - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
 //
-// The Kubernetes api https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
-// Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.html#configmaplist-v1core
+// ### Sample data
+// - docs/insights-archive-sample/config/configmaps
 //
-// * Location in archive: config/configmaps/{namespace-name}/{configmap-name}/
-// * Location in older versions: config/configmaps/{configmap-name}/
-// * See: docs/insights-archive-sample/config/configmaps
-// * Id in config: clusterconfig/config_maps
-// * Since versions:
-//   - 4.3.25+
-//   - 4.4.6+
-//   - 4.5+
+// ### Location in archive
+// | Version   | Path														|
+// | --------- | ---------------------------------------------------------- |
+// | < 4.7.0   | config/configmaps/{configmap}								|
+// | >= 4.7.0  | config/configmaps/{namespace}/{name}/{configmap}         	|
 //
-// * "cluster-monitoring-config" ConfigMap data since versions:
-//   - 4.6.22+
-//   - 4.7+
+// ### Config ID
+// `clusterconfig/config_maps`
 //
-// * "cluster-config-v1" ConfigMap since versions:
-//   - 4.9+
+// ### Released version
+// - 4.5.0
+//
+// ### Backported versions
+// - 4.3.25+
+// - 4.4.6+
+//
+// ### Changes
+// - `cluster-monitoring-config` data since versions 4.6.22+ and 4.7.0+
+// - `cluster-config-v1` since versions 4.9.0+
+//
+// ### Anonymization
+// If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
+// PEM blocks. For `ConfigMap` of type `BinaryData`, it is encoded as standard base64. In the archive under configmaps,
+// we store the name of the namespace, the name of the `ConfigMap`, and then each key.
+//
+// For example: ```config/configmaps/NAMESPACENAME/CONFIGMAPNAME/CONFIGMAPKEY1```
 func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {

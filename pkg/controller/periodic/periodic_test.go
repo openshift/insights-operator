@@ -37,60 +37,83 @@ func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 }
 
 func Test_Controller_Run(t *testing.T) {
-	c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
-		&gather.MockGatherer{},
-	}, 1*time.Hour)
-	assert.NoError(t, err)
-	// No delay, 5 gatherers + metadata
-	stopCh := make(chan struct{})
-	go c.Run(stopCh, 0)
-	time.Sleep(100 * time.Millisecond)
-	stopCh <- struct{}{}
-	assert.Len(t, mockRecorder.Records, 6)
-	mockRecorder.Reset()
+	tests := []struct {
+		name                 string
+		initialDelay         time.Duration
+		waitTime             time.Duration
+		expectedNumOfRecords int
+	}{
+		{
+			name:                 "controller run with no initial delay",
+			initialDelay:         0,
+			waitTime:             100 * time.Millisecond,
+			expectedNumOfRecords: 6,
+		},
+		{
+			name:                 "controller run with short initial delay",
+			initialDelay:         2 * time.Second,
+			waitTime:             4 * time.Second,
+			expectedNumOfRecords: 6,
+		},
+		{
+			name:                 "controller run stop before delay ends",
+			initialDelay:         2 * time.Hour,
+			waitTime:             1 * time.Second,
+			expectedNumOfRecords: 0,
+		},
+	}
 
-	// 2 sec delay, 5 gatherers + metadata
-	stopCh = make(chan struct{})
-	go c.Run(stopCh, 2*time.Second)
-	time.Sleep(2 * time.Second)
-	stopCh <- struct{}{}
-	assert.Len(t, mockRecorder.Records, 6)
-	mockRecorder.Reset()
-
-	// 2 hour delay, stop before delay ends
-	stopCh = make(chan struct{})
-	go c.Run(stopCh, 2*time.Hour)
-	time.Sleep(100 * time.Millisecond)
-	assert.Len(t, mockRecorder.Records, 0)
-	stopCh <- struct{}{}
-	assert.Len(t, mockRecorder.Records, 0)
-	mockRecorder.Reset()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
+				&gather.MockGatherer{},
+			}, 1*time.Hour)
+			assert.NoError(t, err)
+			stopCh := make(chan struct{})
+			go c.Run(stopCh, tt.initialDelay)
+			if _, ok := <-time.After(tt.waitTime); ok {
+				stopCh <- struct{}{}
+			}
+			assert.Len(t, mockRecorder.Records, tt.expectedNumOfRecords)
+		})
+	}
 }
 
 func Test_Controller_periodicTrigger(t *testing.T) {
-	c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
-		&gather.MockGatherer{},
-	}, 1*time.Hour)
-	assert.NoError(t, err)
-	// 1 sec interval, 5 gatherers + metadata
-	c.secretConfigurator.Config().Interval = 1 * time.Second
-	stopCh := make(chan struct{})
-	go c.periodicTrigger(stopCh)
-	// 2 intervals
-	time.Sleep(2200 * time.Millisecond)
-	stopCh <- struct{}{}
-	assert.Len(t, mockRecorder.Records, 12)
-	mockRecorder.Reset()
+	tests := []struct {
+		name                 string
+		interval             time.Duration
+		waitTime             time.Duration
+		expectedNumOfRecords int
+	}{
+		{
+			name:                 "periodicTrigger finished gathering",
+			interval:             1 * time.Second,
+			waitTime:             3 * time.Second,
+			expectedNumOfRecords: 12,
+		},
+		{
+			name:                 "periodicTrigger stopped with no data gathered",
+			interval:             2 * time.Hour,
+			waitTime:             100 * time.Millisecond,
+			expectedNumOfRecords: 0,
+		},
+	}
 
-	// 2 hour interval, stop before delay ends
-	c.secretConfigurator.Config().Interval = 2 * time.Hour
-	stopCh = make(chan struct{})
-	go c.periodicTrigger(stopCh)
-	time.Sleep(100 * time.Millisecond)
-	assert.Len(t, mockRecorder.Records, 0)
-	stopCh <- struct{}{}
-	assert.Len(t, mockRecorder.Records, 0)
-	mockRecorder.Reset()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, mockRecorder, err := getMocksForPeriodicTest([]gatherers.Interface{
+				&gather.MockGatherer{},
+			}, tt.interval)
+			assert.NoError(t, err)
+			stopCh := make(chan struct{})
+			go c.periodicTrigger(stopCh)
+			if _, ok := <-time.After(tt.waitTime); ok {
+				stopCh <- struct{}{}
+			}
+			assert.Len(t, mockRecorder.Records, tt.expectedNumOfRecords)
+		})
+	}
 }
 
 func Test_Controller_Sources(t *testing.T) {

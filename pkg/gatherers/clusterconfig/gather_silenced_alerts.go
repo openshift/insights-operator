@@ -10,13 +10,28 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// GatherSilencedAlerts gathers the alerts that have been silenced.
+// GatherSilencedAlerts Collects the alerts that have been silenced.
 //
-// * Location in archive: config/silenced_alerts
-// * See: docs/insights-archive-sample/config/silenced_alerts
-// * Id in config: clusterconfig/silenced_alerts
-// * Since version:
-//   - 4.10+
+// ### API Reference
+// None
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/silenced_alerts.json
+//
+// ### Location in archive
+// - `config/silenced_alerts.json`
+//
+// ### Config ID
+// `config/silenced_alerts`
+//
+// ### Released version
+// - 4.10.0
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherSilencedAlerts(ctx context.Context) ([]record.Record, []error) {
 	alertsRESTClient, err := rest.RESTClientFor(g.alertsGatherKubeConfig)
 	if err != nil {

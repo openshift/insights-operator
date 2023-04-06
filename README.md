@@ -4,6 +4,7 @@ This cluster operator gathers anonymized system configuration and reports it to 
 standard OpenShift distribution. The data collected allows for debugging in the event of cluster failures or
 unanticipated errors.
 
+
 # Table of Contents
 
 - [Insights Operator](#insights-operator)

@@ -11,17 +11,31 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherPNCC collects a summary of failed PodNetworkConnectivityChecks from
-// last 24 hours.
+// GatherPNCC Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
+//
 // Time of the most recently failed check with each reason and message is recorded.
 //
-// Resource API: podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
-// Docs for relevant types: https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
+// ### API Reference
+// - podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
+// - https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
 //
-// * Location in archive: config/podnetworkconnectivitychecks.json
-// * Id in config: clusterconfig/pod_network_connectivity_checks
-// * Since versions:
-//   - 4.8+
+// ### Sample data
+// - docs/insights-archive-sample/config/podnetworkconnectivitychecks.json
+//
+// ### Location in archive
+// - `config/podnetworkconnectivitychecks.json`
+//
+// ### Config ID
+// `clusterconfig/pod_network_connectivity_checks`
+//
+// ### Released version
+// - 4.8.2
+//
+// ### Backported versions
+// None
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherPNCC(ctx context.Context) ([]record.Record, []error) {
 	gatherClient, err := ocpV1AlphaCli.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

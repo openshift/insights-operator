@@ -10,25 +10,33 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherOpenshiftSDNLogs collects logs from pods in openshift-sdn namespace with following substrings:
-//   - "Got OnEndpointsUpdate for unknown Endpoints",
-//   - "Got OnEndpointsDelete for unknown Endpoints",
-//   - "Unable to update proxy firewall for policy",
-//   - "Failed to update proxy firewall for policy",
+// GatherOpenshiftSDNLogs Collects logs from pods in `openshift-sdn` namespace with following substrings:
+// - "Got OnEndpointsUpdate for unknown Endpoints",
+// - "Got OnEndpointsDelete for unknown Endpoints",
+// - "Unable to update proxy firewall for policy",
+// - "Failed to update proxy firewall for policy",
 //
-// The Kubernetes API:
+// ### API Reference
+// - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// - https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
 //
-//	https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
+// ### Sample data
+// - docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log
 //
-// Response see:
+// ### Location in archive
+// - `config/pod/openshift-sdn/logs/{name}/errors.log`
 //
-//	https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
+// ### Config ID
+// `clusterconfig/openshift_sdn_logs`
 //
-// * Location in archive: config/pod/openshift-sdn/logs/{pod-name}/errors.log
-// * Id in config: clusterconfig/openshift_sdn_logs
-// * Since versions:
-//   - 4.6.19+
-//   - 4.7+
+// ### Released version
+// - 4.7.0
+//
+// ### Backported versions
+// - 4.6.19+
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record, []error) {
 	containersFilter := common.LogContainersFilter{
 		Namespace:     "openshift-sdn",
