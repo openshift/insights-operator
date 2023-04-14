@@ -1926,6 +1926,34 @@ Collects `ValidatingWebhookConfiguration` resources
 None
 
 
+## VirtualMachineInstances
+
+Collects `VirtualMachineInstance` resources from cluster if available.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/virtualmachineinstances/openshift-cnv/fedora-r2nf0eocvxbkmqjy.json](./insights-archive-sample/config/virtualmachineinstances/openshift-cnv/fedora-r2nf0eocvxbkmqjy.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | ---------------------------------------------------------- |
+| >= 4.14   | config/virtualmachineinstances/{namespace}/{name}.json		|
+
+### Config ID
+`clusterconfig/virtual_machine_instances`
+
+### Released version
+- 4.14
+
+### Backported versions
+None
+
+### Notes
+None
+
+
 ## WorkloadInfo
 
 Collects summarized info about the workloads on a cluster
