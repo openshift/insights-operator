@@ -75,6 +75,9 @@ var (
 		Version:  "v1alpha3",
 		Resource: "virtualmachineinstances",
 	}
+	tempoResource = schema.GroupVersionResource{
+		Group: "tempo.grafana.com", Version: "v1alpha1", Resource: "tempostacks",
+	}
 )
 
 func init() { //nolint: gochecknoinits
