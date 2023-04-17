@@ -67,7 +67,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"sap_pods":                          (*Gatherer).GatherSAPPods,
 	"sap_datahubs":                      (*Gatherer).GatherSAPDatahubs,
 	"olm_operators":                     (*Gatherer).GatherOLMOperators,
-	"pod_network_connectivity_checks":   (*Gatherer).GatherPNCC,
+	"pod_network_connectivity_checks":   (*Gatherer).GatherPodNetworkConnectivityChecks,
 	"machine_autoscalers":               (*Gatherer).GatherMachineAutoscalers,
 	"openshift_logging":                 (*Gatherer).GatherOpenshiftLogging,
 	"storage_cluster":                   (*Gatherer).GatherStorageCluster,
