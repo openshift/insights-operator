@@ -1911,13 +1911,13 @@ None
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.15.0 | config/tempo.grafana.com/{namespace}/{name}.json 					    |
+| >= 4.14   | config/tempo.grafana.com/{namespace}/{name}.json 			|
 
 ### Config ID
 `clusterconfig/tempo_stack`
 
 ### Released version
-- 4.15.0
+- 4.14
 
 ### Backported versions
 None
