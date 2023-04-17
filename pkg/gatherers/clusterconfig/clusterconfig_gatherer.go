@@ -76,7 +76,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"mutating_webhook_configurations":   (*Gatherer).GatherMutatingWebhookConfigurations,
 	"cost_management_metrics_configs":   (*Gatherer).GatherCostManagementMetricsConfigs,
 	"node_logs":                         (*Gatherer).GatherNodeLogs,
-	"tsdb_status":                       (*Gatherer).GatherTSDBStatus,
+	"tsdb_status":                       (*Gatherer).GatherPrometheusTSDBStatus,
 	"schedulers":                        (*Gatherer).GatherSchedulers,
 	"scheduler_logs":                    (*Gatherer).GatherSchedulerLogs,
 	"silenced_alerts":                   (*Gatherer).GatherSilencedAlerts,
