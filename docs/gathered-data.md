@@ -1898,6 +1898,34 @@ None
 None
 
 
+## TempoStackCR
+
+Collects maximum of 5 `tempostacks.tempo.grafana.com` custom resources installed in the cluster.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/tempo.grafana.com/simpletest.json](./insights-archive-sample/config/tempo.grafana.com/simpletest.json)
+
+### Location in archive
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| >= 4.15.0 | config/tempo.grafana.com/{name}.json 					    |
+
+### Config ID
+`clusterconfig/tempo_stack`
+
+### Released version
+- 4.15.0
+
+### Backported versions
+None
+
+### Notes
+None
+
+
 ## ValidatingWebhookConfigurations
 
 Collects `ValidatingWebhookConfiguration` resources
