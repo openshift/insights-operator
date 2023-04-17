@@ -17,12 +17,12 @@ import (
 // None
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/tempo.grafana.com/simpletest.json
+// - docs/insights-archive-sample/config/tempo.grafana.com/openshift-operators/simpletest.json
 //
 // ### Location in archive
 // | Version   | Path														|
 // | --------- | --------------------------------------------------------	|
-// | >= 4.15.0 | config/tempo.grafana.com/{name}.json 					    |
+// | >= 4.15.0 | config/tempo.grafana.com/{namespace}/{name}.json 					    |
 //
 // ### Config ID
 // `clusterconfig/tempo_stack`
@@ -45,7 +45,7 @@ func (g *Gatherer) GatherTempoStackCR(ctx context.Context) ([]record.Record, []e
 }
 
 func gatherTempoStackCR(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
-	tempoList, err := dynamicClient.Resource(tempoResource).List(ctx, metav1.ListOptions{})
+	tempoList, err := dynamicClient.Resource(tempoStackResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -60,12 +60,12 @@ func gatherTempoStackCR(ctx context.Context, dynamicClient dynamic.Interface) ([
 	for i := range tempoList.Items {
 		t := tempoList.Items[i]
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/%s/%s", tempoResource.Group, t.GetName()),
+			Name: fmt.Sprintf("config/%s/%s/%s", tempoStackResource.Group, t.GetNamespace(), t.GetName()),
 			Item: record.ResourceMarshaller{Resource: &t},
 		})
 		// limit the gathered records
 		if len(records) == limit {
-			err := fmt.Errorf("limit %d for number of gathered %s resources exceeded", limit, tempoResource.GroupResource())
+			err := fmt.Errorf("limit %d for number of gathered %s resources exceeded", limit, tempoStackResource.GroupResource())
 			errs = append(errs, err)
 			break
 		}
