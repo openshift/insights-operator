@@ -130,7 +130,7 @@ func clusterOperatorsRecords(ctx context.Context,
 
 		relRes := collectClusterOperatorRelatedObjects(ctx, dynamicClient, items[idx], resVer)
 		for _, rr := range relRes {
-			// imageregistry resources (config, pruner) are gathered in image_registries.go, gather_image_pruners.go
+			// imageregistry resources (config, pruner) are gathered in gather_cluster_image_registries.go, gather_image_pruners.go
 			if strings.Contains(rr.APIVersion, "imageregistry") {
 				continue
 			}
