@@ -1906,12 +1906,12 @@ Collects maximum of 5 `tempostacks.tempo.grafana.com` custom resources installed
 None
 
 ### Sample data
-- [docs/insights-archive-sample/config/tempo.grafana.com/simpletest.json](./insights-archive-sample/config/tempo.grafana.com/simpletest.json)
+- [docs/insights-archive-sample/config/tempo.grafana.com/openshift-operators/simpletest.json](./insights-archive-sample/config/tempo.grafana.com/openshift-operators/simpletest.json)
 
 ### Location in archive
 | Version   | Path														|
 | --------- | --------------------------------------------------------	|
-| >= 4.15.0 | config/tempo.grafana.com/{name}.json 					    |
+| >= 4.15.0 | config/tempo.grafana.com/{namespace}/{name}.json 					    |
 
 ### Config ID
 `clusterconfig/tempo_stack`
