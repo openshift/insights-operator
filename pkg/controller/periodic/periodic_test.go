@@ -79,7 +79,7 @@ func Test_Controller_Run(t *testing.T) {
 			}, 1*time.Hour)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.Run(stopCh, tt.initialDelay, false)
+			go c.Run(stopCh, tt.initialDelay)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}
@@ -116,7 +116,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 			}, tt.interval)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.periodicTrigger(stopCh, false)
+			go c.periodicTrigger(stopCh)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}
@@ -298,13 +298,13 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 	tests := []struct {
 		name                   string
-		testedDataGather       v1alpha1.DataGather
+		testedDataGather       *v1alpha1.DataGather
 		testedInsightsOperator operatorv1.InsightsOperator
 		expected               *operatorv1.InsightsOperator
 	}{
 		{
 			name: "Basic copy status test",
-			testedDataGather: v1alpha1.DataGather{
+			testedDataGather: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 				Status: v1alpha1.DataGatherStatus{
 					State:      v1alpha1.Failed,
@@ -424,7 +424,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 		},
 		{
 			name: "InsightsReport attribute is not updated when copying",
-			testedDataGather: v1alpha1.DataGather{
+			testedDataGather: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 				Status: v1alpha1.DataGatherStatus{
 					State:      v1alpha1.Failed,
@@ -532,11 +532,11 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(&tt.testedDataGather)
+			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
 			operatorFakeCS := fakeOperatorCli.NewSimpleClientset(&tt.testedInsightsOperator)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil,
 				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators())
-			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather.Name)
+			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, updatedOperator)
 		})

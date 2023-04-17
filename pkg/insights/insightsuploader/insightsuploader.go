@@ -193,10 +193,12 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 	err := wait.ExponentialBackoff(c.backoff, func() (done bool, err error) {
 		requestID, err = c.client.SendAndGetID(ctx, c.secretConfigurator.Config().Endpoint, *s)
 		if err != nil {
-			klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
-			klog.Errorf("%v. Trying again in %s %d", err, c.backoff.Step(), c.backoff.Steps)
-			return false, nil
-			// TODO we would need to propagate the error as HTTP
+			// do no return the error if it's not the last attempt
+			if c.backoff.Steps > 1 {
+				klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
+				klog.Errorf("%v. Trying again in %s %d", err, c.backoff.Step(), c.backoff.Steps)
+				return false, nil
+			}
 		}
 		return true, err
 	})
