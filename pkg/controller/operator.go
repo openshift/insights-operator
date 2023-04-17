@@ -165,6 +165,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver, operatorClient.InsightsOperators())
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver,
 			apiConfigObserver, gatherers, kubeClient, insightClient, operatorClient.InsightsOperators())
+		statusReporter.AddSources(periodicGather.Sources()...)
 		go periodicGather.PeriodicPrune(ctx)
 	}
 
@@ -177,7 +178,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		initialDelay = wait.Jitter(baseInitialDelay, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
-	go periodicGather.Run(ctx.Done(), initialDelay, tpEnabled)
+	go periodicGather.Run(ctx.Done(), initialDelay)
 
 	if !tpEnabled {
 		// upload results to the provided client - if no client is configured reporting

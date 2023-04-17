@@ -198,8 +198,20 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 		}
 	}
-	conditions := []metav1.Condition{}
 
+	for k := range allFunctionReports {
+		fr := allFunctionReports[k]
+		// duration = 0 means the gatherer didn't run
+		if fr.Duration == 0 {
+			continue
+		}
+
+		gs := status.CreateDataGatherGathererStatus(&fr)
+		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
+	}
+
+	// record data
+	conditions := []metav1.Condition{}
 	lastArchive, err := record(mapToArray(allFunctionReports), rec, recdriver, anonymizer)
 	if err != nil {
 		conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionFalse, "RecordingFailed",
@@ -210,8 +222,9 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		}
 		return err
 	}
-
 	conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", ""))
+
+	// upload data
 	insightsRequestID, err := uploader.Upload(ctx, lastArchive)
 	if err != nil {
 		klog.Error(err)
@@ -226,16 +239,6 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
 
 	dataGatherCR.Status.InsightsRequestID = insightsRequestID
-	for k := range allFunctionReports {
-		fr := allFunctionReports[k]
-		// duration = 0 means the gatherer didn't run
-		if fr.Duration == 0 {
-			continue
-		}
-
-		gs := status.CreateDataGatherGathererStatus(&fr)
-		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
-	}
 	conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionTrue, "AsExpected", ""))
 
 	_, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Completed, conditions)

@@ -52,6 +52,7 @@ type Controller struct {
 	image               string
 	jobController       *JobController
 	pruneInterval       time.Duration
+	techPreview         bool
 }
 
 func NewWithTechPreview(
@@ -64,6 +65,8 @@ func NewWithTechPreview(
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
+
+	statuses["tech-preview-test"] = controllerstatus.New("tech-preview-test")
 	jobController := NewJobController(kubeClient)
 	return &Controller{
 		reportRetriever:     reportRetriever,
@@ -76,6 +79,7 @@ func NewWithTechPreview(
 		jobController:       jobController,
 		insightsOperatorCLI: insightsOperatorCLI,
 		pruneInterval:       1 * time.Hour,
+		techPreview:         true,
 	}
 }
 
@@ -120,7 +124,7 @@ func (c *Controller) Sources() []controllerstatus.StatusController {
 	return sources
 }
 
-func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration, techPreview bool) {
+func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	defer utilruntime.HandleCrash()
 	defer klog.Info("Shutting down")
 
@@ -130,21 +134,21 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration, tec
 		case <-stopCh:
 			return
 		case <-time.After(initialDelay):
-			if techPreview {
+			if c.techPreview {
 				c.GatherJob()
 			} else {
 				c.Gather()
 			}
 		}
 	} else {
-		if techPreview {
+		if c.techPreview {
 			c.GatherJob()
 		} else {
 			c.Gather()
 		}
 	}
 
-	go wait.Until(func() { c.periodicTrigger(stopCh, techPreview) }, time.Second, stopCh)
+	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
 
 	<-stopCh
 }
@@ -217,7 +221,7 @@ func (c *Controller) Gather() {
 
 // Periodically starts the gathering.
 // If there is an initialDelay set then it waits that much for the first gather to happen.
-func (c *Controller) periodicTrigger(stopCh <-chan struct{}, techPreview bool) {
+func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	configCh, closeFn := c.secretConfigurator.ConfigChanged()
 	defer closeFn()
 
@@ -237,7 +241,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}, techPreview bool) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			if techPreview {
+			if c.techPreview {
 				c.GatherJob()
 			} else {
 				c.Gather()
@@ -288,8 +292,15 @@ func (c *Controller) GatherJob() {
 		klog.Error(err)
 	}
 	klog.Infof("Job completed %s", gj.Name)
+
+	dataGatheredOK := c.wasDataGatherSuccessfull(dataGatherCR)
+	if !dataGatheredOK {
+		klog.Error("Last data gathering %v was not successful", dataGatherCR.Name)
+		return
+	}
+
 	c.reportRetriever.RetrieveReport()
-	_, err = c.copyDataGatherStatusToOperatorStatus(ctx, dataGatherCR.Name)
+	_, err = c.copyDataGatherStatusToOperatorStatus(ctx, dataGatherCR)
 	if err != nil {
 		klog.Errorf("Failed to copy the last DataGather status to \"cluster\" operator status: %v", err)
 		return
@@ -298,18 +309,14 @@ func (c *Controller) GatherJob() {
 }
 
 // copyDataGatherStatusToOperatorStatus gets the "cluster" "insightsoperator.operator.openshift.io" resource
-// and updates its status with values from the provided "dgName" "datagather.insights.openshift.io" resource.
-func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context, dgName string) (*v1.InsightsOperator, error) {
+// and updates its status with values from the provided "datagather.insights.openshift.io" resource.
+func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
+	dataGather *insightsv1alpha1.DataGather) (*v1.InsightsOperator, error) {
 	operator, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 	statusToUpdate := operator.Status.DeepCopy()
-
-	dataGather, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
 	statusToUpdate.GatherStatus = status.DataGatherStatusToOperatorGatherStatus(&dataGather.Status)
 	operator.Status = *statusToUpdate
 
@@ -491,6 +498,27 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 		}
 	}
 	return disabledGatherers, dp
+}
+
+// wasDataGatherSuccessfull reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
+// custom resource and checks whether the data was successfully uploaded or not and updates status accordingly
+func (c *Controller) wasDataGatherSuccessfull(dataGather *insightsv1alpha1.DataGather) bool {
+	for _, con := range dataGather.Status.Conditions {
+		if con.Type == status.DataUploaded && con.Status == metav1.ConditionFalse {
+			c.statuses["tech-preview-test"].UpdateStatus(controllerstatus.Summary{
+				Operation: controllerstatus.Uploading,
+				Healthy:   false,
+				Reason:    con.Reason,
+				Message:   con.Message,
+			})
+			return false
+		}
+	}
+	c.statuses["tech-preview-test"].UpdateStatus(controllerstatus.Summary{
+		Operation: controllerstatus.Uploading,
+		Healthy:   true,
+	})
+	return true
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
