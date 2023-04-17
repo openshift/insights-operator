@@ -1586,6 +1586,32 @@ None
 None
 
 
+## PrometheusTSDBStatus
+
+Collects Prometheus TSDB status.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/tsdb.json](./insights-archive-sample/config/tsdb.json)
+
+### Location in archive
+- `config/tsdb.json`
+
+### Config ID
+`clusterconfig/tsdb_status`
+
+### Released version
+- 4.10.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## SAPConfig
 
 Collects selected security context constraints
@@ -1871,32 +1897,6 @@ None
 
 ### Released version
 - 4.11.0
-
-### Backported versions
-None
-
-### Changes
-None
-
-
-## TSDBStatus
-
-Collects Prometheus TSDB status.
-
-### API Reference
-None
-
-### Sample data
-- [docs/insights-archive-sample/config/tsdb.json](./insights-archive-sample/config/tsdb.json)
-
-### Location in archive
-- `config/tsdb.json`
-
-### Config ID
-`clusterconfig/tsdb_status`
-
-### Released version
-- 4.10.0
 
 ### Backported versions
 None
