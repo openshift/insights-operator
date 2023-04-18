@@ -34,18 +34,12 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			namespaces: []string{"openshift", "openshift-apiserver"},
 			serviceAccounts: []*corev1.ServiceAccount{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "deployer",
-						Namespace: "openshift",
-					},
-					Secrets: []corev1.ObjectReference{{}},
+					ObjectMeta: metav1.ObjectMeta{Name: "deployer", Namespace: "openshift"},
+					Secrets:    []corev1.ObjectReference{{}},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "openshift-apiserver-sa",
-						Namespace: "openshift-apiserver",
-					},
-					Secrets: []corev1.ObjectReference{{}},
+					ObjectMeta: metav1.ObjectMeta{Name: "openshift-apiserver-sa", Namespace: "openshift-apiserver"},
+					Secrets:    []corev1.ObjectReference{{}},
 				},
 			},
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":2,"namespaces":{"openshift":[{"name":"deployer","secrets":1}],"openshift-apiserver":[{"name":"openshift-apiserver-sa","secrets":1}]}}}`, // nolint: lll
@@ -55,25 +49,16 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			namespaces: []string{"openshift"},
 			serviceAccounts: []*corev1.ServiceAccount{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "deployer",
-						Namespace: "openshift",
-					},
-					Secrets: []corev1.ObjectReference{{}},
+					ObjectMeta: metav1.ObjectMeta{Name: "deployer", Namespace: "openshift"},
+					Secrets:    []corev1.ObjectReference{{}},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "builder",
-						Namespace: "openshift",
-					},
-					Secrets: []corev1.ObjectReference{{}},
+					ObjectMeta: metav1.ObjectMeta{Name: "builder", Namespace: "openshift"},
+					Secrets:    []corev1.ObjectReference{{}},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "default",
-						Namespace: "openshift",
-					},
-					Secrets: []corev1.ObjectReference{{}},
+					ObjectMeta: metav1.ObjectMeta{Name: "default", Namespace: "openshift"},
+					Secrets:    []corev1.ObjectReference{{}},
 				},
 			},
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":3,"namespaces":{"openshift":[{"name":"builder","secrets":1},{"name":"default","secrets":1},{"name":"deployer","secrets":1}]}}}`, // nolint: lll
@@ -82,17 +67,10 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 			name:       "multiple secrets",
 			namespaces: []string{"default"},
 			serviceAccounts: []*corev1.ServiceAccount{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "local-storage-operator",
-					Namespace: "default",
-				},
+				ObjectMeta: metav1.ObjectMeta{Name: "local-storage-operator", Namespace: "default"},
 				Secrets: []corev1.ObjectReference{
-					{
-						Name: "secret1",
-					},
-					{
-						Name: "secret2",
-					},
+					{Name: "secret1"},
+					{Name: "secret2"},
 				},
 			}},
 			exp: `{"serviceAccounts":{"TOTAL_COUNT":1,"namespaces":{"default":[{"name":"local-storage-operator","secrets":2}]}}}`,
