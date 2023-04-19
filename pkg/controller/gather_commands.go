@@ -107,19 +107,16 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	return gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
 }
 
-// GatherAndUpload runs a single gather and stores the generated archive, uploads it
-// and waits for the corresponding Insights analysis report.
-// 1. Creates the necessary configs/clients
-// 2. Creates the configobserver
-// 3. Initiates the recorder
-// 4. Executes a Gather
-// 5. Flushes the results
-// 6. Get the latest archive
-// 7. Uploads the archive
-// 8. Waits for the corresponding Insights analysis download
+// GatherAndUpload runs a single gather and stores the generated archive, uploads it.
+// 1. Prepare the necessary kube configs
+// 2. Get the corresponding "datagathers.insights.openshift.io" resource
+// 3. Create all the gatherers
+// 4. Run data gathering
+// 5. Recodrd the data into the Insights archive
+// 6. Get the latest archive and upload it
+// 7. Updates the status of the corresponding "datagathers.insights.openshift.io" resource continuously
 func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen, gocyclo
-	klog.Infof("Starting insights-operator %s", version.Get().String())
-	// these are operator clients
+	klog.Info("Starting data gathering")
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
 		return err
