@@ -7,6 +7,7 @@ const (
 	DataRecorded = "DataRecorded"
 )
 
+// DataUploadedCondition returns new "DataUploaded" status condition with provided status, reason and message
 func DataUploadedCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
 	return metav1.Condition{
 		Type:               DataUploaded,
@@ -17,6 +18,7 @@ func DataUploadedCondition(status metav1.ConditionStatus, reason, message string
 	}
 }
 
+// DataRecordedCondition returns new "DataRecorded" status condition with provided status, reason and message
 func DataRecordedCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
 	return metav1.Condition{
 		Type:               DataRecorded,

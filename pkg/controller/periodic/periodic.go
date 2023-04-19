@@ -66,7 +66,7 @@ func NewWithTechPreview(
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
-	statuses["tech-preview-test"] = controllerstatus.New("tech-preview-test")
+	statuses["insightsuploader"] = controllerstatus.New("insightsuploader")
 	jobController := NewJobController(kubeClient)
 	return &Controller{
 		reportRetriever:     reportRetriever,
@@ -292,15 +292,19 @@ func (c *Controller) GatherJob() {
 		klog.Error(err)
 	}
 	klog.Infof("Job completed %s", gj.Name)
-
-	dataGatheredOK := c.wasDataGatherSuccessfull(dataGatherCR)
+	dataGatherFinished, err := c.dataGatherClient.DataGathers().Get(ctx, dataGatherCR.Name, metav1.GetOptions{})
+	if err != nil {
+		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherCR.Name, err)
+		return
+	}
+	dataGatheredOK := c.wasDataGatherSuccessful(dataGatherFinished)
 	if !dataGatheredOK {
-		klog.Error("Last data gathering %v was not successful", dataGatherCR.Name)
+		klog.Errorf("Last data gathering %v was not successful", dataGatherFinished.Name)
 		return
 	}
 
 	c.reportRetriever.RetrieveReport()
-	_, err = c.copyDataGatherStatusToOperatorStatus(ctx, dataGatherCR)
+	_, err = c.copyDataGatherStatusToOperatorStatus(ctx, dataGatherFinished)
 	if err != nil {
 		klog.Errorf("Failed to copy the last DataGather status to \"cluster\" operator status: %v", err)
 		return
@@ -500,24 +504,38 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 	return disabledGatherers, dp
 }
 
-// wasDataGatherSuccessfull reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
+// wasDataGatherSuccessful reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
 // custom resource and checks whether the data was successfully uploaded or not and updates status accordingly
-func (c *Controller) wasDataGatherSuccessfull(dataGather *insightsv1alpha1.DataGather) bool {
-	for _, con := range dataGather.Status.Conditions {
-		if con.Type == status.DataUploaded && con.Status == metav1.ConditionFalse {
-			c.statuses["tech-preview-test"].UpdateStatus(controllerstatus.Summary{
-				Operation: controllerstatus.Uploading,
-				Healthy:   false,
-				Reason:    con.Reason,
-				Message:   con.Message,
-			})
-			return false
+func (c *Controller) wasDataGatherSuccessful(dataGather *insightsv1alpha1.DataGather) bool {
+	var dataUploadedCon *metav1.Condition
+	for i := range dataGather.Status.Conditions {
+		con := dataGather.Status.Conditions[i]
+		if con.Type == status.DataUploaded {
+			dataUploadedCon = &con
 		}
 	}
-	c.statuses["tech-preview-test"].UpdateStatus(controllerstatus.Summary{
+	statusSummary := controllerstatus.Summary{
 		Operation: controllerstatus.Uploading,
 		Healthy:   true,
-	})
+	}
+	if dataUploadedCon == nil {
+		statusSummary.Healthy = false
+		statusSummary.Count = 5
+		statusSummary.Reason = "DataUploadedConditionNotAvailable"
+		statusSummary.Message = fmt.Sprintf("did not find any %q condition in the %s dataGather resource",
+			status.DataUploaded, dataGather.Name)
+		c.statuses["insightsuploader"].UpdateStatus(statusSummary)
+		return false
+	}
+	if dataUploadedCon.Status == metav1.ConditionFalse {
+		statusSummary.Healthy = false
+		statusSummary.Count = 5
+		statusSummary.Reason = dataUploadedCon.Reason
+		statusSummary.Message = dataUploadedCon.Message
+		c.statuses["insightsuploader"].UpdateStatus(statusSummary)
+		return false
+	}
+	c.statuses["insightsuploader"].UpdateStatus(statusSummary)
 	return true
 }
 

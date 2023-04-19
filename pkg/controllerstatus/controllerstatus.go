@@ -66,6 +66,13 @@ func (s *Simple) UpdateStatus(summary Summary) { //nolint: gocritic
 		s.summary.LastTransitionTime = time.Now()
 	}
 
+	// this is an ugly hack for tech preview with gathering jobs. The reason is that we don't want to count
+	// the attempts in this case, because the attempts (e.g upload) happens in the job
+	if summary.Count > 0 {
+		s.summary = summary
+		return
+	}
+
 	if s.summary.Healthy != summary.Healthy {
 		klog.V(2).Infof("name=%s healthy=%t reason=%s message=%s", s.name, summary.Healthy, summary.Reason, summary.Message)
 		s.summary = summary
