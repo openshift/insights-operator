@@ -90,7 +90,7 @@ func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.Ins
 
 	resp, err := c.client.GetWithPathParams(ctx, reportEndpointTP, insightsRequestID)
 	if err != nil {
-		klog.Errorf("Unexpected error retrieving the report: %s", err)
+		klog.Errorf("Unexpected error retrieving the report: %v", err)
 		c.UpdateStatus(controllerstatus.Summary{
 			Healthy:   false,
 			Operation: controllerstatus.DownloadingReport,
@@ -154,14 +154,14 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return false, err
 	} else if insightsclient.IsHttpError(err) {
 		ie := err.(insightsclient.HttpError)
-		klog.Errorf("Unexpected error retrieving the report: %s", ie)
+		klog.Errorf("Unexpected error retrieving the report: %v", ie)
 		// if there's a 404 response then retry
 		if ie.StatusCode == http.StatusNotFound {
 			return false, ie
 		}
 		return true, ie
 	} else if err != nil {
-		klog.Errorf("Unexpected error retrieving the report: %s", err)
+		klog.Errorf("Unexpected error retrieving the report: %v", err)
 		c.StatusController.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
 			Reason:    "UnexpectedError",

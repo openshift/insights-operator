@@ -292,3 +292,13 @@ func isGathererDisabled(gathererConfigs []v1alpha1.GathererConfig, gathererName 
 	}
 	return false
 }
+
+// FunctionReportsMapToArray converts provided map[string]GathererFunctionReport to a slice of
+// GathererFunctionReports. Map keys are not used.
+func FunctionReportsMapToArray(m map[string]GathererFunctionReport) []GathererFunctionReport {
+	a := make([]GathererFunctionReport, 0, len(m))
+	for _, v := range m {
+		a = append(a, v)
+	}
+	return a
+}

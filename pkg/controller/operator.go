@@ -9,7 +9,8 @@ import (
 	v1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
-	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
+	insightsv1alpha1client "github.com/openshift/client-go/insights/clientset/versioned"
+	insightsInformers "github.com/openshift/client-go/insights/informers/externalversions"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
@@ -75,7 +76,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightClient, err := insightsv1alpha1cli.NewForConfig(controller.KubeConfig)
+	insightClient, err := insightsv1alpha1client.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -128,6 +129,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		}
 	}
 	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
+	var dgInformer periodic.DataGatherInformer
 	if insightsConfigAPIEnabled {
 		configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 		insightsDataGatherObserver, err = configobserver.NewInsightsDataGatherObserver(gatherKubeConfig,
@@ -136,8 +138,16 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return err
 		}
 
+		insightsInformersfactory := insightsInformers.NewSharedInformerFactory(insightClient, 10*time.Minute)
+		dgInformer, err = periodic.NewDataGatherInformer(controller.EventRecorder, insightsInformersfactory)
+		if err != nil {
+			return err
+		}
+
 		go insightsDataGatherObserver.Run(ctx, 1)
 		go configInformersForTechPreview.Start(ctx.Done())
+		go dgInformer.Run(ctx, 1)
+		go insightsInformersfactory.Start(ctx.Done())
 	}
 
 	// secretConfigObserver synthesizes all config into the status reporter controller
@@ -196,7 +206,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver,
-			insightsDataGatherObserver, gatherers, kubeClient, insightClient, operatorClient.InsightsOperators())
+			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(), operatorClient.InsightsOperators(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)
 		go periodicGather.PeriodicPrune(ctx)

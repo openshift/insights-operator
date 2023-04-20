@@ -114,7 +114,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		}
 	}
 
-	return gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
+	return gather.RecordArchiveMetadata(gather.FunctionReportsMapToArray(allFunctionReports), rec, anonymizer)
 }
 
 // GatherAndUpload runs a single gather and stores the generated archive, uploads it.
@@ -191,7 +191,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	// record data
 	dataRecordedCon := status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", "")
-	lastArchive, err := record(mapToArray(allFunctionReports), rec, recdriver, anonymizer)
+	lastArchive, err := record(gather.FunctionReportsMapToArray(allFunctionReports), rec, recdriver, anonymizer)
 	if err != nil {
 		klog.Error("Failed to record data archive: %v", err)
 		dataRecordedCon.Status = metav1.ConditionFalse
@@ -285,14 +285,6 @@ func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1
 	if err != nil {
 		klog.Error("Failed to update DataGather resource %s conditions: %v", dataGatherCR.Name, err)
 	}
-}
-
-func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
-	a := make([]gather.GathererFunctionReport, 0, len(m))
-	for _, v := range m {
-		a = append(a, v)
-	}
-	return a
 }
 
 // record is a helper function recording the archive metadata as well as data.
