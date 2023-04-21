@@ -77,8 +77,6 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
     - revive
     - goprintffuncname
     - gosec
@@ -108,6 +106,8 @@ linters:
   # - godot
   # - godox
   # - goerr113
+  # - gofmt // break comments documentation guidelines
+  # - goimports // break comments documentation guidelines
   # - interfacer
   # - maligned
   # - nestif
