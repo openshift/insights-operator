@@ -82,7 +82,7 @@ func (c *Collector) ClearState() {
 	// interface from the legacyregistry module.
 }
 
-func (c *Collector) Create(version *semver.Version) bool {
+func (c *Collector) Create(_ *semver.Version) bool {
 	return true
 	// NOOP: No versioning is implemented for this collector.
 	// This method is implemented exclusively to comply with the Collector
