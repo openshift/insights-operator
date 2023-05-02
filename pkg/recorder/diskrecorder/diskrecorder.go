@@ -72,20 +72,20 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
 
-	for _, record := range records {
+	for _, r := range records {
 		if err := tw.WriteHeader(&tar.Header{
-			Name:     record.Name,
-			ModTime:  record.At,
+			Name:     r.Name,
+			ModTime:  r.At,
 			Mode:     int64(os.FileMode(0640).Perm()),
-			Size:     int64(len(record.Data)),
+			Size:     int64(len(r.Data)),
 			Typeflag: tar.TypeReg,
 		}); err != nil {
 			return nil, fmt.Errorf("unable to write tar header: %v", err)
 		}
-		if _, err := tw.Write(record.Data); err != nil {
+		if _, err := tw.Write(r.Data); err != nil {
 			return nil, fmt.Errorf("unable to write tar entry: %v", err)
 		}
-		completed = append(completed, record)
+		completed = append(completed, r)
 	}
 
 	if err := tw.Close(); err != nil {
