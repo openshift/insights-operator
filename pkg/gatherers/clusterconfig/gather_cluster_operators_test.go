@@ -87,7 +87,7 @@ func Test_Operators_GatherClusterOperators(t *testing.T) {
 
 	item, _ := records[0].Item.Marshal()
 	var gatheredCO configv1.ClusterOperator
-	openshiftCodec := openshiftscheme.Codecs.LegacyCodec(configv1.SchemeGroupVersion)
+	openshiftCodec := openshiftscheme.Codecs.LegacyCodec(configv1.GroupVersion)
 	_, _, err = openshiftCodec.Decode(item, nil, &gatheredCO)
 	if err != nil {
 		t.Fatalf("failed to decode object: %v", err)
