@@ -319,9 +319,9 @@ func (c *mockInsightsClient) GetClusterVersion() (*v1.ClusterVersion, error) {
 	return c.clusterVersion, nil
 }
 
-func (c *mockInsightsClient) IncrementRecvReportMetric(statusCode int) {
+func (c *mockInsightsClient) IncrementRecvReportMetric(_ int) {
 }
 
-func (c *mockInsightsClient) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
+func (c *mockInsightsClient) RecvReport(_ context.Context, _ string) (*http.Response, error) {
 	return nil, nil
 }
