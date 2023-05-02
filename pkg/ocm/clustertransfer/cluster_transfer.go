@@ -212,7 +212,7 @@ func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint strin
 		Duration: c.configurator.Config().OCMConfig.ClusterTransferInterval / 24, // 30 min as the first waiting
 		Factor:   2,
 		Jitter:   0,
-		Steps:    ocm.OCMAPIFailureCountThreshold,
+		Steps:    ocm.FailureCountThreshold,
 		Cap:      c.configurator.Config().OCMConfig.ClusterTransferInterval,
 	}
 
