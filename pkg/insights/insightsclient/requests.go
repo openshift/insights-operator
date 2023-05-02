@@ -171,7 +171,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	}
 
 	klog.Warningf("Report response status code: %d", resp.StatusCode)
-	return nil, fmt.Errorf("Report response status code: %d", resp.StatusCode)
+	return nil, fmt.Errorf("report response status code: %d", resp.StatusCode)
 }
 
 func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error) {

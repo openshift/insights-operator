@@ -393,7 +393,7 @@ func extractErrorKeyFromRuleData(r types.RuleWithContentResponse) (string, error
 
 	errorKeyStr, ok := errorKeyField.(string)
 	if !ok {
-		return "", fmt.Errorf("The error_key of TemplateData of rule %q is not a string", r.RuleID)
+		return "", fmt.Errorf("the error_key of TemplateData of rule %q is not a string", r.RuleID)
 	}
 	return errorKeyStr, nil
 }

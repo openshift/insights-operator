@@ -297,7 +297,7 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 				},
 			},
 			expectedErrorKey: "",
-			expectedError:    fmt.Errorf("The error_key of TemplateData of rule \"%s\" is not a string", testRuleID),
+			expectedError:    fmt.Errorf("the error_key of TemplateData of rule \"%s\" is not a string", testRuleID),
 		},
 	}
 
