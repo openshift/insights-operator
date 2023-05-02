@@ -31,7 +31,7 @@ const (
 	pbAcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 )
 
-// NewOperator create the commad for running the Insights Operator.
+// NewOperator create the command for running the Insights Operator.
 func NewOperator() *cobra.Command {
 	operator := &controller.Operator{
 		Controller: config.Controller{
@@ -57,12 +57,12 @@ func NewOperator() *cobra.Command {
 		Short: "Start the operator",
 		Run:   runOperator(operator, cfg),
 	}
-	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
+	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.TODO()).Flags())
 
 	return cmd
 }
 
-// NewGather create the commad for running the a single gather.
+// NewGather create the command for running a single gather.
 func NewGather() *cobra.Command {
 	operator := &controller.GatherJob{
 		Controller: config.Controller{
@@ -77,7 +77,7 @@ func NewGather() *cobra.Command {
 		Short: "Does a single gather, without uploading it",
 		Run:   runGather(operator, cfg),
 	}
-	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
+	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.TODO()).Flags())
 
 	return cmd
 }
