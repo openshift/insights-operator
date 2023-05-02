@@ -38,7 +38,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
-// Operator is the type responsible for controlling the start up of the Insights Operator
+// Operator is the type responsible for controlling the start-up of the Insights Operator
 type Operator struct {
 	config.Controller
 }
@@ -199,7 +199,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		go periodicGather.PeriodicPrune(ctx)
 	}
 
-	// check we can read IO container status and we are not in crash loop
+	// check we can read IO container status, and we are not in crash loop
 	initialCheckTimeout := s.Controller.Interval / 24
 	initialCheckInterval := 20 * time.Second
 	baseInitialDelay := s.Controller.Interval / 12

@@ -163,7 +163,7 @@ func readCHANGELOG() map[ReleaseVersion]MarkdownReleaseBlock {
 		if match := miscSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			releaseBlock.misc = match[1]
 		}
-		// We want only found versions - e.g master is not considered as a version
+		// We want only found versions - e.g. master is not considered as a version
 		if version != (ReleaseVersion{}) {
 			releaseBlocks[version] = releaseBlock
 		}

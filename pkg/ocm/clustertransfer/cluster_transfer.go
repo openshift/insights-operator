@@ -280,7 +280,7 @@ func isUpdatedPullSecretContentSame(originalPS, updatedPS pullSecretContent) boo
 }
 
 // unmarshallToPullSecretContent unmarshals the data into "pullSecretContent" type.
-// If the unmarshaling fails then an error is returned. Otherwise the reference to
+// If the unmarshaling fails then an error is returned. Otherwise, the reference to
 // the new pullSecretContent is returned.
 func unmarshallToPullSecretContent(data []byte) (*pullSecretContent, error) {
 	var psContent pullSecretContent

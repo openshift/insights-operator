@@ -196,7 +196,7 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 // Boilerplate for running an operator and handling command line arguments.
 func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		// boiler plate for the "normal" command
+		// boilerplate for the "normal" command
 		rand.Seed(time.Now().UTC().UnixNano())
 		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
 		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()

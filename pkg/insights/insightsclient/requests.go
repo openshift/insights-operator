@@ -42,7 +42,7 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	resp, err := c.client.Do(req)
 	if err != nil {
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
-		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
+		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have recorded about it in metrics as well.
 		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()
 		return "", fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
@@ -253,9 +253,9 @@ func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byt
 	return io.ReadAll(resp.Body)
 }
 
-// RecvClusterTransfer performs a request to the OCM cluster transfer API.
-// It is a HTTP GET request with the `search` query parameter limiting the result
-// only for the one cluster and only for the `accepted` cluster transfers.
+// RecvClusterTransfer performs a request to the OCM cluster transfer API. It is
+// an HTTP GET request with the `search` query parameter limiting the result only
+// for the one cluster and only for the `accepted` cluster transfers.
 func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {

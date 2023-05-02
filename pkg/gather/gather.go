@@ -45,7 +45,7 @@ type GathererFunctionReport struct {
 	Panic        interface{} `json:"panic"`
 }
 
-// ArchiveMetadata contains the information about the archive and all its' gatherers
+// ArchiveMetadata contains the information about the archive and all its gatherers
 type ArchiveMetadata struct {
 	// info about gathering functions.
 	StatusReports []GathererFunctionReport `json:"status_reports"`
@@ -243,7 +243,7 @@ func startGatheringConcurrently(
 		return nil, err
 	}
 
-	// This is from TechPreview feature so we have to check the nil
+	// This is from TechPreview feature, so we have to check the nil
 	if len(gatherConfigs) > 0 {
 		gatheringFunctions = getEnabledGatheringFunctions(gatherer.GetName(), gatheringFunctions, gatherConfigs)
 	}
