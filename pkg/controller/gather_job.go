@@ -91,8 +91,13 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	}()
 
 	authorizer := clusterauthorizer.New(configObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configClient)
 
+	gatherClient, err := configv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherClient)
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,

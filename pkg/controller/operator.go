@@ -127,7 +127,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	go rec.PeriodicallyPrune(ctx, statusReporter)
 
 	authorizer := clusterauthorizer.New(secretConfigObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configClient)
+
+	gatherClient, err := configv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherClient)
 
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
