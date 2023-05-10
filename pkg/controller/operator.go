@@ -11,6 +11,7 @@ import (
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -81,6 +82,34 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
+
+	desiredVersion := config.OperatorReleaseVersion
+	missingVersion := "0.0.1-snapshot"
+
+	// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
+	featureGateAccessor := featuregates.NewFeatureGateAccess(
+		desiredVersion, missingVersion,
+		configInformers.Config().V1().ClusterVersions(), configInformers.Config().V1().FeatureGates(),
+		eventRecorder,
+	)
+	go featureGateAccessor.Run(ctx)
+	go configInformers.Start(config.Stop)
+
+	select {
+	case <-featureGateAccessor.InitialFeatureGatesObserved():
+		featureGates, _ := featureGateAccessor.CurrentFeatureGates()
+		log.Info("FeatureGates initialized", "knownFeatures", featureGates.KnownFeatures())
+	case <-time.After(1 * time.Minute):
+		log.Error(nil, "timed out waiting for FeatureGate detection")
+		return nil, fmt.Errorf("timed out waiting for FeatureGate detection")
+	}
+
+	featureGates, err := featureGateAccessor.CurrentFeatureGates()
+	if err != nil {
+		return nil, err
+	}
+	// example of future featuregate read and usage to set a variable to pass to a controller
+	gatewayAPIEnabled := featureGates.Enabled(configv1.FeatureGateGatewayAPI)
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
