@@ -128,12 +128,15 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	authorizer := clusterauthorizer.New(secretConfigObserver)
 
-	gatherClient, err := configv1client.NewForConfig(gatherKubeConfig)
+	// gatherConfigClient is configClient created from gatherKubeConfig, this name was used because configClient was already taken
+	// this client is only used in insightsClient, it is created here
+	// because pkg/insights/insightsclient/request_test.go unit test won't work otherwise
+	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherClient)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder

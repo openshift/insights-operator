@@ -92,12 +92,15 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	authorizer := clusterauthorizer.New(configObserver)
 
-	gatherClient, err := configv1client.NewForConfig(gatherKubeConfig)
+	// gatherConfigClient is configClient created from gatherKubeConfig, this name was used because configClient was already taken
+	// this client is only used in insightsClient, it is created here
+	// because pkg/insights/insightsclient/request_test.go unit test won't work otherwise
+	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherClient)
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,
