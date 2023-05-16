@@ -18,14 +18,13 @@ import (
 	"time"
 
 	"k8s.io/client-go/pkg/version"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/transport"
 	"k8s.io/component-base/metrics"
 
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	"github.com/openshift/insights-operator/pkg/insights"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
@@ -38,13 +37,11 @@ const (
 )
 
 type Client struct {
-	client      *http.Client
-	maxBytes    int64
-	metricsName string
-
-	authorizer       Authorizer
-	gatherKubeConfig *rest.Config
-	clusterVersion   *configv1.ClusterVersion
+	client       *http.Client
+	maxBytes     int64
+	metricsName  string
+	authorizer   Authorizer
+	configClient *configv1client.Clientset
 }
 
 type Authorizer interface {
@@ -92,7 +89,7 @@ func IsHttpError(err error) bool {
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
 // New creates a Client
-func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, gatherKubeConfig *rest.Config) *Client {
+func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, configClient *configv1client.Clientset) *Client {
 	if client == nil {
 		client = &http.Client{}
 	}
@@ -100,11 +97,11 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 		maxBytes = 10 * 1024 * 1024
 	}
 	return &Client{
-		client:           client,
-		maxBytes:         maxBytes,
-		metricsName:      metricsName,
-		authorizer:       authorizer,
-		gatherKubeConfig: gatherKubeConfig,
+		client:       client,
+		maxBytes:     maxBytes,
+		metricsName:  metricsName,
+		authorizer:   authorizer,
+		configClient: configClient,
 	}
 }
 
@@ -162,22 +159,13 @@ func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv
 }
 
 func (c *Client) GetClusterVersion() (*configv1.ClusterVersion, error) {
-	if c.clusterVersion != nil {
-		return c.clusterVersion, nil
-	}
 	ctx := context.Background()
 
-	gatherConfigClient, err := configv1client.NewForConfig(c.gatherKubeConfig)
+	cv, err := c.configClient.ConfigV1().ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	cv, err := gatherConfigClient.ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	c.clusterVersion = cv
 	return cv, nil
 }
 

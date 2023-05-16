@@ -85,14 +85,22 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	recdriver := diskrecorder.New(d.StoragePath)
 	rec := recorder.New(recdriver, d.Interval, anonymizer)
 	defer func() {
-		if err := rec.Flush(); err != nil {
+		if err = rec.Flush(); err != nil {
 			klog.Error(err)
 		}
 	}()
 
 	authorizer := clusterauthorizer.New(configObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
 
+	// gatherConfigClient is configClient created from gatherKubeConfig, this name was used because configClient was already taken
+	// this client is only used in insightsClient, it is created here
+	// because pkg/insights/insightsclient/request_test.go unit test won't work otherwise
+	gatherConfigClient, err := configv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,
