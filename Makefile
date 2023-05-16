@@ -20,7 +20,7 @@ endif
 
 # Testing
 GO_TEST_FLAGS = $(VERBOSE)
-COVER_PROFILE = cover.out
+COVER_PROFILE ?= cover.out
 
 # Build
 CLIENTGO_VERSION := $(shell git rev-parse --short=7 HEAD)
@@ -61,8 +61,8 @@ unit: ## Run the unit tests
 	go test -race $(GO_TEST_FLAGS) -coverprofile $(COVER_PROFILE) ./...
 
 .PHONY: coverage
-coverage:
-	./.openshiftci/check-coverage.sh
+coverage: ## Upload report to codecov
+	./.openshiftci/publish-codecov.sh
 
 .PHONE: unit-verbose
 unit-verbose:
