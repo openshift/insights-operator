@@ -12,6 +12,7 @@ import (
 	"k8s.io/klog/v2"
 
 	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
@@ -171,7 +172,12 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	recdriver := diskrecorder.New(d.StoragePath)
 	rec := recorder.New(recdriver, d.Interval, anonymizer)
 	authorizer := clusterauthorizer.New(configObserver)
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherKubeConfig)
+
+	configClient, err := configv1client.NewForConfig(gatherKubeConfig)
+	if err != nil {
+		return err
+	}
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configClient)
 
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
