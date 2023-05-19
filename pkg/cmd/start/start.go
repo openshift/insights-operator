@@ -2,11 +2,17 @@ package start
 
 import (
 	"context"
+	"fmt"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"math/rand"
 	"os"
 	"time"
 
+	v1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
+	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/serviceability"
 
 	"github.com/spf13/cobra"
@@ -113,6 +119,41 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 		protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
 
 		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
+
+		// before calling the Gather logic, this command must check the featuregate status.
+		configClient, err := configv1client.NewForConfig(clientConfig)
+		if err != nil {
+			klog.Exit("error: building client: %v", err)
+		}
+		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
+
+		desiredVersion := os.Getenv("RELEASE_VERSION")
+		missingVersion := "0.0.1-snapshot"
+
+		// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
+		featureGateAccessor := featuregates.NewFeatureGateAccess(
+			desiredVersion, missingVersion,
+			configInformers.Config().V1().ClusterVersions(), configInformers.Config().V1().FeatureGates(),
+			events.NewLoggingEventRecorder("insights-gather"),
+		)
+		go featureGateAccessor.Run(ctx)
+		go configInformers.Start(ctx.Done())
+
+		select {
+		case <-featureGateAccessor.InitialFeatureGatesObserved():
+			featureGates, _ := featureGateAccessor.CurrentFeatureGates()
+			klog.Infof("FeatureGates initialized: knownFeatureGates=%v", featureGates.KnownFeatures())
+		case <-time.After(1 * time.Minute):
+			klog.Errorf("timed out waiting for FeatureGate detection")
+			klog.Exit(fmt.Errorf("timed out waiting for FeatureGate detection"))
+		}
+
+		featureGates, err := featureGateAccessor.CurrentFeatureGates()
+		if err != nil {
+			klog.Exit(err)
+		}
+		operator.InsightsConfigAPIEnabled = featureGates.Enabled(v1.FeatureGateInsightsConfigAPI)
+
 		err = operator.Gather(ctx, clientConfig, protoConfig)
 		if err != nil {
 			klog.Error(err)
