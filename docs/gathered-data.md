@@ -1568,7 +1568,8 @@ Collects the cluster's `PodDisruptionBudgets`.
 - 4.5.15+
 
 ### Changes
-None
+- The gatherer was changed to gather pdbs only from namespaces with "openshift" prefix
+and the limit of gathered records to 100 since 4.14.
 
 
 ## SAPConfig

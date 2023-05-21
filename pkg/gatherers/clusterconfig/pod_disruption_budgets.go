@@ -39,7 +39,8 @@ const (
 // - 4.5.15+
 //
 // ### Changes
-// - In 4.14 we changed the gatherer to gather pdbs only from namespaces with "openshift-" prefix and the limit to 100.
+// - The gatherer was changed to gather pdbs only from namespaces with "openshift" prefix
+// and the limit of gathered records to 100 since 4.14.
 func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
