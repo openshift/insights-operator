@@ -3,6 +3,7 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	gatherPodDisruptionBudgetLimit = 5000
+	gatherPodDisruptionBudgetLimit = 100
+	serverRequestLimit             = 5000
 )
 
 // GatherPodDisruptionBudgets Collects the cluster's `PodDisruptionBudgets`.
@@ -37,7 +39,7 @@ const (
 // - 4.5.15+
 //
 // ### Changes
-// None
+// - In 4.14 we changed the gatherer to gather pdbs only from namespaces with "openshift-" prefix and the limit to 100.
 func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -48,20 +50,24 @@ func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Rec
 }
 
 func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1Interface) ([]record.Record, []error) {
-	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
+	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{Limit: serverRequestLimit})
 	if err != nil {
 		return nil, []error{err}
 	}
 	var records []record.Record
+	limit := 0
 	for i := range pdbs.Items {
-		recordName := fmt.Sprintf("config/pdbs/%s", pdbs.Items[i].GetName())
-		if pdbs.Items[i].GetNamespace() != "" {
-			recordName = fmt.Sprintf("config/pdbs/%s/%s", pdbs.Items[i].GetNamespace(), pdbs.Items[i].GetName())
+		if strings.HasPrefix(pdbs.Items[i].GetNamespace(), "openshift") {
+			limit++
+			if limit == gatherPodDisruptionBudgetLimit {
+				break
+			}
+			recordName := fmt.Sprintf("config/pdbs/%s/%s", pdbs.Items[i].GetNamespace(), pdbs.Items[i].GetName())
+			records = append(records, record.Record{
+				Name: recordName,
+				Item: record.ResourceMarshaller{Resource: &pdbs.Items[i]},
+			})
 		}
-		records = append(records, record.Record{
-			Name: recordName,
-			Item: record.ResourceMarshaller{Resource: &pdbs.Items[i]},
-		})
 	}
 	return records, nil
 }
