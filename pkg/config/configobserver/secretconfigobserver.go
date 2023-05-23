@@ -12,12 +12,19 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/component-base/metrics"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/insights"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var insightsAlertsDisabled = metrics.NewGaugeVec(&metrics.GaugeOpts{
+	Name: "insights_alerts_disabled",
+	Help: "Indicates whether the alerts registered by the Insights Operator are enabled or disabled",
+}, []string{})
 
 type ConfigReporter interface {
 	SetConfig(*config.Controller)
@@ -45,6 +52,7 @@ type Controller struct {
 
 // New creates a new configobsever, the configs/tokens are updated from the configs/tokens present in the cluster if possible.
 func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Controller { //nolint: gocritic
+	insights.MustRegisterMetrics(insightsAlertsDisabled)
 	c := &Controller{
 		kubeClient:    kubeClient,
 		defaultConfig: defaultConfig,
@@ -62,14 +70,34 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 
 // Start is periodically invoking check and set of config and token
 func (c *Controller) Start(ctx context.Context) {
-	wait.Until(func() {
-		if err := c.updateToken(ctx); err != nil {
-			klog.Warningf("Unable to retrieve token config: %v", err)
+	configCh, cancelFn := c.ConfigChanged()
+	defer cancelFn()
+
+	if c.Config().DisableInsightsAlerts {
+		insightsAlertsDisabled.With(prometheus.Labels{}).Set(1)
+	} else {
+		insightsAlertsDisabled.With(prometheus.Labels{}).Set(0)
+	}
+
+	for {
+		select {
+		case <-time.After(c.checkPeriod):
+			if err := c.updateToken(ctx); err != nil {
+				klog.Warningf("Unable to retrieve token config: %v", err)
+			}
+			if err := c.updateConfig(ctx); err != nil {
+				klog.Warningf("Unable to retrieve config: %v", err)
+			}
+		case <-configCh:
+			if c.Config().DisableInsightsAlerts {
+				insightsAlertsDisabled.With(prometheus.Labels{}).Set(1)
+			} else {
+				insightsAlertsDisabled.With(prometheus.Labels{}).Set(0)
+			}
+		case <-ctx.Done():
+			return
 		}
-		if err := c.updateConfig(ctx); err != nil {
-			klog.Warningf("Unable to retrieve config: %v", err)
-		}
-	}, c.checkPeriod, ctx.Done())
+	}
 }
 
 // Config provides the config in a thread-safe way.
