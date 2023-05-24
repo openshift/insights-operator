@@ -1,8 +1,20 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 24aeaa5b82e3828883faafd351f530abddf484d7-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: abc6aa2a6e567484ad725fbada41b8ebf34a769c-->
 ## 4.11
 
+### Backporting
+- [#773](https://github.com/openshift/insights-operator/pull/773) Collect info about monitoring pods pv
+- [#766](https://github.com/openshift/insights-operator/pull/766) update the cluster transfer interval to…
+- [#739](https://github.com/openshift/insights-operator/pull/739) feat(recent_metrics) adds openshift_apps_deploymentconfigs_strategy_total 
+- [#737](https://github.com/openshift/insights-operator/pull/737) Create gatherer for gathering machines.
+- [#698](https://github.com/openshift/insights-operator/pull/698) fix storage/ceph path structure
+- [#722](https://github.com/openshift/insights-operator/pull/722) operators gatherer - handle ingresscontroller relatedOb…
+- [#677](https://github.com/openshift/insights-operator/pull/677) update the DVO metrics gatherer (#664)
+- [#662](https://github.com/openshift/insights-operator/pull/662) backport helm upgrade and uninstall metric to 4.11
+- [#655](https://github.com/openshift/insights-operator/pull/655) Gather status of the cephclusters.ceph.rook.io resourc…
+
 ### Enhancement
+- [#689](https://github.com/openshift/insights-operator/pull/689) remove name and namespace from dvo metrics
 - [#625](https://github.com/openshift/insights-operator/pull/625) gather io configuration
 - [#627](https://github.com/openshift/insights-operator/pull/627) Console helm metrics
 - [#603](https://github.com/openshift/insights-operator/pull/603) Implement fingerprint for records
@@ -14,6 +26,8 @@
 - [#580](https://github.com/openshift/insights-operator/pull/580) Gather cluster images.config.openshift.io resource definition
 
 ### Bugfix
+- [#718](https://github.com/openshift/insights-operator/pull/718) do not periodically update Available clusteroperator co…
+- [#641](https://github.com/openshift/insights-operator/pull/641) insightsclient - do not format OCM error message twice
 - [#640](https://github.com/openshift/insights-operator/pull/640) Fix permissions for OCS for the storage gatherer
 - [#633](https://github.com/openshift/insights-operator/pull/633) make cluster version condition more flexible
 - [#620](https://github.com/openshift/insights-operator/pull/620) save conditional gatherer endpoint and firing alerts in the metadata
@@ -27,6 +41,7 @@
 - [#578](https://github.com/openshift/insights-operator/pull/578) defer in loop
 
 ### Others
+- [#642](https://github.com/openshift/insights-operator/pull/642) Update CHANGELOG
 - [#639](https://github.com/openshift/insights-operator/pull/639) Do not use the kube-rbac-proxy container
 - [#637](https://github.com/openshift/insights-operator/pull/637) Implement Prometheus Collector pattern
 - [#626](https://github.com/openshift/insights-operator/pull/626) update of the arch.md document
@@ -51,6 +66,7 @@
 - [#582](https://github.com/openshift/insights-operator/pull/582) Send gathering time as metadata field with upload request
 
 ### Misc
+- [#676](https://github.com/openshift/insights-operator/pull/676) Explicitly clear run-level label
 - [#635](https://github.com/openshift/insights-operator/pull/635) Revert "Implement Prometheus Collector pattern (#607)"
 - [#624](https://github.com/openshift/insights-operator/pull/624) Updating ose-insights-operator images to be consistent with ART
 - [#616](https://github.com/openshift/insights-operator/pull/616) comply to restricted pod security level
