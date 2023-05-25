@@ -91,9 +91,7 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 							MinAvailable: &intstr.IntOrString{IntVal: int32(test.minAvailableToPdb[name])},
 						},
 					}, metav1.CreateOptions{})
-				if err != nil {
-					t.Fatalf("unable to create fake pdbs: %v", err)
-				}
+				assert.NoErrorf(t, err, "unable to create fake pdbs: %v", err)
 			}
 			ctx := context.Background()
 			records, errs := gatherPodDisruptionBudgets(ctx, coreClient.PolicyV1())
@@ -101,17 +99,11 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 			assert.Equal(t, test.expCount, len(records))
 			for i := range records {
 				pdba, ok := records[i].Item.(record.ResourceMarshaller).Resource.(*policyv1.PodDisruptionBudget)
-				if !ok {
-					t.Fatal("pdb item has invalid type")
-				}
-
+				assert.True(t, ok, "pdb item has invalid type")
 				name := pdba.ObjectMeta.Name
 				namespace := pdba.ObjectMeta.Namespace
 				assert.Equal(t, test.pdbsToNamespace[namespace], name)
-				minAvailable := pdba.Spec.MinAvailable.StrVal
-				if pdba.Spec.MinAvailable.IntValue() != test.minAvailableToPdb[name] {
-					t.Fatalf("pdb item has mismatched MinAvailable value, %q != %q", test.minAvailableToPdb[name], minAvailable)
-				}
+				assert.Equal(t, test.minAvailableToPdb[name], pdba.Spec.MinAvailable.IntValue())
 			}
 		})
 	}
