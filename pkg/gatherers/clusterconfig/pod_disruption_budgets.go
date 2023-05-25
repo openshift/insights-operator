@@ -13,7 +13,6 @@ import (
 
 const (
 	gatherPodDisruptionBudgetLimit = 100
-	serverRequestLimit             = 5000
 )
 
 // GatherPodDisruptionBudgets Collects the cluster's `PodDisruptionBudgets`.
@@ -51,23 +50,22 @@ func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Rec
 }
 
 func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1Interface) ([]record.Record, []error) {
-	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{Limit: serverRequestLimit})
+	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
 	}
 	var records []record.Record
-	limit := 0
 	for i := range pdbs.Items {
-		if strings.HasPrefix(pdbs.Items[i].GetNamespace(), "openshift") {
-			limit++
-			if limit == gatherPodDisruptionBudgetLimit {
-				break
-			}
-			recordName := fmt.Sprintf("config/pdbs/%s/%s", pdbs.Items[i].GetNamespace(), pdbs.Items[i].GetName())
+		item := &pdbs.Items[i]
+		if strings.HasPrefix(item.GetNamespace(), "openshift-") {
+			recordName := fmt.Sprintf("config/pdbs/%s/%s", item.GetNamespace(), item.GetName())
 			records = append(records, record.Record{
 				Name: recordName,
-				Item: record.ResourceMarshaller{Resource: &pdbs.Items[i]},
+				Item: record.ResourceMarshaller{Resource: item},
 			})
+			if len(records) == gatherPodDisruptionBudgetLimit {
+				break
+			}
 		}
 	}
 	return records, nil
