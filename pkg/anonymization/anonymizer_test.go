@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/config/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha1"
 	networkv1 "github.com/openshift/api/network/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -123,11 +123,8 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{
 		EnableGlobalObfuscation: true,
 	})
-	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
-		DataPolicy: v1alpha1.ObfuscateNetworking,
-	})
 	anonymizer, err := NewAnonymizer(clusterBaseDomain,
-		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockSecretConfigurator, mockAPIConfigurator)
+		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockSecretConfigurator, v1alpha1.ObfuscateNetworking)
 	assert.NoError(t, err)
 
 	return anonymizer
@@ -332,10 +329,7 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 		networkClient,
 		config.NewMockSecretConfigurator(&config.Controller{
 			EnableGlobalObfuscation: true,
-		}),
-		config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
-			DataPolicy: v1alpha1.ObfuscateNetworking,
-		}),
+		}), v1alpha1.ObfuscateNetworking,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, anonymizer)
