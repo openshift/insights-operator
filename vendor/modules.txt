@@ -166,7 +166,6 @@ github.com/openshift/api/image/docker10
 github.com/openshift/api/image/dockerpre012
 github.com/openshift/api/image/v1
 github.com/openshift/api/imageregistry/v1
-github.com/openshift/api/insights/v1alpha1
 github.com/openshift/api/network/v1
 github.com/openshift/api/operator/v1
 github.com/openshift/api/operator/v1alpha1
@@ -220,13 +219,6 @@ github.com/openshift/client-go/imageregistry/clientset/versioned/fake
 github.com/openshift/client-go/imageregistry/clientset/versioned/scheme
 github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1
 github.com/openshift/client-go/imageregistry/clientset/versioned/typed/imageregistry/v1/fake
-github.com/openshift/client-go/insights/applyconfigurations/insights/v1alpha1
-github.com/openshift/client-go/insights/applyconfigurations/internal
-github.com/openshift/client-go/insights/clientset/versioned
-github.com/openshift/client-go/insights/clientset/versioned/fake
-github.com/openshift/client-go/insights/clientset/versioned/scheme
-github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1
-github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1/fake
 github.com/openshift/client-go/network/applyconfigurations/internal
 github.com/openshift/client-go/network/applyconfigurations/network/v1
 github.com/openshift/client-go/network/clientset/versioned

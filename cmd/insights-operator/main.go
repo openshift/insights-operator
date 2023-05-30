@@ -60,7 +60,6 @@ func NewOperatorCommand() *cobra.Command {
 	cmd.AddCommand(start.NewOperator())
 	cmd.AddCommand(start.NewReceiver())
 	cmd.AddCommand(start.NewGather())
-	cmd.AddCommand(start.NewGatherAndUpload())
 
 	return cmd
 }

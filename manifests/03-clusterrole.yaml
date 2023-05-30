@@ -44,19 +44,6 @@ metadata:
     capability.openshift.io/name: Insights
 rules:
   - apiGroups:
-      - "insights.openshift.io"
-    resources:
-      - datagathers
-      - datagathers/status
-    verbs:
-      - create
-      - get
-      - update
-      - patch
-      - list
-      - delete
-      - watch
-  - apiGroups:
       - "operator.openshift.io"
     resources:
       - insightsoperators/status
@@ -382,22 +369,6 @@ rules:
       - pods
     verbs:
       - get
-  - apiGroups:
-      - batch
-    resources:
-      - jobs
-    verbs:
-      - create
-      - get
-      - list 
-      - delete
-  - apiGroups:
-      - apps
-    resources:
-      - deployments
-    verbs:
-      - get
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

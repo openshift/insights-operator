@@ -25,6 +25,7 @@ type APIConfigObserver interface {
 type APIConfigController struct {
 	factory.Controller
 	lock              sync.Mutex
+	listeners         map[chan *v1alpha1.GatherConfig]struct{}
 	configV1Alpha1Cli *configCliv1alpha1.ConfigV1alpha1Client
 	gatherConfig      *v1alpha1.GatherConfig
 }
@@ -39,6 +40,7 @@ func NewAPIConfigObserver(kubeConfig *rest.Config,
 	}
 	c := &APIConfigController{
 		configV1Alpha1Cli: configV1Alpha1Cli,
+		listeners:         make(map[chan *v1alpha1.GatherConfig]struct{}),
 	}
 
 	insightDataGatherConf, err := c.configV1Alpha1Cli.InsightsDataGathers().Get(context.Background(), "cluster", metav1.GetOptions{})
