@@ -33,7 +33,7 @@ import (
 	"sync"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/config/v1alpha1"
 	networkv1 "github.com/openshift/api/network/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
@@ -88,7 +88,7 @@ type Anonymizer struct {
 	ipNetworkRegex     *regexp.Regexp
 	secretsClient      corev1client.SecretInterface
 	secretConfigurator configobserver.Configurator
-	dataPolicy         v1alpha1.DataPolicy
+	apiConfigurator    configobserver.APIConfigObserver
 	configClient       configv1client.ConfigV1Interface
 	networkClient      networkv1client.NetworkV1Interface
 	gatherKubeClient   kubernetes.Interface
@@ -104,7 +104,7 @@ func NewAnonymizer(clusterBaseDomain string,
 	networks []string,
 	secretsClient corev1client.SecretInterface,
 	secretConfigurator configobserver.Configurator,
-	dataPolicy v1alpha1.DataPolicy) (*Anonymizer, error) {
+	apiConfigurator configobserver.APIConfigObserver) (*Anonymizer, error) {
 	cidrs, err := k8snet.ParseCIDRs(networks)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func NewAnonymizer(clusterBaseDomain string,
 		ipNetworkRegex:     regexp.MustCompile(Ipv4AddressOrNetworkRegex),
 		secretsClient:      secretsClient,
 		secretConfigurator: secretConfigurator,
-		dataPolicy:         dataPolicy,
+		apiConfigurator:    apiConfigurator,
 	}, nil
 }
 
@@ -138,14 +138,14 @@ func NewAnonymizerFromConfigClient(
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
 	secretConfigurator configobserver.Configurator,
-	dataPolicy v1alpha1.DataPolicy,
+	apiConfigurator configobserver.APIConfigObserver,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
 		return nil, err
 	}
 	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, secretConfigurator, dataPolicy)
+	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, secretConfigurator, apiConfigurator)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func NewAnonymizerFromConfig(
 	gatherProtoKubeConfig *rest.Config,
 	protoKubeConfig *rest.Config,
 	secretConfigurator configobserver.Configurator,
-	dataPolicy v1alpha1.DataPolicy,
+	apiConfigurator configobserver.APIConfigObserver,
 ) (*Anonymizer, error) {
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
@@ -344,7 +344,7 @@ func NewAnonymizerFromConfig(
 		return nil, err
 	}
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient, secretConfigurator, dataPolicy)
+	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient, secretConfigurator, apiConfigurator)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
@@ -484,8 +484,8 @@ func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
 	if anonymizer.secretConfigurator.Config().EnableGlobalObfuscation {
 		return true
 	}
-	if anonymizer.dataPolicy != "" {
-		return anonymizer.dataPolicy == v1alpha1.ObfuscateNetworking
+	if anonymizer.apiConfigurator != nil {
+		return *anonymizer.apiConfigurator.GatherDataPolicy() == v1alpha1.ObfuscateNetworking
 	}
 	return false
 }
