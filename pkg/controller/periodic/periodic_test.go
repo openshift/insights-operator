@@ -1,7 +1,6 @@
 package periodic
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -9,23 +8,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
-	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
-	"github.com/openshift/api/insights/v1alpha1"
-	operatorv1 "github.com/openshift/api/operator/v1"
-	insightsFakeCli "github.com/openshift/client-go/insights/clientset/versioned/fake"
+	"github.com/openshift/api/config/v1alpha1"
+	v1 "github.com/openshift/api/operator/v1"
 	fakeOperatorCli "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	v1 "k8s.io/api/core/v1"
-	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_Controller_CustomPeriodGatherer(t *testing.T) {
@@ -79,7 +70,7 @@ func Test_Controller_Run(t *testing.T) {
 			}, 1*time.Hour)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.Run(stopCh, tt.initialDelay, false)
+			go c.Run(stopCh, tt.initialDelay)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}
@@ -116,7 +107,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 			}, tt.interval)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.periodicTrigger(stopCh, false)
+			go c.periodicTrigger(stopCh)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}
@@ -207,323 +198,131 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		Report:   true,
 		Interval: interval,
 	}}
+	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{})
 	mockRecorder := recorder.MockRecorder{}
-	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, "")
+	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, mockAPIConfigurator)
 	if err != nil {
 		return nil, nil, err
 	}
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
-	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, nil)
+	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, mockAPIConfigurator)
 	return mockController, &mockRecorder, nil
 }
 
-func TestCreateNewDataGatherCR(t *testing.T) {
-	cs := insightsFakeCli.NewSimpleClientset()
-	mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil)
+func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 	tests := []struct {
-		name              string
-		disabledGatherers []string
-		dataPolicy        v1alpha1.DataPolicy
-		expected          *v1alpha1.DataGather
+		name       string
+		gfr        gather.GathererFunctionReport
+		expectedGs v1.GathererStatus
 	}{
 		{
-			name:              "Empty DataGather resource creation",
-			disabledGatherers: []string{},
-			dataPolicy:        "",
-			expected: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "periodic-gathering-",
-				},
-				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: "",
-				},
+			name: "Data gathered OK",
+			gfr: gather.GathererFunctionReport{
+				FuncName:     "gatherer1/foo",
+				Duration:     115000,
+				RecordsCount: 5,
 			},
-		},
-		{
-			name:              "DataGather with NoPolicy DataPolicy",
-			disabledGatherers: []string{},
-			dataPolicy:        v1alpha1.NoPolicy,
-			expected: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "periodic-gathering-",
+			expectedGs: v1.GathererStatus{
+				Name: "gatherer1/foo",
+				LastGatherDuration: metav1.Duration{
+					Duration: 115000000000,
 				},
-				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: "ClearText",
-				},
-			},
-		},
-		{
-			name: "DataGather with ObfuscateNetworking DataPolicy and some disabled gatherers",
-			disabledGatherers: []string{
-				"clusterconfig/foo",
-				"clusterconfig/bar",
-				"workloads",
-			},
-			dataPolicy: v1alpha1.ObfuscateNetworking,
-			expected: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "periodic-gathering-",
-				},
-				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: "ObfuscateNetworking",
-					Gatherers: []v1alpha1.GathererConfig{
-						{
-							Name:  "clusterconfig/foo",
-							State: v1alpha1.Disabled,
-						},
-						{
-							Name:  "clusterconfig/bar",
-							State: v1alpha1.Disabled,
-						},
-						{
-							Name:  "workloads",
-							State: v1alpha1.Disabled,
-						},
-					},
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dg, err := mockController.createNewDataGatherCR(context.Background(), tt.disabledGatherers, tt.dataPolicy)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, dg)
-			err = cs.InsightsV1alpha1().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
-			assert.NoError(t, err)
-		})
-	}
-}
-
-func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
-	tests := []struct {
-		name                   string
-		testedDataGather       v1alpha1.DataGather
-		testedInsightsOperator operatorv1.InsightsOperator
-		expected               *operatorv1.InsightsOperator
-	}{
-		{
-			name: "Basic copy status test",
-			testedDataGather: v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-				Status: v1alpha1.DataGatherStatus{
-					State:      v1alpha1.Failed,
-					StartTime:  metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC),
-					FinishTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
-					Gatherers: []v1alpha1.GathererStatus{
-						{
-							Name: "clusterconfig/foo1",
-							Conditions: []metav1.Condition{
-								{
-									Type:               status.DataGatheredCondition,
-									Status:             metav1.ConditionTrue,
-									Reason:             status.GatheredOKReason,
-									LastTransitionTime: metav1.Date(2020, 5, 13, 2, 35, 5, 0, time.UTC),
-								},
-							},
-						},
-						{
-							Name: "clusterconfig/bar",
-							Conditions: []metav1.Condition{
-								{
-									Type:               status.DataGatheredCondition,
-									Status:             metav1.ConditionTrue,
-									Reason:             status.GatherErrorReason,
-									Message:            "Gatherer failed",
-									LastTransitionTime: metav1.Date(2020, 5, 13, 2, 36, 5, 0, time.UTC),
-								},
-							},
-						},
-						{
-							Name: "workloads",
-							Conditions: []metav1.Condition{
-								{
-									Type:               status.DataGatheredCondition,
-									Status:             metav1.ConditionTrue,
-									Reason:             status.GatheredOKReason,
-									LastTransitionTime: metav1.Date(2020, 5, 13, 2, 38, 5, 0, time.UTC),
-								},
-							},
-						},
-					},
-				},
-			},
-			testedInsightsOperator: operatorv1.InsightsOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
-				},
-				Status: operatorv1.InsightsOperatorStatus{
-					GatherStatus: operatorv1.GatherStatus{
-						LastGatherTime:     metav1.Date(2020, 5, 12, 2, 0, 0, 0, time.UTC),
-						LastGatherDuration: metav1.Duration{Duration: 5 * time.Minute},
-						Gatherers: []operatorv1.GathererStatus{
-							{
-								Name: "clusterconfig/foo1",
-								Conditions: []metav1.Condition{
-									{
-										Type:               status.DataGatheredCondition,
-										Status:             metav1.ConditionTrue,
-										Reason:             status.GatheredOKReason,
-										LastTransitionTime: metav1.Date(2020, 5, 12, 1, 0, 0, 0, time.UTC),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: &operatorv1.InsightsOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
-				},
-				Status: operatorv1.InsightsOperatorStatus{
-					GatherStatus: operatorv1.GatherStatus{
-						LastGatherTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
-						LastGatherDuration: metav1.Duration{
-							Duration: 1614 * time.Second,
-						},
-						Gatherers: []operatorv1.GathererStatus{
-							{
-								Name: "clusterconfig/foo1",
-								Conditions: []metav1.Condition{
-									{
-										Type:               status.DataGatheredCondition,
-										Status:             metav1.ConditionTrue,
-										Reason:             status.GatheredOKReason,
-										LastTransitionTime: metav1.Date(2020, 5, 13, 2, 35, 5, 0, time.UTC),
-									},
-								},
-							},
-							{
-								Name: "clusterconfig/bar",
-								Conditions: []metav1.Condition{
-									{
-										Type:               status.DataGatheredCondition,
-										Status:             metav1.ConditionTrue,
-										Reason:             status.GatherErrorReason,
-										Message:            "Gatherer failed",
-										LastTransitionTime: metav1.Date(2020, 5, 13, 2, 36, 5, 0, time.UTC),
-									},
-								},
-							},
-							{
-								Name: "workloads",
-								Conditions: []metav1.Condition{
-									{
-										Type:               status.DataGatheredCondition,
-										Status:             metav1.ConditionTrue,
-										Reason:             status.GatheredOKReason,
-										LastTransitionTime: metav1.Date(2020, 5, 13, 2, 38, 5, 0, time.UTC),
-									},
-								},
-							},
-						},
+				Conditions: []metav1.Condition{
+					{
+						Type:    DataGatheredCondition,
+						Status:  metav1.ConditionTrue,
+						Reason:  GatheredOKReason,
+						Message: "Created 5 records in the archive.",
 					},
 				},
 			},
 		},
 		{
-			name: "InsightsReport attribute is not updated when copying",
-			testedDataGather: v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-				Status: v1alpha1.DataGatherStatus{
-					State:      v1alpha1.Failed,
-					StartTime:  metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC),
-					FinishTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
-					Gatherers: []v1alpha1.GathererStatus{
-						{
-							Name: "clusterconfig/foo1",
-							Conditions: []metav1.Condition{
-								{
-									Type:               status.DataGatheredCondition,
-									Status:             metav1.ConditionTrue,
-									Reason:             status.GatheredOKReason,
-									LastTransitionTime: metav1.Date(2020, 5, 13, 2, 35, 5, 0, time.UTC),
-								},
-							},
-						},
+			name: "No Data",
+			gfr: gather.GathererFunctionReport{
+				FuncName:     "gatherer2/baz",
+				Duration:     0,
+				RecordsCount: 0,
+			},
+			expectedGs: v1.GathererStatus{
+				Name: "gatherer2/baz",
+				LastGatherDuration: metav1.Duration{
+					Duration: 0,
+				},
+				Conditions: []metav1.Condition{
+					{
+						Type:   DataGatheredCondition,
+						Status: metav1.ConditionFalse,
+						Reason: NoDataGatheredReason,
 					},
 				},
 			},
-			testedInsightsOperator: operatorv1.InsightsOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
+		},
+		{
+			name: "Gatherer Error",
+			gfr: gather.GathererFunctionReport{
+				FuncName:     "gatherer3/bar",
+				Duration:     0,
+				RecordsCount: 0,
+				Errors:       []string{"unable to read the data"},
+			},
+			expectedGs: v1.GathererStatus{
+				Name: "gatherer3/bar",
+				LastGatherDuration: metav1.Duration{
+					Duration: 0,
 				},
-				Status: operatorv1.InsightsOperatorStatus{
-					InsightsReport: operatorv1.InsightsReport{
-						DownloadedAt: metav1.Date(2020, 5, 13, 2, 40, 0, 0, time.UTC),
-						HealthChecks: []operatorv1.HealthCheck{
-							{
-								Description: "healtheck ABC",
-								TotalRisk:   1,
-								State:       operatorv1.HealthCheckEnabled,
-								AdvisorURI:  "test-uri",
-							},
-							{
-								Description: "healtheck XYZ",
-								TotalRisk:   2,
-								State:       operatorv1.HealthCheckEnabled,
-							},
-						},
-					},
-					GatherStatus: operatorv1.GatherStatus{
-						LastGatherTime:     metav1.Date(2020, 5, 12, 2, 0, 0, 0, time.UTC),
-						LastGatherDuration: metav1.Duration{Duration: 5 * time.Minute},
-						Gatherers: []operatorv1.GathererStatus{
-							{
-								Name: "clusterconfig/foo1",
-								Conditions: []metav1.Condition{
-									{
-										Type:               status.DataGatheredCondition,
-										Status:             metav1.ConditionTrue,
-										Reason:             status.GatheredOKReason,
-										LastTransitionTime: metav1.Date(2020, 5, 12, 1, 0, 0, 0, time.UTC),
-									},
-								},
-							},
-						},
+				Conditions: []metav1.Condition{
+					{
+						Type:    DataGatheredCondition,
+						Status:  metav1.ConditionFalse,
+						Reason:  GatherErrorReason,
+						Message: "unable to read the data",
 					},
 				},
 			},
-			expected: &operatorv1.InsightsOperator{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
+		},
+		{
+			name: "Data gathered with an error",
+			gfr: gather.GathererFunctionReport{
+				FuncName:     "gatherer4/quz",
+				Duration:     9000,
+				RecordsCount: 2,
+				Errors:       []string{"didn't find xyz configmap"},
+			},
+			expectedGs: v1.GathererStatus{
+				Name: "gatherer4/quz",
+				LastGatherDuration: metav1.Duration{
+					Duration: 9000000000,
 				},
-				Status: operatorv1.InsightsOperatorStatus{
-					InsightsReport: operatorv1.InsightsReport{
-						DownloadedAt: metav1.Date(2020, 5, 13, 2, 40, 0, 0, time.UTC),
-						HealthChecks: []operatorv1.HealthCheck{
-							{
-								Description: "healtheck ABC",
-								TotalRisk:   1,
-								State:       operatorv1.HealthCheckEnabled,
-								AdvisorURI:  "test-uri",
-							},
-							{
-								Description: "healtheck XYZ",
-								TotalRisk:   2,
-								State:       operatorv1.HealthCheckEnabled,
-							},
-						},
+				Conditions: []metav1.Condition{
+					{
+						Type:    DataGatheredCondition,
+						Status:  metav1.ConditionTrue,
+						Reason:  GatheredWithErrorReason,
+						Message: "Created 2 records in the archive. Error: didn't find xyz configmap",
 					},
-					GatherStatus: operatorv1.GatherStatus{
-						LastGatherTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
-						LastGatherDuration: metav1.Duration{
-							Duration: 1614 * time.Second,
-						},
-						Gatherers: []operatorv1.GathererStatus{
-							{
-								Name: "clusterconfig/foo1",
-								Conditions: []metav1.Condition{
-									{
-										Type:               status.DataGatheredCondition,
-										Status:             metav1.ConditionTrue,
-										Reason:             status.GatheredOKReason,
-										LastTransitionTime: metav1.Date(2020, 5, 13, 2, 35, 5, 0, time.UTC),
-									},
-								},
-							},
-						},
+				},
+			},
+		},
+		{
+			name: "Gatherer panicked",
+			gfr: gather.GathererFunctionReport{
+				FuncName:     "gatherer5/quz",
+				Duration:     0,
+				RecordsCount: 0,
+				Panic:        "quz gatherer panicked",
+			},
+			expectedGs: v1.GathererStatus{
+				Name: "gatherer5/quz",
+				LastGatherDuration: metav1.Duration{
+					Duration: 0,
+				},
+				Conditions: []metav1.Condition{
+					{
+						Type:    DataGatheredCondition,
+						Status:  metav1.ConditionFalse,
+						Reason:  GatherPanicReason,
+						Message: "quz gatherer panicked",
 					},
 				},
 			},
@@ -532,264 +331,16 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(&tt.testedDataGather)
-			operatorFakeCS := fakeOperatorCli.NewSimpleClientset(&tt.testedInsightsOperator)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, nil,
-				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators())
-			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather.Name)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, updatedOperator)
-		})
-	}
-}
+			gathererStatus := createGathererStatus(&tt.gfr)
+			assert.Equal(t, tt.expectedGs.Name, gathererStatus.Name)
+			assert.Equal(t, tt.expectedGs.LastGatherDuration, gathererStatus.LastGatherDuration)
 
-func TestCreateDataGatherAttributeValues(t *testing.T) {
-	tests := []struct {
-		name                      string
-		gatherConfig              configv1alpha1.GatherConfig
-		gatheres                  []gatherers.Interface
-		expectedPolicy            v1alpha1.DataPolicy
-		expectedDisabledGatherers []string
-	}{
-		{
-			name: "Two disabled gatherers and ObfuscateNetworking Policy",
-			gatherConfig: configv1alpha1.GatherConfig{
-				DataPolicy: configv1alpha1.ObfuscateNetworking,
-				DisabledGatherers: []string{
-					"mock_gatherer",
-					"foo_gatherer",
-				},
-			},
-			gatheres: []gatherers.Interface{
-				&gather.MockGatherer{},
-				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true},
-			},
-			expectedPolicy:            v1alpha1.ObfuscateNetworking,
-			expectedDisabledGatherers: []string{"mock_gatherer", "foo_gatherer"},
-		},
-		{
-			name: "Custom period gatherer is excluded because it should not be processed",
-			gatherConfig: configv1alpha1.GatherConfig{
-				DataPolicy: configv1alpha1.NoPolicy,
-				DisabledGatherers: []string{
-					"clusterconfig/bar",
-				},
-			},
-			gatheres: []gatherers.Interface{
-				&gather.MockGatherer{},
-				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: false},
-			},
-			expectedPolicy:            v1alpha1.NoPolicy,
-			expectedDisabledGatherers: []string{"clusterconfig/bar", "mock_custom_period_gatherer_no_period"},
-		},
-		{
-			name: "Empty data policy is created as NoPolicy/ClearText",
-			gatherConfig: configv1alpha1.GatherConfig{
-				DataPolicy:        "",
-				DisabledGatherers: []string{},
-			},
-			gatheres: []gatherers.Interface{
-				&gather.MockGatherer{},
-				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true},
-			},
-			expectedPolicy:            v1alpha1.NoPolicy,
-			expectedDisabledGatherers: []string{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockAPIConfig := config.NewMockAPIConfigurator(&tt.gatherConfig)
-			mockController := NewWithTechPreview(nil, nil, mockAPIConfig, tt.gatheres, nil, nil, nil)
-			disabledGatherers, dp := mockController.createDataGatherAttributeValues()
-			assert.Equal(t, tt.expectedPolicy, dp)
-			assert.EqualValues(t, disabledGatherers, tt.expectedDisabledGatherers)
-		})
-	}
-}
-
-func TestGetInsightsImage(t *testing.T) {
-	tests := []struct {
-		name              string
-		testDeployment    appsv1.Deployment
-		expectedImageName string
-		expectedError     error
-	}{
-		{
-			name: "Successful image get",
-			testDeployment: appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "insights-operator",
-					Namespace: insightsNamespace,
-				},
-				Spec: appsv1.DeploymentSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "test-image",
-									Image: "testing-image:123",
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedImageName: "testing-image:123",
-			expectedError:     nil,
-		},
-		{
-			name: "Empty deployment spec",
-			testDeployment: appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "insights-operator",
-					Namespace: insightsNamespace,
-				},
-				Spec: appsv1.DeploymentSpec{},
-			},
-			expectedImageName: "",
-			expectedError:     fmt.Errorf("no container defined in the deployment"),
-		},
-		{
-			name: "Multiple containers - first container image is returned",
-			testDeployment: appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "insights-operator",
-					Namespace: insightsNamespace,
-				},
-				Spec: appsv1.DeploymentSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers: []v1.Container{
-								{
-									Name:  "test-image-1",
-									Image: "testing-image-1:123",
-								},
-								{
-									Name:  "test-image-2",
-									Image: "testing-image-1:123",
-								},
-							},
-						},
-					},
-				},
-			},
-			expectedImageName: "testing-image-1:123",
-			expectedError:     nil,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cs := kubefake.NewSimpleClientset(&tt.testDeployment)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil)
-			imgName, err := mockController.getInsightsImage(context.Background())
-			assert.Equal(t, tt.expectedError, err)
-			assert.Equal(t, tt.expectedImageName, imgName)
-		})
-	}
-}
-
-func TestPeriodicPrune(t *testing.T) {
-	tests := []struct {
-		name                string
-		jobs                []runtime.Object
-		dataGathers         []runtime.Object
-		expectedJobs        []string
-		expectedDataGathers []string
-	}{
-		{
-			name: "Basic pruning test",
-			jobs: []runtime.Object{
-				&batchv1.Job{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "to-be-removed-job-1",
-						Namespace: insightsNamespace,
-						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-25 * time.Hour),
-						},
-					},
-				},
-				&batchv1.Job{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "to-be-removed-job-2",
-						Namespace: insightsNamespace,
-						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-1441 * time.Minute),
-						},
-					},
-				},
-				&batchv1.Job{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "to-keep-job-1",
-						Namespace: insightsNamespace,
-						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-23 * time.Hour),
-						},
-					},
-				},
-				&batchv1.Job{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "to-keep-job-2",
-						Namespace: insightsNamespace,
-						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-2 * time.Hour),
-						},
-					},
-				},
-			},
-			dataGathers: []runtime.Object{
-				&v1alpha1.DataGather{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "to-be-removed-dg-1",
-						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-25 * time.Hour),
-						},
-					},
-				},
-				&v1alpha1.DataGather{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "to-be-removed-dg-2",
-						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-1441 * time.Minute),
-						},
-					},
-				},
-				&v1alpha1.DataGather{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "to-keep-dg-1",
-						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-1339 * time.Minute),
-						},
-					},
-				},
-			},
-			expectedJobs:        []string{"to-keep-job-1", "to-keep-job-2"},
-			expectedDataGathers: []string{"to-keep-dg-1"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			kubeCs := kubefake.NewSimpleClientset(tt.jobs...)
-			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGathers...)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1alpha1(), nil)
-			mockController.pruneInterval = 90 * time.Millisecond
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-			defer cancel()
-			mockController.PeriodicPrune(ctx)
-
-			jobList, err := kubeCs.BatchV1().Jobs(insightsNamespace).List(context.Background(), metav1.ListOptions{})
-			assert.NoError(t, err)
-			assert.Len(t, jobList.Items, 2)
-			for _, j := range jobList.Items {
-				assert.Contains(t, tt.expectedJobs, j.Name)
-			}
-			dataGathersList, err := insightsCs.InsightsV1alpha1().DataGathers().List(context.Background(), metav1.ListOptions{})
-			assert.NoError(t, err)
-			assert.Len(t, dataGathersList.Items, 1)
-			for _, dg := range dataGathersList.Items {
-				assert.Contains(t, tt.expectedDataGathers, dg.Name)
-			}
+			// more asserts since we can use simple equal because of the last transition time of the condition
+			assert.Len(t, gathererStatus.Conditions, 1)
+			assert.Equal(t, tt.expectedGs.Conditions[0].Type, gathererStatus.Conditions[0].Type)
+			assert.Equal(t, tt.expectedGs.Conditions[0].Reason, gathererStatus.Conditions[0].Reason)
+			assert.Equal(t, tt.expectedGs.Conditions[0].Status, gathererStatus.Conditions[0].Status)
+			assert.Equal(t, tt.expectedGs.Conditions[0].Message, gathererStatus.Conditions[0].Message)
 		})
 	}
 }

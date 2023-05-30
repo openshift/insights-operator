@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/config/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -59,17 +59,15 @@ func (d *driverMock) Prune(time.Time) error {
 	return args.Error(1)
 }
 
-func newRecorder(maxArchiveSize int64, clusterBaseDomain string) (*Recorder, error) {
+func newRecorder(maxArchiveSize int64, clusterBaseDomain string) Recorder {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
 	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{EnableGlobalObfuscation: true})
-	anonymizer, err := anonymization.NewAnonymizer(clusterBaseDomain, nil, nil, mockSecretConfigurator, v1alpha1.ObfuscateNetworking)
-	if err != nil {
-		return nil, err
-	}
+	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{DataPolicy: v1alpha1.ObfuscateNetworking})
+	anonymizer, _ := anonymization.NewAnonymizer(clusterBaseDomain, nil, nil, mockSecretConfigurator, mockAPIConfigurator)
 
 	interval, _ := time.ParseDuration("1m")
-	return &Recorder{
+	return Recorder{
 		driver:               &driver,
 		interval:             interval,
 		maxAge:               interval * 6 * 24,
@@ -77,12 +75,11 @@ func newRecorder(maxArchiveSize int64, clusterBaseDomain string) (*Recorder, err
 		records:              make(map[string]*record.MemoryRecord),
 		recordedFingerprints: make(map[string]string),
 		anonymizer:           anonymizer,
-	}, nil
+	}
 }
 
 func Test_Record(t *testing.T) {
-	rec, err := newRecorder(MaxArchiveSize, "")
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, "")
 	errs := rec.Record(record.Record{
 		Name: mock1Name,
 		Item: RawReport{Data: "mock1"},
@@ -92,8 +89,7 @@ func Test_Record(t *testing.T) {
 }
 
 func Test_Record_Duplicated(t *testing.T) {
-	rec, err := newRecorder(MaxArchiveSize, "")
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, "")
 	errs := rec.Record(record.Record{
 		Name: mock1Name,
 		Item: RawReport{Data: "mock1"},
@@ -108,8 +104,7 @@ func Test_Record_Duplicated(t *testing.T) {
 }
 
 func Test_Record_CantBeSerialized(t *testing.T) {
-	rec, err := newRecorder(MaxArchiveSize, "")
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, "")
 	errs := rec.Record(record.Record{
 		Name: mock1Name,
 		Item: RawInvalidReport{},
@@ -119,8 +114,7 @@ func Test_Record_CantBeSerialized(t *testing.T) {
 }
 
 func Test_Record_Flush(t *testing.T) {
-	rec, err := newRecorder(MaxArchiveSize, "")
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, "")
 	for i := 0; i < 3; i++ {
 		errs := rec.Record(record.Record{
 			Name: fmt.Sprintf("config/mock%d", i),
@@ -132,23 +126,21 @@ func Test_Record_Flush(t *testing.T) {
 			assert.Empty(t, errs)
 		}
 	}
-	err = rec.Flush()
-	assert.NoError(t, err)
+	err := rec.Flush()
+	assert.Nil(t, err)
 	assert.Equal(t, int64(0), rec.size)
 }
 
 func Test_Record_FlushEmptyRecorder(t *testing.T) {
-	rec, err := newRecorder(MaxArchiveSize, "")
-	assert.NoError(t, err)
-	err = rec.Flush()
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, "")
+	err := rec.Flush()
+	assert.Nil(t, err)
 }
 
 func Test_Record_ArchiveSizeExceeded(t *testing.T) {
 	data := "data bigger than 4 bytes"
 	maxArchiveSize := int64(4)
-	rec, err := newRecorder(maxArchiveSize, "")
-	assert.NoError(t, err)
+	rec := newRecorder(maxArchiveSize, "")
 	errs := rec.Record(record.Record{
 		Name: mock1Name,
 		Item: RawReport{
@@ -156,7 +148,7 @@ func Test_Record_ArchiveSizeExceeded(t *testing.T) {
 		},
 	})
 	assert.Len(t, errs, 1)
-	err = errs[0]
+	err := errs[0]
 	assert.Equal(
 		t,
 		err,
@@ -177,8 +169,7 @@ func Test_Record_SizeDoesntGrowWithSameRecords(t *testing.T) {
 			Data: data,
 		},
 	}
-	rec, err := newRecorder(MaxArchiveSize, "")
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, "")
 	errs := rec.Record(testRec)
 	assert.Empty(t, errs)
 	// record again the same record
@@ -187,7 +178,7 @@ func Test_Record_SizeDoesntGrowWithSameRecords(t *testing.T) {
 
 	// check that size refers only to one record data
 	assert.Equal(t, rec.size, int64(len(data)))
-	err = rec.Flush()
+	err := rec.Flush()
 	assert.Nil(t, err)
 	assert.Equal(t, rec.size, int64(0))
 }
@@ -196,8 +187,7 @@ func Test_ObfuscatedRecord_NameCorrect(t *testing.T) {
 	clusterBaseDomain := "test"
 	testRecordName := fmt.Sprintf("%s/%s-node-1", mock1Name, clusterBaseDomain)
 	obfuscatedRecordName := fmt.Sprintf("%s/%s-node-1", mock1Name, anonymization.ClusterBaseDomainPlaceholder)
-	rec, err := newRecorder(MaxArchiveSize, clusterBaseDomain)
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, clusterBaseDomain)
 	errs := rec.Record(record.Record{
 		Name: testRecordName,
 		Item: RawReport{
@@ -207,19 +197,19 @@ func Test_ObfuscatedRecord_NameCorrect(t *testing.T) {
 	assert.Empty(t, errs)
 	_, exists := rec.records[obfuscatedRecordName]
 	assert.True(t, exists, "can't find %s record name", testRecordName)
-	err = rec.Flush()
+	err := rec.Flush()
 	assert.Nil(t, err)
 	assert.Equal(t, rec.size, int64(0))
 }
 
 func Test_EmptyItemRecord(t *testing.T) {
-	rec, err := newRecorder(MaxArchiveSize, "")
-	assert.NoError(t, err)
+	rec := newRecorder(MaxArchiveSize, "")
+
 	testRec := record.Record{
 		Name: "test/empty",
 	}
 	errs := rec.Record(testRec)
 	assert.Len(t, errs, 1)
-	err = errs[0]
+	err := errs[0]
 	assert.Equal(t, fmt.Errorf(`empty "%s" record data. Nothing will be recorded`, testRec.Name), err)
 }
