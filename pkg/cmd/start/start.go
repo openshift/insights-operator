@@ -3,7 +3,6 @@ package start
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/library-go/pkg/operator/events"
 	"math/rand"
 	"os"
 	"time"
@@ -13,6 +12,7 @@ import (
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/serviceability"
 
 	"github.com/spf13/cobra"
@@ -127,8 +127,11 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 		}
 		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
-		desiredVersion := os.Getenv("RELEASE_VERSION")
 		missingVersion := "0.0.1-snapshot"
+		desiredVersion := missingVersion
+		if envVersion, exists := os.LookupEnv("RELEASE_VERSION"); exists {
+			desiredVersion = envVersion
+		}
 
 		// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
 		featureGateAccessor := featuregates.NewFeatureGateAccess(

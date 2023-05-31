@@ -58,12 +58,20 @@ rules:
       - clusteroperators
       - clusteroperators/status
       - insightsdatagathers
-      - featuregates
     verbs:
       - create
       - get
       - update
       - patch
+      - list
+      - watch
+  - apiGroups:
+      - "config.openshift.io"
+    resources:
+      - clusterversions
+      - featuregates
+    verbs:
+      - get
       - list
       - watch
   # allow the operator to retrieve prometheus metrics
