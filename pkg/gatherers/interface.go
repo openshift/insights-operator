@@ -1,4 +1,3 @@
-// gatherers package contains interfaces to be implemented by gatherers and subpackages with actual gatherers
 package gatherers
 
 import (

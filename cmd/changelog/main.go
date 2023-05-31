@@ -61,7 +61,7 @@ const gitHubPath = "https://github.com/openshift/insights-operator"
 // API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
 const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" // owner, repo, pull-number
 
-// OpenShift release version helper type
+// ReleaseVersion OpenShift release version helper type
 type ReleaseVersion struct {
 	Major int
 	Minor int
