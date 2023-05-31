@@ -10,7 +10,7 @@ The Insights Operator internally validates the conditional rules JSON against th
 
 The following are some examples of validation failures (which will show up in the log):
 
-Non-existing gathering fumction:
+Non-existing gathering function:
 ```
 E0808 16:29:51.864716  241084 parsing.go:22] skipping a rule because of an error: unable to create params for conditional.GatheringFunctionName: containers_log {[{alert_is_firing 0xc0004639c0 <nil>}] map[]}
 ```
