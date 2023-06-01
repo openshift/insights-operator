@@ -11,6 +11,7 @@ import (
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -65,6 +66,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
+	configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
 	operatorClient, err := operatorv1client.NewForConfig(controller.KubeConfig)
 	if err != nil {
@@ -82,24 +84,45 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
+	desiredVersion := os.Getenv("RELEASE_VERSION")
+	missingVersion := "0.0.1-snapshot"
+
+	// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
+	featureGateAccessor := featuregates.NewFeatureGateAccess(
+		desiredVersion, missingVersion,
+		configInformers.Config().V1().ClusterVersions(), configInformers.Config().V1().FeatureGates(),
+		controller.EventRecorder,
+	)
+	go featureGateAccessor.Run(ctx)
+	go configInformers.Start(ctx.Done())
+
+	select {
+	case <-featureGateAccessor.InitialFeatureGatesObserved():
+		featureGates, _ := featureGateAccessor.CurrentFeatureGates()
+		klog.Infof("FeatureGates initialized: knownFeatureGates=%v", featureGates.KnownFeatures())
+	case <-time.After(1 * time.Minute):
+		klog.Errorf("timed out waiting for FeatureGate detection")
+		return fmt.Errorf("timed out waiting for FeatureGate detection")
+	}
+
+	featureGates, err := featureGateAccessor.CurrentFeatureGates()
+	if err != nil {
+		return err
+	}
+	insightsConfigAPIEnabled := featureGates.Enabled(v1.FeatureGateInsightsConfigAPI)
+
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err = os.MkdirAll(s.StoragePath, 0777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
-	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
-	if err != nil {
-		klog.Error("can't read cluster feature gates: %v", err)
-	}
 	var apiConfigObserver configobserver.APIConfigObserver
-	if tpEnabled {
-		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
+	if insightsConfigAPIEnabled {
 		apiConfigObserver, err = configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
 		if err != nil {
 			return err
 		}
-		configInformers.Start(ctx.Done())
 		go apiConfigObserver.Run(ctx, 1)
 	}
 
@@ -151,7 +174,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	initialCheckTimeout := s.Controller.Interval / 24
 	initialCheckInterval := 20 * time.Second
 	baseInitialDelay := s.Controller.Interval / 12
-	err = wait.PollImmediate(initialCheckInterval, wait.Jitter(initialCheckTimeout, 0.1), isRunning(ctx, gatherKubeConfig))
+	err = wait.PollUntilContextTimeout(ctx, initialCheckInterval, wait.Jitter(initialCheckTimeout, 0.1), true, isRunning(gatherKubeConfig))
 	if err != nil {
 		initialDelay = wait.Jitter(baseInitialDelay, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
@@ -192,8 +215,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	return nil
 }
 
-func isRunning(ctx context.Context, kubeConfig *rest.Config) wait.ConditionFunc {
-	return func() (bool, error) {
+func isRunning(kubeConfig *rest.Config) wait.ConditionWithContextFunc {
+	return func(ctx context.Context) (bool, error) {
 		c, err := corev1client.NewForConfig(kubeConfig)
 		if err != nil {
 			return false, err
@@ -228,13 +251,4 @@ func initiateSCAController(ctx context.Context,
 	// the data is exposed in the OpenShift API
 	scaController := sca.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
 	return scaController
-}
-
-// featureEnabled checks if the feature is enabled in the "cluster" FeatureGate
-func isTechPreviewEnabled(ctx context.Context, client *configv1client.Clientset) (bool, error) {
-	fg, err := client.ConfigV1().FeatureGates().Get(ctx, "cluster", metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
-	return fg.Spec.FeatureSet == v1.TechPreviewNoUpgrade, nil
 }

@@ -26,6 +26,7 @@ import (
 // GatherJob is the type responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
 	config.Controller
+	InsightsConfigAPIEnabled bool
 }
 
 // Gather runs a single gather and stores the generated archive, without uploading it.
@@ -51,12 +52,8 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		protoKubeConfig, kubeConfig, d.Impersonate,
 	)
 
-	tpEnabled, err := isTechPreviewEnabled(ctx, configClient)
-	if err != nil {
-		klog.Error("can't read cluster feature gates: %v", err)
-	}
 	var gatherConfig v1alpha1.GatherConfig
-	if tpEnabled {
+	if d.InsightsConfigAPIEnabled {
 		insightsDataGather, err := configClient.ConfigV1alpha1().InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{}) //nolint: govet
 		if err != nil {
 			return err
