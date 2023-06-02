@@ -151,7 +151,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	var recdriver *diskrecorder.DiskRecorder
 	var rec *recorder.Recorder
 	// if techPreview is enabled we switch to separate job and we don't need anything from this
-	if !tpEnabled {
+	if !insightsConfigAPIEnabled {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
 			gatherProtoKubeConfig, controller.ProtoKubeConfig, secretConfigObserver, "")
@@ -187,7 +187,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		secretConfigObserver, insightsClient,
 	)
-	if !tpEnabled {
+	if !insightsConfigAPIEnabled {
 		periodicGather = periodic.New(secretConfigObserver, rec, gatherers, anonymizer,
 			operatorClient.InsightsOperators(), kubeClient)
 		statusReporter.AddSources(periodicGather.Sources()...)
@@ -207,9 +207,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		initialDelay = wait.Jitter(baseInitialDelay, 0.5)
 		klog.Infof("Unable to check insights-operator pod status. Setting initial delay to %s", initialDelay)
 	}
-	go periodicGather.Run(ctx.Done(), initialDelay, tpEnabled)
+	go periodicGather.Run(ctx.Done(), initialDelay, insightsConfigAPIEnabled)
 
-	if !tpEnabled {
+	if !insightsConfigAPIEnabled {
 		// upload results to the provided client - if no client is configured reporting
 		// is permanently disabled, but if a client does exist the server may still disable reporting
 		uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)

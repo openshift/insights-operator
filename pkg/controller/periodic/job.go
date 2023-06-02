@@ -109,7 +109,7 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 
 // WaitForJobCompletion polls the Kubernetes API every 20 seconds and checks if the job finished.
 func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
-	return wait.PollUntil(20*time.Second, func() (done bool, err error) {
+	return wait.PollUntilContextCancel(ctx, 20*time.Second, true, func(ctx context.Context) (done bool, err error) {
 		j, err := j.kubeClient.BatchV1().Jobs(insightsNamespace).Get(ctx, job.Name, metav1.GetOptions{})
 		if errors.IsNotFound(err) {
 			return false, err
@@ -121,5 +121,5 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 			return true, fmt.Errorf("job %s failed", job.Name)
 		}
 		return false, nil
-	}, ctx.Done())
+	})
 }

@@ -29,6 +29,7 @@ import (
 // GatherJob is the type responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
 	config.Controller
+	InsightsConfigAPIEnabled bool
 }
 
 // Gather runs a single gather and stores the generated archive, without uploading it.
