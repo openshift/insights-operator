@@ -583,6 +583,7 @@ and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` names
 ### Changes
 - `cluster-monitoring-config` data since versions 4.6.22+ and 4.7.0+
 - `cluster-config-v1` since versions 4.9.0+
+- `gateway-mode-config` data from 'openshift-network-operator' namespace since 4.14.0+
 
 ### Anonymization
 If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of

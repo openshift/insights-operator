@@ -84,8 +84,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	desiredVersion := os.Getenv("RELEASE_VERSION")
 	missingVersion := "0.0.1-snapshot"
+	desiredVersion := missingVersion
+	if envVersion, exists := os.LookupEnv("RELEASE_VERSION"); exists {
+		desiredVersion = envVersion
+	}
 
 	// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
 	featureGateAccessor := featuregates.NewFeatureGateAccess(
