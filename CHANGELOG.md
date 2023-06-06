@@ -1,14 +1,5 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: e761abf647746c56fb8c2a59fb683984795a0624-->
-## 4.14
-
-### Data Enhancement
-- [#741](https://github.com/openshift/insights-operator/pull/685) Gather openshift-monitoring persistent volumes
-
-### Others
-
-- [#756](https://github.com/openshift/insights-operator/pull/756) add unit tests for cluster proxy gatherer
-
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 08b4171784b8debe038e912ecd8bcab511cf7aa3-->
 ## 4.13
 
 ### Data Enhancement

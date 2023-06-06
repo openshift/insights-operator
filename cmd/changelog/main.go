@@ -362,7 +362,8 @@ func sinceHashReverseGitLog(hash string) []string {
 		"--reverse",
 		fmt.Sprintf("%s..HEAD", hash)).CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		// CombinedOutput sends stderr to the 'out' variable
+		log.Fatalf("%s: %s", err.Error(), string(out))
 	}
 	return strings.Split(string(out), "\n")
 }
