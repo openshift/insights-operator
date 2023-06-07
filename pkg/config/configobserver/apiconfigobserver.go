@@ -53,15 +53,18 @@ func NewAPIConfigObserver(kubeConfig *rest.Config,
 		WithSync(c.sync).
 		ToController("InsightConfigController", eventRecorder)
 	c.Controller = ctrl
+	klog.Infof("ConfigObserver informer successfully created %v ", inf)
 	return c, nil
 }
 
 func (a *APIConfigController) sync(ctx context.Context, _ factory.SyncContext) error {
 	insightDataGatherConf, err := a.configV1Alpha1Cli.InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
+		klog.Errorf("Failed to get 'InsightsDataGather' cluster custom resource: %v ", err)
 		return err
 	}
 	a.gatherConfig = &insightDataGatherConf.Spec.GatherConfig
+	klog.Info("InsightConfigController successfully synced")
 	return nil
 }
 
