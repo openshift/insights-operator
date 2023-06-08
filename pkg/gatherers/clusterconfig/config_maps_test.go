@@ -204,7 +204,7 @@ func Test_ConfigMap_YAML_Data(t *testing.T) {
 			if err != nil {
 				t.Fatalf("cannot create %s config map: %v", tt.testCM.Name, err)
 			}
-			records, errs := gatherMonitoringCM(context.Background(), coreClient.CoreV1())
+			records, errs := gatherConfigMap(context.Background(), coreClient.CoreV1(), tt.testCM.Name, tt.testCM.Namespace)
 			if len(errs) > 0 {
 				if errs[0].Error() != tt.expectedError.Error() {
 					t.Fatalf("unexpected errors: %v", errs[0].Error())
