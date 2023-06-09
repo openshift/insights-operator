@@ -88,7 +88,7 @@ type Anonymizer struct {
 	ipNetworkRegex     *regexp.Regexp
 	secretsClient      corev1client.SecretInterface
 	secretConfigurator configobserver.Configurator
-	apiConfigurator    configobserver.APIConfigObserver
+	apiConfigurator    configobserver.InsightsDataGatherObserver
 	configClient       configv1client.ConfigV1Interface
 	networkClient      networkv1client.NetworkV1Interface
 	gatherKubeClient   kubernetes.Interface
@@ -104,7 +104,7 @@ func NewAnonymizer(clusterBaseDomain string,
 	networks []string,
 	secretsClient corev1client.SecretInterface,
 	secretConfigurator configobserver.Configurator,
-	apiConfigurator configobserver.APIConfigObserver) (*Anonymizer, error) {
+	apiConfigurator configobserver.InsightsDataGatherObserver) (*Anonymizer, error) {
 	cidrs, err := k8snet.ParseCIDRs(networks)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func NewAnonymizerFromConfigClient(
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
 	secretConfigurator configobserver.Configurator,
-	apiConfigurator configobserver.APIConfigObserver,
+	apiConfigurator configobserver.InsightsDataGatherObserver,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
@@ -322,7 +322,7 @@ func NewAnonymizerFromConfig(
 	gatherProtoKubeConfig *rest.Config,
 	protoKubeConfig *rest.Config,
 	secretConfigurator configobserver.Configurator,
-	apiConfigurator configobserver.APIConfigObserver,
+	apiConfigurator configobserver.InsightsDataGatherObserver,
 ) (*Anonymizer, error) {
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {

@@ -89,10 +89,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if envVersion, exists := os.LookupEnv("RELEASE_VERSION"); exists {
 		desiredVersion = envVersion
 	}
-	apiConfigObserver, err := configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
-	if err != nil {
-		return err
-	}
 
 	// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
 	featureGateAccessor := featuregates.NewFeatureGateAccess(
@@ -124,9 +120,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
-	if insightsConfigAPIEnabled {
-		go apiConfigObserver.Run(ctx, 1)
+	apiConfigObserver, err := configobserver.NewInsightsDataGatherObserver(gatherKubeConfig,
+		controller.EventRecorder, configInformers, insightsConfigAPIEnabled)
+	if err != nil {
+		return err
 	}
+
+	go apiConfigObserver.Run(ctx, 1)
+	go configInformers.Start(ctx.Done())
 
 	// secretConfigObserver synthesizes all config into the status reporter controller
 	secretConfigObserver := configobserver.New(s.Controller, kubeClient)
