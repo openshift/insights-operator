@@ -3,6 +3,7 @@ package configobserver
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/openshift/api/config/v1alpha1"
 	configCliv1alpha1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1alpha1"
@@ -49,6 +50,7 @@ func NewInsightsDataGatherObserver(kubeConfig *rest.Config,
 
 	ctrl := factory.New().WithInformers(inf).
 		WithSync(c.sync).
+		ResyncEvery(2*time.Minute).
 		ToController("InsightsDataGatherObserver", eventRecorder)
 	c.Controller = ctrl
 	return c, nil
