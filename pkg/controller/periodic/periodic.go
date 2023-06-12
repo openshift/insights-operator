@@ -40,7 +40,7 @@ const (
 // and flushes the recorder to create archives
 type Controller struct {
 	secretConfigurator  configobserver.Configurator
-	apiConfigurator     configobserver.APIConfigObserver
+	apiConfigurator     configobserver.InsightsDataGatherObserver
 	recorder            recorder.FlushInterface
 	gatherers           []gatherers.Interface
 	statuses            map[string]controllerstatus.StatusController
@@ -56,7 +56,7 @@ func New(
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
-	apiConfigurator configobserver.APIConfigObserver,
+	apiConfigurator configobserver.InsightsDataGatherObserver,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 

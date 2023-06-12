@@ -36,7 +36,7 @@ type Controller struct {
 	summarizer         Summarizer
 	client             *insightsclient.Client
 	secretConfigurator configobserver.Configurator
-	apiConfigurator    configobserver.APIConfigObserver
+	apiConfigurator    configobserver.InsightsDataGatherObserver
 	reporter           StatusReporter
 	archiveUploaded    chan struct{}
 	initialDelay       time.Duration
@@ -45,7 +45,7 @@ type Controller struct {
 func New(summarizer Summarizer,
 	client *insightsclient.Client,
 	secretconfigurator configobserver.Configurator,
-	apiConfigurator configobserver.APIConfigObserver,
+	apiConfigurator configobserver.InsightsDataGatherObserver,
 	statusReporter StatusReporter,
 	initialDelay time.Duration) *Controller {
 

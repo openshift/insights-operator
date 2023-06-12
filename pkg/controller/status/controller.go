@@ -56,7 +56,7 @@ type Controller struct {
 
 	statusCh           chan struct{}
 	secretConfigurator configobserver.Configurator
-	apiConfigurator    configobserver.APIConfigObserver
+	apiConfigurator    configobserver.InsightsDataGatherObserver
 
 	sources  map[string]controllerstatus.StatusController
 	reported Reported
@@ -70,7 +70,7 @@ type Controller struct {
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
 func NewController(client configv1client.ConfigV1Interface,
 	secretConfigurator configobserver.Configurator,
-	apiConfigurator configobserver.APIConfigObserver,
+	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string) *Controller {
 	c := &Controller{
 		name:               "insights",
