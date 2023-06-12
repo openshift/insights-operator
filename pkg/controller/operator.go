@@ -120,13 +120,17 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
-	var apiConfigObserver configobserver.APIConfigObserver
+	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
 	if insightsConfigAPIEnabled {
-		apiConfigObserver, err = configobserver.NewAPIConfigObserver(gatherKubeConfig, controller.EventRecorder, configInformers)
+		configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
+		insightsDataGatherObserver, err = configobserver.NewInsightsDataGatherObserver(gatherKubeConfig,
+			controller.EventRecorder, configInformersForTechPreview)
 		if err != nil {
 			return err
 		}
-		go apiConfigObserver.Run(ctx, 1)
+
+		go insightsDataGatherObserver.Run(ctx, 1)
+		go configInformersForTechPreview.Start(ctx.Done())
 	}
 
 	// secretConfigObserver synthesizes all config into the status reporter controller
@@ -135,11 +139,11 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver, apiConfigObserver, os.Getenv("POD_NAMESPACE"))
+	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver, insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"))
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
-		gatherProtoKubeConfig, controller.ProtoKubeConfig, secretConfigObserver, apiConfigObserver)
+		gatherProtoKubeConfig, controller.ProtoKubeConfig, secretConfigObserver, insightsDataGatherObserver)
 	if err != nil {
 		// in case of an error anonymizer will be nil and anonymization will be just skipped
 		klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
@@ -170,7 +174,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		secretConfigObserver, insightsClient,
 	)
-	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), apiConfigObserver)
+	periodicGather := periodic.New(secretConfigObserver, rec, gatherers, anonymizer, operatorClient.InsightsOperators(), insightsDataGatherObserver)
 	statusReporter.AddSources(periodicGather.Sources()...)
 
 	// check we can read IO container status and we are not in crash loop
@@ -186,7 +190,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// upload results to the provided client - if no client is configured reporting
 	// is permanently disabled, but if a client does exist the server may still disable reporting
-	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
+	uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, insightsDataGatherObserver, statusReporter, initialDelay)
 	statusReporter.AddSources(uploader)
 
 	// start reporting status now that all controller loops are added as sources
