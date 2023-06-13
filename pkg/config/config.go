@@ -256,7 +256,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 		}
 		cfg.OCMConfig.SCAInterval = i
 	}
-	if len(s.OCM.SCAEndpoint) > 0 {
+	if len(s.OCM.ClusterTransferEndpoint) > 0 {
 		cfg.OCMConfig.ClusterTransferEndpoint = s.OCM.ClusterTransferEndpoint
 	}
 	if len(s.OCM.ClusterTransferInterval) > 0 {
