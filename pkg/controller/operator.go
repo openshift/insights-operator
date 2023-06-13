@@ -145,7 +145,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver, insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"))
+	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver,
+		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"))
 
 	var anonymizer *anonymization.Anonymizer
 	var recdriver *diskrecorder.DiskRecorder
@@ -194,7 +195,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver, operatorClient.InsightsOperators())
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver,
-			apiConfigObserver, gatherers, kubeClient, insightClient, operatorClient.InsightsOperators())
+			insightsDataGatherObserver, gatherers, kubeClient, insightClient, operatorClient.InsightsOperators())
 		go periodicGather.PeriodicPrune(ctx)
 	}
 
@@ -212,7 +213,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if !insightsConfigAPIEnabled {
 		// upload results to the provided client - if no client is configured reporting
 		// is permanently disabled, but if a client does exist the server may still disable reporting
-		uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver, apiConfigObserver, statusReporter, initialDelay)
+		uploader := insightsuploader.New(recdriver, insightsClient, secretConfigObserver,
+			insightsDataGatherObserver, statusReporter, initialDelay)
 		statusReporter.AddSources(uploader)
 
 		// start uploading status, so that we

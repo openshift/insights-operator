@@ -57,7 +57,7 @@ type Controller struct {
 func NewWithTechPreview(
 	reportRetriever *insightsreport.Controller,
 	secretConfigurator configobserver.Configurator,
-	apiConfigurator configobserver.APIConfigObserver,
+	apiConfigurator configobserver.InsightsDataGatherObserver,
 	listGatherers []gatherers.Interface,
 	kubeClient kubernetes.Interface,
 	dataGatherClient insightsv1alpha1cli.InsightsV1alpha1Interface,
@@ -87,7 +87,6 @@ func New(
 	listGatherers []gatherers.Interface,
 	anonymizer *anonymization.Anonymizer,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
-	apiConfigurator configobserver.InsightsDataGatherObserver,
 	kubeClient *kubernetes.Clientset,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
