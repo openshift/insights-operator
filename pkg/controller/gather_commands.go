@@ -58,7 +58,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	}
 
 	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(d.Controller, kubeClient)
+	configObserver := configobserver.New(d.Controller, kubeClient, kubeConfig)
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
@@ -161,7 +161,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(d.Controller, kubeClient)
+	configObserver := configobserver.New(d.Controller, kubeClient, kubeConfig)
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
 		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, dataGatherCR.Spec.DataPolicy)

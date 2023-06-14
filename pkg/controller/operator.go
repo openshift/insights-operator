@@ -140,7 +140,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 
 	// secretConfigObserver synthesizes all config into the status reporter controller
-	secretConfigObserver := configobserver.New(s.Controller, kubeClient)
+	secretConfigObserver := configobserver.New(s.Controller, kubeClient, controller.KubeConfig)
 	go secretConfigObserver.Start(ctx)
 
 	// the status controller initializes the cluster operator object and retrieves

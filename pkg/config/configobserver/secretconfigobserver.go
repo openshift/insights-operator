@@ -36,15 +36,16 @@ type Configurator interface {
 type Controller struct {
 	kubeClient kubernetes.Interface
 
-	lock          sync.Mutex
-	defaultConfig config.Controller
-	tokenConfig   *config.Controller
-	secretConfig  *config.Controller
-	supportSecret *v1.Secret
-	config        *config.Controller
-	checkPeriod   time.Duration
-	listeners     []chan struct{}
-	monitoringCli monitoringcli.Clientset
+	lock            sync.Mutex
+	defaultConfig   config.Controller
+	tokenConfig     *config.Controller
+	secretConfig    *config.Controller
+	supportSecret   *v1.Secret
+	config          *config.Controller
+	checkPeriod     time.Duration
+	listeners       []chan struct{}
+	monitoringCli   monitoringcli.Clientset
+	promRulesExists bool
 }
 
 // New creates a new configobsever, the configs/tokens are updated from the configs/tokens present in the cluster if possible.
@@ -74,11 +75,7 @@ func (c *Controller) Start(ctx context.Context) {
 	configCh, cancelFn := c.ConfigChanged()
 	defer cancelFn()
 
-	if c.Config().DisableInsightsAlerts {
-		c.createInsightsAlerts(ctx)
-	} else {
-		c.removeInsightsAlerts(ctx)
-	}
+	c.checkAlertsDisabled(ctx)
 
 	for {
 		select {
@@ -90,11 +87,7 @@ func (c *Controller) Start(ctx context.Context) {
 				klog.Warningf("Unable to retrieve config: %v", err)
 			}
 		case <-configCh:
-			if c.Config().DisableInsightsAlerts {
-				c.createInsightsAlerts(ctx)
-			} else {
-				c.removeInsightsAlerts(ctx)
-			}
+			c.checkAlertsDisabled(ctx)
 		case <-ctx.Done():
 			return
 		}
@@ -316,11 +309,37 @@ func (c *Controller) createInsightsAlerts(ctx context.Context) error {
 								"summary":     "Insights operator is disabled.",
 							},
 						},
+						{
+							Alert: "SimpleContentAccessNotAvailable",
+							Expr:  intstr.FromString(" max without (job, pod, service, instance) (max_over_time(cluster_operator_conditions{name=\"insights\", condition=\"SCAAvailable\", reason=\"NotFound\"}[5m]) == 0)"),
+							For:   monitoringv1.Duration("5m"),
+							Labels: map[string]string{
+								"severity":  "info",
+								"namespace": "openshift-insights",
+							},
+							Annotations: map[string]string{
+								"description": "Simple content access (SCA) is not enabled. Once enabled, Insights Operator can automatically import the SCA certificates from Red Hat OpenShift Cluster Manager making it easier to use the content provided by your Red Hat subscriptions when creating container images. See https://docs.openshift.com/container-platform/latest/cicd/builds/running-entitled-builds.html for more information.",
+								"summary":     "Simple content access certificates are not available.",
+							},
+						},
+						{
+							Alert: "InsightsRecommendationActive",
+							Expr:  intstr.FromString("insights_recommendation_active == 1"),
+							For:   monitoringv1.Duration("5m"),
+							Labels: map[string]string{
+								"severity": "info",
+							},
+							Annotations: map[string]string{
+								"description": "Insights recommendation \"{{ $labels.description }}\" with total risk \"{{ $labels.total_risk }}\" was detected on the cluster. More information is available at {{ $labels.info_link }}.",
+								"summary":     "An Insights recommendation is active for this cluster.",
+							},
+						},
 					},
 				},
 			},
 		},
 	}
+
 	_, err := c.monitoringCli.MonitoringV1().PrometheusRules("openshift-insights").Create(ctx, pr, metav1.CreateOptions{})
 	return err
 }
@@ -329,4 +348,28 @@ func (c *Controller) removeInsightsAlerts(ctx context.Context) error {
 	return c.monitoringCli.MonitoringV1().
 		PrometheusRules("openshift-insights").
 		Delete(ctx, "insights-prometheus-rules", metav1.DeleteOptions{})
+}
+
+func (c *Controller) checkAlertsDisabled(ctx context.Context) {
+	if c.Config().DisableInsightsAlerts {
+		if c.promRulesExists {
+			err := c.removeInsightsAlerts(ctx)
+			if err != nil {
+				klog.Errorf("Failed to remove Insights Prometheus rules definition: %v ", err)
+			} else {
+				klog.Info("Prometheus rules successfully removed")
+				c.promRulesExists = false
+			}
+		}
+	} else {
+		if !c.promRulesExists {
+			err := c.createInsightsAlerts(ctx)
+			if err != nil {
+				klog.Errorf("Failed to create Insights Prometheus rules definition: %v ", err)
+			} else {
+				klog.Info("Prometheus rules successfully created")
+				c.promRulesExists = true
+			}
+		}
+	}
 }
