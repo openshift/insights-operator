@@ -12,11 +12,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringcli "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 )
 
 type ConfigReporter interface {
@@ -41,14 +44,20 @@ type Controller struct {
 	config        *config.Controller
 	checkPeriod   time.Duration
 	listeners     []chan struct{}
+	monitoringCli monitoringcli.Clientset
 }
 
 // New creates a new configobsever, the configs/tokens are updated from the configs/tokens present in the cluster if possible.
-func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Controller { //nolint: gocritic
+func New(defaultConfig config.Controller, kubeClient kubernetes.Interface, kubeConfig *rest.Config) *Controller { //nolint: gocritic
+	monitoringCS, err := monitoringcli.NewForConfig(kubeConfig)
+	if err != nil {
+		klog.Warningf("Unable create monitoring client: %v", err)
+	}
 	c := &Controller{
 		kubeClient:    kubeClient,
 		defaultConfig: defaultConfig,
 		checkPeriod:   5 * time.Minute,
+		monitoringCli: *monitoringCS,
 	}
 	c.mergeConfig()
 	if err := c.updateToken(context.TODO()); err != nil {
@@ -62,14 +71,37 @@ func New(defaultConfig config.Controller, kubeClient kubernetes.Interface) *Cont
 
 // Start is periodically invoking check and set of config and token
 func (c *Controller) Start(ctx context.Context) {
-	wait.Until(func() {
-		if err := c.updateToken(ctx); err != nil {
-			klog.Warningf("Unable to retrieve token config: %v", err)
+	configCh, cancelFn := c.ConfigChanged()
+	defer cancelFn()
+
+	if c.Config().DisableInsightsAlerts {
+		c.createInsightsAlerts(ctx)
+	} else {
+		c.removeInsightsAlerts(ctx)
+	}
+
+	for {
+		select {
+		case <-time.After(c.checkPeriod):
+			if err := c.updateToken(ctx); err != nil {
+				klog.Warningf("Unable to retrieve token config: %v", err)
+			}
+			if err := c.updateConfig(ctx); err != nil {
+				klog.Warningf("Unable to retrieve config: %v", err)
+			}
+		case <-configCh:
+			if c.Config().DisableInsightsAlerts {
+				c.createInsightsAlerts(ctx)
+			} else {
+				c.removeInsightsAlerts(ctx)
+			}
+		case <-ctx.Done():
+			return
 		}
 		if err := c.updateConfig(ctx); err != nil {
 			klog.Warningf("Unable to retrieve config: %v", err)
 		}
-	}, c.checkPeriod, ctx.Done())
+	}
 }
 
 // Config provides the config in a thread-safe way.
@@ -258,4 +290,43 @@ type serializedAuthMap struct {
 }
 type serializedAuth struct {
 	Auth string `json:"auth"`
+}
+
+func (c *Controller) createInsightsAlerts(ctx context.Context) error {
+	pr := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "insights-prometheus-rules",
+			Namespace: "openshift-insights",
+		},
+		Spec: monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name: "insights",
+					Rules: []monitoringv1.Rule{
+						{
+							Alert: "InsightsDisabled",
+							Expr:  intstr.FromString("max without (job, pod, service, instance) (cluster_operator_conditions{name=\"insights\", condition=\"Disabled\"} == 1)"),
+							For:   monitoringv1.Duration("5m"),
+							Labels: map[string]string{
+								"severity":  "info",
+								"namespace": "openshift-insights",
+							},
+							Annotations: map[string]string{
+								"description": "Insights operator is disabled. In order to enable Insights and benefit from recommendations specific to your cluster, please follow steps listed in the documentation: https://docs.openshift.com/container-platform/latest/support/remote_health_monitoring/enabling-remote-health-reporting.html",
+								"summary":     "Insights operator is disabled.",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	_, err := c.monitoringCli.MonitoringV1().PrometheusRules("openshift-insights").Create(ctx, pr, metav1.CreateOptions{})
+	return err
+}
+
+func (c *Controller) removeInsightsAlerts(ctx context.Context) error {
+	return c.monitoringCli.MonitoringV1().
+		PrometheusRules("openshift-insights").
+		Delete(ctx, "insights-prometheus-rules", metav1.DeleteOptions{})
 }
