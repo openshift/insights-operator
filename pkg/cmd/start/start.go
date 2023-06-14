@@ -43,7 +43,7 @@ func NewOperator() *cobra.Command {
 				SCAInterval:             8 * time.Hour,
 				SCAEndpoint:             "https://api.openshift.com/api/accounts_mgmt/v1/certificates",
 				ClusterTransferEndpoint: "https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers",
-				ClusterTransferInterval: 24 * time.Hour,
+				ClusterTransferInterval: 12 * time.Hour,
 			},
 		},
 	}
