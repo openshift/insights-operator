@@ -56,7 +56,7 @@ func NewInsightsDataGatherObserver(kubeConfig *rest.Config,
 	return c, nil
 }
 
-func (i *insightsDataGatherController) sync(ctx context.Context, scx factory.SyncContext) error {
+func (i *insightsDataGatherController) sync(ctx context.Context, _ factory.SyncContext) error {
 	insightDataGatherConf, err := i.configV1Alpha1Cli.InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
