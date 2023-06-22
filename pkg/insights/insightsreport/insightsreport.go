@@ -77,16 +77,6 @@ func New(client *insightsclient.Client, configurator configobserver.Configurator
 	}
 }
 
-func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Configurator, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
-	return &Controller{
-		StatusController:      controllerstatus.New("insightsreport"),
-		configurator:          configurator,
-		client:                client,
-		archiveUploadReporter: nil,
-		insightsOperatorCLI:   insightsOperatorCLI,
-	}
-}
-
 // PullSmartProxy performs a request to the Smart Proxy and unmarshal the response
 func (c *Controller) PullSmartProxy() (bool, error) {
 	klog.Info("Pulling report from smart-proxy")
