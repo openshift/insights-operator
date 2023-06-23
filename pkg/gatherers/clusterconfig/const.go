@@ -30,8 +30,7 @@ var (
 	// logDefaultLimitBytes is used in calls to common.CollectLogsFromContainers
 	logDefaultLimitBytes = int64(1024 * 64) // maximum 64 kb of logs
 
-	defaultNamespaces = []string{"default", "kube-system", "kube-public", "openshift"}
-
+	defaultNamespaces           = []string{"default", "kube-system", "kube-public", "openshift"}
 	datahubGroupVersionResource = schema.GroupVersionResource{
 		Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs",
 	}
@@ -69,11 +68,6 @@ var (
 		Group:    "operators.coreos.com",
 		Version:  "v1alpha1",
 		Resource: "clusterserviceversions",
-	}
-	virtualMachineInstancesResource = schema.GroupVersionResource{
-		Group:    "kubevirt.io",
-		Version:  "v1alpha3",
-		Resource: "virtualmachineinstances",
 	}
 )
 
