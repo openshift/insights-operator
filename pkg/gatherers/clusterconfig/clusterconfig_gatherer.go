@@ -87,7 +87,6 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"active_alerts":                     (*Gatherer).GatherActiveAlerts,
 	"ceph_cluster":                      (*Gatherer).GatherCephCluster,
 	"openshift_machine_api_events":      (*Gatherer).GatherOpenshiftMachineAPIEvents,
-	"virtual_machine_instances":         (*Gatherer).GatherVirtualMachineInstances,
 }
 
 func New(
