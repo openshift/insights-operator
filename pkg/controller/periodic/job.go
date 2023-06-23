@@ -39,6 +39,7 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 			BackoffLimit: new(int32),
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
+					PriorityClassName:  "system-cluster-critical",
 					RestartPolicy:      corev1.RestartPolicyNever,
 					ServiceAccountName: "operator",
 					SecurityContext: &corev1.PodSecurityContext{
