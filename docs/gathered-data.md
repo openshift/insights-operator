@@ -282,6 +282,8 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
   * 4.7+
 * "cluster-config-v1" ConfigMap since versions:
   * 4.9+
+* "gateway-mode-config" data from 'openshift-network-operator' namespace since:
+  * 4.14.0+
 
 
 ## ContainerImages
@@ -544,6 +546,34 @@ Response see:
   * 4.4.29+
   * 4.5.15+
   * 4.6+
+
+
+## MonitoringPVs
+
+Collects Persistent Volumes from openshift-monitoring namespace
+which matches with ConfigMap configuration yaml
+
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/persistentvolume.go
+
+### Sample data
+- docs/insights-archive-sample/config/persistentvolumes/monitoring-persistent-volume.json
+
+### Location in archive
+- `config/persistentvolumes/{persistent_volume_name}.json`
+
+### Config ID
+`clusterconfig/monitoring_persistent_volumes`
+
+### Released version
+- 4.14
+
+### Backported versions
+- 4.13
+
+### Changes
+None
 
 
 ## MostRecentMetrics

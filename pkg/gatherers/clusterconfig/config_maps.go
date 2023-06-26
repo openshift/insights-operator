@@ -39,6 +39,8 @@ import (
 //   * 4.7+
 // * "cluster-config-v1" ConfigMap since versions:
 //   * 4.9+
+// * "gateway-mode-config" data from 'openshift-network-operator' namespace since:
+//   * 4.14.0+
 func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -49,9 +51,13 @@ func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []err
 
 	records, errs := gatherConfigMaps(ctx, coreClient)
 
-	monitoringRec, monitoringErrs := gatherMonitoringCM(ctx, coreClient)
+	monitoringRec, monitoringErrs := gatherConfigMap(ctx, coreClient, "cluster-monitoring-config", "openshift-monitoring")
 	records = append(records, monitoringRec...)
 	errs = append(errs, monitoringErrs...)
+
+	gateayModeConf, networkErrs := gatherConfigMap(ctx, coreClient, "gateway-mode-config", "openshift-network-operator")
+	records = append(records, gateayModeConf...)
+	errs = append(errs, networkErrs...)
 
 	clusterConfigV1Rec, clusterConfigV1Errs := gatherClusterConfigV1(ctx, coreClient)
 	records = append(records, clusterConfigV1Rec...)
@@ -86,21 +92,21 @@ func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interfa
 	return records, nil
 }
 
-func gatherMonitoringCM(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
-	monitoringCM, err := coreClient.ConfigMaps("openshift-monitoring").Get(ctx, "cluster-monitoring-config", metav1.GetOptions{})
+func gatherConfigMap(ctx context.Context, coreClient corev1client.CoreV1Interface, name, namespace string) ([]record.Record, []error) {
+	cm, err := coreClient.ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, []error{err}
 	}
 
 	records := make([]record.Record, 0)
 
-	for dk, dv := range monitoringCM.Data {
+	for dk, dv := range cm.Data {
 		j, err := yaml.YAMLToJSON([]byte(dv))
 		if err != nil {
 			return nil, []error{err}
 		}
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/configmaps/%s/%s/%s", monitoringCM.Namespace, monitoringCM.Name, strings.TrimSuffix(dk, ".yaml")),
+			Name: fmt.Sprintf("config/configmaps/%s/%s/%s", cm.Namespace, cm.Name, strings.TrimSuffix(dk, ".yaml")),
 			Item: RawJSON(j),
 		})
 	}
