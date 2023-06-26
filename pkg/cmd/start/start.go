@@ -56,7 +56,7 @@ func NewOperator() *cobra.Command {
 		Short: "Start the operator",
 		Run:   runOperator(operator, cfg),
 	}
-	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.TODO()).Flags())
+	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.Background()).Flags())
 
 	return cmd
 }
@@ -76,7 +76,7 @@ func NewGather() *cobra.Command {
 		Short: "Does a single gather, without uploading it",
 		Run:   runGather(operator, cfg),
 	}
-	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.TODO()).Flags())
+	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.Background()).Flags())
 
 	return cmd
 }
