@@ -311,6 +311,9 @@ Response see https://docs.openshift.com/container-platform/4.3/rest_api/index.ht
 * "cluster-config-v1" ConfigMap since versions:
   - 4.9+
 
+* "gateway-mode-config" data from 'openshift-network-operator' namespace since:
+  - 4.14.0+
+
 
 ## ContainerImages
 
