@@ -15,19 +15,18 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// Send uploads archives to Ingress service
-func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
+func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
-		return ErrWaitingForVersion
+		return "", ErrWaitingForVersion
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req, err := c.prepareRequest(ctx, http.MethodPost, endpoint, cv)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	bytesRead := make(chan int64, 1)
@@ -45,7 +44,7 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
 		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
 		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()
-		return fmt.Errorf("unable to build request to connect to Insights server: %v", err)
+		return "", fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
 
 	requestID := resp.Header.Get(insightsReqId)
@@ -63,27 +62,33 @@ func (c *Client) Send(ctx context.Context, endpoint string, source Source) error
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		klog.V(2).Infof("gateway server %s returned 401, %s=%s", resp.Request.URL, insightsReqId, requestID)
-		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
+		return "", authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
 		klog.V(2).Infof("gateway server %s returned 403, %s=%s", resp.Request.URL, insightsReqId, requestID)
-		return authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
+		return "", authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
-		return fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, responseBody(resp))
+		return "", fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, responseBody(resp))
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-		return fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, responseBody(resp))
+		return "", fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, responseBody(resp))
 	}
 
 	if len(requestID) > 0 {
 		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, <-bytesRead)
 	}
 
-	return nil
+	return requestID, nil
+}
+
+// Send uploads archives to Ingress service
+func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
+	_, err := c.SendAndGetID(ctx, endpoint, source)
+	return err
 }
 
 // RecvReport performs a request to Insights Results Smart Proxy endpoint
