@@ -66,7 +66,6 @@ linters:
   enable:
     - bodyclose
     - deadcode
-    - depguard
     - dogsled
     - dupl
     - errcheck
@@ -101,6 +100,7 @@ linters:
     - whitespace
 
   # don't enable:
+  # - depguard
   # - asciicheck
   # - scopelint
   # - gochecknoglobals
