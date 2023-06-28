@@ -20,25 +20,13 @@ const (
 // The Kubernetes api https://github.com/kubernetes/client-go/blob/v11.0.0/kubernetes/typed/policy/v1beta1/poddisruptionbudget.go#L80
 // Response see https://docs.okd.io/latest/rest_api/policy_apis/poddisruptionbudget-policy-v1beta1.html
 //
-// ### Sample data
-// - docs/insights-archive-sample/config/pdbs/openshift-machine-config-operator/etcd-quorum-guard.json
-//
-// ### Location in archive
-// - `config/pdbs/{namespace}/{name}.json`
-//
-// ### Config ID
-// `clusterconfig/pdbs`
-//
-// ### Released version
-// - 4.6.0
-//
-// ### Backported versions
-// - 4.4.30+
-// - 4.5.15+
-//
-// ### Changes
-// - The gatherer was changed to gather pdbs only from namespaces with "openshift" prefix
-// and the limit of gathered records to 100 since 4.14.
+// * Location in archive: config/pdbs/
+// * See: docs/insights-archive-sample/config/pdbs
+// * Id in config: clusterconfig/pdbs
+// * Since versions:
+//   - 4.4.30+
+//   - 4.5.34+
+//   - 4.6+
 func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Record, []error) {
 	gatherPolicyClient, err := policyclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
