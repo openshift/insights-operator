@@ -3,6 +3,7 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1"
@@ -11,7 +12,7 @@ import (
 )
 
 const (
-	gatherPodDisruptionBudgetLimit = 5000
+	gatherPodDisruptionBudgetLimit = 100
 )
 
 // GatherPodDisruptionBudgets gathers the cluster's PodDisruptionBudgets.
@@ -36,20 +37,23 @@ func (g *Gatherer) GatherPodDisruptionBudgets(ctx context.Context) ([]record.Rec
 }
 
 func gatherPodDisruptionBudgets(ctx context.Context, policyClient policyclient.PolicyV1Interface) ([]record.Record, []error) {
-	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{Limit: gatherPodDisruptionBudgetLimit})
+	pdbs, err := policyClient.PodDisruptionBudgets("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
 	}
 	var records []record.Record
 	for i := range pdbs.Items {
-		recordName := fmt.Sprintf("config/pdbs/%s", pdbs.Items[i].GetName())
-		if pdbs.Items[i].GetNamespace() != "" {
-			recordName = fmt.Sprintf("config/pdbs/%s/%s", pdbs.Items[i].GetNamespace(), pdbs.Items[i].GetName())
+		item := &pdbs.Items[i]
+		if strings.HasPrefix(item.GetNamespace(), "openshift-") {
+			recordName := fmt.Sprintf("config/pdbs/%s/%s", item.GetNamespace(), item.GetName())
+			records = append(records, record.Record{
+				Name: recordName,
+				Item: record.ResourceMarshaller{Resource: item},
+			})
+			if len(records) == gatherPodDisruptionBudgetLimit {
+				break
+			}
 		}
-		records = append(records, record.Record{
-			Name: recordName,
-			Item: record.ResourceMarshaller{Resource: &pdbs.Items[i]},
-		})
 	}
 	return records, nil
 }
