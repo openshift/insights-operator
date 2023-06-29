@@ -524,19 +524,14 @@ func (c *Controller) wasDataGatherSuccessful(dataGather *insightsv1alpha1.DataGa
 		statusSummary.Reason = "DataUploadedConditionNotAvailable"
 		statusSummary.Message = fmt.Sprintf("did not find any %q condition in the %s dataGather resource",
 			status.DataUploaded, dataGather.Name)
-		c.statuses["insightsuploader"].UpdateStatus(statusSummary)
-		return false
-	}
-	if dataUploadedCon.Status == metav1.ConditionFalse {
+	} else if dataUploadedCon.Status == metav1.ConditionFalse {
 		statusSummary.Healthy = false
 		statusSummary.Count = 5
 		statusSummary.Reason = dataUploadedCon.Reason
 		statusSummary.Message = dataUploadedCon.Message
-		c.statuses["insightsuploader"].UpdateStatus(statusSummary)
-		return false
 	}
 	c.statuses["insightsuploader"].UpdateStatus(statusSummary)
-	return true
+	return statusSummary.Healthy
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
