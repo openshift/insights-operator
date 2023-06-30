@@ -1501,35 +1501,6 @@ Collects logs from pods in `openshift-sdn` namespace with following substrings:
 None
 
 
-## PNCC
-
-Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
-
-Time of the most recently failed check with each reason and message is recorded.
-
-### API Reference
-- podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
-- https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
-
-### Sample data
-- [docs/insights-archive-sample/config/podnetworkconnectivitychecks.json](./insights-archive-sample/config/podnetworkconnectivitychecks.json)
-
-### Location in archive
-- `config/podnetworkconnectivitychecks.json`
-
-### Config ID
-`clusterconfig/pod_network_connectivity_checks`
-
-### Released version
-- 4.8.2
-
-### Backported versions
-None
-
-### Changes
-None
-
-
 ## PodDefinition
 
 Collects pod definition from pods that are
@@ -1584,6 +1555,61 @@ Collects the cluster's `PodDisruptionBudgets`.
 ### Changes
 - The gatherer was changed to gather pdbs only from namespaces with "openshift" prefix
 and the limit of gathered records to 100 since 4.14.
+
+
+## PodNetworkConnectivityChecks
+
+Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
+
+Time of the most recently failed check with each reason and message is recorded.
+
+### API Reference
+- podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
+- https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
+
+### Sample data
+- [docs/insights-archive-sample/config/podnetworkconnectivitychecks.json](./insights-archive-sample/config/podnetworkconnectivitychecks.json)
+
+### Location in archive
+- `config/podnetworkconnectivitychecks.json`
+
+### Config ID
+`clusterconfig/pod_network_connectivity_checks`
+
+### Released version
+- 4.8.2
+
+### Backported versions
+None
+
+### Changes
+None
+
+
+## PrometheusTSDBStatus
+
+Collects Prometheus TSDB status.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/tsdb.json](./insights-archive-sample/config/tsdb.json)
+
+### Location in archive
+- `config/tsdb.json`
+
+### Config ID
+`clusterconfig/tsdb_status`
+
+### Released version
+- 4.10.0
+
+### Backported versions
+None
+
+### Changes
+None
 
 
 ## SAPConfig
@@ -1926,32 +1952,6 @@ None
 
 ### Released version
 - 4.11.0
-
-### Backported versions
-None
-
-### Changes
-None
-
-
-## TSDBStatus
-
-Collects Prometheus TSDB status.
-
-### API Reference
-None
-
-### Sample data
-- [docs/insights-archive-sample/config/tsdb.json](./insights-archive-sample/config/tsdb.json)
-
-### Location in archive
-- `config/tsdb.json`
-
-### Config ID
-`clusterconfig/tsdb_status`
-
-### Released version
-- 4.10.0
 
 ### Backported versions
 None

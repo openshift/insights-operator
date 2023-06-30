@@ -20,7 +20,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-func Test_UnhealtyOperators_GatherClusterOperatorPodsAndEvents(t *testing.T) {
+func Test_GatherClusterOperatorPodsAndEvents(t *testing.T) {
 	testOperator := configv1.ClusterOperator{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-clusteroperator",
@@ -39,7 +39,7 @@ func Test_UnhealtyOperators_GatherClusterOperatorPodsAndEvents(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_GatherPodContainersLogs(t *testing.T) {
+func Test_GatherPodContainersLogs(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		client     corev1client.CoreV1Interface
@@ -89,7 +89,7 @@ func Test_UnhealtyOperators_GatherPodContainersLogs(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_GetContainerLogs(t *testing.T) {
+func Test_GetContainerLogs(t *testing.T) {
 	bufferSize := int64(8 * 1024 * 1024 * logCompressionRatio / 10 / 2)
 
 	type args struct {
@@ -132,7 +132,7 @@ func Test_UnhealtyOperators_GetContainerLogs(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_UnhealthyClusterOperator(t *testing.T) {
+func Test_UnhealthyClusterOperator(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		items      []configv1.ClusterOperator
@@ -173,7 +173,7 @@ func Test_UnhealtyOperators_UnhealthyClusterOperator(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_GatherUnhealthyPods(t *testing.T) {
+func Test_GatherUnhealthyPods(t *testing.T) {
 	type args struct {
 		pods []v1.Pod
 	}
@@ -205,7 +205,7 @@ func Test_UnhealtyOperators_GatherUnhealthyPods(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_GatherNamespaceEvents(t *testing.T) {
+func Test_GatherNamespaceEvents(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		coreClient corev1client.CoreV1Interface
@@ -244,7 +244,7 @@ func Test_UnhealtyOperators_GatherNamespaceEvents(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_FetchPodContainerLog(t *testing.T) {
+func Test_FetchPodContainerLog(t *testing.T) {
 	bufferSize := int64(8 * 1024 * 1024 * logCompressionRatio / 10 / 2)
 
 	type args struct {
@@ -306,7 +306,7 @@ func Test_UnhealtyOperators_FetchPodContainerLog(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_IsHealthyOperator(t *testing.T) {
+func Test_IsHealthyOperator(t *testing.T) {
 	type args struct {
 		operator *configv1.ClusterOperator
 	}
@@ -383,7 +383,7 @@ func Test_UnhealtyOperators_IsHealthyOperator(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_IsPodRestarted(t *testing.T) {
+func Test_IsPodRestarted(t *testing.T) {
 	type args struct {
 		pod *v1.Pod
 	}
@@ -454,7 +454,7 @@ func Test_UnhealtyOperators_IsPodRestarted(t *testing.T) {
 	}
 }
 
-func Test_UnhealtyOperators_NamespacesForOperator(t *testing.T) {
+func Test_NamespacesForOperator(t *testing.T) {
 	type args struct {
 		operator *configv1.ClusterOperator
 	}
