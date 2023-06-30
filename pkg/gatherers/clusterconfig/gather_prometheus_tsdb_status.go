@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// GatherTSDBStatus Collects Prometheus TSDB status.
+// GatherPrometheusTSDBStatus Collects Prometheus TSDB status.
 //
 // ### API Reference
 // None
@@ -32,17 +32,17 @@ import (
 //
 // ### Changes
 // None
-func (g *Gatherer) GatherTSDBStatus(ctx context.Context) ([]record.Record, []error) {
+func (g *Gatherer) GatherPrometheusTSDBStatus(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
 		klog.Warningf("Unable to load metrics client, tsdb status cannot be collected: %v", err)
 		return nil, nil
 	}
 
-	return gatherTsdbStatus(ctx, metricsRESTClient)
+	return gatherPrometheusTSDBStatus(ctx, metricsRESTClient)
 }
 
-func gatherTsdbStatus(ctx context.Context, metricsClient rest.Interface) ([]record.Record, []error) {
+func gatherPrometheusTSDBStatus(ctx context.Context, metricsClient rest.Interface) ([]record.Record, []error) {
 	data, err := metricsClient.Get().AbsPath("api/v1/status/tsdb").
 		DoRaw(ctx)
 	if err != nil {

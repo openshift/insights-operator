@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherPNCC Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
+// GatherPodNetworkConnectivityChecks Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
 //
 // Time of the most recently failed check with each reason and message is recorded.
 //
@@ -36,7 +36,7 @@ import (
 //
 // ### Changes
 // None
-func (g *Gatherer) GatherPNCC(ctx context.Context) ([]record.Record, []error) {
+func (g *Gatherer) GatherPodNetworkConnectivityChecks(ctx context.Context) ([]record.Record, []error) {
 	gatherClient, err := ocpV1AlphaCli.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
