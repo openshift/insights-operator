@@ -29,6 +29,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
+	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
@@ -240,6 +241,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), secretConfigObserver, insightsClient)
 	statusReporter.AddSources(clusterTransferController)
 	go clusterTransferController.Run()
+
+	promRulesController := insights.NewPrometheusRulesController(secretConfigObserver, controller.KubeConfig)
+	go promRulesController.Start(ctx)
 
 	klog.Warning("started")
 
