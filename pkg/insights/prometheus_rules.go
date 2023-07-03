@@ -62,26 +62,26 @@ func (p *PrometheusRulesController) Start(ctx context.Context) {
 // checkAlertsDisabled reads the actual config and either creates (if they don't exist) or removes (if they do exist)
 // the "insights-prometheus-rules" definition
 func (p *PrometheusRulesController) checkAlertsDisabled(ctx context.Context) {
-	if p.configurator.Config().DisableInsightsAlerts {
-		if p.promRulesExist {
-			err := p.removeInsightsAlerts(ctx)
-			if err != nil {
-				klog.Errorf("Failed to remove Insights Prometheus rules definition: %v ", err)
-			} else {
-				klog.Info("Prometheus rules successfully removed")
-				p.promRulesExist = false
-			}
+	disableInsightsAlerts := p.configurator.Config().DisableInsightsAlerts
+
+	if disableInsightsAlerts && p.promRulesExist {
+		err := p.removeInsightsAlerts(ctx)
+		if err != nil {
+			klog.Errorf("Failed to remove Insights Prometheus rules definition: %v", err)
+			return
 		}
-	} else {
-		if !p.promRulesExist {
-			err := p.createInsightsAlerts(ctx)
-			if err != nil {
-				klog.Errorf("Failed to create Insights Prometheus rules definition: %v ", err)
-			} else {
-				klog.Info("Prometheus rules successfully created")
-				p.promRulesExist = true
-			}
+		klog.Info("Prometheus rules successfully removed")
+		p.promRulesExist = false
+	}
+
+	if !disableInsightsAlerts && !p.promRulesExist {
+		err := p.createInsightsAlerts(ctx)
+		if err != nil {
+			klog.Errorf("Failed to create Insights Prometheus rules definition: %v", err)
+			return
 		}
+		klog.Info("Prometheus rules successfully created")
+		p.promRulesExist = true
 	}
 }
 
