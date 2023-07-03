@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -22,6 +23,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -298,6 +300,7 @@ func (c *Controller) GatherJob() {
 		return
 	}
 	dataGatheredOK := c.wasDataGatherSuccessful(dataGatherFinished)
+	updateMetrics(dataGatherFinished)
 	if !dataGatheredOK {
 		klog.Errorf("Last data gathering %v was not successful", dataGatherFinished.Name)
 		return
@@ -507,13 +510,7 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 // wasDataGatherSuccessful reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
 // custom resource and checks whether the data was successfully uploaded or not and updates status accordingly
 func (c *Controller) wasDataGatherSuccessful(dataGather *insightsv1alpha1.DataGather) bool {
-	var dataUploadedCon *metav1.Condition
-	for i := range dataGather.Status.Conditions {
-		con := dataGather.Status.Conditions[i]
-		if con.Type == status.DataUploaded {
-			dataUploadedCon = &con
-		}
-	}
+	dataUploadedCon := getConditionByStatus(dataGather, status.DataUploaded)
 	statusSummary := controllerstatus.Summary{
 		Operation: controllerstatus.Uploading,
 		Healthy:   true,
@@ -530,8 +527,36 @@ func (c *Controller) wasDataGatherSuccessful(dataGather *insightsv1alpha1.DataGa
 		statusSummary.Reason = dataUploadedCon.Reason
 		statusSummary.Message = dataUploadedCon.Message
 	}
+
 	c.statuses["insightsuploader"].UpdateStatus(statusSummary)
 	return statusSummary.Healthy
+}
+
+// getConditionByStatus tries to get the condition with the provided condition status
+// from the provided "datagather" resource. Returns nil when no condition is found.
+func getConditionByStatus(dataGather *insightsv1alpha1.DataGather, conStatus string) *metav1.Condition {
+	var dataUploadedCon *metav1.Condition
+	for i := range dataGather.Status.Conditions {
+		con := dataGather.Status.Conditions[i]
+		if con.Type == conStatus {
+			dataUploadedCon = &con
+		}
+	}
+	return dataUploadedCon
+}
+
+// updateMetrics reads the HTTP status code from the reason of the "DataUploaded" condition
+// from the provided "datagather" resource and increments
+// the "insightsclient_request_send_total" Prometheus metric accordingly.
+func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
+	dataUploadedCon := getConditionByStatus(dataGather, status.DataUploaded)
+	var statusCode string
+	if dataUploadedCon == nil {
+		statusCode = "0"
+	} else {
+		statusCode, _ = strings.CutPrefix(dataUploadedCon.Reason, "HttpStatus")
+	}
+	insights.IncrementCounterRequestSend(statusCode)
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {

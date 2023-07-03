@@ -242,10 +242,9 @@ func Test_readInsightsReport(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			activeRecommendations, healthStatus, gatherTime := tc.testController.readInsightsReport(tc.report)
+			activeRecommendations, healthStatus := tc.testController.readInsightsReport(tc.report)
 			assert.Equal(t, tc.expectedActiveRecommendations, activeRecommendations)
 			assert.Equal(t, tc.expectedHealthStatus, healthStatus)
-			assert.Equal(t, tc.expectedGatherTime, gatherTime.String())
 		})
 	}
 }
@@ -286,7 +285,7 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 				},
 			},
 			expectedErrorKey: "",
-			expectedError:    fmt.Errorf("TemplateData of rule \"%s\" does not contain error_key", testRuleID),
+			expectedError:    fmt.Errorf("templateData of rule \"%s\" does not contain error_key", testRuleID),
 		},
 		{
 			name: "Rule response with wrong error_key type",

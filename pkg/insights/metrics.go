@@ -17,6 +17,10 @@ var (
 	RecommendationCollector = &Collector{
 		metricName: "insights_recommendation_active",
 	}
+	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
+		Name: "insightsclient_request_send_total",
+		Help: "Tracks the number of archives sent",
+	}, []string{"client", "status_code"})
 )
 
 // MustRegisterMetrics registers provided registrables in the Insights metrics registry.
@@ -32,7 +36,11 @@ func MustRegisterMetrics(registrables ...metrics.Registerable) {
 }
 
 func init() {
-	MustRegisterMetrics(RecommendationCollector)
+	MustRegisterMetrics(RecommendationCollector, counterRequestSend)
+}
+
+func IncrementCounterRequestSend(status string) {
+	counterRequestSend.WithLabelValues("insights", status).Inc()
 }
 
 // Collector collects insights recommendations
