@@ -19,6 +19,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller/status"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/recorder"
@@ -79,7 +80,7 @@ func Test_Controller_Run(t *testing.T) {
 			}, 1*time.Hour)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.Run(stopCh, tt.initialDelay, false)
+			go c.Run(stopCh, tt.initialDelay)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}
@@ -116,7 +117,7 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 			}, tt.interval)
 			assert.NoError(t, err)
 			stopCh := make(chan struct{})
-			go c.periodicTrigger(stopCh, false)
+			go c.periodicTrigger(stopCh)
 			if _, ok := <-time.After(tt.waitTime); ok {
 				stopCh <- struct{}{}
 			}
@@ -298,13 +299,13 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 	tests := []struct {
 		name                   string
-		testedDataGather       v1alpha1.DataGather
+		testedDataGather       *v1alpha1.DataGather
 		testedInsightsOperator operatorv1.InsightsOperator
 		expected               *operatorv1.InsightsOperator
 	}{
 		{
 			name: "Basic copy status test",
-			testedDataGather: v1alpha1.DataGather{
+			testedDataGather: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 				Status: v1alpha1.DataGatherStatus{
 					State:      v1alpha1.Failed,
@@ -424,7 +425,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 		},
 		{
 			name: "InsightsReport attribute is not updated when copying",
-			testedDataGather: v1alpha1.DataGather{
+			testedDataGather: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 				Status: v1alpha1.DataGatherStatus{
 					State:      v1alpha1.Failed,
@@ -532,11 +533,11 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(&tt.testedDataGather)
+			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
 			operatorFakeCS := fakeOperatorCli.NewSimpleClientset(&tt.testedInsightsOperator)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil,
 				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators())
-			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather.Name)
+			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, updatedOperator)
 		})
@@ -790,6 +791,96 @@ func TestPeriodicPrune(t *testing.T) {
 			for _, dg := range dataGathersList.Items {
 				assert.Contains(t, tt.expectedDataGathers, dg.Name)
 			}
+		})
+	}
+}
+
+func TestWasDataGatherSuccessful(t *testing.T) {
+	tests := []struct {
+		name             string
+		testedDataGather *v1alpha1.DataGather
+		expectSuccessful bool
+		expectedSummary  controllerstatus.Summary
+	}{
+		{
+			name: "Data gather was successful",
+			testedDataGather: &v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   status.DataUploaded,
+							Status: metav1.ConditionTrue,
+							Reason: "AsExpected",
+						},
+					},
+				},
+			},
+			expectSuccessful: true,
+			expectedSummary: controllerstatus.Summary{
+				Operation: controllerstatus.Uploading,
+				Healthy:   true,
+				Count:     1,
+			},
+		},
+		{
+			name: "Data gather not successful - upload failed",
+			testedDataGather: &v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:    status.DataUploaded,
+							Status:  metav1.ConditionFalse,
+							Reason:  "NotAuthorized",
+							Message: "test error message",
+						},
+					},
+				},
+			},
+			expectSuccessful: false,
+			expectedSummary: controllerstatus.Summary{
+				Operation: controllerstatus.Uploading,
+				Healthy:   false,
+				Count:     5,
+				Reason:    "NotAuthorized",
+				Message:   "test error message",
+			},
+		},
+		{
+			name: "Data gather missing DataUploaded condition",
+			testedDataGather: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-dg",
+				},
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:    status.DataRecorded,
+							Status:  metav1.ConditionFalse,
+							Reason:  "ERROR",
+							Message: "test error message",
+						},
+					},
+				},
+			},
+			expectSuccessful: false,
+			expectedSummary: controllerstatus.Summary{
+				Operation: controllerstatus.Uploading,
+				Healthy:   false,
+				Count:     5,
+				Reason:    "DataUploadedConditionNotAvailable",
+				Message: fmt.Sprintf("did not find any %q condition in the test-dg dataGather resource",
+					status.DataUploaded),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil)
+			successful := mockController.wasDataGatherSuccessful(tt.testedDataGather)
+			assert.Equal(t, tt.expectSuccessful, successful)
+			summary, _ := mockController.Sources()[0].CurrentStatus()
+			assert.Equal(t, tt.expectedSummary, summary)
 		})
 	}
 }
