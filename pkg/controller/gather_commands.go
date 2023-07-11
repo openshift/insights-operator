@@ -107,19 +107,16 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	return gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
 }
 
-// GatherAndUpload runs a single gather and stores the generated archive, uploads it
-// and waits for the corresponding Insights analysis report.
-// 1. Creates the necessary configs/clients
-// 2. Creates the configobserver
-// 3. Initiates the recorder
-// 4. Executes a Gather
-// 5. Flushes the results
-// 6. Get the latest archive
-// 7. Uploads the archive
-// 8. Waits for the corresponding Insights analysis download
+// GatherAndUpload runs a single gather and stores the generated archive, uploads it.
+// 1. Prepare the necessary kube configs
+// 2. Get the corresponding "datagathers.insights.openshift.io" resource
+// 3. Create all the gatherers
+// 4. Run data gathering
+// 5. Recodrd the data into the Insights archive
+// 6. Get the latest archive and upload it
+// 7. Updates the status of the corresponding "datagathers.insights.openshift.io" resource continuously
 func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen, gocyclo
-	klog.Infof("Starting insights-operator %s", version.Get().String())
-	// these are operator clients
+	klog.Info("Starting data gathering")
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
 		return err
@@ -143,11 +140,8 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		klog.Error("failed to get coresponding DataGather custom resource: %v", err)
 		return err
 	}
-	updatedCR := dataGatherCR.DeepCopy()
-	updatedCR.Status.State = insightsv1alpha1.Running
-	updatedCR.Status.StartTime = metav1.Now()
 
-	dataGatherCR, err = insightClient.DataGathers().UpdateStatus(ctx, updatedCR, metav1.UpdateOptions{})
+	dataGatherCR, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR.DeepCopy(), insightsv1alpha1.Pending, nil)
 	if err != nil {
 		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
 		return err
@@ -186,6 +180,11 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	)
 	uploader := insightsuploader.New(nil, insightsClient, configObserver, nil, nil, 0)
 
+	dataGatherCR, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Running, nil)
+	if err != nil {
+		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
+		return err
+	}
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	for _, gatherer := range gatherers {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers) // nolint: govet
@@ -197,39 +196,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 		}
 	}
-	err = gather.RecordArchiveMetadata(mapToArray(allFunctionReports), rec, anonymizer)
-	if err != nil {
-		klog.Error(err)
-		return err
-	}
-	err = rec.Flush()
-	if err != nil {
-		klog.Error(err)
-		return err
-	}
-	lastArchive, err := recdriver.LastArchive()
-	if err != nil {
-		klog.Error(err)
-		return err
-	}
-	insightsRequestID, err := uploader.Upload(ctx, lastArchive)
-	if err != nil {
-		klog.Error(err)
-		return err
-	}
-	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
 
-	dataGatherCR.Status.FinishTime = metav1.Now()
-	dataGatherCR.Status.State = insightsv1alpha1.Completed
-	dataGatherCR.Status.InsightsRequestID = insightsRequestID
-	dataGatherCR.Status.Conditions = []metav1.Condition{
-		{
-			Type:               "DataUploaded",
-			Status:             metav1.ConditionTrue,
-			Reason:             "AsExpected",
-			LastTransitionTime: metav1.Now(),
-		},
-	}
 	for k := range allFunctionReports {
 		fr := allFunctionReports[k]
 		// duration = 0 means the gatherer didn't run
@@ -240,7 +207,39 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		gs := status.CreateDataGatherGathererStatus(&fr)
 		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
 	}
-	_, err = insightClient.DataGathers().UpdateStatus(ctx, dataGatherCR, metav1.UpdateOptions{})
+
+	// record data
+	conditions := []metav1.Condition{}
+	lastArchive, err := record(mapToArray(allFunctionReports), rec, recdriver, anonymizer)
+	if err != nil {
+		conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionFalse, "RecordingFailed",
+			fmt.Sprintf("Failed to record data: %v", err)))
+		_, recErr := updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
+		if recErr != nil {
+			klog.Error("data recording failed and the update of DataGaher resource status failed as well: %v", recErr)
+		}
+		return err
+	}
+	conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", ""))
+
+	// upload data
+	insightsRequestID, err := uploader.Upload(ctx, lastArchive)
+	if err != nil {
+		klog.Error(err)
+		conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionFalse, "UploadFailed",
+			fmt.Sprintf("Failed to upload data: %v", err)))
+		_, updateErr := updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
+		if updateErr != nil {
+			klog.Error("data upload failed and the update of DataGaher resource status failed as well: %v", updateErr)
+		}
+		return err
+	}
+	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
+
+	dataGatherCR.Status.InsightsRequestID = insightsRequestID
+	conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionTrue, "AsExpected", ""))
+
+	_, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Completed, conditions)
 	if err != nil {
 		klog.Error(err)
 		return err
@@ -255,4 +254,42 @@ func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFun
 		a = append(a, v)
 	}
 	return a
+}
+
+// record is a helper function recording the archive metadata as well as data.
+// Returns last known Insights archive and an error when recording failed.
+func record(functionReports []gather.GathererFunctionReport,
+	rec *recorder.Recorder, recdriver *diskrecorder.DiskRecorder, anonymizer *anonymization.Anonymizer) (*insightsclient.Source, error) {
+	err := gather.RecordArchiveMetadata(functionReports, rec, anonymizer)
+	if err != nil {
+		return nil, err
+	}
+	err = rec.Flush()
+	if err != nil {
+		return nil, err
+	}
+	return recdriver.LastArchive()
+}
+
+// updateDataGatherStatus updates status' time attributes, state and conditions
+// of the provided DataGather resource
+func updateDataGatherStatus(ctx context.Context,
+	insightsClient insightsv1alpha1cli.InsightsV1alpha1Client,
+	dataGatherCR *insightsv1alpha1.DataGather,
+	newState insightsv1alpha1.DataGatherState, conditions []metav1.Condition) (*insightsv1alpha1.DataGather, error) {
+	switch newState {
+	case insightsv1alpha1.Completed:
+		dataGatherCR.Status.FinishTime = metav1.Now()
+	case insightsv1alpha1.Failed:
+		dataGatherCR.Status.FinishTime = metav1.Now()
+	case insightsv1alpha1.Running:
+		dataGatherCR.Status.StartTime = metav1.Now()
+	case insightsv1alpha1.Pending:
+		// no op
+	}
+	dataGatherCR.Status.State = newState
+	if conditions != nil {
+		dataGatherCR.Status.Conditions = append(dataGatherCR.Status.Conditions, conditions...)
+	}
+	return insightsClient.DataGathers().UpdateStatus(ctx, dataGatherCR, metav1.UpdateOptions{})
 }
