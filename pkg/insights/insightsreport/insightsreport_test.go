@@ -297,7 +297,7 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 				},
 			},
 			expectedErrorKey: "",
-			expectedError:    fmt.Errorf("The error_key of TemplateData of rule \"%s\" is not a string", testRuleID),
+			expectedError:    fmt.Errorf("the error_key of TemplateData of rule \"%s\" is not a string", testRuleID),
 		},
 	}
 
@@ -319,9 +319,9 @@ func (c *mockInsightsClient) GetClusterVersion() (*v1.ClusterVersion, error) {
 	return c.clusterVersion, nil
 }
 
-func (c *mockInsightsClient) IncrementRecvReportMetric(statusCode int) {
+func (c *mockInsightsClient) IncrementRecvReportMetric(_ int) {
 }
 
-func (c *mockInsightsClient) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
+func (c *mockInsightsClient) RecvReport(_ context.Context, _ string) (*http.Response, error) {
 	return nil, nil
 }

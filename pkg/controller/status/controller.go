@@ -228,14 +228,14 @@ func (c *Controller) currentControllerStatus() (allReady bool) { //nolint: gocyc
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
 				klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
-					ocm.OCMAPIFailureCountThreshold)
+					ocm.FailureCountThreshold)
 				degradingFailure = true
 			}
 		} else if summary.Operation.Name == controllerstatus.PullingClusterTransfer.Name {
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
 				klog.V(4).Infof("Failed to pull the cluster transfer object within the threshold %d with exponential backoff. Marking as degraded.",
-					ocm.OCMAPIFailureCountThreshold)
+					ocm.FailureCountThreshold)
 				degradingFailure = true
 			}
 		}

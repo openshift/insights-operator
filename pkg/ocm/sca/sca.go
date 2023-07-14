@@ -213,7 +213,7 @@ func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 		Duration: c.configurator.Config().OCMConfig.SCAInterval / 32, // 15 min by default
 		Factor:   2,
 		Jitter:   0,
-		Steps:    ocm.OCMAPIFailureCountThreshold,
+		Steps:    ocm.FailureCountThreshold,
 		Cap:      c.configurator.Config().OCMConfig.SCAInterval,
 	}
 	var data []byte

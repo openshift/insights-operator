@@ -41,7 +41,7 @@ func Test_Controller_CustomPeriodGatherer(t *testing.T) {
 	mockRecorder.Reset()
 
 	c.Gather()
-	// 5 gatherers + metadata (one is low priority and we need to wait 999 hours to get it
+	// 5 gatherers + metadata (one is low priority, and we need to wait 999 hours to get it
 	assert.Len(t, mockRecorder.Records, 6)
 	mockRecorder.Reset()
 }

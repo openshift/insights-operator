@@ -72,5 +72,5 @@ var (
 )
 
 func init() { //nolint: gochecknoinits
-	utilruntime.Must(registryv1.AddToScheme(registryScheme))
+	utilruntime.Must(registryv1.SchemeBuilder.AddToScheme(registryScheme))
 }

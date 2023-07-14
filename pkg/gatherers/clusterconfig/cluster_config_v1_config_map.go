@@ -64,7 +64,6 @@ func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *instal
 		installConfig.Platform.VSphere.Password = anonymize.String(installConfig.Platform.VSphere.Password)
 	}
 	if installConfig.Platform.OpenStack != nil {
-		installConfig.Platform.OpenStack.Region = anonymize.String(installConfig.Platform.OpenStack.Region)
 		installConfig.Platform.OpenStack.Cloud = anonymize.String(installConfig.Platform.OpenStack.Cloud)
 	}
 
