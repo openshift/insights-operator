@@ -11,7 +11,7 @@ type MockSecretConfigurator struct {
 	Conf *Controller
 }
 
-// NewMockConfigurator constructs a new MockConfigurator with default config values
+// NewMockSecretConfigurator constructs a new MockConfigurator with default config values
 func NewMockSecretConfigurator(conf *Controller) *MockSecretConfigurator {
 	if conf == nil {
 		conf = &Controller{}

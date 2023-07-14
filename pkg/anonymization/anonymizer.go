@@ -403,7 +403,7 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 		return ipStr
 	}
 
-	// We could use something like https://github.com/yl2chen/cidranger but we shouldn't typically have many networks
+	// We could use something like https://github.com/yl2chen/cidranger, but we shouldn't typically have many networks,
 	// so it's fine to just iterate over them
 	for i := range anonymizer.networks {
 		networkInfo := &anonymizer.networks[i]
@@ -473,7 +473,7 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 	return result
 }
 
-// ResetTranslationTable resets the translation table, so that the translation table of multiple gathers wont mix toghater.
+// ResetTranslationTable resets the translation table, so that the translation table of multiple gathers won't mix together.
 func (anonymizer *Anonymizer) ResetTranslationTable() {
 	anonymizer.translationTable = make(map[string]string)
 }

@@ -160,10 +160,10 @@ func IncludeCSR(c *CSRAnonymizedFeatures, opts ...FilterOptFunc) bool {
 			// Now > Certificate NotAfter, certificate is probably not valid
 			return true
 		}
-		// Otherwise it may be valid valid and we dont collect it
+		// Otherwise it may be valid, and we don't collect it
 		return false
 	}
-	// We dont know how CSR is going to be evaluated, collect it
+	// We don't know how CSR is going to be evaluated, collect it
 	return true
 }
 

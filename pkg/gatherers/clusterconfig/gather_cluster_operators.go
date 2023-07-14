@@ -237,7 +237,7 @@ func getOperatorResourcesVersions(discoveryClient discovery.DiscoveryInterface) 
 }
 
 // anonymizeIdentityProviders tries to get an array of identity providers defined in OAuth config
-// and anonymize potentially sensitive data - e.g LDAP domain, url
+// and anonymize potentially sensitive data - e.g. LDAP domain, url
 func anonymizeIdentityProviders(obj map[string]interface{}) {
 	ips, err := utils.NestedSliceWrapper(obj, "spec", "observedConfig", "oauthServer", "oauthConfig", "identityProviders")
 

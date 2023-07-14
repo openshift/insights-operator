@@ -3,7 +3,7 @@
 ## Directory and File Names
 
 - Use lowercase dash-separated names for all files (to avoid git issues with case-insensitive file systems)
-- Exceptions are files which have their own naming conventions (eg Dockerfile, Makefile, README)
+- Exceptions are files which have their own naming conventions (e.g. Dockerfile, Makefile, README)
 - Automation scripts should be stored into `dotdirs` (eg .githooks, .openshiftci)
 
 ## Go

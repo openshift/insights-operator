@@ -318,7 +318,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 	return string(output), err
 }
 
-// createRandom creates a random non existing file name in current folder
+// createRandom creates a random non-existing file name in current folder
 func createRandom() string {
 	var f string
 	for {

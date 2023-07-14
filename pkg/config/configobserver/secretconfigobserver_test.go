@@ -219,7 +219,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error %s", err)
 	}
-	// Check if the event arrived on the channel
+	// Check if the event arrived at the channel
 	if len(configCh) != 1 {
 		t.Fatalf("Config channel has more/less then 1 event on a singal config change. len(configCh)==%d", len(configCh))
 	}

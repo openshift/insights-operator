@@ -3,7 +3,6 @@ package start
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"time"
 
@@ -31,7 +30,7 @@ const (
 	pbAcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 )
 
-// NewOperator create the commad for running the Insights Operator.
+// NewOperator create the command for running the Insights Operator.
 func NewOperator() *cobra.Command {
 	operator := &controller.Operator{
 		Controller: config.Controller{
@@ -57,12 +56,12 @@ func NewOperator() *cobra.Command {
 		Short: "Start the operator",
 		Run:   runOperator(operator, cfg),
 	}
-	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
+	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.Background()).Flags())
 
 	return cmd
 }
 
-// NewGather create the commad for running the a single gather.
+// NewGather create the command for running a single gather.
 func NewGather() *cobra.Command {
 	operator := &controller.GatherJob{
 		Controller: config.Controller{
@@ -77,7 +76,7 @@ func NewGather() *cobra.Command {
 		Short: "Does a single gather, without uploading it",
 		Run:   runGather(operator, cfg),
 	}
-	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
+	cmd.Flags().AddFlagSet(cfg.NewCommandWithContext(context.Background()).Flags())
 
 	return cmd
 }
@@ -196,8 +195,7 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 // Boilerplate for running an operator and handling command line arguments.
 func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		// boiler plate for the "normal" command
-		rand.Seed(time.Now().UTC().UnixNano())
+		// boilerplate for the "normal" command
 		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
 		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
 		serviceability.StartProfiler()

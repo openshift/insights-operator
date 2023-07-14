@@ -61,7 +61,7 @@ const gitHubPath = "https://github.com/openshift/insights-operator"
 // API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
 const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" // owner, repo, pull-number
 
-// OpenShift release version helper type
+// ReleaseVersion OpenShift release version helper type
 type ReleaseVersion struct {
 	Major int
 	Minor int
@@ -163,7 +163,7 @@ func readCHANGELOG() map[ReleaseVersion]MarkdownReleaseBlock {
 		if match := miscSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			releaseBlock.misc = match[1]
 		}
-		// We want only found versions - e.g master is not considered as a version
+		// We want only found versions - e.g. master is not considered as a version
 		if version != (ReleaseVersion{}) {
 			releaseBlocks[version] = releaseBlock
 		}
