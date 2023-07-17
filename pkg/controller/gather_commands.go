@@ -2,10 +2,14 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
@@ -30,6 +34,12 @@ import (
 type GatherJob struct {
 	config.Controller
 	InsightsConfigAPIEnabled bool
+}
+
+// processingStatusClient is an interface to call the "processingStatusEndpoint" in
+// the "insights-results-aggregator" service running in console.redhat.com
+type processingStatusClient interface {
+	GetDataProcessingStatus(ctx context.Context, endpoint, requestID string) (*http.Response, error)
 }
 
 // Gather runs a single gather and stores the generated archive, without uploading it.
@@ -122,7 +132,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	insightClient, err := insightsv1alpha1cli.NewForConfig(kubeConfig)
+	insightsV1alphaCli, err := insightsv1alpha1cli.NewForConfig(kubeConfig)
 	if err != nil {
 		return err
 	}
@@ -135,13 +145,13 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	// See the insightsuploader Upload method
 	ctx, cancel := context.WithTimeout(context.Background(), d.Interval*4)
 	defer cancel()
-	dataGatherCR, err := insightClient.DataGathers().Get(ctx, os.Getenv("DATAGATHER_NAME"), metav1.GetOptions{})
+	dataGatherCR, err := insightsV1alphaCli.DataGathers().Get(ctx, os.Getenv("DATAGATHER_NAME"), metav1.GetOptions{})
 	if err != nil {
 		klog.Error("failed to get coresponding DataGather custom resource: %v", err)
 		return err
 	}
 
-	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR.DeepCopy(), insightsv1alpha1.Pending, nil)
+	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR.DeepCopy(), insightsv1alpha1.Pending, nil)
 	if err != nil {
 		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
 		return err
@@ -172,15 +182,15 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		return err
 	}
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, configClient)
+	insightsHTTPCli := insightsclient.New(nil, 0, "default", authorizer, configClient)
 
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configObserver, insightsClient,
+		configObserver, insightsHTTPCli,
 	)
-	uploader := insightsuploader.New(nil, insightsClient, configObserver, nil, nil, 0)
+	uploader := insightsuploader.New(nil, insightsHTTPCli, configObserver, nil, nil, 0)
 
-	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Running, nil)
+	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running, nil)
 	if err != nil {
 		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
 		return err
@@ -214,7 +224,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionFalse, "RecordingFailed",
 			fmt.Sprintf("Failed to record data: %v", err)))
-		_, recErr := status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
+		_, recErr := status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Failed, conditions)
 		if recErr != nil {
 			klog.Error("data recording failed and the update of DataGaher resource status failed as well: %v", recErr)
 		}
@@ -229,7 +239,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		klog.Error(err)
 		conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionFalse, reason,
 			fmt.Sprintf("Failed to upload data: %v", err)))
-		_, updateErr := status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
+		_, updateErr := status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Failed, conditions)
 		if updateErr != nil {
 			klog.Error("data upload failed and the update of DataGaher resource status failed as well: %v", updateErr)
 		}
@@ -240,12 +250,20 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	dataGatherCR.Status.InsightsRequestID = insightsRequestID
 	conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionTrue, reason, ""))
 
-	_, err = status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Completed, conditions)
+	// check if the archive/data was processed
+	processed, err := wasDataProcessed(ctx, insightsHTTPCli, insightsRequestID, configObserver.Config())
+	if err != nil || !processed {
+		klog.Error(err)
+		conditions = append(conditions,
+			status.DataProcessedCondition(metav1.ConditionFalse, "Failure", fmt.Sprintf("failed to process data in the given time: %v", err)))
+	} else {
+		conditions = append(conditions, status.DataProcessedCondition(metav1.ConditionTrue, "Processed", ""))
+	}
+	_, err = status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Completed, conditions)
 	if err != nil {
 		klog.Error(err)
 		return err
 	}
-	// TODO use the InsightsRequestID to query the new aggregator API
 	return nil
 }
 
@@ -270,4 +288,57 @@ func record(functionReports []gather.GathererFunctionReport,
 		return nil, err
 	}
 	return recdriver.LastArchive()
+}
+
+// dataStatus is a helper struct to unmarshall
+// the HTTP response from the processing status endpoint
+type dataStatus struct {
+	ClusterID string `json:"cluster"`
+	Status    string `json:"status"`
+}
+
+// wasDataProcessed polls the "insights-results-aggregator" service processing status endpoint using provided
+// "insightsRequestID" and tries to parse the response body in case of HTTP 200 response.
+func wasDataProcessed(ctx context.Context,
+	insightsCli processingStatusClient,
+	insightsRequestID string, controllerConf *config.Controller) (bool, error) {
+	delay := controllerConf.ReportPullingDelay
+	retryCounter := 0
+	klog.V(4).Infof("Initial delay when checking processing status: %v", delay)
+
+	var resp *http.Response
+	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {
+		resp, err = insightsCli.GetDataProcessingStatus(ctx, // nolint: bodyclose
+			controllerConf.ProcessingStatusEndpoint, insightsRequestID) // response body is closed later
+		if err != nil {
+			return false, err
+		}
+		if resp.StatusCode == http.StatusOK || retryCounter == 2 {
+			return true, nil
+		}
+		klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, delay)
+		retryCounter++
+		return false, nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	if resp.Body == nil || resp.Body == http.NoBody {
+		return false, nil
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return false, err
+	}
+	var processingResp dataStatus
+	err = json.Unmarshal(data, &processingResp)
+	if err != nil {
+		return false, err
+	}
+
+	return processingResp.Status == "processed", nil
 }

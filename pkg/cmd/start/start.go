@@ -92,6 +92,7 @@ func NewGatherAndUpload() *cobra.Command {
 			ReportPullingDelay:          60 * time.Second,
 			ReportMinRetryTime:          10 * time.Second,
 			ReportPullingTimeout:        30 * time.Minute,
+			ProcessingStatusEndpoint:    "https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/request/%s/status",
 		},
 	}
 	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil)

@@ -302,3 +302,27 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	}()
 	return io.ReadAll(resp.Body)
 }
+
+func (c *Client) GetDataProcessingStatus(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+	cv, err := c.GetClusterVersion()
+	if apierrors.IsNotFound(err) {
+		return nil, ErrWaitingForVersion
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID, requestID)
+	klog.Infof("Checking data processing status for request ID: %s", requestID)
+	klog.Infof("Endpoint: %s", endpoint)
+
+	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
+	if err != nil {
+		return nil, err
+	}
+
+	// dynamically set the proxy environment
+	c.client.Transport = clientTransport(c.authorizer)
+
+	return c.client.Do(req)
+}
