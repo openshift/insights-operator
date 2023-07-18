@@ -24,15 +24,15 @@ var (
 func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, int, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
-		return "", 0, ErrWaitingForVersion
+		return "", noHttpStatusCode, ErrWaitingForVersion
 	}
 	if err != nil {
-		return "", 0, err
+		return "", noHttpStatusCode, err
 	}
 
 	req, err := c.prepareRequest(ctx, http.MethodPost, endpoint, cv)
 	if err != nil {
-		return "", 0, err
+		return "", noHttpStatusCode, err
 	}
 
 	bytesRead := make(chan int64, 1)
