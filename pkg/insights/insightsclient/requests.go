@@ -7,13 +7,18 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"strconv"
 
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
 	"github.com/openshift/insights-operator/pkg/insights"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+)
+
+var (
+	// when there's no HTTP status response code then we send 0 to track
+	// this request in the "insightsclient_request_send_total" Prometheus metrics
+	noHttpStatusCode = 0
 )
 
 func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, int, error) {
@@ -44,8 +49,8 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	if err != nil {
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
 		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
-		insights.IncrementCounterRequestSend("0")
-		return "", 0, fmt.Errorf("unable to build request to connect to Insights server: %v", err)
+		insights.IncrementCounterRequestSend(noHttpStatusCode)
+		return "", noHttpStatusCode, fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
 
 	requestID := resp.Header.Get(insightsReqId)
@@ -59,7 +64,7 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 		}
 	}()
 
-	insights.IncrementCounterRequestSend(strconv.Itoa(resp.StatusCode))
+	insights.IncrementCounterRequestSend(resp.StatusCode)
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		klog.V(2).Infof("gateway server %s returned 401, %s=%s", resp.Request.URL, insightsReqId, requestID)

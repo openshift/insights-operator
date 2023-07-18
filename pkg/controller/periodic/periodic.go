@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -550,11 +551,17 @@ func getConditionByStatus(dataGather *insightsv1alpha1.DataGather, conStatus str
 // the "insightsclient_request_send_total" Prometheus metric accordingly.
 func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
 	dataUploadedCon := getConditionByStatus(dataGather, status.DataUploaded)
-	var statusCode string
+	var statusCode int
 	if dataUploadedCon == nil {
-		statusCode = "0"
+		statusCode = 0
 	} else {
-		statusCode, _ = strings.CutPrefix(dataUploadedCon.Reason, "HttpStatus")
+		statusCodeStr, _ := strings.CutPrefix(dataUploadedCon.Reason, "HttpStatus")
+		var err error
+		statusCode, err = strconv.Atoi(statusCodeStr)
+		if err != nil {
+			klog.Error("failed to update the Prometheus metrics: %v", err)
+			return
+		}
 	}
 	insights.IncrementCounterRequestSend(statusCode)
 }

@@ -2,6 +2,7 @@ package insights
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -39,8 +40,9 @@ func init() {
 	MustRegisterMetrics(RecommendationCollector, counterRequestSend)
 }
 
-func IncrementCounterRequestSend(status string) {
-	counterRequestSend.WithLabelValues("insights", status).Inc()
+func IncrementCounterRequestSend(status int) {
+	statusCodeString := strconv.Itoa(status)
+	counterRequestSend.WithLabelValues("insights", statusCodeString).Inc()
 }
 
 // Collector collects insights recommendations
