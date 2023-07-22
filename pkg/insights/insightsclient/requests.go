@@ -7,26 +7,32 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"strconv"
 
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/authorizer"
+	"github.com/openshift/insights-operator/pkg/insights"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, error) {
+var (
+	// when there's no HTTP status response code then we send 0 to track
+	// this request in the "insightsclient_request_send_total" Prometheus metrics
+	noHttpStatusCode = 0
+)
+
+func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, int, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
-		return "", ErrWaitingForVersion
+		return "", noHttpStatusCode, ErrWaitingForVersion
 	}
 	if err != nil {
-		return "", err
+		return "", noHttpStatusCode, err
 	}
 
 	req, err := c.prepareRequest(ctx, http.MethodPost, endpoint, cv)
 	if err != nil {
-		return "", err
+		return "", noHttpStatusCode, err
 	}
 
 	bytesRead := make(chan int64, 1)
@@ -42,9 +48,9 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	resp, err := c.client.Do(req)
 	if err != nil {
 		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
-		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have recorded about it in metrics as well.
-		counterRequestSend.WithLabelValues(c.metricsName, "0").Inc()
-		return "", fmt.Errorf("unable to build request to connect to Insights server: %v", err)
+		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
+		insights.IncrementCounterRequestSend(noHttpStatusCode)
+		return "", noHttpStatusCode, fmt.Errorf("unable to build request to connect to Insights server: %v", err)
 	}
 
 	requestID := resp.Header.Get(insightsReqId)
@@ -58,36 +64,36 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 		}
 	}()
 
-	counterRequestSend.WithLabelValues(c.metricsName, strconv.Itoa(resp.StatusCode)).Inc()
+	insights.IncrementCounterRequestSend(resp.StatusCode)
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		klog.V(2).Infof("gateway server %s returned 401, %s=%s", resp.Request.URL, insightsReqId, requestID)
-		return "", authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
+		return "", resp.StatusCode, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
 		klog.V(2).Infof("gateway server %s returned 403, %s=%s", resp.Request.URL, insightsReqId, requestID)
-		return "", authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
+		return "", resp.StatusCode, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	}
 
 	if resp.StatusCode == http.StatusBadRequest {
-		return "", fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, responseBody(resp))
+		return "", resp.StatusCode, fmt.Errorf("gateway server bad request: %s (request=%s): %s", resp.Request.URL, requestID, responseBody(resp))
 	}
 
 	if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-		return "", fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, responseBody(resp))
+		return "", resp.StatusCode, fmt.Errorf("gateway server reported unexpected error code: %d (request=%s): %s", resp.StatusCode, requestID, responseBody(resp))
 	}
 
 	if len(requestID) > 0 {
 		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, <-bytesRead)
 	}
 
-	return requestID, nil
+	return requestID, resp.StatusCode, nil
 }
 
 // Send uploads archives to Ingress service
 func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
-	_, err := c.SendAndGetID(ctx, endpoint, source)
+	_, _, err := c.SendAndGetID(ctx, endpoint, source)
 	return err
 }
 

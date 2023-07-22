@@ -45,10 +45,6 @@ type InsightsReporter interface {
 	ArchiveUploaded() <-chan struct{}
 }
 
-const (
-	insightsLastGatherTimeName = "insightsclient_last_gather_time"
-)
-
 var (
 	// insightsStatus contains a metric with the latest report information
 	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{
@@ -59,11 +55,6 @@ var (
 	}, []string{"metric"})
 	// number of pulling report retries
 	retryThreshold = 2
-
-	// insightsLastGatherTime contains time of the last Insights data gathering
-	insightsLastGatherTime = metrics.NewGauge(&metrics.GaugeOpts{
-		Name: insightsLastGatherTimeName,
-	})
 )
 
 // New initializes and returns a Gatherer
@@ -152,8 +143,8 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, fmt.Errorf("report not updated")
 	}
 
-	recommendations, healthStatus, gatherTime := c.readInsightsReport(reportResponse.Report)
-	updateInsightsMetrics(recommendations, healthStatus, gatherTime)
+	recommendations, healthStatus := c.readInsightsReport(reportResponse.Report)
+	updateInsightsMetrics(recommendations, healthStatus)
 	err = c.updateOperatorStatusCR(reportResponse.Report, downloadTime)
 	if err != nil {
 		klog.Errorf("failed to update the Insights Operator CR status: %v", err)
@@ -278,7 +269,7 @@ type insightsReportClient interface {
 	GetClusterVersion() (*configv1.ClusterVersion, error)
 }
 
-func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time) {
+func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts) {
 	healthStatus := healthStatusCounts{}
 	healthStatus.total = report.Meta.Count
 	activeRecommendations := []types.InsightsRecommendation{}
@@ -323,15 +314,11 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 		})
 	}
 
-	t, err := time.Parse(time.RFC3339, string(report.Meta.GatheredAt))
-	if err != nil {
-		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTimeName, err)
-	}
-	return activeRecommendations, healthStatus, t
+	return activeRecommendations, healthStatus
 }
 
 // updateInsightsMetrics update the Prometheus metrics from a report
-func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation, hsCount healthStatusCounts, gatherTime time.Time) {
+func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation, hsCount healthStatusCounts) {
 	insights.RecommendationCollector.SetActiveRecommendations(activeRecommendations)
 
 	insightsStatus.WithLabelValues("low").Set(float64(hsCount.low))
@@ -339,7 +326,6 @@ func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation,
 	insightsStatus.WithLabelValues("important").Set(float64(hsCount.important))
 	insightsStatus.WithLabelValues("critical").Set(float64(hsCount.critical))
 	insightsStatus.WithLabelValues("total").Set(float64(hsCount.total))
-	insightsLastGatherTime.Set(float64(gatherTime.Unix()))
 }
 
 func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport, reportDownloadTime metav1.Time) error {
@@ -388,7 +374,7 @@ func extractErrorKeyFromRuleData(r types.RuleWithContentResponse) (string, error
 
 	errorKeyField, exists := extraDataMap["error_key"]
 	if !exists {
-		return "", fmt.Errorf("TemplateData of rule %q does not contain error_key", r.RuleID)
+		return "", fmt.Errorf("templateData of rule %q does not contain error_key", r.RuleID)
 	}
 
 	errorKeyStr, ok := errorKeyField.(string)
@@ -399,7 +385,7 @@ func extractErrorKeyFromRuleData(r types.RuleWithContentResponse) (string, error
 }
 
 func init() {
-	insights.MustRegisterMetrics(insightsStatus, insightsLastGatherTime)
+	insights.MustRegisterMetrics(insightsStatus)
 
 	insightsStatus.WithLabelValues("low").Set(float64(-1))
 	insightsStatus.WithLabelValues("moderate").Set(float64(-1))

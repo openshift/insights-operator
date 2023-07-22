@@ -2,6 +2,7 @@ package insights
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -17,6 +18,10 @@ var (
 	RecommendationCollector = &Collector{
 		metricName: "insights_recommendation_active",
 	}
+	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
+		Name: "insightsclient_request_send_total",
+		Help: "Tracks the number of archives sent",
+	}, []string{"client", "status_code"})
 )
 
 // MustRegisterMetrics registers provided registrables in the Insights metrics registry.
@@ -32,7 +37,12 @@ func MustRegisterMetrics(registrables ...metrics.Registerable) {
 }
 
 func init() {
-	MustRegisterMetrics(RecommendationCollector)
+	MustRegisterMetrics(RecommendationCollector, counterRequestSend)
+}
+
+func IncrementCounterRequestSend(status int) {
+	statusCodeString := strconv.Itoa(status)
+	counterRequestSend.WithLabelValues("insights", statusCodeString).Inc()
 }
 
 // Collector collects insights recommendations
