@@ -223,10 +223,11 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", ""))
 
 	// upload data
-	insightsRequestID, err := uploader.Upload(ctx, lastArchive)
+	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive)
+	reason := fmt.Sprintf("HttpStatus%d", statusCode)
 	if err != nil {
 		klog.Error(err)
-		conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionFalse, "UploadFailed",
+		conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionFalse, reason,
 			fmt.Sprintf("Failed to upload data: %v", err)))
 		_, updateErr := updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
 		if updateErr != nil {
@@ -237,7 +238,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
 
 	dataGatherCR.Status.InsightsRequestID = insightsRequestID
-	conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionTrue, "AsExpected", ""))
+	conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionTrue, reason, ""))
 
 	_, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Completed, conditions)
 	if err != nil {

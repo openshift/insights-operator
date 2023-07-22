@@ -180,7 +180,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
+	insightsClient := insightsclient.New(nil, 0, "insights", authorizer, gatherConfigClient)
 
 	var periodicGather *periodic.Controller
 	// the gatherers are periodically called to collect the data from the cluster
@@ -198,6 +198,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, secretConfigObserver,
 			insightsDataGatherObserver, gatherers, kubeClient, insightClient, operatorClient.InsightsOperators())
 		statusReporter.AddSources(periodicGather.Sources()...)
+		statusReporter.AddSources(reportRetriever)
 		go periodicGather.PeriodicPrune(ctx)
 	}
 
