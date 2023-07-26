@@ -141,7 +141,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	dataGatherCR, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR.DeepCopy(), insightsv1alpha1.Pending, nil)
+	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR.DeepCopy(), insightsv1alpha1.Pending, nil)
 	if err != nil {
 		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
 		return err
@@ -180,7 +180,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	)
 	uploader := insightsuploader.New(nil, insightsClient, configObserver, nil, nil, 0)
 
-	dataGatherCR, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Running, nil)
+	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Running, nil)
 	if err != nil {
 		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
 		return err
@@ -214,7 +214,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionFalse, "RecordingFailed",
 			fmt.Sprintf("Failed to record data: %v", err)))
-		_, recErr := updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
+		_, recErr := status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
 		if recErr != nil {
 			klog.Error("data recording failed and the update of DataGaher resource status failed as well: %v", recErr)
 		}
@@ -229,7 +229,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		klog.Error(err)
 		conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionFalse, reason,
 			fmt.Sprintf("Failed to upload data: %v", err)))
-		_, updateErr := updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
+		_, updateErr := status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Failed, conditions)
 		if updateErr != nil {
 			klog.Error("data upload failed and the update of DataGaher resource status failed as well: %v", updateErr)
 		}
@@ -240,7 +240,7 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	dataGatherCR.Status.InsightsRequestID = insightsRequestID
 	conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionTrue, reason, ""))
 
-	_, err = updateDataGatherStatus(ctx, *insightClient, dataGatherCR, insightsv1alpha1.Completed, conditions)
+	_, err = status.UpdateDataGatherStatus(ctx, insightClient, dataGatherCR, insightsv1alpha1.Completed, conditions)
 	if err != nil {
 		klog.Error(err)
 		return err
@@ -270,27 +270,4 @@ func record(functionReports []gather.GathererFunctionReport,
 		return nil, err
 	}
 	return recdriver.LastArchive()
-}
-
-// updateDataGatherStatus updates status' time attributes, state and conditions
-// of the provided DataGather resource
-func updateDataGatherStatus(ctx context.Context,
-	insightsClient insightsv1alpha1cli.InsightsV1alpha1Client,
-	dataGatherCR *insightsv1alpha1.DataGather,
-	newState insightsv1alpha1.DataGatherState, conditions []metav1.Condition) (*insightsv1alpha1.DataGather, error) {
-	switch newState {
-	case insightsv1alpha1.Completed:
-		dataGatherCR.Status.FinishTime = metav1.Now()
-	case insightsv1alpha1.Failed:
-		dataGatherCR.Status.FinishTime = metav1.Now()
-	case insightsv1alpha1.Running:
-		dataGatherCR.Status.StartTime = metav1.Now()
-	case insightsv1alpha1.Pending:
-		// no op
-	}
-	dataGatherCR.Status.State = newState
-	if conditions != nil {
-		dataGatherCR.Status.Conditions = append(dataGatherCR.Status.Conditions, conditions...)
-	}
-	return insightsClient.DataGathers().UpdateStatus(ctx, dataGatherCR, metav1.UpdateOptions{})
 }
