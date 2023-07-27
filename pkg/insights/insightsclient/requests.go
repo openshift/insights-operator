@@ -303,7 +303,9 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func (c *Client) GetDataProcessingStatus(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+// GetWithPathParams makes an HTTP GET request to the specified endpoint using the specified "requestID" as
+// a part of the endpoint path
+func (c *Client) GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion

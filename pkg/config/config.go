@@ -31,8 +31,9 @@ type Serialized struct {
 		ClusterTransferEndpoint string `json:"clusterTransferEndpoint"`
 		ClusterTransferInterval string `json:"clusterTransferInterval"`
 	} `json:"ocm"`
-	DisableInsightsAlerts    bool   `json:"disableInsightsAlerts"`
-	ProcessingStatusEndpoint string `json:"processingStatusEndpoint"`
+	DisableInsightsAlerts     bool   `json:"disableInsightsAlerts"`
+	ProcessingStatusEndpoint  string `json:"processingStatusEndpoint"`
+	ReportEndpointTechPreview string `json:"reportEndpointTechPreview"`
 }
 
 // Controller defines the standard config for this operator.
@@ -43,6 +44,7 @@ type Controller struct {
 	Endpoint                    string
 	ConditionalGathererEndpoint string
 	ReportEndpoint              string
+	ReportEndpointTechPreview   string
 	ReportPullingDelay          time.Duration
 	ReportMinRetryTime          time.Duration
 	ReportPullingTimeout        time.Duration
@@ -116,6 +118,7 @@ func (c *Controller) MergeWith(cfg *Controller) {
 	c.mergeOCM(cfg)
 	c.mergeHTTP(cfg)
 	c.mergeProcessingStatusEndpoint(cfg)
+	c.mergeReportEndpointTechPreview(cfg)
 }
 
 func (c *Controller) mergeCredentials(cfg *Controller) {
@@ -132,6 +135,12 @@ func (c *Controller) mergeEndpoint(cfg *Controller) {
 func (c *Controller) mergeProcessingStatusEndpoint(cfg *Controller) {
 	if len(cfg.ProcessingStatusEndpoint) > 0 {
 		c.ProcessingStatusEndpoint = cfg.ProcessingStatusEndpoint
+	}
+}
+
+func (c *Controller) mergeReportEndpointTechPreview(cfg *Controller) {
+	if len(cfg.ReportEndpointTechPreview) > 0 {
+		c.ReportEndpointTechPreview = cfg.ReportEndpointTechPreview
 	}
 }
 
@@ -199,6 +208,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts
 	cfg.ProcessingStatusEndpoint = s.ProcessingStatusEndpoint
+	cfg.ReportEndpointTechPreview = s.ReportEndpointTechPreview
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)

@@ -424,7 +424,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "InsightsReport attribute is not updated when copying",
+			name: "InsightsReport attribute is updated when copying",
 			testedDataGather: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 				Status: v1alpha1.DataGatherStatus{
@@ -444,6 +444,23 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 							},
 						},
 					},
+					InsightsReport: v1alpha1.InsightsReport{
+						DownloadedAt: metav1.Date(2020, 5, 13, 2, 40, 0, 0, time.UTC),
+						HealthChecks: []v1alpha1.HealthCheck{
+							{
+								Description: "healtheck ABC",
+								TotalRisk:   1,
+								State:       v1alpha1.HealthCheckEnabled,
+								AdvisorURI:  "test-uri",
+							},
+							{
+								Description: "healtheck XYZ",
+								TotalRisk:   2,
+								State:       v1alpha1.HealthCheckEnabled,
+								AdvisorURI:  "test-uri-1",
+							},
+						},
+					},
 				},
 			},
 			testedInsightsOperator: operatorv1.InsightsOperator{
@@ -451,22 +468,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 					Name: "cluster",
 				},
 				Status: operatorv1.InsightsOperatorStatus{
-					InsightsReport: operatorv1.InsightsReport{
-						DownloadedAt: metav1.Date(2020, 5, 13, 2, 40, 0, 0, time.UTC),
-						HealthChecks: []operatorv1.HealthCheck{
-							{
-								Description: "healtheck ABC",
-								TotalRisk:   1,
-								State:       operatorv1.HealthCheckEnabled,
-								AdvisorURI:  "test-uri",
-							},
-							{
-								Description: "healtheck XYZ",
-								TotalRisk:   2,
-								State:       operatorv1.HealthCheckEnabled,
-							},
-						},
-					},
+					InsightsReport: operatorv1.InsightsReport{},
 					GatherStatus: operatorv1.GatherStatus{
 						LastGatherTime:     metav1.Date(2020, 5, 12, 2, 0, 0, 0, time.UTC),
 						LastGatherDuration: metav1.Duration{Duration: 5 * time.Minute},
@@ -504,6 +506,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 								Description: "healtheck XYZ",
 								TotalRisk:   2,
 								State:       operatorv1.HealthCheckEnabled,
+								AdvisorURI:  "test-uri-1",
 							},
 						},
 					},
@@ -877,7 +880,7 @@ func TestWasDataGatherSuccessful(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil)
-			successful := mockController.wasDataGatherSuccessful(tt.testedDataGather)
+			successful := mockController.wasDataUploaded(tt.testedDataGather)
 			assert.Equal(t, tt.expectSuccessful, successful)
 			summary, _ := mockController.Sources()[0].CurrentStatus()
 			assert.Equal(t, tt.expectedSummary, summary)

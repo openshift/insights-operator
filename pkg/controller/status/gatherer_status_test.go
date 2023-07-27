@@ -2,7 +2,9 @@ package status
 
 import (
 	"testing"
+	"time"
 
+	"github.com/openshift/api/insights/v1alpha1"
 	v1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/stretchr/testify/assert"
@@ -141,6 +143,61 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 			assert.Equal(t, tt.expectedGs.Conditions[0].Reason, gathererStatus.Conditions[0].Reason)
 			assert.Equal(t, tt.expectedGs.Conditions[0].Status, gathererStatus.Conditions[0].Status)
 			assert.Equal(t, tt.expectedGs.Conditions[0].Message, gathererStatus.Conditions[0].Message)
+		})
+	}
+}
+
+func TestDataGatherStatusToOperatorStatus(t *testing.T) {
+	tests := []struct {
+		name                   string
+		dataGather             v1alpha1.DataGather
+		expectedOperatorstatus v1.InsightsOperatorStatus
+	}{
+		{
+			name: "basic copy test",
+			dataGather: v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						DataProcessedCondition(metav1.ConditionTrue, "EveyrthingOK", "no message"),
+					},
+					State:      v1alpha1.Completed,
+					StartTime:  metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
+					FinishTime: metav1.Date(2023, 7, 31, 5, 41, 04, 0, time.UTC),
+					Gatherers: []v1alpha1.GathererStatus{
+						{
+							Name:       "test-gatherer-1",
+							Conditions: []metav1.Condition{},
+							LastGatherDuration: metav1.Duration{
+								Duration: 94 * time.Second,
+							},
+						},
+					},
+				},
+			},
+			expectedOperatorstatus: v1.InsightsOperatorStatus{
+				GatherStatus: v1.GatherStatus{
+					LastGatherTime: metav1.Date(2023, 7, 31, 5, 41, 04, 0, time.UTC),
+					LastGatherDuration: metav1.Duration{
+						Duration: 49 * time.Second,
+					},
+					Gatherers: []v1.GathererStatus{
+						{
+							Name:       "test-gatherer-1",
+							Conditions: []metav1.Condition{},
+							LastGatherDuration: metav1.Duration{
+								Duration: 94 * time.Second,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			operatorStatus := DataGatherStatusToOperatorStatus(&tt.dataGather)
+			assert.Equal(t, tt.expectedOperatorstatus, operatorStatus)
 		})
 	}
 }

@@ -39,7 +39,7 @@ type GatherJob struct {
 // processingStatusClient is an interface to call the "processingStatusEndpoint" in
 // the "insights-results-aggregator" service running in console.redhat.com
 type processingStatusClient interface {
-	GetDataProcessingStatus(ctx context.Context, endpoint, requestID string) (*http.Response, error)
+	GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error)
 }
 
 // Gather runs a single gather and stores the generated archive, without uploading it.
@@ -308,7 +308,7 @@ func wasDataProcessed(ctx context.Context,
 
 	var resp *http.Response
 	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {
-		resp, err = insightsCli.GetDataProcessingStatus(ctx, // nolint: bodyclose
+		resp, err = insightsCli.GetWithPathParams(ctx, // nolint: bodyclose
 			controllerConf.ProcessingStatusEndpoint, insightsRequestID) // response body is closed later
 		if err != nil {
 			return false, err

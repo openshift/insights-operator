@@ -1,5 +1,7 @@
 package types
 
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 // Timestamp represents any timestamp in a form gathered from database
 type Timestamp string
 
@@ -11,6 +13,11 @@ type ErrorKey string
 
 // UserVote is a type for user's vote
 type UserVote int
+
+// Response represents the Smart Proxy report response structure
+type Response struct {
+	Report SmartProxyReport `json:"report"`
+}
 
 // ReportResponseMeta contains metadata about the report
 type ReportResponseMeta struct {
@@ -56,4 +63,21 @@ type InsightsRecommendation struct {
 	ErrorKey    string
 	Description string
 	TotalRisk   int
+}
+
+type Recommendation struct {
+	ErrorKey    string `json:"error_key"`
+	Description string `json:"description"`
+	TotalRisk   int    `json:"total_risk"`
+	RuleFQDN    string `json:"rule_fqdn"`
+}
+
+// InsightsAnalysisReport is a type reflecting json structure
+// of the insights-results-aggregator response. This is currently
+// used only in TechPreview
+type InsightsAnalysisReport struct {
+	DownloadedAt    metav1.Time
+	ClusterID       string           `json:"cluster"`
+	Recommendations []Recommendation `json:"report"`
+	RequestID       string           `json:"requestID"`
 }

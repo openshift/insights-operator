@@ -31,6 +31,7 @@ func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 	cfg.loadReport(secret.Data)
 	cfg.loadOCM(secret.Data)
 	cfg.loadProcessingStatusEndpoint(secret.Data)
+	cfg.loadReportEndpointTechPreview(secret.Data)
 
 	if intervalString, ok := secret.Data["interval"]; ok {
 		var duration time.Duration
@@ -169,5 +170,11 @@ func (c *Config) loadOCM(data map[string][]byte) {
 func (c *Config) loadProcessingStatusEndpoint(data map[string][]byte) {
 	if endpoint, ok := data["processingStatusEndpoint"]; ok {
 		c.ProcessingStatusEndpoint = string(endpoint)
+	}
+}
+
+func (c *Config) loadReportEndpointTechPreview(data map[string][]byte) {
+	if endpoint, ok := data["reportEndpointTechPreview"]; ok {
+		c.ReportEndpointTechPreview = string(endpoint)
 	}
 }

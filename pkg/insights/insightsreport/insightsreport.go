@@ -35,11 +35,6 @@ type Controller struct {
 	insightsOperatorCLI   operatorv1client.InsightsOperatorInterface
 }
 
-// Response represents the Smart Proxy report response structure
-type Response struct {
-	Report types.SmartProxyReport `json:"report"`
-}
-
 // InsightsReporter represents an object that can notify about archive uploading
 type InsightsReporter interface {
 	ArchiveUploaded() <-chan struct{}
@@ -70,12 +65,48 @@ func New(client *insightsclient.Client, configurator configobserver.Configurator
 
 func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Configurator, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
 	return &Controller{
-		StatusController:      controllerstatus.New("insightsreport"),
-		configurator:          configurator,
-		client:                client,
-		archiveUploadReporter: nil,
-		insightsOperatorCLI:   insightsOperatorCLI,
+		StatusController:    controllerstatus.New("insightsreport"),
+		configurator:        configurator,
+		client:              client,
+		insightsOperatorCLI: insightsOperatorCLI,
 	}
+}
+
+// PullReportTechpreview queries the "reportEndpointTechPreview" endpoint with provided Insights request ID
+// to get the corresponding Insights analysis report. When the response is successfully decoded, the "insightsclient_request_recvreport_total"
+// Prometheus metric is incremented and InsightsAnalysisReport is returned. This is called only in TechPreview clusters.
+func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.InsightsAnalysisReport, error) {
+	klog.Info("Pulling report from the insights-results-agregator service endpoint")
+	config := c.configurator.Config()
+	reportEndpointTP := config.ReportEndpointTechPreview
+
+	if len(reportEndpointTP) == 0 {
+		klog.V(4).Info("Not downloading report because the insights-results-agregator endpoint is not configured")
+		return nil, nil
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
+	defer cancelFunc()
+
+	klog.V(4).Info("Retrieving report")
+	resp, err := c.client.GetWithPathParams(ctx, reportEndpointTP, insightsRequestID)
+	if err != nil {
+		return nil, err
+	}
+	downloadTime := metav1.Now()
+	c.client.IncrementRecvReportMetric(resp.StatusCode)
+
+	analysisReport := &types.InsightsAnalysisReport{}
+
+	if err = json.NewDecoder(resp.Body).Decode(analysisReport); err != nil {
+		klog.Errorf("The report response cannot be parsed: %v", err)
+		return nil, err
+	}
+	analysisReport.DownloadedAt = downloadTime
+	recommendations, healthStatus := c.readInsightsReportTechPreview(*analysisReport)
+	updateInsightsMetrics(recommendations, healthStatus)
+	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
+	return analysisReport, nil
 }
 
 // PullSmartProxy performs a request to the Smart Proxy and unmarshal the response
@@ -129,7 +160,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 
 	klog.V(4).Info("Report retrieved")
 	downloadTime := metav1.Now()
-	reportResponse := Response{}
+	reportResponse := types.Response{}
 
 	if err = json.NewDecoder(resp.Body).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
@@ -267,6 +298,42 @@ type insightsReportClient interface {
 	RecvReport(ctx context.Context, endpoint string) (*http.Response, error)
 	IncrementRecvReportMetric(statusCode int)
 	GetClusterVersion() (*configv1.ClusterVersion, error)
+	GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error)
+}
+
+// readInsightsReportTechPreview
+func (c *Controller) readInsightsReportTechPreview(report types.InsightsAnalysisReport) ([]types.InsightsRecommendation, healthStatusCounts) {
+	healthStatus := healthStatusCounts{}
+	total := 0
+	activeRecommendations := []types.InsightsRecommendation{}
+
+	for _, recommendation := range report.Recommendations {
+		total++
+		switch recommendation.TotalRisk {
+		case 1:
+			healthStatus.low++
+		case 2:
+			healthStatus.moderate++
+		case 3:
+			healthStatus.important++
+		case 4:
+			healthStatus.critical++
+		}
+		if c.configurator.Config().DisableInsightsAlerts {
+			continue
+		}
+		insights.RecommendationCollector.SetClusterID(configv1.ClusterID(report.ClusterID))
+
+		activeRecommendations = append(activeRecommendations, types.InsightsRecommendation{
+			RuleID:      types.RuleID(recommendation.RuleFQDN),
+			ErrorKey:    recommendation.ErrorKey,
+			Description: recommendation.Description,
+			TotalRisk:   recommendation.TotalRisk,
+		})
+	}
+
+	healthStatus.total = total
+	return activeRecommendations, healthStatus
 }
 
 func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts) {

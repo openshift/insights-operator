@@ -13,6 +13,7 @@ pull_report:
   timeout: "3000s"
   min_retry: "30s"
 processingStatusEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/request/%s/status
+reportEndpointTechPreview: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/request/%s/report
 ocm:
   scaEndpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates
   scaInterval: "8h"

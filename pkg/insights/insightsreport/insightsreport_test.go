@@ -324,3 +324,7 @@ func (c *mockInsightsClient) IncrementRecvReportMetric(_ int) {
 func (c *mockInsightsClient) RecvReport(_ context.Context, _ string) (*http.Response, error) {
 	return nil, nil
 }
+
+func (c *mockInsightsClient) GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+	return nil, nil
+}
