@@ -60,7 +60,7 @@ const (
 // None
 //
 // ### Changes
-// None
+// - Image repository is now collected if it comes from outside the Red Hat domain
 func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -509,8 +509,11 @@ func calculateWorkloadInfo(h hash.Hash, image *imagev1.Image) workloadImage {
 	for _, layer := range image.DockerImageLayers {
 		layers = append(layers, layer.Name)
 	}
+
 	info := workloadImage{
 		LayerIDs: layers,
+		//RepoURL: "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5710554c08735126986b7c553cdb9a31bf97071c7adceda20f7aa116f35e867f",
+		Repository: getExternalImageRepo(image.DockerImageReference),
 	}
 
 	if err := imageutil.ImageWithMetadata(image); err != nil {
@@ -586,4 +589,12 @@ func workloadImageAdd(imageID string, image workloadImage) {
 	workloadSizeLock.Lock()
 	defer workloadSizeLock.Unlock()
 	workloadImageLRU.Add(imageID, image)
+}
+
+// getExternalImageRepo returns image URLs if they are not from Red Hat domain
+func getExternalImageRepo(s string) (repo string) {
+	if !strings.Contains(s, "redhat") {
+		repo = s
+	}
+	return
 }
