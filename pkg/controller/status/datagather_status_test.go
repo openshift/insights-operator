@@ -12,12 +12,13 @@ import (
 
 func TestUpdateDataGatherStatus(t *testing.T) {
 	tests := []struct {
-		name                    string
-		dataGather              *v1alpha1.DataGather
-		dgState                 v1alpha1.DataGatherState
-		updatingConditions      []metav1.Condition
-		expectedDataRecordedCon metav1.Condition
-		expectedDataUploadedCon metav1.Condition
+		name                     string
+		dataGather               *v1alpha1.DataGather
+		dgState                  v1alpha1.DataGatherState
+		updatingConditions       []metav1.Condition
+		expectedDataRecordedCon  metav1.Condition
+		expectedDataUploadedCon  metav1.Condition
+		expectedDataProcessedCon metav1.Condition
 	}{
 		{
 			name: "updating DataGather to completed state",
@@ -30,6 +31,7 @@ func TestUpdateDataGatherStatus(t *testing.T) {
 			updatingConditions: []metav1.Condition{
 				DataRecordedCondition(metav1.ConditionTrue, "AsExpected", ""),
 				DataUploadedCondition(metav1.ConditionTrue, "HttpStatus200", "testing message"),
+				DataProcessedCondition(metav1.ConditionTrue, "Processed", ""),
 			},
 			expectedDataRecordedCon: metav1.Condition{
 				Type:   DataRecorded,
@@ -41,6 +43,11 @@ func TestUpdateDataGatherStatus(t *testing.T) {
 				Status:  metav1.ConditionTrue,
 				Reason:  "HttpStatus200",
 				Message: "testing message",
+			},
+			expectedDataProcessedCon: metav1.Condition{
+				Type:   DataProcessed,
+				Status: metav1.ConditionTrue,
+				Reason: "Processed",
 			},
 		},
 		{
@@ -54,6 +61,7 @@ func TestUpdateDataGatherStatus(t *testing.T) {
 			updatingConditions: []metav1.Condition{
 				DataRecordedCondition(metav1.ConditionFalse, "Failure", "testing error message"),
 				DataUploadedCondition(metav1.ConditionFalse, "HttpStatus403", "testing message"),
+				DataProcessedCondition(metav1.ConditionFalse, "Failure", "testing error message"),
 			},
 			expectedDataRecordedCon: metav1.Condition{
 				Type:    DataRecorded,
@@ -66,6 +74,12 @@ func TestUpdateDataGatherStatus(t *testing.T) {
 				Status:  metav1.ConditionFalse,
 				Reason:  "HttpStatus403",
 				Message: "testing message",
+			},
+			expectedDataProcessedCon: metav1.Condition{
+				Type:    DataProcessed,
+				Status:  metav1.ConditionFalse,
+				Reason:  "Failure",
+				Message: "testing error message",
 			},
 		},
 	}
@@ -92,6 +106,12 @@ func TestUpdateDataGatherStatus(t *testing.T) {
 			assert.Equal(t, tt.expectedDataUploadedCon.Reason, dataUploadedCon.Reason)
 			assert.Equal(t, tt.expectedDataUploadedCon.Status, dataUploadedCon.Status)
 			assert.Equal(t, tt.expectedDataUploadedCon.Message, dataUploadedCon.Message)
+
+			dataProcessedCon := GetConditionByStatus(updatedDG, DataProcessed)
+			assert.NotNil(t, dataRecordedCon)
+			assert.Equal(t, tt.expectedDataProcessedCon.Reason, dataProcessedCon.Reason)
+			assert.Equal(t, tt.expectedDataProcessedCon.Status, dataProcessedCon.Status)
+			assert.Equal(t, tt.expectedDataProcessedCon.Message, dataProcessedCon.Message)
 		})
 	}
 }
