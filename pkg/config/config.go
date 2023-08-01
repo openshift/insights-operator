@@ -31,7 +31,8 @@ type Serialized struct {
 		ClusterTransferEndpoint string `json:"clusterTransferEndpoint"`
 		ClusterTransferInterval string `json:"clusterTransferInterval"`
 	} `json:"ocm"`
-	DisableInsightsAlerts bool `json:"disableInsightsAlerts"`
+	DisableInsightsAlerts    bool   `json:"disableInsightsAlerts"`
+	ProcessingStatusEndpoint string `json:"processingStatusEndpoint"`
 }
 
 // Controller defines the standard config for this operator.
@@ -58,7 +59,8 @@ type Controller struct {
 	OCMConfig  OCMConfig
 
 	// DisableInsightsAlerts disabled exposing of Insights recommendations as Prometheus info alerts
-	DisableInsightsAlerts bool
+	DisableInsightsAlerts    bool
+	ProcessingStatusEndpoint string
 }
 
 // HTTPConfig configures http proxy and exception settings if they come from config
@@ -90,7 +92,8 @@ func (c *Controller) ToString() string {
 		"reportEndpoint=%s "+
 		"initialPollingDelay=%s "+
 		"minRetryTime=%s "+
-		"pollingTimeout=%s",
+		"pollingTimeout=%s "+
+		"processingStatusEndpoint=%s",
 		c.Report,
 		c.Endpoint,
 		c.ConditionalGathererEndpoint,
@@ -100,7 +103,8 @@ func (c *Controller) ToString() string {
 		c.ReportEndpoint,
 		c.ReportPullingDelay,
 		c.ReportMinRetryTime,
-		c.ReportPullingTimeout)
+		c.ReportPullingTimeout,
+		c.ProcessingStatusEndpoint)
 }
 
 func (c *Controller) MergeWith(cfg *Controller) {
@@ -111,6 +115,7 @@ func (c *Controller) MergeWith(cfg *Controller) {
 	c.mergeReport(cfg)
 	c.mergeOCM(cfg)
 	c.mergeHTTP(cfg)
+	c.mergeProcessingStatusEndpoint(cfg)
 }
 
 func (c *Controller) mergeCredentials(cfg *Controller) {
@@ -121,6 +126,12 @@ func (c *Controller) mergeCredentials(cfg *Controller) {
 func (c *Controller) mergeEndpoint(cfg *Controller) {
 	if len(cfg.Endpoint) > 0 {
 		c.Endpoint = cfg.Endpoint
+	}
+}
+
+func (c *Controller) mergeProcessingStatusEndpoint(cfg *Controller) {
+	if len(cfg.ProcessingStatusEndpoint) > 0 {
+		c.ProcessingStatusEndpoint = cfg.ProcessingStatusEndpoint
 	}
 }
 
@@ -187,6 +198,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	cfg.Impersonate = s.Impersonate
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts
+	cfg.ProcessingStatusEndpoint = s.ProcessingStatusEndpoint
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)

@@ -30,6 +30,7 @@ func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 	cfg.loadHTTP(secret.Data)
 	cfg.loadReport(secret.Data)
 	cfg.loadOCM(secret.Data)
+	cfg.loadProcessingStatusEndpoint(secret.Data)
 
 	if intervalString, ok := secret.Data["interval"]; ok {
 		var duration time.Duration
@@ -162,5 +163,11 @@ func (c *Config) loadOCM(data map[string][]byte) {
 				clusterTransferInterval,
 			)
 		}
+	}
+}
+
+func (c *Config) loadProcessingStatusEndpoint(data map[string][]byte) {
+	if endpoint, ok := data["processingStatusEndpoint"]; ok {
+		c.ProcessingStatusEndpoint = string(endpoint)
 	}
 }

@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	DataUploaded = "DataUploaded"
-	DataRecorded = "DataRecorded"
+	DataUploaded  = "DataUploaded"
+	DataRecorded  = "DataRecorded"
+	DataProcessed = "DataProcessed"
 )
 
 // DataUploadedCondition returns new "DataUploaded" status condition with provided status, reason and message
@@ -28,6 +29,17 @@ func DataUploadedCondition(status metav1.ConditionStatus, reason, message string
 func DataRecordedCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
 	return metav1.Condition{
 		Type:               DataRecorded,
+		LastTransitionTime: metav1.Now(),
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+	}
+}
+
+// DataProcessedCondition returns new "DataProcessed" status condition with provided status, reason and message
+func DataProcessedCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
+	return metav1.Condition{
+		Type:               DataProcessed,
 		LastTransitionTime: metav1.Now(),
 		Status:             status,
 		Reason:             reason,
