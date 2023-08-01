@@ -32,12 +32,13 @@ import (
 )
 
 var (
-	serviceCABundle             = "service-ca-bundle"
-	serviceCABundlePath         = "/var/run/configmaps/service-ca-bundle"
-	insightsNamespace           = "openshift-insights"
-	falseB                      = new(bool)
-	trueB                       = true
-	deletePropagationBackground = metav1.DeletePropagationBackground
+	serviceCABundle                  = "service-ca-bundle"
+	serviceCABundlePath              = "/var/run/configmaps/service-ca-bundle"
+	insightsNamespace                = "openshift-insights"
+	falseB                           = new(bool)
+	trueB                            = true
+	deletePropagationBackground      = metav1.DeletePropagationBackground
+	dataUplodedConditionNotAvailable = "DataUploadedConditionNotAvailable"
 )
 
 // Controller periodically runs gatherers, records their results to the recorder
@@ -254,7 +255,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	}
 }
 
-func (c *Controller) GatherJob() {
+func (c *Controller) GatherJob() { // nolint: funlen, gocyclo
 	if c.isGatheringDisabled() {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
@@ -301,10 +302,16 @@ func (c *Controller) GatherJob() {
 		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherCR.Name, err)
 		return
 	}
-	dataUploaded := c.wasDataUploaded(dataGatherFinished)
+	statusSummary := c.dataUploadStatus(dataGatherFinished)
 	updateMetrics(dataGatherFinished)
-	if !dataUploaded {
+	if !statusSummary.Healthy {
 		klog.Errorf("Last data gathering %v was not successful", dataGatherFinished.Name)
+
+		// the job can fail for more reasons. Maybe the upload really failed and in this case the conditions should be there or
+		// the job's pod was deleted and in this case the conditions will be likely missing
+		if statusSummary.Reason != dataUplodedConditionNotAvailable {
+			return
+		}
 		conditions := []metav1.Condition{
 			status.DataRecordedCondition(metav1.ConditionFalse, "JobNotSucceeded", ""),
 			status.DataUploadedCondition(metav1.ConditionFalse, "JobNotSucceeded", ""),
@@ -332,7 +339,7 @@ func (c *Controller) GatherJob() {
 	}
 
 	// update Insights analysis report in the DataGather custom resource
-	err = c.updateInsightsReportInDataGather(ctx, analysisReport, *dataGatherFinished)
+	err = c.updateInsightsReportInDataGather(ctx, analysisReport, dataGatherFinished)
 	if err != nil {
 		klog.Errorf("Failed to update Insights report in the %s custom resource:%v", dataGatherFinished.Name, err)
 	}
@@ -347,7 +354,8 @@ func (c *Controller) GatherJob() {
 
 // updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
 // updates the provided DataGather resource with all important attributes.
-func (c *Controller) updateInsightsReportInDataGather(ctx context.Context, report *types.InsightsAnalysisReport, dg insightsv1alpha1.DataGather) error {
+func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
+	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather) error {
 	for _, recommendation := range report.Recommendations {
 		healthCheck := insightsv1alpha1.HealthCheck{
 			Description: recommendation.Description,
@@ -361,7 +369,7 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context, repor
 	dg.Status.InsightsReport.DownloadedAt = report.DownloadedAt
 	uri := fmt.Sprintf(c.secretConfigurator.Config().ReportEndpointTechPreview, report.ClusterID, report.RequestID)
 	dg.Status.InsightsReport.URI = uri
-	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, &dg, metav1.UpdateOptions{})
+	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, dg, metav1.UpdateOptions{})
 	return err
 }
 
@@ -557,9 +565,9 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 	return disabledGatherers, dp
 }
 
-// wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
+// dataUploadStatus reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
 // custom resource and checks whether the data was successfully uploaded or not and updates status accordingly
-func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha1.DataGather) bool {
+func (c *Controller) dataUploadStatus(dataGather *insightsv1alpha1.DataGather) controllerstatus.Summary {
 	dataUploadedCon := status.GetConditionByStatus(dataGather, status.DataUploaded)
 	statusSummary := controllerstatus.Summary{
 		Operation: controllerstatus.Uploading,
@@ -568,7 +576,7 @@ func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha1.DataGather) bo
 	if dataUploadedCon == nil {
 		statusSummary.Healthy = false
 		statusSummary.Count = 5
-		statusSummary.Reason = "DataUploadedConditionNotAvailable"
+		statusSummary.Reason = dataUplodedConditionNotAvailable
 		statusSummary.Message = fmt.Sprintf("did not find any %q condition in the %s dataGather resource",
 			status.DataUploaded, dataGather.Name)
 	} else if dataUploadedCon.Status == metav1.ConditionFalse {
@@ -579,9 +587,11 @@ func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha1.DataGather) bo
 	}
 
 	c.statuses["insightsuploader"].UpdateStatus(statusSummary)
-	return statusSummary.Healthy
+	return statusSummary
 }
 
+// wasDataProcessed checks the corresponding "DataProcessed" condition and returns
+// true if the condition status is true, otherwise returns false
 func (c *Controller) wasDataProcessed(dataGather *insightsv1alpha1.DataGather) bool {
 	dataProcessedCon := status.GetConditionByStatus(dataGather, status.DataProcessed)
 	if dataProcessedCon == nil {

@@ -798,11 +798,10 @@ func TestPeriodicPrune(t *testing.T) {
 	}
 }
 
-func TestWasDataGatherSuccessful(t *testing.T) {
+func TestWasDataUploaded(t *testing.T) {
 	tests := []struct {
 		name             string
 		testedDataGather *v1alpha1.DataGather
-		expectSuccessful bool
 		expectedSummary  controllerstatus.Summary
 	}{
 		{
@@ -818,11 +817,9 @@ func TestWasDataGatherSuccessful(t *testing.T) {
 					},
 				},
 			},
-			expectSuccessful: true,
 			expectedSummary: controllerstatus.Summary{
 				Operation: controllerstatus.Uploading,
 				Healthy:   true,
-				Count:     1,
 			},
 		},
 		{
@@ -839,7 +836,6 @@ func TestWasDataGatherSuccessful(t *testing.T) {
 					},
 				},
 			},
-			expectSuccessful: false,
 			expectedSummary: controllerstatus.Summary{
 				Operation: controllerstatus.Uploading,
 				Healthy:   false,
@@ -865,12 +861,11 @@ func TestWasDataGatherSuccessful(t *testing.T) {
 					},
 				},
 			},
-			expectSuccessful: false,
 			expectedSummary: controllerstatus.Summary{
 				Operation: controllerstatus.Uploading,
 				Healthy:   false,
 				Count:     5,
-				Reason:    "DataUploadedConditionNotAvailable",
+				Reason:    dataUplodedConditionNotAvailable,
 				Message: fmt.Sprintf("did not find any %q condition in the test-dg dataGather resource",
 					status.DataUploaded),
 			},
@@ -880,9 +875,7 @@ func TestWasDataGatherSuccessful(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil)
-			successful := mockController.wasDataUploaded(tt.testedDataGather)
-			assert.Equal(t, tt.expectSuccessful, successful)
-			summary, _ := mockController.Sources()[0].CurrentStatus()
+			summary := mockController.dataUploadStatus(tt.testedDataGather)
 			assert.Equal(t, tt.expectedSummary, summary)
 		})
 	}

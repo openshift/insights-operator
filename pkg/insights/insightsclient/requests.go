@@ -315,8 +315,7 @@ func (c *Client) GetWithPathParams(ctx context.Context, endpoint, requestID stri
 	}
 
 	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID, requestID)
-	klog.Infof("Checking data processing status for request ID: %s", requestID)
-	klog.Infof("Endpoint: %s", endpoint)
+	klog.Infof("Making HTTP GET request at: %s", endpoint)
 
 	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
 	if err != nil {

@@ -63,12 +63,11 @@ func New(client *insightsclient.Client, configurator configobserver.Configurator
 	}
 }
 
-func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Configurator, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
+func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Configurator) *Controller {
 	return &Controller{
-		StatusController:    controllerstatus.New("insightsreport"),
-		configurator:        configurator,
-		client:              client,
-		insightsOperatorCLI: insightsOperatorCLI,
+		StatusController: controllerstatus.New("insightsreport"),
+		configurator:     configurator,
+		client:           client,
 	}
 }
 
@@ -76,26 +75,44 @@ func NewWithTechPreview(client *insightsclient.Client, configurator configobserv
 // to get the corresponding Insights analysis report. When the response is successfully decoded, the "insightsclient_request_recvreport_total"
 // Prometheus metric is incremented and InsightsAnalysisReport is returned. This is called only in TechPreview clusters.
 func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.InsightsAnalysisReport, error) {
-	klog.Info("Pulling report from the insights-results-agregator service endpoint")
+	klog.Info("Retrieving report from the insights-results-agregator service endpoint")
 	config := c.configurator.Config()
 	reportEndpointTP := config.ReportEndpointTechPreview
 
 	if len(reportEndpointTP) == 0 {
 		klog.V(4).Info("Not downloading report because the insights-results-agregator endpoint is not configured")
+		c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 		return nil, nil
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelFunc()
 
-	klog.V(4).Info("Retrieving report")
 	resp, err := c.client.GetWithPathParams(ctx, reportEndpointTP, insightsRequestID)
 	if err != nil {
+		klog.Errorf("Unexpected error retrieving the report: %s", err)
+		c.UpdateStatus(controllerstatus.Summary{
+			Healthy:   false,
+			Operation: controllerstatus.DownloadingReport,
+			Message:   fmt.Sprintf("Couldn't download the latest report: %v", err),
+			Reason:    "UnexpectedError",
+		})
 		return nil, err
 	}
 	downloadTime := metav1.Now()
 	c.client.IncrementRecvReportMetric(resp.StatusCode)
 
+	if resp.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Failed to download the latest report: HTTP %d %s", resp.StatusCode, resp.Status)
+		c.UpdateStatus(controllerstatus.Summary{
+			Healthy:   false,
+			Operation: controllerstatus.DownloadingReport,
+			Message:   msg,
+			Reason:    "NotAvailable",
+		})
+		return nil, fmt.Errorf(msg)
+	}
+	klog.Info("Report retrieved correctly")
 	analysisReport := &types.InsightsAnalysisReport{}
 
 	if err = json.NewDecoder(resp.Body).Decode(analysisReport); err != nil {
@@ -301,7 +318,8 @@ type insightsReportClient interface {
 	GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error)
 }
 
-// readInsightsReportTechPreview
+// readInsightsReportTechPreview reads the specified InsightsAnalysisReport and returns slice of active
+// Insights recommendations and corresponding health status
 func (c *Controller) readInsightsReportTechPreview(report types.InsightsAnalysisReport) ([]types.InsightsRecommendation, healthStatusCounts) {
 	healthStatus := healthStatusCounts{}
 	total := 0

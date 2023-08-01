@@ -253,7 +253,11 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	// check if the archive/data was processed
 	processed, err := wasDataProcessed(ctx, insightsHTTPCli, insightsRequestID, configObserver.Config())
 	if err != nil || !processed {
-		klog.Error(err)
+		msg := fmt.Sprintf("Data was not processed in the console.redhat.com pipeline for the request %s", insightsRequestID)
+		if err != nil {
+			msg = fmt.Sprintf("%s: %v", msg, err)
+		}
+		klog.Info(msg)
 		conditions = append(conditions,
 			status.DataProcessedCondition(metav1.ConditionFalse, "Failure", fmt.Sprintf("failed to process data in the given time: %v", err)))
 	} else {
