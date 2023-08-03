@@ -19,15 +19,14 @@ import (
 type InsightsDataGatherObserver interface {
 	factory.Controller
 	GatherConfig() *v1alpha1.GatherConfig
-	GatherDataPolicy() *v1alpha1.DataPolicy
 	GatherDisabled() bool
 }
 
 type insightsDataGatherController struct {
 	factory.Controller
-	lock              sync.Mutex
-	configV1Alpha1Cli *configCliv1alpha1.ConfigV1alpha1Client
-	gatherConfig      *v1alpha1.GatherConfig
+	lock         sync.Mutex
+	cli          configCliv1alpha1.ConfigV1alpha1Interface
+	gatherConfig *v1alpha1.GatherConfig
 }
 
 func NewInsightsDataGatherObserver(kubeConfig *rest.Config,
@@ -39,10 +38,10 @@ func NewInsightsDataGatherObserver(kubeConfig *rest.Config,
 		return nil, err
 	}
 	c := &insightsDataGatherController{
-		configV1Alpha1Cli: configV1Alpha1Cli,
+		cli: configV1Alpha1Cli,
 	}
 
-	insightDataGatherConf, err := c.configV1Alpha1Cli.InsightsDataGathers().Get(context.Background(), "cluster", metav1.GetOptions{})
+	insightDataGatherConf, err := c.cli.InsightsDataGathers().Get(context.Background(), "cluster", metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Cannot read API gathering configuration: %v", err)
 	}
@@ -57,7 +56,7 @@ func NewInsightsDataGatherObserver(kubeConfig *rest.Config,
 }
 
 func (i *insightsDataGatherController) sync(ctx context.Context, _ factory.SyncContext) error {
-	insightDataGatherConf, err := i.configV1Alpha1Cli.InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{})
+	insightDataGatherConf, err := i.cli.InsightsDataGathers().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -82,11 +81,4 @@ func (i *insightsDataGatherController) GatherDisabled() bool {
 		return true
 	}
 	return false
-}
-
-// GatherDataPolicy provides DataPolicy attribute value defined in the API
-func (i *insightsDataGatherController) GatherDataPolicy() *v1alpha1.DataPolicy {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	return &i.gatherConfig.DataPolicy
 }
