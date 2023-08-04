@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -289,7 +290,7 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dg, err := mockController.createNewDataGatherCR(context.Background(), tt.disabledGatherers, tt.dataPolicy)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, dg)
+			assert.Equal(t, tt.expected.Spec, dg.Spec)
 			err = cs.InsightsV1alpha1().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
 			assert.NoError(t, err)
 		})
@@ -820,6 +821,7 @@ func TestWasDataUploaded(t *testing.T) {
 			expectedSummary: controllerstatus.Summary{
 				Operation: controllerstatus.Uploading,
 				Healthy:   true,
+				Count:     1,
 			},
 		},
 		{
@@ -875,8 +877,144 @@ func TestWasDataUploaded(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil)
-			summary := mockController.dataUploadStatus(tt.testedDataGather)
+			successful := mockController.wasDataUploaded(tt.testedDataGather)
+			assert.Equal(t, tt.expectedSummary.Healthy, successful)
+			summary, _ := mockController.Sources()[0].CurrentStatus()
 			assert.Equal(t, tt.expectedSummary, summary)
+		})
+	}
+}
+
+func TestWasDataProcessed(t *testing.T) {
+	tests := []struct {
+		name              string
+		dataGather        *v1alpha1.DataGather
+		expectedProcessed bool
+	}{
+		{
+			name: "Empty conditions - not processed",
+			dataGather: &v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{},
+				},
+			},
+			expectedProcessed: false,
+		},
+		{
+			name: "DataProcessed status unknown - not processed",
+			dataGather: &v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
+					},
+				},
+			},
+			expectedProcessed: false,
+		},
+		{
+			name: "DataProcessed status true - processed",
+			dataGather: &v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						status.DataProcessedCondition(metav1.ConditionTrue, "Processed", ""),
+					},
+				},
+			},
+			expectedProcessed: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processed := wasDataProcessed(tt.dataGather)
+			assert.Equal(t, tt.expectedProcessed, processed)
+		})
+	}
+}
+
+func TestUpdateInsightsReportInDataGather(t *testing.T) {
+	tests := []struct {
+		name                   string
+		dataGatherToUpdate     *v1alpha1.DataGather
+		analysisReport         *types.InsightsAnalysisReport
+		expectedInsightsReport *v1alpha1.InsightsReport
+	}{
+		{
+			name: "DataGather is updated with active recommendations",
+			dataGatherToUpdate: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-data-gather",
+				},
+			},
+			analysisReport: &types.InsightsAnalysisReport{
+				DownloadedAt: metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC),
+				ClusterID:    "test-cluster-id",
+				Recommendations: []types.Recommendation{
+					{
+						ErrorKey:    "test-error-key-1",
+						Description: "lorem-ipsum",
+						TotalRisk:   1,
+						RuleFQDN:    "test.fqdn.key1",
+					},
+					{
+						ErrorKey:    "test-error-key-2",
+						Description: "lorem-ipsum bla bla test",
+						TotalRisk:   4,
+						RuleFQDN:    "test.fqdn.key2",
+					},
+				},
+				RequestID: "test-request-id",
+			},
+			expectedInsightsReport: &v1alpha1.InsightsReport{
+				DownloadedAt: metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC),
+				URI:          "https://test.report.endpoint.tech.preview.uri/cluster/test-cluster-id/requestID/test-request-id",
+				HealthChecks: []v1alpha1.HealthCheck{
+					{
+						Description: "lorem-ipsum",
+						TotalRisk:   1,
+						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key1|test-error-key-1",
+						State:       v1alpha1.HealthCheckEnabled,
+					},
+					{
+						Description: "lorem-ipsum bla bla test",
+						TotalRisk:   4,
+						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key2|test-error-key-2",
+						State:       v1alpha1.HealthCheckEnabled,
+					},
+				},
+			},
+		},
+		{
+			name: "No active recommendations",
+			dataGatherToUpdate: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-data-gather",
+				},
+			},
+			analysisReport: &types.InsightsAnalysisReport{
+				DownloadedAt:    metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC),
+				ClusterID:       "test-cluster-id",
+				Recommendations: []types.Recommendation{},
+				RequestID:       "test-request-id",
+			},
+			expectedInsightsReport: &v1alpha1.InsightsReport{
+				DownloadedAt: metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC),
+				URI:          "https://test.report.endpoint.tech.preview.uri/cluster/test-cluster-id/requestID/test-request-id",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGatherToUpdate)
+			mockSecretConf := &config.MockSecretConfigurator{
+				Conf: &config.Controller{
+					ReportEndpointTechPreview: "https://test.report.endpoint.tech.preview.uri/cluster/%s/requestID/%s",
+				},
+			}
+			mockController := NewWithTechPreview(nil, mockSecretConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil)
+			err := mockController.updateInsightsReportInDataGather(context.Background(), tt.analysisReport, tt.dataGatherToUpdate)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedInsightsReport, &tt.dataGatherToUpdate.Status.InsightsReport)
 		})
 	}
 }

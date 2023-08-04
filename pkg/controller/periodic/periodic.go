@@ -302,21 +302,11 @@ func (c *Controller) GatherJob() { // nolint: funlen, gocyclo
 		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherCR.Name, err)
 		return
 	}
-	statusSummary := c.dataUploadStatus(dataGatherFinished)
+	uploaded := c.wasDataUploaded(dataGatherFinished)
 	updateMetrics(dataGatherFinished)
-	if !statusSummary.Healthy {
+	if !uploaded {
 		klog.Errorf("Last data gathering %v was not successful", dataGatherFinished.Name)
-
-		// the job can fail for more reasons. Maybe the upload really failed and in this case the conditions should be there or
-		// the job's pod was deleted and in this case the conditions will be likely missing
-		if statusSummary.Reason != dataUplodedConditionNotAvailable {
-			return
-		}
-		conditions := []metav1.Condition{
-			status.DataRecordedCondition(metav1.ConditionFalse, "JobNotSucceeded", ""),
-			status.DataUploadedCondition(metav1.ConditionFalse, "JobNotSucceeded", ""),
-		}
-		_, err = status.UpdateDataGatherStatus(ctx, c.dataGatherClient, dataGatherFinished, insightsv1alpha1.Failed, conditions)
+		_, err = status.UpdateDataGatherState(ctx, c.dataGatherClient, dataGatherFinished, insightsv1alpha1.Failed)
 		if err != nil {
 			klog.Errorf("Failed to update failed DataGather resource %s: %v ", dataGatherFinished.Name, err)
 		}
@@ -324,7 +314,7 @@ func (c *Controller) GatherJob() { // nolint: funlen, gocyclo
 	}
 
 	// check data was processed in the external pipeline
-	dataProcessed := c.wasDataProcessed(dataGatherFinished)
+	dataProcessed := wasDataProcessed(dataGatherFinished)
 	if !dataProcessed {
 		klog.Infof("Data archive for the %s was not processed in the console.redhat.com. New Insights analysis is not available.",
 			dataGatherFinished.Name)
@@ -532,6 +522,16 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherer
 	if err != nil {
 		return nil, err
 	}
+	dataGather.Status.Conditions = []metav1.Condition{
+		status.DataUploadedCondition(metav1.ConditionUnknown, status.NoUploadYetReason, ""),
+		status.DataRecordedCondition(metav1.ConditionUnknown, status.NoDataGatheringYetReason, ""),
+		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
+	}
+	dataGather.Status.State = insightsv1alpha1.Pending
+	dataGather, err = c.dataGatherClient.DataGathers().UpdateStatus(ctx, dataGather, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
 	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
 	return dataGather, nil
 }
@@ -565,10 +565,10 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 	return disabledGatherers, dp
 }
 
-// dataUploadStatus reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
+// wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
 // custom resource and checks whether the data was successfully uploaded or not and updates status accordingly
-func (c *Controller) dataUploadStatus(dataGather *insightsv1alpha1.DataGather) controllerstatus.Summary {
-	dataUploadedCon := status.GetConditionByStatus(dataGather, status.DataUploaded)
+func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha1.DataGather) bool {
+	dataUploadedCon := status.GetConditionByType(dataGather, status.DataUploaded)
 	statusSummary := controllerstatus.Summary{
 		Operation: controllerstatus.Uploading,
 		Healthy:   true,
@@ -587,13 +587,13 @@ func (c *Controller) dataUploadStatus(dataGather *insightsv1alpha1.DataGather) c
 	}
 
 	c.statuses["insightsuploader"].UpdateStatus(statusSummary)
-	return statusSummary
+	return statusSummary.Healthy
 }
 
 // wasDataProcessed checks the corresponding "DataProcessed" condition and returns
 // true if the condition status is true, otherwise returns false
-func (c *Controller) wasDataProcessed(dataGather *insightsv1alpha1.DataGather) bool {
-	dataProcessedCon := status.GetConditionByStatus(dataGather, status.DataProcessed)
+func wasDataProcessed(dataGather *insightsv1alpha1.DataGather) bool {
+	dataProcessedCon := status.GetConditionByType(dataGather, status.DataProcessed)
 	if dataProcessedCon == nil {
 		return false
 	}
@@ -604,7 +604,7 @@ func (c *Controller) wasDataProcessed(dataGather *insightsv1alpha1.DataGather) b
 // from the provided "datagather" resource and increments
 // the "insightsclient_request_send_total" Prometheus metric accordingly.
 func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
-	dataUploadedCon := status.GetConditionByStatus(dataGather, status.DataUploaded)
+	dataUploadedCon := status.GetConditionByType(dataGather, status.DataUploaded)
 	var statusCode int
 	if dataUploadedCon == nil {
 		statusCode = 0
