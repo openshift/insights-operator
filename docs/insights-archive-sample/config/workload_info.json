@@ -23,7 +23,7 @@
       ],
       "firstCommand": "icTsn2s_EIax",
       "firstArg": "2v1NneeWoS_9",
-      "repository":"quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a16c19e8f7372bec6e2b62f1eae6d4796d6aec8435679c7821fdc267fa667140"
+      "repository":"2W0Xq9hxQzho"
     },
     "sha256:7c6d0a0fed7ddb95550623aa23c434446fb99abef18e6d57b8b12add606efde8": {
       "layerIDs": [
