@@ -512,8 +512,11 @@ func calculateWorkloadInfo(h hash.Hash, image *imagev1.Image) workloadImage {
 
 	info := workloadImage{
 		LayerIDs: layers,
-		//RepoURL: "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:5710554c08735126986b7c553cdb9a31bf97071c7adceda20f7aa116f35e867f",
-		Repository: getExternalImageRepo(image.DockerImageReference),
+	}
+
+	// we only need repo URLs from outside RH
+	if repo := getExternalImageRepo(image.DockerImageReference); repo != "" {
+		info.Repository = workloadHashString(h, repo)
 	}
 
 	if err := imageutil.ImageWithMetadata(image); err != nil {
