@@ -26,17 +26,19 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
+	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	serviceCABundle             = "service-ca-bundle"
-	serviceCABundlePath         = "/var/run/configmaps/service-ca-bundle"
-	insightsNamespace           = "openshift-insights"
-	falseB                      = new(bool)
-	trueB                       = true
-	deletePropagationBackground = metav1.DeletePropagationBackground
+	serviceCABundle                  = "service-ca-bundle"
+	serviceCABundlePath              = "/var/run/configmaps/service-ca-bundle"
+	insightsNamespace                = "openshift-insights"
+	falseB                           = new(bool)
+	trueB                            = true
+	deletePropagationBackground      = metav1.DeletePropagationBackground
+	dataUplodedConditionNotAvailable = "DataUploadedConditionNotAvailable"
 )
 
 // Controller periodically runs gatherers, records their results to the recorder
@@ -253,7 +255,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	}
 }
 
-func (c *Controller) GatherJob() {
+func (c *Controller) GatherJob() { // nolint: funlen, gocyclo
 	if c.isGatheringDisabled() {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
@@ -300,28 +302,65 @@ func (c *Controller) GatherJob() {
 		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherCR.Name, err)
 		return
 	}
-	dataGatheredOK := c.wasDataGatherSuccessful(dataGatherFinished)
+	uploaded := c.wasDataUploaded(dataGatherFinished)
 	updateMetrics(dataGatherFinished)
-	if !dataGatheredOK {
+	if !uploaded {
 		klog.Errorf("Last data gathering %v was not successful", dataGatherFinished.Name)
-		conditions := []metav1.Condition{
-			status.DataRecordedCondition(metav1.ConditionFalse, "JobNotSucceeded", ""),
-			status.DataUploadedCondition(metav1.ConditionFalse, "JobNotSucceeded", ""),
-		}
-		_, err = status.UpdateDataGatherStatus(ctx, c.dataGatherClient, dataGatherFinished, insightsv1alpha1.Failed, conditions)
+		_, err = status.UpdateDataGatherState(ctx, c.dataGatherClient, dataGatherFinished, insightsv1alpha1.Failed)
 		if err != nil {
-			klog.Error("Failed to update failed DataGather resource %s: %v ", dataGatherFinished.Name, err)
+			klog.Errorf("Failed to update failed DataGather resource %s: %v ", dataGatherFinished.Name, err)
 		}
 		return
 	}
 
-	c.reportRetriever.RetrieveReport()
+	// check data was processed in the external pipeline
+	dataProcessed := wasDataProcessed(dataGatherFinished)
+	if !dataProcessed {
+		klog.Infof("Data archive for the %s was not processed in the console.redhat.com. New Insights analysis is not available.",
+			dataGatherFinished.Name)
+		return
+	}
+
+	// try to pull corresponding Insights analysis report
+	analysisReport, err := c.reportRetriever.PullReportTechpreview(dataGatherFinished.Status.InsightsRequestID)
+	if err != nil {
+		klog.Errorf("Failed to download Insights analysis for the Insights request %s: %v", dataGatherFinished.Status.InsightsRequestID, err)
+		return
+	}
+
+	// update Insights analysis report in the DataGather custom resource
+	err = c.updateInsightsReportInDataGather(ctx, analysisReport, dataGatherFinished)
+	if err != nil {
+		klog.Errorf("Failed to update Insights report in the %s custom resource:%v", dataGatherFinished.Name, err)
+	}
+
 	_, err = c.copyDataGatherStatusToOperatorStatus(ctx, dataGatherFinished)
 	if err != nil {
 		klog.Errorf("Failed to copy the last DataGather status to \"cluster\" operator status: %v", err)
 		return
 	}
 	klog.Info("Operator status in \"insightsoperator.operator.openshift.io\" successfully updated")
+}
+
+// updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
+// updates the provided DataGather resource with all important attributes.
+func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
+	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather) error {
+	for _, recommendation := range report.Recommendations {
+		healthCheck := insightsv1alpha1.HealthCheck{
+			Description: recommendation.Description,
+			TotalRisk:   int32(recommendation.TotalRisk),
+			State:       insightsv1alpha1.HealthCheckEnabled,
+			AdvisorURI: fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s",
+				report.ClusterID, recommendation.RuleFQDN, recommendation.ErrorKey),
+		}
+		dg.Status.InsightsReport.HealthChecks = append(dg.Status.InsightsReport.HealthChecks, healthCheck)
+	}
+	dg.Status.InsightsReport.DownloadedAt = report.DownloadedAt
+	uri := fmt.Sprintf(c.secretConfigurator.Config().ReportEndpointTechPreview, report.ClusterID, report.RequestID)
+	dg.Status.InsightsReport.URI = uri
+	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, dg, metav1.UpdateOptions{})
+	return err
 }
 
 // copyDataGatherStatusToOperatorStatus gets the "cluster" "insightsoperator.operator.openshift.io" resource
@@ -332,9 +371,9 @@ func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	statusToUpdate := operator.Status.DeepCopy()
-	statusToUpdate.GatherStatus = status.DataGatherStatusToOperatorGatherStatus(&dataGather.Status)
-	operator.Status = *statusToUpdate
+
+	statusToUpdate := status.DataGatherStatusToOperatorStatus(dataGather)
+	operator.Status = statusToUpdate
 
 	_, err = c.insightsOperatorCLI.UpdateStatus(ctx, operator, metav1.UpdateOptions{})
 	if err != nil {
@@ -483,6 +522,16 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherer
 	if err != nil {
 		return nil, err
 	}
+	dataGather.Status.Conditions = []metav1.Condition{
+		status.DataUploadedCondition(metav1.ConditionUnknown, status.NoUploadYetReason, ""),
+		status.DataRecordedCondition(metav1.ConditionUnknown, status.NoDataGatheringYetReason, ""),
+		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
+	}
+	dataGather.Status.State = insightsv1alpha1.Pending
+	dataGather, err = c.dataGatherClient.DataGathers().UpdateStatus(ctx, dataGather, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
 	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
 	return dataGather, nil
 }
@@ -516,10 +565,10 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 	return disabledGatherers, dp
 }
 
-// wasDataGatherSuccessful reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
+// wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
 // custom resource and checks whether the data was successfully uploaded or not and updates status accordingly
-func (c *Controller) wasDataGatherSuccessful(dataGather *insightsv1alpha1.DataGather) bool {
-	dataUploadedCon := status.GetConditionByStatus(dataGather, status.DataUploaded)
+func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha1.DataGather) bool {
+	dataUploadedCon := status.GetConditionByType(dataGather, status.DataUploaded)
 	statusSummary := controllerstatus.Summary{
 		Operation: controllerstatus.Uploading,
 		Healthy:   true,
@@ -527,7 +576,7 @@ func (c *Controller) wasDataGatherSuccessful(dataGather *insightsv1alpha1.DataGa
 	if dataUploadedCon == nil {
 		statusSummary.Healthy = false
 		statusSummary.Count = 5
-		statusSummary.Reason = "DataUploadedConditionNotAvailable"
+		statusSummary.Reason = dataUplodedConditionNotAvailable
 		statusSummary.Message = fmt.Sprintf("did not find any %q condition in the %s dataGather resource",
 			status.DataUploaded, dataGather.Name)
 	} else if dataUploadedCon.Status == metav1.ConditionFalse {
@@ -541,11 +590,21 @@ func (c *Controller) wasDataGatherSuccessful(dataGather *insightsv1alpha1.DataGa
 	return statusSummary.Healthy
 }
 
+// wasDataProcessed checks the corresponding "DataProcessed" condition and returns
+// true if the condition status is true, otherwise returns false
+func wasDataProcessed(dataGather *insightsv1alpha1.DataGather) bool {
+	dataProcessedCon := status.GetConditionByType(dataGather, status.DataProcessed)
+	if dataProcessedCon == nil {
+		return false
+	}
+	return dataProcessedCon.Status == metav1.ConditionTrue
+}
+
 // updateMetrics reads the HTTP status code from the reason of the "DataUploaded" condition
 // from the provided "datagather" resource and increments
 // the "insightsclient_request_send_total" Prometheus metric accordingly.
 func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
-	dataUploadedCon := status.GetConditionByStatus(dataGather, status.DataUploaded)
+	dataUploadedCon := status.GetConditionByType(dataGather, status.DataUploaded)
 	var statusCode int
 	if dataUploadedCon == nil {
 		statusCode = 0

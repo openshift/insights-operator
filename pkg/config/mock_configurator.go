@@ -55,10 +55,3 @@ func (mc *MockAPIConfigurator) GatherDisabled() bool {
 	}
 	return false
 }
-
-func (mc *MockAPIConfigurator) GatherDataPolicy() *v1alpha1.DataPolicy {
-	if mc.config != nil {
-		return &mc.config.DataPolicy
-	}
-	return nil
-}
