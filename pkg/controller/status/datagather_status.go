@@ -12,6 +12,10 @@ const (
 	DataUploaded  = "DataUploaded"
 	DataRecorded  = "DataRecorded"
 	DataProcessed = "DataProcessed"
+
+	NoUploadYetReason         = "NoUploadYet"
+	NoDataGatheringYetReason  = "NoDataGatheringYet"
+	NothingToProcessYetReason = "NothingToProcessYet"
 )
 
 // DataUploadedCondition returns new "DataUploaded" status condition with provided status, reason and message
@@ -49,10 +53,10 @@ func DataProcessedCondition(status metav1.ConditionStatus, reason, message strin
 
 // updateDataGatherStatus updates status' time attributes, state and conditions
 // of the provided DataGather resource
-func UpdateDataGatherStatus(ctx context.Context,
+func UpdateDataGatherState(ctx context.Context,
 	insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,
 	dataGatherCR *insightsv1alpha1.DataGather,
-	newState insightsv1alpha1.DataGatherState, conditions []metav1.Condition) (*insightsv1alpha1.DataGather, error) {
+	newState insightsv1alpha1.DataGatherState) (*insightsv1alpha1.DataGather, error) {
 	switch newState {
 	case insightsv1alpha1.Completed:
 		dataGatherCR.Status.FinishTime = metav1.Now()
@@ -64,21 +68,42 @@ func UpdateDataGatherStatus(ctx context.Context,
 		// no op
 	}
 	dataGatherCR.Status.State = newState
-	if conditions != nil {
-		dataGatherCR.Status.Conditions = append(dataGatherCR.Status.Conditions, conditions...)
-	}
 	return insightsClient.DataGathers().UpdateStatus(ctx, dataGatherCR, metav1.UpdateOptions{})
 }
 
-// GetConditionByStatus tries to get the condition with the provided condition status
+// GetConditionByType tries to get the condition with the provided condition status
 // from the provided "datagather" resource. Returns nil when no condition is found.
-func GetConditionByStatus(dataGather *insightsv1alpha1.DataGather, conStatus string) *metav1.Condition {
-	var dataUploadedCon *metav1.Condition
+func GetConditionByType(dataGather *insightsv1alpha1.DataGather, conType string) *metav1.Condition {
+	var c *metav1.Condition
 	for i := range dataGather.Status.Conditions {
 		con := dataGather.Status.Conditions[i]
-		if con.Type == conStatus {
-			dataUploadedCon = &con
+		if con.Type == conType {
+			c = &con
 		}
 	}
-	return dataUploadedCon
+	return c
+}
+
+func getConditionIndexByType(conType string, conditions []metav1.Condition) int {
+	var idx int
+	for i := range conditions {
+		con := conditions[i]
+		if con.Type == conType {
+			idx = i
+		}
+	}
+	return idx
+}
+
+// UpdateDataGatherConditions updates the conditions of the provided dataGather resource with provided
+// condition
+func UpdateDataGatherConditions(ctx context.Context,
+	insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,
+	dataGather *insightsv1alpha1.DataGather, condition *metav1.Condition) (*insightsv1alpha1.DataGather, error) {
+	newConditions := make([]metav1.Condition, len(dataGather.Status.Conditions))
+	_ = copy(newConditions, dataGather.Status.Conditions)
+	idx := getConditionIndexByType(condition.Type, newConditions)
+	newConditions[idx] = *condition
+	dataGather.Status.Conditions = newConditions
+	return insightsClient.DataGathers().UpdateStatus(ctx, dataGather, metav1.UpdateOptions{})
 }

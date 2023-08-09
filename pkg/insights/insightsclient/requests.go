@@ -303,7 +303,9 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func (c *Client) GetDataProcessingStatus(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+// GetWithPathParams makes an HTTP GET request to the specified endpoint using the specified "requestID" as
+// a part of the endpoint path
+func (c *Client) GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -313,8 +315,7 @@ func (c *Client) GetDataProcessingStatus(ctx context.Context, endpoint, requestI
 	}
 
 	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID, requestID)
-	klog.Infof("Checking data processing status for request ID: %s", requestID)
-	klog.Infof("Endpoint: %s", endpoint)
+	klog.Infof("Making HTTP GET request at: %s", endpoint)
 
 	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
 	if err != nil {

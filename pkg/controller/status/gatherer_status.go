@@ -95,23 +95,37 @@ func createGathererConditions(gfr *gather.GathererFunctionReport) []metav1.Condi
 	return conditions
 }
 
-// DataGatherStatusToOperatorGatherStatus copies "DataGatherStatus" from "datagather.openshift.io" and creates
-// "GatherStatus" for "insightsoperator.operator.openshift.io"
-func DataGatherStatusToOperatorGatherStatus(dgGatherStatus *v1alpha1.DataGatherStatus) v1.GatherStatus {
-	operatorGatherStatus := v1.GatherStatus{}
-	operatorGatherStatus.LastGatherTime = dgGatherStatus.FinishTime
-	operatorGatherStatus.LastGatherDuration = metav1.Duration{
-		Duration: dgGatherStatus.FinishTime.Sub(dgGatherStatus.StartTime.Time),
+// DataGatherStatusToOperatorStatus copies "DataGatherStatus" from "datagather.openshift.io" and creates
+// "Status" for "insightsoperator.operator.openshift.io"
+func DataGatherStatusToOperatorStatus(dg *v1alpha1.DataGather) v1.InsightsOperatorStatus {
+	operatorStatus := v1.InsightsOperatorStatus{}
+	operatorStatus.GatherStatus = v1.GatherStatus{
+		LastGatherTime: dg.Status.FinishTime,
+		LastGatherDuration: metav1.Duration{
+			Duration: dg.Status.FinishTime.Sub(dg.Status.StartTime.Time),
+		},
+	}
+	operatorStatus.InsightsReport = v1.InsightsReport{
+		DownloadedAt: dg.Status.InsightsReport.DownloadedAt,
 	}
 
-	for _, g := range dgGatherStatus.Gatherers {
+	for _, g := range dg.Status.Gatherers {
 		gs := v1.GathererStatus{
 			Name:               g.Name,
 			LastGatherDuration: g.LastGatherDuration,
 			Conditions:         g.Conditions,
 		}
-		operatorGatherStatus.Gatherers = append(operatorGatherStatus.Gatherers, gs)
+		operatorStatus.GatherStatus.Gatherers = append(operatorStatus.GatherStatus.Gatherers, gs)
 	}
 
-	return operatorGatherStatus
+	for _, hc := range dg.Status.InsightsReport.HealthChecks {
+		operatorHch := v1.HealthCheck{
+			Description: hc.Description,
+			TotalRisk:   hc.TotalRisk,
+			State:       v1.HealthCheckEnabled,
+			AdvisorURI:  hc.AdvisorURI,
+		}
+		operatorStatus.InsightsReport.HealthChecks = append(operatorStatus.InsightsReport.HealthChecks, operatorHch)
+	}
+	return operatorStatus
 }

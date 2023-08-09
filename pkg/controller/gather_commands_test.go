@@ -18,7 +18,7 @@ type MockProcessingStatusClient struct {
 	response *http.Response
 }
 
-func (m *MockProcessingStatusClient) GetDataProcessingStatus(_ context.Context, _, _ string) (*http.Response, error) {
+func (m *MockProcessingStatusClient) GetWithPathParams(_ context.Context, _, _ string) (*http.Response, error) {
 	if m.err != nil {
 		return nil, m.err
 	}

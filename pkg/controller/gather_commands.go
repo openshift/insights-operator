@@ -24,6 +24,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/recorder"
@@ -39,7 +40,7 @@ type GatherJob struct {
 // processingStatusClient is an interface to call the "processingStatusEndpoint" in
 // the "insights-results-aggregator" service running in console.redhat.com
 type processingStatusClient interface {
-	GetDataProcessingStatus(ctx context.Context, endpoint, requestID string) (*http.Response, error)
+	GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error)
 }
 
 // Gather runs a single gather and stores the generated archive, without uploading it.
@@ -48,7 +49,7 @@ type processingStatusClient interface {
 // 3. Initiates the recorder
 // 4. Executes a Gather
 // 5. Flushes the results
-func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *rest.Config) error {
+func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *rest.Config) error {
 	klog.Infof("Starting insights-operator %s", version.Get().String())
 	// these are operator clients
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
@@ -57,18 +58,17 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	}
 
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
-		protoKubeConfig, kubeConfig, d.Impersonate,
+		protoKubeConfig, kubeConfig, g.Impersonate,
 	)
 
 	// ensure the insight snapshot directory exists
-	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
-		if err = os.MkdirAll(d.StoragePath, 0777); err != nil {
-			return fmt.Errorf("can't create --path: %v", err)
-		}
+	err = g.storagePathExists()
+	if err != nil {
+		return err
 	}
 
 	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(d.Controller, kubeClient)
+	configObserver := configobserver.New(g.Controller, kubeClient)
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
@@ -78,8 +78,8 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	}
 
 	// the recorder stores the collected data and we flush at the end.
-	recdriver := diskrecorder.New(d.StoragePath)
-	rec := recorder.New(recdriver, d.Interval, anonymizer)
+	recdriver := diskrecorder.New(g.StoragePath)
+	rec := recorder.New(recdriver, g.Interval, anonymizer)
 	defer func() {
 		if err = rec.Flush(); err != nil {
 			klog.Error(err)
@@ -97,13 +97,13 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	}
 
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
-	gatherers := gather.CreateAllGatherers(
+	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsClient,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
-	for _, gatherer := range gatherers {
+	for _, gatherer := range createdGatherers {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, nil)
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
@@ -125,7 +125,7 @@ func (d *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 // 5. Recodrd the data into the Insights archive
 // 6. Get the latest archive and upload it
 // 7. Updates the status of the corresponding "datagathers.insights.openshift.io" resource continuously
-func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen, gocyclo
+func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen
 	klog.Info("Starting data gathering")
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
@@ -138,34 +138,25 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
-		protoKubeConfig, kubeConfig, d.Impersonate,
+		protoKubeConfig, kubeConfig, g.Impersonate,
 	)
 
 	// The reason for using longer context is that the upload can fail and then there is the exponential backoff
 	// See the insightsuploader Upload method
-	ctx, cancel := context.WithTimeout(context.Background(), d.Interval*4)
+	ctx, cancel := context.WithTimeout(context.Background(), g.Interval*4)
 	defer cancel()
 	dataGatherCR, err := insightsV1alphaCli.DataGathers().Get(ctx, os.Getenv("DATAGATHER_NAME"), metav1.GetOptions{})
 	if err != nil {
 		klog.Error("failed to get coresponding DataGather custom resource: %v", err)
 		return err
 	}
-
-	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR.DeepCopy(), insightsv1alpha1.Pending, nil)
+	// ensure the insight snapshot directory exists
+	err = g.storagePathExists()
 	if err != nil {
-		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
 		return err
 	}
-
-	// ensure the insight snapshot directory exists
-	if _, err = os.Stat(d.StoragePath); err != nil && os.IsNotExist(err) {
-		if err = os.MkdirAll(d.StoragePath, 0777); err != nil {
-			return fmt.Errorf("can't create --path: %v", err)
-		}
-	}
-
 	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(d.Controller, kubeClient)
+	configObserver := configobserver.New(g.Controller, kubeClient)
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
 		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, dataGatherCR.Spec.DataPolicy)
@@ -174,8 +165,8 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	// the recorder stores the collected data and we flush at the end.
-	recdriver := diskrecorder.New(d.StoragePath)
-	rec := recorder.New(recdriver, d.Interval, anonymizer)
+	recdriver := diskrecorder.New(g.StoragePath)
+	rec := recorder.New(recdriver, g.Interval, anonymizer)
 	authorizer := clusterauthorizer.New(configObserver)
 
 	configClient, err := configv1client.NewForConfig(gatherKubeConfig)
@@ -184,19 +175,80 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 	insightsHTTPCli := insightsclient.New(nil, 0, "default", authorizer, configClient)
 
-	gatherers := gather.CreateAllGatherers(
+	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configObserver, insightsHTTPCli,
 	)
 	uploader := insightsuploader.New(nil, insightsHTTPCli, configObserver, nil, nil, 0)
 
-	dataGatherCR, err = status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running, nil)
+	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)
 	if err != nil {
 		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
 		return err
 	}
+
+	allFunctionReports := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
+
+	// record data
+	dataRecordedCon := status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", "")
+	lastArchive, err := record(mapToArray(allFunctionReports), rec, recdriver, anonymizer)
+	if err != nil {
+		klog.Error("Failed to record data archive: %v", err)
+		dataRecordedCon.Status = metav1.ConditionFalse
+		dataRecordedCon.Reason = "RecordingFailed"
+		dataRecordedCon.Message = fmt.Sprintf("Failed to record data: %v", err)
+		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCon, insightsv1alpha1.Failed)
+		return err
+	}
+
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCon)
+	if err != nil {
+		klog.Error(err)
+	}
+
+	// upload data
+	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive)
+	reason := fmt.Sprintf("HttpStatus%d", statusCode)
+	dataUploadedCon := status.DataUploadedCondition(metav1.ConditionTrue, reason, "")
+	if err != nil {
+		klog.Error("Failed to upload data archive: %v", err)
+		dataUploadedCon.Status = metav1.ConditionFalse
+		dataUploadedCon.Reason = reason
+		dataUploadedCon.Message = fmt.Sprintf("Failed to upload data: %v", err)
+		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataUploadedCon, insightsv1alpha1.Failed)
+		return err
+	}
+	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
+
+	dataGatherCR.Status.InsightsRequestID = insightsRequestID
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &dataUploadedCon)
+	if err != nil {
+		klog.Error(err)
+	}
+
+	// check if the archive/data was processed
+	processed, err := wasDataProcessed(ctx, insightsHTTPCli, insightsRequestID, configObserver.Config())
+	dataProcessedCon := status.DataProcessedCondition(metav1.ConditionTrue, "Processed", "")
+	if err != nil || !processed {
+		msg := fmt.Sprintf("Data was not processed in the console.redhat.com pipeline for the request %s", insightsRequestID)
+		if err != nil {
+			msg = fmt.Sprintf("%s: %v", msg, err)
+		}
+		klog.Info(msg)
+		dataProcessedCon.Status = metav1.ConditionFalse
+		dataProcessedCon.Reason = "Failure"
+		dataProcessedCon.Message = fmt.Sprintf("failed to process data in the given time: %v", err)
+	}
+	updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Completed)
+	return nil
+}
+
+// gatherAndReporFunctions calls all the defined gatherers, calculates their status and returns map of resulting
+// gatherer functions reports
+func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Interface,
+	dataGatherCR *insightsv1alpha1.DataGather, rec *recorder.Recorder) map[string]gather.GathererFunctionReport {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
-	for _, gatherer := range gatherers {
+	for _, gatherer := range gatherersToRun {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers) // nolint: govet
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
@@ -217,54 +269,22 @@ func (d *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		gs := status.CreateDataGatherGathererStatus(&fr)
 		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
 	}
+	return allFunctionReports
+}
 
-	// record data
-	conditions := []metav1.Condition{}
-	lastArchive, err := record(mapToArray(allFunctionReports), rec, recdriver, anonymizer)
+// updateDataGatherStatus updates DataGather status conditions with provided condition definition as well as
+// the DataGather state
+func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,
+	dataGatherCR *insightsv1alpha1.DataGather, conditionToUpdate *metav1.Condition, state insightsv1alpha1.DataGatherState) {
+	dataGatherUpdated, err := status.UpdateDataGatherState(ctx, insightsClient, dataGatherCR, state)
 	if err != nil {
-		conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionFalse, "RecordingFailed",
-			fmt.Sprintf("Failed to record data: %v", err)))
-		_, recErr := status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Failed, conditions)
-		if recErr != nil {
-			klog.Error("data recording failed and the update of DataGaher resource status failed as well: %v", recErr)
-		}
-		return err
+		klog.Error("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
 	}
-	conditions = append(conditions, status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", ""))
 
-	// upload data
-	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive)
-	reason := fmt.Sprintf("HttpStatus%d", statusCode)
+	_, err = status.UpdateDataGatherConditions(ctx, insightsClient, dataGatherUpdated, conditionToUpdate)
 	if err != nil {
-		klog.Error(err)
-		conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionFalse, reason,
-			fmt.Sprintf("Failed to upload data: %v", err)))
-		_, updateErr := status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Failed, conditions)
-		if updateErr != nil {
-			klog.Error("data upload failed and the update of DataGaher resource status failed as well: %v", updateErr)
-		}
-		return err
+		klog.Error("Failed to update DataGather resource %s conditions: %v", dataGatherCR.Name, err)
 	}
-	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
-
-	dataGatherCR.Status.InsightsRequestID = insightsRequestID
-	conditions = append(conditions, status.DataUploadedCondition(metav1.ConditionTrue, reason, ""))
-
-	// check if the archive/data was processed
-	processed, err := wasDataProcessed(ctx, insightsHTTPCli, insightsRequestID, configObserver.Config())
-	if err != nil || !processed {
-		klog.Error(err)
-		conditions = append(conditions,
-			status.DataProcessedCondition(metav1.ConditionFalse, "Failure", fmt.Sprintf("failed to process data in the given time: %v", err)))
-	} else {
-		conditions = append(conditions, status.DataProcessedCondition(metav1.ConditionTrue, "Processed", ""))
-	}
-	_, err = status.UpdateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Completed, conditions)
-	if err != nil {
-		klog.Error(err)
-		return err
-	}
-	return nil
 }
 
 func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
@@ -308,7 +328,7 @@ func wasDataProcessed(ctx context.Context,
 
 	var resp *http.Response
 	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {
-		resp, err = insightsCli.GetDataProcessingStatus(ctx, // nolint: bodyclose
+		resp, err = insightsCli.GetWithPathParams(ctx, // nolint: bodyclose
 			controllerConf.ProcessingStatusEndpoint, insightsRequestID) // response body is closed later
 		if err != nil {
 			return false, err
@@ -341,4 +361,15 @@ func wasDataProcessed(ctx context.Context,
 	}
 
 	return processingResp.Status == "processed", nil
+}
+
+// storagePathExists checks if the configured storagePath exists or not.
+// If not, non-nill error is returned.
+func (g *GatherJob) storagePathExists() error {
+	if _, err := os.Stat(g.StoragePath); err != nil && os.IsNotExist(err) {
+		if err = os.MkdirAll(g.StoragePath, 0777); err != nil {
+			return fmt.Errorf("can't create --path: %v", err)
+		}
+	}
+	return nil
 }

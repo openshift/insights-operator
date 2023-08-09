@@ -1,13 +1,17 @@
 package insightsreport
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -309,9 +313,131 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 	}
 }
 
+func TestPullReportTechpreview(t *testing.T) {
+	tests := []struct {
+		name          string
+		report        *types.InsightsAnalysisReport
+		statusCode    int
+		conf          *config.Controller
+		statusSummary controllerstatus.Summary
+		mockClientErr error
+		expectedErr   error
+	}{
+		{
+			name: "Insights Analysis Report retrieved",
+			report: &types.InsightsAnalysisReport{
+				ClusterID: "test-cluster-ID",
+				RequestID: "test-request-ID",
+				Recommendations: []types.Recommendation{
+					{
+						ErrorKey:    "test-error-key-1",
+						Description: "lorem ipsum description",
+						TotalRisk:   1,
+						RuleFQDN:    "test.err.key1",
+					},
+					{
+						ErrorKey:    "test-error-key-2",
+						Description: "lorem ipsum description",
+						TotalRisk:   2,
+						RuleFQDN:    "test.err.key2",
+					},
+					{
+						ErrorKey:    "test-error-key-3",
+						Description: "lorem ipsum description",
+						TotalRisk:   3,
+						RuleFQDN:    "test.err.key3",
+					},
+				},
+			},
+			statusCode: http.StatusOK,
+			conf: &config.Controller{
+				ReportEndpointTechPreview: "non-empty-endpoint",
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: true,
+			},
+			mockClientErr: nil,
+			expectedErr:   nil,
+		},
+		{
+			name:       "Empty report endpoint",
+			report:     nil,
+			statusCode: 0,
+			conf: &config.Controller{
+				ReportEndpointTechPreview: "",
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: true,
+			},
+			mockClientErr: nil,
+			expectedErr:   nil,
+		},
+		{
+			name:       "Insights Analysis Report not retrieved, because of error",
+			report:     nil,
+			statusCode: 0,
+			conf: &config.Controller{
+				ReportEndpointTechPreview: "non-empty-endpoint",
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: false,
+			},
+			mockClientErr: fmt.Errorf("test error"),
+			expectedErr:   fmt.Errorf("test error"),
+		},
+		{
+			name:       "Insights Analysis Report not retrieved, because of HTTP 404 response",
+			report:     nil,
+			statusCode: http.StatusNotFound,
+			conf: &config.Controller{
+				ReportEndpointTechPreview: "non-empty-endpoint",
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: false,
+			},
+			mockClientErr: nil,
+			expectedErr:   fmt.Errorf("Failed to download the latest report: HTTP 404 Not Found"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := json.Marshal(tt.report)
+			assert.NoError(t, err)
+			testController := Controller{
+				client: &mockInsightsClient{
+					response: http.Response{
+						StatusCode: tt.statusCode,
+						Status:     http.StatusText(tt.statusCode),
+						Body:       io.NopCloser(bytes.NewReader(data)),
+					},
+					err: tt.mockClientErr,
+				},
+				configurator: &config.MockSecretConfigurator{
+					Conf: tt.conf,
+				},
+				StatusController: controllerstatus.New("test-insightsreport"),
+			}
+
+			report, err := testController.PullReportTechpreview("test-request-id")
+			assert.Equal(t, tt.expectedErr, err)
+			summary, _ := testController.StatusController.CurrentStatus()
+			assert.Equal(t, tt.statusSummary.Healthy, summary.Healthy)
+			if report == nil || report.Recommendations == nil {
+				return
+			}
+			assert.Equal(t, tt.report.Recommendations, report.Recommendations)
+			assert.Equal(t, tt.report.ClusterID, report.ClusterID)
+			assert.Equal(t, tt.report.RequestID, report.RequestID)
+		})
+	}
+}
+
 type mockInsightsClient struct {
 	clusterVersion *v1.ClusterVersion
 	metricsName    string
+	response       http.Response
+	err            error
 }
 
 func (c *mockInsightsClient) GetClusterVersion() (*v1.ClusterVersion, error) {
@@ -323,4 +449,8 @@ func (c *mockInsightsClient) IncrementRecvReportMetric(_ int) {
 
 func (c *mockInsightsClient) RecvReport(_ context.Context, _ string) (*http.Response, error) {
 	return nil, nil
+}
+
+func (c *mockInsightsClient) GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+	return &c.response, c.err
 }
