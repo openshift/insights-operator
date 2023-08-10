@@ -20,7 +20,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/types"
 )
 
-func Test_getEnabledGatheringFunctions(t *testing.T) {
+func TestGetEnabledGatheringFunctions(t *testing.T) {
 	tests := []struct {
 		testName        string
 		gathererName    string
@@ -122,7 +122,7 @@ func Test_getEnabledGatheringFunctions(t *testing.T) {
 }
 
 // nolint: funlen
-func Test_StartGatheringConcurrently(t *testing.T) {
+func TestStartGatheringConcurrently(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
 	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, nil)
@@ -273,7 +273,7 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 	})
 }
 
-func Test_StartGatheringConcurrently_Error(t *testing.T) {
+func TestStartGatheringConcurrentlyError(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
 	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, []v1alpha1.GathererConfig{
@@ -311,7 +311,7 @@ func Test_StartGatheringConcurrently_Error(t *testing.T) {
 	assert.Nil(t, resultsChan)
 }
 
-func Test_CollectAndRecordGatherer(t *testing.T) {
+func TestCollectAndRecordGatherer(t *testing.T) {
 	gatherer := &MockGatherer{
 		SomeField: "some_value",
 	}
@@ -390,7 +390,7 @@ func Test_CollectAndRecordGatherer(t *testing.T) {
 	})
 }
 
-func Test_CollectAndRecordGatherer_Error(t *testing.T) {
+func TestCollectAndRecordGathererError(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
 	gatherersConfig := []v1alpha1.GathererConfig{
@@ -445,7 +445,7 @@ func Test_CollectAndRecordGatherer_Error(t *testing.T) {
 	})
 }
 
-func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
+func TestCollectAndRecordGathererPanic(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
 	gatherersConfig := []v1alpha1.GathererConfig{
@@ -485,7 +485,7 @@ func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
 	assert.Len(t, mockRecorder.Records, 0)
 }
 
-func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
+func TestCollectAndRecordGathererDuplicateRecords(t *testing.T) {
 	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
 		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
 			return []record.Record{{
@@ -549,7 +549,7 @@ func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
 	assert.Len(t, records, 2)
 }
 
-func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
+func TestCollectAndRecordGathererWarning(t *testing.T) {
 	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
 		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
 			return nil, []error{&types.Warning{UnderlyingValue: fmt.Errorf("test warning")}}
@@ -566,6 +566,66 @@ func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
 	assert.Nil(t, functionReports[0].Errors)
 	assert.Equal(t, []string{"warning: test warning"}, functionReports[0].Warnings)
 	assert.Nil(t, functionReports[0].Panic)
+}
+
+func TestFunctionReportsMapToArray(t *testing.T) {
+	tests := []struct {
+		name           string
+		testMap        map[string]GathererFunctionReport
+		expectedResult []GathererFunctionReport
+	}{
+		{
+			name:           "empty resutls in an empty slice",
+			testMap:        map[string]GathererFunctionReport{},
+			expectedResult: []GathererFunctionReport{},
+		},
+		{
+			name: "map converted as expected",
+			testMap: map[string]GathererFunctionReport{
+				"fooKey": {
+					FuncName:     "foo",
+					Duration:     120,
+					RecordsCount: 5,
+				},
+				"barKey": {
+					FuncName:     "bar",
+					Duration:     20,
+					RecordsCount: 1,
+				},
+				"bazKey": {
+					FuncName:     "baz",
+					Duration:     240,
+					RecordsCount: 12,
+					Errors:       []string{"test-error"},
+				},
+			},
+			expectedResult: []GathererFunctionReport{
+				{
+					FuncName:     "foo",
+					Duration:     120,
+					RecordsCount: 5,
+				},
+				{
+					FuncName:     "bar",
+					Duration:     20,
+					RecordsCount: 1,
+				},
+				{
+					FuncName:     "baz",
+					Duration:     240,
+					RecordsCount: 12,
+					Errors:       []string{"test-error"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FunctionReportsMapToArray(tt.testMap)
+			assert.ElementsMatch(t, tt.expectedResult, result)
+		})
+	}
 }
 
 func assertMetadataOneGatherer(

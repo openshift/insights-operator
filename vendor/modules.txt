@@ -290,6 +290,11 @@ github.com/openshift/client-go/insights/clientset/versioned/fake
 github.com/openshift/client-go/insights/clientset/versioned/scheme
 github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1
 github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1/fake
+github.com/openshift/client-go/insights/informers/externalversions
+github.com/openshift/client-go/insights/informers/externalversions/insights
+github.com/openshift/client-go/insights/informers/externalversions/insights/v1alpha1
+github.com/openshift/client-go/insights/informers/externalversions/internalinterfaces
+github.com/openshift/client-go/insights/listers/insights/v1alpha1
 github.com/openshift/client-go/network/applyconfigurations/internal
 github.com/openshift/client-go/network/applyconfigurations/network/v1
 github.com/openshift/client-go/network/clientset/versioned
