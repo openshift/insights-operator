@@ -58,6 +58,7 @@ type Controller struct {
 	jobController       *JobController
 	pruneInterval       time.Duration
 	techPreview         bool
+	dgInf               DataGatherInformer
 }
 
 func NewWithTechPreview(
@@ -68,6 +69,8 @@ func NewWithTechPreview(
 	kubeClient kubernetes.Interface,
 	dataGatherClient insightsv1alpha1cli.InsightsV1alpha1Interface,
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
+	dgInf DataGatherInformer,
+
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -85,6 +88,7 @@ func NewWithTechPreview(
 		insightsOperatorCLI: insightsOperatorCLI,
 		pruneInterval:       1 * time.Hour,
 		techPreview:         true,
+		dgInf:               dgInf,
 	}
 }
 
@@ -153,7 +157,11 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 		}
 	}
 
-	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
+	if c.techPreview {
+		go wait.Until(func() { c.periodicTriggerTechPreview(stopCh) }, time.Second, stopCh)
+	} else {
+		go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
+	}
 
 	<-stopCh
 }
@@ -218,7 +226,7 @@ func (c *Controller) Gather() {
 	if err != nil {
 		klog.Errorf("failed to update the Insights Operator CR status: %v", err)
 	}
-	err = gather.RecordArchiveMetadata(mapToArray(allFunctionReports), c.recorder, c.anonymizer)
+	err = gather.RecordArchiveMetadata(gather.FunctionReportsMapToArray(allFunctionReports), c.recorder, c.anonymizer)
 	if err != nil {
 		klog.Errorf("unable to record archive metadata because of error: %v", err)
 	}
@@ -246,16 +254,53 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			if c.techPreview {
-				c.GatherJob()
-			} else {
-				c.Gather()
-			}
+			c.Gather()
 		}
 	}
 }
 
-func (c *Controller) GatherJob() { // nolint: funlen, gocyclo
+// periodicTriggerTechPreview is a techpreview alternative to the same function above,
+// but this adds a listerner for the dataGatherInforme, which is nil (not initialized) in
+// non-techpreview clusters.
+func (c *Controller) periodicTriggerTechPreview(stopCh <-chan struct{}) {
+	configCh, closeFn := c.secretConfigurator.ConfigChanged()
+	defer closeFn()
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)
+	defer cancel()
+
+	interval := c.secretConfigurator.Config().Interval
+	klog.Infof("Gathering cluster info every %s", interval)
+	for {
+		select {
+		case <-stopCh:
+			return
+
+		case <-configCh:
+			newInterval := c.secretConfigurator.Config().Interval
+			if newInterval == interval {
+				continue
+			}
+			interval = newInterval
+			klog.Infof("Gathering cluster info every %s", interval)
+
+		case <-time.After(interval):
+			c.GatherJob()
+
+		// lister to on-demand dataGather creations
+		case dgName := <-c.dgInf.DataGatherCreated():
+			err := c.updateNewDataGatherCRStatus(ctx, dgName)
+			if err != nil {
+				klog.Errorf("Failed to update status of the %s DataGather resource: %v", dgName, err)
+				return
+			}
+			klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
+			go c.runJobAndCheckResults(ctx, dgName)
+		}
+	}
+}
+
+func (c *Controller) GatherJob() {
 	if c.isGatheringDisabled() {
 		klog.V(3).Info("Gather is disabled by configuration.")
 		return
@@ -279,9 +324,17 @@ func (c *Controller) GatherJob() { // nolint: funlen, gocyclo
 		klog.Errorf("Failed to create a new DataGather resource: %v", err)
 		return
 	}
+	err = c.updateNewDataGatherCRStatus(ctx, dataGatherCR.GetName())
+	if err != nil {
+		klog.Errorf("Failed to update status of the %s DataGather resource: %v", dataGatherCR.GetName(), err)
+		return
+	}
+	c.runJobAndCheckResults(ctx, dataGatherCR.Name)
+}
 
+func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGatherCR.Name, c.image, c.secretConfigurator.Config().StoragePath)
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGatherName, c.image, c.secretConfigurator.Config().StoragePath)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -297,9 +350,9 @@ func (c *Controller) GatherJob() { // nolint: funlen, gocyclo
 		klog.Error(err)
 	}
 	klog.Infof("Job completed %s", gj.Name)
-	dataGatherFinished, err := c.dataGatherClient.DataGathers().Get(ctx, dataGatherCR.Name, metav1.GetOptions{})
+	dataGatherFinished, err := c.dataGatherClient.DataGathers().Get(ctx, dataGatherName, metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherCR.Name, err)
+		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherName, err)
 		return
 	}
 	uploaded := c.wasDataUploaded(dataGatherFinished)
@@ -500,13 +553,13 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 }
 
 // createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
-// with generate name prefix "periodic-gathering-". Returns the name of the newly created
-// resource
+// with generate name prefix "periodic-gathering-". Returns the newly created
+// resource or an error if the creation failed.
 func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherers []string,
 	dataPolicy insightsv1alpha1.DataPolicy) (*insightsv1alpha1.DataGather, error) {
 	dataGatherCR := insightsv1alpha1.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "periodic-gathering-",
+			GenerateName: periodicGatheringPrefix,
 		},
 		Spec: insightsv1alpha1.DataGatherSpec{
 			DataPolicy: dataPolicy,
@@ -522,18 +575,28 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherer
 	if err != nil {
 		return nil, err
 	}
-	dataGather.Status.Conditions = []metav1.Condition{
+	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
+	return dataGather, nil
+}
+
+// updateNewDataGatherCRStatus updates the newly created DataGather custom resource status to
+// set the initial unknown conditions and also the DataGather state to pending.
+func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dgName string) error {
+	dg, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	dg.Status.Conditions = []metav1.Condition{
 		status.DataUploadedCondition(metav1.ConditionUnknown, status.NoUploadYetReason, ""),
 		status.DataRecordedCondition(metav1.ConditionUnknown, status.NoDataGatheringYetReason, ""),
 		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
 	}
-	dataGather.Status.State = insightsv1alpha1.Pending
-	dataGather, err = c.dataGatherClient.DataGathers().UpdateStatus(ctx, dataGather, metav1.UpdateOptions{})
+	dg.Status.State = insightsv1alpha1.Pending
+	_, err = c.dataGatherClient.DataGathers().UpdateStatus(ctx, dg, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
-	return dataGather, nil
+	return nil
 }
 
 // createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
@@ -618,12 +681,4 @@ func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
 		}
 	}
 	insights.IncrementCounterRequestSend(statusCode)
-}
-
-func mapToArray(m map[string]gather.GathererFunctionReport) []gather.GathererFunctionReport {
-	a := make([]gather.GathererFunctionReport, 0, len(m))
-	for _, v := range m {
-		a = append(a, v)
-	}
-	return a
 }

@@ -221,7 +221,7 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 
 func TestCreateNewDataGatherCR(t *testing.T) {
 	cs := insightsFakeCli.NewSimpleClientset()
-	mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil)
+	mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil)
 	tests := []struct {
 		name              string
 		disabledGatherers []string
@@ -293,6 +293,73 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 			assert.Equal(t, tt.expected.Spec, dg.Spec)
 			err = cs.InsightsV1alpha1().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestUpdateNewDataGatherCRStatus(t *testing.T) {
+	tests := []struct {
+		name                     string
+		testedDataGather         *v1alpha1.DataGather
+		expectedDataRecordedCon  metav1.Condition
+		expectedDataUploadedCon  metav1.Condition
+		expectedDataProcessedCon metav1.Condition
+	}{
+		{
+			name: "plain DataGather with no status",
+			testedDataGather: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-data-gather",
+				},
+			},
+			expectedDataRecordedCon: metav1.Condition{
+				Type:    status.DataRecorded,
+				Status:  metav1.ConditionUnknown,
+				Reason:  status.NoDataGatheringYetReason,
+				Message: "",
+			},
+			expectedDataUploadedCon: metav1.Condition{
+				Type:    status.DataRecorded,
+				Status:  metav1.ConditionUnknown,
+				Reason:  status.NoUploadYetReason,
+				Message: "",
+			},
+			expectedDataProcessedCon: metav1.Condition{
+				Type:    status.DataRecorded,
+				Status:  metav1.ConditionUnknown,
+				Reason:  status.NothingToProcessYetReason,
+				Message: "",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cs := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil)
+			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather.Name)
+			assert.NoError(t, err)
+			updatedDataGather, err := cs.InsightsV1alpha1().DataGathers().Get(context.Background(), tt.testedDataGather.Name, metav1.GetOptions{})
+			assert.NoError(t, err)
+			assert.Equal(t, v1alpha1.Pending, updatedDataGather.Status.State)
+
+			dr := status.GetConditionByType(updatedDataGather, status.DataRecorded)
+			assert.NotNil(t, dr)
+			assert.Equal(t, tt.expectedDataRecordedCon.Status, dr.Status)
+			assert.Equal(t, tt.expectedDataRecordedCon.Reason, dr.Reason)
+			assert.Equal(t, tt.expectedDataRecordedCon.Message, dr.Message)
+
+			du := status.GetConditionByType(updatedDataGather, status.DataUploaded)
+			assert.NotNil(t, du)
+			assert.Equal(t, tt.expectedDataUploadedCon.Status, du.Status)
+			assert.Equal(t, tt.expectedDataUploadedCon.Reason, du.Reason)
+			assert.Equal(t, tt.expectedDataUploadedCon.Message, du.Message)
+
+			dp := status.GetConditionByType(updatedDataGather, status.DataProcessed)
+			assert.NotNil(t, dp)
+			assert.Equal(t, tt.expectedDataProcessedCon.Status, dp.Status)
+			assert.Equal(t, tt.expectedDataProcessedCon.Reason, dp.Reason)
+			assert.Equal(t, tt.expectedDataProcessedCon.Message, dp.Message)
 		})
 	}
 }
@@ -540,7 +607,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
 			operatorFakeCS := fakeOperatorCli.NewSimpleClientset(&tt.testedInsightsOperator)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil,
-				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators())
+				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators(), nil)
 			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, updatedOperator)
@@ -605,7 +672,7 @@ func TestCreateDataGatherAttributeValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockAPIConfig := config.NewMockAPIConfigurator(&tt.gatherConfig)
-			mockController := NewWithTechPreview(nil, nil, mockAPIConfig, tt.gatheres, nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, mockAPIConfig, tt.gatheres, nil, nil, nil, nil)
 			disabledGatherers, dp := mockController.createDataGatherAttributeValues()
 			assert.Equal(t, tt.expectedPolicy, dp)
 			assert.EqualValues(t, disabledGatherers, tt.expectedDisabledGatherers)
@@ -686,7 +753,7 @@ func TestGetInsightsImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := kubefake.NewSimpleClientset(&tt.testDeployment)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil, nil)
 			imgName, err := mockController.getInsightsImage(context.Background())
 			assert.Equal(t, tt.expectedError, err)
 			assert.Equal(t, tt.expectedImageName, imgName)
@@ -777,7 +844,7 @@ func TestPeriodicPrune(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			kubeCs := kubefake.NewSimpleClientset(tt.jobs...)
 			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGathers...)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1alpha1(), nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1alpha1(), nil, nil)
 			mockController.pruneInterval = 90 * time.Millisecond
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
@@ -876,7 +943,7 @@ func TestWasDataUploaded(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, nil)
 			successful := mockController.wasDataUploaded(tt.testedDataGather)
 			assert.Equal(t, tt.expectedSummary.Healthy, successful)
 			summary, _ := mockController.Sources()[0].CurrentStatus()
@@ -1011,7 +1078,7 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 					ReportEndpointTechPreview: "https://test.report.endpoint.tech.preview.uri/cluster/%s/requestID/%s",
 				},
 			}
-			mockController := NewWithTechPreview(nil, mockSecretConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil)
+			mockController := NewWithTechPreview(nil, mockSecretConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil)
 			err := mockController.updateInsightsReportInDataGather(context.Background(), tt.analysisReport, tt.dataGatherToUpdate)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedInsightsReport, &tt.dataGatherToUpdate.Status.InsightsReport)
