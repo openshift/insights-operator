@@ -21,6 +21,10 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
+const (
+	managedDVONamespaceName = "openshift-deployment-validation-operator"
+)
+
 // GatherDVOMetrics Collects metrics from the Deployment Validation Operator's
 // metrics service. The metrics are fetched via the /metrics endpoint and
 // filtered to only include those with a `deployment_validation_operator_` prefix.
@@ -66,18 +70,22 @@ func gatherDVOMetrics(
 		return nil, []error{err}
 	}
 
+	useUIDs := false
 	nonFatalErrors := []error{}
 	allDVOMetricsLines := []byte{}
 	for svcIdx := range serviceList.Items {
 		// Use pointer to make gocritic happy and avoid copying the whole Service struct.
 		service := &serviceList.Items[svcIdx]
+		if service.Namespace == managedDVONamespaceName {
+			useUIDs = true
+		}
 		for _, port := range service.Spec.Ports {
 			apiURL := url.URL{
 				Scheme: "http",
 				Host:   fmt.Sprintf("%s.%s.svc:%d", service.Name, service.Namespace, port.Port),
 			}
 
-			prefixedLines, err := gatherDVOMetricsFromEndpoint(ctx, &apiURL, rateLimiter)
+			prefixedLines, err := gatherDVOMetricsFromEndpoint(ctx, &apiURL, rateLimiter, useUIDs)
 			if err != nil {
 				// Log errors as warnings and don't fail the entire gatherer.
 				// It is possible that this service is not really the correct one
@@ -113,6 +121,7 @@ func gatherDVOMetricsFromEndpoint(
 	ctx context.Context,
 	apiURL *url.URL,
 	rateLimiter flowcontrol.RateLimiter,
+	useUIDs bool,
 ) ([]byte, error) {
 	metricsRESTClient, err := rest.NewRESTClient(
 		apiURL,
@@ -140,19 +149,24 @@ func gatherDVOMetricsFromEndpoint(
 
 	// only metrics with the DVO prefix should be gathered.
 	dvoMetricsPrefix := []byte("deployment_validation_operator_")
-	// precompile regex rules
-	regexString := `(?m)(,?%s=[^\,\}]*")`
-	filterProps := []*regexp.Regexp{
-		regexp.MustCompile(fmt.Sprintf(regexString, "name")),
-		regexp.MustCompile(fmt.Sprintf(regexString, "namespace")),
-	}
-	prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvoMetricsPrefix, func(b []byte) []byte {
-		for _, re := range filterProps {
-			str := re.ReplaceAllString(string(b), "")
-			b = []byte(str)
+
+	var f func(b []byte) []byte
+	if useUIDs {
+		// precompile regex rules
+		regexString := `(?m)(,?%s=[^\,\}]*")`
+		filterProps := []*regexp.Regexp{
+			regexp.MustCompile(fmt.Sprintf(regexString, "name")),
+			regexp.MustCompile(fmt.Sprintf(regexString, "namespace")),
 		}
-		return b
-	})
+		f = func(b []byte) []byte {
+			for _, re := range filterProps {
+				str := re.ReplaceAllString(string(b), "")
+				b = []byte(str)
+			}
+			return b
+		}
+	}
+	prefixedLines, err := utils.ReadAllLinesWithPrefix(dataReader, dvoMetricsPrefix, f)
 	if err != io.EOF {
 		klog.Warningf("Unable to read metrics lines with DVO prefix: %v", err)
 		return prefixedLines, err
