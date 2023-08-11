@@ -1957,6 +1957,6 @@ None
 None
 
 ### Changes
-None
+- Image repository is now collected if it comes from outside the Red Hat domain
 
 
