@@ -554,8 +554,9 @@ None
 
 ## ConfigMaps
 
-Collects the `ConfigMaps` from namespace `openshift-config`
-and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` namespace.
+Collects all `ConfigMaps` from the `openshift-config`
+namespace and specific `ConfigMaps` from other namespaces (see Changes
+for details).
 
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
@@ -581,9 +582,15 @@ and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` names
 - 4.4.6+
 
 ### Changes
-- `cluster-monitoring-config` data since versions 4.6.22+ and 4.7.0+
-- `cluster-config-v1` since versions 4.9.0+
-- `gateway-mode-config` data from 'openshift-network-operator' namespace since 4.14.0+
+  - `cluster-monitoring-config` config map from `openshift-monitoring`
+    namespace since versions 4.6.22+ and 4.7.0+
+  - `install-config` key from the `cluster-config-v1` config map in the
+    `kube-system` namespace since versions 4.9.0+; originally stored as
+    `config/configmaps/kube-system/cluster-config-v1.json`, changed to
+    `config/configmaps/kube-system/cluster-config-v1/install-config` since
+    4.13.0+
+  - `gateway-mode-config` config map from `openshift-network-operator`
+    namespace since 4.14.0+
 
 ### Anonymization
 If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
