@@ -43,15 +43,15 @@ import (
 // - 4.4.6+
 //
 // ### Changes
-// - `cluster-monitoring-config` config map from `openshift-monitoring`
-//    namespace since versions 4.6.22+ and 4.7.0+
-// - `install-config` key from the `cluster-config-v1` config map in the
-//   `kube-system` namespace since versions 4.9.0+; originally stored as
-//   `config/configmaps/kube-system/cluster-config-v1.json`, changed to
-//   `config/configmaps/kube-system/cluster-config-v1/install-config` since
-//   4.13.0+
-// - `gateway-mode-config` config map from `openshift-network-operator`
-//   namespace since 4.14.0+
+//   - `cluster-monitoring-config` config map from `openshift-monitoring`
+//     namespace since versions 4.6.22+ and 4.7.0+
+//   - `install-config` key from the `cluster-config-v1` config map in the
+//     `kube-system` namespace since versions 4.9.0+; originally stored as
+//     `config/configmaps/kube-system/cluster-config-v1.json`, changed to
+//     `config/configmaps/kube-system/cluster-config-v1/install-config` since
+//     4.13.0+
+//   - `gateway-mode-config` config map from `openshift-network-operator`
+//     namespace since 4.14.0+
 //
 // ### Anonymization
 // If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
