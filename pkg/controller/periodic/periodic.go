@@ -359,10 +359,6 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName s
 	updateMetrics(dataGatherFinished)
 	if !uploaded {
 		klog.Errorf("Last data gathering %v was not successful", dataGatherFinished.Name)
-		_, err = status.UpdateDataGatherState(ctx, c.dataGatherClient, dataGatherFinished, insightsv1alpha1.Failed)
-		if err != nil {
-			klog.Errorf("Failed to update failed DataGather resource %s: %v ", dataGatherFinished.Name, err)
-		}
 		return
 	}
 
@@ -676,7 +672,7 @@ func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
 		var err error
 		statusCode, err = strconv.Atoi(statusCodeStr)
 		if err != nil {
-			klog.Error("failed to update the Prometheus metrics: %v", err)
+			klog.Errorf("failed to update the Prometheus metrics: %v", err)
 			return
 		}
 	}
