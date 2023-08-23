@@ -714,6 +714,9 @@ None
 Collects metrics from the Deployment Validation Operator's
 metrics service. The metrics are fetched via the /metrics endpoint and
 filtered to only include those with a `deployment_validation_operator_` prefix.
+If the DVO service is deployed in a namespace other than `openshift-deployment-validation-operator',
+then the names of the workloads (e.g., namespace, deployment) are collected.
+Otherwise, only the UIDs of those resources are collected.
 
 ### API Reference
 None
