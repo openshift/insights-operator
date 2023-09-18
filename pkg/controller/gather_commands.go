@@ -147,7 +147,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	defer cancel()
 	dataGatherCR, err := insightsV1alphaCli.DataGathers().Get(ctx, os.Getenv("DATAGATHER_NAME"), metav1.GetOptions{})
 	if err != nil {
-		klog.Error("failed to get coresponding DataGather custom resource: %v", err)
+		klog.Errorf("failed to get coresponding DataGather custom resource: %v", err)
 		return err
 	}
 	// ensure the insight snapshot directory exists
@@ -183,7 +183,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)
 	if err != nil {
-		klog.Error("failed to update coresponding DataGather custom resource: %v", err)
+		klog.Errorf("failed to update coresponding DataGather custom resource: %v", err)
 		return err
 	}
 
@@ -193,7 +193,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	dataRecordedCon := status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", "")
 	lastArchive, err := record(gather.FunctionReportsMapToArray(allFunctionReports), rec, recdriver, anonymizer)
 	if err != nil {
-		klog.Error("Failed to record data archive: %v", err)
+		klog.Errorf("Failed to record data archive: %v", err)
 		dataRecordedCon.Status = metav1.ConditionFalse
 		dataRecordedCon.Reason = "RecordingFailed"
 		dataRecordedCon.Message = fmt.Sprintf("Failed to record data: %v", err)
@@ -211,7 +211,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	reason := fmt.Sprintf("HttpStatus%d", statusCode)
 	dataUploadedCon := status.DataUploadedCondition(metav1.ConditionTrue, reason, "")
 	if err != nil {
-		klog.Error("Failed to upload data archive: %v", err)
+		klog.Errorf("Failed to upload data archive: %v", err)
 		dataUploadedCon.Status = metav1.ConditionFalse
 		dataUploadedCon.Reason = reason
 		dataUploadedCon.Message = fmt.Sprintf("Failed to upload data: %v", err)
@@ -278,12 +278,12 @@ func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1
 	dataGatherCR *insightsv1alpha1.DataGather, conditionToUpdate *metav1.Condition, state insightsv1alpha1.DataGatherState) {
 	dataGatherUpdated, err := status.UpdateDataGatherState(ctx, insightsClient, dataGatherCR, state)
 	if err != nil {
-		klog.Error("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
+		klog.Errorf("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
 	}
 
 	_, err = status.UpdateDataGatherConditions(ctx, insightsClient, dataGatherUpdated, conditionToUpdate)
 	if err != nil {
-		klog.Error("Failed to update DataGather resource %s conditions: %v", dataGatherCR.Name, err)
+		klog.Errorf("Failed to update DataGather resource %s conditions: %v", dataGatherCR.Name, err)
 	}
 }
 

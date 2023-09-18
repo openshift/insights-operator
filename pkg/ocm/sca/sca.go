@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	targetNamespaceName    = "openshift-config-managed"
-	secretName             = "etc-pki-entitlement" //nolint: gosec
+	targetNamespaceName    = "openshift-config-managed" //nolint: gosec
+	secretName             = "etc-pki-entitlement"      //nolint: gosec
 	entitlementAttrName    = "entitlement.pem"
 	entitlementKeyAttrName = "entitlement-key.pem"
 	ControllerName         = "scaController"
