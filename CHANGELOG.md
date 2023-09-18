@@ -1,5 +1,45 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 08b4171784b8debe038e912ecd8bcab511cf7aa3-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: f936f69980ce327c12d7cf78558c6b70a1509932-->
+## 4.14
+
+### Data Enhancement
+- [#811](https://github.com/openshift/insights-operator/pull/811) workload info gatherer, add external image repo
+- [#797](https://github.com/openshift/insights-operator/pull/797) adds virtual machine instances gather"
+- [#788](https://github.com/openshift/insights-operator/pull/788) extend configmap gatherer to get gateway-mode-config
+- [#785](https://github.com/openshift/insights-operator/pull/785) Revert "Implement periodic gathering as a job in tech …
+
+### Feature
+- [#815](https://github.com/openshift/insights-operator/pull/815) on-demand data gathering in techpreview
+- [#812](https://github.com/openshift/insights-operator/pull/812) download Insights analysis report from a new endpoint (using Insights request ID)
+- [#810](https://github.com/openshift/insights-operator/pull/810) check new processing status endpoint after uploading data in the job
+- [#808](https://github.com/openshift/insights-operator/pull/808) update registration of the metrics to work in techpreview too
+- [#805](https://github.com/openshift/insights-operator/pull/805) Implement DataGather status conditions and status propagation
+- [#799](https://github.com/openshift/insights-operator/pull/799) Implement periodic gathering as a job in tech preview & latest fix
+- [#787](https://github.com/openshift/insights-operator/pull/787) Implement periodic gathering as a job in tech preview
+- [#764](https://github.com/openshift/insights-operator/pull/764) Implement periodic gathering as a job in tech preview
+- [#764](https://github.com/openshift/insights-operator/pull/764) Implement periodic gathering as a job in tech preview
+
+### Bugfix
+- [#814](https://github.com/openshift/insights-operator/pull/814) bump library-go version
+- [#809](https://github.com/openshift/insights-operator/pull/809) update DataGather CR status in case of job failure
+- [#807](https://github.com/openshift/insights-operator/pull/807) create Prometheus rules programmatically according the config option
+- [#792](https://github.com/openshift/insights-operator/pull/792) run an extra config informer in the tech preview
+- [#780](https://github.com/openshift/insights-operator/pull/780) gather PDBs only from openshift namespaces
+
+### Others
+- [#813](https://github.com/openshift/insights-operator/pull/813) add unit test for the InsightsDataGather Observer
+- [#776](https://github.com/openshift/insights-operator/pull/776) general code cleanup
+- [#768](https://github.com/openshift/insights-operator/pull/768) renaming gather files
+- [#778](https://github.com/openshift/insights-operator/pull/778) adds codecov
+- [#783](https://github.com/openshift/insights-operator/pull/783) Update documentation
+- [#777](https://github.com/openshift/insights-operator/pull/777) update DVO metrics example in the sample archive
+
+### Misc
+- [#798](https://github.com/openshift/insights-operator/pull/798) Revert "Implement periodic gathering as a job in tech preview"
+- [#794](https://github.com/openshift/insights-operator/pull/794) fix the config serialization & add test
+- [#779](https://github.com/openshift/insights-operator/pull/779) read featuregates from the shared API value
+- [#774](https://github.com/openshift/insights-operator/pull/774) Updating ose-insights-operator images to be consistent with ART
+
 ## 4.13
 
 ### Data Enhancement
