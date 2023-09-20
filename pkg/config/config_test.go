@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// nolint: funlen
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name           string
