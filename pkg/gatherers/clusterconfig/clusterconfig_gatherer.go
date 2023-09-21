@@ -64,6 +64,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"olm_operators":                     (*Gatherer).GatherOLMOperators,
 	"openshift_apiserver_operator_logs": (*Gatherer).GatherOpenShiftAPIServerOperatorLogs,
 	"openshift_authentication_logs":     (*Gatherer).GatherOpenshiftAuthenticationLogs,
+	"openshift_config_apiserver":        (*Gatherer).GatherOpenshiftConfigAPIServer,
 	"openshift_logging":                 (*Gatherer).GatherOpenshiftLogging,
 	"openshift_machine_api_events":      (*Gatherer).GatherOpenshiftMachineAPIEvents,
 	"openshift_sdn_controller_logs":     (*Gatherer).GatherOpenshiftSDNControllerLogs,
