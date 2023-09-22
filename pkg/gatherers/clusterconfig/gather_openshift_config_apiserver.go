@@ -16,16 +16,16 @@ func (g *Gatherer) GatherOpenshiftConfigAPIServer(ctx context.Context) ([]record
 		return nil, []error{err}
 	}
 
-	return configAPIServer{}.gather(ctx, configClient)
+	return configAPIServer{}.gather(ctx, configClient.APIServers())
 }
 
 type configAPIServer struct{}
 
-func (cas configAPIServer) gather(ctx context.Context, client *configv1client.ConfigV1Client) ([]record.Record, []error) {
+func (cas configAPIServer) gather(ctx context.Context, apiservers configv1client.APIServerInterface) ([]record.Record, []error) {
 	const APIServerName = "cluster"
 	const Filename = "config/apiserver"
 
-	server, err := client.APIServers().Get(ctx, APIServerName, v1.GetOptions{})
+	server, err := apiservers.Get(ctx, APIServerName, v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil, nil
