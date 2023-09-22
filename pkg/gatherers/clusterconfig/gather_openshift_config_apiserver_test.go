@@ -40,7 +40,7 @@ func Test_GatherOpenshiftConfigAPIServer(t *testing.T) {
 			// Given
 			clientset := fake.NewSimpleClientset()
 			configv1 := configfake.FakeConfigV1{Fake: &clientset.Fake}
-			configv1.APIServers().Create(context.Background(), tc.apiserver, metav1.CreateOptions{})
+			configv1.APIServers().Create(context.Background(), tc.apiserver, metav1.CreateOptions{}) // nolint: errcheck
 
 			// When
 			records, err := configAPIServer{}.gather(context.Background(), configv1.APIServers())

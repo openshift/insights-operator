@@ -1388,6 +1388,32 @@ None
 None
 
 
+## OpenshiftConfigAPIServer
+
+Collects APIServer.config.openshift.io resource
+
+### API Reference
+https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/apiserver.go
+
+### Sample data
+- [docs/insights-archive-sample/config/apiserver.json](./insights-archive-sample/config/apiserver.json)
+
+### Location in archive
+- `config/apiserver.json`
+
+### Config ID
+`openshift_config_apiserver`
+
+### Released version
+- 4.15
+
+### Backported versions
+- TBD
+
+### Changes
+None
+
+
 ## OpenshiftLogging
 
 Collects `clusterlogging.logging.openshift.io` resources.

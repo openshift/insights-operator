@@ -9,7 +9,28 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TODO - Doc
+// GatherOpenshiftConfigAPIServer Collects APIServer.config.openshift.io resource
+//
+// ### API Reference
+// https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/apiserver.go
+//
+// ### Sample data
+// - docs/insights-archive-sample/config/apiserver.json
+//
+// ### Location in archive
+// - `config/apiserver.json`
+//
+// ### Config ID
+// `openshift_config_apiserver`
+//
+// ### Released version
+// - 4.15
+//
+// ### Backported versions
+// - TBD
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherOpenshiftConfigAPIServer(ctx context.Context) ([]record.Record, []error) {
 	configClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
