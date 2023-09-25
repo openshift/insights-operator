@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GatherOpenshiftConfigAPIServer Collects APIServer.config.openshift.io resource
+// GatherClusterAPIServer Collects APIServer.config.openshift.io resource
 //
 // ### API Reference
 // https://github.com/openshift/api/blob/master/config/v1/types_apiserver.go
@@ -21,7 +21,7 @@ import (
 // - `config/apiserver.json`
 //
 // ### Config ID
-// `openshift_config_apiserver`
+// `cluster_apiserver`
 //
 // ### Released version
 // - 4.15
@@ -31,18 +31,18 @@ import (
 //
 // ### Changes
 // None
-func (g *Gatherer) GatherOpenshiftConfigAPIServer(ctx context.Context) ([]record.Record, []error) {
+func (g *Gatherer) GatherClusterAPIServer(ctx context.Context) ([]record.Record, []error) {
 	configClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return configAPIServer{}.gather(ctx, configClient.APIServers())
+	return clusterAPIServer{}.gather(ctx, configClient.APIServers())
 }
 
-type configAPIServer struct{}
+type clusterAPIServer struct{}
 
-func (cas configAPIServer) gather(ctx context.Context, apiservers configv1client.APIServerInterface) ([]record.Record, []error) {
+func (cas clusterAPIServer) gather(ctx context.Context, apiservers configv1client.APIServerInterface) ([]record.Record, []error) {
 	const APIServerName = "cluster"
 	const Filename = "config/apiserver"
 
