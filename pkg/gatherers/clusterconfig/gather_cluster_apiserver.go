@@ -12,7 +12,7 @@ import (
 // GatherOpenshiftConfigAPIServer Collects APIServer.config.openshift.io resource
 //
 // ### API Reference
-// https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/apiserver.go
+// https://github.com/openshift/api/blob/master/config/v1/types_apiserver.go
 //
 // ### Sample data
 // - docs/insights-archive-sample/config/apiserver.json
