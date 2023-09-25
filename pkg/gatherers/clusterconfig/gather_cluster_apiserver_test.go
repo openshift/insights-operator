@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func Test_GatherOpenshiftConfigAPIServer(t *testing.T) {
+func Test_GatherClusterAPIServer(t *testing.T) {
 	// Unit Tests
 	testCases := []struct {
 		name      string
@@ -43,7 +43,7 @@ func Test_GatherOpenshiftConfigAPIServer(t *testing.T) {
 			configv1.APIServers().Create(context.Background(), tc.apiserver, metav1.CreateOptions{}) // nolint: errcheck
 
 			// When
-			records, err := configAPIServer{}.gather(context.Background(), configv1.APIServers())
+			records, err := clusterAPIServer{}.gather(context.Background(), configv1.APIServers())
 
 			// Assert
 			assert.Len(t, err, tc.errCount)
