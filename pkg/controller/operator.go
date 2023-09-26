@@ -209,7 +209,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		secretConfigObserver, insightsClient,
+		configAggregator, insightsClient,
 	)
 	if !insightsConfigAPIEnabled {
 		periodicGather = periodic.New(configAggregator, rec, gatherers, anonymizer,

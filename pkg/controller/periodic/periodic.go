@@ -237,6 +237,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 
 	interval := c.configAggregator.Config().DataReporting.Interval
 	klog.Infof("Gathering cluster info every %s", interval)
+	klog.Infof("Configuration is %v", c.configAggregator.Config().String())
 	t := time.NewTicker(interval)
 	for {
 		select {
@@ -252,6 +253,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			interval = newInterval
 			t.Reset(interval)
 			klog.Infof("Gathering cluster info every %s", interval)
+			klog.Infof("Configuration is %v", c.configAggregator.Config().String())
 		case <-t.C:
 			c.Gather()
 		}
@@ -270,23 +272,26 @@ func (c *Controller) periodicTriggerTechPreview(stopCh <-chan struct{}) {
 
 	interval := c.configAggregator.Config().DataReporting.Interval
 	klog.Infof("Gathering cluster info every %s", interval)
+	klog.Infof("Configuration is %v", c.configAggregator.Config().String())
+	t := time.NewTicker(interval)
 	for {
 		select {
 		case <-stopCh:
+			t.Stop()
 			return
-
 		case <-configCh:
 			newInterval := c.configAggregator.Config().DataReporting.Interval
 			if newInterval == interval {
 				continue
 			}
 			interval = newInterval
+			t.Reset(interval)
 			klog.Infof("Gathering cluster info every %s", interval)
-
-		case <-time.After(interval):
+			klog.Infof("Configuration is %v", c.configAggregator.Config().String())
+		case <-t.C:
 			c.GatherJob()
 
-		// lister to on-demand dataGather creations
+		// listen to on-demand dataGather creations
 		case dgName := <-c.dgInf.DataGatherCreated():
 			go func() {
 				ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)

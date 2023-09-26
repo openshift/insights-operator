@@ -9,8 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
@@ -26,12 +24,8 @@ func Test_gatherSupportSecret(t *testing.T) {
 		},
 	}, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	configObserver := configobserver.New(config.Controller{}, kubeClient)
-	gatherer := New(
-		nil, nil, nil, nil, nil, configObserver,
-	)
 
-	records, errs := gatherer.GatherSupportSecret(context.TODO())
+	records, errs := gatherSupportSecret(context.Background(), kubeClient.CoreV1())
 	assert.Empty(t, errs)
 	assert.Len(t, records, 1)
 	assert.Equal(t, record.Record{

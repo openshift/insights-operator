@@ -18,6 +18,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const (
+	insightsConfigMapName = "insights-config"
+)
+
 type ConfigMapInformer interface {
 	factory.Controller
 	// Config provides actual Insights configuration values from the "insights-config" configmap
@@ -125,5 +129,5 @@ func readConfigAndDecode(cm *v1.ConfigMap) (*config.InsightsConfiguration, error
 }
 
 func getConfigMap(ctx context.Context, kubeCli *kubernetes.Clientset) (*v1.ConfigMap, error) {
-	return kubeCli.CoreV1().ConfigMaps("openshift-insights").Get(ctx, "insights-config", metav1.GetOptions{})
+	return kubeCli.CoreV1().ConfigMaps("openshift-insights").Get(ctx, insightsConfigMapName, metav1.GetOptions{})
 }

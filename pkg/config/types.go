@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -14,13 +15,13 @@ type InsightsConfigurationSerialized struct {
 }
 
 type DataReportingSerialized struct {
-	Enabled                     string `json:"enabled,omitempty"`
 	Interval                    string `json:"interval,omitempty"`
 	UploadEndpoint              string `json:"uploadEndpoint,omitempty"`
 	DownloadEndpoint            string `json:"downloadEndpoint,omitempty"`
 	DownloadEndpointTechPreview string `json:"downloadEndpointTechPreview,omitempty"`
 	StoragePath                 string `json:"storagePath,omitempty"`
 	ConditionalGathererEndpoint string `json:"conditionalGathererEndpoint,omitempty"`
+	ProcessingStatusEndpoint    string `json:"processingStatusEndpoint"`
 }
 
 // InsightsConfiguration is a type representing actual Insights
@@ -41,6 +42,8 @@ type DataReporting struct {
 	DownloadEndpointTechPreview string
 	StoragePath                 string
 	ConditionalGathererEndpoint string
+	ReportPullingDelay          time.Duration
+	ProcessingStatusEndpoint    string
 }
 
 // ToConfig reads and pareses the actual serialized configuration from "InsightsConfigurationSerialized"
@@ -53,6 +56,7 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 			DownloadEndpointTechPreview: i.DataReporting.DownloadEndpointTechPreview,
 			StoragePath:                 i.DataReporting.StoragePath,
 			ConditionalGathererEndpoint: i.DataReporting.ConditionalGathererEndpoint,
+			ProcessingStatusEndpoint:    i.DataReporting.ProcessingStatusEndpoint,
 		},
 	}
 	if i.DataReporting.Interval != "" {
@@ -66,10 +70,20 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 		}
 		ic.DataReporting.Interval = interval
 	}
-	if i.DataReporting.Enabled != "false" || i.DataReporting.Enabled == "" {
-		ic.DataReporting.Enabled = true
-	} else {
-		ic.DataReporting.Enabled = false
-	}
 	return ic
+}
+
+func (i *InsightsConfiguration) String() string {
+	s := fmt.Sprintf("interval=%s, "+
+		"upload_endpoint=%s, "+
+		"storage_path=%s, "+
+		"download_endpoint=%s, "+
+		"conditional_gatherer_endpoint=%s",
+		i.DataReporting.Interval,
+		i.DataReporting.UploadEndpoint,
+		i.DataReporting.StoragePath,
+		i.DataReporting.DownloadEndpoint,
+		i.DataReporting.ConditionalGathererEndpoint,
+	)
+	return s
 }
