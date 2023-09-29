@@ -13,9 +13,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/stretchr/testify/assert"
 )
 
-//nolint: funlen, gocyclo, gosec
+// nolint: funlen, gocyclo, gosec
 func Test_gatherWorkloadInfo(t *testing.T) {
 	if len(os.Getenv("TEST_INTEGRATION")) == 0 {
 		t.Skip("will not run unless TEST_INTEGRATION is set, and requires KUBECONFIG to point to a real cluster")
@@ -147,5 +148,34 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 			float64(totalImagesWithData)/float64(pods.ImageCount)*100,
 			workloadImageLRU.Len(),
 		)
+	}
+}
+
+func Test_getExternalImageRepo(t *testing.T) {
+	testCases := []struct {
+		name     string
+		url      string
+		expected string
+	}{
+		{
+			name:     "Image repository under the Red Hat domain will be ignored",
+			url:      "registry.redhat.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:abc",
+			expected: "",
+		},
+		{
+			name:     "Image repository outside the Red Hat domain is returned",
+			url:      "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:abc",
+			expected: "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:abc",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			// When
+			test := getExternalImageRepo(testCase.url)
+
+			// Assert
+			assert.Equal(t, testCase.expected, test)
+		})
 	}
 }
