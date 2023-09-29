@@ -59,7 +59,10 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 		interval, err := time.ParseDuration(i.DataReporting.Interval)
 		if err != nil {
 			klog.Errorf("Cannot parse interval time duration: %v. Using default value 2h", err)
-			return ic
+			interval = 2 * time.Hour
+		}
+		if interval <= 0 {
+			interval = 2 * time.Hour
 		}
 		ic.DataReporting.Interval = interval
 	}
