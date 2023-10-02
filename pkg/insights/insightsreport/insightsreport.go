@@ -244,7 +244,9 @@ func (c *Controller) RetrieveReport() {
 func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
-	klog.V(2).Infof("Initial config: %v", c.configurator.Config())
+	conf := c.configurator.Config()
+	klog.V(2).Infof("Insights analysis reports will be downloaded from the %s endpoint with a delay of %s",
+		conf.ReportEndpoint, conf.ReportPullingDelay)
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
