@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
 	"github.com/openshift/api/insights/v1alpha1"
@@ -1082,6 +1084,60 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 			err := mockController.updateInsightsReportInDataGather(context.Background(), tt.analysisReport, tt.dataGatherToUpdate)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedInsightsReport, &tt.dataGatherToUpdate.Status.InsightsReport)
+		})
+	}
+}
+
+func TestDataGatherState(t *testing.T) {
+	tests := []struct {
+		name           string
+		dataGatherName string
+		dataGather     *v1alpha1.DataGather
+		expectedState  v1alpha1.DataGatherState
+		err            error
+	}{
+		{
+			name:           "Existing DataGather state is read correctly",
+			dataGatherName: "test-dg",
+			dataGather: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-dg",
+				},
+				Status: v1alpha1.DataGatherStatus{
+					State: v1alpha1.Pending,
+				},
+			},
+			expectedState: v1alpha1.Pending,
+			err:           nil,
+		},
+		{
+			name:           "Non-existing DataGather state returns an error",
+			dataGatherName: "non-existing",
+			dataGather:     nil,
+			expectedState:  v1alpha1.Pending,
+			err: errors.NewNotFound(schema.GroupResource{
+				Group:    "insights.openshift.io",
+				Resource: "datagathers",
+			}, "non-existing"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var insightsCs *insightsFakeCli.Clientset
+			if tt.err != nil {
+				insightsCs = insightsFakeCli.NewSimpleClientset()
+			} else {
+				insightsCs = insightsFakeCli.NewSimpleClientset(tt.dataGather)
+			}
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil)
+			state, err := mockController.dataGatherState(context.Background(), tt.dataGatherName)
+			if tt.err != nil {
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.dataGather.Status.State, state)
+			}
 		})
 	}
 }
