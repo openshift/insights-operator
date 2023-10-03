@@ -36,6 +36,9 @@ type workloadImage struct {
 	// FirstArg is a hash of the first value in the command array, if any
 	// was set. Normalized to be consistent with pods
 	FirstArg string `json:"firstArg,omitempty"`
+	// Repository is a hash of an external image URL
+	// It is gathered when the image is not from Red Hat domain
+	Repository string `json:"repository,omitempty"`
 }
 
 // Empty returns true if the image has no contents and can be ignored.
@@ -82,8 +85,9 @@ type workloadPodShape struct {
 // workloadContainerShape describes the shape of a container which includes
 // a subset of the data in the container.
 // TODO: this may desirable to make more precise with a whole container hash
-//   that includes more of the workload, but that would only be necessary if
-//   it assisted reconstruction of type of workloads.
+//
+//	that includes more of the workload, but that would only be necessary if
+//	it assisted reconstruction of type of workloads.
 type workloadContainerShape struct {
 	// ImageID is the content addressable hash of the image as observed from
 	// the status or the spec tag.

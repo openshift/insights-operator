@@ -44,7 +44,7 @@ const (
 // * Location in archive: config/workload_info
 // * Id in config: workloads/workload_info
 // * Since versions:
-//   * 4.8+
+//   - 4.8+
 func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -63,7 +63,7 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient)
 }
 
-//nolint: funlen, gocyclo, gocritic
+// nolint: funlen, gocyclo, gocritic
 func gatherWorkloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
@@ -214,7 +214,7 @@ func gatherWorkloadInfo(
 	return records, nil
 }
 
-//nolint: gocyclo
+// nolint: gocyclo
 func gatherWorkloadImageInfo(
 	ctx context.Context,
 	imageClient imageclient.ImageInterface,
@@ -433,8 +433,14 @@ func calculateWorkloadInfo(h hash.Hash, image *imagev1.Image) workloadImage {
 	for _, layer := range image.DockerImageLayers {
 		layers = append(layers, layer.Name)
 	}
+
 	info := workloadImage{
 		LayerIDs: layers,
+	}
+
+	// we only need repo URLs from outside RH
+	if repo := getExternalImageRepo(image.DockerImageReference); repo != "" {
+		info.Repository = workloadHashString(h, repo)
 	}
 
 	if err := imageutil.ImageWithMetadata(image); err != nil {
@@ -510,4 +516,12 @@ func workloadImageAdd(imageID string, image workloadImage) {
 	workloadSizeLock.Lock()
 	defer workloadSizeLock.Unlock()
 	workloadImageLRU.Add(imageID, image)
+}
+
+// getExternalImageRepo returns image URLs if they are not from Red Hat domain
+func getExternalImageRepo(s string) (repo string) {
+	if !strings.Contains(s, "redhat") {
+		repo = s
+	}
+	return
 }
