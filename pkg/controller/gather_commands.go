@@ -238,8 +238,12 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		dataProcessedCon.Status = metav1.ConditionFalse
 		dataProcessedCon.Reason = "Failure"
 		dataProcessedCon.Message = fmt.Sprintf("failed to process data in the given time: %v", err)
+		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Failed)
+		return err
 	}
 	updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Completed)
+	klog.V(4).Infof("Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
+		insightsRequestID)
 	return nil
 }
 
