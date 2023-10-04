@@ -17,13 +17,14 @@ type InsightsConfigurationSerialized struct {
 }
 
 type DataReportingSerialized struct {
-	Interval                    string `json:"interval,omitempty"`
-	UploadEndpoint              string `json:"uploadEndpoint,omitempty"`
-	DownloadEndpoint            string `json:"downloadEndpoint,omitempty"`
-	DownloadEndpointTechPreview string `json:"downloadEndpointTechPreview,omitempty"`
-	StoragePath                 string `json:"storagePath,omitempty"`
-	ConditionalGathererEndpoint string `json:"conditionalGathererEndpoint,omitempty"`
-	ProcessingStatusEndpoint    string `json:"processingStatusEndpoint"`
+	Interval                    string      `json:"interval,omitempty"`
+	UploadEndpoint              string      `json:"uploadEndpoint,omitempty"`
+	DownloadEndpoint            string      `json:"downloadEndpoint,omitempty"`
+	DownloadEndpointTechPreview string      `json:"downloadEndpointTechPreview,omitempty"`
+	StoragePath                 string      `json:"storagePath,omitempty"`
+	ConditionalGathererEndpoint string      `json:"conditionalGathererEndpoint,omitempty"`
+	ProcessingStatusEndpoint    string      `json:"processingStatusEndpoint,omitempty"`
+	Obfuscation                 Obfuscation `json:"obfuscation,omitempty"`
 }
 
 // InsightsConfiguration is a type representing actual Insights
@@ -46,7 +47,17 @@ type DataReporting struct {
 	ConditionalGathererEndpoint string
 	ReportPullingDelay          time.Duration
 	ProcessingStatusEndpoint    string
+	Obfuscation                 Obfuscation
 }
+
+const (
+	Networking    ObfuscationValue = "networking"
+	WorkloadNames ObfuscationValue = "workload_names"
+)
+
+type ObfuscationValue string
+
+type Obfuscation []ObfuscationValue
 
 // ToConfig reads and pareses the actual serialized configuration from "InsightsConfigurationSerialized"
 // and returns the "InsightsConfiguration".
@@ -59,6 +70,7 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 			StoragePath:                 i.DataReporting.StoragePath,
 			ConditionalGathererEndpoint: i.DataReporting.ConditionalGathererEndpoint,
 			ProcessingStatusEndpoint:    i.DataReporting.ProcessingStatusEndpoint,
+			Obfuscation:                 i.DataReporting.Obfuscation,
 		},
 	}
 	if i.DataReporting.Interval != "" {
@@ -75,16 +87,18 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 }
 
 func (i *InsightsConfiguration) String() string {
-	s := fmt.Sprintf(`interval=%s, 
-		upload_endpoint=%s,
-		storage_path=%s, 
-		download_endpoint=%s, 
-		conditional_gatherer_endpoint=%s`,
+	s := fmt.Sprintf(`upload_interval=%s, 
+	upload_endpoint=%s,
+	storage_path=%s, 
+	download_endpoint=%s, 
+	conditional_gatherer_endpoint=%s,
+	obfuscation=%s`,
 		i.DataReporting.Interval,
 		i.DataReporting.UploadEndpoint,
 		i.DataReporting.StoragePath,
 		i.DataReporting.DownloadEndpoint,
 		i.DataReporting.ConditionalGathererEndpoint,
+		i.DataReporting.Obfuscation,
 	)
 	return s
 }

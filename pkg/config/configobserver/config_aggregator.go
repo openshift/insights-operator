@@ -130,6 +130,10 @@ func (c *ConfigAggregator) merge(defaultCfg, newCfg *config.InsightsConfiguratio
 	if newCfg.DataReporting.StoragePath != "" {
 		defaultCfg.DataReporting.StoragePath = newCfg.DataReporting.StoragePath
 	}
+
+	if len(newCfg.DataReporting.Obfuscation) > 0 {
+		defaultCfg.DataReporting.Obfuscation = append(defaultCfg.DataReporting.Obfuscation, newCfg.DataReporting.Obfuscation...)
+	}
 	c.config = defaultCfg
 }
 
@@ -186,6 +190,11 @@ func (c *ConfigAggregator) ConfigChanged() (configCh <-chan struct{}, closeFn fu
 
 func (c *ConfigAggregator) legacyConfigToInsightsConfiguration() *config.InsightsConfiguration {
 	legacyConfig := c.legacyConfigurator.Config()
+	var obfuscation config.Obfuscation
+	if legacyConfig.EnableGlobalObfuscation {
+		obfuscation = config.Obfuscation{config.Networking}
+	}
+
 	return &config.InsightsConfiguration{
 		DataReporting: config.DataReporting{
 			Interval:                    legacyConfig.Interval,
@@ -200,6 +209,7 @@ func (c *ConfigAggregator) legacyConfigToInsightsConfiguration() *config.Insight
 			Enabled:            legacyConfig.Report,
 			StoragePath:        legacyConfig.StoragePath,
 			ReportPullingDelay: legacyConfig.ReportPullingDelay,
+			Obfuscation:        obfuscation,
 		},
 	}
 }
