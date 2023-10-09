@@ -7,6 +7,8 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const defaultGatherPeriod = 2 * time.Hour
+
 // InsightsConfigurationSerialized is a type representing Insights
 // Operator configuration values in JSON/YAML and it is when decoding
 // the content of the "insights-config" config map.
@@ -62,11 +64,10 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 	if i.DataReporting.Interval != "" {
 		interval, err := time.ParseDuration(i.DataReporting.Interval)
 		if err != nil {
-			klog.Errorf("Cannot parse interval time duration: %v. Using default value 2h", err)
-			interval = 2 * time.Hour
+			klog.Errorf("Cannot parse interval time duration: %v. Using default value %s", err, defaultGatherPeriod)
 		}
 		if interval <= 0 {
-			interval = 2 * time.Hour
+			interval = defaultGatherPeriod
 		}
 		ic.DataReporting.Interval = interval
 	}
@@ -74,11 +75,11 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 }
 
 func (i *InsightsConfiguration) String() string {
-	s := fmt.Sprintf("interval=%s, "+
-		"upload_endpoint=%s, "+
-		"storage_path=%s, "+
-		"download_endpoint=%s, "+
-		"conditional_gatherer_endpoint=%s",
+	s := fmt.Sprintf(`interval=%s, 
+		upload_endpoint=%s,
+		storage_path=%s, 
+		download_endpoint=%s, 
+		conditional_gatherer_endpoint=%s`,
 		i.DataReporting.Interval,
 		i.DataReporting.UploadEndpoint,
 		i.DataReporting.StoragePath,

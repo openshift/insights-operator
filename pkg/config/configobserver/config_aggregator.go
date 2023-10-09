@@ -12,6 +12,8 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const insightsNamespaceName = "openshift-insights"
+
 type Interface interface {
 	Config() *config.InsightsConfiguration
 	ConfigChanged() (<-chan struct{}, func())
@@ -21,7 +23,7 @@ type Interface interface {
 // ConfigAggregator is an auxiliary structure that should obviate the need for the use of
 // legacy secret configurator and the new config map informer
 type ConfigAggregator struct {
-	lock               sync.Mutex
+	lock               sync.RWMutex
 	legacyConfigurator Configurator
 	configMapInformer  ConfigMapInformer
 	config             *config.InsightsConfiguration
@@ -59,6 +61,8 @@ func NewStaticConfigAggregator(ctrl Configurator, cli kubernetes.Interface) Inte
 // from the new configmap informer. The "insights-config" configmap always takes
 // precedence if it exists and is not empty.
 func (c *ConfigAggregator) mergeUsingInformer() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	newConf := c.configMapInformer.Config()
 	conf := c.legacyConfigToInsightsConfiguration()
 
@@ -70,10 +74,18 @@ func (c *ConfigAggregator) mergeUsingInformer() {
 	c.merge(conf, newConf)
 }
 
+// mergeStatically merges config values for the legacy "support" secret configuration and
+// from the "insights-config" configmap by getting and reading the confimap directly without
+// using an informer.
 func (c *ConfigAggregator) mergeStatically() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	conf := c.legacyConfigToInsightsConfiguration()
 	c.config = conf
-	cm, err := c.kubeClient.CoreV1().ConfigMaps("openshift-insights").Get(context.Background(), insightsConfigMapName, metav1.GetOptions{})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cm, err := c.kubeClient.CoreV1().ConfigMaps(insightsNamespaceName).Get(ctx, insightsConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return
