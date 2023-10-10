@@ -52,7 +52,19 @@ func TestWasDataProcessed(t *testing.T) {
 				err: nil,
 			},
 			expectedProcessed: false,
-			expectedErr:       nil,
+			expectedErr:       fmt.Errorf("HTTP status message: %s", http.StatusText(http.StatusNotFound)),
+		},
+		{
+			name: "HTTP 404 response and existing body",
+			mockClient: MockProcessingStatusClient{
+				response: &http.Response{
+					StatusCode: http.StatusNotFound,
+					Body:       io.NopCloser(strings.NewReader("test message")),
+				},
+				err: nil,
+			},
+			expectedProcessed: false,
+			expectedErr:       fmt.Errorf("HTTP status message: %s", http.StatusText(http.StatusNotFound)),
 		},
 		{
 			name: "data not processed",
