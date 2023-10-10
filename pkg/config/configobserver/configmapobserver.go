@@ -34,7 +34,7 @@ type ConfigMapInformer interface {
 // in the "openshift-insights" namespace.
 type ConfigMapObserver struct {
 	factory.Controller
-	lock           sync.Mutex
+	lock           sync.RWMutex
 	kubeCli        *kubernetes.Clientset
 	insightsConfig *config.InsightsConfiguration
 	listeners      map[chan struct{}]struct{}

@@ -3,7 +3,6 @@ package configobserver
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -104,7 +103,7 @@ func (c *ConfigAggregator) mergeStatically() {
 
 func (c *ConfigAggregator) merge(defaultCfg, newCfg *config.InsightsConfiguration) {
 	// read config map values and merge
-	if newCfg.DataReporting.Interval != 0*time.Minute {
+	if newCfg.DataReporting.Interval != 0 {
 		defaultCfg.DataReporting.Interval = newCfg.DataReporting.Interval
 	}
 
