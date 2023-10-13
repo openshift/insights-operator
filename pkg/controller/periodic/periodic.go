@@ -260,41 +260,18 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	}
 }
 
-// periodicTriggerTechPreview is a techpreview alternative to the same function above,
-// but this adds a listerner for the dataGatherInforme, which is nil (not initialized) in
-// non-techpreview clusters.
-func (c *Controller) periodicTriggerTechPreview(stopCh <-chan struct{}) {
-	configCh, closeFn := c.configAggregator.ConfigChanged()
-	defer closeFn()
-
-	ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
-	defer cancel()
-
-	interval := c.configAggregator.Config().DataReporting.Interval
-	klog.Infof("Gathering cluster info every %s", interval)
-	klog.Infof("Configuration is %v", c.configAggregator.Config().String())
-	t := time.NewTicker(interval)
+// onDemandGather listens to newly created DataGather resources and checks
+// the state of each resource. If the state is not an empty string, it means that
+// the corresponding job is already running or has been started and new data gathering
+// is not triggered.
+func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 	for {
 		select {
 		case <-stopCh:
-			t.Stop()
 			return
-		case <-configCh:
-			newInterval := c.configAggregator.Config().DataReporting.Interval
-			if newInterval == interval {
-				continue
-			}
-			interval = newInterval
-			t.Reset(interval)
-			klog.Infof("Gathering cluster info every %s", interval)
-			klog.Infof("Configuration is %v", c.configAggregator.Config().String())
-		case <-t.C:
-			c.GatherJob()
-
-		// listen to on-demand dataGather creations
 		case dgName := <-c.dgInf.DataGatherCreated():
 			go func() {
-				ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)
+				ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
 				defer cancel()
 
 				state, err := c.dataGatherState(ctx, dgName)
