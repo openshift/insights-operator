@@ -329,12 +329,16 @@ func wasDataProcessed(ctx context.Context,
 		if err != nil {
 			return false, err
 		}
-		if resp.StatusCode == http.StatusOK || retryCounter == 2 {
-			return true, nil
+		if resp.StatusCode != http.StatusOK {
+			if retryCounter == 2 {
+				err := fmt.Errorf("HTTP status message: %s", http.StatusText(resp.StatusCode))
+				return false, err
+			}
+			klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, delay)
+			retryCounter++
+			return false, nil
 		}
-		klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, delay)
-		retryCounter++
-		return false, nil
+		return true, nil
 	})
 
 	if err != nil {
