@@ -10,7 +10,6 @@ The `support` secret provides following configuration attributes:
 - `endpoint` - upload endpoint - default is `https://console.redhat.com/api/ingress/v1/upload`,
 - `interval` - data gathering & uploading frequency - default is `2h`
 - `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator
-- `username`, `password` - if set, the insights client upload will be authenticated by basic authorization using the username/password. By default, it uses the token (see below) from the `pull-secret` secret.
 - `enableGlobalObfuscation` - to enable the global obfuscation of the IP addresses and the cluster domain name. Default value is `false`
 - `reportEndpoint` - download endpoint. From this endpoint, the Insights operator downloads the latest Insights analysis. Default value is `https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports` (where `%s` must be replaced with the cluster ID)
 - `reportPullingDelay` - the delay between data upload and download. Default value is `60s`
