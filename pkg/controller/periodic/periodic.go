@@ -156,13 +156,10 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 			c.Gather()
 		}
 	}
-
+	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
 	if c.techPreview {
-		go wait.Until(func() { c.periodicTriggerTechPreview(stopCh) }, time.Second, stopCh)
-	} else {
-		go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
+		go wait.Until(func() { c.onDemandGather(stopCh) }, time.Second, stopCh)
 	}
-
 	<-stopCh
 }
 
@@ -254,48 +251,46 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 
 		case <-time.After(interval):
-			c.Gather()
+			if c.techPreview {
+				c.GatherJob()
+			} else {
+				c.Gather()
+			}
 		}
 	}
 }
 
-// periodicTriggerTechPreview is a techpreview alternative to the same function above,
-// but this adds a listerner for the dataGatherInforme, which is nil (not initialized) in
-// non-techpreview clusters.
-func (c *Controller) periodicTriggerTechPreview(stopCh <-chan struct{}) {
-	configCh, closeFn := c.secretConfigurator.ConfigChanged()
-	defer closeFn()
-
-	ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)
-	defer cancel()
-
-	interval := c.secretConfigurator.Config().Interval
-	klog.Infof("Gathering cluster info every %s", interval)
+// onDemandGather listens to newly created DataGather resources and checks
+// the state of each resource. If the state is not an empty string, it means that
+// the corresponding job is already running or has been started and new data gathering
+// is not triggered.
+func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 	for {
 		select {
 		case <-stopCh:
 			return
-
-		case <-configCh:
-			newInterval := c.secretConfigurator.Config().Interval
-			if newInterval == interval {
-				continue
-			}
-			interval = newInterval
-			klog.Infof("Gathering cluster info every %s", interval)
-
-		case <-time.After(interval):
-			c.GatherJob()
-
-		// lister to on-demand dataGather creations
 		case dgName := <-c.dgInf.DataGatherCreated():
-			err := c.updateNewDataGatherCRStatus(ctx, dgName)
-			if err != nil {
-				klog.Errorf("Failed to update status of the %s DataGather resource: %v", dgName, err)
-				return
-			}
-			klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
-			go c.runJobAndCheckResults(ctx, dgName)
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), c.secretConfigurator.Config().Interval*4)
+				defer cancel()
+
+				state, err := c.dataGatherState(ctx, dgName)
+				if err != nil {
+					klog.Errorf("Failed to read %s DataGather resource", dgName)
+					return
+				}
+				if state != "" {
+					klog.Infof("DataGather %s resource state is %s. Not triggering any data gathering", dgName, state)
+					return
+				}
+				err = c.updateNewDataGatherCRStatus(ctx, dgName)
+				if err != nil {
+					klog.Errorf("Failed to update status of the %s DataGather resource: %v", dgName, err)
+					return
+				}
+				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
+				c.runJobAndCheckResults(ctx, dgName)
+			}()
 		}
 	}
 }
@@ -597,6 +592,15 @@ func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dgName str
 		return err
 	}
 	return nil
+}
+
+// dataGatherState gets the DataGather resource with the provided name and returns its state.
+func (c *Controller) dataGatherState(ctx context.Context, dgName string) (insightsv1alpha1.DataGatherState, error) {
+	dg, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return dg.Status.State, nil
 }
 
 // createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
