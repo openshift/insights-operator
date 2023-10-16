@@ -22,7 +22,7 @@ type Interface interface {
 // ConfigAggregator is an auxiliary structure that should obviate the need for the use of
 // legacy secret configurator and the new config map informer
 type ConfigAggregator struct {
-	lock               sync.RWMutex
+	lock               sync.Mutex
 	legacyConfigurator Configurator
 	configMapInformer  ConfigMapInformer
 	config             *config.InsightsConfiguration
