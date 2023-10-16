@@ -37,11 +37,9 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 		expConfig *config.Controller
 		expErr    error
 	}{
-		{name: "interval too short",
+		{
+			name: "interval too short",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": nil,
-				}},
 				supportKey: {Data: map[string][]byte{
 					"username": []byte("someone"),
 					"password": []byte("secret"),
@@ -51,55 +49,45 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 			},
 			expErr: fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to ten seconds: too short"),
 		},
-		{name: "interval incorrect format",
+		{
+			name: "interval incorrect format",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": nil,
-				}},
 				supportKey: {Data: map[string][]byte{
 					"interval": []byte("every second"),
 				}},
 			},
 			expErr: fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to ten seconds: time: invalid duration \"every second\""),
 		},
-		{name: "reportPullingDelay incorrect format",
+		{
+			name: "reportPullingDelay incorrect format",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": nil,
-				}},
 				supportKey: {Data: map[string][]byte{
 					"reportPullingDelay": []byte("every second"),
 				}},
 			},
 			expConfig: &config.Controller{}, // it only produces a warning in the log
 		},
-		{name: "reportMinRetryTime incorrect format",
+		{
+			name: "reportMinRetryTime incorrect format",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": nil,
-				}},
 				supportKey: {Data: map[string][]byte{
 					"reportMinRetryTime": []byte("every second"),
 				}},
 			},
 			expConfig: &config.Controller{}, // it only produces a warning in the log
 		},
-		{name: "reportPullingTimeout incorrect format",
+		{
+			name: "reportPullingTimeout incorrect format",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": nil,
-				}},
 				supportKey: {Data: map[string][]byte{
 					"reportPullingTimeout": []byte("every second"),
 				}},
 			},
 			expConfig: &config.Controller{}, // it only produces a warning in the log
 		},
-		{name: "correct interval",
+		{
+			name: "correct interval",
 			config: map[string]*corev1.Secret{
-				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": nil,
-				}},
 				supportKey: {Data: map[string][]byte{
 					"interval": []byte("1m"),
 				}},
@@ -109,14 +97,14 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 			},
 			expErr: nil,
 		},
-		{name: "set-all-config",
+		{
+			name: "set-all-config",
 			config: map[string]*corev1.Secret{
 				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": nil,
+					".dockerconfigjson": []byte("{\"auths\":{\"cloud.openshift.com\":{\"auth\":\"testtoken\",\"email\":\"test\"}}}"),
 				}},
+
 				supportKey: {Data: map[string][]byte{
-					"username":                []byte("Dude"),
-					"password":                []byte("pswd123"),
 					"endpoint":                []byte("http://po.rt"),
 					"httpProxy":               []byte("http://pro.xy"),
 					"httpsProxy":              []byte("https://pro.xy"),
@@ -131,9 +119,8 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 			},
 			expConfig: &config.Controller{
 				Report:   true,
-				Username: "Dude",
-				Password: "pswd123",
 				Endpoint: "http://po.rt",
+				Token:    "testtoken",
 				HTTPConfig: config.HTTPConfig{
 					HTTPProxy:  "http://pro.xy",
 					HTTPSProxy: "https://pro.xy",
@@ -211,7 +198,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 			".dockerconfigjson": nil,
 		}},
 		supportKey: {Data: map[string][]byte{
-			"username": []byte("test2"),
+			"endpoint": []byte("test2"),
 		}},
 	})
 	// 1. config update
@@ -221,7 +208,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 	}
 	// Check if the event arrived at the channel
 	if len(configCh) != 1 {
-		t.Fatalf("Config channel has more/less then 1 event on a singal config change. len(configCh)==%d", len(configCh))
+		t.Fatalf("Config channel has more/less than 1 event on a signal config change. len(configCh)==%d", len(configCh))
 	}
 
 	// Unsubscribe from config change
@@ -232,7 +219,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 			".dockerconfigjson": nil,
 		}},
 		supportKey: {Data: map[string][]byte{
-			"username": []byte("test3"),
+			"endpoint": []byte("test3"),
 		}},
 	})
 	// 2. config update
