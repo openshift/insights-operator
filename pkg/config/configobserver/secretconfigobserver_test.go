@@ -101,7 +101,7 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 			name: "set-all-config",
 			config: map[string]*corev1.Secret{
 				pullSecretKey: {Data: map[string][]byte{
-					".dockerconfigjson": []byte("{\"auths\":{\"cloud.openshift.com\":{\"auth\":\"testtoken\",\"email\":\"test\"}}}"),
+					".dockerconfigjson": []byte(`{"auths":{"cloud.openshift.com":{"auth":"testtoken","email":"test"}}}`),
 				}},
 
 				supportKey: {Data: map[string][]byte{
