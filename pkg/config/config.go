@@ -53,9 +53,7 @@ type Controller struct {
 	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
 	EnableGlobalObfuscation bool
 
-	Username string
-	Password string
-	Token    string
+	Token string
 
 	HTTPConfig HTTPConfig
 	OCMConfig  OCMConfig
@@ -89,7 +87,6 @@ func (c *Controller) ToString() string {
 		"endpoint=%s "+
 		"conditional_gatherer_endpoint=%s "+
 		"interval=%s "+
-		"username=%t "+
 		"token=%t "+
 		"reportEndpoint=%s "+
 		"initialPollingDelay=%s "+
@@ -100,7 +97,6 @@ func (c *Controller) ToString() string {
 		c.Endpoint,
 		c.ConditionalGathererEndpoint,
 		c.Interval,
-		len(c.Username) > 0,
 		len(c.Token) > 0,
 		c.ReportEndpoint,
 		c.ReportPullingDelay,
@@ -110,7 +106,6 @@ func (c *Controller) ToString() string {
 }
 
 func (c *Controller) MergeWith(cfg *Controller) {
-	c.mergeCredentials(cfg)
 	c.mergeInterval(cfg)
 	c.mergeEndpoint(cfg)
 	c.mergeConditionalGathererEndpoint(cfg)
@@ -119,11 +114,6 @@ func (c *Controller) MergeWith(cfg *Controller) {
 	c.mergeHTTP(cfg)
 	c.mergeProcessingStatusEndpoint(cfg)
 	c.mergeReportEndpointTechPreview(cfg)
-}
-
-func (c *Controller) mergeCredentials(cfg *Controller) {
-	c.Username = cfg.Username
-	c.Password = cfg.Password
 }
 
 func (c *Controller) mergeEndpoint(cfg *Controller) {

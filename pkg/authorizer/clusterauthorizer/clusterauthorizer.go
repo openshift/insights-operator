@@ -28,15 +28,8 @@ func New(configurator configobserver.Configurator) *Authorizer {
 
 // Authorize adds the necessary auth header to the request, depending on the config. (BasicAuth/Token)
 func (a *Authorizer) Authorize(req *http.Request) error {
-	cfg := a.configurator.Config()
-
 	if req.Header == nil {
 		req.Header = make(http.Header)
-	}
-
-	if len(cfg.Username) > 0 || len(cfg.Password) > 0 {
-		req.SetBasicAuth(cfg.Username, cfg.Password)
-		return nil
 	}
 
 	token, err := a.Token()
