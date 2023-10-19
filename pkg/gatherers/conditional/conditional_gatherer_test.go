@@ -294,12 +294,18 @@ func newEmptyGatherer(gathererConfig string) *Gatherer { // nolint:gocritic
 			}]
 		}`
 	}
+	testConf := &config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			ConditionalGathererEndpoint: "/gathering_rules",
+		},
+	}
+	mockConfigurator := config.NewMockConfigMapConfigurator(testConf)
 
 	return New(
 		nil,
 		nil,
 		nil,
-		&config.MockSecretConfigurator{Conf: &config.Controller{ConditionalGathererEndpoint: "/gathering_rules"}},
+		mockConfigurator,
 		&MockGatheringRulesServiceClient{Conf: gathererConfig},
 	)
 }

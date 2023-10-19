@@ -94,10 +94,12 @@ func TestWasDataProcessed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockConfCtrl := &config.Controller{
-				ReportPullingDelay: 10 * time.Millisecond,
+			mockConfig := &config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					ReportPullingDelay: 10 * time.Millisecond,
+				},
 			}
-			processed, err := wasDataProcessed(context.Background(), &tt.mockClient, "empty", mockConfCtrl)
+			processed, err := wasDataProcessed(context.Background(), &tt.mockClient, "empty", mockConfig)
 			assert.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedProcessed, processed)
 		})
