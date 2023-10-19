@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -137,9 +139,9 @@ func gatherDVOMetricsFromEndpoint(
 		return nil, err
 	}
 
-	dataReader, err := metricsRESTClient.Get().AbsPath("metrics").Stream(ctx)
+	dataReader, err := queryMetricsService(ctx, metricsRESTClient)
 	if err != nil {
-		klog.Warningf("Unable to retrieve most recent metrics: %v", err)
+		klog.Warningf("Unable to retrieve DVO metrics: %v", err)
 		return nil, err
 	}
 	defer func() {
@@ -175,4 +177,22 @@ func gatherDVOMetricsFromEndpoint(
 	}
 
 	return prefixedLines, nil
+}
+
+// queryMetricsService queries the DVO metrics service with poll in case of an error. Polling
+// timeout is 2 seconds and interval is 0.5 seconds.
+func queryMetricsService(ctx context.Context, client *rest.RESTClient) (io.ReadCloser, error) {
+	var dataReader io.ReadCloser
+	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 2*time.Second, true, func(ctx context.Context) (done bool, err error) {
+		dataReader, err = client.Get().AbsPath("metrics").Stream(ctx)
+		if err != nil {
+			klog.Warning("Failed to read DVO metrics. Trying again.")
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return dataReader, nil
 }
