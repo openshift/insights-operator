@@ -20,6 +20,7 @@ type Gatherer struct {
 	alertsGatherKubeConfig  *rest.Config
 	anonymizer              *anonymization.Anonymizer
 	interval                time.Duration
+	configObserver          *configobserver.Controller
 }
 
 // gathererFuncPtr is a type for pointers to functions of Gatherer
@@ -91,11 +92,11 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 
 func New(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer, configObserver configobserver.Interface,
+	anonymizer *anonymization.Anonymizer, configObserver *configobserver.Controller,
 ) *Gatherer {
 	interval := time.Minute
 	if configObserver != nil && configObserver.Config() != nil {
-		interval = configObserver.Config().DataReporting.Interval
+		interval = configObserver.Config().Interval
 	}
 
 	return &Gatherer{
@@ -105,6 +106,7 @@ func New(
 		alertsGatherKubeConfig:  alertsGatherKubeConfig,
 		anonymizer:              anonymizer,
 		interval:                interval,
+		configObserver:          configObserver,
 	}
 }
 
