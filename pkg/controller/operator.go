@@ -266,7 +266,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	statusReporter.AddSources(clusterTransferController)
 	go clusterTransferController.Run()
 
-	promRulesController := insights.NewPrometheusRulesController(secretConfigObserver, controller.KubeConfig)
+	promRulesController := insights.NewPrometheusRulesController(configAggregator, controller.KubeConfig)
 	go promRulesController.Start(ctx)
 
 	klog.Warning("started")

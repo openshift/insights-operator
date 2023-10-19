@@ -42,8 +42,10 @@ func TestCheckAlertsDisabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockConfigObserver := config.NewMockSecretConfigurator(&config.Controller{
-				DisableInsightsAlerts: tt.alertsDisabled,
+			mockConfigObserver := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				Alerting: config.Alerting{
+					Disabled: tt.alertsDisabled,
+				},
 			})
 			testMonCli := fakeMonCli.NewSimpleClientset()
 			mockPromController := PrometheusRulesController{
