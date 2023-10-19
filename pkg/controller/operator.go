@@ -216,7 +216,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			operatorClient.InsightsOperators(), kubeClient)
 		statusReporter.AddSources(periodicGather.Sources()...)
 	} else {
-		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver)
+		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
 			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(), operatorClient.InsightsOperators(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
@@ -246,7 +246,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		// know any previous last reported time
 		go uploader.Run(ctx)
 
-		reportGatherer := insightsreport.New(insightsClient, secretConfigObserver, uploader, operatorClient.InsightsOperators())
+		reportGatherer := insightsreport.New(insightsClient, configAggregator, uploader, operatorClient.InsightsOperators())
 		statusReporter.AddSources(reportGatherer)
 		go reportGatherer.Run(ctx)
 	}

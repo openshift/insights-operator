@@ -14,6 +14,7 @@ const defaultGatherPeriod = 2 * time.Hour
 // the content of the "insights-config" config map.
 type InsightsConfigurationSerialized struct {
 	DataReporting DataReportingSerialized `json:"dataReporting"`
+	Alerting      AlertingSerialized      `json:"alerting,omitempty"`
 }
 
 type DataReportingSerialized struct {
@@ -27,11 +28,16 @@ type DataReportingSerialized struct {
 	Obfuscation                 Obfuscation `json:"obfuscation,omitempty"`
 }
 
+type AlertingSerialized struct {
+	Disabled bool `json:"disabled,omitempty"`
+}
+
 // InsightsConfiguration is a type representing actual Insights
 // Operator configuration options and is used in the code base
 // to make the configuration available.
 type InsightsConfiguration struct {
 	DataReporting DataReporting
+	Alerting      Alerting
 }
 
 // DataReporting is a type including all
@@ -48,6 +54,10 @@ type DataReporting struct {
 	ReportPullingDelay          time.Duration
 	ProcessingStatusEndpoint    string
 	Obfuscation                 Obfuscation
+}
+
+type Alerting struct {
+	Disabled bool
 }
 
 const (
@@ -71,6 +81,9 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 			ConditionalGathererEndpoint: i.DataReporting.ConditionalGathererEndpoint,
 			ProcessingStatusEndpoint:    i.DataReporting.ProcessingStatusEndpoint,
 			Obfuscation:                 i.DataReporting.Obfuscation,
+		},
+		Alerting: Alerting{
+			Disabled: i.Alerting.Disabled,
 		},
 	}
 	if i.DataReporting.Interval != "" {
