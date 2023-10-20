@@ -7,7 +7,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const defaultGatherPeriod = 2 * time.Hour
+const (
+	defaultGatherPeriod = 2 * time.Hour
+	defaultSCAPeriod    = 8 * time.Hour
+)
 
 // InsightsConfigurationSerialized is a type representing Insights
 // Operator configuration values in JSON/YAML and it is when decoding
@@ -15,6 +18,7 @@ const defaultGatherPeriod = 2 * time.Hour
 type InsightsConfigurationSerialized struct {
 	DataReporting DataReportingSerialized `json:"dataReporting"`
 	Alerting      AlertingSerialized      `json:"alerting,omitempty"`
+	SCA           SCASerialized           `json:"sca,omitempty"`
 }
 
 type DataReportingSerialized struct {
@@ -32,12 +36,19 @@ type AlertingSerialized struct {
 	Disabled bool `json:"disabled,omitempty"`
 }
 
+type SCASerialized struct {
+	Disabled bool   `json:"disabled,omitempty"`
+	Interval string `json:"interval,omitempty"`
+	Endpoint string `json:"endpoint,omitempty"`
+}
+
 // InsightsConfiguration is a type representing actual Insights
 // Operator configuration options and is used in the code base
 // to make the configuration available.
 type InsightsConfiguration struct {
 	DataReporting DataReporting
 	Alerting      Alerting
+	SCA           SCA
 }
 
 // DataReporting is a type including all
@@ -56,8 +67,18 @@ type DataReporting struct {
 	Obfuscation                 Obfuscation
 }
 
+// Alerting is a helper type for configuring Insights alerting
+// options
 type Alerting struct {
 	Disabled bool
+}
+
+// SCA is a helper type for configuring periodical download/check
+// of the SimpleContentAcccess entitlements
+type SCA struct {
+	Disabled bool
+	Interval time.Duration
+	Endpoint string
 }
 
 const (
@@ -85,6 +106,10 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 		Alerting: Alerting{
 			Disabled: i.Alerting.Disabled,
 		},
+		SCA: SCA{
+			Disabled: i.SCA.Disabled,
+			Endpoint: i.SCA.Endpoint,
+		},
 	}
 	if i.DataReporting.Interval != "" {
 		interval, err := time.ParseDuration(i.DataReporting.Interval)
@@ -96,6 +121,18 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 		}
 		ic.DataReporting.Interval = interval
 	}
+
+	if i.SCA.Interval != "" {
+		interval, err := time.ParseDuration(i.SCA.Interval)
+		if err != nil {
+			klog.Errorf("Cannot parse interval time duration: %v. Using default value %s", err, defaultSCAPeriod)
+		}
+		if interval <= 0 {
+			interval = defaultSCAPeriod
+		}
+		ic.SCA.Interval = interval
+	}
+
 	return ic
 }
 

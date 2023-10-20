@@ -35,7 +35,7 @@ type Controller struct {
 	controllerstatus.StatusController
 	coreClient   corev1client.CoreV1Interface
 	ctx          context.Context
-	configurator configobserver.Configurator
+	configurator configobserver.Interface
 	client       *insightsclient.Client
 }
 
@@ -48,7 +48,7 @@ type Response struct {
 }
 
 // New creates new instance
-func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator configobserver.Configurator,
+func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator configobserver.Interface,
 	insightsClient *insightsclient.Client) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New(ControllerName),
@@ -62,9 +62,9 @@ func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configura
 // Run periodically queries the OCM API and update corresponding secret accordingly
 func (c *Controller) Run() {
 	cfg := c.configurator.Config()
-	endpoint := cfg.OCMConfig.SCAEndpoint
-	interval := cfg.OCMConfig.SCAInterval
-	disabled := cfg.OCMConfig.SCADisabled
+	endpoint := cfg.SCA.Endpoint
+	interval := cfg.SCA.Interval
+	disabled := cfg.SCA.Disabled
 	configCh, cancel := c.configurator.ConfigChanged()
 	defer cancel()
 	if !disabled {
@@ -88,16 +88,16 @@ func (c *Controller) Run() {
 			}
 		case <-configCh:
 			cfg := c.configurator.Config()
-			interval = cfg.OCMConfig.SCAInterval
-			endpoint = cfg.OCMConfig.SCAEndpoint
-			disabled = cfg.OCMConfig.SCADisabled
+			interval = cfg.SCA.Interval
+			endpoint = cfg.SCA.Endpoint
+			disabled = cfg.SCA.Disabled
 		}
 	}
 }
 
 func (c *Controller) requestDataAndCheckSecret(endpoint string) {
-	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().OCMConfig.SCAEndpoint,
-		c.configurator.Config().OCMConfig.SCAInterval)
+	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().SCA.Endpoint,
+		c.configurator.Config().SCA.Interval)
 	data, err := c.requestSCAWithExpBackoff(endpoint)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
@@ -210,11 +210,11 @@ func (c *Controller) updateSecret(s *v1.Secret, ocmData *Response) (*v1.Secret, 
 // The exponential backoff is applied only for HTTP errors >= 500.
 func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
-		Duration: c.configurator.Config().OCMConfig.SCAInterval / 32, // 15 min by default
+		Duration: c.configurator.Config().SCA.Interval / 32, // 15 min by default
 		Factor:   2,
 		Jitter:   0,
 		Steps:    ocm.FailureCountThreshold,
-		Cap:      c.configurator.Config().OCMConfig.SCAInterval,
+		Cap:      c.configurator.Config().SCA.Interval,
 	}
 	var data []byte
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {

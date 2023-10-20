@@ -256,11 +256,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return fmt.Errorf("unable to set initial cluster status: %v", err)
 	}
 
-	scaController := initiateSCAController(ctx, kubeClient, secretConfigObserver, insightsClient)
-	if scaController != nil {
-		statusReporter.AddSources(scaController)
-		go scaController.Run()
-	}
+	scaController := sca.New(ctx, kubeClient.CoreV1(), configAggregator, insightsClient)
+	statusReporter.AddSources(scaController)
+	go scaController.Run()
 
 	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), secretConfigObserver, insightsClient)
 	statusReporter.AddSources(clusterTransferController)
@@ -303,13 +301,4 @@ func isRunning(kubeConfig *rest.Config) wait.ConditionWithContextFunc {
 		}
 		return true, nil
 	}
-}
-
-// initiateSCAController creates a new sca.Controller
-func initiateSCAController(ctx context.Context,
-	kubeClient *kubernetes.Clientset, configObserver *configobserver.Controller, insightsClient *insightsclient.Client) *sca.Controller {
-	// SCA controller periodically checks and pull data from the OCM SCA API
-	// the data is exposed in the OpenShift API
-	scaController := sca.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
-	return scaController
 }
