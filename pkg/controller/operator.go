@@ -168,7 +168,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver,
+	statusReporter := status.NewController(configClient.ConfigV1(), configAggregator,
 		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"))
 
 	var anonymizer *anonymization.Anonymizer
