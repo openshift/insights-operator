@@ -101,9 +101,9 @@ func Test_Controller_periodicTrigger(t *testing.T) {
 	}{
 		{
 			name:                 "periodicTrigger finished gathering",
-			interval:             1 * time.Second,
+			interval:             2 * time.Second,
 			waitTime:             3 * time.Second,
-			expectedNumOfRecords: 12,
+			expectedNumOfRecords: 6,
 		},
 		{
 			name:                 "periodicTrigger stopped with no data gathered",
@@ -211,13 +211,19 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		Report:   true,
 		Interval: interval,
 	}}
+	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			Enabled:  true,
+			Interval: interval,
+		},
+	})
 	mockRecorder := recorder.MockRecorder{}
 	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, "")
 	if err != nil {
 		return nil, nil, err
 	}
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
-	mockController := New(&mockConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, nil)
+	mockController := New(mockConfigMapConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, nil)
 	return mockController, &mockRecorder, nil
 }
 
@@ -1075,12 +1081,13 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGatherToUpdate)
-			mockSecretConf := &config.MockSecretConfigurator{
-				Conf: &config.Controller{
-					ReportEndpointTechPreview: "https://test.report.endpoint.tech.preview.uri/cluster/%s/requestID/%s",
+			conf := &config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "https://test.report.endpoint.tech.preview.uri/cluster/%s/requestID/%s",
 				},
 			}
-			mockController := NewWithTechPreview(nil, mockSecretConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil)
+			mockCMConf := config.NewMockConfigMapConfigurator(conf)
+			mockController := NewWithTechPreview(nil, mockCMConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil)
 			err := mockController.updateInsightsReportInDataGather(context.Background(), tt.analysisReport, tt.dataGatherToUpdate)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedInsightsReport, &tt.dataGatherToUpdate.Status.InsightsReport)
