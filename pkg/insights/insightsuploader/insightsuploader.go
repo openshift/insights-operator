@@ -84,7 +84,7 @@ func (c *Controller) Run(ctx context.Context) {
 	if !lastReported.IsZero() {
 		next := lastReported.Add(interval)
 		if now := time.Now(); next.After(now) {
-			c.initialDelay = wait.Jitter(now.Sub(next), 1.2)
+			c.initialDelay = wait.Jitter(next.Sub(now), 1.2)
 		}
 	}
 	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", cfg.DataReporting.UploadEndpoint, interval, c.initialDelay.Truncate(time.Second))
@@ -106,7 +106,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	configCh, cancelFn := c.configurator.ConfigChanged()
 	defer cancelFn()
 
-	if c.initialDelay == 0 {
+	if c.initialDelay <= 0 {
 		c.checkSummaryAndSend(interval, lastReported, endpoint, reportingEnabled)
 		return
 	}
