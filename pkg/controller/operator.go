@@ -260,7 +260,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	statusReporter.AddSources(scaController)
 	go scaController.Run()
 
-	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), secretConfigObserver, insightsClient)
+	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), configAggregator, insightsClient)
 	statusReporter.AddSources(clusterTransferController)
 	go clusterTransferController.Run()
 

@@ -8,17 +8,22 @@ import (
 )
 
 const (
-	defaultGatherPeriod = 2 * time.Hour
-	defaultSCAPeriod    = 8 * time.Hour
+	// defines default frequency of the data gathering
+	defaultGatherFrequency = 2 * time.Hour
+	// defines default frequency of the SCA download
+	defaultSCAFfrequency = 8 * time.Hour
+	// defines default frequency of the Cluster Transfer download
+	defaultClusterTransferFrequency = 12 * time.Hour
 )
 
 // InsightsConfigurationSerialized is a type representing Insights
 // Operator configuration values in JSON/YAML and it is when decoding
 // the content of the "insights-config" config map.
 type InsightsConfigurationSerialized struct {
-	DataReporting DataReportingSerialized `json:"dataReporting"`
-	Alerting      AlertingSerialized      `json:"alerting,omitempty"`
-	SCA           SCASerialized           `json:"sca,omitempty"`
+	DataReporting   DataReportingSerialized   `json:"dataReporting"`
+	Alerting        AlertingSerialized        `json:"alerting,omitempty"`
+	SCA             SCASerialized             `json:"sca,omitempty"`
+	ClusterTransfer ClusterTransferSerialized `json:"clusterTransfer,omitempty"`
 }
 
 type DataReportingSerialized struct {
@@ -42,13 +47,19 @@ type SCASerialized struct {
 	Endpoint string `json:"endpoint,omitempty"`
 }
 
+type ClusterTransferSerialized struct {
+	Interval string `json:"interval,omitempty"`
+	Endpoint string `json:"endpoint,omitempty"`
+}
+
 // InsightsConfiguration is a type representing actual Insights
 // Operator configuration options and is used in the code base
 // to make the configuration available.
 type InsightsConfiguration struct {
-	DataReporting DataReporting
-	Alerting      Alerting
-	SCA           SCA
+	DataReporting   DataReporting
+	Alerting        Alerting
+	SCA             SCA
+	ClusterTransfer ClusterTransfer
 }
 
 // DataReporting is a type including all
@@ -71,6 +82,13 @@ type DataReporting struct {
 // options
 type Alerting struct {
 	Disabled bool
+}
+
+// ClusterTransfer is a helper type for configuring Insights
+// cluster transfer (ownership) feature
+type ClusterTransfer struct {
+	Interval time.Duration
+	Endpoint string
 }
 
 // SCA is a helper type for configuring periodical download/check
@@ -110,30 +128,36 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 			Disabled: i.SCA.Disabled,
 			Endpoint: i.SCA.Endpoint,
 		},
+		ClusterTransfer: ClusterTransfer{
+			Endpoint: i.ClusterTransfer.Endpoint,
+		},
 	}
 	if i.DataReporting.Interval != "" {
-		interval, err := time.ParseDuration(i.DataReporting.Interval)
-		if err != nil {
-			klog.Errorf("Cannot parse interval time duration: %v. Using default value %s", err, defaultGatherPeriod)
-		}
-		if interval <= 0 {
-			interval = defaultGatherPeriod
-		}
-		ic.DataReporting.Interval = interval
+		ic.DataReporting.Interval = parseInterval(i.DataReporting.Interval, defaultGatherFrequency)
 	}
 
 	if i.SCA.Interval != "" {
-		interval, err := time.ParseDuration(i.SCA.Interval)
-		if err != nil {
-			klog.Errorf("Cannot parse interval time duration: %v. Using default value %s", err, defaultSCAPeriod)
-		}
-		if interval <= 0 {
-			interval = defaultSCAPeriod
-		}
-		ic.SCA.Interval = interval
+		ic.SCA.Interval = parseInterval(i.SCA.Interval, defaultSCAFfrequency)
+	}
+	if i.ClusterTransfer.Interval != "" {
+		ic.ClusterTransfer.Interval = parseInterval(i.ClusterTransfer.Interval, defaultClusterTransferFrequency)
 	}
 
 	return ic
+}
+
+// parseInterval tries to parse the "interval" string as time duration and if there is an error
+// or negative time value then the provided default time duration is used
+func parseInterval(interval string, defaultValue time.Duration) time.Duration {
+	durationInt, err := time.ParseDuration(interval)
+	if err != nil {
+		klog.Errorf("Cannot parse interval time duration: %v. Using default value %s", err, defaultValue)
+		return defaultValue
+	}
+	if durationInt <= 0 {
+		durationInt = defaultValue
+	}
+	return durationInt
 }
 
 func (i *InsightsConfiguration) String() string {

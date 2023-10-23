@@ -29,7 +29,7 @@ type Controller struct {
 	controllerstatus.StatusController
 	coreClient   corev1client.CoreV1Interface
 	ctx          context.Context
-	configurator configobserver.Configurator
+	configurator configobserver.Interface
 	client       clusterTransferClient
 	pullSecret   *v1.Secret
 }
@@ -41,7 +41,7 @@ type clusterTransferClient interface {
 // New creates new instance of the cluster transfer controller
 func New(ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
-	configurator configobserver.Configurator,
+	configurator configobserver.Interface,
 	insightsClient clusterTransferClient) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New(ControllerName),
@@ -55,8 +55,8 @@ func New(ctx context.Context,
 // Run periodically queries the OCM API and update pull-secret accordingly
 func (c *Controller) Run() {
 	cfg := c.configurator.Config()
-	endpoint := cfg.OCMConfig.ClusterTransferEndpoint
-	interval := cfg.OCMConfig.ClusterTransferInterval
+	endpoint := cfg.ClusterTransfer.Endpoint
+	interval := cfg.ClusterTransfer.Interval
 	configCh, cancel := c.configurator.ConfigChanged()
 	defer cancel()
 	c.requestDataAndUpdateSecret(endpoint)
@@ -66,8 +66,8 @@ func (c *Controller) Run() {
 			c.requestDataAndUpdateSecret(endpoint)
 		case <-configCh:
 			cfg := c.configurator.Config()
-			interval = cfg.OCMConfig.ClusterTransferInterval
-			endpoint = cfg.OCMConfig.ClusterTransferEndpoint
+			interval = cfg.ClusterTransfer.Interval
+			endpoint = cfg.ClusterTransfer.Endpoint
 		}
 	}
 }
@@ -75,7 +75,7 @@ func (c *Controller) Run() {
 // requestDataAndUpdateSecret queries the provided endpoint. If there is any data
 // in the response then check if a secret update is required, and if so, perform the update.
 func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
-	klog.Infof("checking the availability of cluster transfer. Next check is in %s", c.configurator.Config().OCMConfig.ClusterTransferInterval)
+	klog.Infof("checking the availability of cluster transfer. Next check is in %s", c.configurator.Config().ClusterTransfer.Interval)
 	data, err := c.requestClusterTransferWithExponentialBackoff(endpoint)
 	if err != nil {
 		msg := fmt.Sprintf("failed to pull cluster transfer: %v", err)
@@ -209,11 +209,11 @@ func (c *Controller) updatePullSecret(newData []byte) error {
 // The exponential backoff is applied only for HTTP errors >= 500.
 func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
-		Duration: c.configurator.Config().OCMConfig.ClusterTransferInterval / 24, // 30 min as the first waiting
+		Duration: c.configurator.Config().ClusterTransfer.Interval / 24, // 30 min as the first waiting
 		Factor:   2,
 		Jitter:   0,
 		Steps:    ocm.FailureCountThreshold,
-		Cap:      c.configurator.Config().OCMConfig.ClusterTransferInterval,
+		Cap:      c.configurator.Config().ClusterTransfer.Interval,
 	}
 
 	var data []byte

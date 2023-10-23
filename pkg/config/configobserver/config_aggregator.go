@@ -101,7 +101,18 @@ func (c *ConfigAggregator) mergeStatically() {
 	c.merge(conf, cmConf)
 }
 
+// merge merges the default configuration options with the defined ones
 func (c *ConfigAggregator) merge(defaultCfg, newCfg *config.InsightsConfiguration) {
+	c.mergeDataReporting(defaultCfg, newCfg)
+	c.mergeSCAConfig(defaultCfg, newCfg)
+	c.mergeAlerting(defaultCfg, newCfg)
+	c.mergeClusterTransfer(defaultCfg, newCfg)
+	c.config = defaultCfg
+}
+
+// mergeDataReporting checks configured data reporting options and if they are not empty then
+// override default data reporting configuration
+func (c *ConfigAggregator) mergeDataReporting(defaultCfg, newCfg *config.InsightsConfiguration) {
 	// read config map values and merge
 	if newCfg.DataReporting.Interval != 0 {
 		defaultCfg.DataReporting.Interval = newCfg.DataReporting.Interval
@@ -134,7 +145,40 @@ func (c *ConfigAggregator) merge(defaultCfg, newCfg *config.InsightsConfiguratio
 	if len(newCfg.DataReporting.Obfuscation) > 0 {
 		defaultCfg.DataReporting.Obfuscation = append(defaultCfg.DataReporting.Obfuscation, newCfg.DataReporting.Obfuscation...)
 	}
-	c.config = defaultCfg
+}
+
+func (c *ConfigAggregator) mergeAlerting(defaultCfg, newCfg *config.InsightsConfiguration) {
+	if newCfg.Alerting.Disabled != defaultCfg.Alerting.Disabled {
+		defaultCfg.Alerting.Disabled = newCfg.Alerting.Disabled
+	}
+}
+
+// mergeSCAConfig checks configured SCA options and if they are not empty then
+// override default SCA configuration
+func (c *ConfigAggregator) mergeSCAConfig(defaultCfg, newCfg *config.InsightsConfiguration) {
+	if newCfg.SCA.Interval != 0 {
+		defaultCfg.SCA.Interval = newCfg.SCA.Interval
+	}
+
+	if newCfg.SCA.Endpoint != "" {
+		defaultCfg.SCA.Endpoint = newCfg.SCA.Endpoint
+	}
+
+	if newCfg.SCA.Disabled != defaultCfg.SCA.Disabled {
+		defaultCfg.SCA.Disabled = newCfg.SCA.Disabled
+	}
+}
+
+// mergeClusterTransfer checks configured cluster transfer options and if they are not empty then
+// override default cluster transfer configuration
+func (c *ConfigAggregator) mergeClusterTransfer(defaultCfg, newCfg *config.InsightsConfiguration) {
+	if newCfg.ClusterTransfer.Interval != 0 {
+		defaultCfg.ClusterTransfer.Interval = newCfg.ClusterTransfer.Interval
+	}
+
+	if newCfg.ClusterTransfer.Endpoint != "" {
+		defaultCfg.ClusterTransfer.Endpoint = newCfg.ClusterTransfer.Endpoint
+	}
 }
 
 func (c *ConfigAggregator) Config() *config.InsightsConfiguration {
@@ -210,6 +254,14 @@ func (c *ConfigAggregator) legacyConfigToInsightsConfiguration() *config.Insight
 			StoragePath:        legacyConfig.StoragePath,
 			ReportPullingDelay: legacyConfig.ReportPullingDelay,
 			Obfuscation:        obfuscation,
+		},
+		Alerting: config.Alerting{
+			Disabled: legacyConfig.DisableInsightsAlerts,
+		},
+		SCA: config.SCA{
+			Disabled: legacyConfig.OCMConfig.SCADisabled,
+			Interval: legacyConfig.OCMConfig.SCAInterval,
+			Endpoint: legacyConfig.OCMConfig.SCAEndpoint,
 		},
 	}
 }
