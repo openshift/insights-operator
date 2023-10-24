@@ -24,6 +24,7 @@ type InsightsConfigurationSerialized struct {
 	Alerting        AlertingSerialized        `json:"alerting,omitempty"`
 	SCA             SCASerialized             `json:"sca,omitempty"`
 	ClusterTransfer ClusterTransferSerialized `json:"clusterTransfer,omitempty"`
+	Proxy           ProxySeriazlied           `json:"proxy,omitempty"`
 }
 
 type DataReportingSerialized struct {
@@ -52,6 +53,12 @@ type ClusterTransferSerialized struct {
 	Endpoint string `json:"endpoint,omitempty"`
 }
 
+type ProxySeriazlied struct {
+	HTTPProxy  string `json:"httpProxy,omitempty"`
+	HTTPSProxy string `json:"httpsProxy,omitempty"`
+	NoProxy    string `json:"noProxy,omitempty"`
+}
+
 // InsightsConfiguration is a type representing actual Insights
 // Operator configuration options and is used in the code base
 // to make the configuration available.
@@ -60,6 +67,7 @@ type InsightsConfiguration struct {
 	Alerting        Alerting
 	SCA             SCA
 	ClusterTransfer ClusterTransfer
+	Proxy           Proxy
 }
 
 // DataReporting is a type including all
@@ -99,6 +107,13 @@ type SCA struct {
 	Endpoint string
 }
 
+// Proxy is a helper type for configuring connection proxy
+type Proxy struct {
+	HTTPProxy  string
+	HTTPSProxy string
+	NoProxy    string
+}
+
 const (
 	Networking    ObfuscationValue = "networking"
 	WorkloadNames ObfuscationValue = "workload_names"
@@ -130,6 +145,11 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 		},
 		ClusterTransfer: ClusterTransfer{
 			Endpoint: i.ClusterTransfer.Endpoint,
+		},
+		Proxy: Proxy{
+			HTTPProxy:  i.Proxy.HTTPProxy,
+			HTTPSProxy: i.Proxy.HTTPSProxy,
+			NoProxy:    i.Proxy.NoProxy,
 		},
 	}
 	if i.DataReporting.Interval != "" {
@@ -166,13 +186,15 @@ func (i *InsightsConfiguration) String() string {
 	storage_path=%s, 
 	download_endpoint=%s, 
 	conditional_gatherer_endpoint=%s,
-	obfuscation=%s`,
+	obfuscation=%s,
+	sca=%v`,
 		i.DataReporting.Interval,
 		i.DataReporting.UploadEndpoint,
 		i.DataReporting.StoragePath,
 		i.DataReporting.DownloadEndpoint,
 		i.DataReporting.ConditionalGathererEndpoint,
 		i.DataReporting.Obfuscation,
+		i.SCA,
 	)
 	return s
 }

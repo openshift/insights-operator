@@ -107,6 +107,7 @@ func (c *ConfigAggregator) merge(defaultCfg, newCfg *config.InsightsConfiguratio
 	c.mergeSCAConfig(defaultCfg, newCfg)
 	c.mergeAlerting(defaultCfg, newCfg)
 	c.mergeClusterTransfer(defaultCfg, newCfg)
+	c.mergeProxyConfig(defaultCfg, newCfg)
 	c.config = defaultCfg
 }
 
@@ -166,6 +167,22 @@ func (c *ConfigAggregator) mergeSCAConfig(defaultCfg, newCfg *config.InsightsCon
 
 	if newCfg.SCA.Disabled != defaultCfg.SCA.Disabled {
 		defaultCfg.SCA.Disabled = newCfg.SCA.Disabled
+	}
+}
+
+// mergeProxyConfig checks configured proxy options and if they are not empty then
+// override default connection configuration
+func (c *ConfigAggregator) mergeProxyConfig(defaultCfg, newCfg *config.InsightsConfiguration) {
+	if newCfg.Proxy.HTTPProxy != "" {
+		defaultCfg.Proxy.HTTPProxy = newCfg.Proxy.HTTPProxy
+	}
+
+	if newCfg.Proxy.HTTPSProxy != "" {
+		defaultCfg.Proxy.HTTPSProxy = newCfg.Proxy.HTTPSProxy
+	}
+
+	if newCfg.Proxy.NoProxy != "" {
+		defaultCfg.Proxy.NoProxy = newCfg.Proxy.NoProxy
 	}
 }
 

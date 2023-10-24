@@ -192,7 +192,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		go rec.PeriodicallyPrune(ctx, statusReporter)
 	}
 
-	authorizer := clusterauthorizer.New(secretConfigObserver)
+	authorizer := clusterauthorizer.New(secretConfigObserver, configAggregator)
 
 	// gatherConfigClient is configClient created from gatherKubeConfig, this name was used because configClient was already taken
 	// this client is only used in insightsClient, it is created here
