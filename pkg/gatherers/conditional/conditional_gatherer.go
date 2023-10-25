@@ -36,7 +36,7 @@ type Gatherer struct {
 	firingAlerts                map[string][]AlertLabels
 	gatheringRules              GatheringRules
 	clusterVersion              string
-	configurator                configobserver.Configurator
+	configurator                configobserver.Interface
 	gatheringRulesServiceClient GatheringRulesServiceClient
 }
 
@@ -47,7 +47,7 @@ type GatheringRulesServiceClient interface {
 // New creates a new instance of conditional gatherer with the appropriate configs
 func New(
 	gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.Config,
-	configurator configobserver.Configurator, gatheringRulesServiceClient GatheringRulesServiceClient,
+	configurator configobserver.Interface, gatheringRulesServiceClient GatheringRulesServiceClient,
 ) *Gatherer {
 	var imageKubeConfig *rest.Config
 	if gatherProtoKubeConfig != nil {
@@ -212,7 +212,7 @@ func (g *Gatherer) getRulesEndpoint() (string, error) {
 		return "", fmt.Errorf("config is nil")
 	}
 
-	return config.ConditionalGathererEndpoint, nil
+	return config.DataReporting.ConditionalGathererEndpoint, nil
 }
 
 // updateCache updates alerts and version caches
