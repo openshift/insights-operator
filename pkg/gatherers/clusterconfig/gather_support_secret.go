@@ -2,12 +2,10 @@ package clusterconfig
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // GatherSupportSecret Collects anonymized support secret if there is any
@@ -32,25 +30,19 @@ import (
 //
 // ### Changes
 // None
-func (g *Gatherer) GatherSupportSecret(ctx context.Context) ([]record.Record, []error) {
-	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherKubeConfig)
-	if err != nil {
-		return nil, []error{err}
+func (g *Gatherer) GatherSupportSecret(context.Context) ([]record.Record, []error) {
+	if g.configObserver == nil {
+		return nil, []error{fmt.Errorf("configObserver is nil")}
 	}
 
-	return gatherSupportSecret(ctx, gatherKubeClient.CoreV1())
-}
-
-func gatherSupportSecret(ctx context.Context, cli v1.CoreV1Interface) ([]record.Record, []error) {
-	supportSecret, err := cli.Secrets("openshift-config").Get(ctx, "support", metav1.GetOptions{})
-	if err != nil {
-		return nil, []error{err}
+	if supportSecret := g.configObserver.SupportSecret(); supportSecret != nil && supportSecret.Data != nil {
+		return []record.Record{{
+			Name: "config/secrets/openshift-config/support/data",
+			Item: record.JSONMarshaller{Object: anonymizeSecretData(supportSecret.Data)},
+		}}, nil
 	}
 
-	return []record.Record{{
-		Name: "config/secrets/openshift-config/support/data",
-		Item: record.JSONMarshaller{Object: anonymizeSecretData(supportSecret.Data)},
-	}}, nil
+	return nil, nil
 }
 
 func anonymizeSecretData(data map[string][]byte) map[string][]byte {

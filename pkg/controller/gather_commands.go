@@ -69,7 +69,6 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(g.Controller, kubeClient)
-	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
@@ -100,7 +99,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient,
+		configObserver, insightsClient,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
@@ -156,10 +155,8 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		return err
 	}
-
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(g.Controller, kubeClient)
-	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
 		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, dataGatherCR.Spec.DataPolicy)
@@ -180,9 +177,9 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsHTTPCli,
+		configObserver, insightsHTTPCli,
 	)
-	uploader := insightsuploader.New(nil, insightsHTTPCli, configAggregator, nil, nil, 0)
+	uploader := insightsuploader.New(nil, insightsHTTPCli, configObserver, nil, nil, 0)
 
 	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)
 	if err != nil {
@@ -230,7 +227,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	// check if the archive/data was processed
-	processed, err := wasDataProcessed(ctx, insightsHTTPCli, insightsRequestID, configAggregator.Config())
+	processed, err := wasDataProcessed(ctx, insightsHTTPCli, insightsRequestID, configObserver.Config())
 	dataProcessedCon := status.DataProcessedCondition(metav1.ConditionTrue, "Processed", "")
 	if err != nil || !processed {
 		msg := fmt.Sprintf("Data was not processed in the console.redhat.com pipeline for the request %s", insightsRequestID)
@@ -320,15 +317,15 @@ type dataStatus struct {
 // "insightsRequestID" and tries to parse the response body in case of HTTP 200 response.
 func wasDataProcessed(ctx context.Context,
 	insightsCli processingStatusClient,
-	insightsRequestID string, conf *config.InsightsConfiguration) (bool, error) {
-	delay := conf.DataReporting.ReportPullingDelay
+	insightsRequestID string, controllerConf *config.Controller) (bool, error) {
+	delay := controllerConf.ReportPullingDelay
 	retryCounter := 0
 	klog.V(4).Infof("Initial delay when checking processing status: %v", delay)
 
 	var resp *http.Response
 	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {
 		resp, err = insightsCli.GetWithPathParams(ctx, // nolint: bodyclose
-			conf.DataReporting.ProcessingStatusEndpoint, insightsRequestID) // response body is closed later
+			controllerConf.ProcessingStatusEndpoint, insightsRequestID) // response body is closed later
 		if err != nil {
 			return false, err
 		}
