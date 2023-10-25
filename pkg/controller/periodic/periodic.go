@@ -255,7 +255,11 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			klog.Infof("Gathering cluster info every %s", interval)
 			klog.Infof("Configuration is %v", c.configAggregator.Config().String())
 		case <-t.C:
-			c.Gather()
+			if c.techPreview {
+				c.GatherJob()
+			} else {
+				c.Gather()
+			}
 		}
 	}
 }
