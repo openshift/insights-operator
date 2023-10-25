@@ -183,16 +183,16 @@ func gatherDVOMetricsFromEndpoint(
 // timeout is 2 seconds and interval is 0.5 seconds.
 func queryMetricsService(ctx context.Context, client *rest.RESTClient) (io.ReadCloser, error) {
 	var dataReader io.ReadCloser
-	err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 2*time.Second, true, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 5*time.Second, true, func(ctx context.Context) (done bool, err error) {
 		dataReader, err = client.Get().AbsPath("metrics").Stream(ctx)
 		if err != nil {
-			klog.Warning("Failed to read DVO metrics. Trying again.")
+			klog.Warning("Failed to read the DVO metrics. Trying again.")
 			return false, nil
 		}
 		return true, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read the data from the DVO metrics service: %v", err)
 	}
 	return dataReader, nil
 }
