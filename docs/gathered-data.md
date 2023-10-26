@@ -99,6 +99,29 @@ Response see:
   - 4.5+
 
 
+## ClusterAPIServer
+
+Collects APIServer.config.openshift.io resource
+
+### API Reference
+https://github.com/openshift/api/blob/master/config/v1/types_apiserver.go
+
+### Sample data
+- docs/insights-archive-sample/config/apiserver.json
+
+### Location in archive
+- `config/apiserver.json`
+
+### Config ID
+`cluster_apiserver`
+
+### Released version
+- 4.15
+
+### Changes
+None
+
+
 ## ClusterAuthentication
 
 fetches the cluster Authentication - the Authentication with name cluster.
