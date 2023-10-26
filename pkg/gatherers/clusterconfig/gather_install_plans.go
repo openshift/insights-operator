@@ -41,7 +41,7 @@ type installPlanAnonymizer struct {
 // - https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/instalplans.json
+// - docs/insights-archive-sample/config/installplans.json
 //
 // ### Location in archive
 // - `config/instalplans.json`

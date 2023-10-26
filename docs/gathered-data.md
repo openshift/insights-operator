@@ -341,7 +341,7 @@ Collects the cluster `Infrastructure` with cluster name.
 - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
 
 ### Sample data
-- [docs/insights-archive-sample/config/infrastructure/.json](./insights-archive-sample/config/infrastructure/.json)
+- [docs/insights-archive-sample/config/infrastructure.json](./insights-archive-sample/config/infrastructure.json)
 
 ### Location in archive
 - `config/infrastructure.json`
@@ -832,7 +832,7 @@ It also collects total number of all `InstallPlans` and all non-unique `InstallP
 - https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 
 ### Sample data
-- [docs/insights-archive-sample/config/instalplans.json](./insights-archive-sample/config/instalplans.json)
+- [docs/insights-archive-sample/config/installplans.json](./insights-archive-sample/config/installplans.json)
 
 ### Location in archive
 - `config/instalplans.json`
@@ -1338,7 +1338,7 @@ following data:
 None
 
 ### Sample data
-- [docs/insights-archive-sample/config/olm_operators](./insights-archive-sample/config/olm_operators)
+- [docs/insights-archive-sample/config/olm_operators.json](./insights-archive-sample/config/olm_operators.json)
 
 ### Location in archive
 - `config/olm_operators`

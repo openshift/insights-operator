@@ -37,7 +37,7 @@ type csvRef struct {
 // None
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/olm_operators
+// - docs/insights-archive-sample/config/olm_operators.json
 //
 // ### Location in archive
 // - `config/olm_operators`
