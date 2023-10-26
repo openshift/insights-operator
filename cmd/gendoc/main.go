@@ -25,6 +25,7 @@ var (
 	reGather        = regexp.MustCompile(`^((Build)?Gather)(.*)`)
 	reExample       = regexp.MustCompile(`^(Example)(.*)`)
 	reSampleArchive = regexp.MustCompile(`docs/(insights-archive-sample/.*)`)
+	cleanRoot       = "./"
 )
 
 type DocBlock struct {
@@ -44,7 +45,6 @@ func main() {
 		return
 	}
 	defer mdf.Close()
-	cleanRoot := "./"
 
 	md := map[string]*DocBlock{}
 	err = walkDir(cleanRoot, md)
@@ -312,7 +312,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 	}
 
 	// nolint: gosec
-	cmd := exec.Command("go", "run", "./"+f)
+	cmd := exec.Command("go", "run", fmt.Sprintf("%s%s", cleanRoot, f))
 	output, err := cmd.CombinedOutput()
 
 	return string(output), err

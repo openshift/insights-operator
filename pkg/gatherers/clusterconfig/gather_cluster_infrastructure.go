@@ -19,7 +19,7 @@ import (
 // - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/infrastructure/.json
+// - docs/insights-archive-sample/config/infrastructure.json
 //
 // ### Location in archive
 // - `config/infrastructure.json`
