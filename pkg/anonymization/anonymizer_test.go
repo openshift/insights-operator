@@ -120,11 +120,15 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		"127.0.0.0/8",
 		"192.168.0.0/16",
 	}
-	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{
-		EnableGlobalObfuscation: true,
+	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			Obfuscation: config.Obfuscation{
+				config.Networking,
+			},
+		},
 	})
 	anonymizer, err := NewAnonymizer(clusterBaseDomain,
-		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockSecretConfigurator, v1alpha1.ObfuscateNetworking)
+		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockConfigMapConfigurator, v1alpha1.ObfuscateNetworking)
 	assert.NoError(t, err)
 
 	return anonymizer
@@ -321,15 +325,22 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 
 	// test that everything was initialized correctly
 
+	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			Obfuscation: config.Obfuscation{
+				config.Networking,
+			},
+		},
+	})
+
 	anonymizer, err := NewAnonymizerFromConfigClient(
-		context.TODO(),
+		context.Background(),
 		kubeClient,
 		kubeClient,
 		configClient,
 		networkClient,
-		config.NewMockSecretConfigurator(&config.Controller{
-			EnableGlobalObfuscation: true,
-		}), v1alpha1.ObfuscateNetworking,
+		mockConfigMapConfigurator,
+		v1alpha1.ObfuscateNetworking,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, anonymizer)

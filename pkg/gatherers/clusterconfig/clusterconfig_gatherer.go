@@ -2,11 +2,11 @@ package clusterconfig
 
 import (
 	"context"
-	"time"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -19,7 +19,7 @@ type Gatherer struct {
 	metricsGatherKubeConfig *rest.Config
 	alertsGatherKubeConfig  *rest.Config
 	anonymizer              *anonymization.Anonymizer
-	interval                time.Duration
+	configAggregator        configobserver.Interface
 }
 
 // gathererFuncPtr is a type for pointers to functions of Gatherer
@@ -93,18 +93,13 @@ func New(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
 	anonymizer *anonymization.Anonymizer, configObserver configobserver.Interface,
 ) *Gatherer {
-	interval := time.Minute
-	if configObserver != nil && configObserver.Config() != nil {
-		interval = configObserver.Config().DataReporting.Interval
-	}
-
 	return &Gatherer{
 		gatherKubeConfig:        gatherKubeConfig,
 		gatherProtoKubeConfig:   gatherProtoKubeConfig,
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
 		alertsGatherKubeConfig:  alertsGatherKubeConfig,
 		anonymizer:              anonymizer,
-		interval:                interval,
+		configAggregator:        configObserver,
 	}
 }
 
@@ -126,4 +121,8 @@ func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.
 	}
 
 	return result, nil
+}
+
+func (g *Gatherer) config() *config.InsightsConfiguration {
+	return g.configAggregator.Config()
 }

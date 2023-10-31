@@ -62,8 +62,14 @@ func (d *driverMock) Prune(time.Time) error {
 func newRecorder(maxArchiveSize int64, clusterBaseDomain string) (*Recorder, error) {
 	driver := driverMock{}
 	driver.On("Save").Return(nil, nil)
-	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{EnableGlobalObfuscation: true})
-	anonymizer, err := anonymization.NewAnonymizer(clusterBaseDomain, nil, nil, mockSecretConfigurator, v1alpha1.ObfuscateNetworking)
+	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			Obfuscation: config.Obfuscation{
+				config.Networking,
+			},
+		},
+	})
+	anonymizer, err := anonymization.NewAnonymizer(clusterBaseDomain, nil, nil, mockConfigMapConfigurator, v1alpha1.ObfuscateNetworking)
 	if err != nil {
 		return nil, err
 	}

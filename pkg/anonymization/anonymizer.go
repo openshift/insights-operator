@@ -82,17 +82,17 @@ type subnetInformation struct {
 // Config can be used to enable anonymization of cluster base domain
 // and obfuscation of IPv4 addresses
 type Anonymizer struct {
-	clusterBaseDomain  string
-	networks           []subnetInformation
-	translationTable   map[string]string
-	ipNetworkRegex     *regexp.Regexp
-	secretsClient      corev1client.SecretInterface
-	secretConfigurator configobserver.Configurator
-	dataPolicy         v1alpha1.DataPolicy
-	configClient       configv1client.ConfigV1Interface
-	networkClient      networkv1client.NetworkV1Interface
-	gatherKubeClient   kubernetes.Interface
-	runningInCluster   bool
+	clusterBaseDomain string
+	networks          []subnetInformation
+	translationTable  map[string]string
+	ipNetworkRegex    *regexp.Regexp
+	secretsClient     corev1client.SecretInterface
+	configurator      configobserver.Interface
+	dataPolicy        v1alpha1.DataPolicy
+	configClient      configv1client.ConfigV1Interface
+	networkClient     networkv1client.NetworkV1Interface
+	gatherKubeClient  kubernetes.Interface
+	runningInCluster  bool
 }
 
 type ConfigProvider interface {
@@ -103,7 +103,7 @@ type ConfigProvider interface {
 func NewAnonymizer(clusterBaseDomain string,
 	networks []string,
 	secretsClient corev1client.SecretInterface,
-	secretConfigurator configobserver.Configurator,
+	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy) (*Anonymizer, error) {
 	cidrs, err := k8snet.ParseCIDRs(networks)
 	if err != nil {
@@ -120,13 +120,13 @@ func NewAnonymizer(clusterBaseDomain string,
 	}
 
 	return &Anonymizer{
-		clusterBaseDomain:  strings.TrimSpace(clusterBaseDomain),
-		networks:           networksInformation,
-		translationTable:   make(map[string]string),
-		ipNetworkRegex:     regexp.MustCompile(Ipv4AddressOrNetworkRegex),
-		secretsClient:      secretsClient,
-		secretConfigurator: secretConfigurator,
-		dataPolicy:         dataPolicy,
+		clusterBaseDomain: strings.TrimSpace(clusterBaseDomain),
+		networks:          networksInformation,
+		translationTable:  make(map[string]string),
+		ipNetworkRegex:    regexp.MustCompile(Ipv4AddressOrNetworkRegex),
+		secretsClient:     secretsClient,
+		configurator:      configurator,
+		dataPolicy:        dataPolicy,
 	}, nil
 }
 
@@ -137,7 +137,7 @@ func NewAnonymizerFromConfigClient(
 	gatherKubeClient kubernetes.Interface,
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
-	secretConfigurator configobserver.Configurator,
+	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy,
 ) (*Anonymizer, error) {
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
@@ -145,7 +145,7 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, secretConfigurator, dataPolicy)
+	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, configurator, dataPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +321,7 @@ func NewAnonymizerFromConfig(
 	gatherKubeConfig *rest.Config,
 	gatherProtoKubeConfig *rest.Config,
 	protoKubeConfig *rest.Config,
-	secretConfigurator configobserver.Configurator,
+	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy,
 ) (*Anonymizer, error) {
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
@@ -344,7 +344,7 @@ func NewAnonymizerFromConfig(
 		return nil, err
 	}
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient, secretConfigurator, dataPolicy)
+	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient, configurator, dataPolicy)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
@@ -443,8 +443,10 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 		return nil
 	}
 	defer anonymizer.ResetTranslationTable()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	err := anonymizer.secretsClient.Delete(context.TODO(), TranslationTableSecretName, metav1.DeleteOptions{})
+	err := anonymizer.secretsClient.Delete(ctx, TranslationTableSecretName, metav1.DeleteOptions{})
 	if err != nil {
 		klog.V(4).Infof("Failed to delete translation table secret. err: %s", err)
 	}
@@ -464,7 +466,7 @@ func (anonymizer *Anonymizer) StoreTranslationTable() *corev1.Secret {
 		FieldManager: "insights-operator",
 	}
 
-	result, err := anonymizer.secretsClient.Create(context.TODO(), &secret, createOptions)
+	result, err := anonymizer.secretsClient.Create(ctx, &secret, createOptions)
 	if err != nil {
 		klog.Errorf("Failed to create the translation table secret. err: %s", err)
 		return nil
@@ -478,10 +480,21 @@ func (anonymizer *Anonymizer) ResetTranslationTable() {
 	anonymizer.translationTable = make(map[string]string)
 }
 
+// obfuscateNetworking tells whether Networking/IP addresses should be "obfuscated" or not
+func obfuscateNetworking(o config.Obfuscation) bool {
+	for _, ov := range o {
+		if ov == config.Networking {
+			return true
+		}
+	}
+	return false
+}
+
 // IsObfuscationEnabled returns true if obfuscation(hiding IP and domain names) is enabled and false otherwise
 func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
+	obfuscation := anonymizer.configurator.Config().DataReporting.Obfuscation
 	// support secret still has precedence
-	if anonymizer.secretConfigurator.Config().EnableGlobalObfuscation {
+	if obfuscateNetworking(obfuscation) {
 		return true
 	}
 	if anonymizer.dataPolicy != "" {

@@ -38,7 +38,8 @@ func (g *Gatherer) GatherOpenshiftMachineAPIEvents(ctx context.Context) ([]recor
 	if err != nil {
 		return nil, []error{err}
 	}
-	records, err := gatherOpenshiftMachineAPIEvents(ctx, gatherKubeClient.CoreV1(), g.interval)
+	interval := g.config().DataReporting.Interval
+	records, err := gatherOpenshiftMachineAPIEvents(ctx, gatherKubeClient.CoreV1(), interval)
 	if err != nil {
 		return nil, []error{err}
 	}

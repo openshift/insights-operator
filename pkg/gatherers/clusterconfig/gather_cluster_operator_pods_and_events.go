@@ -90,8 +90,8 @@ func (g *Gatherer) GatherClusterOperatorPodsAndEvents(ctx context.Context) ([]re
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	records, err := gatherClusterOperatorPodsAndEvents(ctx, gatherConfigClient, gatherKubeClient.CoreV1(), g.interval)
+	interval := g.config().DataReporting.Interval
+	records, err := gatherClusterOperatorPodsAndEvents(ctx, gatherConfigClient, gatherKubeClient.CoreV1(), interval)
 	if err != nil {
 		return records, []error{err}
 	}
