@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	batchv1 "k8s.io/api/batch/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -15,7 +16,7 @@ import (
 
 	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
 	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
-	v1 "github.com/openshift/api/operator/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
@@ -331,6 +332,11 @@ func (c *Controller) GatherJob() {
 	c.runJobAndCheckResults(ctx, dataGatherCR.Name)
 }
 
+// runJobAndCheckResults creates a new data gathering job in techpreview
+// and waits for the job to complete. It then checks whether the data has been successfully uploaded and processed
+// (in the external data pipeline) by reading the corresponding DataGather status conditions.
+// If the processing was successful, a new Insights analysis report is loaded; if not,
+// it returns with the providing the info in the log message.
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName string) {
 	// create a new periodic gathering job
 	gj, err := c.jobController.CreateGathererJob(ctx, dataGatherName, c.image, c.configAggregator.Config().DataReporting.StoragePath)
@@ -354,6 +360,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName s
 		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherName, err)
 		return
 	}
+	c.updateDataGatherRelatedObjects(ctx, gj, dataGatherFinished)
 	uploaded := c.wasDataUploaded(dataGatherFinished)
 	updateMetrics(dataGatherFinished)
 	if !uploaded {
@@ -414,7 +421,7 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 // copyDataGatherStatusToOperatorStatus gets the "cluster" "insightsoperator.operator.openshift.io" resource
 // and updates its status with values from the provided "datagather.insights.openshift.io" resource.
 func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
-	dataGather *insightsv1alpha1.DataGather) (*v1.InsightsOperator, error) {
+	dataGather *insightsv1alpha1.DataGather) (*operatorv1.InsightsOperator, error) {
 	operator, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -440,7 +447,7 @@ func (c *Controller) updateOperatorStatusCR(ctx context.Context, allFunctionRepo
 	}
 
 	updatedOperatorCR := insightsOperatorCR.DeepCopy()
-	updatedOperatorCR.Status.GatherStatus = v1.GatherStatus{
+	updatedOperatorCR.Status.GatherStatus = operatorv1.GatherStatus{
 		LastGatherTime: gatherTime,
 		LastGatherDuration: metav1.Duration{
 			Duration: time.Since(gatherTime.Time),
@@ -630,6 +637,22 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 		}
 	}
 	return disabledGatherers, dp
+}
+
+// updateDataGatherRelatedObjects updates the related objects in the status of the provided DataGather resource
+func (c *Controller) updateDataGatherRelatedObjects(ctx context.Context, job *batchv1.Job, dataGather *insightsv1alpha1.DataGather) {
+	dataGather.Status.RelatedObjects = []insightsv1alpha1.ObjectReference{
+		{
+			Group:     batchv1.GroupName,
+			Resource:  "job",
+			Name:      job.GetName(),
+			Namespace: job.GetNamespace(),
+		},
+	}
+	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, dataGather, metav1.UpdateOptions{})
+	if err != nil {
+		klog.Errorf("Failed to update related objects for the DataGather resource %s due to: %v", dataGather.GetName(), err)
+	}
 }
 
 // wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
