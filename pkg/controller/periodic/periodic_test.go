@@ -207,10 +207,6 @@ func Test_Controller_FailingGatherer(t *testing.T) {
 }
 
 func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.Duration) (*Controller, *recorder.MockRecorder, error) {
-	mockConfigurator := config.MockSecretConfigurator{Conf: &config.Controller{
-		Report:   true,
-		Interval: interval,
-	}}
 	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
 		DataReporting: config.DataReporting{
 			Enabled:  true,
@@ -218,7 +214,7 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		},
 	})
 	mockRecorder := recorder.MockRecorder{}
-	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, &mockConfigurator, "")
+	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, mockConfigMapConfigurator, "")
 	if err != nil {
 		return nil, nil, err
 	}

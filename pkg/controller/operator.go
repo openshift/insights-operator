@@ -178,7 +178,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if !insightsConfigAPIEnabled {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
-			gatherProtoKubeConfig, controller.ProtoKubeConfig, secretConfigObserver, "")
+			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, "")
 		if err != nil {
 			// in case of an error anonymizer will be nil and anonymization will be just skipped
 			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)

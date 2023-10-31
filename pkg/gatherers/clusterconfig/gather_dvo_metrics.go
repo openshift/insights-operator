@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/klog/v2"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
@@ -59,14 +60,15 @@ func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []err
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	return gatherDVOMetrics(ctx, gatherKubeClient.CoreV1(), g.gatherKubeConfig.RateLimiter)
+	obfuscation := g.config().DataReporting.Obfuscation
+	return gatherDVOMetrics(ctx, gatherKubeClient.CoreV1(), g.gatherKubeConfig.RateLimiter, obfuscation)
 }
 
 func gatherDVOMetrics(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	rateLimiter flowcontrol.RateLimiter,
+	obfuscation config.Obfuscation,
 ) ([]record.Record, []error) {
 	serviceList, err := coreClient.Services("").List(ctx, metav1.ListOptions{
 		LabelSelector: "name=deployment-validation-operator",
@@ -81,7 +83,7 @@ func gatherDVOMetrics(
 	for svcIdx := range serviceList.Items {
 		// Use pointer to make gocritic happy and avoid copying the whole Service struct.
 		service := &serviceList.Items[svcIdx]
-		useUIDs = service.Namespace == managedDVONamespaceName
+		useUIDs = service.Namespace == managedDVONamespaceName || obfuscateDVOMetrics(obfuscation)
 
 		for _, port := range service.Spec.Ports {
 			apiURL := url.URL{
@@ -195,4 +197,14 @@ func queryMetricsService(ctx context.Context, client *rest.RESTClient) (io.ReadC
 		return nil, fmt.Errorf("failed to read the data from the DVO metrics service: %v", err)
 	}
 	return dataReader, nil
+}
+
+// obfuscateDVOMetrics tells whether DVO metrics should be "obfuscated" or not
+func obfuscateDVOMetrics(o config.Obfuscation) bool {
+	for _, ov := range o {
+		if ov == config.WorkloadNames {
+			return true
+		}
+	}
+	return false
 }

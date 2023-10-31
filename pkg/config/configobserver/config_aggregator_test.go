@@ -29,6 +29,7 @@ func TestMergeStatically(t *testing.T) {
 				ReportEndpoint:              "http://reportendpoint.here",
 				Interval:                    2 * time.Hour,
 				ConditionalGathererEndpoint: "http://conditionalendpoint.here",
+				EnableGlobalObfuscation:     true,
 			},
 			expectedConfig: &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
@@ -38,6 +39,7 @@ func TestMergeStatically(t *testing.T) {
 					DownloadEndpoint:            "http://reportendpoint.here",
 					Interval:                    2 * time.Hour,
 					ConditionalGathererEndpoint: "http://conditionalendpoint.here",
+					Obfuscation:                 config.Obfuscation{config.Networking},
 				},
 			},
 		},
@@ -57,7 +59,9 @@ dataReporting:
   downloadEndpoint: https://overriden.download/endpoint
   conditionalGathererEndpoint: https://overriden.conditional/endpoint
   processingStatusEndpoint: https://overriden.status/endpoint
-  downloadEndpointTechPreview: https://overriden.downloadtechpreview/endpoint`,
+  downloadEndpointTechPreview: https://overriden.downloadtechpreview/endpoint
+  obfuscation:
+  - workload_names`,
 				},
 			},
 			legacyConfig: config.Controller{
@@ -69,6 +73,7 @@ dataReporting:
 				ConditionalGathererEndpoint: "http://conditionalendpoint.here",
 				ProcessingStatusEndpoint:    "http://statusendpoint.here",
 				ReportEndpointTechPreview:   "http://downloadtpendpoint.here",
+				EnableGlobalObfuscation:     true,
 			},
 			expectedConfig: &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
@@ -80,6 +85,7 @@ dataReporting:
 					ConditionalGathererEndpoint: "https://overriden.conditional/endpoint",
 					ProcessingStatusEndpoint:    "https://overriden.status/endpoint",
 					DownloadEndpointTechPreview: "https://overriden.downloadtechpreview/endpoint",
+					Obfuscation:                 config.Obfuscation{config.Networking, config.WorkloadNames},
 				},
 			},
 		},
@@ -144,6 +150,7 @@ func TestMergeUsingInformer(t *testing.T) {
 				ReportEndpoint:              "http://reportendpoint.here",
 				Interval:                    2 * time.Hour,
 				ConditionalGathererEndpoint: "http://conditionalendpoint.here",
+				EnableGlobalObfuscation:     true,
 			},
 			expectedConfig: &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
@@ -153,6 +160,7 @@ func TestMergeUsingInformer(t *testing.T) {
 					DownloadEndpoint:            "http://reportendpoint.here",
 					Interval:                    2 * time.Hour,
 					ConditionalGathererEndpoint: "http://conditionalendpoint.here",
+					Obfuscation:                 config.Obfuscation{config.Networking},
 				},
 			},
 		},
@@ -165,6 +173,7 @@ func TestMergeUsingInformer(t *testing.T) {
 					StoragePath:                 "/var/lib/test",
 					DownloadEndpoint:            "https://overriden.download/endpoint",
 					ConditionalGathererEndpoint: "https://overriden.conditional/endpoint",
+					Obfuscation:                 config.Obfuscation{config.WorkloadNames},
 				},
 			},
 			legacyConfig: config.Controller{
@@ -174,6 +183,7 @@ func TestMergeUsingInformer(t *testing.T) {
 				ReportEndpoint:              "http://reportendpoint.here",
 				Interval:                    2 * time.Hour,
 				ConditionalGathererEndpoint: "http://conditionalendpoint.here",
+				EnableGlobalObfuscation:     true,
 			},
 			expectedConfig: &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
@@ -183,6 +193,7 @@ func TestMergeUsingInformer(t *testing.T) {
 					DownloadEndpoint:            "https://overriden.download/endpoint",
 					Interval:                    1 * time.Hour,
 					ConditionalGathererEndpoint: "https://overriden.conditional/endpoint",
+					Obfuscation:                 config.Obfuscation{config.Networking, config.WorkloadNames},
 				},
 			},
 		},

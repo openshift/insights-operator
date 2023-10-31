@@ -73,7 +73,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
-		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, "")
+		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, "")
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
-		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configObserver, dataGatherCR.Spec.DataPolicy)
+		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, dataGatherCR.Spec.DataPolicy)
 	if err != nil {
 		return err
 	}
