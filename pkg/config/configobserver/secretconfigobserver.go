@@ -228,7 +228,7 @@ func (c *Controller) mergeConfig() {
 		cfg.Token = c.tokenConfig.Token
 	}
 
-	cfg.Report = len(cfg.Endpoint) > 0 && (len(cfg.Token) > 0 || len(cfg.Username) > 0)
+	cfg.Report = len(cfg.Endpoint) > 0 && len(cfg.Token) > 0
 	c.setConfig(&cfg)
 }
 
