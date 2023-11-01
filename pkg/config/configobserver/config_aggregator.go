@@ -280,5 +280,14 @@ func (c *ConfigAggregator) legacyConfigToInsightsConfiguration() *config.Insight
 			Interval: legacyConfig.OCMConfig.SCAInterval,
 			Endpoint: legacyConfig.OCMConfig.SCAEndpoint,
 		},
+		ClusterTransfer: config.ClusterTransfer{
+			Interval: legacyConfig.OCMConfig.ClusterTransferInterval,
+			Endpoint: legacyConfig.OCMConfig.ClusterTransferEndpoint,
+		},
+		Proxy: config.Proxy{
+			HTTPProxy:  legacyConfig.HTTPConfig.HTTPProxy,
+			HTTPSProxy: legacyConfig.HTTPConfig.HTTPSProxy,
+			NoProxy:    legacyConfig.HTTPConfig.NoProxy,
+		},
 	}
 }

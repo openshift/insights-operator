@@ -36,11 +36,11 @@ type DataReportingSerialized struct {
 }
 
 type AlertingSerialized struct {
-	Disabled bool `json:"disabled,omitempty"`
+	Disabled string `json:"disabled,omitempty"`
 }
 
 type SCASerialized struct {
-	Disabled bool   `json:"disabled,omitempty"`
+	Disabled string `json:"disabled,omitempty"`
 	Interval string `json:"interval,omitempty"`
 	Endpoint string `json:"endpoint,omitempty"`
 }

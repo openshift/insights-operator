@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -20,11 +21,7 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 			ProcessingStatusEndpoint:    i.DataReporting.ProcessingStatusEndpoint,
 			Obfuscation:                 i.DataReporting.Obfuscation,
 		},
-		Alerting: Alerting{
-			Disabled: i.Alerting.Disabled,
-		},
 		SCA: SCA{
-			Disabled: i.SCA.Disabled,
 			Endpoint: i.SCA.Endpoint,
 		},
 		ClusterTransfer: ClusterTransfer{
@@ -43,8 +40,17 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 	if i.SCA.Interval != "" {
 		ic.SCA.Interval = parseInterval(i.SCA.Interval, defaultSCAFfrequency)
 	}
+
 	if i.ClusterTransfer.Interval != "" {
 		ic.ClusterTransfer.Interval = parseInterval(i.ClusterTransfer.Interval, defaultClusterTransferFrequency)
+	}
+
+	if i.Alerting.Disabled != "" {
+		ic.Alerting.Disabled = strings.EqualFold(i.Alerting.Disabled, "true")
+	}
+
+	if i.SCA.Disabled != "" {
+		ic.SCA.Disabled = strings.EqualFold(i.SCA.Disabled, "true")
 	}
 
 	return ic
@@ -71,7 +77,10 @@ func (i *InsightsConfiguration) String() string {
 	download_endpoint=%s, 
 	conditional_gatherer_endpoint=%s,
 	obfuscation=%s,
-	sca=%v`,
+	sca=%v,
+	alerting=%v,
+	clusterTransfer=%v,
+	proxy=%v`,
 		i.DataReporting.Interval,
 		i.DataReporting.UploadEndpoint,
 		i.DataReporting.StoragePath,
@@ -79,6 +88,9 @@ func (i *InsightsConfiguration) String() string {
 		i.DataReporting.ConditionalGathererEndpoint,
 		i.DataReporting.Obfuscation,
 		i.SCA,
+		i.Alerting,
+		i.ClusterTransfer,
+		i.Proxy,
 	)
 	return s
 }
