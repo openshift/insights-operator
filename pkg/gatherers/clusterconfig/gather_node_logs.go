@@ -19,7 +19,20 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// GatherNodeLogs Collects control plane node logs from journal unit.
+// GatherNodeLogs Collects control plane node logs from journal unit with following substrings:
+//   - E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}
+//   - connect: connection refused
+//   - failed (failure): command timed out
+//   - Failed to make webhook authenticator request: Post
+//   - raise JSONDecodeError("Expecting value", s, err.value) from None
+//   - ContainerStateWaiting{Reason:ContainerCreating
+//   - ContainersNotReady Message:containers with unready status
+//   - MountVolume.MountDevice failed for volume
+//   - kubernetes.io/csi: attacher.MountDevice failed to create newCsiDriverClient
+//   - Unable to attach or mount volumes: unmounted volumes
+//   - timed out waiting for the condition
+//   - CreateContainerError: context deadline exceeded
+//   - rpc error: code = ResourceExhausted desc = grpc: received message larger than max
 //
 // ### API Reference
 // - https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
@@ -50,7 +63,7 @@ func (g *Gatherer) GatherNodeLogs(ctx context.Context) ([]record.Record, []error
 }
 
 func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([]record.Record, []error) {
-	nodes, err := client.Nodes().List(ctx, metav1.ListOptions{LabelSelector: "node-role.kubernetes.io/master"})
+	nodes, err := client.Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -105,24 +118,44 @@ func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer in.Close()
+	defer func() {
+		_ = in.Close()
+	}()
 
 	r, err := gzip.NewReader(in)
 	var scanner *bufio.Scanner
 	if err != nil {
 		scanner = bufio.NewScanner(in)
 	} else {
-		defer r.Close()
+		defer func() {
+			_ = r.Close()
+		}()
 		scanner = bufio.NewScanner(r)
 	}
 
-	messagesToSearch := []string{
-		"E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
-	}
+	messagesToSearch := nodeLogsMessagesFilter()
 	return common.FilterLogFromScanner(scanner, messagesToSearch, true, func(lines []string) []string {
 		if len(lines) > logNodeMaxLines {
 			return lines[len(lines)-logNodeMaxLines:]
 		}
 		return lines
 	})
+}
+
+func nodeLogsMessagesFilter() []string {
+	return []string{
+		`E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}`, //  Errors from log
+		`connect: connection refused`,
+		`failed (failure): command timed out`,
+		`Failed to make webhook authenticator request: Post`,
+		`raise JSONDecodeError("Expecting value", s, err.value) from None`,
+		`ContainerStateWaiting{Reason:ContainerCreating`,
+		`ContainersNotReady Message:containers with unready status`,
+		`MountVolume.MountDevice failed for volume`,
+		`kubernetes.io/csi: attacher.MountDevice failed to create newCsiDriverClient`,
+		`Unable to attach or mount volumes: unmounted volumes`,
+		`timed out waiting for the condition`,
+		`CreateContainerError: context deadline exceeded`,
+		`rpc error: code = ResourceExhausted desc = grpc: received message larger than max`,
+	}
 }
