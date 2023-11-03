@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -77,6 +78,10 @@ func (p *PrometheusRulesController) checkAlertsDisabled(ctx context.Context) {
 	if !disableInsightsAlerts && !p.promRulesExist {
 		err := p.createInsightsAlerts(ctx)
 		if err != nil {
+			if errors.IsAlreadyExists(err) {
+				p.promRulesExist = true
+				return
+			}
 			klog.Errorf("Failed to create Insights Prometheus rules definition: %v", err)
 			return
 		}

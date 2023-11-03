@@ -3,7 +3,6 @@ package configobserver
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -56,7 +55,6 @@ func NewConfigMapObserver(kubeConfig *rest.Config,
 	}
 	factoryCtrl := factory.New().WithInformers(cmInformer).
 		WithSync(ctrl.sync).
-		ResyncEvery(10*time.Minute).
 		ToController("ConfigController", eventRecorder)
 
 	ctrl.Controller = factoryCtrl

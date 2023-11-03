@@ -70,27 +70,72 @@ func parseInterval(interval string, defaultValue time.Duration) time.Duration {
 	return durationInt
 }
 
+func (d *DataReporting) String() string {
+	s := fmt.Sprintf(`
+		interval: %s,
+		uploadEndpoint: %s,
+		storagePath: %s,
+		downloadEndpoint: %s, 
+		conditionalGathererEndpoint: %s,
+		obfuscation: %s`,
+		d.Interval,
+		d.UploadEndpoint,
+		d.StoragePath,
+		d.DownloadEndpoint,
+		d.ConditionalGathererEndpoint,
+		d.Obfuscation)
+	return s
+}
+
+func (s *SCA) String() string {
+	str := fmt.Sprintf(`
+		disabled: %v,
+		endpoint: %s,
+		interval: %s`,
+		s.Disabled,
+		s.Endpoint,
+		s.Interval)
+	return str
+}
+
+func (a *Alerting) String() string {
+	s := fmt.Sprintf(`
+		disabled: %v`, a.Disabled)
+	return s
+}
+
+func (p *Proxy) String() string {
+	s := fmt.Sprintf(`
+		httpProxy: %s,
+		httpsProxy: %s,
+		noProxy: %s`,
+		p.HTTPProxy,
+		p.HTTPSProxy,
+		p.NoProxy)
+	return s
+}
+
+func (c *ClusterTransfer) String() string {
+	s := fmt.Sprintf(`
+		endpoint: %s,
+		interval: %s`,
+		c.Endpoint,
+		c.Interval)
+	return s
+}
+
 func (i *InsightsConfiguration) String() string {
-	s := fmt.Sprintf(`upload_interval=%s, 
-	upload_endpoint=%s,
-	storage_path=%s, 
-	download_endpoint=%s, 
-	conditional_gatherer_endpoint=%s,
-	obfuscation=%s,
-	sca=%v,
-	alerting=%v,
-	clusterTransfer=%v,
-	proxy=%v`,
-		i.DataReporting.Interval,
-		i.DataReporting.UploadEndpoint,
-		i.DataReporting.StoragePath,
-		i.DataReporting.DownloadEndpoint,
-		i.DataReporting.ConditionalGathererEndpoint,
-		i.DataReporting.Obfuscation,
-		i.SCA,
-		i.Alerting,
-		i.ClusterTransfer,
-		i.Proxy,
+	s := fmt.Sprintf(`
+	dataReporting:%s
+	sca:%s
+	alerting:%s
+	clusterTransfer:%s
+	proxy:%s`,
+		i.DataReporting.String(),
+		i.SCA.String(),
+		i.Alerting.String(),
+		i.ClusterTransfer.String(),
+		i.Proxy.String(),
 	)
 	return s
 }
