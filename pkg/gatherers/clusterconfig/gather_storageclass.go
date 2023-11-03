@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// GatherClusterStorageClasses Collects the cluster `StorageClass` available in cluster.
+// GatherStorageClasses Collects the cluster `StorageClass` available in cluster.
 //
 // ### API Reference
 // - https://docs.openshift.com/container-platform/4.13/rest_api/storage_apis/storageclass-storage-k8s-io-v1.html
@@ -34,16 +34,16 @@ import (
 //
 // ### Changes
 // None
-func (g *Gatherer) GatherClusterStorageClasses(ctx context.Context) ([]record.Record, []error) {
+func (g *Gatherer) GatherStorageClasses(ctx context.Context) ([]record.Record, []error) {
 	kubeClient, err := kubernetes.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return gatherClusterStorageClasses(ctx, kubeClient.StorageV1())
+	return gatherStorageClasses(ctx, kubeClient.StorageV1())
 }
 
-func gatherClusterStorageClasses(ctx context.Context, storageClient v1.StorageV1Interface) ([]record.Record, []error) {
+func gatherStorageClasses(ctx context.Context, storageClient v1.StorageV1Interface) ([]record.Record, []error) {
 	storageClasses, err := listStorageClasses(ctx, storageClient.StorageClasses())
 	if err != nil {
 		return nil, []error{err}

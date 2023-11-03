@@ -542,32 +542,6 @@ None
 None
 
 
-## ClusterStorageClasses
-
-Collects the cluster `StorageClass` available in cluster.
-
-### API Reference
-- https://docs.openshift.com/container-platform/4.13/rest_api/storage_apis/storageclass-storage-k8s-io-v1.html
-
-### Sample data
-- [docs/insights-archive-sample/config/storage/storageclasses/standard-csi.json](./insights-archive-sample/config/storage/storageclasses/standard-csi.json)
-
-### Location in archive
-- `config/storage/storageclasses/{name}.json`
-
-### Config ID
-`clusterconfig/storage_classes`
-
-### Released version
-- 4.15
-
-### Backported versions
-None
-
-### Changes
-None
-
-
 ## ClusterVersion
 
 Collects the `ClusterVersion` (including the cluster ID) with the name
@@ -1902,6 +1876,32 @@ None
 
 ### Released version
 - 4.10.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
+## StorageClasses
+
+Collects the cluster `StorageClass` available in cluster.
+
+### API Reference
+- https://docs.openshift.com/container-platform/4.13/rest_api/storage_apis/storageclass-storage-k8s-io-v1.html
+
+### Sample data
+- [docs/insights-archive-sample/config/storage/storageclasses/standard-csi.json](./insights-archive-sample/config/storage/storageclasses/standard-csi.json)
+
+### Location in archive
+- `config/storage/storageclasses/{name}.json`
+
+### Config ID
+`clusterconfig/storage_classes`
+
+### Released version
+- 4.15
 
 ### Backported versions
 None

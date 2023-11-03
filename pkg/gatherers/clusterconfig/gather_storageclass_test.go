@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGatherClusterStorageClasses(t *testing.T) {
+func TestGatherStorageClasses(t *testing.T) {
 	tests := []struct {
 		name           string
 		storageClasses []storagev1.StorageClass
@@ -19,7 +19,7 @@ func TestGatherClusterStorageClasses(t *testing.T) {
 		wantErrCount   int
 	}{
 		{
-			name: "Successful retrieval of cluster storage classes",
+			name: "Successful retrieval of storageclasses",
 			storageClasses: []storagev1.StorageClass{
 				{
 					ObjectMeta:  metav1.ObjectMeta{Name: "standard-csi"},
@@ -48,10 +48,10 @@ func TestGatherClusterStorageClasses(t *testing.T) {
 			wantErrCount: 0,
 		},
 		{
-			name:           "Failed retrieval of cluster storage classes",
-			storageClasses: nil, // Simulating an error scenario with an empty list
+			name:           "Retrieval no storageclasses items",
+			storageClasses: nil,
 			wantRecords:    nil,
-			wantErrCount:   1,
+			wantErrCount:   0,
 		},
 	}
 
@@ -62,8 +62,8 @@ func TestGatherClusterStorageClasses(t *testing.T) {
 				Items: tt.storageClasses,
 			})
 
-			// Call the gatherClusterStorageClasses function with the fake client
-			records, errs := gatherClusterStorageClasses(context.TODO(), kubeClient.StorageV1())
+			// Call the gatherStorageClasses function with the fake client
+			records, errs := gatherStorageClasses(context.Background(), kubeClient.StorageV1())
 
 			// Verify the results
 			assert.Equal(t, tt.wantRecords, records)
