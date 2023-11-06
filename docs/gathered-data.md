@@ -1370,7 +1370,7 @@ Collects logs from `openshift-apiserver-operator` with following substrings:
 - [docs/insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log](./insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log)
 
 ### Location in archive
-- `config/pod/{namespace-name}/logs/{pod-name}/errors.log`
+- `config/pod/openshift-apiserver-operator/logs/{pod-name}/errors.log`
 
 ### Config ID
 `clusterconfig/openshift_apiserver_operator_logs`
