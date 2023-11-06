@@ -83,6 +83,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"scheduler_logs":                    (*Gatherer).GatherSchedulerLogs,
 	"service_accounts":                  (*Gatherer).GatherServiceAccounts,
 	"silenced_alerts":                   (*Gatherer).GatherSilencedAlerts,
+	"storage_classes":                   (*Gatherer).GatherStorageClasses,
 	"storage_cluster":                   (*Gatherer).GatherStorageCluster,
 	"support_secret":                    (*Gatherer).GatherSupportSecret,
 	"tsdb_status":                       (*Gatherer).GatherPrometheusTSDBStatus,
