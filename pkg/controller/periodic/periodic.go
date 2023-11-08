@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	batchv1 "k8s.io/api/batch/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -29,6 +28,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -279,22 +279,17 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 				ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
 				defer cancel()
 
-				state, err := c.dataGatherState(ctx, dgName)
+				dataGather, err := c.getDataGather(ctx, dgName)
 				if err != nil {
 					klog.Errorf("Failed to read %s DataGather resource", dgName)
 					return
 				}
-				if state != "" {
-					klog.Infof("DataGather %s resource state is %s. Not triggering any data gathering", dgName, state)
-					return
-				}
-				err = c.updateNewDataGatherCRStatus(ctx, dgName)
-				if err != nil {
-					klog.Errorf("Failed to update status of the %s DataGather resource: %v", dgName, err)
+				if dataGather.Status.State != "" {
+					klog.Infof("DataGather %s resource state is %s. Not triggering any data gathering", dgName, dataGather.Status.State)
 					return
 				}
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
-				c.runJobAndCheckResults(ctx, dgName)
+				c.runJobAndCheckResults(ctx, dataGather)
 			}()
 		}
 	}
@@ -324,12 +319,7 @@ func (c *Controller) GatherJob() {
 		klog.Errorf("Failed to create a new DataGather resource: %v", err)
 		return
 	}
-	err = c.updateNewDataGatherCRStatus(ctx, dataGatherCR.GetName())
-	if err != nil {
-		klog.Errorf("Failed to update status of the %s DataGather resource: %v", dataGatherCR.GetName(), err)
-		return
-	}
-	c.runJobAndCheckResults(ctx, dataGatherCR.Name)
+	c.runJobAndCheckResults(ctx, dataGatherCR)
 }
 
 // runJobAndCheckResults creates a new data gathering job in techpreview
@@ -337,11 +327,17 @@ func (c *Controller) GatherJob() {
 // (in the external data pipeline) by reading the corresponding DataGather status conditions.
 // If the processing was successful, a new Insights analysis report is loaded; if not,
 // it returns with the providing the info in the log message.
-func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName string) {
+func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGatherName, c.image, c.configAggregator.Config().DataReporting.StoragePath)
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, c.image, c.configAggregator.Config().DataReporting.StoragePath)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
+		return
+	}
+
+	err = c.updateNewDataGatherCRStatus(ctx, dataGather, gj)
+	if err != nil {
+		klog.Errorf("Failed to update status of the %s DataGather resource: %v", dataGather.Name, err)
 		return
 	}
 
@@ -355,12 +351,12 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName s
 		klog.Error(err)
 	}
 	klog.Infof("Job completed %s", gj.Name)
-	dataGatherFinished, err := c.dataGatherClient.DataGathers().Get(ctx, dataGatherName, metav1.GetOptions{})
+	dataGatherFinished, err := c.dataGatherClient.DataGathers().Get(ctx, dataGather.Name, metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherName, err)
+		klog.Errorf("Failed to get DataGather resource %s: %v", dataGather.Name, err)
 		return
 	}
-	c.updateDataGatherRelatedObjects(ctx, gj, dataGatherFinished)
+
 	uploaded := c.wasDataUploaded(dataGatherFinished)
 	updateMetrics(dataGatherFinished)
 	if !uploaded {
@@ -583,18 +579,25 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherer
 
 // updateNewDataGatherCRStatus updates the newly created DataGather custom resource status to
 // set the initial unknown conditions and also the DataGather state to pending.
-func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dgName string) error {
-	dg, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
+func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insightsv1alpha1.DataGather, job *batchv1.Job) error {
 	dg.Status.Conditions = []metav1.Condition{
 		status.DataUploadedCondition(metav1.ConditionUnknown, status.NoUploadYetReason, ""),
 		status.DataRecordedCondition(metav1.ConditionUnknown, status.NoDataGatheringYetReason, ""),
 		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
 	}
 	dg.Status.State = insightsv1alpha1.Pending
-	_, err = c.dataGatherClient.DataGathers().UpdateStatus(ctx, dg, metav1.UpdateOptions{})
+	if job != nil {
+		dg.Status.RelatedObjects = []insightsv1alpha1.ObjectReference{
+			{
+				Group:     batchv1.GroupName,
+				Resource:  "job",
+				Name:      job.GetName(),
+				Namespace: job.GetNamespace(),
+			},
+		}
+	}
+
+	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, dg, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -602,12 +605,12 @@ func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dgName str
 }
 
 // dataGatherState gets the DataGather resource with the provided name and returns its state.
-func (c *Controller) dataGatherState(ctx context.Context, dgName string) (insightsv1alpha1.DataGatherState, error) {
+func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insightsv1alpha1.DataGather, error) {
 	dg, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return dg.Status.State, nil
+	return dg, nil
 }
 
 // createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
@@ -637,22 +640,6 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 		}
 	}
 	return disabledGatherers, dp
-}
-
-// updateDataGatherRelatedObjects updates the related objects in the status of the provided DataGather resource
-func (c *Controller) updateDataGatherRelatedObjects(ctx context.Context, job *batchv1.Job, dataGather *insightsv1alpha1.DataGather) {
-	dataGather.Status.RelatedObjects = []insightsv1alpha1.ObjectReference{
-		{
-			Group:     batchv1.GroupName,
-			Resource:  "job",
-			Name:      job.GetName(),
-			Namespace: job.GetNamespace(),
-		},
-	}
-	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, dataGather, metav1.UpdateOptions{})
-	if err != nil {
-		klog.Errorf("Failed to update related objects for the DataGather resource %s due to: %v", dataGather.GetName(), err)
-	}
 }
 
 // wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"

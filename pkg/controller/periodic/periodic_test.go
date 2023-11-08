@@ -345,7 +345,7 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil)
-			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather.Name)
+			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather, &batchv1.Job{})
 			assert.NoError(t, err)
 			updatedDataGather, err := cs.InsightsV1alpha1().DataGathers().Get(context.Background(), tt.testedDataGather.Name, metav1.GetOptions{})
 			assert.NoError(t, err)
@@ -1138,12 +1138,12 @@ func TestDataGatherState(t *testing.T) {
 				insightsCs = insightsFakeCli.NewSimpleClientset(tt.dataGather)
 			}
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil)
-			state, err := mockController.dataGatherState(context.Background(), tt.dataGatherName)
+			dataGather, err := mockController.getDataGather(context.Background(), tt.dataGatherName)
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.dataGather.Status.State, state)
+				assert.Equal(t, tt.dataGather.Status.State, dataGather.Status.State)
 			}
 		})
 	}
