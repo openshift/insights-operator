@@ -309,15 +309,23 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 	tests := []struct {
 		name                     string
 		testedDataGather         *v1alpha1.DataGather
+		testJob                  *batchv1.Job
 		expectedDataRecordedCon  metav1.Condition
 		expectedDataUploadedCon  metav1.Condition
 		expectedDataProcessedCon metav1.Condition
+		expectedObjectReference  v1alpha1.ObjectReference
 	}{
 		{
 			name: "plain DataGather with no status",
 			testedDataGather: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-data-gather",
+				},
+			},
+			testJob: &batchv1.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-data-gather-job",
+					Namespace: "test-namespace",
 				},
 			},
 			expectedDataRecordedCon: metav1.Condition{
@@ -338,6 +346,12 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 				Reason:  status.NothingToProcessYetReason,
 				Message: "",
 			},
+			expectedObjectReference: v1alpha1.ObjectReference{
+				Group:     "batch",
+				Resource:  "job",
+				Name:      "test-data-gather-job",
+				Namespace: "test-namespace",
+			},
 		},
 	}
 
@@ -345,11 +359,13 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil)
-			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather, &batchv1.Job{})
+			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather, tt.testJob)
 			assert.NoError(t, err)
 			updatedDataGather, err := cs.InsightsV1alpha1().DataGathers().Get(context.Background(), tt.testedDataGather.Name, metav1.GetOptions{})
 			assert.NoError(t, err)
 			assert.Equal(t, v1alpha1.Pending, updatedDataGather.Status.State)
+			assert.Len(t, updatedDataGather.Status.RelatedObjects, 1)
+			assert.Equal(t, tt.expectedObjectReference, updatedDataGather.Status.RelatedObjects[0])
 
 			dr := status.GetConditionByType(updatedDataGather, status.DataRecorded)
 			assert.NotNil(t, dr)
