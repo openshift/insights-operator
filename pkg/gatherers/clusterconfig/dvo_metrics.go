@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -122,15 +124,21 @@ func gatherDVOMetricsFromEndpoint(
 		http.DefaultClient,
 	)
 	if err != nil {
-		klog.Warningf("Unable to load metrics client, no metrics will be collected: %v", err)
+		klog.Errorf("Unable to load metrics client, no metrics will be collected: %v", err)
+		return nil, err
+	}
+
+	err = metricsServiceUp(ctx, metricsRESTClient, apiURL)
+	if err != nil {
 		return nil, err
 	}
 
 	dataReader, err := metricsRESTClient.Get().AbsPath("metrics").Stream(ctx)
 	if err != nil {
-		klog.Warningf("Unable to retrieve most recent metrics: %v", err)
+		klog.Errorf("Failed to stream data from the DVO service: %v", err)
 		return nil, err
 	}
+
 	defer func() {
 		// The error variable must have a more unique name to satisfy govet.
 		if closeErr := dataReader.Close(); closeErr != nil {
@@ -159,4 +167,24 @@ func gatherDVOMetricsFromEndpoint(
 	}
 
 	return prefixedLines, nil
+}
+
+// metricsServiceUp queries the DVO metrics service with poll in case of an error. Polling
+// timeout is 5 seconds and interval is 1 second.
+func metricsServiceUp(ctx context.Context, client *rest.RESTClient, apiURL *url.URL) error {
+	timeout := 5 * time.Second
+	dvoMetricsURL := fmt.Sprintf("http://%s/metrics", apiURL.Host)
+	err := wait.PollUntilContextTimeout(ctx, 1*time.Second, timeout, true, func(ctx context.Context) (done bool, err error) {
+		resp, err := client.Client.Head(dvoMetricsURL) //nolint: noctx
+		if err != nil || resp.StatusCode != 200 {
+			klog.Warning("Failed to read the DVO metrics. Trying again.")
+			return false, nil
+		}
+		defer resp.Body.Close()
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("DVO metrics service was not available within the %s timeout: %v", timeout, err)
+	}
+	return nil
 }
