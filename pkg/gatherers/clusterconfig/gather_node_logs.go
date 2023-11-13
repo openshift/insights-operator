@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
@@ -63,7 +64,7 @@ func (g *Gatherer) GatherNodeLogs(ctx context.Context) ([]record.Record, []error
 }
 
 func gatherNodeLogs(ctx context.Context, client corev1client.CoreV1Interface) ([]record.Record, []error) {
-	nodes, err := client.Nodes().List(ctx, metav1.ListOptions{})
+	nodes, err := client.Nodes().List(ctx, metav1.ListOptions{LabelSelector: "node-role.kubernetes.io/master"})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -119,19 +120,24 @@ func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
 		return "", err
 	}
 	defer func() {
-		_ = in.Close()
+		if closeErr := in.Close(); closeErr != nil {
+			klog.Errorf("failed to close the request stream: %v", closeErr)
+		}
 	}()
 
-	r, err := gzip.NewReader(in)
-	var scanner *bufio.Scanner
-	if err != nil {
-		scanner = bufio.NewScanner(in)
+	var reader io.Reader
+	if r, err := gzip.NewReader(in); err != nil {
+		klog.Warningf("failed to create gzip reader: %v. Reading uncompressed data.", err)
+		reader = in
 	} else {
 		defer func() {
-			_ = r.Close()
+			if closeErr := r.Close(); closeErr != nil {
+				klog.Errorf("failed to close the gzip reader: %v", closeErr)
+			}
 		}()
-		scanner = bufio.NewScanner(r)
+		reader = r
 	}
+	scanner := bufio.NewScanner(reader)
 
 	messagesToSearch := nodeLogsMessagesFilter()
 	return common.FilterLogFromScanner(scanner, messagesToSearch, true, func(lines []string) []string {
