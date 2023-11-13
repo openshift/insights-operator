@@ -73,6 +73,15 @@ rules:
       - namespaces
     verbs:
       - get
+  - apiGroups:
+      - "monitoring.coreos.com"
+    resources:
+      - prometheusrules
+    verbs:
+      - create
+      - get
+      - list
+      - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
