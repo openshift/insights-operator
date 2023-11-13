@@ -144,7 +144,7 @@ func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
 
 func nodeLogsMessagesFilter() []string {
 	return []string{
-		`E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}`, //  Errors from log
+		"E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
 		`connect: connection refused`,
 		`failed (failure): command timed out`,
 		`Failed to make webhook authenticator request: Post`,
