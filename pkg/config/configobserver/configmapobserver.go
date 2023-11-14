@@ -62,12 +62,12 @@ func NewConfigMapObserver(ctx context.Context, kubeConfig *rest.Config,
 	ctrl.Controller = factoryCtrl
 	cm, err := getConfigMap(ctx, kubeClient)
 	if err != nil {
-		klog.Warning("Cannot get the configuration config map: %v. Default configuration is used", err)
+		klog.Warningf("Cannot get the configuration config map: %v. Default configuration is used.", err)
 		return ctrl, nil
 	}
 	insightsConfig, err := readConfigAndDecode(cm)
 	if err != nil {
-		klog.Warning("Failed to read the configuration during start: %v Default configuration is used.", err)
+		klog.Warningf("Failed to read the configuration during start: %v. Default configuration is used.", err)
 		return ctrl, nil
 	}
 	ctrl.insightsConfig = insightsConfig
