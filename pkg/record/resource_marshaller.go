@@ -1,5 +1,6 @@
-// nolint: misspell
 package record
+
+// nolint: misspell
 
 import (
 	"encoding/json"

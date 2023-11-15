@@ -1,5 +1,6 @@
-// nolint: dupl
 package clusterconfig
+
+// nolint: dupl
 
 import (
 	"context"

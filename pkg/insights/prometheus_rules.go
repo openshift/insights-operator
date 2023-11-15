@@ -14,17 +14,17 @@ import (
 )
 
 var (
-	rulesName      string = "insights-prometheus-rules"
-	namespaceName  string = "openshift-insights"
-	durationString string = "5m"
-	info           string = "info"
+	rulesName      = "insights-prometheus-rules"
+	namespaceName  = "openshift-insights"
+	durationString = "5m"
+	info           = "info"
 
-	insightsDisabledAlert                string = "InsightsDisabled"
-	simpleContentAccessNotAvailableAlert string = "SimpleContentAccessNotAvailable"
-	insightsRecommendationActiveAlert    string = "InsightsRecommendationActive"
+	insightsDisabledAlert                = "InsightsDisabled"
+	simpleContentAccessNotAvailableAlert = "SimpleContentAccessNotAvailable"
+	insightsRecommendationActiveAlert    = "InsightsRecommendationActive"
 )
 
-// PrometheusRulesControllers listens to the configuration observer and
+// PrometheusRulesController listens to the configuration observer and
 // creates or removes the Insights Prometheus Rules definitions accordingly
 type PrometheusRulesController struct {
 	configurator   configobserver.Configurator
