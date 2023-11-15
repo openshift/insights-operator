@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -79,7 +80,7 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 			}
 
 			err := ctrl.updateStatus(context.Background(), tt.initialRun)
-			if err != tt.expErr {
+			if !errors.Is(err, tt.expErr) {
 				t.Fatalf("updateStatus returned unexpected error: %s Expected %s", err, tt.expErr)
 			}
 		})

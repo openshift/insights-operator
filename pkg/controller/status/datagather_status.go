@@ -51,7 +51,7 @@ func DataProcessedCondition(status metav1.ConditionStatus, reason, message strin
 	}
 }
 
-// updateDataGatherStatus updates status' time attributes, state and conditions
+// pdateDataGatherStatus updates status' time attributes, state and conditions
 // of the provided DataGather resource
 func UpdateDataGatherState(ctx context.Context,
 	insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,

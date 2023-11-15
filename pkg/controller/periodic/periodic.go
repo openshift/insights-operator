@@ -2,6 +2,7 @@ package periodic
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -342,7 +343,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGatherName s
 	klog.Infof("Created new gathering job %v", gj.Name)
 	err = c.jobController.WaitForJobCompletion(ctx, gj)
 	if err != nil {
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			klog.Errorf("Failed to read job status: %v", err)
 			return
 		}
