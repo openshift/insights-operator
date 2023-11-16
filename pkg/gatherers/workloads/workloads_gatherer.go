@@ -14,12 +14,14 @@ import (
 var workloadsGathererPeriod = time.Hour * 12
 
 type Gatherer struct {
+	gatherKubeConfig      *rest.Config
 	gatherProtoKubeConfig *rest.Config
 	lastProcessingTime    time.Time
 }
 
-func New(gatherProtoKubeConfig *rest.Config) *Gatherer {
+func New(gatherKubeConfig, gatherProtoKubeConfig *rest.Config) *Gatherer {
 	return &Gatherer{
+		gatherKubeConfig:      gatherKubeConfig,
 		gatherProtoKubeConfig: gatherProtoKubeConfig,
 		lastProcessingTime:    time.Unix(0, 0),
 	}
@@ -34,6 +36,11 @@ func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.
 		"workload_info": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherWorkloadInfo(ctx)
+			},
+		},
+		"helm_info": {
+			Run: func(ctx context.Context) ([]record.Record, []error) {
+				return g.GatherHelmInfo(ctx)
 			},
 		},
 	}, nil
