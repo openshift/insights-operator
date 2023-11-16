@@ -67,7 +67,7 @@ func (g *Gatherer) gatherLogsOfNamespace(ctx context.Context, namespace string, 
 	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
-		common.LogContainersFilter{
+		common.LogResourceFilter{
 			Namespace:              namespace,
 			MaxNamespaceContainers: 64, // arbitrary fixed value
 		},

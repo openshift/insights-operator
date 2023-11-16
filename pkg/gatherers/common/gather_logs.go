@@ -17,12 +17,13 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// LogContainersFilter allows you to filter containers
-type LogContainersFilter struct {
+// LogResourceFilter allows you to filter containers
+type LogResourceFilter struct {
 	Namespace                string `json:"namespace"`
 	LabelSelector            string `json:"label_selector,omitempty"`
 	FieldSelector            string `json:"field_selector,omitempty"`
 	ContainerNameRegexFilter string `json:"container_name_regex_filter,omitempty"`
+	PodNameRegexFilter       string `json:"pod_name_regex_filter,omitempty"`
 	MaxNamespaceContainers   int    `json:"max_namespace_containers,omitempty"`
 }
 
@@ -58,7 +59,7 @@ type LogMessagesFilter struct {
 func CollectLogsFromContainers( //nolint:gocyclo
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
-	containersFilter LogContainersFilter,
+	containersFilter LogResourceFilter,
 	messagesFilter LogMessagesFilter,
 	buildLogFileName func(namespace string, podName string, containerName string) string,
 ) ([]record.Record, error) {
@@ -79,22 +80,32 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	var skippedContainers int
 	var records []record.Record
 
+	var podNameRegex *regexp.Regexp
+	if len(containersFilter.PodNameRegexFilter) > 0 {
+		podNameRegex = regexp.MustCompile(containersFilter.PodNameRegexFilter)
+	}
+
+	var messagesRegexp *regexp.Regexp
+	if messagesFilter.IsRegexSearch {
+		messagesRegexp = regexp.MustCompile(strings.Join(messagesFilter.MessagesToSearch, "|"))
+	}
+
 	for i := range pods.Items {
-		var containerNames []string
-		for j := range pods.Items[i].Spec.Containers {
-			containerNames = append(containerNames, pods.Items[i].Spec.Containers[j].Name)
+		pod := &pods.Items[i]
+
+		if podNameRegex != nil {
+			if !podNameRegex.MatchString(pod.Name) {
+				continue
+			}
 		}
-		for j := range pods.Items[i].Spec.InitContainers {
-			containerNames = append(containerNames, pods.Items[i].Spec.InitContainers[j].Name)
-		}
+
+		containerNames := podContainers(pod)
 
 		containersLimited := containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers
 		if containersLimited {
 			skippedContainers += len(containerNames)
 			continue
 		}
-
-		pod := &pods.Items[i]
 
 		for _, containerName := range containerNames {
 			if len(containersFilter.ContainerNameRegexFilter) > 0 {
@@ -114,7 +125,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 
 			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
-			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
+			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesRegexp)
 			if err != nil {
 				return nil, err
 			}
@@ -140,8 +151,19 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	return records, nil
 }
 
+func podContainers(pod *corev1.Pod) []string {
+	var containerNames []string
+	for j := range pod.Spec.Containers {
+		containerNames = append(containerNames, pod.Spec.Containers[j].Name)
+	}
+	for j := range pod.Spec.InitContainers {
+		containerNames = append(containerNames, pod.Spec.InitContainers[j].Name)
+	}
+	return containerNames
+}
+
 func filterLogs(
-	ctx context.Context, request *restclient.Request, messagesToSearch []string, regexSearch bool,
+	ctx context.Context, request *restclient.Request, messagesToSearch []string, messagesRegexp *regexp.Regexp,
 ) (string, error) {
 	stream, err := request.Stream(ctx)
 	if err != nil {
@@ -156,18 +178,13 @@ func filterLogs(
 	}()
 
 	scanner := bufio.NewScanner(stream)
-	return FilterLogFromScanner(scanner, messagesToSearch, regexSearch, nil)
+	return FilterLogFromScanner(scanner, messagesToSearch, messagesRegexp, nil)
 }
 
 // FilterLogFromScanner filters the desired messages from the log
-func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, regexSearch bool,
+func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, messagesRegexp *regexp.Regexp,
 	cb func(lines []string) []string) (string, error) {
 	var result []string
-
-	var messagesRegexp *regexp.Regexp
-	if regexSearch {
-		messagesRegexp = regexp.MustCompile(strings.Join(messagesToSearch, "|"))
-	}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -176,16 +193,17 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, reg
 			continue
 		}
 
-		if regexSearch && messagesRegexp != nil {
+		if messagesRegexp != nil {
 			matches := messagesRegexp.MatchString(line)
 			if matches {
 				result = append(result, line)
 			}
-		} else {
-			for _, messageToSearch := range messagesToSearch {
-				if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
-					result = append(result, line)
-				}
+			continue
+		}
+
+		for _, messageToSearch := range messagesToSearch {
+			if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
+				result = append(result, line)
 			}
 		}
 	}

@@ -38,7 +38,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherOpenshiftSDNLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogContainersFilter{
+	containersFilter := common.LogResourceFilter{
 		Namespace:     "openshift-sdn",
 		LabelSelector: "app=sdn",
 	}

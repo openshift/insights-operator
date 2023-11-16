@@ -85,7 +85,7 @@ func gatherSAPLicenseManagementLogs(
 	var errs []error
 
 	for _, item := range datahubs {
-		containersFilter := common.LogContainersFilter{
+		containersFilter := common.LogResourceFilter{
 			Namespace:                item.GetNamespace(),
 			ContainerNameRegexFilter: "^vsystem-iptables$",
 		}

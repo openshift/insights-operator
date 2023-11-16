@@ -35,7 +35,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherOpenShiftAPIServerOperatorLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogContainersFilter{
+	containersFilter := common.LogResourceFilter{
 		Namespace:     "openshift-apiserver-operator",
 		LabelSelector: "app=openshift-apiserver-operator",
 	}

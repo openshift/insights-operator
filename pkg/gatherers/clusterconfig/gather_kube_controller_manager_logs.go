@@ -39,7 +39,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherKubeControllerManagerLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogContainersFilter{
+	containersFilter := common.LogResourceFilter{
 		Namespace:                "openshift-kube-controller-manager",
 		LabelSelector:            "app=kube-controller-manager",
 		ContainerNameRegexFilter: "kube-controller-manager",

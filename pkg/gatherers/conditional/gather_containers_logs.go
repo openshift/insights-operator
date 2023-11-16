@@ -97,7 +97,7 @@ func (g *Gatherer) gatherContainersLogs(
 			}
 		}
 
-		logContainersFilter := common.LogContainersFilter{
+		logContainersFilter := common.LogResourceFilter{
 			Namespace:     podNamespace,
 			FieldSelector: fmt.Sprintf("metadata.name=%s", podName),
 		}

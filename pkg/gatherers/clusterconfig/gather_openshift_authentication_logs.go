@@ -35,7 +35,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogContainersFilter{
+	containersFilter := common.LogResourceFilter{
 		Namespace:     "openshift-authentication",
 		LabelSelector: "app=oauth-openshift",
 	}

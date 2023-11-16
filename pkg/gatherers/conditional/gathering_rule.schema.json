@@ -249,6 +249,11 @@
                                     "title": "ContainerNameRegexFilter",
                                     "pattern": "^[a-zA-Z0-9_.-]{1,128}$"
                                 },
+                                "pod_name_regex_filter": {
+                                    "type": "string",
+                                    "title": "PodNameRegexFilter",
+                                    "pattern": "^[a-zA-Z0-9_.-]{1,128}$"
+                                },
                                 "max_namespace_containers": {
                                     "type": "integer",
                                     "title": "MaxNamespaceContainers",

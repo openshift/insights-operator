@@ -117,8 +117,8 @@ type GatherPodDefinitionParams struct {
 
 // GatherPodLogsParams defines parameters for pod_logs gatherer
 type GatherPodLogsParams struct {
-	ResourceFilter   common.LogContainersFilter `json:"resource_filter"`
-	LogMessageFilter common.LogMessagesFilter   `json:"log_filter,omitempty"`
+	ResourceFilter   common.LogResourceFilter `json:"resource_filter"`
+	LogMessageFilter common.LogMessagesFilter `json:"log_filter,omitempty"`
 }
 
 // registered builders:
