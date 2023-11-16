@@ -1,6 +1,5 @@
+// nolint: dupl, misspell
 package clusterconfig
-
-// nolint: dupl
 
 import (
 	"context"
