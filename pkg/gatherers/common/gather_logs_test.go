@@ -133,52 +133,46 @@ func Test_FilterLogFromScanner(t *testing.T) {
 	tests := []struct {
 		name             string
 		messagesToSearch []string
-		isRegexSearch    bool
+		messagesRegex    *regexp.Regexp
 		expectedOutput   string
 	}{
 		{
 			name:             "simple non-regex search",
 			messagesToSearch: []string{"Pellentesque"},
-			isRegexSearch:    false,
+			messagesRegex:    nil,
 			expectedOutput:   "Pellentesque elit ullamcorper dignissim cras tincidunt lobortis.",
 		},
 		{
 			name:             "non-regex search with empty messages",
 			messagesToSearch: []string{},
-			isRegexSearch:    false,
+			messagesRegex:    nil,
 			expectedOutput:   testText,
 		},
 		{
 			name:             "advanced non-regex search",
 			messagesToSearch: []string{"Pellentesque", "scelerisque", "this is not there"},
-			isRegexSearch:    false,
+			messagesRegex:    nil,
 			// nolint lll
 			expectedOutput: "Nunc scelerisque viverra mauris in aliquam.\nScelerisque eu ultrices vitae auctor.\nPellentesque elit ullamcorper dignissim cras tincidunt lobortis.",
 		},
 		{
 			name:             "Regex search with empty messages",
-			messagesToSearch: []string{},
-			isRegexSearch:    true,
+			messagesToSearch: nil,
+			messagesRegex:    nil,
 			expectedOutput:   testText,
 		},
 		{
 			name:             "advanced regex search",
-			messagesToSearch: []string{"Pellentesque", "scelerisque", "this is not there"},
-			isRegexSearch:    true,
+			messagesToSearch: nil,
+			messagesRegex:    regexp.MustCompile(strings.Join([]string{"Pellentesque", "scelerisque", "this is not there"}, "|")),
 			expectedOutput:   "Nunc scelerisque viverra mauris in aliquam.\nPellentesque elit ullamcorper dignissim cras tincidunt lobortis.",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// not that good, but...
-			var messagesRegex *regexp.Regexp
-			if tt.isRegexSearch {
-				messagesRegex = regexp.MustCompile(strings.Join(tt.messagesToSearch, "|"))
-			}
-
 			reader := strings.NewReader(testText)
-			result, err := FilterLogFromScanner(bufio.NewScanner(reader), tt.messagesToSearch, messagesRegex, nil)
+			result, err := FilterLogFromScanner(bufio.NewScanner(reader), tt.messagesToSearch, tt.messagesRegex, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedOutput, result)
 		})

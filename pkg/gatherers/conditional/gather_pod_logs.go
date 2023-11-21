@@ -13,20 +13,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 )
 
-// This https://github.com/openshift/insights-operator/pull/675 will look like:
-//type ResourceFilter struct {
-//	Namespace     string `json:"namespace"`
-//	LabelSelector string `json:"label_selector,omitempty"`
-//	FieldSelector string `json:"field_selector,omitempty"`
-//	ContainerName string `json:"container_name,omitempty"`
-//	PodName       string `json:"pod_name,omitempty"`
-//}
-//type LogFilter struct {
-//	MessagePatterns []string `json:"message_patterns,omitempty"`
-//	TailLines       int64    `json:"tail_lines,omitempty"`
-//	Previous        bool     `json:"previous,omitempty"`
-//}
-
 func (g *Gatherer) BuildGatherPodLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) {
 	params, ok := paramsInterface.(GatherPodLogsParams)
 	if !ok {
@@ -49,16 +35,19 @@ func (g *Gatherer) BuildGatherPodLogs(paramsInterface interface{}) (gatherers.Ga
 }
 
 func (g *Gatherer) gatherPodLogs(ctx context.Context, params GatherPodLogsParams, coreClient v1.CoreV1Interface) ([]record.Record, []error) {
-	// TODO filter namespace, it only allows `openshift-*` and `kubernetes-*`
 	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
 		params.ResourceFilter,
 		params.LogMessageFilter,
 		func(namespace string, podName string, containerName string) string {
+			filename := "current.log"
+			if params.LogMessageFilter.Previous {
+				filename = "previous.log"
+			}
 			return fmt.Sprintf(
-				"%v/logs/%v/%v/%v.log",
-				g.GetName(), namespace, podName, containerName,
+				"%v/pod_logs/%v/%v/%v/%v",
+				g.GetName(), namespace, podName, containerName, filename,
 			)
 		},
 	)

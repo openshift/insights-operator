@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"unsafe"
@@ -94,7 +95,8 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 	c := testRESTClient(t, s)
 
 	type args struct {
-		req *rest.Request
+		req           *rest.Request
+		messagesRegex *regexp.Regexp
 	}
 	tests := []struct {
 		name    string
@@ -106,6 +108,9 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 			name: "Test content stream",
 			args: args{
 				req: c.Get().Prefix("/"),
+				messagesRegex: regexp.MustCompile(strings.Join([]string{
+					"E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
+				}, "|")),
 			},
 			want:    expectedBody,
 			wantErr: false,
@@ -113,7 +118,7 @@ Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 k
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := nodeLogString(context.TODO(), tt.args.req)
+			got, err := nodeLogString(context.TODO(), tt.args.req, tt.args.messagesRegex)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("nodeLogString() error = %v, wantErr %v", err, tt.wantErr)
 				return

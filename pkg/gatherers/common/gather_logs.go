@@ -61,10 +61,10 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	coreClient v1.CoreV1Interface,
 	containersFilter LogResourceFilter,
 	messagesFilter LogMessagesFilter,
-	buildLogFileName func(namespace string, podName string, containerName string) string,
+	buildLogFileName func(namespace, podName, containerName string) string,
 ) ([]record.Record, error) {
 	if buildLogFileName == nil {
-		buildLogFileName = func(namespace string, podName string, containerName string) string {
+		buildLogFileName = func(namespace, podName, containerName string) string {
 			return fmt.Sprintf("config/pod/%s/logs/%s/errors.log", namespace, podName)
 		}
 	}
@@ -188,10 +188,6 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, mes
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(messagesToSearch) == 0 {
-			result = append(result, line)
-			continue
-		}
 
 		if messagesRegexp != nil {
 			matches := messagesRegexp.MatchString(line)
@@ -205,6 +201,11 @@ func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, mes
 			if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
 				result = append(result, line)
 			}
+		}
+
+		if len(messagesToSearch) == 0 {
+			result = append(result, line)
+			continue
 		}
 	}
 

@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -76,12 +78,14 @@ func nodeLogRecords(ctx context.Context, restClient rest.Interface, nodes *corev
 	var errs []error
 	records := make([]record.Record, 0)
 
+	messagesRegex := regexp.MustCompile(strings.Join(nodeLogsMessagesFilter(), "|"))
+
 	for i := range nodes.Items {
 		name := nodes.Items[i].Name
 		uri := nodeLogResourceURI(restClient, name)
 		req := requestNodeLog(restClient, uri, logNodeMaxTailLines, logNodeUnit)
 
-		logString, err := nodeLogString(ctx, req)
+		logString, err := nodeLogString(ctx, req, messagesRegex)
 		if err != nil {
 			klog.V(2).Infof("Error: %q", err)
 			errs = append(errs, err)
@@ -114,7 +118,7 @@ func requestNodeLog(client rest.Interface, uri string, tail int, unit string) *r
 }
 
 // nodeLogString retrieve the data from the stream, decompress it (if necessary) and return the string
-func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
+func nodeLogString(ctx context.Context, req *rest.Request, messagesRegex *regexp.Regexp) (string, error) {
 	in, err := req.Stream(ctx)
 	if err != nil {
 		return "", err
@@ -139,8 +143,7 @@ func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
 	}
 	scanner := bufio.NewScanner(reader)
 
-	messagesToSearch := nodeLogsMessagesFilter()
-	return common.FilterLogFromScanner(scanner, messagesToSearch, true, func(lines []string) []string {
+	return common.FilterLogFromScanner(scanner, nil, messagesRegex, func(lines []string) []string {
 		if len(lines) > logNodeMaxLines {
 			return lines[len(lines)-logNodeMaxLines:]
 		}
