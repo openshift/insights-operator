@@ -143,7 +143,7 @@ func nodeLogString(ctx context.Context, req *rest.Request, messagesRegex *regexp
 	}
 	scanner := bufio.NewScanner(reader)
 
-	return common.FilterLogFromScanner(scanner, nil, messagesRegex, func(lines []string) []string {
+	return common.FilterLogFromScanner(scanner, common.WithRegexFilter(messagesRegex), func(lines []string) []string {
 		if len(lines) > logNodeMaxLines {
 			return lines[len(lines)-logNodeMaxLines:]
 		}

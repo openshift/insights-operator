@@ -37,6 +37,12 @@ type LogMessagesFilter struct {
 	Previous         bool     `json:"previous,omitempty"`
 }
 
+// FilterLogCallbackFunc is used to apply extra filtering to log lines
+type FilterLogCallbackFunc func(lines []string) []string
+
+// FilterLogOption is used to apply the filter engine (e.g: Regex, Substring)
+type FilterLogOption func(line string) bool
+
 // CollectLogsFromContainers collects logs from containers
 //   - containerFilter allows you to specify
 //   - namespace in which to search for pods
@@ -125,7 +131,14 @@ func CollectLogsFromContainers( //nolint:gocyclo
 
 			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
-			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesRegexp)
+			var filter FilterLogOption
+			if messagesFilter.IsRegexSearch {
+				filter = WithRegexFilter(messagesRegexp)
+			} else {
+				filter = WithSubstringFilter(messagesFilter.MessagesToSearch)
+			}
+
+			logs, err := FilterLogsFromRequest(ctx, request, filter)
 			if err != nil {
 				return nil, err
 			}
@@ -162,9 +175,32 @@ func podContainers(pod *corev1.Pod) []string {
 	return containerNames
 }
 
-func filterLogs(
-	ctx context.Context, request *restclient.Request, messagesToSearch []string, messagesRegexp *regexp.Regexp,
-) (string, error) {
+// WithRegexFilter filter the log line with the given regex
+func WithRegexFilter(r *regexp.Regexp) FilterLogOption {
+	return func(line string) bool {
+		return r.MatchString(line)
+	}
+}
+
+// WithSubstringFilter filter the log line with the given messages
+func WithSubstringFilter(messages []string) FilterLogOption {
+	return func(line string) bool {
+		if len(messages) == 0 {
+			return true
+		}
+
+		for _, m := range messages {
+			if strings.Contains(strings.ToLower(line), strings.ToLower(m)) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// FilterLogsFromRequest filters the desired messages from log from given Request.
+// If no filter is specified all log lines in the request would be included.
+func FilterLogsFromRequest(ctx context.Context, request *restclient.Request, filter FilterLogOption) (string, error) {
 	stream, err := request.Stream(ctx)
 	if err != nil {
 		return "", err
@@ -178,34 +214,23 @@ func filterLogs(
 	}()
 
 	scanner := bufio.NewScanner(stream)
-	return FilterLogFromScanner(scanner, messagesToSearch, messagesRegexp, nil)
+	return FilterLogFromScanner(scanner, filter, nil)
 }
 
-// FilterLogFromScanner filters the desired messages from the log
-func FilterLogFromScanner(scanner *bufio.Scanner, messagesToSearch []string, messagesRegexp *regexp.Regexp,
-	cb func(lines []string) []string) (string, error) {
+// FilterLogFromScanner filters the desired messages from the log from given Scanner.
+// If no filter is specified all log lines in the scanner would be included.
+func FilterLogFromScanner(scanner *bufio.Scanner, filter FilterLogOption, cb FilterLogCallbackFunc,
+) (string, error) {
 	var result []string
 
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		if messagesRegexp != nil {
-			matches := messagesRegexp.MatchString(line)
-			if matches {
-				result = append(result, line)
-			}
-			continue
-		}
-
-		for _, messageToSearch := range messagesToSearch {
-			if strings.Contains(strings.ToLower(line), strings.ToLower(messageToSearch)) {
-				result = append(result, line)
-			}
-		}
-
-		if len(messagesToSearch) == 0 {
+		if filter == nil {
 			result = append(result, line)
-			continue
+		}
+
+		if ok := filter(line); ok {
+			result = append(result, line)
 		}
 	}
 

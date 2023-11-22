@@ -61,8 +61,7 @@ func Test_GatherOpenshiftSDNControllerLogs(t *testing.T) {
 				bufio.NewScanner(strings.NewReader(
 					tc.logline,
 				)),
-				msgFilter.MessagesToSearch,
-				messagesRegex,
+				common.WithRegexFilter(messagesRegex),
 				nil)
 
 			// Assert

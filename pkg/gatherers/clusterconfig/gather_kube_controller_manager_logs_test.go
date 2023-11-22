@@ -51,8 +51,7 @@ func Test_GatherKubeControllerManagerLogs(t *testing.T) {
 				bufio.NewScanner(strings.NewReader(
 					tc.logline,
 				)),
-				msgFilter.MessagesToSearch,
-				messagesRegex,
+				common.WithRegexFilter(messagesRegex),
 				nil)
 
 			// Assert

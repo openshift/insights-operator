@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"bufio"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -36,10 +35,6 @@ func Test_GatherOpenShiftAPIServerOperatorLogs(t *testing.T) {
 
 	// Given
 	msgFilter := getAPIServerOperatorLogsMessagesFilter()
-	var messagesRegex *regexp.Regexp
-	if msgFilter.IsRegexSearch {
-		messagesRegex = regexp.MustCompile(strings.Join(msgFilter.MessagesToSearch, "|"))
-	}
 
 	for _, testCase := range testCases {
 		tc := testCase
@@ -51,8 +46,7 @@ func Test_GatherOpenShiftAPIServerOperatorLogs(t *testing.T) {
 				bufio.NewScanner(strings.NewReader(
 					tc.logline,
 				)),
-				msgFilter.MessagesToSearch,
-				messagesRegex,
+				common.WithSubstringFilter(msgFilter.MessagesToSearch),
 				nil)
 
 			// Assert

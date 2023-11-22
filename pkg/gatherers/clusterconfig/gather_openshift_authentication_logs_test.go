@@ -2,7 +2,6 @@ package clusterconfig
 
 import (
 	"bufio"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -31,10 +30,6 @@ func Test_GatherOpenshiftAuthenticationLogs(t *testing.T) {
 
 	// Given
 	msgFilter := getOpenshiftAuthenticationLogsMessagesFilter()
-	var messagesRegex *regexp.Regexp
-	if msgFilter.IsRegexSearch {
-		messagesRegex = regexp.MustCompile(strings.Join(msgFilter.MessagesToSearch, "|"))
-	}
 
 	for _, testCase := range testCases {
 		tc := testCase
@@ -46,8 +41,7 @@ func Test_GatherOpenshiftAuthenticationLogs(t *testing.T) {
 				bufio.NewScanner(strings.NewReader(
 					tc.logline,
 				)),
-				msgFilter.MessagesToSearch,
-				messagesRegex,
+				common.WithSubstringFilter(msgFilter.MessagesToSearch),
 				nil)
 
 			// Assert

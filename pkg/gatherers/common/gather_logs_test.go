@@ -172,7 +172,13 @@ func Test_FilterLogFromScanner(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reader := strings.NewReader(testText)
-			result, err := FilterLogFromScanner(bufio.NewScanner(reader), tt.messagesToSearch, tt.messagesRegex, nil)
+			var filter FilterLogOption
+			if tt.messagesRegex != nil {
+				filter = WithRegexFilter(tt.messagesRegex)
+			} else {
+				filter = WithSubstringFilter(tt.messagesToSearch)
+			}
+			result, err := FilterLogFromScanner(bufio.NewScanner(reader), filter, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedOutput, result)
 		})
@@ -186,7 +192,7 @@ func Benchmark_FilterLogFromScanner(b *testing.B) {
 	reader := strings.NewReader(testText)
 	for i := 0; i <= b.N; i++ {
 		// nolint errcheck
-		FilterLogFromScanner(bufio.NewScanner(reader), messagesToSearch, messagesRegex, nil)
+		FilterLogFromScanner(bufio.NewScanner(reader), WithRegexFilter(messagesRegex), nil)
 		runtime.ReadMemStats(&m)
 		b.Logf("Size of allocated heap objects: %d MB, Size of heap in use: %d MB", m.Alloc/1024/1024, m.HeapInuse/1024/1024)
 	}
