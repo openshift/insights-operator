@@ -18,6 +18,51 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+const LabelChartNameKey = "helm.sh/chart"
+
+type HelmChartInfo struct {
+	Name      string         `json:"name"`
+	Version   string         `json:"version"`
+	Resources map[string]int `json:"resources"`
+}
+
+type HelmChartInfoList struct {
+	Namespaces map[string][]HelmChartInfo
+}
+
+func newHelmChartInfoList() HelmChartInfoList {
+	return HelmChartInfoList{
+		Namespaces: make(map[string][]HelmChartInfo),
+	}
+}
+
+func (h *HelmChartInfoList) addItem(ns string, resourceType string, info HelmChartInfo) {
+	if _, ok := h.Namespaces[ns]; !ok {
+		h.Namespaces[ns] = make([]HelmChartInfo, 0)
+	}
+
+	var helmIdx int
+	var found bool
+	for i, n := range h.Namespaces[ns] {
+		if n.Name == info.Name && n.Version == info.Version {
+			helmIdx = i
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		info.Resources = map[string]int{resourceType: 1}
+		h.Namespaces[ns] = append(h.Namespaces[ns], info)
+		return
+	}
+
+	if h.Namespaces[ns][helmIdx].Resources == nil {
+		h.Namespaces[ns][helmIdx].Resources = make(map[string]int)
+	}
+	h.Namespaces[ns][helmIdx].Resources[resourceType]++
+}
+
 // GatherHelmInfo Collects summarized info about the helm usage on a cluster
 // in a generic fashion
 //
@@ -48,38 +93,10 @@ func (g *Gatherer) GatherHelmInfo(ctx context.Context) ([]record.Record, []error
 	return gatherHelmInfo(ctx, dynamicClient)
 }
 
-const LabelChartNameKey = "helm.sh/chart"
-
-type HelmChartInfo struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-}
-
-type HelmChartInfoList struct {
-	Namespaces map[string][]HelmChartInfo
-}
-
-func (h *HelmChartInfoList) addItem(ns string, info HelmChartInfo) {
-	n, ok := h.Namespaces[ns]
-	if !ok {
-		h.Namespaces[ns] = make([]HelmChartInfo, 0)
-		h.Namespaces[ns] = append(h.Namespaces[ns], info)
-		return
-	}
-
-	for _, i := range n {
-		if i != info {
-			h.Namespaces[ns] = append(h.Namespaces[ns], info)
-			break
-		}
-	}
-}
-
 func gatherHelmInfo(
 	ctx context.Context,
 	dynamicClient dynamic.Interface,
 ) ([]record.Record, []error) {
-	// List ReplicaSets, DaemonSets, StatefulSets, Services, and Deployments in the namespace
 	resources := []schema.GroupVersionResource{
 		{Group: "apps", Version: "v1", Resource: "replicasets"},
 		{Group: "apps", Version: "v1", Resource: "daemonsets"},
@@ -90,15 +107,10 @@ func gatherHelmInfo(
 
 	var errs []error
 	var records []record.Record
-	helmList := HelmChartInfoList{
-		Namespaces: make(map[string][]HelmChartInfo),
-	}
+	helmList := newHelmChartInfoList()
 
 	for _, resource := range resources {
-
-		listOptions := metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/managed-by=Helm",
-		}
+		listOptions := metav1.ListOptions{LabelSelector: "app.kubernetes.io/managed-by=Helm"}
 
 		items, err := dynamicClient.Resource(resource).List(ctx, listOptions)
 		if errors.IsNotFound(err) {
@@ -130,12 +142,10 @@ func gatherHelmInfo(
 				continue
 			}
 
-			helmInfo := HelmChartInfo{
+			helmList.addItem(hash, resource.Resource, HelmChartInfo{
 				Name:    name,
 				Version: version,
-			}
-
-			helmList.addItem(hash, helmInfo)
+			})
 		}
 	}
 
