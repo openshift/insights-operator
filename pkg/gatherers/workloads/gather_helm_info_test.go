@@ -1,10 +1,152 @@
 package workloads
 
 import (
+	"context"
 	"testing"
+
+	"github.com/openshift/insights-operator/pkg/record"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/fake"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestGatherHelmInfo(t *testing.T) {
+	ctx := context.TODO()
+
+	hash, err := createHash("mynamespace")
+	assert.NoError(t, err, "failed to generate namespace hash")
+
+	// create the data for testing here
+	helmChartInfoList := newHelmChartInfoList()
+	helmChartInfoList.Namespaces[hash] = []HelmChartInfo{
+		{
+			Name:    "postgres",
+			Version: "9.0.0",
+			Resources: map[string]int{
+				"daemonsets":   1,
+				"deployments":  1,
+				"replicasets":  1,
+				"services":     1,
+				"statefulsets": 1,
+			},
+		},
+	}
+
+	tests := []struct {
+		name           string
+		fakeClientFunc func() dynamic.Interface
+		wantRecords    []record.Record
+		wantErrors     int
+	}{
+		{
+			name: "Valid Helm Resources",
+			fakeClientFunc: func() dynamic.Interface {
+				fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), []runtime.Object{
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Deployment",
+							"metadata": map[string]interface{}{
+								"name":      "mydeployment",
+								"namespace": "mynamespace",
+								"labels": map[string]interface{}{
+									"app.kubernetes.io/managed-by": "Helm",
+									"helm.sh/chart":                "postgres-9.0.0",
+								},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Replicaset",
+							"metadata": map[string]interface{}{
+								"name":      "myreplicaset",
+								"namespace": "mynamespace",
+								"labels": map[string]interface{}{
+									"app.kubernetes.io/managed-by": "Helm",
+									"helm.sh/chart":                "postgres-9.0.0",
+								},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Daemonset",
+							"metadata": map[string]interface{}{
+								"name":      "mydemonset",
+								"namespace": "mynamespace",
+								"labels": map[string]interface{}{
+									"app.kubernetes.io/managed-by": "Helm",
+									"helm.sh/chart":                "postgres-9.0.0",
+								},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Statefulset",
+							"metadata": map[string]interface{}{
+								"name":      "mystateful",
+								"namespace": "mynamespace",
+								"labels": map[string]interface{}{
+									"app.kubernetes.io/managed-by": "Helm",
+									"helm.sh/chart":                "postgres-9.0.0",
+								},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "v1",
+							"kind":       "Service",
+							"metadata": map[string]interface{}{
+								"name":      "myservice",
+								"namespace": "mynamespace",
+								"labels": map[string]interface{}{
+									"app.kubernetes.io/managed-by": "Helm",
+									"helm.sh/chart":                "postgres-9.0.0",
+								},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+				}...)
+				return fakeClient
+			},
+			wantRecords: []record.Record{
+				{
+					Name: "config/helmchart_info",
+					Item: record.JSONMarshaller{Object: &helmChartInfoList.Namespaces},
+				},
+			},
+			wantErrors: 0,
+		},
+	}
+
+	for _, testCase := range tests {
+		tt := testCase
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			dynamicClient := tt.fakeClientFunc()
+			records, errs := gatherHelmInfo(ctx, dynamicClient)
+
+			assert.Equal(t, tt.wantRecords, records)
+			assert.Len(t, errs, tt.wantErrors)
+		})
+	}
+}
 
 func TestAddItem(t *testing.T) {
 	tests := []struct {
