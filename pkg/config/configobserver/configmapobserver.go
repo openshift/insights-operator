@@ -40,7 +40,7 @@ type ConfigMapObserver struct {
 	listeners      map[chan struct{}]struct{}
 }
 
-func NewConfigMapObserver(kubeConfig *rest.Config,
+func NewConfigMapObserver(ctx context.Context, kubeConfig *rest.Config,
 	eventRecorder events.Recorder,
 	kubeInformer v1helpers.KubeInformersForNamespaces) (ConfigMapInformer, error) {
 	cmInformer := kubeInformer.InformersFor(insightsNamespaceName).Core().V1().ConfigMaps().Informer()
@@ -60,6 +60,17 @@ func NewConfigMapObserver(kubeConfig *rest.Config,
 		ToController("ConfigController", eventRecorder)
 
 	ctrl.Controller = factoryCtrl
+	cm, err := getConfigMap(ctx, kubeClient)
+	if err != nil {
+		klog.Warningf("Cannot get the configuration config map: %v. Default configuration is used.", err)
+		return ctrl, nil
+	}
+	insightsConfig, err := readConfigAndDecode(cm)
+	if err != nil {
+		klog.Warningf("Failed to read the configuration during start: %v. Default configuration is used.", err)
+		return ctrl, nil
+	}
+	ctrl.insightsConfig = insightsConfig
 	return ctrl, nil
 }
 
