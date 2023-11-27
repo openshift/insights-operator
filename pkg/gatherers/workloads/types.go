@@ -123,7 +123,7 @@ func newHelmChartInfoList() HelmChartInfoList {
 	}
 }
 
-func (h *HelmChartInfoList) addItem(ns string, resourceType string, info HelmChartInfo) {
+func (h *HelmChartInfoList) addItem(ns, resourceType string, info HelmChartInfo) {
 	if _, ok := h.Namespaces[ns]; !ok {
 		h.Namespaces[ns] = make([]HelmChartInfo, 0)
 	}

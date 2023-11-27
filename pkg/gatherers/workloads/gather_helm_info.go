@@ -42,7 +42,6 @@ const LabelChartNameKey = "helm.sh/chart"
 // None
 func (g *Gatherer) GatherHelmInfo(ctx context.Context) ([]record.Record, []error) {
 	dynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
-	// dynamicClient, err := dynamic.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -135,7 +134,7 @@ func createHash(chartName string) (string, error) {
 	return hash, nil
 }
 
-func helmChartNameAndVersion(chart string) (string, string) {
+func helmChartNameAndVersion(chart string) (name, version string) {
 	parts := strings.Split(chart, "-")
 
 	// no version found
@@ -143,10 +142,10 @@ func helmChartNameAndVersion(chart string) (string, string) {
 		return chart, ""
 	}
 
-	name := strings.Join(parts[:len(parts)-1], "-")
+	name = strings.Join(parts[:len(parts)-1], "-")
 
 	// best guess to get the version
-	version := parts[len(parts)-1]
+	version = parts[len(parts)-1]
 	// check for standard version format
 	if !strings.Contains(version, ".") {
 		// maybe it is a string version
