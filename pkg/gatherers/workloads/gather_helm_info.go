@@ -80,9 +80,6 @@ func gatherHelmInfo(
 
 		for _, item := range items.Items {
 			labels := item.GetLabels()
-			if labels == nil {
-				labels = map[string]string{}
-			}
 
 			// Anonymize the namespace to make it unique identifier
 			hash, err := createHash(item.GetNamespace())
