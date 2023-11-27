@@ -152,7 +152,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 
 	kubeInf := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
-	configMapObserver, err := configobserver.NewConfigMapObserver(gatherKubeConfig, controller.EventRecorder, kubeInf)
+	configMapObserver, err := configobserver.NewConfigMapObserver(ctx, gatherKubeConfig, controller.EventRecorder, kubeInf)
 	if err != nil {
 		return err
 	}
