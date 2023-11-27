@@ -38,7 +38,7 @@ func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.
 				return g.GatherWorkloadInfo(ctx)
 			},
 		},
-		"helm_info": {
+		"helmchart_info": {
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return g.GatherHelmInfo(ctx)
 			},
