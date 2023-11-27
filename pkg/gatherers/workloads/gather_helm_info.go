@@ -18,7 +18,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-const LabelChartNameKey = "helm.sh/chart"
+const labelChartNameKey = "helm.sh/chart"
 
 // GatherHelmInfo Collects summarized info about the helm usage on a cluster
 // in a generic fashion
@@ -84,11 +84,11 @@ func gatherHelmInfo(
 			// Anonymize the namespace to make it unique identifier
 			hash, err := createHash(item.GetNamespace())
 			if err != nil {
-				klog.Errorf("unable to hash the HelmChart's name '%s': %v", labels[LabelChartNameKey], err)
+				klog.Errorf("unable to hash the HelmChart's name '%s': %v", labels[labelChartNameKey], err)
 				continue
 			}
 
-			name, version := helmChartNameAndVersion(labels[LabelChartNameKey])
+			name, version := helmChartNameAndVersion(labels[labelChartNameKey])
 			if name == "" && version == "" {
 				// some helm-maneged resource may not have reference to the chart
 				klog.Infof("unable to get helm chart from %s on %s from %s.", resource.Resource, item.GetNamespace(), item.GetName())
