@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/insights-operator/pkg/gatherers/helmcharts"
-
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
@@ -74,9 +72,8 @@ func CreateAllGatherers(
 	conditionalGatherer := conditional.New(
 		gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig, configObserver, insightsClient,
 	)
-	helmChartsGatherer := helmcharts.New(gatherKubeConfig, gatherProtoKubeConfig)
 
-	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer, conditionalGatherer, helmChartsGatherer}
+	return []gatherers.Interface{clusterConfigGatherer, workloadsGatherer, conditionalGatherer}
 }
 
 // CollectAndRecordGatherer gathers enabled functions of the provided gatherer and records the results to the recorder
