@@ -43,7 +43,7 @@ func TestGatherHelmInfo(t *testing.T) {
 		wantErrors     int
 	}{
 		{
-			name: "Valid Helm Resources",
+			name: "valid helm resources",
 			fakeClientFunc: func() dynamic.Interface {
 				fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), []runtime.Object{
 					&unstructured.Unstructured{
@@ -131,6 +131,81 @@ func TestGatherHelmInfo(t *testing.T) {
 				},
 			},
 			wantErrors: 0,
+		},
+		{
+			name: "invalid helm resources",
+			fakeClientFunc: func() dynamic.Interface {
+				fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), []runtime.Object{
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Deployment",
+							"metadata": map[string]interface{}{
+								"name":      "mydeployment",
+								"namespace": "mynamespace",
+								"labels":    map[string]interface{}{},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Replicaset",
+							"metadata": map[string]interface{}{
+								"name":      "myreplicaset",
+								"namespace": "mynamespace",
+								"labels":    nil,
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Daemonset",
+							"metadata": map[string]interface{}{
+								"name":      "mydemonset",
+								"namespace": "mynamespace",
+								"labels": map[string]interface{}{
+									"app.kubernetes.io/managed-by": "Helm",
+									"app.kubernetes.io/version":    "1.0.0",
+								},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "apps/v1",
+							"kind":       "Statefulset",
+							"metadata": map[string]interface{}{
+								"name":      "mystateful",
+								"namespace": "mynamespace",
+								"labels": map[string]interface{}{
+									"helm.sh/chart": "postgres-9.0.0",
+								},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+					&unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"apiVersion": "v1",
+							"kind":       "Service",
+							"metadata": map[string]interface{}{
+								"name":      "myservice",
+								"namespace": "mynamespace",
+								"labels":    map[string]interface{}{},
+							},
+							"spec": map[string]interface{}{},
+						},
+					},
+				}...)
+				return fakeClient
+			},
+			wantRecords: nil,
+			wantErrors:  0,
 		},
 	}
 
