@@ -46,7 +46,7 @@ func (g *Gatherer) GatherSchedulerLogs(ctx context.Context) ([]record.Record, []
 
 func gatherSchedulerLogs(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	records, err := common.CollectLogsFromContainers(ctx, coreClient,
-		common.LogResourceFilter{
+		&common.LogResourceFilter{
 			Namespace:     "openshift-kube-scheduler",
 			LabelSelector: "app=openshift-kube-scheduler",
 		},
@@ -62,8 +62,8 @@ func gatherSchedulerLogs(ctx context.Context, coreClient corev1client.CoreV1Inte
 	return records, nil
 }
 
-func getSchedulerLogsMessagesFilter() common.LogMessagesFilter {
-	return common.LogMessagesFilter{
+func getSchedulerLogsMessagesFilter() *common.LogMessagesFilter {
+	return &common.LogMessagesFilter{
 		MessagesToSearch: []string{"PodTopologySpread"},
 		SinceSeconds:     logDefaultSinceSeconds,
 		LimitBytes:       logDefaultLimitBytes,

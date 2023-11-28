@@ -29,17 +29,18 @@ func (g *Gatherer) BuildGatherPodLogs(paramsInterface interface{}) (gatherers.Ga
 				return nil, []error{err}
 			}
 			coreClient := kubeClient.CoreV1()
-			return g.gatherPodLogs(ctx, params, coreClient)
+			return g.gatherPodLogs(ctx, &params, coreClient)
 		},
 	}, nil
 }
 
-func (g *Gatherer) gatherPodLogs(ctx context.Context, params GatherPodLogsParams, coreClient v1.CoreV1Interface) ([]record.Record, []error) {
+func (g *Gatherer) gatherPodLogs(ctx context.Context, params *GatherPodLogsParams,
+	coreClient v1.CoreV1Interface) ([]record.Record, []error) {
 	records, err := common.CollectLogsFromContainers(
 		ctx,
 		coreClient,
-		params.ResourceFilter,
-		params.LogMessageFilter,
+		&params.ResourceFilter,
+		&params.LogMessageFilter,
 		func(namespace string, podName string, containerName string) string {
 			filename := "current.log"
 			if params.LogMessageFilter.Previous {

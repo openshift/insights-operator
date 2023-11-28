@@ -35,7 +35,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogResourceFilter{
+	containersFilter := &common.LogResourceFilter{
 		Namespace:     "openshift-authentication",
 		LabelSelector: "app=oauth-openshift",
 	}
@@ -61,8 +61,8 @@ func (g *Gatherer) GatherOpenshiftAuthenticationLogs(ctx context.Context) ([]rec
 	return records, nil
 }
 
-func getOpenshiftAuthenticationLogsMessagesFilter() common.LogMessagesFilter {
-	return common.LogMessagesFilter{
+func getOpenshiftAuthenticationLogsMessagesFilter() *common.LogMessagesFilter {
+	return &common.LogMessagesFilter{
 		MessagesToSearch: []string{
 			"AuthenticationError: invalid resource name",
 		},

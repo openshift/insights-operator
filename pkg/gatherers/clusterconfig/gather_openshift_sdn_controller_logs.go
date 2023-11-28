@@ -46,7 +46,7 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]record.Record, []error) {
-	containersFilter := common.LogResourceFilter{
+	containersFilter := &common.LogResourceFilter{
 		Namespace:     "openshift-sdn",
 		LabelSelector: "app=sdn-controller",
 	}
@@ -72,8 +72,8 @@ func (g *Gatherer) GatherOpenshiftSDNControllerLogs(ctx context.Context) ([]reco
 	return records, nil
 }
 
-func getSDNControllerLogsMessagesFilter() common.LogMessagesFilter {
-	return common.LogMessagesFilter{
+func getSDNControllerLogsMessagesFilter() *common.LogMessagesFilter {
+	return &common.LogMessagesFilter{
 		MessagesToSearch: []string{
 			`Node.+is not Ready`,
 			`Node.+may be offline... retrying`,
