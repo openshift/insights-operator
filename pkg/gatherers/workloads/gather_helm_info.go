@@ -84,14 +84,14 @@ func gatherHelmInfo(
 			// Anonymize the namespace to make it unique identifier
 			hash, err := createHash(item.GetNamespace())
 			if err != nil {
-				klog.Errorf("unable to hash the HelmChart's name '%s': %v", labels[labelChartNameKey], err)
+				klog.Errorf("unable to hash the namespace '%s': %v", labels[labelChartNameKey], err)
 				continue
 			}
 
 			name, version := helmChartNameAndVersion(labels[labelChartNameKey])
 			if name == "" && version == "" {
 				// some helm-maneged resource may not have reference to the chart
-				klog.Infof("unable to get helm chart from %s on %s from %s.", resource.Resource, item.GetNamespace(), item.GetName())
+				klog.Infof("unable to get HelmChart from %s on %s from %s.", resource.Resource, item.GetNamespace(), item.GetName())
 				continue
 			}
 
