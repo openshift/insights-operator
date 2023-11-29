@@ -42,7 +42,10 @@ type LogMessagesFilter struct {
 // FilterLogCallbackFunc is used to apply extra filtering to log lines
 type FilterLogCallbackFunc func(lines []string) []string
 
-// FilterLogOption is used to apply the filter engine (e.g: Regex, Substring)
+// FilterLogOption is a functional option used to apply the filtering engine, such as Regex or Substring matching,
+// to determine whether a given log line satisfies the specified condition.
+// When applied, it returns true if the provided regex or substring is found in the log line, indicating a match.
+// Conversely, it returns false if no match is detected.
 type FilterLogOption func(line string) bool
 
 // CollectLogsFromContainers collects logs from containers
