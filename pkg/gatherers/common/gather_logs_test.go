@@ -3,18 +3,23 @@ package common
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"regexp"
 	"runtime"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
+
+	"github.com/openshift/insights-operator/pkg/record"
+
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/openshift/insights-operator/pkg/utils/marshal"
+	"github.com/stretchr/testify/assert"
 )
 
 // nolint: lll, misspell
@@ -40,93 +45,180 @@ Pellentesque elit ullamcorper dignissim cras tincidunt lobortis.
 Vitae proin sagittis nisl rhoncus.
 Tortor condimentum lacinia quis vel eros donec ac odio tempor.`
 
-func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shouldExist bool) {
-	const testPodName = "test"
-	const testLogFileName = "errors"
-
+func TestCollectLogsFromContainers(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset().CoreV1()
 	ctx := context.Background()
 
-	_, err := coreClient.Pods(testPodName).Create(
+	if err := createPods(coreClient, ctx, "test-namespace", "test"); err != nil {
+		t.Fatal(err)
+	}
+	if err := createPods(coreClient, ctx, "second-namespace", "new-pod"); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name              string
+		logResourceFilter *LogResourceFilter
+		logMessageFilter  *LogMessagesFilter
+		wantRecords       []record.Record
+		wantErr           error
+	}{
+		{
+			name: "substring search should exist",
+			logResourceFilter: &LogResourceFilter{
+				Namespaces: []string{"test-namespace"},
+			},
+			logMessageFilter: &LogMessagesFilter{
+				MessagesToSearch: []string{"fake logs"},
+				IsRegexSearch:    false,
+			},
+			wantRecords: []record.Record{
+				{
+					Name: "config/pod/test-namespace/logs/test/errors.log",
+					Item: marshal.Raw{Str: "fake logs"},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "substring search should not exist",
+			logResourceFilter: &LogResourceFilter{
+				Namespaces: []string{"test-namespace"},
+			},
+			logMessageFilter: &LogMessagesFilter{
+				MessagesToSearch: []string{"The quick brown fox jumps over the lazy dog"},
+				IsRegexSearch:    false,
+			},
+			wantRecords: nil,
+			wantErr:     nil,
+		},
+		{
+			name: "regex search should exist",
+			logResourceFilter: &LogResourceFilter{
+				Namespaces: []string{"test-namespace"},
+			},
+			logMessageFilter: &LogMessagesFilter{
+				MessagesToSearch: []string{"f.*l"},
+				IsRegexSearch:    true,
+			},
+			wantRecords: []record.Record{
+				{
+					Name: "config/pod/test-namespace/logs/test/errors.log",
+					Item: marshal.Raw{Str: "fake logs"},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "regex search should not exist",
+			logResourceFilter: &LogResourceFilter{
+				Namespaces: []string{"test-namespace"},
+			},
+			logMessageFilter: &LogMessagesFilter{
+				MessagesToSearch: []string{"f.*l"},
+				IsRegexSearch:    false,
+			},
+			wantRecords: nil,
+			wantErr:     nil,
+		},
+		{
+			name: "regex search should not exist",
+			logResourceFilter: &LogResourceFilter{
+				Namespaces: []string{"test-namespace"},
+			},
+			logMessageFilter: &LogMessagesFilter{
+				MessagesToSearch: []string{"[0-9]99"},
+				IsRegexSearch:    true,
+			},
+			wantRecords: nil,
+			wantErr:     nil,
+		},
+		{
+			name: "deprecated namespace still supported",
+			logResourceFilter: &LogResourceFilter{
+				Namespace: "test-namespace",
+			},
+			logMessageFilter: &LogMessagesFilter{
+				MessagesToSearch: []string{"fake logs"},
+				IsRegexSearch:    false,
+			},
+			wantRecords: []record.Record{
+				{
+					Name: "config/pod/test-namespace/logs/test/errors.log",
+					Item: marshal.Raw{Str: "fake logs"},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "support multiple namespaces",
+			logResourceFilter: &LogResourceFilter{
+				Namespaces: []string{"test-namespace", "second-namespace"},
+			},
+			logMessageFilter: &LogMessagesFilter{
+				MessagesToSearch: []string{"fake logs"},
+				IsRegexSearch:    false,
+			},
+			wantRecords: []record.Record{
+				{
+					Name: "config/pod/test-namespace/logs/test/errors.log",
+					Item: marshal.Raw{Str: "fake logs"},
+				},
+				{
+					Name: "config/pod/second-namespace/logs/new-pod/errors.log",
+					Item: marshal.Raw{Str: "fake logs"},
+				},
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, testCase := range tests {
+		tt := testCase
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			records, err := CollectLogsFromContainers(
+				ctx,
+				coreClient,
+				tt.logResourceFilter,
+				tt.logMessageFilter,
+				nil,
+			)
+
+			assert.Equal(t, err, tt.wantErr)
+			assert.Equal(t, records, tt.wantRecords)
+		})
+	}
+}
+
+func createPods(coreClient corev1client.CoreV1Interface, ctx context.Context, namespace, podName string) error {
+	_, err := coreClient.Pods(namespace).Create(
 		ctx,
 		&corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      testPodName,
-				Namespace: testPodName,
+				Name:      podName,
+				Namespace: namespace,
 			},
 			Status: corev1.PodStatus{
 				Phase: corev1.PodRunning,
 				ContainerStatuses: []corev1.ContainerStatus{
-					{Name: testPodName},
+					{Name: podName},
 				},
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
-					{Name: testPodName},
+					{Name: podName},
 				},
 			},
 		},
 		metav1.CreateOptions{},
 	)
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 
-	records, err := CollectLogsFromContainers(
-		ctx,
-		coreClient,
-		&LogResourceFilter{
-			Namespace: testPodName,
-		},
-		&LogMessagesFilter{
-			MessagesToSearch: []string{
-				stringToSearch,
-			},
-			IsRegexSearch: regexSearch,
-			SinceSeconds:  86400,     // last day
-			LimitBytes:    1024 * 64, // maximum 64 kb of logs
-		},
-		nil,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !shouldExist {
-		assert.Len(t, records, 0)
-		return
-	}
-
-	assert.Len(t, records, 1)
-	assert.Equal(
-		t,
-		fmt.Sprintf("config/pod/%s/logs/%s/%s.log", testPodName, testPodName, testLogFileName),
-		records[0].Name,
-	)
-	if regexSearch {
-		assert.Regexp(t, stringToSearch, records[0].Item)
-	} else {
-		assert.Equal(t, marshal.Raw{Str: stringToSearch}, records[0].Item)
-	}
-}
-
-func Test_GatherLogs(t *testing.T) {
-	t.Run("SubstringSearch_ShouldExist", func(t *testing.T) {
-		testGatherLogs(t, false, "fake logs", true)
-	})
-	t.Run("SubstringSearch_ShouldNotExist", func(t *testing.T) {
-		testGatherLogs(t, false, "The quick brown fox jumps over the lazy dog", false)
-	})
-	t.Run("SubstringSearch_ShouldNotExist", func(t *testing.T) {
-		testGatherLogs(t, false, "f.*l", false)
-	})
-
-	t.Run("RegexSearch_ShouldExist", func(t *testing.T) {
-		testGatherLogs(t, true, "f.*l", true)
-	})
-	t.Run("RegexSearch_ShouldNotExist", func(t *testing.T) {
-		testGatherLogs(t, true, "[0-9]99", false)
-	})
+	return nil
 }
 
 func Test_FilterLogFromScanner(t *testing.T) {

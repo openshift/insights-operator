@@ -19,12 +19,14 @@ import (
 
 // LogResourceFilter allows you to filter containers
 type LogResourceFilter struct {
-	Namespace                string `json:"namespace"`
-	LabelSelector            string `json:"label_selector,omitempty"`
-	FieldSelector            string `json:"field_selector,omitempty"`
-	ContainerNameRegexFilter string `json:"container_name_regex_filter,omitempty"`
-	PodNameRegexFilter       string `json:"pod_name_regex_filter,omitempty"`
-	MaxNamespaceContainers   int    `json:"max_namespace_containers,omitempty"`
+	// Deprecated: Namespace would be replaced by Namespaces in the future
+	Namespace                string   `json:"namespace"`
+	Namespaces               []string `json:"namespaces,omitempty"`
+	LabelSelector            string   `json:"label_selector,omitempty"`
+	FieldSelector            string   `json:"field_selector,omitempty"`
+	ContainerNameRegexFilter string   `json:"container_name_regex_filter,omitempty"`
+	PodNameRegexFilter       string   `json:"pod_name_regex_filter,omitempty"`
+	MaxNamespaceContainers   int      `json:"max_namespace_containers,omitempty"`
 }
 
 // LogMessagesFilter allows you to filter messages
@@ -75,90 +77,100 @@ func CollectLogsFromContainers( //nolint:gocyclo
 		}
 	}
 
-	pods, err := coreClient.Pods(containersFilter.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: containersFilter.LabelSelector,
-		FieldSelector: containersFilter.FieldSelector,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var skippedContainers int
 	var records []record.Record
 
-	var podNameRegex *regexp.Regexp
-	if len(containersFilter.PodNameRegexFilter) > 0 {
-		podNameRegex = regexp.MustCompile(containersFilter.PodNameRegexFilter)
+	// to keep this function compatible with deprecated Namespace property
+	if containersFilter.Namespace != "" {
+		containersFilter.Namespaces = append(containersFilter.Namespaces, containersFilter.Namespace)
 	}
 
-	var messagesRegexp *regexp.Regexp
-	if messagesFilter.IsRegexSearch {
-		messagesRegexp = regexp.MustCompile(strings.Join(messagesFilter.MessagesToSearch, "|"))
-	}
+	for _, namespace := range containersFilter.Namespaces {
 
-	for i := range pods.Items {
-		pod := &pods.Items[i]
-
-		if podNameRegex != nil {
-			if !podNameRegex.MatchString(pod.Name) {
-				continue
-			}
+		pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: containersFilter.LabelSelector,
+			FieldSelector: containersFilter.FieldSelector,
+		})
+		if err != nil {
+			return nil, err
 		}
 
-		containerNames := podContainers(pod)
-
-		containersLimited := containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers
-		if containersLimited {
-			skippedContainers += len(containerNames)
+		if len(pods.Items) == 0 {
+			klog.Infof("no pods in %v namespace were found", namespace)
 			continue
 		}
 
-		for _, containerName := range containerNames {
-			if len(containersFilter.ContainerNameRegexFilter) > 0 {
-				match, err := regexp.MatchString(containersFilter.ContainerNameRegexFilter, containerName)
-				if err != nil {
-					return nil, err
-				}
-				if !match {
+		var skippedContainers int
+
+		var podNameRegex *regexp.Regexp
+		if len(containersFilter.PodNameRegexFilter) > 0 {
+			podNameRegex = regexp.MustCompile(containersFilter.PodNameRegexFilter)
+		}
+
+		var messagesRegexp *regexp.Regexp
+		if messagesFilter.IsRegexSearch {
+			messagesRegexp = regexp.MustCompile(strings.Join(messagesFilter.MessagesToSearch, "|"))
+		}
+
+		for i := range pods.Items {
+			pod := &pods.Items[i]
+
+			if podNameRegex != nil {
+				if !podNameRegex.MatchString(pod.Name) {
 					continue
 				}
 			}
 
+			containerNames := podContainers(pod)
+
+			containersLimited := containersFilter.MaxNamespaceContainers > 0 && len(records) >= containersFilter.MaxNamespaceContainers
 			if containersLimited {
-				skippedContainers = len(containerNames) - containersFilter.MaxNamespaceContainers
-				break
+				skippedContainers += len(containerNames)
+				continue
 			}
 
-			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
+			for _, containerName := range containerNames {
+				if len(containersFilter.ContainerNameRegexFilter) > 0 {
+					match, err := regexp.MatchString(containersFilter.ContainerNameRegexFilter, containerName)
+					if err != nil {
+						return nil, err
+					}
+					if !match {
+						continue
+					}
+				}
 
-			var filter FilterLogOption
-			if messagesFilter.IsRegexSearch {
-				filter = WithRegexFilter(messagesRegexp)
-			} else {
-				filter = WithSubstringFilter(messagesFilter.MessagesToSearch)
-			}
+				if containersLimited {
+					skippedContainers = len(containerNames) - containersFilter.MaxNamespaceContainers
+					break
+				}
 
-			logs, err := FilterLogsFromRequest(ctx, request, filter)
-			if err != nil {
-				return nil, err
-			}
+				request := coreClient.Pods(namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
-			if len(strings.TrimSpace(logs)) != 0 {
-				records = append(records, record.Record{
-					Name: buildLogFileName(pod.Namespace, pod.Name, containerName),
-					Item: marshal.Raw{Str: logs},
-				})
+				var filter FilterLogOption
+				if messagesFilter.IsRegexSearch {
+					filter = WithRegexFilter(messagesRegexp)
+				} else {
+					filter = WithSubstringFilter(messagesFilter.MessagesToSearch)
+				}
+
+				logs, err := FilterLogsFromRequest(ctx, request, filter)
+				if err != nil {
+					return nil, err
+				}
+
+				if len(strings.TrimSpace(logs)) != 0 {
+					records = append(records, record.Record{
+						Name: buildLogFileName(pod.Namespace, pod.Name, containerName),
+						Item: marshal.Raw{Str: logs},
+					})
+				}
 			}
 		}
-	}
 
-	if len(pods.Items) == 0 {
-		klog.Infof("no pods in %v namespace were found", containersFilter.Namespace)
-	}
-
-	if skippedContainers > 0 {
-		return records, fmt.Errorf("skipping %d containers on namespace %s (max: %d)",
-			skippedContainers, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
+		if skippedContainers > 0 {
+			return records, fmt.Errorf("skipping %d containers on namespace %s (max: %d)",
+				skippedContainers, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
+		}
 	}
 
 	return records, nil
