@@ -103,7 +103,7 @@ Insights operator defines three types of gatherers (see below). Each of them mus
 
 Each gatherer includes one or more gathering functions. Gathering functions are defined as a map, where the key is the name of the function and the value is the [GatheringClosure type](../pkg/gatherers/interface.go#L34). They are executed concurrently in the `HandleTasksConcurrently` function in `pkg/gather/task_processing.go`.
 One of the attributes of the `GatheringClosure` type is the function that returns the values: `([]record.Record, []error)`. The slice of the records is the result of gathering function. The actual data is in the `Item` attribute of the `Record`. This `Item` is of type `Marshalable` (see the interface in the [record.go](../pkg/record/record.go)) and there are two JSON marshallers used to serialize the data - `JSONMarshaller` and `ResourceMarshaller` which allows you to save few bytes by omitting the `managedFields` during the serialization.
-Errors, warnings or panics that occurred during  given gathering  function are logged in the "metadata" part of the Insights operator archive. See [sample archive example](../docs/insights-archive-sample/insigths-operator/gathers.json)
+Errors, warnings or panics that occurred during  given gathering  function are logged in the "metadata" part of the Insights operator archive. See [sample archive example](../docs/insights-archive-sample/insights-operator/gathers.json)
 
 ### Clusterconfig gatherer
 
