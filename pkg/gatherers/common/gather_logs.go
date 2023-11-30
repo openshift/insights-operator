@@ -67,7 +67,7 @@ type FilterLogOption func(line string) bool
 // Default location of the logs is `config/pod/{namespace}/logs/{podName}/errors.log`,
 //
 //	you can override it with buildLogFileName
-func CollectLogsFromContainers( //nolint:gocyclo
+func CollectLogsFromContainers( //nolint:gocyclo, funlen
 	ctx context.Context,
 	coreClient v1.CoreV1Interface,
 	containersFilter *LogResourceFilter,
@@ -88,7 +88,6 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	}
 
 	for _, namespace := range containersFilter.Namespaces {
-
 		pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: containersFilter.LabelSelector,
 			FieldSelector: containersFilter.FieldSelector,

@@ -49,10 +49,10 @@ func TestCollectLogsFromContainers(t *testing.T) {
 	coreClient := kubefake.NewSimpleClientset().CoreV1()
 	ctx := context.Background()
 
-	if err := createPods(coreClient, ctx, "test-namespace", "test"); err != nil {
+	if err := createPods(ctx, coreClient, "test-namespace", "test"); err != nil {
 		t.Fatal(err)
 	}
-	if err := createPods(coreClient, ctx, "second-namespace", "new-pod"); err != nil {
+	if err := createPods(ctx, coreClient, "second-namespace", "new-pod"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -192,7 +192,7 @@ func TestCollectLogsFromContainers(t *testing.T) {
 	}
 }
 
-func createPods(coreClient corev1client.CoreV1Interface, ctx context.Context, namespace, podName string) error {
+func createPods(ctx context.Context, coreClient corev1client.CoreV1Interface, namespace, podName string) error {
 	_, err := coreClient.Pods(namespace).Create(
 		ctx,
 		&corev1.Pod{
