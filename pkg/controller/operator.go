@@ -168,7 +168,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient.ConfigV1(), secretConfigObserver,
+	statusReporter := status.NewController(configClient.ConfigV1(), configAggregator,
 		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"))
 
 	var anonymizer *anonymization.Anonymizer
@@ -192,7 +192,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		go rec.PeriodicallyPrune(ctx, statusReporter)
 	}
 
-	authorizer := clusterauthorizer.New(secretConfigObserver)
+	authorizer := clusterauthorizer.New(secretConfigObserver, configAggregator)
 
 	// gatherConfigClient is configClient created from gatherKubeConfig, this name was used because configClient was already taken
 	// this client is only used in insightsClient, it is created here
@@ -216,7 +216,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			operatorClient.InsightsOperators(), kubeClient)
 		statusReporter.AddSources(periodicGather.Sources()...)
 	} else {
-		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, secretConfigObserver)
+		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
 			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(), operatorClient.InsightsOperators(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
@@ -246,7 +246,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		// know any previous last reported time
 		go uploader.Run(ctx)
 
-		reportGatherer := insightsreport.New(insightsClient, secretConfigObserver, uploader, operatorClient.InsightsOperators())
+		reportGatherer := insightsreport.New(insightsClient, configAggregator, uploader, operatorClient.InsightsOperators())
 		statusReporter.AddSources(reportGatherer)
 		go reportGatherer.Run(ctx)
 	}
@@ -256,17 +256,15 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return fmt.Errorf("unable to set initial cluster status: %v", err)
 	}
 
-	scaController := initiateSCAController(ctx, kubeClient, secretConfigObserver, insightsClient)
-	if scaController != nil {
-		statusReporter.AddSources(scaController)
-		go scaController.Run()
-	}
+	scaController := sca.New(ctx, kubeClient.CoreV1(), configAggregator, insightsClient)
+	statusReporter.AddSources(scaController)
+	go scaController.Run()
 
-	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), secretConfigObserver, insightsClient)
+	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), configAggregator, insightsClient)
 	statusReporter.AddSources(clusterTransferController)
 	go clusterTransferController.Run()
 
-	promRulesController := insights.NewPrometheusRulesController(secretConfigObserver, controller.KubeConfig)
+	promRulesController := insights.NewPrometheusRulesController(configAggregator, controller.KubeConfig)
 	go promRulesController.Start(ctx)
 
 	klog.Warning("started")
@@ -303,13 +301,4 @@ func isRunning(kubeConfig *rest.Config) wait.ConditionWithContextFunc {
 		}
 		return true, nil
 	}
-}
-
-// initiateSCAController creates a new sca.Controller
-func initiateSCAController(ctx context.Context,
-	kubeClient *kubernetes.Clientset, configObserver *configobserver.Controller, insightsClient *insightsclient.Client) *sca.Controller {
-	// SCA controller periodically checks and pull data from the OCM SCA API
-	// the data is exposed in the OpenShift API
-	scaController := sca.New(ctx, kubeClient.CoreV1(), configObserver, insightsClient)
-	return scaController
 }

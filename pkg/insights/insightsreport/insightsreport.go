@@ -24,11 +24,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	minReportRetryTime    = 30 * time.Second
+	reportDownloadTimeout = 5 * time.Minute
+)
+
 // Controller gathers the report from Smart Proxy
 type Controller struct {
 	controllerstatus.StatusController
 
-	configurator          configobserver.Configurator
+	configurator          configobserver.Interface
 	client                insightsReportClient
 	LastReport            types.SmartProxyReport
 	archiveUploadReporter <-chan struct{}
@@ -53,7 +58,7 @@ var (
 )
 
 // New initializes and returns a Gatherer
-func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
+func New(client *insightsclient.Client, configurator configobserver.Interface, reporter InsightsReporter, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
 	return &Controller{
 		StatusController:      controllerstatus.New("insightsreport"),
 		configurator:          configurator,
@@ -63,7 +68,7 @@ func New(client *insightsclient.Client, configurator configobserver.Configurator
 	}
 }
 
-func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Configurator) *Controller {
+func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Interface) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New("insightsreport"),
 		configurator:     configurator,
@@ -77,7 +82,7 @@ func NewWithTechPreview(client *insightsclient.Client, configurator configobserv
 func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.InsightsAnalysisReport, error) {
 	klog.Info("Retrieving report from the insights-results-agregator service endpoint")
 	config := c.configurator.Config()
-	reportEndpointTP := config.ReportEndpointTechPreview
+	reportEndpointTP := config.DataReporting.DownloadEndpointTechPreview
 
 	if len(reportEndpointTP) == 0 {
 		klog.V(4).Info("Not downloading report because the insights-results-agregator endpoint is not configured")
@@ -130,7 +135,7 @@ func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.Ins
 func (c *Controller) PullSmartProxy() (bool, error) {
 	klog.Info("Pulling report from smart-proxy")
 	config := c.configurator.Config()
-	reportEndpoint := config.ReportEndpoint
+	reportEndpoint := config.DataReporting.DownloadEndpoint
 
 	if len(reportEndpoint) == 0 {
 		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing report endpoint")
@@ -211,16 +216,11 @@ func (c *Controller) RetrieveReport() {
 	configCh, cancelFn := c.configurator.ConfigChanged()
 	defer cancelFn()
 
-	if config.ReportPullingTimeout == 0 {
-		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing polling timeout")
-		return
-	}
-
-	delay := config.ReportPullingDelay
+	delay := config.DataReporting.ReportPullingDelay
 	klog.V(4).Infof("Initial delay for pulling: %v", delay)
 	startTime := time.Now()
 	delayTimer := time.NewTimer(wait.Jitter(delay, 0.1))
-	timeoutTimer := time.NewTimer(config.ReportPullingTimeout)
+	timeoutTimer := time.NewTimer(reportDownloadTimeout)
 	firstPullDone := false
 	retryCounter := 0
 
@@ -249,7 +249,7 @@ func (c *Controller) RetrieveReport() {
 				})
 				return
 			}
-			t := wait.Jitter(config.ReportMinRetryTime, 0.1)
+			t := wait.Jitter(minReportRetryTime, 0.1)
 			klog.Infof("Reseting the delay timer to retry in %s again", t)
 			delayTimer.Reset(t)
 			retryCounter++
@@ -267,10 +267,10 @@ func (c *Controller) RetrieveReport() {
 			// Update next deadline
 			var nextTick time.Duration
 			if firstPullDone {
-				newDeadline := iterationStart.Add(config.ReportMinRetryTime)
+				newDeadline := iterationStart.Add(minReportRetryTime)
 				nextTick = wait.Jitter(time.Until(newDeadline), 0.3)
 			} else {
-				newDeadline := iterationStart.Add(config.ReportPullingDelay)
+				newDeadline := iterationStart.Add(config.DataReporting.ReportPullingDelay)
 				nextTick = wait.Jitter(time.Until(newDeadline), 0.1)
 			}
 
@@ -280,7 +280,7 @@ func (c *Controller) RetrieveReport() {
 			delayTimer.Reset(nextTick)
 
 			// Update pulling timeout
-			newTimeoutEnd := startTime.Add(config.ReportPullingTimeout)
+			newTimeoutEnd := startTime.Add(reportDownloadTimeout)
 			if !timeoutTimer.Stop() {
 				<-timeoutTimer.C
 			}
@@ -295,7 +295,7 @@ func (c *Controller) Run(ctx context.Context) {
 	klog.V(2).Info("Starting report retriever")
 	conf := c.configurator.Config()
 	klog.V(2).Infof("Insights analysis reports will be downloaded from the %s endpoint with a delay of %s",
-		conf.ReportEndpoint, conf.ReportPullingDelay)
+		conf.DataReporting.DownloadEndpoint, conf.DataReporting.ReportPullingDelay)
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
@@ -339,7 +339,7 @@ func (c *Controller) readInsightsReportTechPreview(report types.InsightsAnalysis
 		case 4:
 			healthStatus.critical++
 		}
-		if c.configurator.Config().DisableInsightsAlerts {
+		if c.configurator.Config().Alerting.Disabled {
 			continue
 		}
 		insights.RecommendationCollector.SetClusterID(configv1.ClusterID(report.ClusterID))
@@ -378,7 +378,7 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 			healthStatus.critical++
 		}
 
-		if c.configurator.Config().DisableInsightsAlerts {
+		if c.configurator.Config().Alerting.Disabled {
 			continue
 		}
 		errorKeyStr, err := extractErrorKeyFromRuleData(rule)

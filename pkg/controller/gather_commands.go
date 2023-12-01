@@ -87,7 +87,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		}
 	}()
 
-	authorizer := clusterauthorizer.New(configObserver)
+	authorizer := clusterauthorizer.New(configObserver, configAggregator)
 
 	// gatherConfigClient is configClient created from gatherKubeConfig, this name was used because configClient was already taken
 	// this client is only used in insightsClient, it is created here
@@ -170,7 +170,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	// the recorder stores the collected data and we flush at the end.
 	recdriver := diskrecorder.New(g.StoragePath)
 	rec := recorder.New(recdriver, g.Interval, anonymizer)
-	authorizer := clusterauthorizer.New(configObserver)
+	authorizer := clusterauthorizer.New(configObserver, configAggregator)
 
 	configClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {

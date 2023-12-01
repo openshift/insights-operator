@@ -22,11 +22,11 @@ func nonCachedProxyFromEnvironment() func(*http.Request) (*url.URL, error) {
 
 func Test_Proxy(tt *testing.T) {
 	testCases := []struct {
-		Name       string
-		EnvValues  map[string]interface{}
-		RequestURL string
-		HTTPConfig config.HTTPConfig
-		ProxyURL   string
+		Name        string
+		EnvValues   map[string]interface{}
+		RequestURL  string
+		ProxyConfig config.Proxy
+		ProxyURL    string
 	}{
 		{
 			Name:       "No env set, no specific proxy",
@@ -47,39 +47,39 @@ func Test_Proxy(tt *testing.T) {
 			ProxyURL:   "http://secproxy.to",
 		},
 		{
-			Name:       "Env not set, specific proxy set",
-			EnvValues:  map[string]interface{}{"HTTP_PROXY": nil},
-			RequestURL: "http://google.com",
-			HTTPConfig: config.HTTPConfig{HTTPProxy: "specproxy.to"},
-			ProxyURL:   "http://specproxy.to",
+			Name:        "Env not set, specific proxy set",
+			EnvValues:   map[string]interface{}{"HTTP_PROXY": nil},
+			RequestURL:  "http://google.com",
+			ProxyConfig: config.Proxy{HTTPProxy: "specproxy.to"},
+			ProxyURL:    "http://specproxy.to",
 		},
 		{
-			Name:       "Env set, specific proxy set http",
-			EnvValues:  map[string]interface{}{"HTTP_PROXY": "envproxy.to"},
-			RequestURL: "http://google.com",
-			HTTPConfig: config.HTTPConfig{HTTPProxy: "specproxy.to"},
-			ProxyURL:   "http://specproxy.to",
+			Name:        "Env set, specific proxy set http",
+			EnvValues:   map[string]interface{}{"HTTP_PROXY": "envproxy.to"},
+			RequestURL:  "http://google.com",
+			ProxyConfig: config.Proxy{HTTPProxy: "specproxy.to"},
+			ProxyURL:    "http://specproxy.to",
 		},
 		{
-			Name:       "Env set, specific proxy set https",
-			EnvValues:  map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to"},
-			RequestURL: "https://google.com",
-			HTTPConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to"},
-			ProxyURL:   "http://specsecproxy.to",
+			Name:        "Env set, specific proxy set https",
+			EnvValues:   map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to"},
+			RequestURL:  "https://google.com",
+			ProxyConfig: config.Proxy{HTTPSProxy: "specsecproxy.to"},
+			ProxyURL:    "http://specsecproxy.to",
 		},
 		{
-			Name:       "Env set, specific proxy set noproxy, request without noproxy",
-			EnvValues:  map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to", "NO_PROXY": "envnoproxy.to"},
-			RequestURL: "https://google.com",
-			HTTPConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
-			ProxyURL:   "http://specsecproxy.to",
+			Name:        "Env set, specific proxy set noproxy, request without noproxy",
+			EnvValues:   map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to", "NO_PROXY": "envnoproxy.to"},
+			RequestURL:  "https://google.com",
+			ProxyConfig: config.Proxy{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
+			ProxyURL:    "http://specsecproxy.to",
 		},
 		{
-			Name:       "Env set, specific proxy set noproxy, request with noproxy",
-			EnvValues:  map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to", "NO_PROXY": "envnoproxy.to"},
-			RequestURL: "https://specnoproxy.to",
-			HTTPConfig: config.HTTPConfig{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
-			ProxyURL:   "",
+			Name:        "Env set, specific proxy set noproxy, request with noproxy",
+			EnvValues:   map[string]interface{}{"HTTPS_PROXY": "envsecproxy.to", "NO_PROXY": "envnoproxy.to"},
+			RequestURL:  "https://specnoproxy.to",
+			ProxyConfig: config.Proxy{HTTPSProxy: "specsecproxy.to", NoProxy: "specnoproxy.to"},
+			ProxyURL:    "",
 		},
 	}
 	for _, tcase := range testCases {
@@ -97,8 +97,15 @@ func Test_Proxy(tt *testing.T) {
 				}
 			}
 
-			co2 := &config.MockSecretConfigurator{Conf: &config.Controller{HTTPConfig: tc.HTTPConfig}}
-			a := Authorizer{proxyFromEnvironment: nonCachedProxyFromEnvironment(), configurator: co2}
+			secretConfigurator := &config.MockSecretConfigurator{Conf: &config.Controller{}}
+			configurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				Proxy: tc.ProxyConfig,
+			})
+			a := Authorizer{
+				proxyFromEnvironment: nonCachedProxyFromEnvironment(),
+				secretConfigurator:   secretConfigurator,
+				configurator:         configurator,
+			}
 			p := a.NewSystemOrConfiguredProxy()
 			req := httptest.NewRequest("GET", tc.RequestURL, http.NoBody)
 			urlRec, err := p(req)
