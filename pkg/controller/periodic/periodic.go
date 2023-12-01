@@ -3,6 +3,7 @@ package periodic
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -235,9 +236,10 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	configCh, closeFn := c.configAggregator.ConfigChanged()
 	defer closeFn()
 
-	interval := c.configAggregator.Config().DataReporting.Interval
+	config := c.configAggregator.Config()
+	interval := config.DataReporting.Interval
 	klog.Infof("Gathering cluster info every %s", interval)
-	klog.Infof("Configuration is %v", c.configAggregator.Config().String())
+	klog.Infof("Configuration is %v", config.String())
 	t := time.NewTicker(interval)
 	for {
 		select {
@@ -245,15 +247,16 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			t.Stop()
 			return
 		case <-configCh:
-			newInterval := c.configAggregator.Config().DataReporting.Interval
-			if newInterval == interval {
+			newConfig := c.configAggregator.Config()
+			if reflect.DeepEqual(config, newConfig) {
 				continue
 			}
 
-			interval = newInterval
+			config = newConfig
+			interval = config.DataReporting.Interval
 			t.Reset(interval)
 			klog.Infof("Gathering cluster info every %s", interval)
-			klog.Infof("Configuration is %v", c.configAggregator.Config().String())
+			klog.Infof("Configuration is %v", config.String())
 		case <-t.C:
 			if c.techPreview {
 				c.GatherJob()

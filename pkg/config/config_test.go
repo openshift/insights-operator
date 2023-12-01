@@ -1,209 +1,103 @@
 package config
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLoadConfig(t *testing.T) {
+func TestToConfig(t *testing.T) {
 	tests := []struct {
-		name           string
-		ctrl           Controller
-		obj            map[string]interface{}
-		expectedOutput Controller
-		err            error
+		name             string
+		serializedConfig InsightsConfigurationSerialized
+		config           *InsightsConfiguration
 	}{
 		{
-			name: "controller defaults are overwritten by the serialized config",
-			ctrl: Controller{
-				Endpoint:             "default-endpoint",
-				Report:               false,
-				Interval:             5 * time.Minute,
-				StoragePath:          "default-storage-path",
-				ReportEndpoint:       "default-report-endpoint",
-				ReportPullingDelay:   30 * time.Second,
-				ReportMinRetryTime:   60 * time.Second,
-				ReportPullingTimeout: 2 * time.Minute,
-				OCMConfig: OCMConfig{
-					SCAInterval:             1 * time.Hour,
-					SCAEndpoint:             "default-sca-endpoint",
-					ClusterTransferEndpoint: "default-ct-endpoint",
-					ClusterTransferInterval: 24 * time.Hour,
+			name: "basic test",
+			serializedConfig: InsightsConfigurationSerialized{
+				DataReporting: DataReportingSerialized{
+					Interval:       "5m",
+					UploadEndpoint: "test.upload.endpoint/v1",
+					StoragePath:    "/tmp/test/path",
+					Obfuscation: Obfuscation{
+						Networking,
+						WorkloadNames,
+					},
+				},
+				SCA: SCASerialized{
+					Disabled: "true",
+					Interval: "12h",
+					Endpoint: "test.sca.endpoint",
+				},
+				ClusterTransfer: ClusterTransferSerialized{
+					Interval: "14h",
+				},
+				Alerting: AlertingSerialized{
+					Disabled: "false",
 				},
 			},
-			obj: map[string]interface{}{
-				"report":      true,
-				"interval":    "2h",
-				"endpoint":    "real-endpoint",
-				"storagePath": "/tmp/insights-operator",
-				"pull_report": map[string]interface{}{
-					"delay":     "1m",
-					"min_retry": "5m",
-					"endpoint":  "real-pull-report-endpoint",
-					"timeout":   "4m",
+			config: &InsightsConfiguration{
+				DataReporting: DataReporting{
+					Interval:       5 * time.Minute,
+					UploadEndpoint: "test.upload.endpoint/v1",
+					StoragePath:    "/tmp/test/path",
+					Obfuscation: Obfuscation{
+						Networking,
+						WorkloadNames,
+					},
 				},
-				"ocm": map[string]interface{}{
-					"scaInterval":             "8h",
-					"scaEndpoint":             "real-sca-endpoint",
-					"clusterTransferEndpoint": "real-ct-endpoint",
-					"clusterTransferInterval": "12h",
+				SCA: SCA{
+					Disabled: true,
+					Interval: 12 * time.Hour,
+					Endpoint: "test.sca.endpoint",
 				},
-			},
-			expectedOutput: Controller{
-				Report:               true,
-				Interval:             2 * time.Hour,
-				Endpoint:             "real-endpoint",
-				StoragePath:          "/tmp/insights-operator",
-				ReportEndpoint:       "real-pull-report-endpoint",
-				ReportPullingDelay:   1 * time.Minute,
-				ReportMinRetryTime:   5 * time.Minute,
-				ReportPullingTimeout: 4 * time.Minute,
-				OCMConfig: OCMConfig{
-					SCAInterval:             8 * time.Hour,
-					SCAEndpoint:             "real-sca-endpoint",
-					ClusterTransferEndpoint: "real-ct-endpoint",
-					ClusterTransferInterval: 12 * time.Hour,
+				ClusterTransfer: ClusterTransfer{
+					Interval: 14 * time.Hour,
 				},
 			},
-			err: nil,
-		},
-		{
-			name:           "interval cannot be empty",
-			ctrl:           Controller{},
-			obj:            map[string]interface{}{},
-			expectedOutput: Controller{},
-			err:            fmt.Errorf("interval must be a non-negative duration"),
-		},
-		{
-			name: "interval must be valid duration",
-			ctrl: Controller{},
-			obj: map[string]interface{}{
-				"interval": "notnumber",
-			},
-			expectedOutput: Controller{
-				Interval: 0,
-			},
-			err: fmt.Errorf("interval must be a valid duration: time: invalid duration \"notnumber\""),
-		},
-		{
-			name: "delay cannot be empty",
-			ctrl: Controller{},
-			obj: map[string]interface{}{
-				"interval": "2h",
-			},
-			expectedOutput: Controller{
-				Interval: 2 * time.Hour,
-			},
-			err: fmt.Errorf("delay must be a non-negative duration"),
-		},
-		{
-			name: "min_retry cannot be empty",
-			ctrl: Controller{},
-			obj: map[string]interface{}{
-				"interval": "2h",
-				"pull_report": map[string]interface{}{
-					"delay": "1m",
-				},
-			},
-			expectedOutput: Controller{
-				Interval:           2 * time.Hour,
-				ReportPullingDelay: 1 * time.Minute,
-			},
-			err: fmt.Errorf("min_retry must be a non-negative duration"),
-		},
-		{
-			name: "timeout cannot be empty",
-			ctrl: Controller{},
-			obj: map[string]interface{}{
-				"interval": "2h",
-				"pull_report": map[string]interface{}{
-					"delay":     "1m",
-					"min_retry": "2m",
-				},
-			},
-			expectedOutput: Controller{
-				Interval:           2 * time.Hour,
-				ReportPullingDelay: 1 * time.Minute,
-				ReportMinRetryTime: 2 * time.Minute,
-			},
-			err: fmt.Errorf("timeout must be a non-negative duration"),
-		},
-		{
-			name: "storagePath cannot be empty",
-			ctrl: Controller{},
-			obj: map[string]interface{}{
-				"interval": "2h",
-				"pull_report": map[string]interface{}{
-					"delay":     "1m",
-					"min_retry": "2m",
-					"timeout":   "5m",
-				},
-			},
-			expectedOutput: Controller{
-				Interval:             2 * time.Hour,
-				ReportPullingDelay:   1 * time.Minute,
-				ReportMinRetryTime:   2 * time.Minute,
-				ReportPullingTimeout: 5 * time.Minute,
-			},
-			err: fmt.Errorf("storagePath must point to a directory where snapshots can be stored"),
-		},
-		{
-			name: "SCA interval must be valid duration",
-			ctrl: Controller{},
-			obj: map[string]interface{}{
-				"interval": "2h",
-				"pull_report": map[string]interface{}{
-					"delay":     "1m",
-					"min_retry": "2m",
-					"timeout":   "5m",
-				},
-				"storagePath": "test/path",
-				"ocm": map[string]interface{}{
-					"scaInterval": "not-duration",
-				},
-			},
-			expectedOutput: Controller{
-				Interval:             2 * time.Hour,
-				ReportPullingDelay:   1 * time.Minute,
-				ReportMinRetryTime:   2 * time.Minute,
-				ReportPullingTimeout: 5 * time.Minute,
-				StoragePath:          "test/path",
-			},
-			err: fmt.Errorf("OCM SCA interval must be a valid duration: time: invalid duration \"not-duration\""),
-		},
-		{
-			name: "SCA interval must be valid duration",
-			ctrl: Controller{},
-			obj: map[string]interface{}{
-				"interval": "2h",
-				"pull_report": map[string]interface{}{
-					"delay":     "1m",
-					"min_retry": "2m",
-					"timeout":   "5m",
-				},
-				"storagePath": "test/path",
-				"ocm": map[string]interface{}{
-					"clusterTransferInterval": "not-duration",
-				},
-			},
-			expectedOutput: Controller{
-				Interval:             2 * time.Hour,
-				ReportPullingDelay:   1 * time.Minute,
-				ReportMinRetryTime:   2 * time.Minute,
-				ReportPullingTimeout: 5 * time.Minute,
-				StoragePath:          "test/path",
-			},
-			err: fmt.Errorf("OCM Cluster transfer interval must be a valid duration: time: invalid duration \"not-duration\""),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output, err := LoadConfig(tt.ctrl, tt.obj, ToController)
-			assert.Equal(t, tt.err, err)
-			assert.Equal(t, tt.expectedOutput, output)
+			testConfig := tt.serializedConfig.ToConfig()
+			assert.Equal(t, tt.config, testConfig)
+		})
+	}
+}
+
+func TestParseInterval(t *testing.T) {
+	tests := []struct {
+		name             string
+		intervalString   string
+		defaultValue     time.Duration
+		expectedInterval time.Duration
+	}{
+		{
+			name:             "basic test with meaningful interval value",
+			intervalString:   "1h",
+			defaultValue:     30 * time.Minute,
+			expectedInterval: 1 * time.Hour,
+		},
+		{
+			name:             "interval cannot be parsed",
+			intervalString:   "not a duration",
+			defaultValue:     30 * time.Minute,
+			expectedInterval: 30 * time.Minute,
+		},
+		{
+			name:             "interval is negative duration",
+			intervalString:   "-10m",
+			defaultValue:     30 * time.Minute,
+			expectedInterval: 30 * time.Minute,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			interval := parseInterval(tt.intervalString, tt.defaultValue)
+			assert.Equal(t, tt.expectedInterval, interval)
 		})
 	}
 }

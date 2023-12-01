@@ -11,11 +11,9 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
-	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeclientfake "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_Status_SaveInitialStart(t *testing.T) {
@@ -68,14 +66,17 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 			if tt.clusterOperator != nil {
 				operators = append(operators, tt.clusterOperator)
 			}
-			kubeclientsetclient := kubeclientfake.NewSimpleClientset()
 
 			client := configfake.NewSimpleClientset(operators...)
 			ctrl := &Controller{
-				name:               "insights",
-				client:             client.ConfigV1(),
-				secretConfigurator: configobserver.New(config.Controller{Report: true}, kubeclientsetclient),
-				ctrlStatus:         newControllerStatus(),
+				name:   "insights",
+				client: client.ConfigV1(),
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+					DataReporting: config.DataReporting{
+						Enabled: true,
+					},
+				}),
+				ctrlStatus: newControllerStatus(),
 			}
 
 			err := ctrl.updateStatus(context.Background(), tt.initialRun)
@@ -137,8 +138,12 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 	testController := Controller{
 		ctrlStatus: newControllerStatus(),
 		// marking operator as disabled
-		secretConfigurator: config.NewMockSecretConfigurator(&config.Controller{Report: false}),
-		apiConfigurator:    config.NewMockAPIConfigurator(nil),
+		configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+			DataReporting: config.DataReporting{
+				Enabled: false,
+			},
+		}),
+		apiConfigurator: config.NewMockAPIConfigurator(nil),
 	}
 	updatedCO := testController.merge(&testCO)
 	// check that all the conditions are not touched except the disabled one
@@ -206,8 +211,12 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	testController := Controller{
 		ctrlStatus: newControllerStatus(),
 		// marking operator as disabled
-		secretConfigurator: config.NewMockSecretConfigurator(&config.Controller{Report: false}),
-		apiConfigurator:    config.NewMockAPIConfigurator(nil),
+		configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+			DataReporting: config.DataReporting{
+				Enabled: false,
+			},
+		}),
+		apiConfigurator: config.NewMockAPIConfigurator(nil),
 	}
 	updatedCO := testController.merge(&testCO)
 	// check that all conditions changed except the Progressing since it's still False

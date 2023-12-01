@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -27,12 +28,12 @@ var (
 // PrometheusRulesControllers listens to the configuration observer and
 // creates or removes the Insights Prometheus Rules definitions accordingly
 type PrometheusRulesController struct {
-	configurator   configobserver.Configurator
+	configurator   configobserver.Interface
 	monitoringCS   monitoringcli.Interface
 	promRulesExist bool
 }
 
-func NewPrometheusRulesController(configurator configobserver.Configurator, kubeConfig *rest.Config) PrometheusRulesController {
+func NewPrometheusRulesController(configurator configobserver.Interface, kubeConfig *rest.Config) PrometheusRulesController {
 	monitoringCS, err := monitoringcli.NewForConfig(kubeConfig)
 	if err != nil {
 		klog.Warningf("Unable create monitoring client: %v", err)
@@ -62,7 +63,7 @@ func (p *PrometheusRulesController) Start(ctx context.Context) {
 // checkAlertsDisabled reads the actual config and either creates (if they don't exist) or removes (if they do exist)
 // the "insights-prometheus-rules" definition
 func (p *PrometheusRulesController) checkAlertsDisabled(ctx context.Context) {
-	disableInsightsAlerts := p.configurator.Config().DisableInsightsAlerts
+	disableInsightsAlerts := p.configurator.Config().Alerting.Disabled
 
 	if disableInsightsAlerts && p.promRulesExist {
 		err := p.removeInsightsAlerts(ctx)
@@ -77,6 +78,10 @@ func (p *PrometheusRulesController) checkAlertsDisabled(ctx context.Context) {
 	if !disableInsightsAlerts && !p.promRulesExist {
 		err := p.createInsightsAlerts(ctx)
 		if err != nil {
+			if errors.IsAlreadyExists(err) {
+				p.promRulesExist = true
+				return
+			}
 			klog.Errorf("Failed to create Insights Prometheus rules definition: %v", err)
 			return
 		}

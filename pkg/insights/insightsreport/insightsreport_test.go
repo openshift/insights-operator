@@ -36,10 +36,9 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "basic test with all rules enabled",
 			testController: &Controller{
-				configurator: config.NewMockSecretConfigurator(&config.Controller{
-					DisableInsightsAlerts: false,
-				}),
-				client: &client,
+
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
+				client:       &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -124,10 +123,8 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "basic test with some rules disabled",
 			testController: &Controller{
-				configurator: config.NewMockSecretConfigurator(&config.Controller{
-					DisableInsightsAlerts: false,
-				}),
-				client: &client,
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
+				client:       &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -200,8 +197,10 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "Insights recommendations as alerts are disabled => no active recommendations",
 			testController: &Controller{
-				configurator: config.NewMockSecretConfigurator(&config.Controller{
-					DisableInsightsAlerts: true,
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+					Alerting: config.Alerting{
+						Disabled: true,
+					},
 				}),
 				client: &client,
 			},
@@ -318,7 +317,7 @@ func TestPullReportTechpreview(t *testing.T) {
 		name          string
 		report        *types.InsightsAnalysisReport
 		statusCode    int
-		conf          *config.Controller
+		conf          config.InsightsConfiguration
 		statusSummary controllerstatus.Summary
 		mockClientErr error
 		expectedErr   error
@@ -350,8 +349,10 @@ func TestPullReportTechpreview(t *testing.T) {
 				},
 			},
 			statusCode: http.StatusOK,
-			conf: &config.Controller{
-				ReportEndpointTechPreview: "non-empty-endpoint",
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "non-empty-endpoint",
+				},
 			},
 			statusSummary: controllerstatus.Summary{
 				Healthy: true,
@@ -363,8 +364,10 @@ func TestPullReportTechpreview(t *testing.T) {
 			name:       "Empty report endpoint",
 			report:     nil,
 			statusCode: 0,
-			conf: &config.Controller{
-				ReportEndpointTechPreview: "",
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "",
+				},
 			},
 			statusSummary: controllerstatus.Summary{
 				Healthy: true,
@@ -376,8 +379,10 @@ func TestPullReportTechpreview(t *testing.T) {
 			name:       "Insights Analysis Report not retrieved, because of error",
 			report:     nil,
 			statusCode: 0,
-			conf: &config.Controller{
-				ReportEndpointTechPreview: "non-empty-endpoint",
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "non-empty-endpoint",
+				},
 			},
 			statusSummary: controllerstatus.Summary{
 				Healthy: false,
@@ -389,8 +394,10 @@ func TestPullReportTechpreview(t *testing.T) {
 			name:       "Insights Analysis Report not retrieved, because of HTTP 404 response",
 			report:     nil,
 			statusCode: http.StatusNotFound,
-			conf: &config.Controller{
-				ReportEndpointTechPreview: "non-empty-endpoint",
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "non-empty-endpoint",
+				},
 			},
 			statusSummary: controllerstatus.Summary{
 				Healthy: false,
@@ -413,9 +420,7 @@ func TestPullReportTechpreview(t *testing.T) {
 					},
 					err: tt.mockClientErr,
 				},
-				configurator: &config.MockSecretConfigurator{
-					Conf: tt.conf,
-				},
+				configurator:     config.NewMockConfigMapConfigurator(&tt.conf),
 				StatusController: controllerstatus.New("test-insightsreport"),
 			}
 

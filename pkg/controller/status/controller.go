@@ -54,9 +54,9 @@ type Controller struct {
 
 	client configv1client.ConfigV1Interface
 
-	statusCh           chan struct{}
-	secretConfigurator configobserver.Configurator
-	apiConfigurator    configobserver.InsightsDataGatherObserver
+	statusCh        chan struct{}
+	configurator    configobserver.Interface
+	apiConfigurator configobserver.InsightsDataGatherObserver
 
 	sources  map[string]controllerstatus.StatusController
 	reported Reported
@@ -69,18 +69,18 @@ type Controller struct {
 
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
 func NewController(client configv1client.ConfigV1Interface,
-	secretConfigurator configobserver.Configurator,
+	configurator configobserver.Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string) *Controller {
 	c := &Controller{
-		name:               "insights",
-		statusCh:           make(chan struct{}, 1),
-		secretConfigurator: secretConfigurator,
-		apiConfigurator:    apiConfigurator,
-		client:             client,
-		namespace:          namespace,
-		sources:            make(map[string]controllerstatus.StatusController),
-		ctrlStatus:         newControllerStatus(),
+		name:            "insights",
+		statusCh:        make(chan struct{}, 1),
+		configurator:    configurator,
+		apiConfigurator: apiConfigurator,
+		client:          client,
+		namespace:       namespace,
+		sources:         make(map[string]controllerstatus.StatusController),
+		ctrlStatus:      newControllerStatus(),
 	}
 	return c
 }
@@ -401,7 +401,7 @@ func (c *Controller) updateControllerConditionByReason(cs *conditions,
 
 func (c *Controller) checkDisabledGathering() {
 	// disabled state only when it's disabled by config. It means that gathering will not happen
-	if !c.secretConfigurator.Config().Report {
+	if !c.configurator.Config().DataReporting.Enabled {
 		c.ctrlStatus.setStatus(DisabledStatus, noTokenReason, reportingDisabledMsg)
 	}
 

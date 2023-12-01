@@ -13,14 +13,16 @@ import (
 )
 
 type Authorizer struct {
-	configurator configobserver.Configurator
+	secretConfigurator configobserver.Configurator
+	configurator       configobserver.Interface
 	// exposed for tests
 	proxyFromEnvironment func(*http.Request) (*url.URL, error)
 }
 
 // New creates a new Authorizer, whose purpose is to auth requests for outgoing traffic.
-func New(configurator configobserver.Configurator) *Authorizer {
+func New(secretConfigurator configobserver.Configurator, configurator configobserver.Interface) *Authorizer {
 	return &Authorizer{
+		secretConfigurator:   secretConfigurator,
 		configurator:         configurator,
 		proxyFromEnvironment: http.ProxyFromEnvironment,
 	}
@@ -46,11 +48,11 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 func (a *Authorizer) NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error) {
 	// using specific proxy settings
 	if c := a.configurator.Config(); c != nil {
-		if len(c.HTTPConfig.HTTPProxy) > 0 || len(c.HTTPConfig.HTTPSProxy) > 0 || len(c.HTTPConfig.NoProxy) > 0 {
+		if len(c.Proxy.HTTPProxy) > 0 || len(c.Proxy.HTTPSProxy) > 0 || len(c.Proxy.NoProxy) > 0 {
 			proxyConfig := httpproxy.Config{
-				HTTPProxy:  c.HTTPConfig.HTTPProxy,
-				HTTPSProxy: c.HTTPConfig.HTTPSProxy,
-				NoProxy:    c.HTTPConfig.NoProxy,
+				HTTPProxy:  c.Proxy.HTTPProxy,
+				HTTPSProxy: c.Proxy.HTTPSProxy,
+				NoProxy:    c.Proxy.NoProxy,
 			}
 			// The golang ProxyFunc seems to have NoProxy already built in
 			return func(req *http.Request) (*url.URL, error) {
@@ -63,7 +65,7 @@ func (a *Authorizer) NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL,
 }
 
 func (a *Authorizer) Token() (string, error) {
-	cfg := a.configurator.Config()
+	cfg := a.secretConfigurator.Config()
 	if len(cfg.Token) > 0 {
 		token := strings.TrimSpace(cfg.Token)
 		if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
