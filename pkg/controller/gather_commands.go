@@ -31,6 +31,10 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 )
 
+// numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint
+// for particular archive/Insights request ID
+var numberOfStatusQueryRetries = 3
+
 // GatherJob is the type responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
 	config.Controller
@@ -333,7 +337,7 @@ func wasDataProcessed(ctx context.Context,
 			return false, err
 		}
 		if resp.StatusCode != http.StatusOK {
-			if retryCounter == 2 {
+			if retryCounter == numberOfStatusQueryRetries {
 				err := fmt.Errorf("HTTP status message: %s", http.StatusText(resp.StatusCode))
 				return false, err
 			}
