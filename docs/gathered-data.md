@@ -372,6 +372,30 @@ filtered to only include those with a deployment_validation_operator_ prefix.
   - 4.10
 
 
+## HelmInfo
+
+Collects summarized info about the helm usage on a cluster
+in a generic fashion
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/helmchart_info.json](./insights-archive-sample/config/helmchart_info.json)
+
+### Location in archive
+- `config/helmchart_info.json`
+
+### Config ID
+`workloads/helmchart_info`
+
+### Released version
+- 4.15.0
+
+### Backported versions
+None
+
+
 ## HostSubnet
 
 collects HostSubnet information
