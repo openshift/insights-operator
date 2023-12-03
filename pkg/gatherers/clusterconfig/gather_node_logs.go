@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
@@ -19,7 +20,20 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// GatherNodeLogs Collects control plane node logs from journal unit.
+// GatherNodeLogs Collects control plane node logs from journal unit with following substrings:
+//   - E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}
+//   - connect: connection refused
+//   - failed (failure): command timed out
+//   - Failed to make webhook authenticator request: Post
+//   - raise JSONDecodeError("Expecting value", s, err.value) from None
+//   - ContainerStateWaiting{Reason:ContainerCreating
+//   - ContainersNotReady Message:containers with unready status
+//   - MountVolume.MountDevice failed for volume
+//   - kubernetes.io/csi: attacher.MountDevice failed to create newCsiDriverClient
+//   - Unable to attach or mount volumes: unmounted volumes
+//   - timed out waiting for the condition
+//   - CreateContainerError: context deadline exceeded
+//   - rpc error: code = ResourceExhausted desc = grpc: received message larger than max
 //
 // ### API Reference
 // - https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
@@ -105,24 +119,49 @@ func nodeLogString(ctx context.Context, req *rest.Request) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer in.Close()
+	defer func() {
+		if closeErr := in.Close(); closeErr != nil {
+			klog.Errorf("failed to close the request stream: %v", closeErr)
+		}
+	}()
 
-	r, err := gzip.NewReader(in)
-	var scanner *bufio.Scanner
-	if err != nil {
-		scanner = bufio.NewScanner(in)
+	var reader io.Reader
+	if r, err := gzip.NewReader(in); err != nil {
+		klog.Warningf("failed to create gzip reader: %v. Reading uncompressed data.", err)
+		reader = in
 	} else {
-		defer r.Close()
-		scanner = bufio.NewScanner(r)
+		defer func() {
+			if closeErr := r.Close(); closeErr != nil {
+				klog.Errorf("failed to close the gzip reader: %v", closeErr)
+			}
+		}()
+		reader = r
 	}
+	scanner := bufio.NewScanner(reader)
 
-	messagesToSearch := []string{
-		"E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
-	}
+	messagesToSearch := nodeLogsMessagesFilter()
 	return common.FilterLogFromScanner(scanner, messagesToSearch, true, func(lines []string) []string {
 		if len(lines) > logNodeMaxLines {
 			return lines[len(lines)-logNodeMaxLines:]
 		}
 		return lines
 	})
+}
+
+func nodeLogsMessagesFilter() []string {
+	return []string{
+		"E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}", //  Errors from log
+		`connect: connection refused`,
+		`failed (failure): command timed out`,
+		`Failed to make webhook authenticator request: Post`,
+		`raise JSONDecodeError("Expecting value", s, err.value) from None`,
+		`ContainerStateWaiting{Reason:ContainerCreating`,
+		`ContainersNotReady Message:containers with unready status`,
+		`MountVolume.MountDevice failed for volume`,
+		`kubernetes.io/csi: attacher.MountDevice failed to create newCsiDriverClient`,
+		`Unable to attach or mount volumes: unmounted volumes`,
+		`timed out waiting for the condition`,
+		`CreateContainerError: context deadline exceeded`,
+		`rpc error: code = ResourceExhausted desc = grpc: received message larger than max`,
+	}
 }
