@@ -1289,7 +1289,20 @@ None
 
 ## NodeLogs
 
-Collects control plane node logs from journal unit.
+Collects control plane node logs from journal unit with following substrings:
+  - E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}
+  - connect: connection refused
+  - failed (failure): command timed out
+  - Failed to make webhook authenticator request: Post
+  - raise JSONDecodeError("Expecting value", s, err.value) from None
+  - ContainerStateWaiting{Reason:ContainerCreating
+  - ContainersNotReady Message:containers with unready status
+  - MountVolume.MountDevice failed for volume
+  - kubernetes.io/csi: attacher.MountDevice failed to create newCsiDriverClient
+  - Unable to attach or mount volumes: unmounted volumes
+  - timed out waiting for the condition
+  - CreateContainerError: context deadline exceeded
+  - rpc error: code = ResourceExhausted desc = grpc: received message larger than max
 
 ### API Reference
 - https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
