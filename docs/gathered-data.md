@@ -180,10 +180,13 @@ https://github.com/openshift/api/blob/master/config/v1/types_apiserver.go
 `cluster_apiserver`
 
 ### Released version
-- 4.15
+- 4.15.0
 
 ### Backported versions
-- TBD
+- 4.14.0+
+- 4.13.19+
+- 4.12.42+
+- 4.11.54+
 
 ### Changes
 None
