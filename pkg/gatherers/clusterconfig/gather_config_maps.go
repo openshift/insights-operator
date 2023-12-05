@@ -12,7 +12,9 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
 // GatherConfigMaps Collects all `ConfigMaps` from the `openshift-config`
@@ -52,6 +54,8 @@ import (
 //     4.13.0+
 //   - `gateway-mode-config` config map from `openshift-network-operator`
 //     namespace since 4.14.0+
+//   - `insights-config` config map from `openshift-insights` namespace
+//     since 4.15.0+
 //
 // ### Anonymization
 // If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
@@ -76,6 +80,10 @@ func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []err
 	gateayModeConf, networkErrs := gatherConfigMap(ctx, coreClient, "gateway-mode-config", "openshift-network-operator")
 	records = append(records, gateayModeConf...)
 	errs = append(errs, networkErrs...)
+
+	insightsConfg, insightsErr := gatherInsightsConfigCM(ctx, coreClient)
+	records = append(records, insightsConfg...)
+	errs = append(errs, insightsErr...)
 
 	clusterConfigV1Rec, clusterConfigV1Errs := gatherClusterConfigV1(ctx, coreClient)
 	records = append(records, clusterConfigV1Rec...)
@@ -130,6 +138,32 @@ func gatherConfigMap(ctx context.Context, coreClient corev1client.CoreV1Interfac
 	}
 
 	return records, nil
+}
+
+func gatherInsightsConfigCM(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
+	cm, err := coreClient.ConfigMaps("openshift-insights").Get(ctx, "insights-config", metav1.GetOptions{})
+	if err != nil {
+		return nil, []error{err}
+	}
+	insightsConfig := &config.InsightsConfigurationSerialized{}
+	cfg := cm.Data["config.yaml"]
+	err = yaml.Unmarshal([]byte(cfg), insightsConfig)
+	if err != nil {
+		return nil, []error{err}
+	}
+	return []record.Record{
+		{
+			Name: fmt.Sprintf("config/configmaps/%s/%s/%s", cm.Namespace, cm.Name, "config"),
+			Item: record.JSONMarshaller{Object: anonymizeInsightsConfig(insightsConfig)},
+		},
+	}, nil
+}
+
+func anonymizeInsightsConfig(conf *config.InsightsConfigurationSerialized) *config.InsightsConfigurationSerialized {
+	conf.Proxy.HTTPProxy = anonymize.String(conf.Proxy.HTTPProxy)
+	conf.Proxy.HTTPSProxy = anonymize.String(conf.Proxy.HTTPSProxy)
+	conf.Proxy.NoProxy = anonymize.String(conf.Proxy.NoProxy)
+	return conf
 }
 
 // ConfigMapAnonymizer implements serialization of configmap

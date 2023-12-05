@@ -169,6 +169,7 @@ func (c *Controller) updateConfig(ctx context.Context) error {
 	if secret == nil {
 		c.setSecretConfig(nil)
 	} else {
+		klog.Warning(`USING THE "SUPPORT" SECRET FOR OPERATOR CONFIGURATION IS DEPRECATED. PLEASE REFER TO THE OCP DOCUMENTATION FOR UPDATES.`) // nolint:lll
 		nextConfig, err := LoadConfigFromSecret(secret)
 		if err != nil {
 			return err
