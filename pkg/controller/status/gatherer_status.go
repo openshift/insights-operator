@@ -69,7 +69,7 @@ func createGathererConditions(gfr *gather.GathererFunctionReport) []metav1.Condi
 
 	if gfr.Panic != nil {
 		con.Reason = GatherPanicReason
-		con.Message = gfr.Panic.(string)
+		con.Message = fmt.Sprintf("%s", gfr.Panic)
 	}
 
 	if gfr.RecordsCount > 0 {

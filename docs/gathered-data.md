@@ -620,6 +620,8 @@ for details).
     4.13.0+
   - `gateway-mode-config` config map from `openshift-network-operator`
     namespace since 4.14.0+
+  - `insights-config` config map from `openshift-insights` namespace
+    since 4.15.0+
 
 ### Anonymization
 If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
