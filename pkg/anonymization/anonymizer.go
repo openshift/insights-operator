@@ -353,7 +353,7 @@ func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryR
 	once.Do(func() {
 		err := anonymizer.readNetworkConfigs()
 		if err != nil {
-			klog.Error("failed to read network config: %v", err)
+			klog.Errorf("failed to read network config: %v", err)
 		}
 	})
 
@@ -418,7 +418,7 @@ func (anonymizer *Anonymizer) ObfuscateIP(ipStr string) string {
 			if overflow {
 				// it's very unlikely to ever happen
 				klog.Warningf(
-					"Anonymizer couldn't find the next IP for %v with mask", networkInfo.lastIP, network.Mask,
+					"Anonymizer couldn't find the next IP for %v with mask %v", networkInfo.lastIP, network.Mask,
 				)
 			}
 
