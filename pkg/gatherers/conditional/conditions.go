@@ -53,22 +53,29 @@ type ClusterVersionMatchesConditionParams struct {
 // areAllConditionsSatisfied returns true if all the conditions are satisfied, for example if the condition is
 // to check if a metric is firing, it will look at that metric and return the result according to that
 func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (bool, error) {
-	for _, condition := range conditions {
+	for k := range conditions {
+		condition := conditions[k]
 		switch condition.Type {
 		case AlertIsFiring:
-			if condition.Alert == nil {
-				return false, fmt.Errorf("alert field should not be nil")
-			}
-
-			if firing, err := g.isAlertFiring(condition.Alert.Name); !firing || err != nil {
+			//if condition.Alert == nil {
+			//	return false, fmt.Errorf("alert field should not be nil")
+			//}
+			//
+			//if firing, err := g.isAlertFiring(condition.Alert.Name); !firing || err != nil {
+			//	return false, err
+			//}
+			if ok, err := g.checkAlertIsFiring(condition.Alert); !ok || err != nil {
 				return false, err
 			}
 		case ClusterVersionMatches:
-			if condition.ClusterVersionMatches == nil {
-				return false, fmt.Errorf("cluster_version_matches field should not be nil")
-			}
-
-			if doesMatch, err := g.doesClusterVersionMatch(condition.ClusterVersionMatches.Version); !doesMatch || err != nil {
+			//if condition.ClusterVersionMatches == nil {
+			//	return false, fmt.Errorf("cluster_version_matches field should not be nil")
+			//}
+			//
+			//if doesMatch, err := g.doesClusterVersionMatch(condition.ClusterVersionMatches.Version); !doesMatch || err != nil {
+			//	return false, err
+			//}
+			if ok, err := g.checkClusterVersionMatches(condition.ClusterVersionMatches); !ok || err != nil {
 				return false, err
 			}
 		default:
@@ -77,6 +84,26 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 	}
 
 	return true, nil
+}
+
+// checkAlertIsFiring verifies whether an alert is currently in a firing state. This function is used to
+// evaluate the AlertIsFiring condition.
+func (g *Gatherer) checkAlertIsFiring(alert *AlertConditionParams) (bool, error) {
+	if alert == nil {
+		return false, fmt.Errorf("alert field should not be nil")
+	}
+
+	return g.isAlertFiring(alert.Name)
+}
+
+// checkClusterVersionMatches verifies if the OpenShift cluster version matches the specified criteria. This function
+// is employed to evaluate the ClusterVersionMatches condition.
+func (g *Gatherer) checkClusterVersionMatches(clusterVersion *ClusterVersionMatchesConditionParams) (bool, error) {
+	if clusterVersion == nil {
+		return false, fmt.Errorf("cluster_version_matches field should not be nil")
+	}
+
+	return g.doesClusterVersionMatch(clusterVersion.Version)
 }
 
 // isAlertFiring using the cache it returns true if the alert is firing
