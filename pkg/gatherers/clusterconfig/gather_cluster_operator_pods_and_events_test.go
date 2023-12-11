@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/openshift/insights-operator/pkg/record"
 )
@@ -270,7 +270,7 @@ func Test_FetchPodContainerLog(t *testing.T) {
 				buf:           bytes.NewBuffer(make([]byte, 0, bufferSize)),
 				containerName: "testContainer",
 				isPrevious:    false,
-				maxBytes:      pointer.Int64(bufferSize),
+				maxBytes:      ptr.To(bufferSize),
 			},
 			wantErr: false,
 		},
@@ -283,7 +283,7 @@ func Test_FetchPodContainerLog(t *testing.T) {
 				buf:           bytes.NewBuffer(make([]byte, 0, bufferSize)),
 				containerName: "testContainer",
 				isPrevious:    true,
-				maxBytes:      pointer.Int64(bufferSize),
+				maxBytes:      ptr.To(bufferSize),
 			},
 			wantErr: false,
 		},

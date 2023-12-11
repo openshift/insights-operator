@@ -94,7 +94,7 @@ func (c *ConfigAggregator) mergeStatically() {
 
 	cmConf, err := readConfigAndDecode(cm)
 	if err != nil {
-		klog.Error("Failed to read configmap configuration: %v", err)
+		klog.Errorf("Failed to read configmap configuration: %v", err)
 		return
 	}
 

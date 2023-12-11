@@ -90,7 +90,7 @@ func (g *Gatherer) gatherPodDefinition(
 
 		pod, err := coreClient.Pods(podNamespace).Get(ctx, podName, metav1.GetOptions{})
 		if err != nil {
-			klog.Warningf("pod %s not found in %s namespace: %w", podName, podNamespace, err)
+			klog.Warningf("pod %s not found in %s namespace: %v", podName, podNamespace, err)
 			errs = append(errs, err)
 			continue
 		}

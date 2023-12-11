@@ -60,7 +60,7 @@ func gatherCephCluster(ctx context.Context, dynamicClient dynamic.Interface) ([]
 		return nil, nil
 	}
 	if err != nil {
-		klog.V(2).Infof("Unable to list %s resource due to: %s", gatherCephCluster, err)
+		klog.V(2).Infof("Unable to list %s resource due to: %s", cephClustereResource, err)
 		return nil, []error{err}
 	}
 

@@ -115,7 +115,7 @@ func clusterOperatorsRecords(ctx context.Context,
 	discoveryClient discovery.DiscoveryInterface) []record.Record {
 	resVer, err := getOperatorResourcesVersions(discoveryClient)
 	if err != nil {
-		klog.Warning("Can't read operator resource versions: %v", err)
+		klog.Warningf("Can't read operator resource versions: %v", err)
 	}
 	records := make([]record.Record, 0, len(items))
 
@@ -249,7 +249,7 @@ func anonymizeIdentityProviders(obj map[string]interface{}) {
 	for _, ip := range ips {
 		ip, ok := ip.(map[string]interface{})
 		if !ok {
-			klog.Warningln("Failed to convert %v to map[string]interface{}", ip)
+			klog.Warningf("Failed to convert %v to map[string]interface{}", ip)
 			continue
 		}
 		for _, sensitiveVal := range sensittiveProviderAttributes {
