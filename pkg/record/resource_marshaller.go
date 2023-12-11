@@ -1,4 +1,3 @@
-// nolint: misspell
 package record
 
 import (
@@ -13,8 +12,8 @@ type managedFieldsSetter interface {
 	SetManagedFields(managedFields []metav1.ManagedFieldsEntry)
 }
 
-// ResourceMarshaller marshals a Kubernetes/OpenShift resource into a JSON format.
-// It performs a cleanup of the resource before the marshalling to reduce resource disk/memory size.
+// ResourceMarshaller serializes a Kubernetes/OpenShift resource into a JSON format.
+// It performs cleanup of the resource before serialization to reduce resource disk/memory size.
 type ResourceMarshaller struct {
 	Resource managedFieldsSetter
 }
@@ -31,7 +30,7 @@ func (m ResourceMarshaller) Marshal() ([]byte, error) {
 	return json.Marshal(m.Resource)
 }
 
-// GetExtension returns the file extension that should be used for marshalled resources (json).
+// GetExtension returns the file extension that should be used for serialized resources (JSON).
 func (m ResourceMarshaller) GetExtension() string {
 	return JSONExtension
 }

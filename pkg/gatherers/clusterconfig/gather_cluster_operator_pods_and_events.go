@@ -9,10 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
@@ -104,7 +106,7 @@ func gatherClusterOperatorPodsAndEvents(ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	interval time.Duration) ([]record.Record, error) {
 	config, err := configClient.ClusterOperators().List(ctx, metav1.ListOptions{})
-	if errors.IsNotFound(err) {
+	if kerrors.IsNotFound(err) {
 		return nil, nil
 	}
 	if err != nil {
@@ -413,7 +415,7 @@ func fetchPodContainerLog(ctx context.Context,
 	defer readCloser.Close()
 
 	_, err = io.Copy(buf, readCloser)
-	if err != nil && err != io.ErrShortBuffer {
+	if err != nil && !errors.Is(err, io.ErrShortBuffer) {
 		klog.V(2).Infof("Failed to write log for %s pod in namespace %s for failing operator %s (previous: %v): %q",
 			pod.Name,
 			pod.Namespace,

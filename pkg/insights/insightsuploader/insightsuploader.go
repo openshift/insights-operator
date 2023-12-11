@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -168,7 +169,7 @@ func (c *Controller) checkSummaryAndSend(interval time.Duration, lastReported ti
 		source.Type = "application/vnd.redhat.openshift.periodic"
 		if err := c.client.Send(ctx, endpoint, *source); err != nil {
 			klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
-			if err == insightsclient.ErrWaitingForVersion {
+			if errors.Is(err, insightsclient.ErrWaitingForVersion) {
 				c.initialDelay = wait.Jitter(time.Second*15, 1)
 				return
 			}
