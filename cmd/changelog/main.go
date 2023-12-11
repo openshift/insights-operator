@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // norevive
@@ -100,8 +101,14 @@ func main() {
 	var releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock
 	if len(os.Args) == 3 {
 		releaseBlocks = make(map[ReleaseVersion]MarkdownReleaseBlock)
-		after := os.Args[1]
-		until := os.Args[2]
+		after, err := time.Parse(time.DateOnly, os.Args[1])
+		if err != nil {
+			log.Fatalf("Failed to parse time arguments: %v", err)
+		}
+		until, err := time.Parse(time.DateOnly, os.Args[2])
+		if err != nil {
+			log.Fatalf("Failed to parse time arguments: %v", err)
+		}
 		gitLog = timeFrameReverseGitLog(after, until)
 	} else {
 		releaseBlocks = readCHANGELOG()
@@ -336,7 +343,7 @@ func findEarliestRelease(releases ReleaseVersions) ReleaseVersion {
 	return releases[0]
 }
 
-func timeFrameReverseGitLog(after, until string) []string {
+func timeFrameReverseGitLog(after, until time.Time) []string {
 	// nolint: gosec
 	out, err := exec.Command(
 		"git",
