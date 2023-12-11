@@ -151,7 +151,7 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 		// before calling the Gather logic, this command must check the featuregate status.
 		configClient, err := configv1client.NewForConfig(clientConfig)
 		if err != nil {
-			klog.Exit("error: building client: %v", err)
+			klog.Exitf("error: building client: %v", err)
 		}
 		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
