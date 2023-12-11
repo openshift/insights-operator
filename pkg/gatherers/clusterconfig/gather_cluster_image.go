@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GatherClusterImages Collects cluster `images.config.openshift.io` resource definition.
+// GatherClusterImage Collects cluster `images.config.openshift.io` resource definition.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/config_client.go#L72

@@ -13,15 +13,15 @@ import (
 
 const (
 	DataGatheredCondition = "DataGathered"
-	// NoDataGathered is a reason when there is no data gathered - e.g the resource is not in a cluster
+	// NoDataGatheredReason is a reason when there is no data gathered - e.g the resource is not in a cluster
 	NoDataGatheredReason = "NoData"
-	// Error is a reason when there is some error and no data gathered
+	// GatherErrorReason is a reason when there is some error and no data gathered
 	GatherErrorReason = "GatherError"
-	// Panic is a reason when there is some error and no data gathered
+	// GatherPanicReason is a reason when there is some error and no data gathered
 	GatherPanicReason = "GatherPanic"
-	// GatheredOK is a reason when data is gathered as expected
+	// GatheredOKReason is a reason when data is gathered as expected
 	GatheredOKReason = "GatheredOK"
-	// GatheredWithError is a reason when data is gathered partially or with another error message
+	// GatheredWithErrorReason is a reason when data is gathered partially or with another error message
 	GatheredWithErrorReason = "GatheredWithError"
 )
 

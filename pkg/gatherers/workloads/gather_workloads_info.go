@@ -11,8 +11,11 @@ import (
 	"sync"
 	"time"
 
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"errors"
+
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -359,11 +362,11 @@ func readImageSHAs(pendingIDs map[string]struct{}, images map[string]workloadIma
 func imageFromID(ctx context.Context, client imageclient.ImageInterface, id string) *imagev1.Image {
 	start := time.Now()
 	image, err := client.Get(ctx, id, metav1.GetOptions{})
-	if errors.IsNotFound(err) {
+	if kerrors.IsNotFound(err) {
 		klog.V(4).Infof("No image %s (%s)", id, time.Since(start).Round(time.Millisecond).String())
 		return nil
 	}
-	if err == context.Canceled {
+	if errors.Is(err, context.Canceled) {
 		return nil
 	}
 	if err != nil {

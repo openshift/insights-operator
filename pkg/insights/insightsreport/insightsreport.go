@@ -3,6 +3,7 @@ package insightsreport
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -154,7 +155,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
 		})
 		return true, err
-	} else if err == insightsclient.ErrWaitingForVersion {
+	} else if errors.Is(err, insightsclient.ErrWaitingForVersion) {
 		klog.Error(err)
 		return false, err
 	} else if insightsclient.IsHttpError(err) {
