@@ -127,11 +127,21 @@ The `resource_filter` structure allows users to filter containers for log gather
 #### Log filter
 The `log_filter` structure enables users to filter log messages. It includes the following fields:
 
-| Field                   | Type   | Description                                           | Required |
-|-------------------------|--------|-------------------------------------------------------|----------|
-| `messages_to_search`    | array  | Array of messages to search for.                      | Required |
-| `is_regex_search`       | bool   | Boolean flag for regex search.                        | Optional |
-| `since_seconds`         | int64  | Time duration for log search (in seconds).            | Optional |
-| `limit_bytes`           | int64  | Maximum size of log data to collect.                  | Optional |
-| `tail_lines`            | int64  | Number of lines to retrieve from the end of logs.     | Optional |
-| `previous`              | bool   | Boolean flag for retrieving previous logs.            | Optional |
+| Field                   | Type   | Description                                                                    | Required |
+|-------------------------|--------|--------------------------------------------------------------------------------|----------|
+| `messages_to_search`    | array  | Array of messages to search for.                                               | Required |
+| `is_regex_search`       | bool   | Boolean flag for regex search.                                                 | Optional |
+| `since_seconds`         | int64  | [Time duration for log search (in seconds).](#since_secions)                   | Optional |
+| `limit_bytes`           | int64  | [Maximum size of log data to collect.](#limit_bytes)                           | Optional |
+| `tail_lines`            | int64  | [Number of lines to retrieve from the end of logs per container.](#tail_lines) | Optional |
+| `previous`              | bool   | Boolean flag for retrieving previous logs.                                     | Optional |
+
+Some of the parameters above are part of the OpenShift API, here is a detailed explanation for these parameters in details:
+
+1. `since_seconds` <span id="since_seconds"></span>, a relative time in seconds before the current time from which to show logs. If this value
+precedes the time a pod was started, only logs since the pod start will be returned. If this value is in the future,
+no logs will be returned.
+2. `limit_bytes` <span id="limit_bytes"></span>, if set, the number of bytes to read from the server before terminating the log output. This may not
+display a complete final line of logging, and may return slightly more or slightly less than the specified limit.
+3. `tail_lines` <span id="tail_lines"></span>, if set, the number of lines from the end of the logs to show. If not specified, logs are shown from
+the creation of the container or `since_seconds`.
