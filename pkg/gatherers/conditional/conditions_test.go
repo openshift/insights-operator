@@ -151,3 +151,67 @@ func TestGatherer_areAllConditionsSatisfied(t *testing.T) {
 		})
 	}
 }
+
+func TestGatherer_checkClusterVersionMatches(t *testing.T) {
+	tests := []struct {
+		name            string
+		clusterVersion  string
+		conditionParams *ClusterVersionMatchesConditionParams
+		want            bool
+		wantErr         error
+	}{
+		{
+			name:           "version less than expected",
+			clusterVersion: "4.11.0",
+			conditionParams: &ClusterVersionMatchesConditionParams{
+				Version: "> 4.12.0",
+			},
+			want:    false,
+			wantErr: nil,
+		},
+		{
+			name:           "version less and equal than expected",
+			clusterVersion: "4.12.0-0.ci.test-2022-10-03-000745-ci-op-0xpdqr02-latest",
+			conditionParams: &ClusterVersionMatchesConditionParams{
+				Version: "<= 4.12.0",
+			},
+			want:    true,
+			wantErr: nil,
+		},
+		{
+			name:           "version equal expected",
+			clusterVersion: "4.12.0",
+			conditionParams: &ClusterVersionMatchesConditionParams{
+				Version: "= 4.12.0",
+			},
+			want:    true,
+			wantErr: nil,
+		},
+		{
+			name:           "version equal short expected",
+			clusterVersion: "4.12.0-0.ci.test-2022-10-03-000745-ci-op-0xpdqr02-latest",
+			conditionParams: &ClusterVersionMatchesConditionParams{
+				Version: "== 4.12.0",
+			},
+			want:    true,
+			wantErr: nil,
+		},
+		{
+			name:           "version not equal expected",
+			clusterVersion: "4.12.1",
+			conditionParams: &ClusterVersionMatchesConditionParams{
+				Version: "!= 4.12.0",
+			},
+			want:    true,
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Gatherer{clusterVersion: tt.clusterVersion}
+			got, err := g.checkClusterVersionMatches(tt.conditionParams)
+			assert.Equal(t, tt.wantErr, err, "expects error '%v', got '%v", tt.wantErr, err)
+			assert.Equalf(t, tt.want, got, "expects '%v', got '%v'", tt.want, tt.clusterVersion)
+		})
+	}
+}

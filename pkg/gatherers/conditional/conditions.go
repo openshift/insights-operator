@@ -57,24 +57,10 @@ func (g *Gatherer) areAllConditionsSatisfied(conditions []ConditionWithParams) (
 		condition := conditions[k]
 		switch condition.Type {
 		case AlertIsFiring:
-			//if condition.Alert == nil {
-			//	return false, fmt.Errorf("alert field should not be nil")
-			//}
-			//
-			//if firing, err := g.isAlertFiring(condition.Alert.Name); !firing || err != nil {
-			//	return false, err
-			//}
 			if ok, err := g.checkAlertIsFiring(condition.Alert); !ok || err != nil {
 				return false, err
 			}
 		case ClusterVersionMatches:
-			//if condition.ClusterVersionMatches == nil {
-			//	return false, fmt.Errorf("cluster_version_matches field should not be nil")
-			//}
-			//
-			//if doesMatch, err := g.doesClusterVersionMatch(condition.ClusterVersionMatches.Version); !doesMatch || err != nil {
-			//	return false, err
-			//}
 			if ok, err := g.checkClusterVersionMatches(condition.ClusterVersionMatches); !ok || err != nil {
 				return false, err
 			}
