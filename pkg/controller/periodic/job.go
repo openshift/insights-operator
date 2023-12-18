@@ -3,14 +3,12 @@ package periodic
 import (
 	"context"
 	"fmt"
-	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -108,19 +106,33 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 	return j.kubeClient.BatchV1().Jobs(insightsNamespace).Create(ctx, gj, metav1.CreateOptions{})
 }
 
-// WaitForJobCompletion polls the Kubernetes API every 20 seconds and checks if the job finished.
+// WaitForJobCompletion listen the Kubernetes events to check if job finished.
 func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
-	return wait.PollUntilContextCancel(ctx, 20*time.Second, true, func(ctx context.Context) (done bool, err error) {
-		j, err := j.kubeClient.BatchV1().Jobs(insightsNamespace).Get(ctx, job.Name, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			return false, err
+	watcher, err := j.kubeClient.BatchV1().Jobs(insightsNamespace).
+		Watch(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", job.Name)})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return fmt.Errorf("watcher channel was closed unexpectedly")
+			}
+			if event.Type == watch.Error {
+				return fmt.Errorf("watcher received error event: %v", event.Object)
+			}
+			job := event.Object.(*batchv1.Job)
+			if job.Status.Succeeded > 0 {
+				return nil
+			}
+			if job.Status.Failed > 0 {
+				return fmt.Errorf("job %s failed", job.Name)
+			}
 		}
-		if j.Status.Succeeded > 0 {
-			return true, nil
-		}
-		if j.Status.Failed > 0 {
-			return true, fmt.Errorf("job %s failed", job.Name)
-		}
-		return false, nil
-	})
+	}
 }
