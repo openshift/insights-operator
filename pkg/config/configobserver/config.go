@@ -161,7 +161,7 @@ func (c *Config) loadReportDurationSetting(data map[string][]byte, key string, t
 			klog.Warningf("%s secret contains an invalid value (%s). Using previous value", key, value)
 		}
 	} else {
-		if "reportPullingDelay" == key {
+		if key == "reportPullingDelay" {
 			*target = time.Duration(-1)
 		}
 	}
