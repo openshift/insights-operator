@@ -5,23 +5,47 @@ The main goal of the Insights Operator is to periodically gather anonymized data
 Insights Operator does not manage any application. As usual with operator applications, most of the code is structured in the `pkg` package and `pkg/controller/operator.go` hosts the operator controller. Typically, operator controllers read configuration and start some periodical tasks.
 
 ## How the Insights operator reads configuration
-The Insights Operator's configuration is a combination of the file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoded in the image) and configuration stored in the `support` secret in the `openshift-config` namespace. The secret doesn't exist by default, but when it does, it overrides default settings which IO reads from the `config/pod.yaml`.
+The Insights Operator's configuration is a combination of the file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoded in the image) and the configuration stored in either the `support` secret in the `openshift-config` namespace or the `insights-config` configmap in the `openshift-insights` namespace. Neither the secret nor the configmap exist by default, but when they do, they override the default settings which IO reads from the `config/pod.yaml`. The configmap takes precedent over the secret.
+The `insights-config` configmap provides the following configuration structure:
+```
+dataReporting:
+    interval: 30m0s,
+    uploadEndpoint: https://console.redhat.com/api/ingress/v1/upload,
+    storagePath: /var/lib/insights-operator,
+    downloadEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports,
+    conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules,
+    obfuscation: [workload_names networking]
+sca:
+    disabled: false,
+    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates,
+    interval: 8h0m0s
+alerting:
+    disabled: false
+clusterTransfer:
+    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/,
+    interval: 1h0m0s
+proxy:
+    httpProxy: http://example.com,
+    httpsProxy: https://example.com,
+    noProxy: test.org
+```
+
 The `support` secret provides following configuration attributes:
-- `endpoint` - upload endpoint - default is `https://console.redhat.com/api/ingress/v1/upload`,
-- `interval` - data gathering & uploading frequency - default is `2h`
-- `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator
-- `enableGlobalObfuscation` - to enable the global obfuscation of the IP addresses and the cluster domain name. Default value is `false`
-- `reportEndpoint` - download endpoint. From this endpoint, the Insights operator downloads the latest Insights analysis. Default value is `https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports` (where `%s` must be replaced with the cluster ID)
+- `endpoint` - upload endpoint. Overwritten by `dataReporting/uploadEndpoint` from the configmap. Default is `https://console.redhat.com/api/ingress/v1/upload`.
+- `interval` - data gathering & uploading frequency. Overwritten by `dataReporting/interval` from the configmap. Default is `2h`.
+- `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator. Overwritten by `proxy/httpProxy`, `proxy/httpsProxy` and `proxy/noProxy`, respectively, from the configmap.
+- `enableGlobalObfuscation` - to enable the global obfuscation of the IP addresses and the cluster domain name. Overwritten by `dataReporting/obfuscation` from the configmap. To enable it via configmap, set the `dataReporting/obfuscation` to [`networking`]. Default value is `false`.
+- `reportEndpoint` - download endpoint. From this endpoint, the Insights operator downloads the latest Insights analysis. Overwritten by `dataReporting/downloadEndpoint` from the configmap. Default value is `https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports` (where `%s` must be replaced with the cluster ID).
 - `reportPullingDelay` - the delay between data upload and download. Default value is `60s`
 - `reportPullingTimeout` - timeout for the Insights download request.
 - `reportMinRetryTime` - the time after which the request is retried. Default value is `30s`
-- `scaEndpoint` - the endpoing for downloading the Simple Content Access(SCA) entitlements. Default value is `https://api.openshift.com/api/accounts_mgmt/v1/certificates`
-- `scaInterval` - frequency of the SCA entitlements download. Default value is `8h`.
-- `scaPullDisabled` - flag to disable the SCA entitlements download. Default value is `false`.
-- `clusterTransferEndpoint` - the endpoint for checking & download cluster transfer data (updated `pull-secret` data). Default values is `https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/`
-- `clusterTransferInterval`  - frequency of checking available cluster transfers. Default value is `24h`.
-- `conditionalGathererEndpoint` - the endpoing providing conditional gathering rules definitions. Default value is `https://console.redhat.com/api/gathering/gathering_rules`.
-
+- `scaEndpoint` - the endpoing for downloading the Simple Content Access(SCA) entitlements. Default value is `https://api.openshift.com/api/accounts_mgmt/v1/certificates`. Overwritten by `sca/endpoint` from the configmap.
+- `scaInterval` - frequency of the SCA entitlements download. Overwritten by `sca/interval` from the configmap. Default value is `8h`.
+- `scaPullDisabled` - flag to disable the SCA entitlements download. Overwritten by `sca/disabled` from the configmap. Default value is `false`.
+- `clusterTransferEndpoint` - the endpoint for checking & download cluster transfer data (updated `pull-secret` data). Overwritten by `clusterTransfer/endpoint` from the configmap. Default values is `https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/`
+- `clusterTransferInterval`  - frequency of checking available cluster transfers. Overwritten by `clusterTransfer/interval` from the configmap. Default value is `24h`.
+- `conditionalGathererEndpoint` - the endpoing providing conditional gathering rules definitions. Overwritten by `dataReporting/conditionalGathererEndpoint` from the configmap. Default value is `https://console.redhat.com/api/gathering/gathering_rules`.
+- `disableInsightsAlerts` - disables the insights alerts for when the insights operator is disabled. Overwritten by `alerting/disabled` from the configmap. Default value is `false`.
 Content example of the `support` secret:
 
 ```shell script
