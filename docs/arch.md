@@ -45,7 +45,7 @@ The `support` secret provides following configuration attributes:
 - `clusterTransferEndpoint` - the endpoint for checking & download cluster transfer data (updated `pull-secret` data). Overwritten by `clusterTransfer/endpoint` from the configmap. Default values is `https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/`
 - `clusterTransferInterval`  - frequency of checking available cluster transfers. Overwritten by `clusterTransfer/interval` from the configmap. Default value is `24h`.
 - `conditionalGathererEndpoint` - the endpoing providing conditional gathering rules definitions. Overwritten by `dataReporting/conditionalGathererEndpoint` from the configmap. Default value is `https://console.redhat.com/api/gathering/gathering_rules`.
-- `disableInsightsAlerts` - disables the insights alerts for when the insights operator is disabled. Overwritten by `alerting/disabled` from the configmap. Default value is `false`.
+- `disableInsightsAlerts` - disables all the alerts registered by the Insights Operator. Overwritten by `alerting/disabled` from the configmap. Default value is `false`.
 Content example of the `support` secret:
 
 ```shell script
