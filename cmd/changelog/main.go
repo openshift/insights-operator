@@ -55,12 +55,10 @@ var (
 	latestHash  = ""
 )
 
-const gitHubRepo = "insights-operator"
-const gitHubRepoOwner = "openshift"
 const gitHubPath = "https://github.com/openshift/insights-operator"
 
 // API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
-const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" // owner, repo, pull-number
+const gitHubAPIFormat = "https://api.github.com/repos/openshift/insights-operator/pulls" // owner, repo, pull-number
 
 // ReleaseVersion OpenShift release version helper type
 type ReleaseVersion struct {
@@ -263,11 +261,15 @@ func getChanges(pullRequestIds, pullRequestHashes []string) []*Change {
 func getPullRequestFromGitHub(id string) *Change {
 	// There is a limit for the GitHub API, if you use auth then its 5000/hour
 	var bearer = "token " + gitHubToken
-
+	url, err := createGitHubURL(id)
+	if err != nil {
+		log.Fatalf(err.Error())
+		return nil
+	}
 	req, err := http.NewRequestWithContext(
 		context.Background(),
-		"GET",
-		fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id),
+		http.MethodGet,
+		url,
 		http.NoBody)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -405,6 +407,14 @@ func stringToReleaseVersion(s string) ReleaseVersion {
 	relVer.Major = major
 	relVer.Minor = minor
 	return relVer
+}
+
+func createGitHubURL(id string) (string, error) {
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%d", gitHubAPIFormat, idInt), nil
 }
 
 type ReleaseVersions []ReleaseVersion
