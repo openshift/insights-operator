@@ -62,6 +62,8 @@ rules:
       - insightsoperators/status
       - insightsoperators
     verbs:
+      - list
+      - watch
       - get
       - update
       - patch
@@ -422,7 +424,7 @@ rules:
     verbs:
       - create
       - get
-      - list 
+      - list
       - delete
   - apiGroups:
       - apps

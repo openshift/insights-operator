@@ -11,7 +11,8 @@ import (
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	insightsv1alpha1client "github.com/openshift/client-go/insights/clientset/versioned"
 	insightsInformers "github.com/openshift/client-go/insights/informers/externalversions"
-	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
+	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
+	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
@@ -39,6 +40,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/ocm/sca"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
+	"github.com/openshift/library-go/pkg/operator/loglevel"
 )
 
 // Operator is the type responsible for controlling the start-up of the Insights Operator
@@ -72,7 +74,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 	configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
-	operatorClient, err := operatorv1client.NewForConfig(controller.KubeConfig)
+	operatorClient, err := operatorclient.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -80,6 +82,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	insightClient, err := insightsv1alpha1client.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
+	}
+
+	operatorConfigInformers := operatorinformers.NewSharedInformerFactory(operatorClient, 10*time.Minute)
+
+	opClient := &genericClient{
+		informers: operatorConfigInformers,
+		client:    operatorClient.OperatorV1(),
 	}
 
 	gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig := prepareGatherConfigs(
@@ -213,12 +222,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	)
 	if !insightsConfigAPIEnabled {
 		periodicGather = periodic.New(configAggregator, rec, gatherers, anonymizer,
-			operatorClient.InsightsOperators(), kubeClient)
+			operatorClient.OperatorV1().InsightsOperators(), kubeClient)
 		statusReporter.AddSources(periodicGather.Sources()...)
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
-			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(), operatorClient.InsightsOperators(), dgInformer)
+			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(),
+			operatorClient.OperatorV1().InsightsOperators(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)
 		go periodicGather.PeriodicPrune(ctx)
@@ -246,7 +256,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		// know any previous last reported time
 		go uploader.Run(ctx)
 
-		reportGatherer := insightsreport.New(insightsClient, configAggregator, uploader, operatorClient.InsightsOperators())
+		reportGatherer := insightsreport.New(insightsClient, configAggregator, uploader, operatorClient.OperatorV1().InsightsOperators())
 		statusReporter.AddSources(reportGatherer)
 		go reportGatherer.Run(ctx)
 	}
@@ -267,6 +277,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	promRulesController := insights.NewPrometheusRulesController(configAggregator, controller.KubeConfig)
 	go promRulesController.Start(ctx)
 
+	// support logLevelController
+	logLevelController := loglevel.NewClusterOperatorLoggingController(opClient, controller.EventRecorder)
+	operatorConfigInformers.Start(ctx.Done())
+	go logLevelController.Run(ctx, 1)
 	klog.Warning("started")
 
 	<-ctx.Done()
