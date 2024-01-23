@@ -1,5 +1,6 @@
-// nolint: lll
 package conditional
+
+// nolint: lll
 
 import (
 	"context"

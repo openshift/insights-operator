@@ -2,27 +2,50 @@
 
 The main goal of the Insights Operator is to periodically gather anonymized data from the OCP cluster (mostly Kubernetes/OpenShift APIs and control plane components) and upload it to `console.redhat.com` for Insights analysis.
 
-Insights Operator does not manage any application. As usual with operator applications, most of the code is structured in the `pkg` package and `pkg/controller/operator.go` hosts the operator controller. Typically operator controllers read configuration and start some periodical tasks.
+Insights Operator does not manage any application. As usual with operator applications, most of the code is structured in the `pkg` package and `pkg/controller/operator.go` hosts the operator controller. Typically, operator controllers read configuration and start some periodical tasks.
 
 ## How the Insights operator reads configuration
-The Insights Operator's configuration is a combination of the file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoded in the image) and configuration stored in the `support` secret in the `openshift-config` namespace. The secret doesn't exist by default, but when it does, it overrides default settings which IO reads from the `config/pod.yaml`.
+The Insights Operator's configuration is a combination of the file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoded in the image) and the configuration stored in either the `support` secret in the `openshift-config` namespace or the `insights-config` configmap in the `openshift-insights` namespace. Neither the secret nor the configmap exist by default, but when they do, they override the default settings which IO reads from the `config/pod.yaml`. The configmap takes precedent over the secret.
+The `insights-config` configmap provides the following configuration structure:
+```
+dataReporting:
+    interval: 30m0s,
+    uploadEndpoint: https://console.redhat.com/api/ingress/v1/upload,
+    storagePath: /var/lib/insights-operator,
+    downloadEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports,
+    conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules,
+    obfuscation: [workload_names networking]
+sca:
+    disabled: false,
+    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates,
+    interval: 8h0m0s
+alerting:
+    disabled: false
+clusterTransfer:
+    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/,
+    interval: 1h0m0s
+proxy:
+    httpProxy: http://example.com,
+    httpsProxy: https://example.com,
+    noProxy: test.org
+```
+
 The `support` secret provides following configuration attributes:
-- `endpoint` - upload endpoint - default is `https://console.redhat.com/api/ingress/v1/upload`,
-- `interval` - data gathering & uploading frequency - default is `2h`
-- `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator
-- `username`, `password` - if set, the insights client upload will be authenticated by basic authorization using the username/password. By default, it uses the token (see below) from the `pull-secret` secret.
-- `enableGlobalObfuscation` - to enable the global obfuscation of the IP addresses and the cluster domain name. Default value is `false`
-- `reportEndpoint` - download endpoint. From this endpoint, the Insights operator downloads the latest Insights analysis. Default value is `https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports` (where `%s` must be replaced with the cluster ID)
+- `endpoint` - upload endpoint. Overwritten by `dataReporting/uploadEndpoint` from the configmap. Default is `https://console.redhat.com/api/ingress/v1/upload`.
+- `interval` - data gathering & uploading frequency. Overwritten by `dataReporting/interval` from the configmap. Default is `2h`.
+- `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator. Overwritten by `proxy/httpProxy`, `proxy/httpsProxy` and `proxy/noProxy`, respectively, from the configmap.
+- `enableGlobalObfuscation` - to enable the global obfuscation of the IP addresses and the cluster domain name. Overwritten by `dataReporting/obfuscation` from the configmap. To enable it via configmap, set the `dataReporting/obfuscation` to [`networking`]. Default value is `false`.
+- `reportEndpoint` - download endpoint. From this endpoint, the Insights operator downloads the latest Insights analysis. Overwritten by `dataReporting/downloadEndpoint` from the configmap. Default value is `https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports` (where `%s` must be replaced with the cluster ID).
 - `reportPullingDelay` - the delay between data upload and download. Default value is `60s`
 - `reportPullingTimeout` - timeout for the Insights download request.
 - `reportMinRetryTime` - the time after which the request is retried. Default value is `30s`
-- `scaEndpoint` - the endpoing for downloading the Simple Content Access(SCA) entitlements. Default value is `https://api.openshift.com/api/accounts_mgmt/v1/certificates`
-- `scaInterval` - frequency of the SCA entitlements download. Default value is `8h`.
-- `scaPullDisabled` - flag to disable the SCA entitlements download. Default value is `false`.
-- `clusterTransferEndpoint` - the endpoint for checking & download cluster transfer data (updated `pull-secret` data). Default values is `https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/`
-- `clusterTransferInterval`  - frequency of checking available cluster transfers. Default value is `24h`.
-- `conditionalGathererEndpoint` - the endpoing providing conditional gathering rules definitions. Default value is `https://console.redhat.com/api/gathering/gathering_rules`.
-
+- `scaEndpoint` - the endpoing for downloading the Simple Content Access(SCA) entitlements. Default value is `https://api.openshift.com/api/accounts_mgmt/v1/certificates`. Overwritten by `sca/endpoint` from the configmap.
+- `scaInterval` - frequency of the SCA entitlements download. Overwritten by `sca/interval` from the configmap. Default value is `8h`.
+- `scaPullDisabled` - flag to disable the SCA entitlements download. Overwritten by `sca/disabled` from the configmap. Default value is `false`.
+- `clusterTransferEndpoint` - the endpoint for checking & download cluster transfer data (updated `pull-secret` data). Overwritten by `clusterTransfer/endpoint` from the configmap. Default values is `https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/`
+- `clusterTransferInterval`  - frequency of checking available cluster transfers. Overwritten by `clusterTransfer/interval` from the configmap. Default value is `24h`.
+- `conditionalGathererEndpoint` - the endpoing providing conditional gathering rules definitions. Overwritten by `dataReporting/conditionalGathererEndpoint` from the configmap. Default value is `https://console.redhat.com/api/gathering/gathering_rules`.
+- `disableInsightsAlerts` - disables all the alerts registered by the Insights Operator. Overwritten by `alerting/disabled` from the configmap. Default value is `false`.
 Content example of the `support` secret:
 
 ```shell script
@@ -100,27 +123,27 @@ There are these main tasks scheduled:
 
 ## Gathering the data
 
-Insights operator defines three types of gatherers (see below). Each of them must implement the [Interface](../pkg/gatherers/interface.go#L11) and they are initialized by calling `gather.CreateAllGatherers` in `operator.go`. The actual gathering is triggered in `Run` method in `pkg/controller/periodic/periodic.go`, but not every gatherer is triggered every time ( for example, see the [CustomPeriodGatherer type](../pkg/gatherers/interface.go#L21)).
+Insights operator defines three types of gatherers (see below). Each of them must implement the [Interface,](../pkg/gatherers/interface.go#L11) and they are initialized by calling `gather.CreateAllGatherers` in `operator.go`. The actual gathering is triggered in `Run` method in `pkg/controller/periodic/periodic.go`, but not every gatherer is triggered every time ( for example, see the [CustomPeriodGatherer type](../pkg/gatherers/interface.go#L21)).
 
 Each gatherer includes one or more gathering functions. Gathering functions are defined as a map, where the key is the name of the function and the value is the [GatheringClosure type](../pkg/gatherers/interface.go#L34). They are executed concurrently in the `HandleTasksConcurrently` function in `pkg/gather/task_processing.go`.
 One of the attributes of the `GatheringClosure` type is the function that returns the values: `([]record.Record, []error)`. The slice of the records is the result of gathering function. The actual data is in the `Item` attribute of the `Record`. This `Item` is of type `Marshalable` (see the interface in the [record.go](../pkg/record/record.go)) and there are two JSON marshallers used to serialize the data - `JSONMarshaller` and `ResourceMarshaller` which allows you to save few bytes by omitting the `managedFields` during the serialization.
-Errors, warnings or panics that occurred during  given gathering  function are logged in the "metadata" part of the Insights operator archive. See [sample archive example](../docs/insights-archive-sample/insigths-operator/gathers.json)
+Errors, warnings or panics that occurred during  given gathering  function are logged in the "metadata" part of the Insights operator archive. See [sample archive example](../docs/insights-archive-sample/insights-operator/gathers.json)
 
 ### Clusterconfig gatherer
 
-Defined in [clusterconfig_gatherer.go](../pkg/gatherers/clusterconfig/clusterconfig_gatherer.go). This gatherer is ran regularly (2h by default) and gathers various data related to cluster config (see [gathered-data doc](../docs/gathered-data.md) for more details).
+Defined in [clusterconfig_gatherer.go](../pkg/gatherers/clusterconfig/clusterconfig_gatherer.go). This gatherer is run regularly (2h by default) and gathers various data related to cluster config (see [gathered-data doc](../docs/gathered-data.md) for more details).
 
 The data from this gatherer is stored under `/config` directory in the archive.
 
 ### Workloads gatherer
 
-Defined in [workloads_gatherer.go](../pkg/gatherers/workloads/workloads_gatherer.go). This gatherer only runs every 12 hours and the interval is not configurable. This is done because running the gatherer more often would significantly increase data in the archive, that is assumed will not change very often. There is only one gathering function in this gatherer and it gathers workload fingerprint data (SHA of the images, fingerprints of namespaces as number of pods in namespace, fingerprints of containers as first command and first argument).
+Defined in [workloads_gatherer.go](../pkg/gatherers/workloads/workloads_gatherer.go). This gatherer only runs every 12 hours and the interval is not configurable. This is done because running the gatherer more often would significantly increase data in the archive, that is assumed will not change very often. There is only one gathering function in this gatherer, and it gathers workload fingerprint data (SHA of the images, fingerprints of namespaces as number of pods in namespace, fingerprints of containers as first command and first argument).
 
 The data from this gatherer is stored in the `/config/workload_info.json` file in the archive, but please note that not every archive contains this data.
 
 ### Conditional gatherer
 
-Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is ran regularly (2h by default), but it only gathers some data when a corresponding condition is met. The conditions and corresponding gathering functions are defined in an external service (https://console.redhat.com/api/gathering/gathering_rules). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts.
+Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is run regularly (2h by default), but it only gathers some data when a corresponding condition is met. The conditions and corresponding gathering functions are defined in an external service (https://console.redhat.com/api/gathering/gathering_rules). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts.
 
 The data from this gatherer is stored under the `/conditional` directory in the archive.
 
@@ -166,7 +189,7 @@ health_statuses_insights{metric="total"} 2
 
 ### Scheduling and running of Uploader
 The `operator.go` starts background task defined in `pkg/insights/insightsuploader/insightsuploader.go`. The insights uploader periodically checks if there is any data to upload. If no data is found, the uploader continues with next cycle.
-The uploader triggers the `wait.Until` function, which waits until the configuration changes or it is time to upload. After start of the operator, there is some waiting time before the very first upload. This time is defined by `initialDelay`. If no error occurred while sending the POST request, then the next uploader check is defined as `wait.Jitter(interval, 1.2)`, where interval is the gathering interval.
+The uploader triggers the `wait.Until` function, which waits until the configuration changes, or it is time to upload. After start of the operator, there is some waiting time before the very first upload. This time is defined by `initialDelay`. If no error occurred while sending the POST request, then the next uploader check is defined as `wait.Jitter(interval, 1.2)`, where interval is the gathering interval.
 
 ## How Uploader authenticates to console.redhat.com
 The HTTP communication with the external service (e.g uploading the Insights archive or downloading the Insights analysis) is defined in the [insightsclient package](../pkg/insights/insightsclient/). The HTTP transport is encrypted with TLS (see the `clientTransport()` function defined in the `pkg/insights/insightsclient/insightsclient.go`. This function (and the `prepareRequest` function) uses `pkg/authorizer/clusterauthorizer.go` to respect the proxy settings and to authorize (i.e add the authorization header with respective token value) the requests. The user defined certificates in the `/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt` are taken into account (see the cluster wide proxy setting in the [OCP documentation](https://docs.openshift.com/container-platform/latest/networking/enable-cluster-wide-proxy.html)).
@@ -379,4 +402,4 @@ Such a client is used in [GatherMachineSet](pkg/gather/clusterconfig/clusterconf
 
 ## Configuring what to gather
 
-[Insights API](https://github.com/openshift/api/blob/master/config/v1alpha1/types_insights.go) and the corresponding `insightsdatagather.config.openshift.io` CRD allow you to specify a list of `disabledGatherers` to disable specific gatherers or disable data gathering altogether by setting the value to `all`. 
+[Insights API](https://github.com/openshift/api/blob/master/config/v1alpha1/types_insights.go) and the corresponding `insightsdatagather.config.openshift.io` CRD allow you to specify a list of `disabledGatherers` to disable specific gatherers or disable data gathering altogether by setting the value to `all`.

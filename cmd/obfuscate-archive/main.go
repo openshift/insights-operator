@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/insights/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -61,7 +62,7 @@ func obfuscateArchive(path string) (string, error) {
 		return "", err
 	}
 
-	anonymizer, err := anonymization.NewAnonymizer(clusterBaseDomain, networks, nil, nil, nil)
+	anonymizer, err := anonymization.NewAnonymizer(clusterBaseDomain, networks, nil, nil, v1alpha1.ObfuscateNetworking)
 	if err != nil {
 		return "", err
 	}

@@ -73,7 +73,7 @@ func (c *conditions) setCondition(conditionType configv1.ClusterStatusConditionT
 	status configv1.ConditionStatus, reason, message string) {
 	originalCondition, ok := c.entryMap[conditionType]
 	transitionTime := metav1.Now()
-	// if condition is defined and there is not new status then don't update transition time
+	// if condition is defined and there is no new status then don't update transition time
 	if ok && originalCondition.Status == status {
 		transitionTime = originalCondition.LastTransitionTime
 	}
@@ -105,7 +105,7 @@ func (c *conditions) findCondition(condition configv1.ClusterStatusConditionType
 }
 
 // entries returns a sorted list of status conditions from the mapped values.
-// The list is sorted by  by type ClusterStatusConditionType to ensure consistent ordering for deep equal checks.
+// The list is sorted by type ClusterStatusConditionType to ensure consistent ordering for deep equal checks.
 func (c *conditions) entries() []configv1.ClusterOperatorStatusCondition {
 	var res []configv1.ClusterOperatorStatusCondition
 	for _, v := range c.entryMap {

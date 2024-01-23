@@ -2,9 +2,10 @@ package insights
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
-	semver "github.com/blang/semver/v4"
+	"github.com/blang/semver/v4"
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,9 +15,13 @@ import (
 )
 
 var (
-	RecommendationCollector = &InsightsRecommendationCollector{
+	RecommendationCollector = &Collector{
 		metricName: "insights_recommendation_active",
 	}
+	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
+		Name: "insightsclient_request_send_total",
+		Help: "Tracks the number of archives sent",
+	}, []string{"client", "status_code"})
 )
 
 // MustRegisterMetrics registers provided registrables in the Insights metrics registry.
@@ -32,32 +37,38 @@ func MustRegisterMetrics(registrables ...metrics.Registerable) {
 }
 
 func init() {
-	MustRegisterMetrics(RecommendationCollector)
+	MustRegisterMetrics(RecommendationCollector, counterRequestSend)
 }
 
-type InsightsRecommendationCollector struct {
+func IncrementCounterRequestSend(status int) {
+	statusCodeString := strconv.Itoa(status)
+	counterRequestSend.WithLabelValues("insights", statusCodeString).Inc()
+}
+
+// Collector collects insights recommendations
+type Collector struct {
 	activeRecommendations []types.InsightsRecommendation
 	metricName            string
 	clusterID             v1.ClusterID
 }
 
-func (c *InsightsRecommendationCollector) SetClusterID(clusterID v1.ClusterID) {
+func (c *Collector) SetClusterID(clusterID v1.ClusterID) {
 	c.clusterID = clusterID
 }
 
-func (c *InsightsRecommendationCollector) ClusterID() v1.ClusterID {
+func (c *Collector) ClusterID() v1.ClusterID {
 	return c.clusterID
 }
 
-func (c *InsightsRecommendationCollector) SetActiveRecommendations(activeRecommendations []types.InsightsRecommendation) {
+func (c *Collector) SetActiveRecommendations(activeRecommendations []types.InsightsRecommendation) {
 	c.activeRecommendations = activeRecommendations
 }
 
-func (c *InsightsRecommendationCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(c, ch)
 }
 
-func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	for _, rec := range c.activeRecommendations {
 		ruleIDStr := string(rec.RuleID)
 		// There is ".report" at the end of the rule ID for some reason, which
@@ -75,20 +86,20 @@ func (c *InsightsRecommendationCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (c *InsightsRecommendationCollector) ClearState() {
+func (c *Collector) ClearState() {
 	// NOOP: There is no state that would need to be cleared.
 	// This method is implemented exclusively to comply with the Collector
 	// interface from the legacyregistry module.
 }
 
-func (c *InsightsRecommendationCollector) Create(version *semver.Version) bool {
+func (c *Collector) Create(_ *semver.Version) bool {
 	return true
 	// NOOP: No versioning is implemented for this collector.
 	// This method is implemented exclusively to comply with the Collector
 	// interface from the legacyregistry module.
 }
 
-func (c *InsightsRecommendationCollector) FQName() string {
+func (c *Collector) FQName() string {
 	return c.metricName
 }
 

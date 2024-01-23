@@ -44,11 +44,26 @@ metadata:
     capability.openshift.io/name: Insights
 rules:
   - apiGroups:
+      - "insights.openshift.io"
+    resources:
+      - datagathers
+      - datagathers/status
+    verbs:
+      - create
+      - get
+      - update
+      - patch
+      - list
+      - delete
+      - watch
+  - apiGroups:
       - "operator.openshift.io"
     resources:
       - insightsoperators/status
       - insightsoperators
     verbs:
+      - list
+      - watch
       - get
       - update
       - patch
@@ -58,12 +73,20 @@ rules:
       - clusteroperators
       - clusteroperators/status
       - insightsdatagathers
-      - featuregates
     verbs:
       - create
       - get
       - update
       - patch
+      - list
+      - watch
+  - apiGroups:
+      - "config.openshift.io"
+    resources:
+      - clusterversions
+      - featuregates
+    verbs:
+      - get
       - list
       - watch
   # allow the operator to retrieve prometheus metrics
@@ -73,6 +96,24 @@ rules:
       - namespaces
     verbs:
       - get
+  - apiGroups:
+      - "monitoring.coreos.com"
+    resources:
+      - prometheusrules
+    verbs:
+      - create
+      - get
+      - list
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -268,6 +309,13 @@ rules:
     verbs:
       - get
       - list
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -369,6 +417,22 @@ rules:
       - pods
     verbs:
       - get
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - list
+      - delete
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

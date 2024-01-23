@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/openshift/api/config/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -20,13 +20,13 @@ import (
 	"github.com/openshift/insights-operator/pkg/types"
 )
 
-func Test_getEnabledGatheringFunctions(t *testing.T) {
+func TestGetEnabledGatheringFunctions(t *testing.T) {
 	tests := []struct {
-		testName     string
-		gathererName string
-		all          map[string]gatherers.GatheringClosure
-		disabled     []string
-		expected     map[string]gatherers.GatheringClosure
+		testName        string
+		gathererName    string
+		all             map[string]gatherers.GatheringClosure
+		gathererConfigs []v1alpha1.GathererConfig
+		expected        map[string]gatherers.GatheringClosure
 	}{
 		{
 			testName:     "disable some functions",
@@ -37,9 +37,14 @@ func Test_getEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			disabled: []string{
-				"clusterconfig/container_images",
-				"clusterconfig/nodes",
+			gathererConfigs: []v1alpha1.GathererConfig{
+				{
+					Name:  "clusterconfig/container_images",
+					State: v1alpha1.Disabled,
+				}, {
+					Name:  "clusterconfig/nodes",
+					State: v1alpha1.Disabled,
+				},
 			},
 			expected: map[string]gatherers.GatheringClosure{
 				"authentication": {},
@@ -55,9 +60,15 @@ func Test_getEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			disabled: []string{
-				"clusterconfig/foo",
-				"clusterconfig/bar",
+			gathererConfigs: []v1alpha1.GathererConfig{
+				{
+					Name:  "clusterconfig/foo",
+					State: v1alpha1.Disabled,
+				},
+				{
+					Name:  "clusterconfig/bar",
+					State: v1alpha1.Disabled,
+				},
 			},
 			expected: map[string]gatherers.GatheringClosure{
 				"container_images": {},
@@ -75,8 +86,11 @@ func Test_getEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			disabled: []string{
-				"clusterconfig",
+			gathererConfigs: []v1alpha1.GathererConfig{
+				{
+					Name:  "clusterconfig",
+					State: v1alpha1.Disabled,
+				},
 			},
 			expected: map[string]gatherers.GatheringClosure{},
 		},
@@ -89,7 +103,7 @@ func Test_getEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			disabled: []string{},
+			gathererConfigs: []v1alpha1.GathererConfig{},
 			expected: map[string]gatherers.GatheringClosure{
 				"container_images": {},
 				"nodes":            {},
@@ -101,14 +115,14 @@ func Test_getEnabledGatheringFunctions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			result := getEnabledGatheringFunctions(tt.gathererName, tt.all, tt.disabled)
+			result := getEnabledGatheringFunctions(tt.gathererName, tt.all, tt.gathererConfigs)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
 // nolint: funlen
-func Test_StartGatheringConcurrently(t *testing.T) {
+func TestStartGatheringConcurrently(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
 	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, nil)
@@ -171,12 +185,22 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 		},
 	})
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
-		DisabledGatherers: []string{
-			"mock_gatherer/3_records",
-			"mock_gatherer/errors",
-			"mock_gatherer/panic",
-			"mock_gatherer/name",
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []v1alpha1.GathererConfig{
+		{
+			Name:  "mock_gatherer/3_records",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/errors",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/panic",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/name",
+			State: v1alpha1.Disabled,
 		},
 	})
 	assert.NoError(t, err)
@@ -197,13 +221,21 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 		},
 	})
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
-		DisabledGatherers: []string{
-			"mock_gatherer/some_field",
-			"mock_gatherer/errors",
-			"mock_gatherer/panic",
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []v1alpha1.GathererConfig{
+		{
+			Name:  "mock_gatherer/some_field",
+			State: v1alpha1.Disabled,
 		},
-	})
+		{
+			Name:  "mock_gatherer/errors",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/panic",
+			State: v1alpha1.Disabled,
+		},
+	},
+	)
 	assert.NoError(t, err)
 	results = gatherResultsFromChannel(resultsChan)
 	assert.Len(t, results, 2)
@@ -241,43 +273,60 @@ func Test_StartGatheringConcurrently(t *testing.T) {
 	})
 }
 
-func Test_StartGatheringConcurrently_Error(t *testing.T) {
+func TestStartGatheringConcurrentlyError(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
-	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
-		DisabledGatherers: []string{
-			"mock_gatherer/some_field",
-			"mock_gatherer/errors",
-			"mock_gatherer/panic",
-			"mock_gatherer/name",
-			"mock_gatherer/3_records",
+	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, []v1alpha1.GathererConfig{
+		{
+			Name:  "mock_gatherer/some_field",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/errors",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/panic",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/name",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/3_records",
+			State: v1alpha1.Disabled,
 		},
 	})
 	assert.EqualError(t, err, "no gather functions are specified to run")
 	assert.Nil(t, resultsChan)
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, &v1alpha1.GatherConfig{
-		DisabledGatherers: []string{
-			"mock_gatherer",
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []v1alpha1.GathererConfig{
+		{
+			Name:  "mock_gatherer",
+			State: v1alpha1.Disabled,
 		},
 	})
 	assert.EqualError(t, err, "no gather functions are specified to run")
 	assert.Nil(t, resultsChan)
 }
 
-func Test_CollectAndRecordGatherer(t *testing.T) {
+func TestCollectAndRecordGatherer(t *testing.T) {
 	gatherer := &MockGatherer{
 		SomeField: "some_value",
 	}
 	mockRecorder := &recorder.MockRecorder{}
-	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{})
-	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{
-		EnableGlobalObfuscation: true,
+	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			Obfuscation: config.Obfuscation{
+				config.Networking,
+			},
+		},
 	})
-	anonymizer, err := anonymization.NewAnonymizer("", nil, nil, mockSecretConfigurator, mockAPIConfigurator)
+	anonymizer, err := anonymization.NewAnonymizer("", nil, nil, mockConfigMapConfigurator, "")
 	assert.NoError(t, err)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator.GatherConfig())
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, nil)
 	assert.Error(t, err)
 
 	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
@@ -345,25 +394,35 @@ func Test_CollectAndRecordGatherer(t *testing.T) {
 	})
 }
 
-func Test_CollectAndRecordGatherer_Error(t *testing.T) {
+func TestCollectAndRecordGathererError(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
-		DisabledGatherers: []string{
-			"mock_gatherer/some_field",
-			"mock_gatherer/name",
-			"mock_gatherer/panic",
-			"mock_gatherer/3_records",
+	gatherersConfig := []v1alpha1.GathererConfig{
+		{
+			Name:  "mock_gatherer/some_field",
+			State: v1alpha1.Disabled,
+		}, {
+			Name:  "mock_gatherer/name",
+			State: v1alpha1.Disabled,
 		},
-	})
+		{
+			Name:  "mock_gatherer/panic",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/3_records",
+			State: v1alpha1.Disabled,
+		},
+	}
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator.GatherConfig())
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, gatherersConfig)
 	assert.EqualError(
 		t,
 		err,
 		`function "errors" failed with an error`,
 	)
-	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, config.NewMockSecretConfigurator(nil), mockAPIConfigurator)
+	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil,
+		config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}), "")
 	assert.NoError(t, err)
 	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
 	assert.NoError(t, err)
@@ -391,19 +450,28 @@ func Test_CollectAndRecordGatherer_Error(t *testing.T) {
 	})
 }
 
-func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
+func TestCollectAndRecordGathererPanic(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
-		DisabledGatherers: []string{
-			"mock_gatherer/some_field",
-			"mock_gatherer/name",
-			"mock_gatherer/errors",
-			"mock_gatherer/3_records",
+	gatherersConfig := []v1alpha1.GathererConfig{
+		{
+			Name:  "mock_gatherer/some_field",
+			State: v1alpha1.Disabled,
+		}, {
+			Name:  "mock_gatherer/name",
+			State: v1alpha1.Disabled,
 		},
-	})
+		{
+			Name:  "mock_gatherer/errors",
+			State: v1alpha1.Disabled,
+		},
+		{
+			Name:  "mock_gatherer/3_records",
+			State: v1alpha1.Disabled,
+		},
+	}
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, mockAPIConfigurator.GatherConfig())
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, gatherersConfig)
 	assert.EqualError(t, err, `function "panic" panicked`)
 	assert.Len(t, functionReports, 2)
 	functionReports[0].Duration = 0
@@ -422,7 +490,7 @@ func Test_CollectAndRecordGatherer_Panic(t *testing.T) {
 	assert.Len(t, mockRecorder.Records, 0)
 }
 
-func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
+func TestCollectAndRecordGathererDuplicateRecords(t *testing.T) {
 	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
 		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
 			return []record.Record{{
@@ -444,12 +512,12 @@ func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
 		}},
 	}}
 	mockDriver := &MockDriver{}
-	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{})
-	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, config.NewMockSecretConfigurator(nil), mockAPIConfigurator)
+	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil,
+		config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}), "")
 	assert.NoError(t, err)
 	rec := recorder.New(mockDriver, time.Second, anonymizer)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator.GatherConfig())
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, nil)
 	assert.Error(t, err)
 	assert.NotEmpty(t, functionReports)
 	assert.Len(t, functionReports, 4)
@@ -487,7 +555,7 @@ func Test_CollectAndRecordGatherer_DuplicateRecords(t *testing.T) {
 	assert.Len(t, records, 2)
 }
 
-func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
+func TestCollectAndRecordGathererWarning(t *testing.T) {
 	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
 		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
 			return nil, []error{&types.Warning{UnderlyingValue: fmt.Errorf("test warning")}}
@@ -495,9 +563,8 @@ func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
 	}}
 	mockDriver := &MockDriver{}
 	rec := recorder.New(mockDriver, time.Second, nil)
-	mockAPIConfigurator := config.NewMockAPIConfigurator(nil)
 
-	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, mockAPIConfigurator.GatherConfig())
+	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, nil)
 	assert.NoError(t, err)
 	assert.Len(t, functionReports, 2)
 	assert.Equal(t, "mock_gatherer_with_provided_functions/function_1", functionReports[0].FuncName)
@@ -505,6 +572,66 @@ func Test_CollectAndRecordGatherer_Warning(t *testing.T) {
 	assert.Nil(t, functionReports[0].Errors)
 	assert.Equal(t, []string{"warning: test warning"}, functionReports[0].Warnings)
 	assert.Nil(t, functionReports[0].Panic)
+}
+
+func TestFunctionReportsMapToArray(t *testing.T) {
+	tests := []struct {
+		name           string
+		testMap        map[string]GathererFunctionReport
+		expectedResult []GathererFunctionReport
+	}{
+		{
+			name:           "empty resutls in an empty slice",
+			testMap:        map[string]GathererFunctionReport{},
+			expectedResult: []GathererFunctionReport{},
+		},
+		{
+			name: "map converted as expected",
+			testMap: map[string]GathererFunctionReport{
+				"fooKey": {
+					FuncName:     "foo",
+					Duration:     120,
+					RecordsCount: 5,
+				},
+				"barKey": {
+					FuncName:     "bar",
+					Duration:     20,
+					RecordsCount: 1,
+				},
+				"bazKey": {
+					FuncName:     "baz",
+					Duration:     240,
+					RecordsCount: 12,
+					Errors:       []string{"test-error"},
+				},
+			},
+			expectedResult: []GathererFunctionReport{
+				{
+					FuncName:     "foo",
+					Duration:     120,
+					RecordsCount: 5,
+				},
+				{
+					FuncName:     "bar",
+					Duration:     20,
+					RecordsCount: 1,
+				},
+				{
+					FuncName:     "baz",
+					Duration:     240,
+					RecordsCount: 12,
+					Errors:       []string{"test-error"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FunctionReportsMapToArray(tt.testMap)
+			assert.ElementsMatch(t, tt.expectedResult, result)
+		})
+	}
 }
 
 func assertMetadataOneGatherer(

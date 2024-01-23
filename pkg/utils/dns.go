@@ -9,7 +9,7 @@ import (
 
 // GetClusterBaseDomain returns a base domain for the cluster.
 // Base domain is the base domain of the cluster. All managed DNS records will
-// be sub-domains of this base.
+// be subdomains of this base.
 //
 // For example, given the base domain `openshift.example.com`, an API server
 // DNS record may be created for `cluster-api.openshift.example.com`.

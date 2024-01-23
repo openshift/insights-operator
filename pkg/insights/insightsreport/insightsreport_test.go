@@ -1,13 +1,17 @@
 package insightsreport
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,10 +36,9 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "basic test with all rules enabled",
 			testController: &Controller{
-				configurator: config.NewMockSecretConfigurator(&config.Controller{
-					DisableInsightsAlerts: false,
-				}),
-				client: &client,
+
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
+				client:       &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -120,10 +123,8 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "basic test with some rules disabled",
 			testController: &Controller{
-				configurator: config.NewMockSecretConfigurator(&config.Controller{
-					DisableInsightsAlerts: false,
-				}),
-				client: &client,
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
+				client:       &client,
 			},
 			report: types.SmartProxyReport{
 				Data: []types.RuleWithContentResponse{
@@ -196,8 +197,10 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "Insights recommendations as alerts are disabled => no active recommendations",
 			testController: &Controller{
-				configurator: config.NewMockSecretConfigurator(&config.Controller{
-					DisableInsightsAlerts: true,
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+					Alerting: config.Alerting{
+						Disabled: true,
+					},
 				}),
 				client: &client,
 			},
@@ -242,10 +245,9 @@ func Test_readInsightsReport(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			activeRecommendations, healthStatus, gatherTime := tc.testController.readInsightsReport(tc.report)
+			activeRecommendations, healthStatus := tc.testController.readInsightsReport(tc.report)
 			assert.Equal(t, tc.expectedActiveRecommendations, activeRecommendations)
 			assert.Equal(t, tc.expectedHealthStatus, healthStatus)
-			assert.Equal(t, tc.expectedGatherTime, gatherTime.String())
 		})
 	}
 }
@@ -286,7 +288,7 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 				},
 			},
 			expectedErrorKey: "",
-			expectedError:    fmt.Errorf("TemplateData of rule \"%s\" does not contain error_key", testRuleID),
+			expectedError:    fmt.Errorf("templateData of rule \"%s\" does not contain error_key", testRuleID),
 		},
 		{
 			name: "Rule response with wrong error_key type",
@@ -297,7 +299,7 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 				},
 			},
 			expectedErrorKey: "",
-			expectedError:    fmt.Errorf("The error_key of TemplateData of rule \"%s\" is not a string", testRuleID),
+			expectedError:    fmt.Errorf("the error_key of TemplateData of rule \"%s\" is not a string", testRuleID),
 		},
 	}
 
@@ -310,18 +312,150 @@ func Test_extractErrorKeyFromRuleData(t *testing.T) {
 	}
 }
 
+func TestPullReportTechpreview(t *testing.T) {
+	tests := []struct {
+		name          string
+		report        *types.InsightsAnalysisReport
+		statusCode    int
+		conf          config.InsightsConfiguration
+		statusSummary controllerstatus.Summary
+		mockClientErr error
+		expectedErr   error
+	}{
+		{
+			name: "Insights Analysis Report retrieved",
+			report: &types.InsightsAnalysisReport{
+				ClusterID: "test-cluster-ID",
+				RequestID: "test-request-ID",
+				Recommendations: []types.Recommendation{
+					{
+						ErrorKey:    "test-error-key-1",
+						Description: "lorem ipsum description",
+						TotalRisk:   1,
+						RuleFQDN:    "test.err.key1",
+					},
+					{
+						ErrorKey:    "test-error-key-2",
+						Description: "lorem ipsum description",
+						TotalRisk:   2,
+						RuleFQDN:    "test.err.key2",
+					},
+					{
+						ErrorKey:    "test-error-key-3",
+						Description: "lorem ipsum description",
+						TotalRisk:   3,
+						RuleFQDN:    "test.err.key3",
+					},
+				},
+			},
+			statusCode: http.StatusOK,
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "non-empty-endpoint",
+				},
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: true,
+			},
+			mockClientErr: nil,
+			expectedErr:   nil,
+		},
+		{
+			name:       "Empty report endpoint",
+			report:     nil,
+			statusCode: 0,
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "",
+				},
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: true,
+			},
+			mockClientErr: nil,
+			expectedErr:   nil,
+		},
+		{
+			name:       "Insights Analysis Report not retrieved, because of error",
+			report:     nil,
+			statusCode: 0,
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "non-empty-endpoint",
+				},
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: false,
+			},
+			mockClientErr: fmt.Errorf("test error"),
+			expectedErr:   fmt.Errorf("test error"),
+		},
+		{
+			name:       "Insights Analysis Report not retrieved, because of HTTP 404 response",
+			report:     nil,
+			statusCode: http.StatusNotFound,
+			conf: config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					DownloadEndpointTechPreview: "non-empty-endpoint",
+				},
+			},
+			statusSummary: controllerstatus.Summary{
+				Healthy: false,
+			},
+			mockClientErr: nil,
+			expectedErr:   fmt.Errorf("Failed to download the latest report: HTTP 404 Not Found"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := json.Marshal(tt.report)
+			assert.NoError(t, err)
+			testController := Controller{
+				client: &mockInsightsClient{
+					response: http.Response{
+						StatusCode: tt.statusCode,
+						Status:     http.StatusText(tt.statusCode),
+						Body:       io.NopCloser(bytes.NewReader(data)),
+					},
+					err: tt.mockClientErr,
+				},
+				configurator:     config.NewMockConfigMapConfigurator(&tt.conf),
+				StatusController: controllerstatus.New("test-insightsreport"),
+			}
+
+			report, err := testController.PullReportTechpreview("test-request-id")
+			assert.Equal(t, tt.expectedErr, err)
+			summary, _ := testController.StatusController.CurrentStatus()
+			assert.Equal(t, tt.statusSummary.Healthy, summary.Healthy)
+			if report == nil || report.Recommendations == nil {
+				return
+			}
+			assert.Equal(t, tt.report.Recommendations, report.Recommendations)
+			assert.Equal(t, tt.report.ClusterID, report.ClusterID)
+			assert.Equal(t, tt.report.RequestID, report.RequestID)
+		})
+	}
+}
+
 type mockInsightsClient struct {
 	clusterVersion *v1.ClusterVersion
 	metricsName    string
+	response       http.Response
+	err            error
 }
 
 func (c *mockInsightsClient) GetClusterVersion() (*v1.ClusterVersion, error) {
 	return c.clusterVersion, nil
 }
 
-func (c *mockInsightsClient) IncrementRecvReportMetric(statusCode int) {
+func (c *mockInsightsClient) IncrementRecvReportMetric(_ int) {
 }
 
-func (c *mockInsightsClient) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
+func (c *mockInsightsClient) RecvReport(_ context.Context, _ string) (*http.Response, error) {
 	return nil, nil
+}
+
+func (c *mockInsightsClient) GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+	return &c.response, c.err
 }

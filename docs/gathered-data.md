@@ -163,6 +163,35 @@ None
 None
 
 
+## ClusterAPIServer
+
+Collects APIServer.config.openshift.io resource
+
+### API Reference
+https://github.com/openshift/api/blob/master/config/v1/types_apiserver.go
+
+### Sample data
+- [docs/insights-archive-sample/config/apiserver.json](./insights-archive-sample/config/apiserver.json)
+
+### Location in archive
+- `config/apiserver.json`
+
+### Config ID
+`cluster_apiserver`
+
+### Released version
+- 4.15.0
+
+### Backported versions
+- 4.14.0+
+- 4.13.19+
+- 4.12.42+
+- 4.11.54+
+
+### Changes
+None
+
+
 ## ClusterAuthentication
 
 Collects the cluster `Authentication` with cluster name.
@@ -315,7 +344,7 @@ Collects the cluster `Infrastructure` with cluster name.
 - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#infrastructure-v1-config-openshift-io
 
 ### Sample data
-- [docs/insights-archive-sample/config/infrastructure/.json](./insights-archive-sample/config/infrastructure/.json)
+- [docs/insights-archive-sample/config/infrastructure.json](./insights-archive-sample/config/infrastructure.json)
 
 ### Location in archive
 - `config/infrastructure.json`
@@ -554,8 +583,9 @@ None
 
 ## ConfigMaps
 
-Collects the `ConfigMaps` from namespace `openshift-config`
-and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` namespace.
+Collects all `ConfigMaps` from the `openshift-config`
+namespace and specific `ConfigMaps` from other namespaces (see Changes
+for details).
 
 ### API Reference
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go#L80
@@ -581,8 +611,17 @@ and tries to fetch `cluster-monitoring-config` from `openshift-monitoring` names
 - 4.4.6+
 
 ### Changes
-- `cluster-monitoring-config` data since versions 4.6.22+ and 4.7.0+
-- `cluster-config-v1` since versions 4.9.0+
+  - `cluster-monitoring-config` config map from `openshift-monitoring`
+    namespace since versions 4.6.22+ and 4.7.0+
+  - `install-config` key from the `cluster-config-v1` config map in the
+    `kube-system` namespace since versions 4.9.0+; originally stored as
+    `config/configmaps/kube-system/cluster-config-v1.json`, changed to
+    `config/configmaps/kube-system/cluster-config-v1/install-config` since
+    4.13.0+
+  - `gateway-mode-config` config map from `openshift-network-operator`
+    namespace since 4.14.0+
+  - `insights-config` config map from `openshift-insights` namespace
+    since 4.15.0+
 
 ### Anonymization
 If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
@@ -706,6 +745,9 @@ None
 Collects metrics from the Deployment Validation Operator's
 metrics service. The metrics are fetched via the /metrics endpoint and
 filtered to only include those with a `deployment_validation_operator_` prefix.
+If the DVO service is deployed in a namespace other than `openshift-deployment-validation-operator',
+then the names of the workloads (e.g., namespace, deployment) are collected.
+Otherwise, only the UIDs of those resources are collected.
 
 ### API Reference
 None
@@ -726,6 +768,30 @@ None
 None
 
 ### Changes
+None
+
+
+## HelmInfo
+
+Collects summarized info about the helm usage on a cluster
+in a generic fashion
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/helmchart_info.json](./insights-archive-sample/config/helmchart_info.json)
+
+### Location in archive
+- `config/helmchart_info.json`
+
+### Config ID
+`workloads/helmchart_info`
+
+### Released version
+- 4.15.0
+
+### Backported versions
 None
 
 
@@ -795,7 +861,7 @@ It also collects total number of all `InstallPlans` and all non-unique `InstallP
 - https://github.com/operator-framework/api/blob/master/pkg/operators/v1alpha1/installplan_types.go#L26
 
 ### Sample data
-- [docs/insights-archive-sample/config/instalplans.json](./insights-archive-sample/config/instalplans.json)
+- [docs/insights-archive-sample/config/installplans.json](./insights-archive-sample/config/installplans.json)
 
 ### Location in archive
 - `config/instalplans.json`
@@ -1085,6 +1151,11 @@ which matches with ConfigMap configuration yaml
 ### Released version
 - 4.14
 
+### Backported versions
+- 4.13.0
+- 4.12.17
+- 4.11.41
+
 ### Changes
 None
 
@@ -1223,7 +1294,20 @@ None
 
 ## NodeLogs
 
-Collects control plane node logs from journal unit.
+Collects control plane node logs from journal unit with following substrings:
+  - E\\d{4} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}
+  - connect: connection refused
+  - failed (failure): command timed out
+  - Failed to make webhook authenticator request: Post
+  - raise JSONDecodeError("Expecting value", s, err.value) from None
+  - ContainerStateWaiting{Reason:ContainerCreating
+  - ContainersNotReady Message:containers with unready status
+  - MountVolume.MountDevice failed for volume
+  - kubernetes.io/csi: attacher.MountDevice failed to create newCsiDriverClient
+  - Unable to attach or mount volumes: unmounted volumes
+  - timed out waiting for the condition
+  - CreateContainerError: context deadline exceeded
+  - rpc error: code = ResourceExhausted desc = grpc: received message larger than max
 
 ### API Reference
 - https://docs.openshift.com/container-platform/4.9/rest_api/node_apis/node-core-v1.html#apiv1nodesnameproxypath
@@ -1296,7 +1380,7 @@ following data:
 None
 
 ### Sample data
-- [docs/insights-archive-sample/config/olm_operators](./insights-archive-sample/config/olm_operators)
+- [docs/insights-archive-sample/config/olm_operators.json](./insights-archive-sample/config/olm_operators.json)
 
 ### Location in archive
 - `config/olm_operators`
@@ -1328,7 +1412,7 @@ Collects logs from `openshift-apiserver-operator` with following substrings:
 - [docs/insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log](./insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log)
 
 ### Location in archive
-- `config/pod/{namespace-name}/logs/{pod-name}/errors.log`
+- `config/pod/openshift-apiserver-operator/logs/{pod-name}/errors.log`
 
 ### Config ID
 `clusterconfig/openshift_apiserver_operator_logs`
@@ -1495,35 +1579,6 @@ Collects logs from pods in `openshift-sdn` namespace with following substrings:
 None
 
 
-## PNCC
-
-Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
-
-Time of the most recently failed check with each reason and message is recorded.
-
-### API Reference
-- podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
-- https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
-
-### Sample data
-- [docs/insights-archive-sample/config/podnetworkconnectivitychecks.json](./insights-archive-sample/config/podnetworkconnectivitychecks.json)
-
-### Location in archive
-- `config/podnetworkconnectivitychecks.json`
-
-### Config ID
-`clusterconfig/pod_network_connectivity_checks`
-
-### Released version
-- 4.8.2
-
-### Backported versions
-None
-
-### Changes
-None
-
-
 ## PodDefinition
 
 Collects pod definition from pods that are
@@ -1574,6 +1629,62 @@ Collects the cluster's `PodDisruptionBudgets`.
 ### Backported versions
 - 4.4.30+
 - 4.5.15+
+
+### Changes
+- The gatherer was changed to gather pdbs only from namespaces with "openshift" prefix
+and the limit of gathered records to 100 since 4.14.
+
+
+## PodNetworkConnectivityChecks
+
+Collects a summary of failed `PodNetworkConnectivityChecks` from last 24 hours.
+
+Time of the most recently failed check with each reason and message is recorded.
+
+### API Reference
+- podnetworkconnectivitychecks.controlplane.operator.openshift.io/v1alpha1
+- https://pkg.go.dev/github.com/openshift/api/operatorcontrolplane/v1alpha1
+
+### Sample data
+- [docs/insights-archive-sample/config/podnetworkconnectivitychecks.json](./insights-archive-sample/config/podnetworkconnectivitychecks.json)
+
+### Location in archive
+- `config/podnetworkconnectivitychecks.json`
+
+### Config ID
+`clusterconfig/pod_network_connectivity_checks`
+
+### Released version
+- 4.8.2
+
+### Backported versions
+None
+
+### Changes
+None
+
+
+## PrometheusTSDBStatus
+
+Collects Prometheus TSDB status.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/tsdb.json](./insights-archive-sample/config/tsdb.json)
+
+### Location in archive
+- `config/tsdb.json`
+
+### Config ID
+`clusterconfig/tsdb_status`
+
+### Released version
+- 4.10.0
+
+### Backported versions
+None
 
 ### Changes
 None
@@ -1815,6 +1926,32 @@ None
 None
 
 
+## StorageClasses
+
+Collects the cluster `StorageClass` available in cluster.
+
+### API Reference
+- https://docs.openshift.com/container-platform/4.13/rest_api/storage_apis/storageclass-storage-k8s-io-v1.html
+
+### Sample data
+- [docs/insights-archive-sample/config/storage/storageclasses/standard-csi.json](./insights-archive-sample/config/storage/storageclasses/standard-csi.json)
+
+### Location in archive
+- `config/storage/storageclasses/{name}.json`
+
+### Config ID
+`clusterconfig/storage_classes`
+
+### Released version
+- 4.15
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## StorageCluster
 
 Collects `storageclusters.ocs.openshift.io` resources
@@ -1870,6 +2007,37 @@ clusterconfig/storage_cluster
 * 4.11
 
 
+## StorageCluster
+
+Collects `storageclusters.ocs.openshift.io` resources
+
+### API Reference
+- https://github.com/red-hat-storage/ocs-operator/blob/main/api/v1/storagecluster_types.go
+
+### Sample data
+- [docs/insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json](./insights-archive-sample/config/storage/openshift-storage/storageclusters/ocs-storagecluster.json)
+
+| Version   | Path														|
+| --------- | --------------------------------------------------------	|
+| < 4.12.0  | config/storage/{namespace}/{name}.json 					|
+| >= 4.12.0 | config/storage/{namespace}/storageclusters/{name}.json 	|
+
+### Config ID
+`clusterconfig/storage_cluster`
+
+### Released version
+- 4.11.0
+
+### Backported versions
+None
+
+### Changes
+- Renamed from `OpenshiftStorage` to `StorageCluster` in version `4.12.0+`
+- Config ID changed from `clusterconfig/openshift_storage` to `clusterconfig/storage_cluster` in version `4.12.0+`
+- In OCP 4.11 and OCP 4.12, the location of gathered data collides with data gathered by the
+CephCluster](#CephCluster) gatherer. It is practically impossible to tell the two resources apart. Use with caution.
+
+
 ## SupportSecret
 
 Collects anonymized support secret if there is any
@@ -1888,32 +2056,6 @@ None
 
 ### Released version
 - 4.11.0
-
-### Backported versions
-None
-
-### Changes
-None
-
-
-## TSDBStatus
-
-Collects Prometheus TSDB status.
-
-### API Reference
-None
-
-### Sample data
-- [docs/insights-archive-sample/config/tsdb.json](./insights-archive-sample/config/tsdb.json)
-
-### Location in archive
-- `config/tsdb.json`
-
-### Config ID
-`clusterconfig/tsdb_status`
-
-### Released version
-- 4.10.0
 
 ### Backported versions
 None
@@ -1974,6 +2116,6 @@ None
 None
 
 ### Changes
-None
+- Image repository is now collected if it comes from outside the Red Hat domain
 
 

@@ -1,0 +1,20 @@
+{
+    "dataReporting": {
+        "uploadEndpoint": "https://console.redhat.com/api/ingress/v1/upload",
+        "obfuscation": [
+            "workload_names"
+        ]
+    },
+    "alerting": {
+        "disabled": "true"
+    },
+    "sca": {
+        "disabled": "true"
+    },
+    "clusterTransfer": {},
+    "proxy": {
+        "httpProxy": "xxxxxxxxxxxxxxxx",
+        "httpsProxy": "xxxxxxxxxxxxxxxxxxxxxxxx",
+        "noProxy": "xxxxxxxxxxxxxxxxxxxx"
+    }
+}

@@ -62,8 +62,8 @@ func (g *Gatherer) GatherClusterVersion(ctx context.Context) ([]record.Record, [
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	return getClusterVersion(ctx, gatherConfigClient, gatherKubeClient.CoreV1(), g.interval)
+	interval := g.config().DataReporting.Interval
+	return getClusterVersion(ctx, gatherConfigClient, gatherKubeClient.CoreV1(), interval)
 }
 
 func getClusterVersion(ctx context.Context,

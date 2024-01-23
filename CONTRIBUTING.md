@@ -30,7 +30,7 @@ the body of the commit should describe the why.
 ```
 Add the gitgooks command
 
-This add githooks to the project, in order to run tests
+This adds githooks to the project, in order to run tests
 and liting and prevent bad commits.
 ```
 

@@ -10,36 +10,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/config"
 )
 
-func TestConfig_loadCredentials(t *testing.T) {
-	tests := []struct {
-		name string
-		data map[string][]byte
-		want *Config
-	}{
-		{
-			name: "Load credentials",
-			data: map[string][]byte{
-				"username": []byte("user"),
-				"password": []byte("xxxxxx"),
-			},
-			want: &Config{Controller: config.Controller{
-				Report:   false,
-				Username: "user",
-				Password: "xxxxxx",
-			}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := &Config{Controller: config.Controller{}}
-			got.loadCredentials(tt.data)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("loadCredentials() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestConfig_loadEndpoint(t *testing.T) {
 	tests := []struct {
 		name string
@@ -194,8 +164,6 @@ func TestLoadConfigFromSecret(t *testing.T) {
 			name: "Can load from secret",
 			secret: &v1.Secret{
 				Data: map[string][]byte{
-					"username":        []byte("user"),
-					"password":        []byte("xxxxxx"),
 					"endpoint":        []byte("http://endpoint"),
 					"noProxy":         []byte("no-proxy"),
 					"reportEndpoint":  []byte("http://report"),
@@ -206,8 +174,6 @@ func TestLoadConfigFromSecret(t *testing.T) {
 				Report:             true,
 				Endpoint:           "http://endpoint",
 				ReportEndpoint:     "http://report",
-				Username:           "user",
-				Password:           "xxxxxx",
 				ReportPullingDelay: time.Duration(-1),
 				HTTPConfig: config.HTTPConfig{
 					NoProxy: "no-proxy",

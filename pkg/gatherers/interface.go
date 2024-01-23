@@ -1,4 +1,3 @@
-// gatherers package contains interfaces to be implemented by gatherers and subpackages with actual gatherers
 package gatherers
 
 import (
@@ -22,7 +21,7 @@ type CustomPeriodGatherer interface {
 	Interface
 
 	// ShouldBeProcessedNow returns true when it's time to process the gatherer
-	// gatherer is responsible of tracking the time itself
+	// is responsible for tracking the time itself
 	ShouldBeProcessedNow() bool
 	// UpdateLastProcessingTime is called when the gatherer is about to be processed,
 	// so that it can update its last processed time for example.

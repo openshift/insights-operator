@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // norevive
@@ -54,14 +55,12 @@ var (
 	latestHash  = ""
 )
 
-const gitHubRepo = "insights-operator"
-const gitHubRepoOwner = "openshift"
 const gitHubPath = "https://github.com/openshift/insights-operator"
 
 // API reference: https://docs.github.com/en/rest/reference/pulls#get-a-pull-request
-const gitHubAPIFormat = "https://api.github.com/repos/%s/%s/pulls/%s" // owner, repo, pull-number
+const gitHubAPIFormat = "https://api.github.com/repos/openshift/insights-operator/pulls" // owner, repo, pull-number
 
-// OpenShift release version helper type
+// ReleaseVersion OpenShift release version helper type
 type ReleaseVersion struct {
 	Major int
 	Minor int
@@ -100,8 +99,14 @@ func main() {
 	var releaseBlocks map[ReleaseVersion]MarkdownReleaseBlock
 	if len(os.Args) == 3 {
 		releaseBlocks = make(map[ReleaseVersion]MarkdownReleaseBlock)
-		after := os.Args[1]
-		until := os.Args[2]
+		after, err := time.Parse(time.DateOnly, os.Args[1])
+		if err != nil {
+			log.Fatalf("Failed to parse time arguments: %v", err)
+		}
+		until, err := time.Parse(time.DateOnly, os.Args[2])
+		if err != nil {
+			log.Fatalf("Failed to parse time arguments: %v", err)
+		}
 		gitLog = timeFrameReverseGitLog(after, until)
 	} else {
 		releaseBlocks = readCHANGELOG()
@@ -163,7 +168,7 @@ func readCHANGELOG() map[ReleaseVersion]MarkdownReleaseBlock {
 		if match := miscSectionRegExp.FindStringSubmatch(versionSection); len(match) > 0 {
 			releaseBlock.misc = match[1]
 		}
-		// We want only found versions - e.g master is not considered as a version
+		// We want only found versions - e.g. master is not considered as a version
 		if version != (ReleaseVersion{}) {
 			releaseBlocks[version] = releaseBlock
 		}
@@ -256,11 +261,15 @@ func getChanges(pullRequestIds, pullRequestHashes []string) []*Change {
 func getPullRequestFromGitHub(id string) *Change {
 	// There is a limit for the GitHub API, if you use auth then its 5000/hour
 	var bearer = "token " + gitHubToken
-
+	url, err := createGitHubURL(id)
+	if err != nil {
+		log.Fatalf(err.Error())
+		return nil
+	}
 	req, err := http.NewRequestWithContext(
 		context.Background(),
-		"GET",
-		fmt.Sprintf(gitHubAPIFormat, gitHubRepoOwner, gitHubRepo, id),
+		http.MethodGet,
+		url,
 		http.NoBody)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -336,7 +345,7 @@ func findEarliestRelease(releases ReleaseVersions) ReleaseVersion {
 	return releases[0]
 }
 
-func timeFrameReverseGitLog(after, until string) []string {
+func timeFrameReverseGitLog(after, until time.Time) []string {
 	// nolint: gosec
 	out, err := exec.Command(
 		"git",
@@ -362,7 +371,8 @@ func sinceHashReverseGitLog(hash string) []string {
 		"--reverse",
 		fmt.Sprintf("%s..HEAD", hash)).CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		// CombinedOutput sends stderr to the 'out' variable
+		log.Fatalf("%s: %s", err.Error(), string(out))
 	}
 	return strings.Split(string(out), "\n")
 }
@@ -397,6 +407,14 @@ func stringToReleaseVersion(s string) ReleaseVersion {
 	relVer.Major = major
 	relVer.Minor = minor
 	return relVer
+}
+
+func createGitHubURL(id string) (string, error) {
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%d", gitHubAPIFormat, idInt), nil
 }
 
 type ReleaseVersions []ReleaseVersion

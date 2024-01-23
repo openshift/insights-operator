@@ -1,15 +1,21 @@
 package insightsclient
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	fakerest "k8s.io/client-go/rest/fake"
 )
 
 const testRules = `{
@@ -38,19 +44,15 @@ const testRules = `{
 }`
 
 func TestClient_RecvGatheringRules(t *testing.T) {
-	httpClient := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	httpServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 		_, err := writer.Write([]byte(testRules))
-		if err != nil {
-			assert.NoError(t, err)
-		}
+		assert.NoError(t, err)
 	}))
-	defer httpClient.Close()
+	endpoint := httpServer.URL
+	defer httpServer.Close()
 
-	endpoint := httpClient.URL
-
-	client := New(http.DefaultClient, 0, "", &MockAuthorizer{}, nil)
-	client.clusterVersion = &configv1.ClusterVersion{
+	clusterVersion := &configv1.ClusterVersion{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "version",
 		},
@@ -59,11 +61,25 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 			Channel:   "stable-4.9",
 		},
 	}
-	gatheringRulesBytes, err := client.RecvGatheringRules(context.TODO(), endpoint)
-	if err != nil {
-		assert.NoError(t, err)
+	cv, err := json.Marshal(clusterVersion)
+	assert.NoError(t, err)
+
+	fakeClient := &fakerest.RESTClient{
+		Client: fakerest.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
+			resp := &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewReader(cv)),
+			}
+			return resp, nil
+		}),
+		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
+		GroupVersion:         configv1.GroupVersion,
 	}
 
+	configClient := configv1client.New(fakeClient)
+	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient)
+	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(context.Background(), endpoint)
+	assert.NoError(t, err)
 	assert.JSONEq(t, testRules, string(gatheringRulesBytes))
 }
 

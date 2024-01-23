@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/api/config/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -45,7 +45,7 @@ type GathererFunctionReport struct {
 	Panic        interface{} `json:"panic"`
 }
 
-// ArchiveMetadata contains the information about the archive and all its' gatherers
+// ArchiveMetadata contains the information about the archive and all its gatherers
 type ArchiveMetadata struct {
 	// info about gathering functions.
 	StatusReports []GathererFunctionReport `json:"status_reports"`
@@ -61,14 +61,14 @@ type ArchiveMetadata struct {
 // CreateAllGatherers creates all the gatherers
 func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
-	anonymizer *anonymization.Anonymizer, configObserver *configobserver.Controller,
+	anonymizer *anonymization.Anonymizer, configObserver configobserver.Interface,
 	insightsClient *insightsclient.Client,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,
 		anonymizer, configObserver,
 	)
-	workloadsGatherer := workloads.New(gatherProtoKubeConfig)
+	workloadsGatherer := workloads.New(gatherKubeConfig, gatherProtoKubeConfig)
 	conditionalGatherer := conditional.New(
 		gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig, configObserver, insightsClient,
 	)
@@ -83,10 +83,10 @@ func CollectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	gatherConfig *v1alpha1.GatherConfig,
+	gatherConfigs []v1alpha1.GathererConfig,
 ) ([]GathererFunctionReport, error) {
 	startTime := time.Now()
-	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, gatherConfig)
+	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, gatherConfigs)
 	reports = append(reports, GathererFunctionReport{
 		FuncName:     gatherer.GetName(),
 		Duration:     time.Since(startTime).Milliseconds(),
@@ -101,9 +101,9 @@ func collectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	gatherConfig *v1alpha1.GatherConfig,
+	gatherConfigs []v1alpha1.GathererConfig,
 ) (reports []GathererFunctionReport, totalNumberOfRecords int, allErrors []error) {
-	resultsChan, err := startGatheringConcurrently(ctx, gatherer, gatherConfig)
+	resultsChan, err := startGatheringConcurrently(ctx, gatherer, gatherConfigs)
 	if err != nil {
 		allErrors = append(allErrors, err)
 		return reports, totalNumberOfRecords, allErrors
@@ -234,7 +234,7 @@ func RecordArchiveMetadata(
 // startGatheringConcurrently starts gathering of enabled functions of the provided gatherer and returns a channel
 // with results which will be closed when processing is done
 func startGatheringConcurrently(
-	ctx context.Context, gatherer gatherers.Interface, gatheringConfig *v1alpha1.GatherConfig,
+	ctx context.Context, gatherer gatherers.Interface, gatherConfigs []v1alpha1.GathererConfig,
 ) (chan GatheringFunctionResult, error) {
 	var tasks []Task
 	var gatheringFunctions map[string]gatherers.GatheringClosure
@@ -243,9 +243,9 @@ func startGatheringConcurrently(
 		return nil, err
 	}
 
-	// This is from TechPreview feature so we have to check the nil
-	if gatheringConfig != nil {
-		gatheringFunctions = getEnabledGatheringFunctions(gatherer.GetName(), gatheringFunctions, gatheringConfig.DisabledGatherers)
+	// This is from TechPreview feature, so we have to check the nil
+	if len(gatherConfigs) > 0 {
+		gatheringFunctions = getEnabledGatheringFunctions(gatherer.GetName(), gatheringFunctions, gatherConfigs)
 	}
 
 	if len(gatheringFunctions) == 0 {
@@ -266,20 +266,39 @@ func startGatheringConcurrently(
 // creates a new map without all the disabled functions
 func getEnabledGatheringFunctions(gathererName string,
 	allGatheringFunctions map[string]gatherers.GatheringClosure,
-	disabledFunctions []string) map[string]gatherers.GatheringClosure {
+	gathererConfigs []v1alpha1.GathererConfig) map[string]gatherers.GatheringClosure {
 	enabledGatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
 	// disabling a complete gatherer - e.g workloads
-	if utils.StringInSlice(gathererName, disabledFunctions) {
+	if isGathererDisabled(gathererConfigs, gathererName) {
 		klog.Infof("%s gatherer is completely disabled", gathererName)
 		return enabledGatheringFunctions
 	}
 
 	for fName, gatherinClosure := range allGatheringFunctions {
 		fullGathererName := fmt.Sprintf("%s/%s", gathererName, fName)
-		if !utils.StringInSlice(fullGathererName, disabledFunctions) {
+		if !isGathererDisabled(gathererConfigs, fullGathererName) {
 			enabledGatheringFunctions[fName] = gatherinClosure
 		}
 	}
 	return enabledGatheringFunctions
+}
+
+func isGathererDisabled(gathererConfigs []v1alpha1.GathererConfig, gathererName string) bool {
+	for _, gf := range gathererConfigs {
+		if gf.Name == gathererName && gf.State == v1alpha1.Disabled {
+			return true
+		}
+	}
+	return false
+}
+
+// FunctionReportsMapToArray converts provided map[string]GathererFunctionReport to a slice of
+// GathererFunctionReports. Map keys are not used.
+func FunctionReportsMapToArray(m map[string]GathererFunctionReport) []GathererFunctionReport {
+	a := make([]GathererFunctionReport, 0, len(m))
+	for _, v := range m {
+		a = append(a, v)
+	}
+	return a
 }

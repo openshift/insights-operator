@@ -24,12 +24,13 @@ func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 	var cfg Config
 	var err error
 
-	cfg.loadCredentials(secret.Data)
 	cfg.loadEndpoint(secret.Data)
 	cfg.loadConditionalGathererEndpoint(secret.Data)
 	cfg.loadHTTP(secret.Data)
 	cfg.loadReport(secret.Data)
 	cfg.loadOCM(secret.Data)
+	cfg.loadProcessingStatusEndpoint(secret.Data)
+	cfg.loadReportEndpointTechPreview(secret.Data)
 
 	if intervalString, ok := secret.Data["interval"]; ok {
 		var duration time.Duration
@@ -48,15 +49,6 @@ func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 	}
 
 	return cfg.Controller, err
-}
-
-func (c *Config) loadCredentials(data map[string][]byte) {
-	if username, ok := data["username"]; ok {
-		c.Username = strings.TrimSpace(string(username))
-	}
-	if password, ok := data["password"]; ok {
-		c.Password = strings.TrimSpace(string(password))
-	}
 }
 
 func (c *Config) loadEndpoint(data map[string][]byte) {
@@ -162,5 +154,17 @@ func (c *Config) loadOCM(data map[string][]byte) {
 				clusterTransferInterval,
 			)
 		}
+	}
+}
+
+func (c *Config) loadProcessingStatusEndpoint(data map[string][]byte) {
+	if endpoint, ok := data["processingStatusEndpoint"]; ok {
+		c.ProcessingStatusEndpoint = string(endpoint)
+	}
+}
+
+func (c *Config) loadReportEndpointTechPreview(data map[string][]byte) {
+	if endpoint, ok := data["reportEndpointTechPreview"]; ok {
+		c.ReportEndpointTechPreview = string(endpoint)
 	}
 }

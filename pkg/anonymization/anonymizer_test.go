@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/config/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha1"
 	networkv1 "github.com/openshift/api/network/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -120,14 +120,15 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		"127.0.0.0/8",
 		"192.168.0.0/16",
 	}
-	mockSecretConfigurator := config.NewMockSecretConfigurator(&config.Controller{
-		EnableGlobalObfuscation: true,
-	})
-	mockAPIConfigurator := config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
-		DataPolicy: v1alpha1.ObfuscateNetworking,
+	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			Obfuscation: config.Obfuscation{
+				config.Networking,
+			},
+		},
 	})
 	anonymizer, err := NewAnonymizer(clusterBaseDomain,
-		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockSecretConfigurator, mockAPIConfigurator)
+		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockConfigMapConfigurator, v1alpha1.ObfuscateNetworking)
 	assert.NoError(t, err)
 
 	return anonymizer
@@ -324,18 +325,22 @@ func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
 
 	// test that everything was initialized correctly
 
+	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+		DataReporting: config.DataReporting{
+			Obfuscation: config.Obfuscation{
+				config.Networking,
+			},
+		},
+	})
+
 	anonymizer, err := NewAnonymizerFromConfigClient(
-		context.TODO(),
+		context.Background(),
 		kubeClient,
 		kubeClient,
 		configClient,
 		networkClient,
-		config.NewMockSecretConfigurator(&config.Controller{
-			EnableGlobalObfuscation: true,
-		}),
-		config.NewMockAPIConfigurator(&v1alpha1.GatherConfig{
-			DataPolicy: v1alpha1.ObfuscateNetworking,
-		}),
+		mockConfigMapConfigurator,
+		v1alpha1.ObfuscateNetworking,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, anonymizer)

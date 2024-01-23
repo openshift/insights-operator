@@ -159,7 +159,7 @@ func (c *Controller) updateToken(ctx context.Context) error {
 
 // Updates the stored configs from the secrets in the cluster. (if present)
 func (c *Controller) updateConfig(ctx context.Context) error {
-	klog.V(2).Infof("Refreshing configuration from cluster secret")
+	klog.V(2).Infof("Refreshing configuration from cluster support secret")
 	secret, err := c.fetchSecret(ctx, "support")
 	if err != nil {
 		return err
@@ -169,6 +169,7 @@ func (c *Controller) updateConfig(ctx context.Context) error {
 	if secret == nil {
 		c.setSecretConfig(nil)
 	} else {
+		klog.Warning(`USING THE "SUPPORT" SECRET FOR OPERATOR CONFIGURATION IS DEPRECATED. PLEASE REFER TO THE OCP DOCUMENTATION FOR UPDATES.`) // nolint:lll
 		nextConfig, err := LoadConfigFromSecret(secret)
 		if err != nil {
 			return err
@@ -200,7 +201,7 @@ func (c *Controller) setSecretConfig(operatorConfig *config.Controller) {
 func (c *Controller) setConfig(operatorConfig *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, operatorConfig) {
-			klog.V(2).Infof("Configuration updated: %s", operatorConfig.ToString())
+			klog.V(2).Infof("Legacy configuration updated: %s", operatorConfig.ToString())
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -212,7 +213,7 @@ func (c *Controller) setConfig(operatorConfig *config.Controller) {
 			}
 		}
 	} else {
-		klog.V(2).Infof("Configuration set: %s", operatorConfig.ToString())
+		klog.V(2).Infof("Legacy configuration set: %s", operatorConfig.ToString())
 	}
 	c.config = operatorConfig
 }
@@ -228,7 +229,7 @@ func (c *Controller) mergeConfig() {
 		cfg.Token = c.tokenConfig.Token
 	}
 
-	cfg.Report = len(cfg.Endpoint) > 0 && (len(cfg.Token) > 0 || len(cfg.Username) > 0)
+	cfg.Report = len(cfg.Endpoint) > 0 && len(cfg.Token) > 0
 	c.setConfig(&cfg)
 }
 

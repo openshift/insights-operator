@@ -3,6 +3,7 @@ package insightsreport
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -24,30 +25,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	minReportRetryTime    = 30 * time.Second
+	reportDownloadTimeout = 5 * time.Minute
+)
+
 // Controller gathers the report from Smart Proxy
 type Controller struct {
 	controllerstatus.StatusController
 
-	configurator          configobserver.Configurator
+	configurator          configobserver.Interface
 	client                insightsReportClient
 	LastReport            types.SmartProxyReport
 	archiveUploadReporter <-chan struct{}
 	insightsOperatorCLI   operatorv1client.InsightsOperatorInterface
 }
 
-// Response represents the Smart Proxy report response structure
-type Response struct {
-	Report types.SmartProxyReport `json:"report"`
-}
-
 // InsightsReporter represents an object that can notify about archive uploading
 type InsightsReporter interface {
 	ArchiveUploaded() <-chan struct{}
 }
-
-const (
-	insightsLastGatherTimeName = "insightsclient_last_gather_time"
-)
 
 var (
 	// insightsStatus contains a metric with the latest report information
@@ -59,15 +56,10 @@ var (
 	}, []string{"metric"})
 	// number of pulling report retries
 	retryThreshold = 2
-
-	// insightsLastGatherTime contains time of the last Insights data gathering
-	insightsLastGatherTime = metrics.NewGauge(&metrics.GaugeOpts{
-		Name: insightsLastGatherTimeName,
-	})
 )
 
 // New initializes and returns a Gatherer
-func New(client *insightsclient.Client, configurator configobserver.Configurator, reporter InsightsReporter, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
+func New(client *insightsclient.Client, configurator configobserver.Interface, reporter InsightsReporter, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
 	return &Controller{
 		StatusController:      controllerstatus.New("insightsreport"),
 		configurator:          configurator,
@@ -77,11 +69,74 @@ func New(client *insightsclient.Client, configurator configobserver.Configurator
 	}
 }
 
+func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Interface) *Controller {
+	return &Controller{
+		StatusController: controllerstatus.New("insightsreport"),
+		configurator:     configurator,
+		client:           client,
+	}
+}
+
+// PullReportTechpreview queries the "reportEndpointTechPreview" endpoint with provided Insights request ID
+// to get the corresponding Insights analysis report. When the response is successfully decoded, the "insightsclient_request_recvreport_total"
+// Prometheus metric is incremented and InsightsAnalysisReport is returned. This is called only in TechPreview clusters.
+func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.InsightsAnalysisReport, error) {
+	klog.Info("Retrieving report from the insights-results-agregator service endpoint")
+	config := c.configurator.Config()
+	reportEndpointTP := config.DataReporting.DownloadEndpointTechPreview
+
+	if len(reportEndpointTP) == 0 {
+		klog.V(4).Info("Not downloading report because the insights-results-agregator endpoint is not configured")
+		c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
+		return nil, nil
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
+	defer cancelFunc()
+
+	resp, err := c.client.GetWithPathParams(ctx, reportEndpointTP, insightsRequestID)
+	if err != nil {
+		klog.Errorf("Unexpected error retrieving the report: %v", err)
+		c.UpdateStatus(controllerstatus.Summary{
+			Healthy:   false,
+			Operation: controllerstatus.DownloadingReport,
+			Message:   fmt.Sprintf("Couldn't download the latest report: %v", err),
+			Reason:    "UnexpectedError",
+		})
+		return nil, err
+	}
+	downloadTime := metav1.Now()
+	c.client.IncrementRecvReportMetric(resp.StatusCode)
+
+	if resp.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Failed to download the latest report: HTTP %d %s", resp.StatusCode, resp.Status)
+		c.UpdateStatus(controllerstatus.Summary{
+			Healthy:   false,
+			Operation: controllerstatus.DownloadingReport,
+			Message:   msg,
+			Reason:    "NotAvailable",
+		})
+		return nil, fmt.Errorf(msg)
+	}
+	klog.Info("Report retrieved correctly")
+	analysisReport := &types.InsightsAnalysisReport{}
+
+	if err = json.NewDecoder(resp.Body).Decode(analysisReport); err != nil {
+		klog.Errorf("The report response cannot be parsed: %v", err)
+		return nil, err
+	}
+	analysisReport.DownloadedAt = downloadTime
+	recommendations, healthStatus := c.readInsightsReportTechPreview(*analysisReport)
+	updateInsightsMetrics(recommendations, healthStatus)
+	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
+	return analysisReport, nil
+}
+
 // PullSmartProxy performs a request to the Smart Proxy and unmarshal the response
 func (c *Controller) PullSmartProxy() (bool, error) {
 	klog.Info("Pulling report from smart-proxy")
 	config := c.configurator.Config()
-	reportEndpoint := config.ReportEndpoint
+	reportEndpoint := config.DataReporting.DownloadEndpoint
 
 	if len(reportEndpoint) == 0 {
 		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing report endpoint")
@@ -100,19 +155,19 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 			Message:   fmt.Sprintf("Auth rejected for downloading latest report: %v", err),
 		})
 		return true, err
-	} else if err == insightsclient.ErrWaitingForVersion {
+	} else if errors.Is(err, insightsclient.ErrWaitingForVersion) {
 		klog.Error(err)
 		return false, err
 	} else if insightsclient.IsHttpError(err) {
 		ie := err.(insightsclient.HttpError)
-		klog.Errorf("Unexpected error retrieving the report: %s", ie)
+		klog.Errorf("Unexpected error retrieving the report: %v", ie)
 		// if there's a 404 response then retry
 		if ie.StatusCode == http.StatusNotFound {
 			return false, ie
 		}
 		return true, ie
 	} else if err != nil {
-		klog.Errorf("Unexpected error retrieving the report: %s", err)
+		klog.Errorf("Unexpected error retrieving the report: %v", err)
 		c.StatusController.UpdateStatus(controllerstatus.Summary{
 			Operation: controllerstatus.DownloadingReport,
 			Reason:    "UnexpectedError",
@@ -128,7 +183,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 
 	klog.V(4).Info("Report retrieved")
 	downloadTime := metav1.Now()
-	reportResponse := Response{}
+	reportResponse := types.Response{}
 
 	if err = json.NewDecoder(resp.Body).Decode(&reportResponse); err != nil {
 		klog.Error("The report response cannot be parsed")
@@ -142,8 +197,8 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		return true, fmt.Errorf("report not updated")
 	}
 
-	recommendations, healthStatus, gatherTime := c.readInsightsReport(reportResponse.Report)
-	updateInsightsMetrics(recommendations, healthStatus, gatherTime)
+	recommendations, healthStatus := c.readInsightsReport(reportResponse.Report)
+	updateInsightsMetrics(recommendations, healthStatus)
 	err = c.updateOperatorStatusCR(reportResponse.Report, downloadTime)
 	if err != nil {
 		klog.Errorf("failed to update the Insights Operator CR status: %v", err)
@@ -162,16 +217,11 @@ func (c *Controller) RetrieveReport() {
 	configCh, cancelFn := c.configurator.ConfigChanged()
 	defer cancelFn()
 
-	if config.ReportPullingTimeout == 0 {
-		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing polling timeout")
-		return
-	}
-
-	delay := config.ReportPullingDelay
+	delay := config.DataReporting.ReportPullingDelay
 	klog.V(4).Infof("Initial delay for pulling: %v", delay)
 	startTime := time.Now()
 	delayTimer := time.NewTimer(wait.Jitter(delay, 0.1))
-	timeoutTimer := time.NewTimer(config.ReportPullingTimeout)
+	timeoutTimer := time.NewTimer(reportDownloadTimeout)
 	firstPullDone := false
 	retryCounter := 0
 
@@ -200,7 +250,7 @@ func (c *Controller) RetrieveReport() {
 				})
 				return
 			}
-			t := wait.Jitter(config.ReportMinRetryTime, 0.1)
+			t := wait.Jitter(minReportRetryTime, 0.1)
 			klog.Infof("Reseting the delay timer to retry in %s again", t)
 			delayTimer.Reset(t)
 			retryCounter++
@@ -218,10 +268,10 @@ func (c *Controller) RetrieveReport() {
 			// Update next deadline
 			var nextTick time.Duration
 			if firstPullDone {
-				newDeadline := iterationStart.Add(config.ReportMinRetryTime)
+				newDeadline := iterationStart.Add(minReportRetryTime)
 				nextTick = wait.Jitter(time.Until(newDeadline), 0.3)
 			} else {
-				newDeadline := iterationStart.Add(config.ReportPullingDelay)
+				newDeadline := iterationStart.Add(config.DataReporting.ReportPullingDelay)
 				nextTick = wait.Jitter(time.Until(newDeadline), 0.1)
 			}
 
@@ -231,7 +281,7 @@ func (c *Controller) RetrieveReport() {
 			delayTimer.Reset(nextTick)
 
 			// Update pulling timeout
-			newTimeoutEnd := startTime.Add(config.ReportPullingTimeout)
+			newTimeoutEnd := startTime.Add(reportDownloadTimeout)
 			if !timeoutTimer.Stop() {
 				<-timeoutTimer.C
 			}
@@ -244,7 +294,9 @@ func (c *Controller) RetrieveReport() {
 func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	klog.V(2).Info("Starting report retriever")
-	klog.V(2).Infof("Initial config: %v", c.configurator.Config())
+	conf := c.configurator.Config()
+	klog.V(2).Infof("Insights analysis reports will be downloaded from the %s endpoint with a delay of %s",
+		conf.DataReporting.DownloadEndpoint, conf.DataReporting.ReportPullingDelay)
 	for {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
@@ -266,9 +318,46 @@ type insightsReportClient interface {
 	RecvReport(ctx context.Context, endpoint string) (*http.Response, error)
 	IncrementRecvReportMetric(statusCode int)
 	GetClusterVersion() (*configv1.ClusterVersion, error)
+	GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error)
 }
 
-func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts, time.Time) {
+// readInsightsReportTechPreview reads the specified InsightsAnalysisReport and returns slice of active
+// Insights recommendations and corresponding health status
+func (c *Controller) readInsightsReportTechPreview(report types.InsightsAnalysisReport) ([]types.InsightsRecommendation, healthStatusCounts) {
+	healthStatus := healthStatusCounts{}
+	total := 0
+	activeRecommendations := []types.InsightsRecommendation{}
+
+	for _, recommendation := range report.Recommendations {
+		total++
+		switch recommendation.TotalRisk {
+		case 1:
+			healthStatus.low++
+		case 2:
+			healthStatus.moderate++
+		case 3:
+			healthStatus.important++
+		case 4:
+			healthStatus.critical++
+		}
+		if c.configurator.Config().Alerting.Disabled {
+			continue
+		}
+		insights.RecommendationCollector.SetClusterID(configv1.ClusterID(report.ClusterID))
+
+		activeRecommendations = append(activeRecommendations, types.InsightsRecommendation{
+			RuleID:      types.RuleID(recommendation.RuleFQDN),
+			ErrorKey:    recommendation.ErrorKey,
+			Description: recommendation.Description,
+			TotalRisk:   recommendation.TotalRisk,
+		})
+	}
+
+	healthStatus.total = total
+	return activeRecommendations, healthStatus
+}
+
+func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.InsightsRecommendation, healthStatusCounts) {
 	healthStatus := healthStatusCounts{}
 	healthStatus.total = report.Meta.Count
 	activeRecommendations := []types.InsightsRecommendation{}
@@ -290,7 +379,7 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 			healthStatus.critical++
 		}
 
-		if c.configurator.Config().DisableInsightsAlerts {
+		if c.configurator.Config().Alerting.Disabled {
 			continue
 		}
 		errorKeyStr, err := extractErrorKeyFromRuleData(rule)
@@ -313,15 +402,11 @@ func (c *Controller) readInsightsReport(report types.SmartProxyReport) ([]types.
 		})
 	}
 
-	t, err := time.Parse(time.RFC3339, string(report.Meta.GatheredAt))
-	if err != nil {
-		klog.Errorf("Metric %s not updated. Failed to parse time: %v", insightsLastGatherTimeName, err)
-	}
-	return activeRecommendations, healthStatus, t
+	return activeRecommendations, healthStatus
 }
 
 // updateInsightsMetrics update the Prometheus metrics from a report
-func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation, hsCount healthStatusCounts, gatherTime time.Time) {
+func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation, hsCount healthStatusCounts) {
 	insights.RecommendationCollector.SetActiveRecommendations(activeRecommendations)
 
 	insightsStatus.WithLabelValues("low").Set(float64(hsCount.low))
@@ -329,7 +414,6 @@ func updateInsightsMetrics(activeRecommendations []types.InsightsRecommendation,
 	insightsStatus.WithLabelValues("important").Set(float64(hsCount.important))
 	insightsStatus.WithLabelValues("critical").Set(float64(hsCount.critical))
 	insightsStatus.WithLabelValues("total").Set(float64(hsCount.total))
-	insightsLastGatherTime.Set(float64(gatherTime.Unix()))
 }
 
 func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport, reportDownloadTime metav1.Time) error {
@@ -378,18 +462,18 @@ func extractErrorKeyFromRuleData(r types.RuleWithContentResponse) (string, error
 
 	errorKeyField, exists := extraDataMap["error_key"]
 	if !exists {
-		return "", fmt.Errorf("TemplateData of rule %q does not contain error_key", r.RuleID)
+		return "", fmt.Errorf("templateData of rule %q does not contain error_key", r.RuleID)
 	}
 
 	errorKeyStr, ok := errorKeyField.(string)
 	if !ok {
-		return "", fmt.Errorf("The error_key of TemplateData of rule %q is not a string", r.RuleID)
+		return "", fmt.Errorf("the error_key of TemplateData of rule %q is not a string", r.RuleID)
 	}
 	return errorKeyStr, nil
 }
 
 func init() {
-	insights.MustRegisterMetrics(insightsStatus, insightsLastGatherTime)
+	insights.MustRegisterMetrics(insightsStatus)
 
 	insightsStatus.WithLabelValues("low").Set(float64(-1))
 	insightsStatus.WithLabelValues("moderate").Set(float64(-1))

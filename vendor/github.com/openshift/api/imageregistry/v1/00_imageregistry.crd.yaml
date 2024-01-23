@@ -606,6 +606,21 @@ spec:
                 resources:
                   description: resources defines the resource requests+limits for the registry pod.
                   properties:
+                    claims:
+                      description: "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers."
+                      items:
+                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                        properties:
+                          name:
+                            description: Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
+                            type: string
+                        required:
+                          - name
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                        - name
+                      x-kubernetes-list-type: map
                     limits:
                       additionalProperties:
                         anyOf:
@@ -622,7 +637,7 @@ spec:
                           - type: string
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                       type: object
                   type: object
                 rolloutStrategy:
@@ -665,6 +680,50 @@ spec:
                           minLength: 3
                           pattern: ^[0-9a-z]+(-[0-9a-z]+)*$
                           type: string
+                        networkAccess:
+                          default:
+                            type: External
+                          description: 'networkAccess defines the network access properties for the storage account. Defaults to type: External.'
+                          properties:
+                            internal:
+                              description: 'internal defines the vnet and subnet names to configure a private endpoint and connect it to the storage account in order to make it private. when type: Internal and internal is unset, the image registry operator will discover vnet and subnet names, and generate a private endpoint name.'
+                              properties:
+                                networkResourceGroupName:
+                                  description: networkResourceGroupName is the resource group name where the cluster's vnet and subnet are. When omitted, the registry operator will use the cluster resource group (from in the infrastructure status). If you set a networkResourceGroupName on your install-config.yaml, that value will be used automatically (for clusters configured with publish:Internal). Note that both vnet and subnet must be in the same resource group. It must be between 1 and 90 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_), and not end with a period.
+                                  maxLength: 90
+                                  minLength: 1
+                                  pattern: ^[0-9A-Za-z_.-](?:[0-9A-Za-z_.-]*[0-9A-Za-z_-])?$
+                                  type: string
+                                privateEndpointName:
+                                  description: privateEndpointName is the name of the private endpoint for the registry. When provided, the registry will use it as the name of the private endpoint it will create for the storage account. When omitted, the registry will generate one. It must be between 2 and 64 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_). It must start with an alphanumeric character and end with an alphanumeric character or an underscore.
+                                  maxLength: 64
+                                  minLength: 2
+                                  pattern: ^[0-9A-Za-z][0-9A-Za-z_.-]*[0-9A-Za-z_]$
+                                  type: string
+                                subnetName:
+                                  description: subnetName is the name of the subnet the registry operates in. When omitted, the registry operator will discover and set this by using the `kubernetes.io_cluster.<cluster-id>` tag in the vnet resource, then using one of listed subnets. Advanced cluster network configurations that use network security groups to protect subnets should ensure the provided subnetName has access to Azure Storage service. It must be between 1 and 80 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_).
+                                  maxLength: 80
+                                  minLength: 1
+                                  pattern: ^[0-9A-Za-z](?:[0-9A-Za-z_.-]*[0-9A-Za-z_])?$
+                                  type: string
+                                vnetName:
+                                  description: vnetName is the name of the vnet the registry operates in. When omitted, the registry operator will discover and set this by using the `kubernetes.io_cluster.<cluster-id>` tag in the vnet resource. This tag is set automatically by the installer. Commonly, this will be the same vnet as the cluster. Advanced cluster network configurations should ensure the provided vnetName is the vnet of the nodes where the image registry pods are running from. It must be between 2 and 64 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_). It must start with an alphanumeric character and end with an alphanumeric character or an underscore.
+                                  maxLength: 64
+                                  minLength: 2
+                                  pattern: ^[0-9A-Za-z][0-9A-Za-z_.-]*[0-9A-Za-z_]$
+                                  type: string
+                              type: object
+                            type:
+                              default: External
+                              description: 'type is the network access level to be used for the storage account. type: Internal means the storage account will be private, type: External means the storage account will be publicly accessible. Internal storage accounts are only exposed within the cluster''s vnet. External storage accounts are publicly exposed on the internet. When type: Internal is used, a vnetName, subNetName and privateEndpointName may optionally be specified. If unspecificed, the image registry operator will discover vnet and subnet names, and generate a privateEndpointName. Defaults to "External".'
+                              enum:
+                                - Internal
+                                - External
+                              type: string
+                          type: object
+                          x-kubernetes-validations:
+                            - message: internal is forbidden when type is not Internal
+                              rule: 'has(self.type) && self.type == ''Internal'' ?  true : !has(self.internal)'
                       type: object
                     emptyDir:
                       description: 'emptyDir represents ephemeral storage on the pod''s host node. WARNING: this storage cannot be used with more than 1 replica and is not suitable for production use. When the pod is removed from a node for any reason, the data in the emptyDir is deleted forever.'
@@ -928,7 +987,7 @@ spec:
                         type: object
                         x-kubernetes-map-type: atomic
                       matchLabelKeys:
-                        description: MatchLabelKeys is a set of pod label keys to select the pods over which spreading will be calculated. The keys are used to lookup values from the incoming pod labels, those key-value labels are ANDed with labelSelector to select the group of existing pods over which spreading will be calculated for the incoming pod. Keys that don't exist in the incoming pod labels will be ignored. A null or empty list means only match against labelSelector.
+                        description: "MatchLabelKeys is a set of pod label keys to select the pods over which spreading will be calculated. The keys are used to lookup values from the incoming pod labels, those key-value labels are ANDed with labelSelector to select the group of existing pods over which spreading will be calculated for the incoming pod. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. MatchLabelKeys cannot be set when LabelSelector isn't set. Keys that don't exist in the incoming pod labels will be ignored. A null or empty list means only match against labelSelector. \n This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default)."
                         items:
                           type: string
                         type: array
@@ -942,10 +1001,10 @@ spec:
                         format: int32
                         type: integer
                       nodeAffinityPolicy:
-                        description: "NodeAffinityPolicy indicates how we will treat Pod's nodeAffinity/nodeSelector when calculating pod topology spread skew. Options are: - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations. - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations. \n If this value is nil, the behavior is equivalent to the Honor policy. This is a alpha-level feature enabled by the NodeInclusionPolicyInPodTopologySpread feature flag."
+                        description: "NodeAffinityPolicy indicates how we will treat Pod's nodeAffinity/nodeSelector when calculating pod topology spread skew. Options are: - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations. - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations. \n If this value is nil, the behavior is equivalent to the Honor policy. This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag."
                         type: string
                       nodeTaintsPolicy:
-                        description: "NodeTaintsPolicy indicates how we will treat node taints when calculating pod topology spread skew. Options are: - Honor: nodes without taints, along with tainted nodes for which the incoming pod has a toleration, are included. - Ignore: node taints are ignored. All nodes are included. \n If this value is nil, the behavior is equivalent to the Ignore policy. This is a alpha-level feature enabled by the NodeInclusionPolicyInPodTopologySpread feature flag."
+                        description: "NodeTaintsPolicy indicates how we will treat node taints when calculating pod topology spread skew. Options are: - Honor: nodes without taints, along with tainted nodes for which the incoming pod has a toleration, are included. - Ignore: node taints are ignored. All nodes are included. \n If this value is nil, the behavior is equivalent to the Ignore policy. This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag."
                         type: string
                       topologyKey:
                         description: TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. We define a domain as a particular instance of a topology. Also, we define an eligible domain as a domain whose nodes meet the requirements of nodeAffinityPolicy and nodeTaintsPolicy. e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology. And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology. It's a required field.
@@ -960,7 +1019,7 @@ spec:
                     type: object
                   type: array
                 unsupportedConfigOverrides:
-                  description: 'unsupportedConfigOverrides holds a sparse config that will override any previously set options.  It only needs to be the fields to override it will end up overlaying in the following order: 1. hardcoded defaults 2. observedConfig 3. unsupportedConfigOverrides'
+                  description: unsupportedConfigOverrides overrides the final configuration that was computed by the operator. Red Hat does not support the use of this field. Misuse of this field could lead to unexpected behavior or conflict with other configuration options. Seek guidance from the Red Hat support before using this field. Use of this property blocks cluster upgrades, it must be removed before upgrading your cluster.
                   nullable: true
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
@@ -1040,6 +1099,50 @@ spec:
                           minLength: 3
                           pattern: ^[0-9a-z]+(-[0-9a-z]+)*$
                           type: string
+                        networkAccess:
+                          default:
+                            type: External
+                          description: 'networkAccess defines the network access properties for the storage account. Defaults to type: External.'
+                          properties:
+                            internal:
+                              description: 'internal defines the vnet and subnet names to configure a private endpoint and connect it to the storage account in order to make it private. when type: Internal and internal is unset, the image registry operator will discover vnet and subnet names, and generate a private endpoint name.'
+                              properties:
+                                networkResourceGroupName:
+                                  description: networkResourceGroupName is the resource group name where the cluster's vnet and subnet are. When omitted, the registry operator will use the cluster resource group (from in the infrastructure status). If you set a networkResourceGroupName on your install-config.yaml, that value will be used automatically (for clusters configured with publish:Internal). Note that both vnet and subnet must be in the same resource group. It must be between 1 and 90 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_), and not end with a period.
+                                  maxLength: 90
+                                  minLength: 1
+                                  pattern: ^[0-9A-Za-z_.-](?:[0-9A-Za-z_.-]*[0-9A-Za-z_-])?$
+                                  type: string
+                                privateEndpointName:
+                                  description: privateEndpointName is the name of the private endpoint for the registry. When provided, the registry will use it as the name of the private endpoint it will create for the storage account. When omitted, the registry will generate one. It must be between 2 and 64 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_). It must start with an alphanumeric character and end with an alphanumeric character or an underscore.
+                                  maxLength: 64
+                                  minLength: 2
+                                  pattern: ^[0-9A-Za-z][0-9A-Za-z_.-]*[0-9A-Za-z_]$
+                                  type: string
+                                subnetName:
+                                  description: subnetName is the name of the subnet the registry operates in. When omitted, the registry operator will discover and set this by using the `kubernetes.io_cluster.<cluster-id>` tag in the vnet resource, then using one of listed subnets. Advanced cluster network configurations that use network security groups to protect subnets should ensure the provided subnetName has access to Azure Storage service. It must be between 1 and 80 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_).
+                                  maxLength: 80
+                                  minLength: 1
+                                  pattern: ^[0-9A-Za-z](?:[0-9A-Za-z_.-]*[0-9A-Za-z_])?$
+                                  type: string
+                                vnetName:
+                                  description: vnetName is the name of the vnet the registry operates in. When omitted, the registry operator will discover and set this by using the `kubernetes.io_cluster.<cluster-id>` tag in the vnet resource. This tag is set automatically by the installer. Commonly, this will be the same vnet as the cluster. Advanced cluster network configurations should ensure the provided vnetName is the vnet of the nodes where the image registry pods are running from. It must be between 2 and 64 characters in length and must consist only of alphanumeric characters, hyphens (-), periods (.) and underscores (_). It must start with an alphanumeric character and end with an alphanumeric character or an underscore.
+                                  maxLength: 64
+                                  minLength: 2
+                                  pattern: ^[0-9A-Za-z][0-9A-Za-z_.-]*[0-9A-Za-z_]$
+                                  type: string
+                              type: object
+                            type:
+                              default: External
+                              description: 'type is the network access level to be used for the storage account. type: Internal means the storage account will be private, type: External means the storage account will be publicly accessible. Internal storage accounts are only exposed within the cluster''s vnet. External storage accounts are publicly exposed on the internet. When type: Internal is used, a vnetName, subNetName and privateEndpointName may optionally be specified. If unspecificed, the image registry operator will discover vnet and subnet names, and generate a privateEndpointName. Defaults to "External".'
+                              enum:
+                                - Internal
+                                - External
+                              type: string
+                          type: object
+                          x-kubernetes-validations:
+                            - message: internal is forbidden when type is not Internal
+                              rule: 'has(self.type) && self.type == ''Internal'' ?  true : !has(self.internal)'
                       type: object
                     emptyDir:
                       description: 'emptyDir represents ephemeral storage on the pod''s host node. WARNING: this storage cannot be used with more than 1 replica and is not suitable for production use. When the pod is removed from a node for any reason, the data in the emptyDir is deleted forever.'

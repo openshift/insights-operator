@@ -72,20 +72,20 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
 
-	for _, record := range records {
+	for _, r := range records {
 		if err := tw.WriteHeader(&tar.Header{
-			Name:     record.Name,
-			ModTime:  record.At,
+			Name:     r.Name,
+			ModTime:  r.At,
 			Mode:     int64(os.FileMode(0640).Perm()),
-			Size:     int64(len(record.Data)),
+			Size:     int64(len(r.Data)),
 			Typeflag: tar.TypeReg,
 		}); err != nil {
 			return nil, fmt.Errorf("unable to write tar header: %v", err)
 		}
-		if _, err := tw.Write(record.Data); err != nil {
+		if _, err := tw.Write(r.Data); err != nil {
 			return nil, fmt.Errorf("unable to write tar entry: %v", err)
 		}
-		completed = append(completed, record)
+		completed = append(completed, r)
 	}
 
 	if err := tw.Close(); err != nil {
@@ -177,4 +177,37 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (*insightscli
 
 func isNotArchiveFile(file os.FileInfo) bool {
 	return file.IsDir() || !strings.HasPrefix(file.Name(), "insights-") || !strings.HasSuffix(file.Name(), ".tar.gz")
+}
+
+// LastArchive tries to find the latest Insights archive. Returns an error
+// when it can't read the base directory or when it can't open the last archive found.
+func (d *DiskRecorder) LastArchive() (*insightsclient.Source, error) {
+	files, err := os.ReadDir(d.basePath)
+	if err != nil {
+		return nil, err
+	}
+	if len(files) == 0 {
+		return nil, nil
+	}
+	var lastTime time.Time
+	var lastArchive string
+	for _, file := range files {
+		fileInfo, err := file.Info() // nolint: govet
+		if err != nil {
+			return nil, err
+		}
+		if isNotArchiveFile(fileInfo) {
+			continue
+		}
+		if fileInfo.ModTime().After(lastTime) {
+			lastTime = fileInfo.ModTime()
+			lastArchive = file.Name()
+		}
+	}
+	f, err := os.Open(filepath.Join(d.basePath, lastArchive))
+	if err != nil {
+		return nil, err
+	}
+
+	return &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}, nil
 }

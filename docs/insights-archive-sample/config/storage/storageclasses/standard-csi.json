@@ -1,0 +1,19 @@
+{
+    "metadata": {
+        "name": "standard-csi",
+        "uid": "325921f8-e18e-4861-96b6-8976bebbf07b",
+        "resourceVersion": "6648",
+        "creationTimestamp": "2023-11-01T12:49:07Z",
+        "annotations": {
+            "storageclass.kubernetes.io/is-default-class": "true"
+        }
+    },
+    "provisioner": "pd.csi.storage.gke.io",
+    "parameters": {
+        "replication-type": "none",
+        "type": "pd-standard"
+    },
+    "reclaimPolicy": "Delete",
+    "allowVolumeExpansion": true,
+    "volumeBindingMode": "WaitForFirstConsumer"
+}

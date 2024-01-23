@@ -1,7 +1,7 @@
 # Conditional Gatherer
 
 Conditional gatherer is a special gatherer which uses a set of rules describing which gathering functions to activate.
-The conditional rules are defined in the [insights-operator-gathering-conditions GitHub repository](https://github.com/RedHatInsights/insights-operator-gathering-conditions). This content is consumed and exposed by the [insights-operator-gathering-conditions-service](https://github.com/RedHatInsights/insights-operator-gathering-conditions-service). A new version of the `insights-operator-gathering-conditions` requires a new release version of the `insights-operator-gathering-conditions-service`. 
+The conditional rules are defined in the [insights-operator-gathering-conditions GitHub repository](https://github.com/RedHatInsights/insights-operator-gathering-conditions). This content is consumed and exposed by the [insights-operator-gathering-conditions-service](https://github.com/RedHatInsights/insights-operator-gathering-conditions-service). A new version of the `insights-operator-gathering-conditions` requires a new release version of the `insights-operator-gathering-conditions-service`.
 The Insights Operator connects to this service and consumes the conditional rules from it. The connection endpoint is defined in the [pod.yaml config file](../../config/pod.yaml) in the `conditionalGathererEndpoint` attribute (the value can be overriden in the `support` secret). Authentication is required and the `pull-secret` token is used for this purpose.
 
 ## Validation of the conditional rules
@@ -10,7 +10,7 @@ The Insights Operator internally validates the conditional rules JSON against th
 
 The following are some examples of validation failures (which will show up in the log):
 
-Non-existing gathering fumction:
+Non-existing gathering function:
 ```
 E0808 16:29:51.864716  241084 parsing.go:22] skipping a rule because of an error: unable to create params for conditional.GatheringFunctionName: containers_log {[{alert_is_firing 0xc0004639c0 <nil>}] map[]}
 ```
@@ -31,7 +31,7 @@ Failed to parse the provided cluster version:
 E0809 10:02:16.383643   37430 conditional_gatherer.go:140] error checking conditions for a gathering rule: Could not parse Range "4-11.12": Could not parse version "4-11.12" in "4-11.12": No Major.Minor.Patch elements found
 ```
 
-One of the common conditions type (see below) is the `alert_is_firing`. This condition depends on availability of Prometheus alerts - i.e connection to the in-cluster Prometheus instance. If the connection is not available, this may manifests in the log as follows for example: 
+One of the common conditions type (see below) is the `alert_is_firing`. This condition depends on availability of Prometheus alerts - i.e. connection to the in-cluster Prometheus instance. If the connection is not available, this may manifest in the log as follows for example:
 
 ```
 E0809 11:56:48.491346   46838 conditional_gatherer.go:226] unable to update alerts cache: open /var/run/configmaps/service-ca-bundle/service-ca.crt: no such file or directory

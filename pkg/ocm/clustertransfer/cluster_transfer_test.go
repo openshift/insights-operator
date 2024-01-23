@@ -125,11 +125,11 @@ func Test_ClusterTransfer_RequestDataAndUpdateSecret(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			kube := kubefake.NewSimpleClientset()
 			coreClient := kube.CoreV1()
-			mockConfig := &config.MockSecretConfigurator{
-				Conf: &config.Controller{
-					OCMConfig: config.OCMConfig{ClusterTransferEndpoint: "/cluster_transfer"},
+			mockConfig := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				ClusterTransfer: config.ClusterTransfer{
+					Endpoint: "/cluster_transfer",
 				},
-			}
+			})
 			ctResponse, err := loadDataFromFile(tt.clusterTransferDataFilePath)
 			assert.NoError(t, err)
 			mockClient := &MockClusterTransferClient{data: string(ctResponse)}
@@ -138,7 +138,7 @@ func Test_ClusterTransfer_RequestDataAndUpdateSecret(t *testing.T) {
 			_, err = createPullSecretFromFile(coreClient, tt.pullSecretDataFilePath)
 			assert.NoError(t, err)
 
-			ctController.requestDataAndUpdateSecret(mockConfig.Conf.OCMConfig.ClusterTransferEndpoint)
+			ctController.requestDataAndUpdateSecret(mockConfig.Config().ClusterTransfer.Endpoint)
 			summary, ok := ctController.CurrentStatus()
 			assert.True(t, ok, "unexpected summary")
 			assert.Equal(t, tt.expectedSummary.Operation, summary.Operation)

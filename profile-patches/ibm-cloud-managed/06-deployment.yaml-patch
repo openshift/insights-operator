@@ -6,4 +6,4 @@
 - op: replace
   path: /spec/template/spec/nodeSelector
   value:
-    beta.kubernetes.io/os: linux
+    kubernetes.io/os: linux

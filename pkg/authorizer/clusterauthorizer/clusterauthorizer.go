@@ -13,14 +13,16 @@ import (
 )
 
 type Authorizer struct {
-	configurator configobserver.Configurator
+	secretConfigurator configobserver.Configurator
+	configurator       configobserver.Interface
 	// exposed for tests
 	proxyFromEnvironment func(*http.Request) (*url.URL, error)
 }
 
 // New creates a new Authorizer, whose purpose is to auth requests for outgoing traffic.
-func New(configurator configobserver.Configurator) *Authorizer {
+func New(secretConfigurator configobserver.Configurator, configurator configobserver.Interface) *Authorizer {
 	return &Authorizer{
+		secretConfigurator:   secretConfigurator,
 		configurator:         configurator,
 		proxyFromEnvironment: http.ProxyFromEnvironment,
 	}
@@ -28,15 +30,8 @@ func New(configurator configobserver.Configurator) *Authorizer {
 
 // Authorize adds the necessary auth header to the request, depending on the config. (BasicAuth/Token)
 func (a *Authorizer) Authorize(req *http.Request) error {
-	cfg := a.configurator.Config()
-
 	if req.Header == nil {
 		req.Header = make(http.Header)
-	}
-
-	if len(cfg.Username) > 0 || len(cfg.Password) > 0 {
-		req.SetBasicAuth(cfg.Username, cfg.Password)
-		return nil
 	}
 
 	token, err := a.Token()
@@ -53,11 +48,11 @@ func (a *Authorizer) Authorize(req *http.Request) error {
 func (a *Authorizer) NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error) {
 	// using specific proxy settings
 	if c := a.configurator.Config(); c != nil {
-		if len(c.HTTPConfig.HTTPProxy) > 0 || len(c.HTTPConfig.HTTPSProxy) > 0 || len(c.HTTPConfig.NoProxy) > 0 {
+		if len(c.Proxy.HTTPProxy) > 0 || len(c.Proxy.HTTPSProxy) > 0 || len(c.Proxy.NoProxy) > 0 {
 			proxyConfig := httpproxy.Config{
-				HTTPProxy:  c.HTTPConfig.HTTPProxy,
-				HTTPSProxy: c.HTTPConfig.HTTPSProxy,
-				NoProxy:    c.HTTPConfig.NoProxy,
+				HTTPProxy:  c.Proxy.HTTPProxy,
+				HTTPSProxy: c.Proxy.HTTPSProxy,
+				NoProxy:    c.Proxy.NoProxy,
 			}
 			// The golang ProxyFunc seems to have NoProxy already built in
 			return func(req *http.Request) (*url.URL, error) {
@@ -70,7 +65,7 @@ func (a *Authorizer) NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL,
 }
 
 func (a *Authorizer) Token() (string, error) {
-	cfg := a.configurator.Config()
+	cfg := a.secretConfigurator.Config()
 	if len(cfg.Token) > 0 {
 		token := strings.TrimSpace(cfg.Token)
 		if strings.Contains(token, "\n") || strings.Contains(token, "\r") {
