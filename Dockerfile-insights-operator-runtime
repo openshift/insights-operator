@@ -1,0 +1,11 @@
+
+FROM redhat/ubi9-minimal
+
+RUN microdnf update -y && microdnf -y install \
+    tar
+
+COPY ./bin/insights-operator /usr/bin/
+COPY config/pod.yaml /etc/insights-operator/server.yaml
+COPY manifests /manifests
+LABEL io.openshift.release.operator=true
+ENTRYPOINT ["sleep", "360000"]
