@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: insights-operator-runtime
+  labels:
+    app.kubernetes.io/name: insights-operator-runtime
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: insights-operator-runtime
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: insights-operator-runtime
+    spec:
+      # You must grant privileged via: oc adm policy add-scc-to-user -z insights-operator-runtime-sa -n insights-operator-runtime privileged
+      # in order for the insights-operator-runtime to work
+      serviceAccountName: insights-operator-runtime-sa
+      hostPID: true
+      containers:
+        - name: insights-operator-runtime
+          # Replace the image field it is is coming from another image registry
+          image: ghcr.io/jmesnil/insights-operator-runtime:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "20Mi"
+              cpu: "250m"
+          env:
+            - name: CONTAINER_RUNTIME_ENDPOINT
+              value: unix:///crio.sock
+          securityContext:
+            privileged: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CAP_SYS_ADMIN
+          volumeMounts:
+            - mountPath: /crio.sock
+              name: crio-socket
+      volumes:
+        - name: crio-socket
+          hostPath:
+            path: /run/crio/crio.sock
+            type: Socket

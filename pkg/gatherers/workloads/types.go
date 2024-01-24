@@ -98,6 +98,30 @@ type workloadContainerShape struct {
 	// FirstArg is a hash of the first value in the arguments array, if any
 	// was set.
 	FirstArg string `json:"firstArg,omitempty"`
+	// Runtime info on the container
+	RuntimeInfo workloadRuntimeInfoContainer `json:"runtimeInfo,omitempty"`
+}
+
+type workloadRuntimeInfoContainer struct {
+	// Hash of the identifier of the Operating System (based on /etc/os-release ID)
+	Os string `json:"os,omitempty"`
+	// Hash of the version identifier of the Operating System (based on /etc/os-release VERSION_ID)
+	OsVersion string `json:"osVersion,omitempty"`
+	// Identifier of the kind of runtime
+	Kind string `json:"kind,omitempty"`
+	// Version of the kind of runtime
+	KindVersion string `json:"kindVersion,omitempty"`
+	// Entity that provides the runtime-kind implementation
+	KindImplementer string `json:"kindImplementer,omitempty"`
+	// Runtimes components
+	Runtimes []RuntimeComponent `json:"runtimes,omitempty"`
+}
+
+type RuntimeComponent struct {
+	// Name of a runtime used to run the application in the container
+	Name string `json:"name,omitempty"`
+	// The version of this runtime
+	Version string `json:"version,omitempty"`
 }
 
 type workloadImageInfo struct {

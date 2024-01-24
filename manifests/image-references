@@ -6,3 +6,7 @@ spec:
     from:
       kind: "DockerImage"
       name: "quay.io/openshift/origin-insights-operator:latest"
+  - name: insights-operator-runtime
+    from:
+      kind: "DockerImage"
+      name: "ghcr.io/jmesnil/insights-operator-runtime:latest"

@@ -1,0 +1,86 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: insights-operator-runtime-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: insights-operator-runtime-role
+rules:
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - insights-operator-runtime-scc
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+---
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: insights-operator-runtime-scc
+allowHostDirVolumePlugin: true
+allowHostPID: true
+allowPrivilegedContainer: true
+allowedCapabilities:
+- CAP_SYS_ADMIN
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+seccompProfiles:
+- runtime/default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator-runtime
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: insights-operator-runtime-role
+subjects:
+  - kind: ServiceAccount
+    name: insights-operator-runtime-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: insights-operator-runtime
+rules:
+  - apiGroups:
+      - ""
+    verbs:
+      - create
+    resources:
+      - pods/exec
+  - apiGroups:
+      - apps
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - watch
+    resources:
+      - daemonsets
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insights-operator-gather-runtime
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: ClusterRole
+  name: insights-operator-runtime
+subjects:
+  - kind: ServiceAccount
+    namespace: openshift-insights
+    name: gather
