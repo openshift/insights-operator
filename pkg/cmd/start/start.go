@@ -220,7 +220,7 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 		if data, err := os.ReadFile(serviceCACertPath); err == nil {
 			startingFileContent[serviceCACertPath] = data
 		} else {
-			klog.V(4).Infof("Unable to read service ca bundle: %v", err)
+			klog.Infof("Unable to read service ca bundle: %v", err)
 		}
 		observedFiles = append(observedFiles, serviceCACertPath)
 

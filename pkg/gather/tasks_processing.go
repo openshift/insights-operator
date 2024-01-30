@@ -42,7 +42,7 @@ func HandleTasksConcurrently(ctx context.Context, tasks []Task) chan GatheringFu
 		if len(tasks) < workerNum {
 			workerNum = len(tasks)
 		}
-		klog.V(4).Infof("number of workers: %d", workerNum)
+		klog.Infof("number of workers: %d", workerNum)
 
 		// create workers
 		for i := 0; i < workerNum; i++ {
@@ -66,12 +66,12 @@ func HandleTasksConcurrently(ctx context.Context, tasks []Task) chan GatheringFu
 
 func worker(ctx context.Context, id int, wg *sync.WaitGroup, tasksChan <-chan Task, resultsChan chan<- GatheringFunctionResult) {
 	defer wg.Done()
-	klog.V(4).Infof("worker %d listening for tasks.", id)
+	klog.Infof("worker %d listening for tasks.", id)
 	for task := range tasksChan {
-		klog.V(4).Infof("worker %d working on %s task.", id, task.Name)
+		klog.Infof("worker %d working on %s task.", id, task.Name)
 		handleTask(ctx, task, resultsChan)
 	}
-	klog.V(4).Infof("worker %d stopped.", id)
+	klog.Infof("worker %d stopped.", id)
 }
 
 func handleTask(ctx context.Context, task Task, resultsChan chan<- GatheringFunctionResult) {

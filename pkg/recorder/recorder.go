@@ -67,7 +67,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		return errs
 	}
 
-	klog.V(4).Infof("Recording %s with fingerprint=%s", rec.Name, fingerprint)
+	klog.Infof("Recording %s with fingerprint=%s", rec.Name, fingerprint)
 
 	at := rec.Captured
 	if at.IsZero() {

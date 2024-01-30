@@ -44,10 +44,10 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	// dynamically set the proxy environment
 	c.client.Transport = clientTransport(c.authorizer)
 
-	klog.V(4).Infof("Uploading %s to %s", source.Type, req.URL.String())
+	klog.Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
 	if err != nil {
-		klog.V(4).Infof("Unable to build a request, possible invalid token: %v", err)
+		klog.Infof("Unable to build a request, possible invalid token: %v", err)
 		// if the request is not build, for example because of invalid endpoint,(maybe some problem with DNS), we want to have record about it in metrics as well.
 		insights.IncrementCounterRequestSend(noHttpStatusCode)
 		return "", noHttpStatusCode, fmt.Errorf("unable to build request to connect to Insights server: %v", err)
@@ -119,7 +119,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	// dynamically set the proxy environment
 	c.client.Transport = clientTransport(c.authorizer)
 
-	klog.V(4).Infof("Retrieving report from %s", req.URL.String())
+	klog.Infof("Retrieving report from %s", req.URL.String())
 	resp, err := c.client.Do(req)
 
 	if err != nil {

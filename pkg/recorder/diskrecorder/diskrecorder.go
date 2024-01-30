@@ -67,7 +67,7 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 		wrote = len(completed)
 	}()
 
-	klog.V(4).Infof("Writing %d records to %s", len(records), path)
+	klog.Infof("Writing %d records to %s", len(records), path)
 
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
@@ -133,7 +133,7 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 		return fmt.Errorf("failed to delete %d expired files: %v", len(errors), errors[0])
 	}
 	if count > 0 {
-		klog.V(4).Infof("Deleted %d files older than %s", count, olderThan.UTC().Format(time.RFC3339))
+		klog.Infof("Deleted %d files older than %s", count, olderThan.UTC().Format(time.RFC3339))
 	}
 	return nil
 }
@@ -167,7 +167,7 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (*insightscli
 		return nil, false, nil
 	}
 	lastFile := recentFiles[len(recentFiles)-1]
-	klog.V(4).Infof("Found files to send: %v", lastFile)
+	klog.Infof("Found files to send: %v", lastFile)
 	f, err := os.Open(filepath.Join(d.basePath, lastFile))
 	if err != nil {
 		return nil, false, nil

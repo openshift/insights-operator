@@ -116,7 +116,7 @@ func (c *Controller) fetchSecret(ctx context.Context, name string) (*v1.Secret, 
 	secret, err := c.kubeClient.CoreV1().Secrets("openshift-config").Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			klog.V(4).Infof("%s secret does not exist", name)
+			klog.Infof("%s secret does not exist", name)
 			err = nil
 			secret = nil
 		} else if errors.IsForbidden(err) {
@@ -246,7 +246,7 @@ func tokenFromSecret(secret *v1.Secret) (string, error) {
 				return "", fmt.Errorf("cluster authorization token is not valid: contains newlines")
 			}
 			if len(token) > 0 {
-				klog.V(4).Info("Found cloud.openshift.com token")
+				klog.Info("Found cloud.openshift.com token")
 				return token, nil
 			}
 		}
