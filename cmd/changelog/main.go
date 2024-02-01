@@ -248,12 +248,19 @@ func getChanges(pullRequestIds, pullRequestHashes []string) []*Change {
 	var changes []*Change
 	log.Print("Reading changes from the GitHub API")
 	for i, id := range pullRequestIds {
-		change := getPullRequestFromGitHub(id)
-		change.hash = pullRequestHashes[i]
-		if _, err := determineReleases(change); err != nil {
-			continue
+		// This regex checks that the ids passed as CLI arguments are valid.
+		// This code cannot be encapsulated or Snyk will flag it as a defect.
+		// This warning was originally raised in issue OCPBUGS-26937.
+		if regexp.MustCompile(`^\d*$`).MatchString(id) {
+			change := getPullRequestFromGitHub(id)
+			change.hash = pullRequestHashes[i]
+			if _, err := determineReleases(change); err != nil {
+				continue
+			}
+			changes = append(changes, change)
+		} else {
+			log.Print("ERR :: could not validate entered Pull Request, ", id)
 		}
-		changes = append(changes, change)
 	}
 	return changes
 }
