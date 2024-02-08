@@ -126,7 +126,11 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 			if event.Type == watch.Error {
 				return fmt.Errorf("watcher received error event: %v", event.Object)
 			}
+
 			job := event.Object.(*batchv1.Job)
+			if job == nil {
+				return fmt.Errorf("cannot cast event objeto into job: %v", event.Object)
+			}
 			if job.Status.Succeeded > 0 {
 				return nil
 			}
