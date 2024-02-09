@@ -346,7 +346,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 	}
 
 	klog.Infof("Created new gathering job %v", gj.Name)
-	err = c.jobController.WaitForJobCompletion(ctx, gj)
+	err = c.jobController.WaitForJobCompletion(ctx, gj.Name)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			klog.Errorf("Failed to read job status: %v", err)
@@ -354,7 +354,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 		}
 		klog.Error(err)
 	}
-	klog.Infof("Job completed %s", gj.Name)
+	klog.Infof("Job completed %s", "")
 	dataGatherFinished, err := c.dataGatherClient.DataGathers().Get(ctx, dataGather.Name, metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Failed to get DataGather resource %s: %v", dataGather.Name, err)

@@ -107,9 +107,9 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 }
 
 // WaitForJobCompletion listen the Kubernetes events to check if job finished.
-func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
+func (j *JobController) WaitForJobCompletion(ctx context.Context, jobName string) error {
 	watcher, err := j.kubeClient.BatchV1().Jobs(insightsNamespace).
-		Watch(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", job.Name)})
+		Watch(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", jobName)})
 	if err != nil {
 		return err
 	}
@@ -123,19 +123,20 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 			if !ok {
 				return fmt.Errorf("watcher channel was closed unexpectedly")
 			}
-			if event.Type == watch.Error {
-				return fmt.Errorf("watcher received error event: %v", event.Object)
+
+			if event.Type != watch.Modified {
+				continue
 			}
 
 			job := event.Object.(*batchv1.Job)
 			if job == nil {
-				return fmt.Errorf("cannot cast event objeto into job: %v", event.Object)
+				return fmt.Errorf("failed to cast job event: %v", event.Object)
 			}
 			if job.Status.Succeeded > 0 {
 				return nil
 			}
 			if job.Status.Failed > 0 {
-				return fmt.Errorf("job %s failed", job.Name)
+				return fmt.Errorf("job %s failed: %s", job.Name, job.Status.Conditions[0].Message)
 			}
 		}
 	}
