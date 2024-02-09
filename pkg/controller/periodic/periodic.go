@@ -354,7 +354,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 		}
 		klog.Error(err)
 	}
-	klog.Infof("Job completed %s", "")
+	klog.Infof("Job completed %s", gj.Name)
 	dataGatherFinished, err := c.dataGatherClient.DataGathers().Get(ctx, dataGather.Name, metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Failed to get DataGather resource %s: %v", dataGather.Name, err)
