@@ -136,7 +136,7 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, jobName string
 				return nil
 			}
 			if job.Status.Failed > 0 {
-				return fmt.Errorf("job %s failed: %s", job.Name, job.Status.Conditions[0].Message)
+				return fmt.Errorf("job %s failed", job.Name)
 			}
 		}
 	}
