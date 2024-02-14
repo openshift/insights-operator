@@ -100,7 +100,7 @@ rules:
       - "monitoring.coreos.com"
     resources:
       - prometheusrules
-      - prometheuses
+      - prometheuses/api
     verbs:
       - create
       - get
