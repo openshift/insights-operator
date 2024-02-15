@@ -156,7 +156,7 @@ func (c *Controller) checkSummaryAndSend(interval time.Duration, lastReported ti
 		return
 	}
 	if !ok {
-		klog.V(4).Infof("Nothing to report since %s", lastReported.Format(time.RFC3339))
+		klog.Infof("Nothing to report since %s", lastReported.Format(time.RFC3339))
 		return
 	}
 	defer source.Contents.Close()
@@ -164,7 +164,7 @@ func (c *Controller) checkSummaryAndSend(interval time.Duration, lastReported ti
 		// send the results
 		start := time.Now()
 		id := start.Format(time.RFC3339)
-		klog.V(4).Infof("Uploading latest report since %s", lastReported.Format(time.RFC3339))
+		klog.Infof("Uploading latest report since %s", lastReported.Format(time.RFC3339))
 		source.ID = id
 		source.Type = "application/vnd.redhat.openshift.periodic"
 		if err := c.client.Send(ctx, endpoint, *source); err != nil {
@@ -186,7 +186,7 @@ func (c *Controller) checkSummaryAndSend(interval time.Duration, lastReported ti
 				Reason: "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err)})
 			return
 		}
-		klog.V(4).Infof("Uploaded report successfully in %s", time.Since(start))
+		klog.Infof("Uploaded report successfully in %s", time.Since(start))
 		select {
 		case c.archiveUploaded <- struct{}{}:
 		default:
@@ -194,9 +194,9 @@ func (c *Controller) checkSummaryAndSend(interval time.Duration, lastReported ti
 		lastReported = start.UTC()
 		c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 	} else {
-		klog.V(4).Info("Display report that would be sent")
+		klog.Info("Display report that would be sent")
 		// display what would have been sent (to ensure we always exercise source processing)
-		if err := reportToLogs(source.Contents, klog.V(4)); err != nil {
+		if err := reportToLogs(source.Contents, klog.V(2)); err != nil {
 			klog.Errorf("Unable to log upload: %v", err)
 		}
 		// we didn't actually report logs, so don't advance the report date

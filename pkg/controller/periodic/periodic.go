@@ -169,7 +169,7 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 // Gather Runs the gatherers one after the other.
 func (c *Controller) Gather() {
 	if c.isGatheringDisabled() {
-		klog.V(3).Info("Gather is disabled by configuration.")
+		klog.Info("Gather is disabled by configuration.")
 		return
 	}
 
@@ -203,13 +203,13 @@ func (c *Controller) Gather() {
 			name := gatherer.GetName()
 			start := time.Now()
 
-			klog.V(4).Infof("Running %s gatherer", gatherer.GetName())
+			klog.Infof("Running %s gatherer", gatherer.GetName())
 			functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, c.recorder, nil)
 			for i := range functionReports {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
 			if err == nil {
-				klog.V(3).Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+				klog.Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
 				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
 				return
 			}
@@ -301,7 +301,7 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 
 func (c *Controller) GatherJob() {
 	if c.isGatheringDisabled() {
-		klog.V(3).Info("Gather is disabled by configuration.")
+		klog.Info("Gather is disabled by configuration.")
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)

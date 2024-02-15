@@ -213,28 +213,28 @@ func (c *Controller) currentControllerStatus() (allReady bool) { //nolint: gocyc
 
 		if summary.Operation.Name == controllerstatus.Uploading.Name {
 			if summary.Count < uploadFailuresCountThreshold {
-				klog.V(4).Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
+				klog.Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			} else {
 				degradingFailure = true
-				klog.V(4).Infof("Number of last upload failures %d exceeded the threshold %d. Marking as degraded.",
+				klog.Infof("Number of last upload failures %d exceeded the threshold %d. Marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
 			}
 			c.ctrlStatus.setStatus(UploadStatus, summary.Reason, summary.Message)
 		} else if summary.Operation.Name == controllerstatus.DownloadingReport.Name {
-			klog.V(4).Info("Failed to download Insights report")
+			klog.Info("Failed to download Insights report")
 			c.ctrlStatus.setStatus(DownloadStatus, summary.Reason, summary.Message)
 		} else if summary.Operation.Name == controllerstatus.PullingSCACerts.Name {
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
-				klog.V(4).Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
+				klog.Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
 					ocm.FailureCountThreshold)
 				degradingFailure = true
 			}
 		} else if summary.Operation.Name == controllerstatus.PullingClusterTransfer.Name {
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
-				klog.V(4).Infof("Failed to pull the cluster transfer object within the threshold %d with exponential backoff. Marking as degraded.",
+				klog.Infof("Failed to pull the cluster transfer object within the threshold %d with exponential backoff. Marking as degraded.",
 					ocm.FailureCountThreshold)
 				degradingFailure = true
 			}
@@ -416,7 +416,7 @@ func (c *Controller) checkDisabledGathering() {
 // update the current controller state by it status
 func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitializing bool) {
 	if isInitializing {
-		klog.V(4).Infof("The operator is still being initialized")
+		klog.Infof("The operator is still being initialized")
 		// if we're still starting up and some sources are not ready, initialize the conditions
 		// but don't update
 		if !cs.hasCondition(configv1.OperatorProgressing) {
@@ -425,7 +425,7 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 	}
 
 	if es := c.ctrlStatus.getStatus(ErrorStatus); es != nil && !c.ctrlStatus.isDisabled() {
-		klog.V(4).Infof("The operator has some internal errors: %s", es.message)
+		klog.Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, degradedReason, "An error has occurred")
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, es.reason, es.message)
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionFalse, degradedReason, es.message)
@@ -434,14 +434,14 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 	// when the operator is already healthy then it doesn't make sense to set those, but when it's degraded and then
 	// marked as disabled then it's reasonable to set Available=True
 	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil && !c.ctrlStatus.isHealthy() {
-		klog.V(4).Infof("The operator is marked as disabled")
+		klog.Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, asExpectedReason, insightsAvailableMessage)
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg)
 	}
 
 	if c.ctrlStatus.isHealthy() {
-		klog.V(4).Infof("The operator is healthy")
+		klog.Infof("The operator is healthy")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, asExpectedReason, insightsAvailableMessage)
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg)

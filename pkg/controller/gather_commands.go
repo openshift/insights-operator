@@ -249,7 +249,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 	updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Completed)
-	klog.V(4).Infof("Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
+	klog.Infof("Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
 		insightsRequestID)
 	return nil
 }
@@ -327,7 +327,7 @@ func wasDataProcessed(ctx context.Context,
 	insightsRequestID string, conf *config.InsightsConfiguration) (bool, error) {
 	delay := conf.DataReporting.ReportPullingDelay
 	retryCounter := 0
-	klog.V(4).Infof("Initial delay when checking processing status: %v", delay)
+	klog.Infof("Initial delay when checking processing status: %v", delay)
 
 	var resp *http.Response
 	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {

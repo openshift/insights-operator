@@ -86,7 +86,7 @@ func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.Ins
 	reportEndpointTP := config.DataReporting.DownloadEndpointTechPreview
 
 	if len(reportEndpointTP) == 0 {
-		klog.V(4).Info("Not downloading report because the insights-results-agregator endpoint is not configured")
+		klog.Info("Not downloading report because the insights-results-agregator endpoint is not configured")
 		c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
 		return nil, nil
 	}
@@ -139,14 +139,14 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	reportEndpoint := config.DataReporting.DownloadEndpoint
 
 	if len(reportEndpoint) == 0 {
-		klog.V(4).Info("Not downloading report because Smart Proxy client is not properly configured: missing report endpoint")
+		klog.Info("Not downloading report because Smart Proxy client is not properly configured: missing report endpoint")
 		return true, nil
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelFunc()
 
-	klog.V(4).Info("Retrieving report")
+	klog.Info("Retrieving report")
 	resp, err := c.client.RecvReport(ctx, reportEndpoint)
 	if authorizer.IsAuthorizationError(err) {
 		c.StatusController.UpdateStatus(controllerstatus.Summary{
@@ -181,7 +181,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 		}
 	}()
 
-	klog.V(4).Info("Report retrieved")
+	klog.Info("Report retrieved")
 	downloadTime := metav1.Now()
 	reportResponse := types.Response{}
 
@@ -193,7 +193,7 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 	klog.V(4).Info("Smart Proxy report correctly parsed")
 
 	if c.LastReport.Meta.LastCheckedAt == reportResponse.Report.Meta.LastCheckedAt {
-		klog.V(2).Info("Retrieved report is equal to previus one. Retrying...")
+		klog.Info("Retrieved report is equal to previus one. Retrying...")
 		return true, fmt.Errorf("report not updated")
 	}
 
@@ -212,13 +212,13 @@ func (c *Controller) PullSmartProxy() (bool, error) {
 
 // RetrieveReport gets the report from Smart Proxy, if possible, handling the delays and timeouts
 func (c *Controller) RetrieveReport() {
-	klog.V(4).Info("Starting retrieving report from Smart Proxy")
+	klog.Info("Starting retrieving report from Smart Proxy")
 	config := c.configurator.Config()
 	configCh, cancelFn := c.configurator.ConfigChanged()
 	defer cancelFn()
 
 	delay := config.DataReporting.ReportPullingDelay
-	klog.V(4).Infof("Initial delay for pulling: %v", delay)
+	klog.Infof("Initial delay for pulling: %v", delay)
 	startTime := time.Now()
 	delayTimer := time.NewTimer(wait.Jitter(delay, 0.1))
 	timeoutTimer := time.NewTimer(reportDownloadTimeout)
@@ -236,7 +236,7 @@ func (c *Controller) RetrieveReport() {
 				if err != nil {
 					klog.Errorf("Unrecoverable problem retrieving the report: %v", err)
 				} else {
-					klog.V(4).Info("Report retrieved correctly")
+					klog.Info("Report retrieved correctly")
 				}
 				return
 			}
@@ -301,7 +301,7 @@ func (c *Controller) Run(ctx context.Context) {
 		// always wait for new uploaded archive or insights-operator ends
 		select {
 		case <-c.archiveUploadReporter:
-			klog.V(4).Info("Archive uploaded, starting pulling report...")
+			klog.Info("Archive uploaded, starting pulling report...")
 			c.RetrieveReport()
 
 		case <-ctx.Done():

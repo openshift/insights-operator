@@ -363,7 +363,7 @@ func imageFromID(ctx context.Context, client imageclient.ImageInterface, id stri
 	start := time.Now()
 	image, err := client.Get(ctx, id, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
-		klog.V(4).Infof("No image %s (%s)", id, time.Since(start).Round(time.Millisecond).String())
+		klog.Infof("No image %s (%s)", id, time.Since(start).Round(time.Millisecond).String())
 		return nil
 	}
 	if errors.Is(err, context.Canceled) {
@@ -374,7 +374,7 @@ func imageFromID(ctx context.Context, client imageclient.ImageInterface, id stri
 		return nil
 	}
 
-	klog.V(4).Infof("Found image %s (%s)", id, time.Since(start).Round(time.Millisecond).String())
+	klog.Infof("Found image %s (%s)", id, time.Since(start).Round(time.Millisecond).String())
 	return image
 }
 
