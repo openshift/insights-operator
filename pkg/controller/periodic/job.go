@@ -128,8 +128,8 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, jobName string
 				continue
 			}
 
-			job, fail := event.Object.(*batchv1.Job)
-			if job == nil || fail {
+			job, ok := event.Object.(*batchv1.Job)
+			if !ok {
 				return fmt.Errorf("failed to cast job event: %v", event.Object)
 			}
 			if job.Status.Succeeded > 0 {
