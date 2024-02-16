@@ -24,7 +24,6 @@ spec:
       containers:
       - args:
         - start
-        - -v=4
         - --config=/etc/insights-operator/server.yaml
         env:
         - name: POD_NAME

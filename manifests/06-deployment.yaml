@@ -98,5 +98,4 @@ spec:
           value: "0.0.1-snapshot"
         args:
         - start
-        - -v=4
         - --config=/etc/insights-operator/server.yaml
