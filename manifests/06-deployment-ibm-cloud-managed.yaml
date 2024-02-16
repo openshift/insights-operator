@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   annotations:
     config.openshift.io/inject-proxy: insights-operator
+    include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     capability.openshift.io/name: Insights
   name: insights-operator
