@@ -26,13 +26,14 @@ const (
 // The GET REST query to URL /federate
 // Gathered metrics:
 //   - `virt_platform`
-//   - `etcd_object_counts`
 //   - `cluster_installer`
 //   - `vsphere_node_hw_version_total`
 //   - namespace CPU and memory usage
 //   - `console_helm_installs_total`
 //   - `console_helm_upgrades_total`
 //   - `console_helm_uninstalls_total`
+//   - `etcd_server_slow_apply_total`
+//   - `etcd_server_slow_read_indexes_total`
 //   - followed by at most 1000 lines of `ALERTS` metric
 //
 // ### API Reference
@@ -65,6 +66,8 @@ const (
 // - `console_helm_upgrades_total` introduced in version 4.12+
 // - `console_helm_uninstalls_total` introduced in version 4.12+
 // - `openshift_apps_deploymentconfigs_strategy_total` introduced in version 4.13+
+// - `etcd_server_slow_apply_total` introduced in version 4.16+
+// - `etcd_server_slow_read_indexes_total` introduced in version 4.16+
 func (g *Gatherer) GatherMostRecentMetrics(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
@@ -87,6 +90,8 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "console_helm_upgrades_total").
 		Param("match[]", "console_helm_uninstalls_total").
 		Param("match[]", "openshift_apps_deploymentconfigs_strategy_total").
+		Param("match[]", "etcd_server_slow_apply_total").
+		Param("match[]", "etcd_server_slow_read_indexes_total").
 		DoRaw(ctx)
 	if err != nil {
 		klog.Errorf("Unable to retrieve most recent metrics: %v", err)
