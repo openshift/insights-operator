@@ -88,7 +88,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		memoryRecord = r.anonymizer.AnonymizeMemoryRecord(memoryRecord)
 	}
 
-	if err := r.handleRecordSizeExceeded(recordName, recordSize, rec); err != nil {
+	if err = r.handleRecordSizeExceeded(recordName, recordSize, rec); err != nil {
 		errs = append(errs, err)
 		return errs
 	}
@@ -121,7 +121,7 @@ func (r *Recorder) Flush() error {
 		return err
 	}
 
-	klog.V(2).Infof("Records sucessfully flushed")
+	klog.V(2).Infof("Records successfully flushed")
 	return nil
 }
 
