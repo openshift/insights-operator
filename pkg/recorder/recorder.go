@@ -105,11 +105,10 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 
 // Flush and save the reports using recorder driver
 func (r *Recorder) Flush() error {
-	if r.anonymizer != nil {
-		defer r.anonymizer.StoreTranslationTable()
-	}
-	records := r.copy()
+	records := r.prepareRecordsForFlush()
+
 	if len(records) == 0 {
+		klog.V(2).Infof("No records to flush")
 		return nil
 	}
 
@@ -122,9 +121,25 @@ func (r *Recorder) Flush() error {
 		return err
 	}
 
+	klog.V(2).Infof("Records sucessfully flushed")
 	return nil
 }
 
+// prepareRecordsForFlush prepares records for flushing
+func (r *Recorder) prepareRecordsForFlush() record.MemoryRecords {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	copies := make([]record.MemoryRecord, 0, len(r.records))
+	for _, rec := range r.records {
+		if rec.Data == nil {
+			continue
+		}
+		copies = append(copies, *rec)
+	}
+	return copies
+}
+
+// PeriodicallyPrune the reports using the recorder driver
 // PeriodicallyPrune the reports using the recorder driver
 func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReported) {
 	wait.Until(func() {
@@ -138,35 +153,30 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReport
 			case <-ctx.Done():
 				return
 			case <-timer.C:
+				r.pruneOldReports(reported)
 			}
-
-			_ = wait.ExponentialBackoff(wait.Backoff{Duration: time.Second, Steps: 4, Factor: 1.5}, func() (bool, error) {
-				lastReported := reported.LastReportedTime()
-				if oldestAllowed := time.Now().Add(-r.maxAge); lastReported.Before(oldestAllowed) {
-					lastReported = oldestAllowed
-				}
-
-				if err := r.driver.Prune(lastReported); err != nil {
-					klog.Errorf("Failed to prune older records: %v", err)
-					return false, nil
-				}
-				return true, nil
-			})
 		}
 	}, time.Second, ctx.Done())
 }
 
-func (r *Recorder) copy() record.MemoryRecords {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	copies := make([]record.MemoryRecord, 0, len(r.records))
-	for _, rec := range r.records {
-		if rec.Data == nil {
-			continue
+// pruneOldReports prunes old reports using the recorder driver
+func (r *Recorder) pruneOldReports(reported alreadyReported) {
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second, Steps: 4, Factor: 1.5}, func() (bool, error) {
+		lastReported := reported.LastReportedTime()
+		if oldestAllowed := time.Now().Add(-r.maxAge); lastReported.Before(oldestAllowed) {
+			lastReported = oldestAllowed
 		}
-		copies = append(copies, *rec)
+
+		if err := r.driver.Prune(lastReported); err != nil {
+			klog.Errorf("Failed to prune older records: %v", err)
+			return false, nil
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		klog.Errorf("Failed to prune old reports: %v", err)
 	}
-	return copies
 }
 
 func (r *Recorder) clear(records record.MemoryRecords) {
