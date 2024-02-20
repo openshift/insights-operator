@@ -140,7 +140,6 @@ func (r *Recorder) prepareRecordsForFlush() record.MemoryRecords {
 }
 
 // PeriodicallyPrune the reports using the recorder driver
-// PeriodicallyPrune the reports using the recorder driver
 func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReported) {
 	wait.Until(func() {
 		basePruneInterval := r.interval * 2
@@ -179,6 +178,7 @@ func (r *Recorder) pruneOldReports(reported alreadyReported) {
 	}
 }
 
+// clear up in-memory records
 func (r *Recorder) clear(records record.MemoryRecords) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
