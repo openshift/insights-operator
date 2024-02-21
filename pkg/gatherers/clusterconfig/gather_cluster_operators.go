@@ -33,10 +33,12 @@ type clusterOperatorResource struct {
 	Name       string      `json:"name"`
 	Spec       interface{} `json:"spec"`
 	namespace  string
+	Status     interface{} `json:"status,omitempty"`
 }
 
 // GatherClusterOperators Collects all the `ClusterOperators` definitions and their related resources
-// from the `operator.openshift.io` group.
+// from the `operator.openshift.io` group. Only metadata (group, version, kind) and spec attributes
+// from the `operator.openshift.io` group are gathered.
 //
 // ### API Reference
 // - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -66,6 +68,7 @@ type clusterOperatorResource struct {
 // - `config/pod/{namespace}/{pod}.json` and `events/` were moved to
 // [ClusterOperatorPodsAndEvents](#ClusterOperatorPodsAndEvents) since `4.8.2`,
 // both were introduced at `4.3.0` as part of this gatherer and backported to `4.2.10+`.
+// - gather status of the `insightsoperator.operator.openshift.io` resource from `4.16.0+`
 func (g *Gatherer) GatherClusterOperators(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -185,14 +188,21 @@ func collectClusterOperatorRelatedObjects(ctx context.Context,
 		if !ok {
 			klog.Warningf("Can't find spec for cluster operator resource %s", clusterResource.GetName())
 		}
+
 		anonymizeIdentityProviders(clusterResource.Object)
-		res = append(res, clusterOperatorResource{
+		coResource := clusterOperatorResource{
 			Spec:       spec,
 			Kind:       clusterResource.GetKind(),
 			Name:       clusterResource.GetName(),
 			APIVersion: clusterResource.GetAPIVersion(),
 			namespace:  clusterResource.GetNamespace(),
-		})
+		}
+		// this is an exception for the insightsoperators.operator.openshift.io
+		// "cluster" resource to also collect the status
+		if coResource.Kind == "InsightsOperator" {
+			coResource.Status = clusterResource.Object["status"]
+		}
+		res = append(res, coResource)
 	}
 	return res
 }

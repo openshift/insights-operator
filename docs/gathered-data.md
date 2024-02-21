@@ -486,7 +486,8 @@ introduced in version `4.3.0` and later backported to version `4.2.10+`.
 ## ClusterOperators
 
 Collects all the `ClusterOperators` definitions and their related resources
-from the `operator.openshift.io` group.
+from the `operator.openshift.io` group. Only metadata (group, version, kind) and spec attributes
+from the `operator.openshift.io` group are gathered.
 
 ### API Reference
 - https://github.com/openshift/client-go/blob/master/config/clientset/versioned/typed/config/v1/clusteroperator.go#L62
@@ -516,6 +517,7 @@ None
 - `config/pod/{namespace}/{pod}.json` and `events/` were moved to
 [ClusterOperatorPodsAndEvents](#ClusterOperatorPodsAndEvents) since `4.8.2`,
 both were introduced at `4.3.0` as part of this gatherer and backported to `4.2.10+`.
+- gather status of the `insightsoperator.operator.openshift.io` resource from `4.16.0+`
 
 
 ## ClusterProxy
