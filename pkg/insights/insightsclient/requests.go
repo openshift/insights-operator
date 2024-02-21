@@ -67,12 +67,12 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	insights.IncrementCounterRequestSend(resp.StatusCode)
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		klog.V(2).Infof("gateway server %s returned 401, %s=%s", resp.Request.URL, insightsReqId, requestID)
+		klog.Infof("gateway server %s returned 401, %s=%s", resp.Request.URL, insightsReqId, requestID)
 		return "", resp.StatusCode, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired: %s", responseBody(resp))}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
-		klog.V(2).Infof("gateway server %s returned 403, %s=%s", resp.Request.URL, insightsReqId, requestID)
+		klog.Infof("gateway server %s returned 403, %s=%s", resp.Request.URL, insightsReqId, requestID)
 		return "", resp.StatusCode, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	}
 
@@ -85,7 +85,7 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	}
 
 	if len(requestID) > 0 {
-		klog.V(2).Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, <-bytesRead)
+		klog.Infof("Successfully reported id=%s %s=%s, wrote=%d", source.ID, insightsReqId, requestID, <-bytesRead)
 	}
 
 	return requestID, resp.StatusCode, nil
@@ -131,13 +131,13 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	requestID := resp.Header.Get("x-rh-insights-request-id")
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		klog.V(2).Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		klog.Infof("gateway server %s returned 401, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
 		c.IncrementRecvReportMetric(resp.StatusCode)
 		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support or your token has expired")}
 	}
 
 	if resp.StatusCode == http.StatusForbidden {
-		klog.V(2).Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
+		klog.Infof("gateway server %s returned 403, x-rh-insights-request-id=%s", resp.Request.URL, requestID)
 		c.IncrementRecvReportMetric(resp.StatusCode)
 		return nil, authorizer.Error{Err: fmt.Errorf("your Red Hat account is not enabled for remote support")}
 	}

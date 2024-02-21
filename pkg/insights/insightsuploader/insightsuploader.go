@@ -88,7 +88,7 @@ func (c *Controller) Run(ctx context.Context) {
 			c.initialDelay = wait.Jitter(next.Sub(now), 1.2)
 		}
 	}
-	klog.V(2).Infof("Reporting status periodically to %s every %s, starting in %s", cfg.DataReporting.UploadEndpoint, interval, c.initialDelay.Truncate(time.Second))
+	klog.Infof("Reporting status periodically to %s every %s, starting in %s", cfg.DataReporting.UploadEndpoint, interval, c.initialDelay.Truncate(time.Second))
 	go wait.Until(func() { c.periodicTrigger(ctx.Done()) }, 5*time.Second, ctx.Done())
 }
 
@@ -129,7 +129,7 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 				disabledInAPI = c.apiConfigurator.GatherDisabled()
 			}
 			if !reportingEnabled || disabledInAPI {
-				klog.V(2).Infof("Reporting was disabled")
+				klog.Infof("Reporting was disabled")
 				c.initialDelay = newCfg.DataReporting.Interval
 				return
 			}
@@ -168,7 +168,7 @@ func (c *Controller) checkSummaryAndSend(interval time.Duration, lastReported ti
 		source.ID = id
 		source.Type = "application/vnd.redhat.openshift.periodic"
 		if err := c.client.Send(ctx, endpoint, *source); err != nil {
-			klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
+			klog.Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
 			if errors.Is(err, insightsclient.ErrWaitingForVersion) {
 				c.initialDelay = wait.Jitter(time.Second*15, 1)
 				return
@@ -196,7 +196,7 @@ func (c *Controller) checkSummaryAndSend(interval time.Duration, lastReported ti
 	} else {
 		klog.Info("Display report that would be sent")
 		// display what would have been sent (to ensure we always exercise source processing)
-		if err := reportToLogs(source.Contents, klog.V(2)); err != nil {
+		if err := reportToLogs(source.Contents); err != nil {
 			klog.Errorf("Unable to log upload: %v", err)
 		}
 		// we didn't actually report logs, so don't advance the report date
@@ -225,7 +225,7 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 		if err != nil {
 			// do no return the error if it's not the last attempt
 			if c.backoff.Steps > 1 {
-				klog.V(2).Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
+				klog.Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
 				klog.Errorf("%v. Trying again in %s", err, c.backoff.Step())
 				return false, nil
 			}
@@ -239,10 +239,7 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 	return requestID, statusCode, nil
 }
 
-func reportToLogs(source io.Reader, klog klog.Verbose) error {
-	if !klog.Enabled() {
-		return nil
-	}
+func reportToLogs(source io.Reader) error {
 	gr, err := gzip.NewReader(source)
 	if err != nil {
 		return err
