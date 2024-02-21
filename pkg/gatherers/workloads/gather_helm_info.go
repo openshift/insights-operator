@@ -20,8 +20,16 @@ import (
 
 const labelChartNameKey = "helm.sh/chart"
 
-// GatherHelmInfo Collects summarized info about the helm usage on a cluster
-// in a generic fashion
+// GatherHelmInfo Collects statistics about resources deployed via HelmChart, counting only the resources
+// with `app.kubernetes.io/managed-by=Helm` and `helm.sh/chart` labels. The data is then summarized
+// and grouped by hashed namespace.
+//
+// Resource types included:
+// - ReplicaSets
+// - DaemonSets
+// - StatefulSets
+// - Services
+// - Deployments
 //
 // ### API Reference
 // None
@@ -84,7 +92,7 @@ func gatherHelmInfo(
 			// Anonymize the namespace to make it unique identifier
 			hash, err := createHash(item.GetNamespace())
 			if err != nil {
-				klog.Errorf("unable to hash the namespace '%s': %v", labels[labelChartNameKey], err)
+				klog.Errorf("unable to hash the namespace '%s': %v", item.GetNamespace(), err)
 				continue
 			}
 

@@ -88,8 +88,6 @@ func TestAddItem(t *testing.T) {
 	for _, testCase := range tests {
 		tt := testCase
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			helmList := newHelmChartInfoList()
 			for namespace, resources := range tt.info {
 				for resource, charts := range resources {
@@ -99,7 +97,12 @@ func TestAddItem(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, tt.expectedList, helmList.Namespaces, "expected '%v', got '%v'", tt.expectedList, helmList.Namespaces)
+			// check equality of elements in slices, ignoring order
+			for namespace, expectedCharts := range tt.expectedList {
+				actualCharts, ok := helmList.Namespaces[namespace]
+				assert.True(t, ok, "expected namespace '%s' not found", namespace)
+				assert.ElementsMatch(t, expectedCharts, actualCharts, "unexpected charts for namespace '%s'", namespace)
+			}
 		})
 	}
 }
