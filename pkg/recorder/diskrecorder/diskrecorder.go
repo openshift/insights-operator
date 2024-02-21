@@ -48,7 +48,7 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 	start := time.Now()
 	defer func() {
 		if wrote > 0 {
-			klog.V(2).Infof("Wrote %d records to disk in %s", wrote, time.Since(start).Truncate(time.Millisecond))
+			klog.Infof("Wrote %d records to disk in %s", wrote, time.Since(start).Truncate(time.Millisecond))
 		}
 	}()
 

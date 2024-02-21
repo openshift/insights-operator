@@ -113,7 +113,7 @@ func (c *Controller) SetLastReportedTime(at time.Time) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if c.reported.LastReportTime.IsZero() {
-		klog.V(2).Infof("Initializing last reported time to %s", at.UTC().Format(time.RFC3339))
+		klog.Infof("Initializing last reported time to %s", at.UTC().Format(time.RFC3339))
 	}
 	c.reported.LastReportTime.Time = at
 	c.triggerStatusUpdate()
@@ -197,7 +197,7 @@ func (c *Controller) currentControllerStatus() (allReady bool) { //nolint: gocyc
 	for name, source := range c.Sources() {
 		summary, ready := source.CurrentStatus()
 		if !ready {
-			klog.V(4).Infof("Source %s %T is not ready", name, source)
+			klog.Infof("Source %s %T is not ready", name, source)
 			allReady = false
 			continue
 		}

@@ -293,9 +293,9 @@ func (c *Controller) RetrieveReport() {
 // Run goroutine code for gathering the reports from Smart Proxy
 func (c *Controller) Run(ctx context.Context) {
 	c.StatusController.UpdateStatus(controllerstatus.Summary{Healthy: true})
-	klog.V(2).Info("Starting report retriever")
+	klog.Info("Starting report retriever")
 	conf := c.configurator.Config()
-	klog.V(2).Infof("Insights analysis reports will be downloaded from the %s endpoint with a delay of %s",
+	klog.Infof("Insights analysis reports will be downloaded from the %s endpoint with a delay of %s",
 		conf.DataReporting.DownloadEndpoint, conf.DataReporting.ReportPullingDelay)
 	for {
 		// always wait for new uploaded archive or insights-operator ends

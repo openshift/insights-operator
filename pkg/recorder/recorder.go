@@ -152,7 +152,7 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReport
 	wait.Until(func() {
 		basePruneInterval := r.interval * 2
 		interval := wait.Jitter(basePruneInterval, 1.2)
-		klog.V(2).Infof("Pruning old reports every %s, max age is %s", interval.Truncate(time.Second), r.maxAge)
+		klog.Infof("Pruning old reports every %s, max age is %s", interval.Truncate(time.Second), r.maxAge)
 		timer := time.NewTicker(interval)
 		defer timer.Stop()
 		for {

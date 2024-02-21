@@ -201,7 +201,7 @@ func (c *Controller) setSecretConfig(operatorConfig *config.Controller) {
 func (c *Controller) setConfig(operatorConfig *config.Controller) {
 	if c.config != nil {
 		if !reflect.DeepEqual(c.config, operatorConfig) {
-			klog.V(2).Infof("Legacy configuration updated: %s", operatorConfig.ToString())
+			klog.Infof("Legacy configuration updated: %s", operatorConfig.ToString())
 			for _, ch := range c.listeners {
 				if ch == nil {
 					continue
@@ -213,7 +213,7 @@ func (c *Controller) setConfig(operatorConfig *config.Controller) {
 			}
 		}
 	} else {
-		klog.V(2).Infof("Legacy configuration set: %s", operatorConfig.ToString())
+		klog.Infof("Legacy configuration set: %s", operatorConfig.ToString())
 	}
 	c.config = operatorConfig
 }
