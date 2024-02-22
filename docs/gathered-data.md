@@ -1207,7 +1207,7 @@ None
 - `etcd_object_counts` introduced in version 4.3+ and removed in 4.12.0
 - `cluster_installer` introduced in version 4.3+
 - `ALERTS` introduced in version 4.3+
-- `namespace:container_cpu_usage_seconds_total:sum_rate` introduced in version 4.5+
+- `namespace:container_cpu_usage_seconds_total:sum_rate` introduced in version 4.5+ and changed to `namespace:container_cpu_usage:sum` in 4.16.0+
 - `namespace:container_memory_usage_bytes:sum` introduced in version 4.5+
 - `virt_platform metric` introduced in version 4.8+ and backported to 4.6.34+, 4.7.16+ versions
 - `vsphere_node_hw_version_total` introduced in version 4.8+ and backported to 4.7.11+ version
