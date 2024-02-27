@@ -80,3 +80,13 @@ func (p *genericClient) UpdateOperatorStatus(ctx context.Context, resourceVersio
 
 	return &ret.Status.OperatorStatus, nil
 }
+
+func (p *genericClient) GetOperatorStateWithQuorum(_ context.Context) (spec *operatorapiv1.OperatorSpec,
+	status *operatorapiv1.OperatorStatus, resourceVersion string, err error) {
+	resource, err := p.informers.Operator().V1().InsightsOperators().Lister().Get("cluster")
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	return &resource.Spec.OperatorSpec, &resource.Status.OperatorStatus, resource.ResourceVersion, nil
+}
