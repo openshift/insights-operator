@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGatherHelmInfo(t *testing.T) {
+func TestGatherHelmInfo(t *testing.T) { // nolint: funlen
 	ctx := context.TODO()
 
 	hash, err := createHash("mynamespace")
