@@ -346,7 +346,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 	}
 
 	klog.Infof("Created new gathering job %v", gj.Name)
-	err = c.jobController.WaitForJobCompletion(ctx, gj)
+	err = c.jobController.WaitForJobCompletion(ctx, gj.Name)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			klog.Errorf("Failed to read job status: %v", err)
