@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	v1 "github.com/openshift/api/config/v1"
@@ -141,6 +142,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
 	var dgInformer periodic.DataGatherInformer
 	if insightsConfigAPIEnabled {
+		deleteAllRunningGatheringsPods(ctx, kubeClient)
 		configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 		insightsDataGatherObserver, err = configobserver.NewInsightsDataGatherObserver(gatherKubeConfig,
 			controller.EventRecorder, configInformersForTechPreview)
@@ -314,5 +316,29 @@ func isRunning(kubeConfig *rest.Config) wait.ConditionWithContextFunc {
 			}
 		}
 		return true, nil
+	}
+}
+
+// deleteAllRunningGatheringsPods deletes all the active jobs (and their Pods) with the "periodic-gathering-"
+// prefix in the openshift-insights namespace
+func deleteAllRunningGatheringsPods(ctx context.Context, cli kubernetes.Interface) {
+	jobList, err := cli.BatchV1().Jobs("openshift-insights").List(ctx, metav1.ListOptions{})
+	if err != nil {
+		klog.Warningf("Failed to list jobs in the Insights namespace: %v ", err)
+	}
+
+	orphan := metav1.DeletePropagationBackground
+	for i := range jobList.Items {
+		j := jobList.Items[i]
+		if j.Status.Active > 0 && strings.HasPrefix(j.Name, "periodic-gathering-") {
+			err := cli.BatchV1().Jobs("openshift-insights").Delete(ctx, j.Name, metav1.DeleteOptions{
+				PropagationPolicy: &orphan,
+			})
+			if err != nil {
+				klog.Warningf("Failed to delete job %s: %v", j.Name, err)
+			} else {
+				klog.Infof("Job %s was deleted due to container restart", j.Name)
+			}
+		}
 	}
 }
