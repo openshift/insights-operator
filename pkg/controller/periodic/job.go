@@ -8,8 +8,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
 )
 
 // JobController type responsible for
@@ -107,24 +109,29 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 }
 
 // WaitForJobCompletion listen the Kubernetes events to check if job finished.
-func (j *JobController) WaitForJobCompletion(ctx context.Context, jobName string) error {
-	watcher, err := j.kubeClient.BatchV1().Jobs(insightsNamespace).
-		Watch(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", jobName)})
+func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
+	watcherFnc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+		return j.kubeClient.BatchV1().Jobs(insightsNamespace).
+			Watch(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", job.Name)})
+	}
+
+	retryWatcher, err := watch.NewRetryWatcher(job.ResourceVersion, &cache.ListWatch{WatchFunc: watcherFnc})
 	if err != nil {
 		return err
 	}
-	defer watcher.Stop()
+
+	defer retryWatcher.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case event, ok := <-watcher.ResultChan():
+		case event, ok := <-retryWatcher.ResultChan():
 			if !ok {
 				return fmt.Errorf("watcher channel was closed unexpectedly")
 			}
 
-			if event.Type != watch.Modified {
+			if event.Type != apiWatch.Modified {
 				continue
 			}
 
