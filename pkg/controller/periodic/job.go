@@ -131,6 +131,10 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 				return fmt.Errorf("watcher channel was closed unexpectedly")
 			}
 
+			if event.Type == apiWatch.Deleted {
+				return nil
+			}
+
 			if event.Type != apiWatch.Modified {
 				continue
 			}
