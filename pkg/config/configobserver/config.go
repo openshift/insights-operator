@@ -76,52 +76,12 @@ func (c *Config) loadHTTP(data map[string][]byte) {
 }
 
 func (c *Config) loadReport(data map[string][]byte) {
-	if enableGlobalObfuscation, ok := data["enableGlobalObfuscation"]; ok {
-		c.EnableGlobalObfuscation = strings.EqualFold(string(enableGlobalObfuscation), "true")
-	}
-
-	if reportEndpoint, ok := data["reportEndpoint"]; ok {
-		c.ReportEndpoint = string(reportEndpoint)
-	}
-	if reportPullingDelay, ok := data["reportPullingDelay"]; ok {
-		if v, err := time.ParseDuration(string(reportPullingDelay)); err == nil {
-			c.ReportPullingDelay = v
-		} else {
-			klog.Warningf(
-				"reportPullingDelay secret contains an invalid value (%s). Using previous value",
-				reportPullingDelay,
-			)
-		}
-	} else {
-		c.ReportPullingDelay = time.Duration(-1)
-	}
-
-	if reportPullingTimeout, ok := data["reportPullingTimeout"]; ok {
-		if v, err := time.ParseDuration(string(reportPullingTimeout)); err == nil {
-			c.ReportPullingTimeout = v
-		} else {
-			klog.Warningf(
-				"reportPullingTimeout secret contains an invalid value (%s). Using previous value",
-				reportPullingTimeout,
-			)
-		}
-	}
-
-	if reportMinRetryTime, ok := data["reportMinRetryTime"]; ok {
-		if v, err := time.ParseDuration(string(reportMinRetryTime)); err == nil {
-			c.ReportMinRetryTime = v
-		} else {
-			klog.Warningf(
-				"reportMinRetryTime secret contains an invalid value (%s). Using previous value",
-				reportMinRetryTime,
-			)
-		}
-	}
-
-	c.Report = len(c.Endpoint) > 0
-	if disableInsightsAlerts, ok := data["disableInsightsAlerts"]; ok {
-		c.DisableInsightsAlerts = strings.EqualFold(string(disableInsightsAlerts), "true")
-	}
+	c.loadEnableGlobalObfuscation(data)
+	c.loadReportEndpoint(data)
+	c.loadReportPullingDelay(data)
+	c.loadReportPullingTimeout(data)
+	c.loadReportMinRetryTime(data)
+	c.loadReportSettings(data)
 }
 
 func (c *Config) loadOCM(data map[string][]byte) {
@@ -166,5 +126,50 @@ func (c *Config) loadProcessingStatusEndpoint(data map[string][]byte) {
 func (c *Config) loadReportEndpointTechPreview(data map[string][]byte) {
 	if endpoint, ok := data["reportEndpointTechPreview"]; ok {
 		c.ReportEndpointTechPreview = string(endpoint)
+	}
+}
+
+func (c *Config) loadEnableGlobalObfuscation(data map[string][]byte) {
+	if enableGlobalObfuscation, ok := data["enableGlobalObfuscation"]; ok {
+		c.EnableGlobalObfuscation = strings.EqualFold(string(enableGlobalObfuscation), "true")
+	}
+}
+
+func (c *Config) loadReportEndpoint(data map[string][]byte) {
+	if reportEndpoint, ok := data["reportEndpoint"]; ok {
+		c.ReportEndpoint = string(reportEndpoint)
+	}
+}
+
+func (c *Config) loadReportPullingDelay(data map[string][]byte) {
+	c.loadReportDurationSetting(data, "reportPullingDelay", &c.ReportPullingDelay)
+}
+
+func (c *Config) loadReportPullingTimeout(data map[string][]byte) {
+	c.loadReportDurationSetting(data, "reportPullingTimeout", &c.ReportPullingTimeout)
+}
+
+func (c *Config) loadReportMinRetryTime(data map[string][]byte) {
+	c.loadReportDurationSetting(data, "reportMinRetryTime", &c.ReportMinRetryTime)
+}
+
+func (c *Config) loadReportDurationSetting(data map[string][]byte, key string, target *time.Duration) {
+	if value, ok := data[key]; ok {
+		if v, err := time.ParseDuration(string(value)); err == nil {
+			*target = v
+		} else {
+			klog.Warningf("%s secret contains an invalid value (%s). Using previous value", key, value)
+		}
+	} else {
+		if key == "reportPullingDelay" {
+			*target = time.Duration(-1)
+		}
+	}
+}
+
+func (c *Config) loadReportSettings(data map[string][]byte) {
+	c.Report = len(c.Endpoint) > 0
+	if disableInsightsAlerts, ok := data["disableInsightsAlerts"]; ok {
+		c.DisableInsightsAlerts = strings.EqualFold(string(disableInsightsAlerts), "true")
 	}
 }
