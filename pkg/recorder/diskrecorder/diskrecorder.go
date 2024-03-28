@@ -22,7 +22,7 @@ type DiskRecorder struct {
 	lastRecording time.Time
 }
 
-// New diskrecorder driver
+// New DiskRecorder driver
 func New(path string) *DiskRecorder {
 	return &DiskRecorder{basePath: path}
 }
@@ -44,6 +44,29 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 		return nil, fmt.Errorf(`path should have suffix "%v"`, archiveExtension)
 	}
 
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0640)
+	if err != nil {
+		if os.IsExist(err) {
+			klog.Errorf("Tried to copy to %s which already exists", path)
+		}
+		return nil, fmt.Errorf("nable to create archive: %v", err)
+	}
+
+	klog.Infof("Writing %d records to %s", len(records), path)
+
+	completed, err := writeRecordsToArchive(records, f)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := f.Close(); err != nil {
+		return nil, fmt.Errorf("unable to close file: %v", err)
+	}
+
+	return completed, nil
+}
+
+func writeRecordsToArchive(records record.MemoryRecords, f *os.File) ([]record.MemoryRecord, error) {
 	wrote := 0
 	start := time.Now()
 	defer func() {
@@ -52,22 +75,10 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 		}
 	}()
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0640)
-	if err != nil {
-		if os.IsExist(err) {
-			klog.Errorf("Tried to copy to %s which already exists", path)
-			return nil, err
-		}
-		return nil, fmt.Errorf("unable to create archive: %v", err)
-	}
-	defer f.Close()
-
 	completed := make([]record.MemoryRecord, 0, len(records))
 	defer func() {
 		wrote = len(completed)
 	}()
-
-	klog.Infof("Writing %d records to %s", len(records), path)
 
 	gw := gzip.NewWriter(f)
 	tw := tar.NewWriter(gw)
@@ -82,6 +93,7 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 		}); err != nil {
 			return nil, fmt.Errorf("unable to write tar header: %v", err)
 		}
+
 		if _, err := tw.Write(r.Data); err != nil {
 			return nil, fmt.Errorf("unable to write tar entry: %v", err)
 		}
@@ -94,9 +106,6 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 	if err := gw.Close(); err != nil {
 		return nil, fmt.Errorf("unable to close gzip writer: %v", err)
 	}
-	if err := f.Close(); err != nil {
-		return nil, fmt.Errorf("unable to close file: %v", err)
-	}
 
 	return completed, nil
 }
@@ -107,34 +116,54 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 	if err != nil {
 		return err
 	}
-	count := 0
+
 	var errors []string
+	count := 0
+
 	for _, file := range files {
 		fileInfo, err := file.Info()
 		if err != nil {
-			continue
-		}
-		if isNotArchiveFile(fileInfo) {
-			continue
-		}
-		if fileInfo.ModTime().After(olderThan) {
-			continue
-		}
-		if err := os.Remove(filepath.Join(d.basePath, file.Name())); err != nil {
 			errors = append(errors, err.Error())
 			continue
 		}
+
+		if err := d.pruneFile(fileInfo, olderThan); err != nil {
+			errors = append(errors, err.Error())
+			continue
+		}
+
 		count++
 	}
+
+	return handlePruneErrors(count, errors, olderThan)
+}
+
+// pruneFile prunes a single file based on its properties
+func (d *DiskRecorder) pruneFile(fileInfo fs.FileInfo, olderThan time.Time) error {
+	if isNotArchiveFile(fileInfo) || fileInfo.ModTime().After(olderThan) {
+		return nil
+	}
+
+	filePath := filepath.Join(d.basePath, fileInfo.Name())
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("failed to delete %s: %v", filePath, err)
+	}
+
+	return nil
+}
+
+// handlePruneErrors handles errors from pruning files
+func handlePruneErrors(count int, errors []string, olderThan time.Time) error {
 	if len(errors) == 1 {
 		return fmt.Errorf("failed to delete expired file: %v", errors[0])
 	}
 	if len(errors) > 1 {
-		return fmt.Errorf("failed to delete %d expired files: %v", len(errors), errors[0])
+		return fmt.Errorf("failed to delete %d expired files: %v", len(errors), errors)
 	}
 	if count > 0 {
-		klog.Infof("Deleted %d files older than %s", count, olderThan.UTC().Format(time.RFC3339))
+		klog.V(2).Infof("Deleted %d files older than %s", count, olderThan.UTC().Format(time.RFC3339))
 	}
+
 	return nil
 }
 
@@ -147,32 +176,42 @@ func (d *DiskRecorder) Summary(_ context.Context, since time.Time) (*insightscli
 	if len(files) == 0 {
 		return nil, false, nil
 	}
-	recentFiles := make([]string, 0, len(files))
 
+	recentFiles := make([]string, 0, len(files))
 	var fileInfo fs.FileInfo
+
 	for _, file := range files {
 		fileInfo, err = file.Info()
 		if err != nil {
 			return nil, false, err
 		}
-		if isNotArchiveFile(fileInfo) {
-			continue
-		}
-		if fileInfo.ModTime().Before(since) {
+		if isNotArchiveFile(fileInfo) || fileInfo.ModTime().Before(since) {
 			continue
 		}
 		recentFiles = append(recentFiles, file.Name())
 	}
+
 	if len(recentFiles) == 0 {
 		return nil, false, nil
 	}
+
 	lastFile := recentFiles[len(recentFiles)-1]
+	filePath := filepath.Join(d.basePath, lastFile)
+
 	klog.Infof("Found files to send: %v", lastFile)
-	f, err := os.Open(filepath.Join(d.basePath, lastFile))
+	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, false, nil
 	}
-	return &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}, true, nil
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			klog.V(2).Infof("Unable to close file: %v", err)
+		}
+	}(f)
+
+	source := &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}
+	return source, true, nil
 }
 
 func isNotArchiveFile(file os.FileInfo) bool {
@@ -189,8 +228,10 @@ func (d *DiskRecorder) LastArchive() (*insightsclient.Source, error) {
 	if len(files) == 0 {
 		return nil, nil
 	}
+
 	var lastTime time.Time
 	var lastArchive string
+
 	for _, file := range files {
 		fileInfo, err := file.Info() // nolint: govet
 		if err != nil {
@@ -204,10 +245,18 @@ func (d *DiskRecorder) LastArchive() (*insightsclient.Source, error) {
 			lastArchive = file.Name()
 		}
 	}
+
 	f, err := os.Open(filepath.Join(d.basePath, lastArchive))
 	if err != nil {
 		return nil, err
 	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			klog.V(2).Infof("Unable to close file: %v", err)
+		}
+	}(f)
 
-	return &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}, nil
+	source := &insightsclient.Source{Contents: f, CreationTime: d.lastRecording}
+	return source, nil
 }
