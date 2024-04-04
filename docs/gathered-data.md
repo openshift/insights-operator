@@ -751,6 +751,12 @@ If the DVO service is deployed in a namespace other than `openshift-deployment-v
 then the names of the workloads (e.g., namespace, deployment) are collected.
 Otherwise, only the UIDs of those resources are collected.
 
+If no service with label selector `name=deployment-validation-operator` is found,
+then there is no `dvo_metrics` file in the archive (and the warning is present in the archive metadata).
+If a service with the selector `name=deployment-validation-operator` is found,
+but no active DVO checks are available,
+then the `dvo_metrics` file in the archive is almost empty (only the URL of the service is there).
+
 ### API Reference
 None
 

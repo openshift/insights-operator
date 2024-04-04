@@ -20,12 +20,14 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/types"
 	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 const (
 	managedDVONamespaceName = "openshift-deployment-validation-operator"
+	dvoServiceLabelSelector = "name=deployment-validation-operator"
 )
 
 // GatherDVOMetrics Collects metrics from the Deployment Validation Operator's
@@ -34,6 +36,12 @@ const (
 // If the DVO service is deployed in a namespace other than `openshift-deployment-validation-operator',
 // then the names of the workloads (e.g., namespace, deployment) are collected.
 // Otherwise, only the UIDs of those resources are collected.
+//
+// If no service with label selector `name=deployment-validation-operator` is found,
+// then there is no `dvo_metrics` file in the archive (and the warning is present in the archive metadata).
+// If a service with the selector `name=deployment-validation-operator` is found,
+// but no active DVO checks are available,
+// then the `dvo_metrics` file in the archive is almost empty (only the URL of the service is there).
 //
 // ### API Reference
 // None
@@ -71,14 +79,24 @@ func gatherDVOMetrics(
 	obfuscation config.Obfuscation,
 ) ([]record.Record, []error) {
 	serviceList, err := coreClient.Services("").List(ctx, metav1.ListOptions{
-		LabelSelector: "name=deployment-validation-operator",
+		LabelSelector: dvoServiceLabelSelector,
 	})
 	if err != nil {
 		return nil, []error{err}
 	}
 
+	// This means that no service was found with the "name=deployment-validation-operator" label selector,
+	// which may indicate that DVO is not installed (or not properly installed).
+	// Record is not created.
+	if len(serviceList.Items) == 0 {
+		klog.Warning("No DVO metrics gathered")
+		return nil, []error{
+			&types.Warning{UnderlyingValue: fmt.Errorf("no service found with label selector %s", dvoServiceLabelSelector)},
+		}
+	}
+
 	useUIDs := false
-	nonFatalErrors := []error{}
+	errors := []error{}
 	allDVOMetricsLines := []byte{}
 	for svcIdx := range serviceList.Items {
 		// Use pointer to make gocritic happy and avoid copying the whole Service struct.
@@ -97,7 +115,7 @@ func gatherDVOMetrics(
 				// It is possible that this service is not really the correct one
 				// and a different service may return the metrics we are looking for.
 				klog.Warningf("Unable to read metrics from endpoint %q: %v", apiURL.String(), err)
-				nonFatalErrors = append(nonFatalErrors, err)
+				errors = append(errors, err)
 				continue
 			}
 
@@ -112,15 +130,9 @@ func gatherDVOMetrics(
 		}
 	}
 
-	// If there are no DVO metrics (or no DVO metrics service), don't create a record at all.
-	if len(allDVOMetricsLines) == 0 {
-		klog.Warning("No DVO metrics gathered")
-		return nil, nonFatalErrors
-	}
-
 	return []record.Record{
 		{Name: "config/dvo_metrics", Item: marshal.RawByte(allDVOMetricsLines)},
-	}, nonFatalErrors
+	}, errors
 }
 
 func gatherDVOMetricsFromEndpoint(
