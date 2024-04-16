@@ -5,13 +5,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"time"
+
+	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
 
 	"k8s.io/klog/v2"
 
-	v1 "k8s.io/api/core/v1"
-
-	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -19,22 +18,23 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// This map defines the namespace and the certificates that we are looking for
-var ingressCertsMap = map[string][]string{
-	"openshift-ingress-operator": {"router-ca"},
-	"openshift-ingress":          {"router-certs-default"},
+const ingressCertificatesLimits = int64(64)
+
+var ingressNamespaces = []string{
+	"openshift-ingress-operator",
+	"openshift-ingress",
 }
 
-type IngressCertificateInfo struct {
-	Name      string    `json:"name"`
-	NotBefore time.Time `json:"not_before"`
-	NotAfter  time.Time `json:"not_after"`
+type CertificateInfo struct {
+	Name        string
+	NotBefore   metav1.Time
+	NotAfter    metav1.Time
+	Controllers []ControllerInfo
 }
 
-type IngressControllerInfo struct {
-	Name                         string                   `json:"name"`
-	OperatorGeneratedCertificate []IngressCertificateInfo `json:"operator_generated_certificate"`
-	CustomCertificates           []IngressCertificateInfo `json:"custom_certificates"`
+type ControllerInfo struct {
+	Name      string
+	Namespace string
 }
 
 func (g *Gatherer) GatherClusterIngressCertificates(ctx context.Context) ([]record.Record, []error) {
@@ -43,119 +43,117 @@ func (g *Gatherer) GatherClusterIngressCertificates(ctx context.Context) ([]reco
 		return nil, []error{err}
 	}
 
-	configClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
+	operatorClient, err := operatorclient.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return gatherClusterIngressCertificates(ctx, gatherKubeClient.CoreV1(), configClient)
+	return gatherClusterIngressCertificates(ctx, gatherKubeClient.CoreV1(), operatorClient)
 }
 
-func gatherClusterIngressCertificates(ctx context.Context, coreClient corev1client.CoreV1Interface, configClient configv1client.ConfigV1Interface) ([]record.Record, []error) {
-	var records []record.Record
-	var errors []error
+func gatherClusterIngressCertificates(
+	ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
+	operatorClient operatorclient.Interface) ([]record.Record, []error) {
 
-	for namespace, certs := range ingressCertsMap {
-		ingressCerts, errs := getIngressCertificates(ctx, coreClient, configClient, namespace, certs)
-		if len(errs) > 0 {
-			errors = append(errors, errs...)
+	var certificates []*CertificateInfo
+	var errs []error
+
+	// Step 1: Collect router-ca and router-certs-default
+	routerCACert, routerCACertErr := getCertificateInfoFromSecret(ctx, coreClient, "openshift-ingress-operator", "router-ca")
+	if routerCACertErr != nil {
+		errs = append(errs, routerCACertErr)
+	} else {
+		certificates = append(certificates, routerCACert)
+	}
+
+	routerCertsDefaultCert, routerCertsDefaultCertErr := getCertificateInfoFromSecret(ctx, coreClient, "openshift-ingress", "router-certs-default")
+	if routerCertsDefaultCertErr != nil {
+		errs = append(errs, routerCertsDefaultCertErr)
+	} else {
+		certificates = append(certificates, routerCertsDefaultCert)
+	}
+
+	// Step 2: List all Ingress Controllers
+	for _, namespace := range ingressNamespaces {
+		controllers, err := operatorClient.OperatorV1().IngressControllers(namespace).List(ctx, metav1.ListOptions{})
+		if errors.IsNotFound(err) {
+			klog.V(2).Infof("Ingress Controllers not found in '%s' namespace", namespace)
+			continue
+		}
+		if err != nil {
+			errs = append(errs, err)
 			continue
 		}
 
-		if len(ingressCerts) > 0 {
-			records = append(records, record.Record{
-				Name: fmt.Sprintf("config/ingress/%s/ingress_certificates.json", namespace),
-				Item: record.JSONMarshaller{Object: ingressCerts},
-			})
+		// Step 3: Filter Ingress Controllers with spec.defaultCertificate and get certificate info
+		for _, controller := range controllers.Items {
+			if controller.Spec.DefaultCertificate != nil {
+				certName := controller.Spec.DefaultCertificate.Name
+				certInfo, certErr := getCertificateInfoFromSecret(ctx, coreClient, namespace, certName)
+				if certErr != nil {
+					errs = append(errs, certErr)
+					continue
+				}
+
+				// Step 4: Add certificate info to the certificates list
+				found := false
+				for _, cert := range certificates {
+					if cert.Name == certInfo.Name {
+						// Certificate already exists, add the controller to its list
+						cert.Controllers = append(cert.Controllers, ControllerInfo{Name: controller.Name, Namespace: controller.Namespace})
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					// Certificate not found, create a new entry
+					certificates = append(certificates, certInfo)
+				}
+			}
 		}
+	}
+
+	var records []record.Record
+	if len(certificates) > 0 {
+		// Step 5: Generate the certificates record
+		records = append(records, record.Record{
+			Name: "config/ingress/certificates",
+			Item: record.JSONMarshaller{Object: certificates},
+		})
 	}
 
 	return records, nil
 }
 
-func getIngressCertificates(
-	ctx context.Context,
-	coreClient corev1client.CoreV1Interface,
-	openshiftClient configv1client.ConfigV1Interface,
-	namespace string,
-	certs []string) ([]IngressControllerInfo, []error) {
-
-	var controllers []IngressControllerInfo
-	var errors []error
-
-	ingressControllers, err := openshiftClient.Ingresses().List(ctx, metav1.ListOptions{})
+func getCertificateInfoFromSecret(ctx context.Context, coreClient corev1client.CoreV1Interface, namespace, secretName string) (*CertificateInfo, error) {
+	secret, err := coreClient.Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
-		klog.V(2).Infof("failed to list IngressControllers: %v", err)
-		return nil, []error{err}
+		return nil, fmt.Errorf("failed to get secret '%s' in namespace '%s': %v", secretName, namespace, err)
 	}
 
-	for _, controller := range ingressControllers.Items {
-		controllerName := controller.Name
-		controllerCertificates, errs := getControllerCertificates(ctx, coreClient, namespace, certs)
-		if len(errs) > 0 {
-			errors = append(errors, errs...)
-			continue
-		}
-
-		controllers = append(controllers, IngressControllerInfo{
-			Name:                         controllerName,
-			OperatorGeneratedCertificate: controllerCertificates,
-			CustomCertificates:           make([]IngressCertificateInfo, 0),
-		})
-	}
-
-	return controllers, errors
-}
-
-func getControllerCertificates(
-	ctx context.Context,
-	coreClient corev1client.CoreV1Interface,
-	namespace string,
-	certs []string) ([]IngressCertificateInfo, []error) {
-
-	var certInfos []IngressCertificateInfo
-	var errors []error
-
-	for _, secretName := range certs {
-		secret, err := coreClient.Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-		if err != nil {
-			klog.V(2).Infof("failed to fetch secret: %v", err)
-			errors = append(errors, err)
-			continue
-		}
-
-		certInfo, err := certificateInfoFromSecret(secret)
-		if err != nil {
-			klog.V(2).Infof("failed to parse the ingress certificate: %v", err)
-			errors = append(errors, err)
-			continue
-		}
-
-		certInfos = append(certInfos, *certInfo)
-	}
-
-	return certInfos, errors
-}
-
-func certificateInfoFromSecret(secret *v1.Secret) (*IngressCertificateInfo, error) {
 	crtData, found := secret.Data["tls.crt"]
 	if !found {
-		return nil, fmt.Errorf("'tls.crt' not found")
+		return nil, fmt.Errorf("'tls.crt' not found in secret '%s' in namespace '%s'", secretName, namespace)
 	}
 
 	block, _ := pem.Decode(crtData)
 	if block == nil {
-		return nil, fmt.Errorf("unable to decode certificate (x509)")
+		return nil, fmt.Errorf("unable to decode certificate (x509) from secret '%s' in namespace '%s'", secretName, namespace)
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse certificate from secret '%s' in namespace '%s': %v", secretName, namespace, err)
 	}
 
-	return &IngressCertificateInfo{
-		Name:      secret.Name,
-		NotBefore: cert.NotBefore,
-		NotAfter:  cert.NotAfter,
+	return &CertificateInfo{
+		Name:      secretName,
+		NotBefore: metav1.NewTime(cert.NotBefore),
+		NotAfter:  metav1.NewTime(cert.NotAfter),
+		Controllers: []ControllerInfo{
+			{Name: "router", Namespace: namespace},
+		},
 	}, nil
 }
