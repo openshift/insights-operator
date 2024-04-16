@@ -26,15 +26,16 @@ var ingressNamespaces = []string{
 }
 
 type CertificateInfo struct {
-	Name        string
-	NotBefore   metav1.Time
-	NotAfter    metav1.Time
-	Controllers []ControllerInfo
+	Name        string           `json:"name"`
+	Namespace   string           `json:"namespace"`
+	NotBefore   metav1.Time      `json:"not_before"`
+	NotAfter    metav1.Time      `json:"not_after"`
+	Controllers []ControllerInfo `json:"controllers"`
 }
 
 type ControllerInfo struct {
-	Name      string
-	Namespace string
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 func (g *Gatherer) GatherClusterIngressCertificates(ctx context.Context) ([]record.Record, []error) {
@@ -150,6 +151,7 @@ func getCertificateInfoFromSecret(ctx context.Context, coreClient corev1client.C
 
 	return &CertificateInfo{
 		Name:      secretName,
+		Namespace: namespace,
 		NotBefore: metav1.NewTime(cert.NotBefore),
 		NotAfter:  metav1.NewTime(cert.NotAfter),
 		Controllers: []ControllerInfo{
