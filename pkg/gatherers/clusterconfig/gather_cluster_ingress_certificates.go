@@ -18,7 +18,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-const ingressCertificatesLimits = int64(64)
+const ingressCertificatesLimits = 64
 
 var ingressNamespaces = []string{
 	"openshift-ingress-operator",
@@ -89,6 +89,13 @@ func gatherClusterIngressCertificates(
 
 		// Step 3: Filter Ingress Controllers with spec.defaultCertificate and get certificate info
 		for _, controller := range controllers.Items {
+
+			// Step 4: Check the certificate limits
+			if len(certificates) >= ingressCertificatesLimits {
+				klog.V(2).Infof("Reached the limit of ingress certificates (%d), skipping additional certificates", ingressCertificatesLimits)
+				break
+			}
+
 			if controller.Spec.DefaultCertificate != nil {
 				certName := controller.Spec.DefaultCertificate.Name
 				certInfo, certErr := getCertificateInfoFromSecret(ctx, coreClient, namespace, certName)
@@ -97,10 +104,11 @@ func gatherClusterIngressCertificates(
 					continue
 				}
 
-				// Step 4: Add certificate info to the certificates list
+				// Step 5: Add certificate info to the certificates list
 				found := false
 				for _, cert := range certificates {
-					if cert.Name == certInfo.Name {
+					// I need to compare both, since a certificate seems to be able to live outside the controller's namespace
+					if cert.Name == certInfo.Name && cert.Namespace == certInfo.Namespace {
 						// Certificate already exists, add the controller to its list
 						cert.Controllers = append(cert.Controllers, ControllerInfo{Name: controller.Name, Namespace: controller.Namespace})
 						found = true
@@ -118,7 +126,7 @@ func gatherClusterIngressCertificates(
 
 	var records []record.Record
 	if len(certificates) > 0 {
-		// Step 5: Generate the certificates record
+		// Step 6: Generate the certificates record
 		records = append(records, record.Record{
 			Name: "config/ingress/certificates",
 			Item: record.JSONMarshaller{Object: certificates},
