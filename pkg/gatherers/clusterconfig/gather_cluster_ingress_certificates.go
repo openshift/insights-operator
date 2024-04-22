@@ -158,12 +158,10 @@ func getCertificateInfoFromSecret(ctx context.Context, coreClient corev1client.C
 	}
 
 	return &CertificateInfo{
-		Name:      secretName,
-		Namespace: namespace,
-		NotBefore: metav1.NewTime(cert.NotBefore),
-		NotAfter:  metav1.NewTime(cert.NotAfter),
-		Controllers: []ControllerInfo{
-			{Name: "router", Namespace: namespace},
-		},
+		Name:        secretName,
+		Namespace:   namespace,
+		NotBefore:   metav1.NewTime(cert.NotBefore),
+		NotAfter:    metav1.NewTime(cert.NotAfter),
+		Controllers: []ControllerInfo{},
 	}, nil
 }
