@@ -118,6 +118,7 @@ func gatherClusterIngressCertificates(
 
 				if !found {
 					// Certificate not found, create a new entry
+					certInfo.Controllers = append(certInfo.Controllers, ControllerInfo{Name: controller.Name, Namespace: controller.Namespace})
 					certificates = append(certificates, certInfo)
 				}
 			}
