@@ -257,106 +257,203 @@ func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
 	}
 }
 
-func TestAnonymizer_NewAnonymizerFromConfigClient(t *testing.T) {
+func TestNewAnonymizerFromConfigClient(t *testing.T) {
 	const testClusterBaseDomain = "example.com"
 	localhostCIDR := "127.0.0.0/8"
 	_, localhostNet, err := net.ParseCIDR(localhostCIDR)
 	assert.NoError(t, err)
-	cidr1 := "55.44.0.0/16"
-	_, net1, err := net.ParseCIDR(cidr1)
+	clusterNetworkCIDR := "55.44.0.0/16"
+	_, net1, err := net.ParseCIDR(clusterNetworkCIDR)
 	assert.NoError(t, err)
-	cidr2 := "192.168.0.0/16"
-	_, net2, err := net.ParseCIDR(cidr2)
+	serviceNetworkCIDR := "192.168.0.0/16"
+	_, net2, err := net.ParseCIDR(serviceNetworkCIDR)
 	assert.NoError(t, err)
 	egressCIDR := "10.0.0.0/8"
 	_, egressNet, err := net.ParseCIDR(egressCIDR)
 	assert.NoError(t, err)
-	testNetworks := []subnetInformation{
+
+	tests := []struct {
+		name               string
+		dns                *configv1.DNS
+		network            *configv1.Network
+		hostsubnet         *networkv1.HostSubnet
+		clusterConfigMap   *corev1.ConfigMap
+		expectedSubnetInfo []subnetInformation
+	}{
 		{
-			network: *localhostNet,
-			lastIP:  net.IPv4(127, 0, 0, 0),
+			name: "Network config includes DNS, ExternalIP and HostSubnet exists",
+			dns: &configv1.DNS{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+				Spec:       configv1.DNSSpec{BaseDomain: testClusterBaseDomain},
+			},
+			network: &configv1.Network{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+				Spec: configv1.NetworkSpec{
+					ClusterNetwork: []configv1.ClusterNetworkEntry{{CIDR: clusterNetworkCIDR}},
+					ServiceNetwork: []string{serviceNetworkCIDR},
+					ExternalIP:     &configv1.ExternalIPConfig{Policy: &configv1.ExternalIPPolicy{}},
+				},
+			},
+			hostsubnet: &networkv1.HostSubnet{
+				EgressCIDRs: []networkv1.HostSubnetEgressCIDR{networkv1.HostSubnetEgressCIDR(egressCIDR)},
+			},
+			clusterConfigMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster-config-v1"},
+			},
+			expectedSubnetInfo: []subnetInformation{
+				{
+					network: *localhostNet,
+					lastIP:  net.IPv4(127, 0, 0, 0),
+				},
+				{
+					network: *egressNet,
+					lastIP:  net.IPv4(10, 0, 0, 0),
+				},
+				{
+					network: *net1,
+					lastIP:  net.IPv4(55, 44, 0, 0),
+				},
+				{
+					network: *net2,
+					lastIP:  net.IPv4(192, 168, 0, 0),
+				},
+			},
 		},
 		{
-			network: *egressNet,
-			lastIP:  net.IPv4(10, 0, 0, 0),
+			name: "Network config includes DNS, ExternalIP and HostSubnet is nil",
+			dns: &configv1.DNS{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+				Spec:       configv1.DNSSpec{BaseDomain: testClusterBaseDomain},
+			},
+			network: &configv1.Network{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+				Spec: configv1.NetworkSpec{
+					ClusterNetwork: []configv1.ClusterNetworkEntry{{CIDR: clusterNetworkCIDR}},
+					ServiceNetwork: []string{serviceNetworkCIDR},
+					ExternalIP:     &configv1.ExternalIPConfig{Policy: &configv1.ExternalIPPolicy{}},
+				},
+			},
+			hostsubnet: nil,
+			clusterConfigMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster-config-v1"},
+			},
+			expectedSubnetInfo: []subnetInformation{
+				{
+					network: *localhostNet,
+					lastIP:  net.IPv4(127, 0, 0, 0),
+				},
+				{
+					network: *egressNet,
+					// when hostsubnet doesn't exist then OVN egress CIDR 192.168.126.0/18
+					// is added
+					lastIP: net.IPv4(192, 168, 64, 0),
+				},
+				{
+					network: *net1,
+					lastIP:  net.IPv4(55, 44, 0, 0),
+				},
+				{
+					network: *net2,
+					lastIP:  net.IPv4(192, 168, 0, 0),
+				},
+			},
 		},
 		{
-			network: *net1,
-			lastIP:  net.IPv4(55, 44, 0, 0),
-		},
-		{
-			network: *net2,
-			lastIP:  net.IPv4(192, 168, 0, 0),
+			name: "Network config includes DNS, HostSubnet but ExternalIP is nil",
+			dns: &configv1.DNS{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+				Spec:       configv1.DNSSpec{BaseDomain: testClusterBaseDomain},
+			},
+			network: &configv1.Network{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+				Spec: configv1.NetworkSpec{
+					ClusterNetwork: []configv1.ClusterNetworkEntry{{CIDR: clusterNetworkCIDR}},
+					ServiceNetwork: []string{serviceNetworkCIDR},
+					ExternalIP:     nil,
+				},
+			},
+			hostsubnet: &networkv1.HostSubnet{
+				EgressCIDRs: []networkv1.HostSubnetEgressCIDR{networkv1.HostSubnetEgressCIDR(egressCIDR)},
+			},
+			clusterConfigMap: &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "cluster-config-v1"},
+			},
+			expectedSubnetInfo: []subnetInformation{
+				{
+					network: *localhostNet,
+					lastIP:  net.IPv4(127, 0, 0, 0),
+				},
+				{
+					network: *egressNet,
+					lastIP:  net.IPv4(10, 0, 0, 0),
+				},
+				{
+					network: *net1,
+					lastIP:  net.IPv4(55, 44, 0, 0),
+				},
+				{
+					network: *net2,
+					lastIP:  net.IPv4(192, 168, 0, 0),
+				},
+			},
 		},
 	}
 
-	kubeClient := kubefake.NewSimpleClientset()
-	coreClient := kubeClient.CoreV1()
-	networkClient := networkfake.NewSimpleClientset().NetworkV1()
-	configClient := configfake.NewSimpleClientset().ConfigV1()
-	ctx := context.TODO()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kubeClient := kubefake.NewSimpleClientset()
+			coreClient := kubeClient.CoreV1()
+			networkClient := networkfake.NewSimpleClientset().NetworkV1()
+			configClient := configfake.NewSimpleClientset().ConfigV1()
 
-	// create fake resources
-	_, err = configClient.DNSes().Create(ctx, &configv1.DNS{
-		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
-		Spec:       configv1.DNSSpec{BaseDomain: testClusterBaseDomain},
-	}, metav1.CreateOptions{})
-	assert.NoError(t, err)
+			mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					Obfuscation: config.Obfuscation{
+						config.Networking,
+					},
+				},
+			})
+			ctx := context.Background()
+			_, err := configClient.DNSes().Create(ctx, tt.dns, metav1.CreateOptions{})
+			assert.NoError(t, err)
 
-	_, err = configClient.Networks().Create(context.TODO(), &configv1.Network{
-		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
-		Spec: configv1.NetworkSpec{
-			ClusterNetwork: []configv1.ClusterNetworkEntry{{CIDR: cidr1}},
-			ServiceNetwork: []string{cidr2},
-			ExternalIP:     &configv1.ExternalIPConfig{Policy: &configv1.ExternalIPPolicy{}},
-		},
-	}, metav1.CreateOptions{})
-	assert.NoError(t, err)
+			_, err = configClient.Networks().Create(ctx, tt.network, metav1.CreateOptions{})
+			assert.NoError(t, err)
 
-	_, err = coreClient.ConfigMaps("kube-system").Create(ctx, &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: "cluster-config-v1"},
-	}, metav1.CreateOptions{})
-	assert.NoError(t, err)
+			_, err = coreClient.ConfigMaps("kube-system").Create(ctx, tt.clusterConfigMap, metav1.CreateOptions{})
+			assert.NoError(t, err)
 
-	_, err = networkClient.HostSubnets().Create(ctx, &networkv1.HostSubnet{
-		EgressCIDRs: []networkv1.HostSubnetEgressCIDR{networkv1.HostSubnetEgressCIDR(egressCIDR)},
-	}, metav1.CreateOptions{})
-	assert.NoError(t, err)
+			if tt.hostsubnet != nil {
+				_, err = networkClient.HostSubnets().Create(ctx, tt.hostsubnet, metav1.CreateOptions{})
+				assert.NoError(t, err)
+			}
 
-	// test that everything was initialized correctly
+			anonymizer, err := NewAnonymizerFromConfigClient(
+				context.Background(),
+				kubeClient,
+				kubeClient,
+				configClient,
+				networkClient,
+				mockConfigMapConfigurator,
+				v1alpha1.ObfuscateNetworking,
+			)
+			assert.NoError(t, err)
+			assert.NotNil(t, anonymizer)
 
-	mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
-		DataReporting: config.DataReporting{
-			Obfuscation: config.Obfuscation{
-				config.Networking,
-			},
-		},
-	})
+			assert.Equal(t, testClusterBaseDomain, anonymizer.clusterBaseDomain)
+			assert.Empty(t, anonymizer.translationTable)
+			assert.NotNil(t, anonymizer.ipNetworkRegex)
+			assert.NotNil(t, anonymizer.secretsClient)
 
-	anonymizer, err := NewAnonymizerFromConfigClient(
-		context.Background(),
-		kubeClient,
-		kubeClient,
-		configClient,
-		networkClient,
-		mockConfigMapConfigurator,
-		v1alpha1.ObfuscateNetworking,
-	)
-	assert.NoError(t, err)
-	assert.NotNil(t, anonymizer)
-
-	assert.Equal(t, testClusterBaseDomain, anonymizer.clusterBaseDomain)
-	assert.Empty(t, anonymizer.translationTable)
-	assert.NotNil(t, anonymizer.ipNetworkRegex)
-	assert.NotNil(t, anonymizer.secretsClient)
-
-	err = anonymizer.readNetworkConfigs()
-	assert.NoError(t, err)
-	assert.Equal(t, len(testNetworks), len(anonymizer.networks))
-	// the networks are already sorted in anonymizer
-	for i, subnetInfo := range anonymizer.networks {
-		expectedSubnetInfo := testNetworks[i]
-		assert.Equal(t, expectedSubnetInfo.network.Network(), subnetInfo.network.Network())
-		assert.Equal(t, expectedSubnetInfo.lastIP.String(), subnetInfo.lastIP.String())
+			err = anonymizer.readNetworkConfigs()
+			assert.NoError(t, err)
+			assert.Equal(t, len(tt.expectedSubnetInfo), len(anonymizer.networks))
+			// the networks are already sorted in anonymizer
+			for i, subnetInfo := range anonymizer.networks {
+				expectedSubnetInfo := tt.expectedSubnetInfo[i]
+				assert.Equal(t, expectedSubnetInfo.network.Network(), subnetInfo.network.Network())
+				assert.Equal(t, expectedSubnetInfo.lastIP.String(), subnetInfo.lastIP.String())
+			}
+		})
 	}
 }
