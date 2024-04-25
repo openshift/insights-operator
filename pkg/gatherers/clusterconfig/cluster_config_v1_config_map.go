@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// gatherClusterConfigV1 gathers "cluster-config-v1" from "kube-system" namespace leaving only "install-config" from data.
+// gatherClusterConfigV1 gathers "cluster-config-v1" from "kube-system" namespace leaving only "install-config" from data DUMMY.
 // "install-config" is anonymized.
 func gatherClusterConfigV1(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	configMap, err := coreClient.ConfigMaps("kube-system").Get(ctx, "cluster-config-v1", metav1.GetOptions{})
