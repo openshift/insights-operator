@@ -34,7 +34,7 @@ type Gatherer struct {
 	gatherKubeConfig        *rest.Config
 	// there can be multiple instances of the same alert
 	firingAlerts                map[string][]AlertLabels
-	gatheringRules              GatheringRules
+	remoteConfiguration         RemoteConfiguration
 	clusterVersion              string
 	configurator                configobserver.Interface
 	gatheringRulesServiceClient GatheringRulesServiceClient
@@ -62,7 +62,7 @@ func New(
 		metricsGatherKubeConfig:     metricsGatherKubeConfig,
 		imageKubeConfig:             imageKubeConfig,
 		gatherKubeConfig:            gatherKubeConfig,
-		gatheringRules:              GatheringRules{},
+		remoteConfiguration:         RemoteConfiguration{},
 		configurator:                configurator,
 		gatheringRulesServiceClient: gatheringRulesServiceClient,
 	}
@@ -78,7 +78,7 @@ type GatheringRuleMetadata struct {
 // GatheringRulesMetadata stores metadata about gathering rules
 type GatheringRulesMetadata struct {
 	Version  string                  `json:"version"`
-	Rules    []GatheringRuleMetadata `json:"rules"`
+	Rules    []GatheringRuleMetadata `json:"conditional_gathering_rules"`
 	Endpoint string                  `json:"endpoint"`
 }
 
@@ -90,28 +90,42 @@ func (g *Gatherer) GetName() string {
 // GetGatheringFunctions returns gathering functions that should be run considering the conditions
 // + the gathering function producing metadata for the conditional gatherer
 func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
-	newGatheringRules, err := g.fetchGatheringRulesFromServer(ctx)
+	remoteConfiguration, err := g.requestRemoteConfigFromServer(ctx)
 	klog.Infof(
 		"got %v gathering rules for conditional gatherer with version %v",
-		len(newGatheringRules.Rules), newGatheringRules.Version,
+		len(remoteConfiguration.ConditionalGatheringRules), remoteConfiguration.Version,
 	)
 	if err != nil {
 		klog.Errorf("unable to fetch gathering rules from the server: %v", err)
 		klog.Infof(
 			"trying to use cached gathering config containing %v gathering rules and version %v",
-			len(g.gatheringRules.Rules), g.gatheringRules.Version,
+			len(g.remoteConfiguration.ConditionalGatheringRules), g.remoteConfiguration.Version,
 		)
 
 		return g.createGatheringFunctions(ctx)
 	}
 
-	g.gatheringRules = newGatheringRules
+	g.remoteConfiguration = remoteConfiguration
+	gatheringClosures, err := g.createGatheringFunctions(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return g.createGatheringFunctions(ctx)
+	containerLogReuquestClosure, err := g.validateAndCreateContainerLogRequestsClosure(remoteConfiguration)
+	if err != nil {
+		return nil, err
+	}
+	gatheringClosures["container_logs_new"] = containerLogReuquestClosure
+	return gatheringClosures, nil
+}
+
+func (g *Gatherer) validateAndCreateContainerLogRequestsClosure(remoteConfig RemoteConfiguration) (gatherers.GatheringClosure, error) {
+	// TODO validate g.remoteConfiguration.ContainerLogRequests
+	return g.GatherContainersLogs(remoteConfig.ContainerLogRequests)
 }
 
 func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
-	errs := validateGatheringRules(g.gatheringRules.Rules)
+	errs := validateGatheringRules(g.remoteConfiguration.ConditionalGatheringRules)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
 	}
@@ -120,17 +134,17 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
-	endpoint, err := g.getRulesEndpoint()
+	endpoint, err := g.getRemoteConfigEndpoint()
 	if err != nil {
 		klog.Error(err)
 	}
 
 	metadata := GatheringRulesMetadata{
-		Version:  g.gatheringRules.Version,
+		Version:  g.remoteConfiguration.Version,
 		Endpoint: endpoint,
 	}
 
-	for _, conditionalGathering := range g.gatheringRules.Rules {
+	for _, conditionalGathering := range g.remoteConfiguration.ConditionalGatheringRules {
 		ruleMetadata := GatheringRuleMetadata{
 			Rule: conditionalGathering,
 		}
@@ -174,39 +188,39 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 	return gatheringFunctions, nil
 }
 
-// fetchGatheringRulesFromServer returns the latest version of the rules from the server
-func (g *Gatherer) fetchGatheringRulesFromServer(ctx context.Context) (GatheringRules, error) {
-	gatheringRulesJSON, err := g.getGatheringRulesJSON(ctx)
+// requestRemoteConfigFromServer returns the latest version of the rules from the server
+func (g *Gatherer) requestRemoteConfigFromServer(ctx context.Context) (RemoteConfiguration, error) {
+	gatheringRulesJSON, err := g.getRemoteConfiguration(ctx)
 	if err != nil {
-		return GatheringRules{}, err
+		return RemoteConfiguration{}, err
 	}
 	// if gatheringRulesJson has invalid json format and cannot be unmarshalled no rules will be returned
-	return parseGatheringRules(gatheringRulesJSON)
+	return parseRemoteConfiguration(gatheringRulesJSON)
 }
 
-// getGatheringRulesJSON returns json version of the rules from the server
-func (g *Gatherer) getGatheringRulesJSON(ctx context.Context) (string, error) {
+// getRemoteConfiguration returns json version of the rules from the server
+func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 	if g.configurator == nil {
-		return "", fmt.Errorf("no configurator was provided")
+		return nil, fmt.Errorf("no configurator was provided")
 	}
 
 	if g.gatheringRulesServiceClient == nil {
-		return "", fmt.Errorf("gathering rules service client is nil")
+		return nil, fmt.Errorf("gathering rules service client is nil")
 	}
 
-	endpoint, err := g.getRulesEndpoint()
+	endpoint, err := g.getRemoteConfigEndpoint()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	rulesBytes, err := g.gatheringRulesServiceClient.RecvGatheringRules(ctx, endpoint)
+	remoteConfigData, err := g.gatheringRulesServiceClient.RecvGatheringRules(ctx, endpoint)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(rulesBytes), err
+	return remoteConfigData, err
 }
-func (g *Gatherer) getRulesEndpoint() (string, error) {
+func (g *Gatherer) getRemoteConfigEndpoint() (string, error) {
 	config := g.configurator.Config()
 	if config == nil {
 		return "", fmt.Errorf("config is nil")
