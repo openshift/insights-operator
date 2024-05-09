@@ -359,7 +359,7 @@ Collects the cluster `Infrastructure` with cluster name.
 None
 
 ### Changes
-None
+- in 4.15 Hypershift clusters: Status struct has fields that require anonymization: APIServerURL, APIServerInternalURL
 
 
 ## ClusterIngress

@@ -34,7 +34,7 @@ import (
 // None
 //
 // ### Changes
-// None
+// - in 4.15 Hypershift clusters: Status struct has fields that require anonymization: APIServerURL, APIServerInternalURL
 func (g *Gatherer) GatherClusterInfrastructure(ctx context.Context) ([]record.Record, []error) {
 	gatherConfigClient, err := configv1client.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -56,7 +56,10 @@ func gatherClusterInfrastructure(ctx context.Context, configClient configv1clien
 }
 
 func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastructure {
-	config.Status.InfrastructureName = anonymize.URL(config.Status.InfrastructureName)
+	// Status fields that require anonymization (if set)
+	anonymizeURLIfNotEmpty(&config.Status.InfrastructureName)
+	anonymizeURLIfNotEmpty(&config.Status.APIServerURL)
+	anonymizeURLIfNotEmpty(&config.Status.APIServerInternalURL)
 
 	if config.Status.PlatformStatus.AWS != nil {
 		config.Status.PlatformStatus.AWS.Region = anonymize.String(config.Status.PlatformStatus.AWS.Region)
@@ -78,4 +81,11 @@ func anonymizeInfrastructure(config *configv1.Infrastructure) *configv1.Infrastr
 	}
 
 	return config
+}
+
+// anonymizeURLIfNotEmpty Anonymizes fields containing sensitive information if they are not empty
+func anonymizeURLIfNotEmpty(field *string) {
+	if *field != "" {
+		*field = anonymize.URL(*field)
+	}
 }
