@@ -291,6 +291,11 @@ func getNetworksFromClusterNetworksConfig(networksConfig *configv1.Network) []st
 		networks = append(networks, network.CIDR)
 	}
 	networks = append(networks, networksConfig.Spec.ServiceNetwork...)
+
+	if networksConfig.Spec.ExternalIP == nil {
+		return networks
+	}
+
 	networks = append(networks, networksConfig.Spec.ExternalIP.AutoAssignCIDRs...)
 	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.AllowedCIDRs...)
 	networks = append(networks, networksConfig.Spec.ExternalIP.Policy.RejectedCIDRs...)
