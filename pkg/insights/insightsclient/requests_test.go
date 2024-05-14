@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -49,7 +50,7 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 		_, err := writer.Write([]byte(testRules))
 		assert.NoError(t, err)
 	}))
-	endpoint := httpServer.URL
+	endpoint := fmt.Sprintf("%s/%s", httpServer.URL, "%s")
 	defer httpServer.Close()
 
 	clusterVersion := &configv1.ClusterVersion{
@@ -78,9 +79,13 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 
 	configClient := configv1client.New(fakeClient)
 	insightsClient := New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient)
-	gatheringRulesBytes, err := insightsClient.RecvGatheringRules(context.Background(), endpoint)
+	httpResp, err := insightsClient.GetWithPathParam(context.Background(), endpoint, "test-version", false)
 	assert.NoError(t, err)
-	assert.JSONEq(t, testRules, string(gatheringRulesBytes))
+	assert.Equal(t, http.StatusOK, httpResp.StatusCode)
+
+	data, err := io.ReadAll(httpResp.Body)
+	assert.NoError(t, err)
+	assert.JSONEq(t, testRules, string(data))
 }
 
 type MockAuthorizer struct{}

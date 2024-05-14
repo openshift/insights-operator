@@ -58,7 +58,8 @@ func Test_Gatherer_GetGatheringFunctions_CacheWorks(t *testing.T) {
 	assert.True(t, found)
 
 	// the service suddenly died
-	gatherer.gatheringRulesServiceClient = &MockGatheringRulesServiceClient{
+
+	gatherer.insightsCli = &MockGatheringRulesServiceClient{
 		err: fmt.Errorf("404"),
 	}
 
@@ -318,13 +319,16 @@ type MockGatheringRulesServiceClient struct {
 	err  error
 }
 
-func (s *MockGatheringRulesServiceClient) RecvGatheringRules(_ context.Context, endpoint string) ([]byte, error) {
+func (s *MockGatheringRulesServiceClient) GetWithPathParam(_ context.Context, endpoint, _ string, _ bool) (*http.Response, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-
 	if strings.HasSuffix(endpoint, "gathering_rules") {
-		return []byte(s.Conf), nil
+		resp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(s.Conf)),
+		}
+		return resp, nil
 	}
 
 	return nil, fmt.Errorf("endpoint not supported")
