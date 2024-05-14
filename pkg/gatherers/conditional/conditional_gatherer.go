@@ -9,6 +9,7 @@ package conditional
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -30,6 +31,9 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
 )
+
+//go:embed default_remote_configuration.json
+var defaultRemoteConfiguration string
 
 // Gatherer implements the conditional gatherer
 type Gatherer struct {
@@ -246,8 +250,9 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 	})
 
 	if err != nil {
-		// connection failed use the builtin JSON
-		return nil, nil
+		// if the connection fails then read the built-in default configuration
+		klog.Infof("Failed to read data from the %s endpoint: %v. Using the default built-in configuration", endpoint, err)
+		return []byte(defaultRemoteConfiguration), nil
 	}
 
 	return remoteConfigData, nil
