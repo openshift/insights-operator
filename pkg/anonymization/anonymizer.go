@@ -145,7 +145,13 @@ func NewAnonymizerFromConfigClient(
 		return nil, err
 	}
 	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, configurator, dataPolicy)
+	anonBuilder := &AnonBuilder{}
+	anonBuilder.
+		WithClusterBaseDomain(baseDomain).
+		WithConfigurator(configurator).
+		WithDataPolicy(dataPolicy).
+		WithSecretsClient(secretsClient)
+	a, err := anonBuilder.Build()
 	if err != nil {
 		return nil, err
 	}
