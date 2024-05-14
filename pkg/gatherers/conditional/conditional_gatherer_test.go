@@ -64,9 +64,9 @@ func Test_Gatherer_GetGatheringFunctions_CacheWorks(t *testing.T) {
 	}
 
 	// but we still expect the same rules (from the cache)
-	gatheringFunctions, err = gatherer.GetGatheringFunctions(context.TODO())
+	gatheringFunctions, err = gatherer.GetGatheringFunctions(ctx)
 	assert.NoError(t, err)
-	assert.Len(t, gatheringFunctions, 3)
+	assert.Len(t, gatheringFunctions, 4)
 	_, found = gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
 }
