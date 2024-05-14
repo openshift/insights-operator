@@ -127,8 +127,14 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 			},
 		},
 	})
-	anonymizer, err := NewAnonymizer(clusterBaseDomain,
-		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockConfigMapConfigurator, v1alpha1.ObfuscateNetworking)
+	anonBuilder := &AnonBuilder{}
+	anonBuilder.
+		WithClusterBaseDomain(clusterBaseDomain).
+		WithConfigurator(mockConfigMapConfigurator).
+		WithDataPolicy(v1alpha1.ObfuscateNetworking).
+		WithNetworks(networks).
+		WithSecretsClient(kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
+	anonymizer, err := anonBuilder.Build()
 	assert.NoError(t, err)
 
 	return anonymizer

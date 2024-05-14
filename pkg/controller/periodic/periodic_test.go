@@ -214,7 +214,8 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		},
 	})
 	mockRecorder := recorder.MockRecorder{}
-	mockAnonymizer, err := anonymization.NewAnonymizer("", []string{}, nil, mockConfigMapConfigurator, "")
+	anonBuilder := &anonymization.AnonBuilder{}
+	mockAnonymizer, err := anonBuilder.WithConfigurator(mockConfigMapConfigurator).Build()
 	if err != nil {
 		return nil, nil, err
 	}
