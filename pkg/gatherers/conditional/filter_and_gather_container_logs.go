@@ -35,8 +35,8 @@ func (g *Gatherer) GatherContainersLogs(rawLogRequests []RawLogRequest) (gathere
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
 			kubeConfigCopy := rest.CopyConfig(g.gatherProtoKubeConfig)
-			kubeConfigCopy.Burst = 40
-			kubeConfigCopy.QPS = 20
+			kubeConfigCopy.Burst = 60
+			kubeConfigCopy.QPS = 30
 			kubeClient, err := kubernetes.NewForConfig(kubeConfigCopy)
 
 			if err != nil {

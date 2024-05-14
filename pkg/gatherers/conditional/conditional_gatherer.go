@@ -11,11 +11,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"sort"
 	"strings"
+	"time"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
@@ -33,21 +38,21 @@ type Gatherer struct {
 	imageKubeConfig         *rest.Config
 	gatherKubeConfig        *rest.Config
 	// there can be multiple instances of the same alert
-	firingAlerts                map[string][]AlertLabels
-	remoteConfiguration         RemoteConfiguration
-	clusterVersion              string
-	configurator                configobserver.Interface
-	gatheringRulesServiceClient GatheringRulesServiceClient
+	firingAlerts        map[string][]AlertLabels
+	remoteConfiguration RemoteConfiguration
+	clusterVersion      string
+	configurator        configobserver.Interface
+	insightsCli         InsightsGetClient
 }
 
-type GatheringRulesServiceClient interface {
-	RecvGatheringRules(ctx context.Context, endpoint string) ([]byte, error)
+type InsightsGetClient interface {
+	GetWithPathParam(ctx context.Context, endpoint string, param string, includeClusterID bool) (*http.Response, error)
 }
 
 // New creates a new instance of conditional gatherer with the appropriate configs
 func New(
 	gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig *rest.Config,
-	configurator configobserver.Interface, gatheringRulesServiceClient GatheringRulesServiceClient,
+	configurator configobserver.Interface, insightsCli InsightsGetClient,
 ) *Gatherer {
 	var imageKubeConfig *rest.Config
 	if gatherProtoKubeConfig != nil {
@@ -58,13 +63,13 @@ func New(
 	}
 
 	return &Gatherer{
-		gatherProtoKubeConfig:       gatherProtoKubeConfig,
-		metricsGatherKubeConfig:     metricsGatherKubeConfig,
-		imageKubeConfig:             imageKubeConfig,
-		gatherKubeConfig:            gatherKubeConfig,
-		remoteConfiguration:         RemoteConfiguration{},
-		configurator:                configurator,
-		gatheringRulesServiceClient: gatheringRulesServiceClient,
+		gatherProtoKubeConfig:   gatherProtoKubeConfig,
+		metricsGatherKubeConfig: metricsGatherKubeConfig,
+		imageKubeConfig:         imageKubeConfig,
+		gatherKubeConfig:        gatherKubeConfig,
+		remoteConfiguration:     RemoteConfiguration{},
+		configurator:            configurator,
+		insightsCli:             insightsCli,
 	}
 }
 
@@ -190,12 +195,12 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 
 // requestRemoteConfigFromServer returns the latest version of the rules from the server
 func (g *Gatherer) requestRemoteConfigFromServer(ctx context.Context) (RemoteConfiguration, error) {
-	gatheringRulesJSON, err := g.getRemoteConfiguration(ctx)
+	remoteConfigData, err := g.getRemoteConfiguration(ctx)
 	if err != nil {
 		return RemoteConfiguration{}, err
 	}
 	// if gatheringRulesJson has invalid json format and cannot be unmarshalled no rules will be returned
-	return parseRemoteConfiguration(gatheringRulesJSON)
+	return parseRemoteConfiguration(remoteConfigData)
 }
 
 // getRemoteConfiguration returns json version of the rules from the server
@@ -204,7 +209,7 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("no configurator was provided")
 	}
 
-	if g.gatheringRulesServiceClient == nil {
+	if g.insightsCli == nil {
 		return nil, fmt.Errorf("gathering rules service client is nil")
 	}
 
@@ -213,12 +218,39 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	remoteConfigData, err := g.gatheringRulesServiceClient.RecvGatheringRules(ctx, endpoint)
+	ocpVersion := os.Getenv("RELEASE_VERSION")
+	backOff := wait.Backoff{
+		Duration: 30 * time.Second,
+		Factor:   2,
+		Jitter:   0,
+		Steps:    3,
+		Cap:      3 * time.Minute,
+	}
+	var remoteConfigData []byte
+	err = wait.ExponentialBackoffWithContext(ctx, backOff, func(ctx context.Context) (done bool, err error) {
+		resp, err := g.insightsCli.GetWithPathParam(ctx, endpoint, ocpVersion, false)
+		if err != nil {
+			return false, err
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			remoteConfigData, err = io.ReadAll(resp.Body)
+			defer resp.Body.Close()
+			if err != nil {
+				return false, nil
+			}
+			return true, nil
+		}
+		klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, backOff.Step())
+		return false, nil
+	})
+
 	if err != nil {
-		return nil, err
+		// connection failed use the builtin JSON
+		return nil, nil
 	}
 
-	return remoteConfigData, err
+	return remoteConfigData, nil
 }
 func (g *Gatherer) getRemoteConfigEndpoint() (string, error) {
 	config := g.configurator.Config()

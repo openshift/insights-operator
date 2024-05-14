@@ -218,47 +218,6 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error
 	return io.ReadAll(resp.Body)
 }
 
-// RecvGatheringRules performs a request to Insights Operator Gathering Conditions Service
-// https://github.com/RedHatInsights/insights-operator-gathering-conditions-service
-// and returns the response body or an error
-func (c *Client) RecvGatheringRules(ctx context.Context, endpoint string) ([]byte, error) {
-	klog.Infof(
-		`Preparing a request to Insights Operator Gathering Conditions Service at the endpoint "%v"`, endpoint,
-	)
-	cv, err := c.GetClusterVersion()
-	if apierrors.IsNotFound(err) {
-		return nil, ErrWaitingForVersion
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
-	if err != nil {
-		return nil, err
-	}
-
-	// dynamically set the proxy environment and authentication
-	c.client.Transport = clientTransport(c.authorizer)
-
-	klog.Infof("Performing a request to Insights Operator Gathering Conditions Service")
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, newHTTPErrorFromResponse(resp)
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			klog.Warningf("failed to close response body: %v", err)
-		}
-	}()
-
-	return io.ReadAll(resp.Body)
-}
-
 // RecvClusterTransfer performs a request to the OCM cluster transfer API. It is
 // an HTTP GET request with the `search` query parameter limiting the result only
 // for the one cluster and only for the `accepted` cluster transfers.
@@ -303,9 +262,9 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// GetWithPathParams makes an HTTP GET request to the specified endpoint using the specified "requestID" as
+// GetWithPathParam makes an HTTP GET request to the specified endpoint using the specified "params" as
 // a part of the endpoint path
-func (c *Client) GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+func (c *Client) GetWithPathParam(ctx context.Context, endpoint, param string, includeClusterID bool) (*http.Response, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -313,8 +272,11 @@ func (c *Client) GetWithPathParams(ctx context.Context, endpoint, requestID stri
 	if err != nil {
 		return nil, err
 	}
-
-	endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID, requestID)
+	if includeClusterID {
+		endpoint = fmt.Sprintf(endpoint, cv.Spec.ClusterID, param)
+	} else {
+		endpoint = fmt.Sprintf(endpoint, param)
+	}
 	klog.Infof("Making HTTP GET request at: %s", endpoint)
 
 	req, err := c.prepareRequest(ctx, http.MethodGet, endpoint, cv)
