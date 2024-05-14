@@ -42,14 +42,12 @@ func Test_GatherClusterInfrastructure(t *testing.T) {
 			result: nil,
 		},
 		{
-			name: "Check 'Status' InfrastructureName, APIServerURL and APIServerInternalURL properties' values return obfuscated",
+			name: "Check 'Status' InfrastructureName property value returns obfuscated",
 			infra: &v1.Infrastructure{
 				ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
 				Status: v1.InfrastructureStatus{
-					InfrastructureName:   "test",
-					PlatformStatus:       &v1.PlatformStatus{},
-					APIServerURL:         "https://2e8a1f9a6035.elb.us-east-1.amazonaws.com:6443",
-					APIServerInternalURL: "https://2e8a1f9a6035.elb.us-east-1.amazonaws.com:6443",
+					InfrastructureName: "test",
+					PlatformStatus:     &v1.PlatformStatus{},
 				},
 			},
 			result: []record.Record{
@@ -59,11 +57,8 @@ func Test_GatherClusterInfrastructure(t *testing.T) {
 						Resource: &v1.Infrastructure{
 							ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
 							Status: v1.InfrastructureStatus{
-								InfrastructureName:   "xxxx",
-								PlatformStatus:       &v1.PlatformStatus{},
-								APIServerURL:         "xxxxx://xxxxxxxxxxxx.xxx.xx-xxxx-x.xxxxxxxxx.xxx:xxxx",
-								APIServerInternalURL: "xxxxx://xxxxxxxxxxxx.xxx.xx-xxxx-x.xxxxxxxxx.xxx:xxxx",
-							},
+								InfrastructureName: "xxxx",
+								PlatformStatus:     &v1.PlatformStatus{}},
 						},
 					},
 				},
