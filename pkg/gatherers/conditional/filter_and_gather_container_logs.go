@@ -146,6 +146,7 @@ func filterAndGetLogsForPodContainers(ctx context.Context,
 				ContainerName: container,
 				PodName:       podName,
 				MessageRegex:  messagesRegex,
+				Previous:      logRequest.Previous,
 			}
 			go func() {
 				defer wgContainers.Done()
@@ -161,12 +162,16 @@ func filterAndGetLogsForPodContainers(ctx context.Context,
 	wgContainers.Wait()
 }
 
+// getAndFilterContainerLogs reads the attributes of the provided ContainerLogRequest and
+// based on the values it gets the corresponding container log and iterates over the log lines
+// and tries to match the required container log messages.
 func getAndFilterContainerLogs(ctx context.Context, coreClient corev1client.CoreV1Interface,
 	containerLogRequest ContainerLogRequest) (*record.Record, error) {
 	req := coreClient.Pods(containerLogRequest.Namespace).GetLogs(containerLogRequest.PodName, &corev1.PodLogOptions{
 		Container:    containerLogRequest.ContainerName,
 		SinceSeconds: &sinceSeconds,
 		Timestamps:   true,
+		Previous:     containerLogRequest.Previous,
 	})
 	stream, err := req.Stream(ctx)
 	if err != nil {
