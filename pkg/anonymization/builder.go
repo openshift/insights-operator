@@ -18,7 +18,7 @@ type AnonBuilder struct {
 	networks []string
 }
 
-func (b *AnonBuilder) AddSensitiveValue(value string, placeholder string) *AnonBuilder {
+func (b *AnonBuilder) AddSensitiveValue(value, placeholder string) *AnonBuilder {
 	if b.anon.sensitiveValues == nil {
 		b.anon.sensitiveValues = make(map[string]string)
 	}
