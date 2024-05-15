@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"sync"
 
@@ -43,12 +43,12 @@ func (g *Gatherer) GatherContainersLogs(rawLogRequests []RawLogRequest) (gathere
 				return nil, []error{err}
 			}
 			coreClient := kubeClient.CoreV1()
-			return g.filterAndGatherContainerLogs(ctx, coreClient, rawLogRequests)
+			return gatherContainerLogs(ctx, coreClient, rawLogRequests)
 		},
 	}, nil
 }
 
-func (g *Gatherer) filterAndGatherContainerLogs(
+func gatherContainerLogs(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	rawLogRequests []RawLogRequest,
@@ -58,7 +58,10 @@ func (g *Gatherer) filterAndGatherContainerLogs(
 
 	namespaceToLogRequestMap := groupRawLogRequestsByNamespace(rawLogRequests)
 	recCh := make(chan *recordWithError)
+	var receiveWG sync.WaitGroup
+	receiveWG.Add(1)
 	go func() {
+		defer receiveWG.Done()
 		for r := range recCh {
 			if r.r != nil {
 				records = append(records, *r.r)
@@ -69,66 +72,59 @@ func (g *Gatherer) filterAndGatherContainerLogs(
 		}
 	}()
 
-	var wg sync.WaitGroup
+	var sendWG sync.WaitGroup
 	for _, logRequest := range namespaceToLogRequestMap {
 		klog.Infof("Start checking namespace %s for the Pod name pattern %s\n", logRequest.Namespace, logRequest.PodNameRegex)
 
-		messagesRegex, err := listOfMessagesToRegex(logRequest.Messages)
-		if err != nil {
-			log.Default().Printf("Can't compile regex for %s: %v", logRequest.Namespace, err)
-			continue
-		}
-
 		for podNameRegex := range logRequest.PodNameRegex {
-			wg.Add(1)
-			go filterAndGetLogsForPodContainers(ctx, coreClient, logRequest, podNameRegex, &wg, messagesRegex, recCh)
+			sendWG.Add(1)
+			go filterContainerLogs(ctx, coreClient, logRequest, podNameRegex, &sendWG, recCh)
 		}
 	}
-	wg.Wait()
+	sendWG.Wait()
 	close(recCh)
+	receiveWG.Wait()
 	return records, errs
 }
 
-// groupRawLogRequestsByNamespace iterates over slice of the provided raw log requests and maps
-// them with namespace name as the key and the logRequest as the value.
-func groupRawLogRequestsByNamespace(rawLogRequests []RawLogRequest) map[string]LogRequest {
-	namespaceToLogRequestMap := make(map[string]LogRequest, len(rawLogRequests))
-	for _, logRequest := range rawLogRequests {
-		existingLogRequest, ok := namespaceToLogRequestMap[logRequest.Namespace]
-
-		if !ok {
-			namespaceToLogRequestMap[logRequest.Namespace] = LogRequest{
-				Namespace:    logRequest.Namespace,
-				PodNameRegex: sets.Set[string](sets.NewString(logRequest.PodNameRegex)),
-				Messages:     sets.Set[string](sets.NewString(logRequest.Messages...)),
-				Previous:     logRequest.Previous,
-			}
-			continue
-		}
-
-		existingLogRequest.Messages = existingLogRequest.Messages.Union(sets.New[string](logRequest.Messages...))
-		existingLogRequest.PodNameRegex = existingLogRequest.PodNameRegex.Union(sets.New[string](logRequest.PodNameRegex))
-		namespaceToLogRequestMap[logRequest.Namespace] = existingLogRequest
-	}
-	return namespaceToLogRequestMap
-}
-
-// filterAndGetLogsForPodContainers compiles the provided podNameRegexStr and creates the map
+// filterContainerLogs compiles the provided podNameRegexStr and creates the map
 // with Pod name as a key and slice of container names as a value. It iterates over the map and for each
 // container name, it asynchronously (own Go routine) gets and filters the corresponding container
 // log and the result is sent to the `recCh` channel.
-func filterAndGetLogsForPodContainers(ctx context.Context,
+func filterContainerLogs(ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	logRequest LogRequest,
 	podNameRegexStr string,
 	wg *sync.WaitGroup,
-	messagesRegex *regexp.Regexp,
 	recCh chan<- *recordWithError) {
 	defer wg.Done()
+
+	messagesRegex, err := listOfMessagesToRegex(logRequest.Messages)
+	if err != nil {
+		errMessage := fmt.Sprintf("Failed to compile messages regular expression %s for %s namespace and Pod regexp %s: %v",
+			messagesRegex,
+			logRequest.Namespace,
+			podNameRegexStr,
+			err)
+		klog.Warningf(errMessage)
+		recCh <- &recordWithError{
+			r:   nil,
+			err: errors.New(errMessage),
+		}
+		return
+	}
+
 	podNameRegex, err := regexp.Compile(podNameRegexStr)
 	if err != nil {
-		klog.Errorf("Failed to compile Pod name regular expression %s for the namespace %s: %v\n",
-			logRequest.PodNameRegex, logRequest.Namespace, err)
+		errMessage := fmt.Sprintf("Failed to compile Pod name regular expression %s for %s namespace: %v",
+			podNameRegexStr,
+			logRequest.Namespace,
+			err)
+		klog.Warningf(errMessage)
+		recCh <- &recordWithError{
+			r:   nil,
+			err: errors.New(errMessage),
+		}
 		return
 	}
 	podToContainers, err := createPodToContainersMap(ctx, coreClient, logRequest.Namespace, podNameRegex)
@@ -196,15 +192,44 @@ func getAndFilterContainerLogs(ctx context.Context, coreClient corev1client.Core
 	if len(byteBuffer.Bytes()) == 0 {
 		return nil, nil
 	}
+	recordPath := fmt.Sprintf("namespaces/%s/pods/%s/%s", containerLogRequest.Namespace,
+		containerLogRequest.PodName,
+		containerLogRequest.ContainerName)
+
+	recordName := fmt.Sprintf("%s/current.log", recordPath)
+	if containerLogRequest.Previous {
+		recordName = fmt.Sprintf("%s/previous.log", recordPath)
+	}
 
 	r := record.Record{
 		Item: marshal.RawByte(byteBuffer.Bytes()),
-		Name: fmt.Sprintf("namespaces/%s/pods/%s/%s/current.log",
-			containerLogRequest.Namespace,
-			containerLogRequest.PodName,
-			containerLogRequest.ContainerName),
+		Name: recordName,
 	}
 	return &r, nil
+}
+
+// groupRawLogRequestsByNamespace iterates over slice of the provided raw log requests and maps
+// them with namespace name as the key and the logRequest as the value.
+func groupRawLogRequestsByNamespace(rawLogRequests []RawLogRequest) map[string]LogRequest {
+	namespaceToLogRequestMap := make(map[string]LogRequest, len(rawLogRequests))
+	for _, logRequest := range rawLogRequests {
+		existingLogRequest, ok := namespaceToLogRequestMap[logRequest.Namespace]
+
+		if !ok {
+			namespaceToLogRequestMap[logRequest.Namespace] = LogRequest{
+				Namespace:    logRequest.Namespace,
+				PodNameRegex: sets.Set[string](sets.NewString(logRequest.PodNameRegex)),
+				Messages:     sets.Set[string](sets.NewString(logRequest.Messages...)),
+				Previous:     logRequest.Previous,
+			}
+			continue
+		}
+
+		existingLogRequest.Messages = existingLogRequest.Messages.Union(sets.New[string](logRequest.Messages...))
+		existingLogRequest.PodNameRegex = existingLogRequest.PodNameRegex.Union(sets.New[string](logRequest.PodNameRegex))
+		namespaceToLogRequestMap[logRequest.Namespace] = existingLogRequest
+	}
+	return namespaceToLogRequestMap
 }
 
 // createPodToContainersMap lists all the Pods in the provided namespace
