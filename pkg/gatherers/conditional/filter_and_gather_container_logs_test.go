@@ -417,3 +417,206 @@ func TestGetAndFilterContainerLogs(t *testing.T) {
 		})
 	}
 }
+
+func TestGatherContainerLogs(t *testing.T) {
+	tests := []struct {
+		name            string
+		rawLogRequests  []RawLogRequest
+		testingPods     []corev1.Pod
+		expectedRecords []record.Record
+		expectedErrors  []error
+	}{
+		{
+			name:            "empty raw log request input",
+			rawLogRequests:  []RawLogRequest{},
+			testingPods:     nil,
+			expectedRecords: nil,
+			expectedErrors:  nil,
+		},
+		{
+			name: "log request with empty messages",
+			rawLogRequests: []RawLogRequest{
+				{
+					Namespace:    "test-namespace",
+					PodNameRegex: "test-.*",
+					Messages:     []string{},
+				},
+			},
+			testingPods:     nil,
+			expectedRecords: nil,
+			expectedErrors: []error{
+				fmt.Errorf("Failed to compile messages regular expression <nil> for test-namespace namespace and Pod regexp test-.*: input messages are nil or empty"), //nolint:lll
+			},
+		},
+		{
+			name: "Messages regex cannot be compiled",
+			rawLogRequests: []RawLogRequest{
+				{
+					Namespace:    "test-namespace",
+					PodNameRegex: "test-.*",
+					Messages: []string{
+						"\\",
+					},
+				},
+			},
+			testingPods:     nil,
+			expectedRecords: nil,
+			expectedErrors: []error{
+				fmt.Errorf("Failed to compile messages regular expression <nil> for test-namespace namespace and Pod regexp test-.*: error parsing regexp: trailing backslash at end of expression: ``"), //nolint:lll
+			},
+		},
+		{
+			name: "Pod name regex cannot be compiled",
+			rawLogRequests: []RawLogRequest{
+				{
+					Namespace:    "test-namespace",
+					PodNameRegex: "\\",
+					Messages: []string{
+						"foo",
+						"bar",
+					},
+				},
+			},
+			testingPods:     nil,
+			expectedRecords: nil,
+			expectedErrors: []error{
+				fmt.Errorf("Failed to compile Pod name regular expression \\ for test-namespace namespace: error parsing regexp: trailing backslash at end of expression: ``"), //nolint:lll
+			},
+		},
+		{
+			name: "two Pods, but only one Pod in testing namespace with two matching container logs",
+			rawLogRequests: []RawLogRequest{
+				{
+					Namespace:    "test-namespace",
+					PodNameRegex: "test-*.",
+					Messages: []string{
+						"fake",
+						"logs",
+					},
+				},
+			},
+			testingPods: []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-foo",
+						Namespace: "test-namespace",
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "foo-1",
+							},
+							{
+								Name: "foo-2",
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-foo",
+						Namespace: "another-namespace",
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "foo-1",
+							},
+							{
+								Name: "foo-2",
+							},
+						},
+					},
+				},
+			},
+			expectedRecords: []record.Record{
+				{
+					Name: "namespaces/test-namespace/pods/test-foo/foo-1/current.log",
+					Item: marshal.RawByte("fake logs\n"),
+				},
+				{
+					Name: "namespaces/test-namespace/pods/test-foo/foo-2/current.log",
+					Item: marshal.RawByte("fake logs\n"),
+				},
+			},
+			expectedErrors: []error{},
+		},
+		{
+			name: "two Pods and two raw log requests",
+			rawLogRequests: []RawLogRequest{
+				{
+					Namespace:    "foo-namespace",
+					PodNameRegex: "test-*.",
+					Messages: []string{
+						"fake",
+						"logs",
+					},
+				},
+				{
+					Namespace:    "bar-namespace",
+					PodNameRegex: "test-*.",
+					Messages: []string{
+						"fake",
+						"logs",
+					},
+					Previous: true,
+				},
+			},
+			testingPods: []corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-foo",
+						Namespace: "foo-namespace",
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "foo-1",
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-bar",
+						Namespace: "bar-namespace",
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "bar-1",
+							},
+						},
+					},
+				},
+			},
+			expectedRecords: []record.Record{
+				{
+					Name: "namespaces/foo-namespace/pods/test-foo/foo-1/current.log",
+					Item: marshal.RawByte("fake logs\n"),
+				},
+				{
+					Name: "namespaces/bar-namespace/pods/test-bar/bar-1/previous.log",
+					Item: marshal.RawByte("fake logs\n"),
+				},
+			},
+			expectedErrors: []error{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cli := kubefake.NewSimpleClientset()
+			ctx := context.Background()
+
+			for _, p := range tt.testingPods {
+				_, err := cli.CoreV1().Pods(p.Namespace).Create(ctx, &p, metav1.CreateOptions{})
+				assert.NoError(t, err)
+			}
+
+			recs, errs := gatherContainerLogs(ctx, cli.CoreV1(), tt.rawLogRequests)
+			assert.ElementsMatch(t, tt.expectedRecords, recs)
+			assert.ElementsMatch(t, tt.expectedErrors, errs)
+		})
+	}
+}
