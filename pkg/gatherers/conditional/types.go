@@ -82,5 +82,6 @@ type ContainerLogRequest struct {
 	Namespace     string
 	PodName       string
 	ContainerName string
+	Previous      bool
 	MessageRegex  *regexp.Regexp
 }
