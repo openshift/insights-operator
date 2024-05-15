@@ -71,7 +71,7 @@ func newRecorder(maxArchiveSize int64, clusterBaseDomain string) (*Recorder, err
 	})
 	anonBuilder := &anonymization.AnonBuilder{}
 	anonBuilder.
-		WithClusterBaseDomain(clusterBaseDomain).
+		AddSensitiveValue(clusterBaseDomain, anonymization.ClusterBaseDomainPlaceholder).
 		WithConfigurator(mockConfigMapConfigurator).
 		WithDataPolicy(v1alpha1.ObfuscateNetworking)
 
