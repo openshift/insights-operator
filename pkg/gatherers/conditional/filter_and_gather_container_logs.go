@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/types"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -190,7 +191,13 @@ func getAndFilterContainerLogs(ctx context.Context, coreClient corev1client.Core
 	}
 
 	if len(byteBuffer.Bytes()) == 0 {
-		return nil, nil
+		warning := types.Warning{
+			UnderlyingValue: fmt.Errorf("not found any data for the container %s in the Pod %s in the %s namespace",
+				containerLogRequest.ContainerName,
+				containerLogRequest.PodName,
+				containerLogRequest.Namespace),
+		}
+		return nil, &warning
 	}
 	recordPath := fmt.Sprintf("namespaces/%s/pods/%s/%s", containerLogRequest.Namespace,
 		containerLogRequest.PodName,
@@ -249,7 +256,7 @@ func createPodToContainersMap(ctx context.Context,
 
 	for i := range podList.Items {
 		pod := podList.Items[i]
-		if podNameRegex.Match([]byte(pod.Name)) {
+		if podNameRegex.Match([]byte(pod.Name)) { //nolint:gocritic
 			var containerNames []string
 			for i := range pod.Spec.Containers {
 				c := pod.Spec.Containers[i]
