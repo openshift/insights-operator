@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/types"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -357,6 +358,7 @@ func TestGetAndFilterContainerLogs(t *testing.T) {
 		containerLogReq ContainerLogRequest
 		testingPod      *corev1.Pod
 		expectedRecord  *record.Record
+		expectedErr     error
 	}{
 		{
 			name: "existing and matching container log message creates expected record",
@@ -381,6 +383,7 @@ func TestGetAndFilterContainerLogs(t *testing.T) {
 				Name: "namespaces/test-namespace/pods/foo/foo-container/current.log",
 				Item: marshal.RawByte("fake logs\n"),
 			},
+			expectedErr: nil,
 		},
 		{
 			name: "non-matching messages creates nil record",
@@ -402,6 +405,9 @@ func TestGetAndFilterContainerLogs(t *testing.T) {
 				},
 			},
 			expectedRecord: nil,
+			expectedErr: &types.Warning{
+				UnderlyingValue: fmt.Errorf("not found any data for the container foo-container in the Pod foo in the test-namespace namespace"),
+			},
 		},
 	}
 
@@ -412,8 +418,8 @@ func TestGetAndFilterContainerLogs(t *testing.T) {
 			_, err := cli.CoreV1().Pods("test-namespace").Create(ctx, tt.testingPod, metav1.CreateOptions{})
 			assert.NoError(t, err)
 			rec, err := getAndFilterContainerLogs(ctx, cli.CoreV1(), tt.containerLogReq)
-			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedRecord, rec)
+			assert.Equal(t, tt.expectedErr, err)
 		})
 	}
 }

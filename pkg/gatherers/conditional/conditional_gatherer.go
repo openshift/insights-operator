@@ -124,7 +124,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	if err != nil {
 		return nil, err
 	}
-	gatheringClosures["container_logs_new"] = containerLogReuquestClosure
+	gatheringClosures["rapid_container_logs"] = containerLogReuquestClosure
 	return gatheringClosures, nil
 }
 

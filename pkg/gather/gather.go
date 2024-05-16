@@ -138,9 +138,6 @@ func recordGatheringFunctionResult(
 	for _, err := range result.Errs {
 		if w, isWarning := err.(*types.Warning); isWarning {
 			recordWarnings = append(recordWarnings, w)
-			klog.Warningf(
-				`gatherer "%v" function "%v" produced the warning: %v`, gathererName, result.FunctionName, w,
-			)
 		} else {
 			recordErrs = append(recordErrs, err)
 			klog.Errorf(
