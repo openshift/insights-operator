@@ -60,5 +60,4 @@ func Test_GetClusterAPIServerInfo(t *testing.T) {
 			}
 		})
 	}
-
 }
