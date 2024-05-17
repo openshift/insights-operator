@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +19,9 @@ func GetClusterAPIServerInfo(ctx context.Context, configClient configv1client.Co
 	infra, err := configClient.Infrastructures().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return []string{}, err
+	}
+	if infra == nil {
+		return []string{}, fmt.Errorf("unexpected nil pointer retrieving 'cluster' Infrastructure")
 	}
 
 	urls := []string{}
