@@ -44,7 +44,7 @@ func Test_AnonBuilder(t *testing.T) {
 		},
 		{
 			name:            "method 'AddSensitiveValue' sets values on the anonymizer instance",
-			builder:         getBuilderInstance().AddSensitiveValue("mock", "xxxx"),
+			builder:         getBuilderInstance().WithSensitiveValue("mock", "xxxx"),
 			sensitiveValues: map[string]string{"mock": "xxxx"},
 		},
 		{
@@ -100,30 +100,16 @@ func Test_AnonBuilder(t *testing.T) {
 			if tc.sensitiveValues != nil {
 				assert.EqualValues(t, tc.sensitiveValues, test.sensitiveValues)
 			}
-			if tc.configClient != nil {
-				assert.Equal(t, tc.configClient, test.configClient)
-			}
-			if tc.configurator != nil {
-				assert.Equal(t, tc.configurator, test.configurator)
-			}
-			if tc.dataPolicy != "" {
-				assert.Equal(t, tc.dataPolicy, test.dataPolicy)
-			}
-			if tc.kubeClient != nil {
-				assert.Equal(t, tc.kubeClient, test.gatherKubeClient)
-			}
-			if tc.networkClient != nil {
-				assert.Equal(t, tc.networkClient, test.networkClient)
-			}
-			if len(tc.networks) > 0 {
-				assert.Equal(t, len(tc.networks), len(test.networks))
-			}
+			assert.Equal(t, tc.configClient, test.configClient)
+			assert.Equal(t, tc.configurator, test.configurator)
+			assert.Equal(t, tc.dataPolicy, test.dataPolicy)
+			assert.Equal(t, tc.kubeClient, test.gatherKubeClient)
+			assert.Equal(t, tc.networkClient, test.networkClient)
+			assert.Equal(t, len(tc.networks), len(test.networks))
 			if tc.runningInCluster {
 				assert.True(t, test.runningInCluster)
 			}
-			if tc.secretsClient != nil {
-				assert.Equal(t, tc.secretsClient, test.secretsClient)
-			}
+			assert.Equal(t, tc.secretsClient, test.secretsClient)
 		})
 	}
 }

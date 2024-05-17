@@ -130,8 +130,8 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 	})
 	anonBuilder := &AnonBuilder{}
 	anonBuilder.
-		AddSensitiveValue(clusterBaseDomain, ClusterBaseDomainPlaceholder).
-		AddSensitiveValue(clusterAPIServer, ClusterAPIServerPlaceholder).
+		WithSensitiveValue(clusterBaseDomain, ClusterBaseDomainPlaceholder).
+		WithSensitiveValue(clusterAPIServer, ClusterAPIServerPlaceholder).
 		WithConfigurator(mockConfigMapConfigurator).
 		WithDataPolicy(v1alpha1.ObfuscateNetworking).
 		WithNetworks(networks).

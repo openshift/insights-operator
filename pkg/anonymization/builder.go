@@ -18,14 +18,15 @@ type AnonBuilder struct {
 	networks []string
 }
 
-func (b *AnonBuilder) AddSensitiveValue(value, placeholder string) *AnonBuilder {
-	if b.anon.sensitiveValues == nil {
-		b.anon.sensitiveValues = make(map[string]string)
-	}
+// WithSensitiveValue adds terms that are obfuscated by the anonymizer in the records.
+// It works as a key-value map, where all instances of 'value' are replaced by 'placeholder'.
+func (b *AnonBuilder) WithSensitiveValue(value, placeholder string) *AnonBuilder {
 	v := strings.TrimSpace(value)
-	if value != "" {
-		b.anon.sensitiveValues[v] = placeholder
+	if v == "" {
+		return b
 	}
+	b.makeMapIfNil()
+	b.anon.sensitiveValues[v] = placeholder
 	return b
 }
 
@@ -84,9 +85,16 @@ func (b *AnonBuilder) Build() (*Anonymizer, error) {
 		})
 	}
 
+	b.makeMapIfNil()
 	b.anon.ipNetworkRegex = regexp.MustCompile(Ipv4AddressOrNetworkRegex)
 	b.anon.networks = networksInformation
 	b.anon.translationTable = make(map[string]string)
 
 	return &b.anon, nil
+}
+
+func (b *AnonBuilder) makeMapIfNil() {
+	if b.anon.sensitiveValues == nil {
+		b.anon.sensitiveValues = make(map[string]string)
+	}
 }

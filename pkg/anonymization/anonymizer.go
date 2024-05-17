@@ -124,14 +124,14 @@ func NewAnonymizerFromConfigClient(
 	if err != nil {
 		return nil, err
 	}
-	anonBuilder.AddSensitiveValue(baseDomain, ClusterBaseDomainPlaceholder)
+	anonBuilder.WithSensitiveValue(baseDomain, ClusterBaseDomainPlaceholder)
 
 	APIServerURLs, err := utils.GetClusterAPIServerInfo(ctx, configClient)
 	if err != nil {
 		return nil, err
 	}
 	for _, v := range APIServerURLs {
-		anonBuilder.AddSensitiveValue(v, ClusterAPIServerPlaceholder)
+		anonBuilder.WithSensitiveValue(v, ClusterAPIServerPlaceholder)
 	}
 
 	return anonBuilder.Build()
@@ -343,19 +343,17 @@ func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryR
 		}
 	})
 
-	if len(anonymizer.sensitiveValues) != 0 {
-		for value, placeholder := range anonymizer.sensitiveValues {
-			memoryRecord.Data = bytes.ReplaceAll(
-				memoryRecord.Data,
-				[]byte(value),
-				[]byte(placeholder),
-			)
-			memoryRecord.Name = strings.ReplaceAll(
-				memoryRecord.Name,
-				value,
-				placeholder,
-			)
-		}
+	for value, placeholder := range anonymizer.sensitiveValues {
+		memoryRecord.Data = bytes.ReplaceAll(
+			memoryRecord.Data,
+			[]byte(value),
+			[]byte(placeholder),
+		)
+		memoryRecord.Name = strings.ReplaceAll(
+			memoryRecord.Name,
+			value,
+			placeholder,
+		)
 	}
 
 	memoryRecord.Data = anonymizer.ipNetworkRegex.ReplaceAllFunc(memoryRecord.Data, func(originalIPBytes []byte) []byte {
