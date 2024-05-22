@@ -56,6 +56,7 @@ const (
 	Ipv4Regex                            = `((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
 	Ipv4NetworkRegex                     = Ipv4Regex + "/([0-9]{1,2})"
 	Ipv4AddressOrNetworkRegex            = Ipv4Regex + "(/([0-9]{1,2}))?"
+	ClusterAPIServerPlaceholder          = "<CLUSTER_API_SERVER>"
 	ClusterBaseDomainPlaceholder         = "<CLUSTER_BASE_DOMAIN>"
 	UnableToCreateAnonymizerErrorMessage = "Unable to create anonymizer, " +
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
@@ -82,52 +83,21 @@ type subnetInformation struct {
 // Config can be used to enable anonymization of cluster base domain
 // and obfuscation of IPv4 addresses
 type Anonymizer struct {
-	clusterBaseDomain string
-	networks          []subnetInformation
-	translationTable  map[string]string
-	ipNetworkRegex    *regexp.Regexp
-	secretsClient     corev1client.SecretInterface
-	configurator      configobserver.Interface
-	dataPolicy        v1alpha1.DataPolicy
-	configClient      configv1client.ConfigV1Interface
-	networkClient     networkv1client.NetworkV1Interface
-	gatherKubeClient  kubernetes.Interface
-	runningInCluster  bool
+	sensitiveValues  map[string]string
+	networks         []subnetInformation
+	translationTable map[string]string
+	ipNetworkRegex   *regexp.Regexp
+	secretsClient    corev1client.SecretInterface
+	configurator     configobserver.Interface
+	dataPolicy       v1alpha1.DataPolicy
+	configClient     configv1client.ConfigV1Interface
+	networkClient    networkv1client.NetworkV1Interface
+	gatherKubeClient kubernetes.Interface
+	runningInCluster bool
 }
 
 type ConfigProvider interface {
 	Config() *config.Controller
-}
-
-// NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
-func NewAnonymizer(clusterBaseDomain string,
-	networks []string,
-	secretsClient corev1client.SecretInterface,
-	configurator configobserver.Interface,
-	dataPolicy v1alpha1.DataPolicy) (*Anonymizer, error) {
-	cidrs, err := k8snet.ParseCIDRs(networks)
-	if err != nil {
-		return nil, err
-	}
-
-	var networksInformation []subnetInformation
-	for _, network := range cidrs {
-		lastIP := network.IP
-		networksInformation = append(networksInformation, subnetInformation{
-			network: *network,
-			lastIP:  lastIP,
-		})
-	}
-
-	return &Anonymizer{
-		clusterBaseDomain: strings.TrimSpace(clusterBaseDomain),
-		networks:          networksInformation,
-		translationTable:  make(map[string]string),
-		ipNetworkRegex:    regexp.MustCompile(Ipv4AddressOrNetworkRegex),
-		secretsClient:     secretsClient,
-		configurator:      configurator,
-		dataPolicy:        dataPolicy,
-	}, nil
 }
 
 // NewAnonymizerFromConfigClient creates a new instance of anonymizer with a provided openshift config client
@@ -140,20 +110,31 @@ func NewAnonymizerFromConfigClient(
 	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy,
 ) (*Anonymizer, error) {
+	anonBuilder := &AnonBuilder{}
+	anonBuilder.
+		WithConfigClient(configClient).
+		WithConfigurator(configurator).
+		WithDataPolicy(dataPolicy).
+		WithKubeClient(gatherKubeClient).
+		WithNetworkClient(networkClient).
+		WithRunningInCluster(true).
+		WithSecretsClient(kubeClient.CoreV1().Secrets(secretNamespace))
+
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
 		return nil, err
 	}
-	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, configurator, dataPolicy)
+	anonBuilder.WithSensitiveValue(baseDomain, ClusterBaseDomainPlaceholder)
+
+	APIServerURLs, err := utils.GetClusterAPIServerInfo(ctx, configClient)
 	if err != nil {
 		return nil, err
 	}
-	a.runningInCluster = true
-	a.gatherKubeClient = gatherKubeClient
-	a.configClient = configClient
-	a.networkClient = networkClient
-	return a, nil
+	for _, v := range APIServerURLs {
+		anonBuilder.WithSensitiveValue(v, ClusterAPIServerPlaceholder)
+	}
+
+	return anonBuilder.Build()
 }
 
 func (anonymizer *Anonymizer) readNetworkConfigs() error {
@@ -362,16 +343,16 @@ func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryR
 		}
 	})
 
-	if len(anonymizer.clusterBaseDomain) != 0 {
+	for value, placeholder := range anonymizer.sensitiveValues {
 		memoryRecord.Data = bytes.ReplaceAll(
 			memoryRecord.Data,
-			[]byte(anonymizer.clusterBaseDomain),
-			[]byte(ClusterBaseDomainPlaceholder),
+			[]byte(value),
+			[]byte(placeholder),
 		)
 		memoryRecord.Name = strings.ReplaceAll(
 			memoryRecord.Name,
-			anonymizer.clusterBaseDomain,
-			ClusterBaseDomainPlaceholder,
+			value,
+			placeholder,
 		)
 	}
 

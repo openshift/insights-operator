@@ -323,7 +323,8 @@ func TestCollectAndRecordGatherer(t *testing.T) {
 			},
 		},
 	})
-	anonymizer, err := anonymization.NewAnonymizer("", nil, nil, mockConfigMapConfigurator, "")
+	anonBuilder := &anonymization.AnonBuilder{}
+	anonymizer, err := anonBuilder.WithConfigurator(mockConfigMapConfigurator).Build()
 	assert.NoError(t, err)
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, mockRecorder, nil)
@@ -421,9 +422,11 @@ func TestCollectAndRecordGathererError(t *testing.T) {
 		err,
 		`function "errors" failed with an error`,
 	)
-	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil,
-		config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}), "")
+	anonBuilder := &anonymization.AnonBuilder{}
+	anonBuilder.WithConfigurator(config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}))
+	anonymizer, err := anonBuilder.Build()
 	assert.NoError(t, err)
+
 	err = RecordArchiveMetadata(functionReports, mockRecorder, anonymizer)
 	assert.NoError(t, err)
 
@@ -512,9 +515,12 @@ func TestCollectAndRecordGathererDuplicateRecords(t *testing.T) {
 		}},
 	}}
 	mockDriver := &MockDriver{}
-	anonymizer, err := anonymization.NewAnonymizer("", []string{}, nil,
-		config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}), "")
+
+	anonBuilder := &anonymization.AnonBuilder{}
+	anonBuilder.WithConfigurator(config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}))
+	anonymizer, err := anonBuilder.Build()
 	assert.NoError(t, err)
+
 	rec := recorder.New(mockDriver, time.Second, anonymizer)
 
 	functionReports, err := CollectAndRecordGatherer(context.Background(), gatherer, rec, nil)
