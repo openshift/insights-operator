@@ -116,6 +116,7 @@ func Test_GetNextIP(t *testing.T) {
 
 func getAnonymizer(t *testing.T) *Anonymizer {
 	clusterBaseDomain := "example.com"
+	clusterAPIServer := "example.apiserver.com" // in HyperShift, API Server does not share base domain
 	networks := []string{
 		"127.0.0.0/8",
 		"192.168.0.0/16",
@@ -127,8 +128,15 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 			},
 		},
 	})
-	anonymizer, err := NewAnonymizer(clusterBaseDomain,
-		networks, kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace), mockConfigMapConfigurator, v1alpha1.ObfuscateNetworking)
+	anonBuilder := &AnonBuilder{}
+	anonBuilder.
+		WithSensitiveValue(clusterBaseDomain, ClusterBaseDomainPlaceholder).
+		WithSensitiveValue(clusterAPIServer, ClusterAPIServerPlaceholder).
+		WithConfigurator(mockConfigMapConfigurator).
+		WithDataPolicy(v1alpha1.ObfuscateNetworking).
+		WithNetworks(networks).
+		WithSecretsClient(kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
+	anonymizer, err := anonBuilder.Build()
 	assert.NoError(t, err)
 
 	return anonymizer
@@ -145,6 +153,7 @@ func Test_Anonymizer(t *testing.T) {
 	nameTestCases := []testCase{
 		{"node1.example.com", "node1.<CLUSTER_BASE_DOMAIN>"},
 		{"api.example.com/test", "api.<CLUSTER_BASE_DOMAIN>/test"},
+		{"https://example.apiserver.com:6443", "https://<CLUSTER_API_SERVER>:6443"},
 	}
 	dataTestCases := []testCase{
 		{"api.example.com\n127.0.0.1  ", "api.<CLUSTER_BASE_DOMAIN>\n127.0.0.1  "},
@@ -156,6 +165,7 @@ func Test_Anonymizer(t *testing.T) {
 		{"192.168.1.255  ", "192.168.0.3  "},
 		{"192.169.1.255  ", "0.0.0.0  "},
 		{`{"key1": "val1", "key2": "127.0.0.128"'}`, `{"key1": "val1", "key2": "127.0.0.2"'}`},
+		{`{"APIServerURL": "https://example.apiserver.com:6443"}`, `{"APIServerURL": "https://<CLUSTER_API_SERVER>:6443"}`},
 	}
 
 	for _, testCase := range nameTestCases {
@@ -423,6 +433,11 @@ func TestNewAnonymizerFromConfigClient(t *testing.T) {
 			_, err = coreClient.ConfigMaps("kube-system").Create(ctx, tt.clusterConfigMap, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
+			_, err = configClient.Infrastructures().Create(ctx,
+				&configv1.Infrastructure{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}},
+				metav1.CreateOptions{})
+			assert.NoError(t, err)
+
 			if tt.hostsubnet != nil {
 				_, err = networkClient.HostSubnets().Create(ctx, tt.hostsubnet, metav1.CreateOptions{})
 				assert.NoError(t, err)
@@ -440,7 +455,8 @@ func TestNewAnonymizerFromConfigClient(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, anonymizer)
 
-			assert.Equal(t, testClusterBaseDomain, anonymizer.clusterBaseDomain)
+			_, exists := anonymizer.sensitiveValues[testClusterBaseDomain]
+			assert.True(t, exists)
 			assert.Empty(t, anonymizer.translationTable)
 			assert.NotNil(t, anonymizer.ipNetworkRegex)
 			assert.NotNil(t, anonymizer.secretsClient)
