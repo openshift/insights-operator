@@ -42,11 +42,10 @@ type Gatherer struct {
 	imageKubeConfig         *rest.Config
 	gatherKubeConfig        *rest.Config
 	// there can be multiple instances of the same alert
-	firingAlerts        map[string][]AlertLabels
-	remoteConfiguration RemoteConfiguration
-	clusterVersion      string
-	configurator        configobserver.Interface
-	insightsCli         InsightsGetClient
+	firingAlerts   map[string][]AlertLabels
+	clusterVersion string
+	configurator   configobserver.Interface
+	insightsCli    InsightsGetClient
 }
 
 type InsightsGetClient interface {
@@ -71,7 +70,6 @@ func New(
 		metricsGatherKubeConfig: metricsGatherKubeConfig,
 		imageKubeConfig:         imageKubeConfig,
 		gatherKubeConfig:        gatherKubeConfig,
-		remoteConfiguration:     RemoteConfiguration{},
 		configurator:            configurator,
 		insightsCli:             insightsCli,
 	}
@@ -99,23 +97,53 @@ func (g *Gatherer) GetName() string {
 // GetGatheringFunctions returns gathering functions that should be run considering the conditions
 // + the gathering function producing metadata for the conditional gatherer
 func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
-	remoteConfiguration, err := g.requestRemoteConfigFromServer(ctx)
-	klog.Infof(
-		"got %v gathering rules for conditional gatherer with version %v",
-		len(remoteConfiguration.ConditionalGatheringRules), remoteConfiguration.Version,
-	)
+	remoteConfigData, err := g.getRemoteConfiguration(ctx)
 	if err != nil {
-		klog.Errorf("unable to fetch gathering rules from the server: %v", err)
-		klog.Infof(
-			"trying to use cached gathering config containing %v gathering rules and version %v",
-			len(g.remoteConfiguration.ConditionalGatheringRules), g.remoteConfiguration.Version,
-		)
+		// failed to get the remote configuration -> use default
+		klog.Infof("Failed to read data from the %s endpoint: %v. Using the default built-in configuration",
+			g.configurator.Config().DataReporting.ConditionalGathererEndpoint, err)
 
-		return g.createGatheringFunctions(ctx)
+		gatheringClosure, closureErr := g.useBuiltInRemoteConfiguration(ctx)
+		if closureErr != nil {
+			return nil, closureErr
+		}
+		return gatheringClosure, RemoteConfigError{
+			Err: err,
+		}
 	}
 
-	g.remoteConfiguration = remoteConfiguration
-	gatheringClosures, err := g.createGatheringFunctions(ctx)
+	remoteConfig, err := parseRemoteConfiguration(remoteConfigData)
+	if err != nil {
+		// failed to parse the remote configuration -> use default
+		klog.Infof("Failed to parse the remote configuration data : %v. Using the default built-in configuration", err)
+		gatheringClosure, closureErr := g.useBuiltInRemoteConfiguration(ctx)
+		if closureErr != nil {
+			return nil, closureErr
+		}
+		return gatheringClosure, RemoteConfigError{
+			Err: err,
+		}
+	}
+
+	return g.createAllGatheringFunctions(ctx, remoteConfig)
+}
+
+// useBuiltInRemoteConfiguration is a helper function parsing the default/built-in remote configuration and
+// using it for gathering functions creation
+func (g *Gatherer) useBuiltInRemoteConfiguration(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
+	// failed to parse the remote configuration -> use default
+	remoteConfig, err := parseRemoteConfiguration([]byte(defaultRemoteConfiguration))
+	if err != nil {
+		return nil, err
+	}
+	return g.createAllGatheringFunctions(ctx, remoteConfig)
+}
+
+// createAllGatheringFunctions is a wrapper function to create all gathering functions - the original
+// conditional gathering functions and the new ("rapid") container logs function
+func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
+	remoteConfiguration RemoteConfiguration) (map[string]gatherers.GatheringClosure, error) {
+	gatheringClosures, err := g.createConditionalGatheringFunctions(ctx, remoteConfiguration)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +153,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		return nil, err
 	}
 	gatheringClosures["rapid_container_logs"] = containerLogReuquestClosure
+
 	return gatheringClosures, nil
 }
 
@@ -133,10 +162,11 @@ func (g *Gatherer) validateAndCreateContainerLogRequestsClosure(remoteConfig Rem
 	return g.GatherContainersLogs(remoteConfig.ContainerLogRequests)
 }
 
-func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gatherers.GatheringClosure, error) {
-	errs := validateGatheringRules(g.remoteConfiguration.ConditionalGatheringRules)
+func (g *Gatherer) createConditionalGatheringFunctions(ctx context.Context,
+	remoteConfiguration RemoteConfiguration) (map[string]gatherers.GatheringClosure, error) {
+	errs := validateGatheringRules(remoteConfiguration.ConditionalGatheringRules)
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.SumErrors(errs))
+		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.UniqueErrors(errs))
 	}
 
 	g.updateCache(ctx)
@@ -149,11 +179,11 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 	}
 
 	metadata := GatheringRulesMetadata{
-		Version:  g.remoteConfiguration.Version,
+		Version:  remoteConfiguration.Version,
 		Endpoint: endpoint,
 	}
 
-	for _, conditionalGathering := range g.remoteConfiguration.ConditionalGatheringRules {
+	for _, conditionalGathering := range remoteConfiguration.ConditionalGatheringRules {
 		ruleMetadata := GatheringRuleMetadata{
 			Rule: conditionalGathering,
 		}
@@ -197,16 +227,6 @@ func (g *Gatherer) createGatheringFunctions(ctx context.Context) (map[string]gat
 	return gatheringFunctions, nil
 }
 
-// requestRemoteConfigFromServer returns the latest version of the rules from the server
-func (g *Gatherer) requestRemoteConfigFromServer(ctx context.Context) (RemoteConfiguration, error) {
-	remoteConfigData, err := g.getRemoteConfiguration(ctx)
-	if err != nil {
-		return RemoteConfiguration{}, err
-	}
-	// if gatheringRulesJson has invalid json format and cannot be unmarshalled no rules will be returned
-	return parseRemoteConfiguration(remoteConfigData)
-}
-
 // getRemoteConfiguration returns json version of the rules from the server
 func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 	if g.configurator == nil {
@@ -237,22 +257,23 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 			return false, err
 		}
 
-		if resp.StatusCode == http.StatusOK {
-			remoteConfigData, err = io.ReadAll(resp.Body)
-			defer resp.Body.Close()
-			if err != nil {
+		if resp.StatusCode != http.StatusOK {
+			klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, backOff.Step())
+			if backOff.Steps > 1 {
 				return false, nil
 			}
-			return true, nil
+			return true, fmt.Errorf("received HTTP %s from %s", resp.Status, endpoint)
 		}
-		klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, backOff.Step())
-		return false, nil
+		remoteConfigData, err = io.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		if err != nil {
+			return false, nil
+		}
+		return true, nil
 	})
 
 	if err != nil {
-		// if the connection fails then read the built-in default configuration
-		klog.Infof("Failed to read data from the %s endpoint: %v. Using the default built-in configuration", endpoint, err)
-		return []byte(defaultRemoteConfiguration), nil
+		return nil, err
 	}
 
 	return remoteConfigData, nil

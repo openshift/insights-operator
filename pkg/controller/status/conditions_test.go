@@ -484,6 +484,12 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 						LastTransitionTime: time,
 						Reason:             "",
 					},
+					RemoteConfigurationNotAvailable: {
+						Type:               RemoteConfigurationNotAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
 				},
 			},
 		},
@@ -532,6 +538,12 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 					},
 					ClusterTransferAvailable: {
 						Type:               ClusterTransferAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					RemoteConfigurationNotAvailable: {
+						Type:               RemoteConfigurationNotAvailable,
 						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
 						Reason:             "",

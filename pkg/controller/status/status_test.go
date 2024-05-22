@@ -7,10 +7,10 @@ import (
 
 func Test_controllerStatus_getStatus(t *testing.T) {
 	type fields struct {
-		statusMap map[string]statusMessage
+		statusMap map[statusID]statusMessage
 	}
 	type args struct {
-		id string
+		id statusID
 	}
 	tests := []struct {
 		name   string
@@ -20,14 +20,14 @@ func Test_controllerStatus_getStatus(t *testing.T) {
 	}{
 		{
 			name:   "Must get nil if there is no status",
-			fields: fields{statusMap: map[string]statusMessage{}},
+			fields: fields{statusMap: map[statusID]statusMessage{}},
 			args:   args{id: DisabledStatus},
 			want:   nil,
 		},
 		{
 			name: "Can get the status message",
 			fields: fields{
-				statusMap: map[string]statusMessage{
+				statusMap: map[statusID]statusMessage{
 					DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 					UploadStatus:   {reason: "upload reason", message: "upload message"},
 					DownloadStatus: {reason: "download reason", message: "download message"},
@@ -52,10 +52,10 @@ func Test_controllerStatus_getStatus(t *testing.T) {
 
 func Test_controllerStatus_hasStatus(t *testing.T) {
 	type fields struct {
-		statusMap map[string]statusMessage
+		statusMap map[statusID]statusMessage
 	}
 	type args struct {
-		id string
+		id statusID
 	}
 	tests := []struct {
 		name   string
@@ -65,14 +65,14 @@ func Test_controllerStatus_hasStatus(t *testing.T) {
 	}{
 		{
 			name:   "Must be false if status doesn't exist",
-			fields: fields{statusMap: map[string]statusMessage{}},
+			fields: fields{statusMap: map[statusID]statusMessage{}},
 			args:   args{id: DisabledStatus},
 			want:   false,
 		},
 		{
 			name: "Must be true if status exists",
 			fields: fields{
-				statusMap: map[string]statusMessage{
+				statusMap: map[statusID]statusMessage{
 					DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 					UploadStatus:   {reason: "upload reason", message: "upload message"},
 					DownloadStatus: {reason: "download reason", message: "download message"},
@@ -97,10 +97,10 @@ func Test_controllerStatus_hasStatus(t *testing.T) {
 
 func Test_controllerStatus_setStatus(t *testing.T) {
 	type fields struct {
-		statusMap map[string]statusMessage
+		statusMap map[statusID]statusMessage
 	}
 	type args struct {
-		id      string
+		id      statusID
 		reason  string
 		message string
 	}
@@ -108,49 +108,49 @@ func Test_controllerStatus_setStatus(t *testing.T) {
 		name     string
 		fields   fields
 		args     args
-		statusID string
+		statusID statusID
 		want     *controllerStatus
 	}{
 		{
 			name:   "Change not existing status",
-			fields: fields{statusMap: map[string]statusMessage{}},
+			fields: fields{statusMap: map[statusID]statusMessage{}},
 			args:   args{id: DisabledStatus, reason: "disabled reason", message: "disabled message"},
-			want: &controllerStatus{statusMap: map[string]statusMessage{
+			want: &controllerStatus{statusMap: map[statusID]statusMessage{
 				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 		},
 		{
 			name: "Update existing status with new reason",
-			fields: fields{statusMap: map[string]statusMessage{
+			fields: fields{statusMap: map[statusID]statusMessage{
 				UploadStatus:   {reason: "upload reason", message: "upload message"},
 				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 			args: args{id: DisabledStatus, reason: "new disabled reason", message: "disabled message"},
-			want: &controllerStatus{statusMap: map[string]statusMessage{
+			want: &controllerStatus{statusMap: map[statusID]statusMessage{
 				UploadStatus:   {reason: "upload reason", message: "upload message"},
 				DisabledStatus: {reason: "new disabled reason", message: "disabled message"},
 			}},
 		},
 		{
 			name: "Update existing status with new message",
-			fields: fields{statusMap: map[string]statusMessage{
+			fields: fields{statusMap: map[statusID]statusMessage{
 				UploadStatus:   {reason: "upload reason", message: "upload message"},
 				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 			args: args{id: DisabledStatus, reason: "disabled reason", message: "new disabled message"},
-			want: &controllerStatus{statusMap: map[string]statusMessage{
+			want: &controllerStatus{statusMap: map[statusID]statusMessage{
 				UploadStatus:   {reason: "upload reason", message: "upload message"},
 				DisabledStatus: {reason: "disabled reason", message: "new disabled message"},
 			}},
 		},
 		{
 			name: "Update existing status with same status message",
-			fields: fields{statusMap: map[string]statusMessage{
+			fields: fields{statusMap: map[statusID]statusMessage{
 				UploadStatus:   {reason: "upload reason", message: "upload message"},
 				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
 			args: args{id: DisabledStatus, reason: "disabled reason", message: "disabled message"},
-			want: &controllerStatus{statusMap: map[string]statusMessage{
+			want: &controllerStatus{statusMap: map[statusID]statusMessage{
 				UploadStatus:   {reason: "upload reason", message: "upload message"},
 				DisabledStatus: {reason: "disabled reason", message: "disabled message"},
 			}},
@@ -174,7 +174,7 @@ func Test_newControllerStatus(t *testing.T) {
 		name string
 		want *controllerStatus
 	}{
-		{name: "Test statusController constructor", want: &controllerStatus{statusMap: make(map[string]statusMessage)}},
+		{name: "Test statusController constructor", want: &controllerStatus{statusMap: make(map[statusID]statusMessage)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

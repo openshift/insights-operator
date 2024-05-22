@@ -94,7 +94,7 @@ func CollectAndRecordGatherer(
 		Errors:       utils.ErrorsToStrings(errs),
 	})
 
-	return reports, utils.SumErrors(errs)
+	return reports, utils.UniqueErrors(errs)
 }
 
 func collectAndRecordGatherer(

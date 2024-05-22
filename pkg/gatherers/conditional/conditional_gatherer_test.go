@@ -2,6 +2,7 @@ package conditional
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,7 +18,7 @@ import (
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
-	gatherer := newEmptyGatherer("")
+	gatherer := newEmptyGatherer("", "")
 
 	assert.Equal(t, "conditional", gatherer.GetName())
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
@@ -31,7 +32,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 }
 
 func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
-	gatherer := newEmptyGatherer("")
+	gatherer := newEmptyGatherer("", "")
 
 	ctx := context.Background()
 	err := gatherer.updateAlertsCache(ctx, newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
@@ -44,8 +45,8 @@ func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	assert.True(t, found)
 }
 
-func Test_Gatherer_GetGatheringFunctions_CacheWorks(t *testing.T) {
-	gatherer := newEmptyGatherer("")
+func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
+	gatherer := newEmptyGatherer("", "")
 
 	ctx := context.Background()
 	err := gatherer.updateAlertsCache(ctx, newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
@@ -65,7 +66,7 @@ func Test_Gatherer_GetGatheringFunctions_CacheWorks(t *testing.T) {
 
 	// but we still expect the same rules (from the cache)
 	gatheringFunctions, err = gatherer.GetGatheringFunctions(ctx)
-	assert.NoError(t, err)
+	assert.EqualError(t, err, "404")
 	assert.Len(t, gatheringFunctions, 4)
 	_, found = gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
@@ -90,7 +91,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 		}]
 	}` // invalid namespace (doesn't start with openshift-)
 
-	gatherer := newEmptyGatherer(gathererConfig)
+	gatherer := newEmptyGatherer(gathererConfig, "")
 
 	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
 	assert.NoError(t, err)
@@ -106,7 +107,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 }
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
-	gatherer := newEmptyGatherer("")
+	gatherer := newEmptyGatherer("", "")
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
 	assert.NoError(t, err)
@@ -117,7 +118,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 }
 
 func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
-	gatherer := newEmptyGatherer("")
+	gatherer := newEmptyGatherer("", "")
 
 	ctx := context.Background()
 	err := gatherer.updateAlertsCache(ctx, newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
@@ -211,7 +212,7 @@ func newFakeClientWithAlerts(alerts ...string) *fake.RESTClient {
 }
 
 func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
-	gatherer := newEmptyGatherer("")
+	gatherer := newEmptyGatherer("", "")
 
 	type testCase struct {
 		expectedVersion string
@@ -275,9 +276,52 @@ func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
 	}
 }
 
-func newEmptyGatherer(gathererConfig string) *Gatherer { // nolint:gocritic
-	if len(gathererConfig) == 0 {
-		gathererConfig = `{
+func TestGetGatheringFunctions(t *testing.T) {
+	tests := []struct {
+		name                  string
+		endpoint              string
+		remoteConfig          string
+		expectedErrMsg        string
+		expectRemoteConfigErr bool
+	}{
+		{
+			name:                  "remote configuration is available and can be parsed",
+			endpoint:              "/gathering_rules",
+			remoteConfig:          "",
+			expectedErrMsg:        "",
+			expectRemoteConfigErr: false,
+		},
+		{
+			name:                  "remote configuration is not available",
+			endpoint:              "not valid endpoint",
+			remoteConfig:          "",
+			expectedErrMsg:        "endpoint not supported",
+			expectRemoteConfigErr: true,
+		},
+		{
+			name:                  "remote configuration is available, but cannot be parsed",
+			endpoint:              "/gathering_rules",
+			remoteConfig:          `{not json}`,
+			expectedErrMsg:        "invalid character 'n' looking for beginning of object key string",
+			expectRemoteConfigErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gatherer := newEmptyGatherer(tt.remoteConfig, tt.endpoint)
+			_, err := gatherer.GetGatheringFunctions(context.Background())
+			if err != nil {
+				assert.EqualError(t, err, tt.expectedErrMsg)
+			}
+			assert.Equal(t, tt.expectRemoteConfigErr, errors.As(err, &RemoteConfigError{}))
+		})
+	}
+}
+
+func newEmptyGatherer(remoteConfig string, conditionalGathererEndpoint string) *Gatherer { // nolint:gocritic
+	if len(remoteConfig) == 0 {
+		remoteConfig = `{
 			"version": "1.0.0",
 			"conditional_gathering_rules": [{
 				"conditions": [
@@ -298,9 +342,12 @@ func newEmptyGatherer(gathererConfig string) *Gatherer { // nolint:gocritic
 			}]
 		}`
 	}
+	if conditionalGathererEndpoint == "" {
+		conditionalGathererEndpoint = "/gathering_rules"
+	}
 	testConf := &config.InsightsConfiguration{
 		DataReporting: config.DataReporting{
-			ConditionalGathererEndpoint: "/gathering_rules",
+			ConditionalGathererEndpoint: conditionalGathererEndpoint,
 		},
 	}
 	mockConfigurator := config.NewMockConfigMapConfigurator(testConf)
@@ -310,7 +357,7 @@ func newEmptyGatherer(gathererConfig string) *Gatherer { // nolint:gocritic
 		nil,
 		nil,
 		mockConfigurator,
-		&MockGatheringRulesServiceClient{Conf: gathererConfig},
+		&MockGatheringRulesServiceClient{Conf: remoteConfig},
 	)
 }
 

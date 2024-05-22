@@ -1,14 +1,17 @@
 package status
 
+type statusID string
+
 const (
-	DisabledStatus = "disabled"
-	UploadStatus   = "upload"
-	DownloadStatus = "download"
-	ErrorStatus    = "error"
+	DisabledStatus     = "disabled"
+	UploadStatus       = "upload"
+	DownloadStatus     = "download"
+	ErrorStatus        = "error"
+	RemoteConfigStatus = "remoteConfig"
 )
 
 type controllerStatus struct {
-	statusMap map[string]statusMessage
+	statusMap map[statusID]statusMessage
 }
 
 type statusMessage struct {
@@ -18,12 +21,12 @@ type statusMessage struct {
 
 func newControllerStatus() *controllerStatus {
 	return &controllerStatus{
-		statusMap: make(map[string]statusMessage),
+		statusMap: make(map[statusID]statusMessage),
 	}
 }
 
-func (c *controllerStatus) setStatus(id, reason, message string) {
-	entries := make(map[string]statusMessage)
+func (c *controllerStatus) setStatus(id statusID, reason, message string) {
+	entries := make(map[statusID]statusMessage)
 	for k, v := range c.statusMap {
 		entries[k] = v
 	}
@@ -39,7 +42,7 @@ func (c *controllerStatus) setStatus(id, reason, message string) {
 	c.statusMap = entries
 }
 
-func (c *controllerStatus) getStatus(id string) *statusMessage {
+func (c *controllerStatus) getStatus(id statusID) *statusMessage {
 	s, ok := c.statusMap[id]
 	if !ok {
 		return nil
@@ -48,13 +51,13 @@ func (c *controllerStatus) getStatus(id string) *statusMessage {
 	return &s
 }
 
-func (c *controllerStatus) hasStatus(id string) bool {
+func (c *controllerStatus) hasStatus(id statusID) bool {
 	_, ok := c.statusMap[id]
 	return ok
 }
 
 func (c *controllerStatus) reset() {
-	c.statusMap = make(map[string]statusMessage)
+	c.statusMap = make(map[statusID]statusMessage)
 }
 
 func (c *controllerStatus) isHealthy() bool {

@@ -31,7 +31,8 @@ type recordWithError struct {
 
 var sinceSeconds = int64(6 * 60 * 60)
 
-// GatherContainersLogs TODO provide documentation for this function
+// GatherContainersLogs refers to the Rapid Recommendations
+// (see https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md).
 func (g *Gatherer) GatherContainersLogs(rawLogRequests []RawLogRequest) (gatherers.GatheringClosure, error) { // nolint: dupl
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
@@ -135,9 +136,9 @@ func filterContainerLogs(ctx context.Context,
 	}
 
 	var wgContainers sync.WaitGroup
-	for podName, containersaNames := range podToContainers {
-		wgContainers.Add(len(containersaNames))
-		for _, container := range containersaNames {
+	for podName, containerNames := range podToContainers {
+		wgContainers.Add(len(containerNames))
+		for _, container := range containerNames {
 			containerLogReq := ContainerLogRequest{
 				Namespace:     logRequest.Namespace,
 				ContainerName: container,

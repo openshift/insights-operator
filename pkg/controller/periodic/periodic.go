@@ -26,6 +26,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/types"
@@ -208,18 +209,28 @@ func (c *Controller) Gather() {
 			for i := range functionReports {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
-			if err == nil {
-				klog.Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
-				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
+
+			if err != nil {
+				if errors.As(err, &conditional.RemoteConfigError{}) {
+					c.statuses[name].UpdateStatus(controllerstatus.Summary{
+						Operation: controllerstatus.ReadingRemoteConfiguration,
+						Reason:    "RemoteConfigurationNotAvailable",
+						Message:   err.Error(),
+					})
+					return
+				}
+
+				utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
+				c.statuses[name].UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.GatheringReport,
+					Reason:    "PeriodicGatherFailed",
+					Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+				})
 				return
 			}
 
-			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-			c.statuses[name].UpdateStatus(controllerstatus.Summary{
-				Operation: controllerstatus.GatheringReport,
-				Reason:    "PeriodicGatherFailed",
-				Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
-			})
+			klog.Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+			c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
 		}()
 	}
 	err := c.updateOperatorStatusCR(ctx, allFunctionReports, gatherTime)

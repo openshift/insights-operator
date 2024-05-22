@@ -85,3 +85,13 @@ type ContainerLogRequest struct {
 	Previous      bool
 	MessageRegex  *regexp.Regexp
 }
+
+// RemoteConfigError is a custom error type used
+// when reading of the remote configuration fails
+type RemoteConfigError struct {
+	Err error
+}
+
+func (u RemoteConfigError) Error() string {
+	return u.Err.Error()
+}

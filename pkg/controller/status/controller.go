@@ -211,7 +211,8 @@ func (c *Controller) currentControllerStatus() (allReady bool) { //nolint: gocyc
 
 		degradingFailure := false
 
-		if summary.Operation.Name == controllerstatus.Uploading.Name {
+		switch summary.Operation.Name {
+		case controllerstatus.Uploading.Name:
 			if summary.Count < uploadFailuresCountThreshold {
 				klog.Infof("Number of last upload failures %d lower than threshold %d. Not marking as degraded.",
 					summary.Count, uploadFailuresCountThreshold)
@@ -221,23 +222,25 @@ func (c *Controller) currentControllerStatus() (allReady bool) { //nolint: gocyc
 					summary.Count, uploadFailuresCountThreshold)
 			}
 			c.ctrlStatus.setStatus(UploadStatus, summary.Reason, summary.Message)
-		} else if summary.Operation.Name == controllerstatus.DownloadingReport.Name {
+		case controllerstatus.DownloadingReport.Name:
 			klog.Info("Failed to download Insights report")
 			c.ctrlStatus.setStatus(DownloadStatus, summary.Reason, summary.Message)
-		} else if summary.Operation.Name == controllerstatus.PullingSCACerts.Name {
+		case controllerstatus.PullingSCACerts.Name:
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
 				klog.Infof("Failed to download the SCA certs within the threshold %d with exponential backoff. Marking as degraded.",
 					ocm.FailureCountThreshold)
 				degradingFailure = true
 			}
-		} else if summary.Operation.Name == controllerstatus.PullingClusterTransfer.Name {
+		case controllerstatus.PullingClusterTransfer.Name:
 			// mark as degraded only in case of HTTP 500 and higher
 			if summary.Operation.HTTPStatusCode >= 500 {
 				klog.Infof("Failed to pull the cluster transfer object within the threshold %d with exponential backoff. Marking as degraded.",
 					ocm.FailureCountThreshold)
 				degradingFailure = true
 			}
+		case controllerstatus.ReadingRemoteConfiguration.Name:
+			c.ctrlStatus.setStatus(RemoteConfigStatus, summary.Reason, summary.Message)
 		}
 
 		if degradingFailure {
@@ -368,6 +371,13 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 	} else {
 		cs.removeCondition(InsightsDownloadDegraded)
 	}
+
+	if rs := c.ctrlStatus.getStatus(RemoteConfigStatus); rs != nil {
+		cs.setCondition(RemoteConfigurationNotAvailable, configv1.ConditionTrue, rs.reason, rs.message)
+	} else {
+		cs.setCondition(RemoteConfigurationNotAvailable, configv1.ConditionFalse, asExpectedReason, "")
+	}
+
 	c.updateControllerConditionByReason(cs, SCAAvailable, sca.ControllerName, sca.AvailableReason, isInitializing)
 	c.updateControllerConditionByReason(cs,
 		ClusterTransferAvailable,
