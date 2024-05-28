@@ -9,6 +9,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GatherAggregatedInstances Collects instances of Prometheus and AlertManager deployments that are outside of the
+// 'openshift-monitoring' namespace
+//
+// ### API Reference
+// - https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/alertmanager-monitoring-coreos-com-v1.html
+// - https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/prometheus-monitoring-coreos-com-v1.html
+//
+// ### Sample data
+// - `docs/insights-archive-sample/config/aggregated/custom_prometheuses_alertmanagers.json`
+//
+// ### Location in archive
+// - `config/aggregated/custom_prometheuses_alertmanagers.json`
+//
+// ### Config ID
+// `clusterconfig/aggregated_instances`
+//
+// ### Released version
+// - 4.16
+//
+// ### Backported versions
+// TBD
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherAggregatedInstances(ctx context.Context) ([]record.Record, []error) {
 	client, err := promcli.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -18,24 +42,23 @@ func (g *Gatherer) GatherAggregatedInstances(ctx context.Context) ([]record.Reco
 	return aggregatedInstances{}.gather(ctx, client)
 }
 
-// avoiding noise inside the clusterconfig package with more 'private' functions
 type aggregatedInstances struct {
 	Prometheuses  []string `json:"prometheuses"`
 	Alertmanagers []string `json:"alertmanagers"`
 }
 
+// gather returns records for all Prometheus and Alertmanager instances that exist outside the openshift-monitoring namespace.
+// It could instead return a collection of errors found when trying to get those instances.
 func (ai aggregatedInstances) gather(ctx context.Context, client promcli.Interface) ([]record.Record, []error) {
 	const Filename = "config/aggregated/custom_prometheuses_alertmanagers"
-	const SystemNamespace = "openshift-monitoring"
 
 	errs := []error{}
-
-	prometheusList, err := client.MonitoringV1().Prometheuses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	prometheusList, err := ai.getOutcastedPrometheuses(ctx, client)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	alertManagers, err := client.MonitoringV1().Alertmanagers(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	alertManagersList, err := ai.getOutcastedAlertManagers(ctx, client)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -44,24 +67,44 @@ func (ai aggregatedInstances) gather(ctx context.Context, client promcli.Interfa
 		return nil, errs
 	}
 
+	ai.Prometheuses = prometheusList
+	ai.Alertmanagers = alertManagersList
+
+	return []record.Record{{Name: Filename, Item: record.JSONMarshaller{Object: ai}}}, nil
+}
+
+// getOutcastedPrometheuses returns a collection of Prometheus names, if any, from other than the openshift-monitoring namespace
+// or an error if it couldn't retrieve them
+func (ai aggregatedInstances) getOutcastedPrometheuses(ctx context.Context, client promcli.Interface) ([]string, error) {
+	prometheusList, err := client.MonitoringV1().Prometheuses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	promNames := []string{}
 	for _, prom := range prometheusList.Items {
-		if prom.GetNamespace() != SystemNamespace {
-			ai.Prometheuses = append(ai.Prometheuses, prom.GetName())
+		if prom.GetNamespace() != "openshift-monitoring" {
+			promNames = append(promNames, prom.GetName())
 		}
 	}
 
-	for _, am := range alertManagers.Items {
-		if am.GetNamespace() != SystemNamespace {
-			ai.Alertmanagers = append(ai.Alertmanagers, am.GetName())
+	return promNames, nil
+}
+
+// getOutcastedAlertManagers returns a collection of AlertManagers names, if any, from other than the openshift-monitoring namespace
+// or an error if it couldn't retrieve them
+func (ai aggregatedInstances) getOutcastedAlertManagers(ctx context.Context, client promcli.Interface) ([]string, error) {
+	alertManagersList, err := client.MonitoringV1().Alertmanagers(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	amNames := []string{}
+	for _, prom := range alertManagersList.Items {
+		if prom.GetNamespace() != "openshift-monitoring" {
+			amNames = append(amNames, prom.GetName())
 		}
 	}
 
-	records := []record.Record{{Name: Filename, Item: record.JSONMarshaller{Object: ai}}}
-	// for _, prom := range prometheusList.Items {
-	// 	if prom.GetNamespace() != SystemNamespace {
-	// 		records = append(records, record.Record{Name: Filename, Item: record.JSONMarshaller{Object: ai}})
-	// 	}
-	// }
-
-	return records, nil
+	return amNames, nil
 }
