@@ -73,24 +73,6 @@ func (ai aggregatedInstances) gather(ctx context.Context, client promcli.Interfa
 	return []record.Record{{Name: Filename, Item: record.JSONMarshaller{Object: ai}}}, nil
 }
 
-// getOutcastedPrometheuses returns a collection of Prometheus names, if any, from other than the openshift-monitoring namespace
-// or an error if it couldn't retrieve them
-func (ai aggregatedInstances) getOutcastedPrometheuses(ctx context.Context, client promcli.Interface) ([]string, error) {
-	prometheusList, err := client.MonitoringV1().Prometheuses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	promNames := []string{}
-	for _, prom := range prometheusList.Items {
-		if prom.GetNamespace() != "openshift-monitoring" {
-			promNames = append(promNames, prom.GetName())
-		}
-	}
-
-	return promNames, nil
-}
-
 // getOutcastedAlertManagers returns a collection of AlertManagers names, if any, from other than the openshift-monitoring namespace
 // or an error if it couldn't retrieve them
 func (ai aggregatedInstances) getOutcastedAlertManagers(ctx context.Context, client promcli.Interface) ([]string, error) {
@@ -100,11 +82,31 @@ func (ai aggregatedInstances) getOutcastedAlertManagers(ctx context.Context, cli
 	}
 
 	amNames := []string{}
-	for _, prom := range alertManagersList.Items {
-		if prom.GetNamespace() != "openshift-monitoring" {
-			amNames = append(amNames, prom.GetName())
+	for i := range alertManagersList.Items {
+		alertMgr := alertManagersList.Items[i]
+		if alertMgr.GetNamespace() != MonitoringNamespace {
+			amNames = append(amNames, alertMgr.GetName())
 		}
 	}
 
 	return amNames, nil
+}
+
+// getOutcastedPrometheuses returns a collection of Prometheus names, if any, from other than the openshift-monitoring namespace
+// or an error if it couldn't retrieve them
+func (ai aggregatedInstances) getOutcastedPrometheuses(ctx context.Context, client promcli.Interface) ([]string, error) {
+	prometheusList, err := client.MonitoringV1().Prometheuses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	promNames := []string{}
+	for i := range prometheusList.Items {
+		prom := prometheusList.Items[i]
+		if prom.GetNamespace() != MonitoringNamespace {
+			promNames = append(promNames, prom.GetName())
+		}
+	}
+
+	return promNames, nil
 }
