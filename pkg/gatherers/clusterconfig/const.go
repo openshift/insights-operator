@@ -7,6 +7,11 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
+const (
+	// introduced by GatherAggregatedInstances gatherer
+	MonitoringNamespace string = "openshift-monitoring"
+)
+
 var (
 	registryScheme = runtime.NewScheme()
 	// logMaxLines sets maximum number of lines of the log file
