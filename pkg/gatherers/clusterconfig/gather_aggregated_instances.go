@@ -9,18 +9,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GatherAggregatedInstances Collects instances of Prometheus and AlertManager deployments that are outside of the
-// 'openshift-monitoring' namespace
+// GatherAggregatedInstances Collects instances of `Prometheus` and `AlertManager` deployments
+// that are outside of the `openshift-monitoring` namespace
 //
 // ### API Reference
 // - https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/alertmanager-monitoring-coreos-com-v1.html
 // - https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/prometheus-monitoring-coreos-com-v1.html
 //
 // ### Sample data
-// - `docs/insights-archive-sample/config/aggregated/custom_prometheuses_alertmanagers.json`
+// - docs/insights-archive-sample/aggregated/custom_prometheuses_alertmanagers.json
 //
 // ### Location in archive
-// - `config/aggregated/custom_prometheuses_alertmanagers.json`
+// - `aggregated/custom_prometheuses_alertmanagers.json`
 //
 // ### Config ID
 // `clusterconfig/aggregated_instances`
@@ -50,7 +50,7 @@ type aggregatedInstances struct {
 // gather returns records for all Prometheus and Alertmanager instances that exist outside the openshift-monitoring namespace.
 // It could instead return a collection of errors found when trying to get those instances.
 func (ai aggregatedInstances) gather(ctx context.Context, client promcli.Interface) ([]record.Record, []error) {
-	const Filename = "config/aggregated/custom_prometheuses_alertmanagers"
+	const Filename = "aggregated/custom_prometheuses_alertmanagers"
 
 	errs := []error{}
 	prometheusList, err := ai.getOutcastedPrometheuses(ctx, client)
