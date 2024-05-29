@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // Test_GatherAggregatedInstances provides unit tests for the correct output file structure
@@ -57,22 +56,29 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 					Alertmanagers: []string{"test-alertmanager"}, Prometheuses: []string{"test-prometheus"},
 				}}},
 			},
+		}, {
+			name:      "The function returns an empty records file if no instances are found",
+			alertMgrs: []*v1.Alertmanager{},
+			proms:     []*v1.Prometheus{},
+			expected: []record.Record{{
+				Name: "aggregated/custom_prometheuses_alertmanagers",
+				Item: record.JSONMarshaller{Object: aggregatedInstances{
+					Alertmanagers: []string{}, Prometheuses: []string{},
+				}}},
+			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given
-			items := []runtime.Object{}
-			if len(tc.proms) > 0 || len(tc.alertMgrs) > 0 {
-				for i := range tc.proms {
-					items = append(items, tc.proms[i])
-				}
-				for i := range tc.alertMgrs {
-					items = append(items, tc.alertMgrs[i])
-				}
+			clientset := fake.NewSimpleClientset()
+			for _, am := range tc.alertMgrs {
+				clientset.Tracker().Add(am)
 			}
-			clientset := fake.NewSimpleClientset(items...)
+			for _, prom := range tc.proms {
+				clientset.Tracker().Add(prom)
+			}
 
 			// When
 			test, errs := aggregatedInstances{}.gather(context.Background(), clientset)
@@ -111,17 +117,20 @@ func Test_getOutcastedAlertManagers(t *testing.T) {
 				{ObjectMeta: metav1.ObjectMeta{Name: "test2", Namespace: "test-namespace"}},
 			},
 			expected: []string{"test1", "test2"},
+		}, {
+			name:      "The function returns an empty slice if no instances are found",
+			alertMgrs: []*v1.Alertmanager{},
+			expected:  []string{},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given
-			items := make([]runtime.Object, len(tc.alertMgrs))
-			for i := range tc.alertMgrs {
-				items[i] = tc.alertMgrs[i]
+			clientset := fake.NewSimpleClientset()
+			for _, am := range tc.alertMgrs {
+				clientset.Tracker().Add(am)
 			}
-			clientset := fake.NewSimpleClientset(items...)
 
 			// When
 			test, err := aggregatedInstances{}.getOutcastedAlertManagers(context.Background(), clientset)
@@ -160,17 +169,20 @@ func Test_getOutcastedPrometheuses(t *testing.T) {
 				{ObjectMeta: metav1.ObjectMeta{Name: "test2", Namespace: "test-namespace"}},
 			},
 			expected: []string{"test1", "test2"},
+		}, {
+			name:     "The function returns an empty slice if no instances are found",
+			proms:    []*v1.Prometheus{},
+			expected: []string{},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given
-			items := make([]runtime.Object, len(tc.proms))
-			for i := range tc.proms {
-				items[i] = tc.proms[i]
+			clientset := fake.NewSimpleClientset()
+			for _, prom := range tc.proms {
+				clientset.Tracker().Add(prom)
 			}
-			clientset := fake.NewSimpleClientset(items...)
 
 			// When
 			test, err := aggregatedInstances{}.getOutcastedPrometheuses(context.Background(), clientset)
