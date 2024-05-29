@@ -9,8 +9,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GatherAggregatedInstances Collects instances of `Prometheus` and `AlertManager` deployments
-// that are outside of the `openshift-monitoring` namespace
+// GatherAggregatedInstances Collects instances outside of the `openshift-monitoring` of the following custom resources:
+// - Kind: `Prometheus` Group: `monitoring.coreos.com`
+// - Kind: `AlertManager` Group: `monitoring.coreos.com`
 //
 // ### API Reference
 // - https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/alertmanager-monitoring-coreos-com-v1.html
@@ -84,7 +85,7 @@ func (ai aggregatedInstances) getOutcastedAlertManagers(ctx context.Context, cli
 	amNames := []string{}
 	for i := range alertManagersList.Items {
 		alertMgr := alertManagersList.Items[i]
-		if alertMgr.GetNamespace() != MonitoringNamespace {
+		if alertMgr.GetNamespace() != monitoringNamespace {
 			amNames = append(amNames, alertMgr.GetName())
 		}
 	}
@@ -103,7 +104,7 @@ func (ai aggregatedInstances) getOutcastedPrometheuses(ctx context.Context, clie
 	promNames := []string{}
 	for i := range prometheusList.Items {
 		prom := prometheusList.Items[i]
-		if prom.GetNamespace() != MonitoringNamespace {
+		if prom.GetNamespace() != monitoringNamespace {
 			promNames = append(promNames, prom.GetName())
 		}
 	}

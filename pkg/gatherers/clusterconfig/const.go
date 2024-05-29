@@ -9,7 +9,7 @@ import (
 
 const (
 	// introduced by GatherAggregatedInstances gatherer
-	MonitoringNamespace string = "openshift-monitoring"
+	monitoringNamespace string = "openshift-monitoring"
 )
 
 var (
