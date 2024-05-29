@@ -74,10 +74,12 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 			// Given
 			clientset := fake.NewSimpleClientset()
 			for _, am := range tc.alertMgrs {
-				clientset.Tracker().Add(am)
+				assert.NoError(t,
+					clientset.Tracker().Add(am))
 			}
 			for _, prom := range tc.proms {
-				clientset.Tracker().Add(prom)
+				assert.NoError(t,
+					clientset.Tracker().Add(prom))
 			}
 
 			// When
@@ -129,7 +131,8 @@ func Test_getOutcastedAlertManagers(t *testing.T) {
 			// Given
 			clientset := fake.NewSimpleClientset()
 			for _, am := range tc.alertMgrs {
-				clientset.Tracker().Add(am)
+				assert.NoError(t,
+					clientset.Tracker().Add(am))
 			}
 
 			// When
@@ -181,7 +184,8 @@ func Test_getOutcastedPrometheuses(t *testing.T) {
 			// Given
 			clientset := fake.NewSimpleClientset()
 			for _, prom := range tc.proms {
-				clientset.Tracker().Add(prom)
+				assert.NoError(t,
+					clientset.Tracker().Add(prom))
 			}
 
 			// When
