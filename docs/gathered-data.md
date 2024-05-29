@@ -71,8 +71,9 @@ None
 
 ## AggregatedInstances
 
-Collects instances of `Prometheus` and `AlertManager` deployments
-that are outside of the `openshift-monitoring` namespace
+Collects instances outside of the `openshift-monitoring` of the following custom resources:
+- Kind: `Prometheus` Group: `monitoring.coreos.com`
+- Kind: `AlertManager` Group: `monitoring.coreos.com`
 
 ### API Reference
 - https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/alertmanager-monitoring-coreos-com-v1.html
