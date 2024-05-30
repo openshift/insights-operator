@@ -27,7 +27,7 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 			},
 			expected: []record.Record{{
 				Name: "aggregated/custom_prometheuses_alertmanagers",
-				Item: record.JSONMarshaller{Object: aggregatedInstances{
+				Item: record.JSONMarshaller{Object: monitoringCRNames{
 					Prometheuses: []string{"test"}, Alertmanagers: []string{},
 				}}},
 			},
@@ -38,7 +38,7 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 			},
 			expected: []record.Record{{
 				Name: "aggregated/custom_prometheuses_alertmanagers",
-				Item: record.JSONMarshaller{Object: aggregatedInstances{
+				Item: record.JSONMarshaller{Object: monitoringCRNames{
 					Alertmanagers: []string{"test"}, Prometheuses: []string{},
 				}}},
 			},
@@ -52,20 +52,15 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 			},
 			expected: []record.Record{{
 				Name: "aggregated/custom_prometheuses_alertmanagers",
-				Item: record.JSONMarshaller{Object: aggregatedInstances{
+				Item: record.JSONMarshaller{Object: monitoringCRNames{
 					Alertmanagers: []string{"test-alertmanager"}, Prometheuses: []string{"test-prometheus"},
 				}}},
 			},
 		}, {
-			name:      "The function returns an empty records file if no instances are found",
+			name:      "The function returns no records if no instances are found",
 			alertMgrs: []*v1.Alertmanager{},
 			proms:     []*v1.Prometheus{},
-			expected: []record.Record{{
-				Name: "aggregated/custom_prometheuses_alertmanagers",
-				Item: record.JSONMarshaller{Object: aggregatedInstances{
-					Alertmanagers: []string{}, Prometheuses: []string{},
-				}}},
-			},
+			expected:  []record.Record{},
 		},
 	}
 
@@ -83,7 +78,7 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 			}
 
 			// When
-			test, errs := aggregatedInstances{}.gather(context.Background(), clientset)
+			test, errs := monitoringCRNames{}.gather(context.Background(), clientset)
 
 			// Assert
 			assert.Empty(t, errs)
@@ -136,7 +131,7 @@ func Test_getOutcastedAlertManagers(t *testing.T) {
 			}
 
 			// When
-			test, err := aggregatedInstances{}.getOutcastedAlertManagers(context.Background(), clientset)
+			test, err := monitoringCRNames{}.getOutcastedAlertManagers(context.Background(), clientset)
 
 			// Assert
 			assert.NoError(t, err)
@@ -189,7 +184,7 @@ func Test_getOutcastedPrometheuses(t *testing.T) {
 			}
 
 			// When
-			test, err := aggregatedInstances{}.getOutcastedPrometheuses(context.Background(), clientset)
+			test, err := monitoringCRNames{}.getOutcastedPrometheuses(context.Background(), clientset)
 
 			// Assert
 			assert.NoError(t, err)
