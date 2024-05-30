@@ -69,7 +69,7 @@ None
 None
 
 
-## AggregatedInstances
+## AggregatedMonitoringCRNames
 
 Collects instances outside of the `openshift-monitoring` of the following custom resources:
 - Kind: `Prometheus` Group: `monitoring.coreos.com`
@@ -86,7 +86,7 @@ Collects instances outside of the `openshift-monitoring` of the following custom
 - `aggregated/custom_prometheuses_alertmanagers.json`
 
 ### Config ID
-`clusterconfig/aggregated_instances`
+`clusterconfig/aggregated_monitoring_cr_names`
 
 ### Released version
 - 4.16
