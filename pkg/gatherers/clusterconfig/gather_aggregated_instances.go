@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GatherAggregatedInstances Collects instances outside of the `openshift-monitoring` of the following custom resources:
+// GatherAggregatedMonitoringCRNames Collects instances outside of the `openshift-monitoring` of the following custom resources:
 // - Kind: `Prometheus` Group: `monitoring.coreos.com`
 // - Kind: `AlertManager` Group: `monitoring.coreos.com`
 //
@@ -24,7 +24,7 @@ import (
 // - `aggregated/custom_prometheuses_alertmanagers.json`
 //
 // ### Config ID
-// `clusterconfig/aggregated_instances`
+// `clusterconfig/aggregated_monitoring_cr_names`
 //
 // ### Released version
 // - 4.16
@@ -34,32 +34,32 @@ import (
 //
 // ### Changes
 // None
-func (g *Gatherer) GatherAggregatedInstances(ctx context.Context) ([]record.Record, []error) {
+func (g *Gatherer) GatherAggregatedMonitoringCRNames(ctx context.Context) ([]record.Record, []error) {
 	client, err := promcli.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return aggregatedInstances{}.gather(ctx, client)
+	return monitoringCRNames{}.gather(ctx, client)
 }
 
-type aggregatedInstances struct {
+type monitoringCRNames struct {
 	Prometheuses  []string `json:"prometheuses"`
 	Alertmanagers []string `json:"alertmanagers"`
 }
 
 // gather returns records for all Prometheus and Alertmanager instances that exist outside the openshift-monitoring namespace.
 // It could instead return a collection of errors found when trying to get those instances.
-func (ai aggregatedInstances) gather(ctx context.Context, client promcli.Interface) ([]record.Record, []error) {
+func (mn monitoringCRNames) gather(ctx context.Context, client promcli.Interface) ([]record.Record, []error) {
 	const Filename = "aggregated/custom_prometheuses_alertmanagers"
 
 	errs := []error{}
-	prometheusList, err := ai.getOutcastedPrometheuses(ctx, client)
+	prometheusList, err := mn.getOutcastedPrometheuses(ctx, client)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	alertManagersList, err := ai.getOutcastedAlertManagers(ctx, client)
+	alertManagersList, err := mn.getOutcastedAlertManagers(ctx, client)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -68,15 +68,20 @@ func (ai aggregatedInstances) gather(ctx context.Context, client promcli.Interfa
 		return nil, errs
 	}
 
-	ai.Prometheuses = prometheusList
-	ai.Alertmanagers = alertManagersList
+	// De not return an empty file if no Custom Resources were found
+	if len(prometheusList) == 0 && len(alertManagersList) == 0 {
+		return []record.Record{}, nil
+	}
 
-	return []record.Record{{Name: Filename, Item: record.JSONMarshaller{Object: ai}}}, nil
+	mn.Prometheuses = prometheusList
+	mn.Alertmanagers = alertManagersList
+
+	return []record.Record{{Name: Filename, Item: record.JSONMarshaller{Object: mn}}}, nil
 }
 
 // getOutcastedAlertManagers returns a collection of AlertManagers names, if any, from other than the openshift-monitoring namespace
 // or an error if it couldn't retrieve them
-func (ai aggregatedInstances) getOutcastedAlertManagers(ctx context.Context, client promcli.Interface) ([]string, error) {
+func (mn monitoringCRNames) getOutcastedAlertManagers(ctx context.Context, client promcli.Interface) ([]string, error) {
 	alertManagersList, err := client.MonitoringV1().Alertmanagers(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -95,7 +100,7 @@ func (ai aggregatedInstances) getOutcastedAlertManagers(ctx context.Context, cli
 
 // getOutcastedPrometheuses returns a collection of Prometheus names, if any, from other than the openshift-monitoring namespace
 // or an error if it couldn't retrieve them
-func (ai aggregatedInstances) getOutcastedPrometheuses(ctx context.Context, client promcli.Interface) ([]string, error) {
+func (mn monitoringCRNames) getOutcastedPrometheuses(ctx context.Context, client promcli.Interface) ([]string, error) {
 	prometheusList, err := client.MonitoringV1().Prometheuses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
