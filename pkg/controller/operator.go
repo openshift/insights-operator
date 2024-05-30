@@ -230,7 +230,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
 			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(),
-			operatorClient.OperatorV1().InsightsOperators(), dgInformer)
+			operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)
 		go periodicGather.PeriodicPrune(ctx)

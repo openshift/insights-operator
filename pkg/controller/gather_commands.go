@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,10 +26,12 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/utils"
 )
 
 // numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint
@@ -194,7 +197,20 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	allFunctionReports := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
+	remoteConfigNotAvailableCondition := status.RemoteConfigurationNotAvailableCondition(metav1.ConditionFalse, "AsExpected", "")
+	allFunctionReports, err := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
+	if err != nil {
+		var remoteConfigErr conditional.RemoteConfigError
+		if errors.As(err, &remoteConfigErr) {
+			remoteConfigNotAvailableCondition.Status = metav1.ConditionTrue
+			remoteConfigNotAvailableCondition.Reason = "NotAvailable"
+			remoteConfigNotAvailableCondition.Message = err.Error()
+		}
+	}
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigNotAvailableCondition)
+	if err != nil {
+		klog.Error(err)
+	}
 
 	// record data
 	dataRecordedCon := status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", "")
@@ -257,12 +273,14 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 // gatherAndReporFunctions calls all the defined gatherers, calculates their status and returns map of resulting
 // gatherer functions reports
 func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Interface,
-	dataGatherCR *insightsv1alpha1.DataGather, rec *recorder.Recorder) map[string]gather.GathererFunctionReport {
+	dataGatherCR *insightsv1alpha1.DataGather, rec *recorder.Recorder) (map[string]gather.GathererFunctionReport, error) {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
+	var gathererErrs []error
 	for _, gatherer := range gatherersToRun {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers) // nolint: govet
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
+			gathererErrs = append(gathererErrs, err)
 		}
 
 		for i := range functionReports {
@@ -280,7 +298,7 @@ func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Int
 		gs := status.CreateDataGatherGathererStatus(&fr)
 		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
 	}
-	return allFunctionReports
+	return allFunctionReports, utils.UniqueErrors(gathererErrs)
 }
 
 // updateDataGatherStatus updates DataGather status conditions with provided condition definition as well as

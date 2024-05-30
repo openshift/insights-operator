@@ -89,7 +89,8 @@ type ContainerLogRequest struct {
 // RemoteConfigError is a custom error type used
 // when reading of the remote configuration fails
 type RemoteConfigError struct {
-	Err error
+	Err    error
+	Reason string
 }
 
 func (u RemoteConfigError) Error() string {

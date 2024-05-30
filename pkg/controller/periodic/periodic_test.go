@@ -13,9 +13,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	configv1 "github.com/openshift/api/config/v1"
 	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
 	"github.com/openshift/api/insights/v1alpha1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	configFakeCli "github.com/openshift/client-go/config/clientset/versioned/fake"
 	insightsFakeCli "github.com/openshift/client-go/insights/clientset/versioned/fake"
 	fakeOperatorCli "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/anonymization"
@@ -226,7 +228,7 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 
 func TestCreateNewDataGatherCR(t *testing.T) {
 	cs := insightsFakeCli.NewSimpleClientset()
-	mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil)
+	mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
 	tests := []struct {
 		name              string
 		disabledGatherers []string
@@ -355,7 +357,7 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
 			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather, tt.testJob)
 			assert.NoError(t, err)
 			updatedDataGather, err := cs.InsightsV1alpha1().DataGathers().Get(context.Background(), tt.testedDataGather.Name, metav1.GetOptions{})
@@ -628,7 +630,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
 			operatorFakeCS := fakeOperatorCli.NewSimpleClientset(&tt.testedInsightsOperator)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil,
-				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators(), nil)
+				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators(), nil, nil)
 			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, updatedOperator)
@@ -693,7 +695,7 @@ func TestCreateDataGatherAttributeValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockAPIConfig := config.NewMockAPIConfigurator(&tt.gatherConfig)
-			mockController := NewWithTechPreview(nil, nil, mockAPIConfig, tt.gatheres, nil, nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, mockAPIConfig, tt.gatheres, nil, nil, nil, nil, nil)
 			disabledGatherers, dp := mockController.createDataGatherAttributeValues()
 			assert.Equal(t, tt.expectedPolicy, dp)
 			assert.EqualValues(t, disabledGatherers, tt.expectedDisabledGatherers)
@@ -774,7 +776,7 @@ func TestGetInsightsImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := kubefake.NewSimpleClientset(&tt.testDeployment)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil, nil, nil)
 			imgName, err := mockController.getInsightsImage(context.Background())
 			assert.Equal(t, tt.expectedError, err)
 			assert.Equal(t, tt.expectedImageName, imgName)
@@ -865,7 +867,7 @@ func TestPeriodicPrune(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			kubeCs := kubefake.NewSimpleClientset(tt.jobs...)
 			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGathers...)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1alpha1(), nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1alpha1(), nil, nil, nil)
 			mockController.pruneInterval = 90 * time.Millisecond
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
@@ -964,7 +966,7 @@ func TestWasDataUploaded(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			successful := mockController.wasDataUploaded(tt.testedDataGather)
 			assert.Equal(t, tt.expectedSummary.Healthy, successful)
 			summary, _ := mockController.Sources()[0].CurrentStatus()
@@ -1100,7 +1102,7 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 				},
 			}
 			mockCMConf := config.NewMockConfigMapConfigurator(conf)
-			mockController := NewWithTechPreview(nil, mockCMConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil)
+			mockController := NewWithTechPreview(nil, mockCMConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil, nil)
 			err := mockController.updateInsightsReportInDataGather(context.Background(), tt.analysisReport, tt.dataGatherToUpdate)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedInsightsReport, &tt.dataGatherToUpdate.Status.InsightsReport)
@@ -1150,7 +1152,7 @@ func TestDataGatherState(t *testing.T) {
 			} else {
 				insightsCs = insightsFakeCli.NewSimpleClientset(tt.dataGather)
 			}
-			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil, nil)
 			dataGather, err := mockController.getDataGather(context.Background(), tt.dataGatherName)
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
@@ -1158,6 +1160,352 @@ func TestDataGatherState(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.dataGather.Status.State, dataGather.Status.State)
 			}
+		})
+	}
+}
+
+func TestUpdateClusterOperatorConditions(t *testing.T) {
+	tests := []struct {
+		name               string
+		dataGatherCR       v1alpha1.DataGather
+		insightsClusterOp  configv1.ClusterOperator
+		expectedConditions []configv1.ClusterOperatorStatusCondition
+	}{
+		{
+			name: "remote config condition is unknown and should be update to true status",
+			dataGatherCR: v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   status.DataUploaded,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:    string(status.RemoteConfigurationNotAvailable),
+							Status:  metav1.ConditionTrue,
+							Reason:  "TestReason",
+							Message: "This is a test error message",
+						},
+					},
+				},
+			},
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:   configv1.OperatorAvailable,
+							Status: configv1.ConditionTrue,
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+						},
+						{
+							Type:   status.RemoteConfigurationNotAvailable,
+							Status: configv1.ConditionUnknown,
+						},
+					},
+				},
+			},
+			expectedConditions: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:   configv1.OperatorAvailable,
+					Status: configv1.ConditionTrue,
+				},
+				{
+					Type:   configv1.OperatorDegraded,
+					Status: configv1.ConditionFalse,
+				},
+				{
+					Type:    status.RemoteConfigurationNotAvailable,
+					Status:  configv1.ConditionTrue,
+					Reason:  "TestReason",
+					Message: "This is a test error message",
+				},
+			},
+		},
+		{
+			name: "remote config condition does not exist in the DataGather CR",
+			dataGatherCR: v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   status.DataRecorded,
+							Status: metav1.ConditionFalse,
+						},
+					},
+				},
+			},
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:   configv1.OperatorAvailable,
+							Status: configv1.ConditionTrue,
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+						},
+						{
+							Type:   status.RemoteConfigurationNotAvailable,
+							Status: configv1.ConditionUnknown,
+						},
+					},
+				},
+			},
+			expectedConditions: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:   configv1.OperatorAvailable,
+					Status: configv1.ConditionTrue,
+				},
+				{
+					Type:   configv1.OperatorDegraded,
+					Status: configv1.ConditionFalse,
+				},
+				{
+					Type:   status.RemoteConfigurationNotAvailable,
+					Status: configv1.ConditionUnknown,
+				},
+			},
+		},
+		{
+			name: "remote config condition does not exist in the ClusterOperator CR",
+			dataGatherCR: v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   status.DataUploaded,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   string(status.RemoteConfigurationNotAvailable),
+							Status: metav1.ConditionFalse,
+							Reason: "AsExpected",
+						},
+					},
+				},
+			},
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:   configv1.OperatorAvailable,
+							Status: configv1.ConditionTrue,
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+						},
+					},
+				},
+			},
+			expectedConditions: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:   configv1.OperatorAvailable,
+					Status: configv1.ConditionTrue,
+				},
+				{
+					Type:   configv1.OperatorDegraded,
+					Status: configv1.ConditionFalse,
+				},
+				{
+					Type:   status.RemoteConfigurationNotAvailable,
+					Status: configv1.ConditionFalse,
+					Reason: "AsExpected",
+				},
+			},
+		},
+		{
+			name: "remote config condition in ClusterOperator CR has the same status as in DataGather CR",
+			dataGatherCR: v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   status.DataUploaded,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   string(status.RemoteConfigurationNotAvailable),
+							Status: metav1.ConditionFalse,
+							Reason: "AsExpected",
+						},
+					},
+				},
+			},
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:   configv1.OperatorAvailable,
+							Status: configv1.ConditionTrue,
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+						},
+						{
+							Type:   status.RemoteConfigurationNotAvailable,
+							Status: configv1.ConditionFalse,
+							Reason: "AsExpected",
+						},
+					},
+				},
+			},
+			expectedConditions: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:   configv1.OperatorAvailable,
+					Status: configv1.ConditionTrue,
+				},
+				{
+					Type:   configv1.OperatorDegraded,
+					Status: configv1.ConditionFalse,
+				},
+				{
+					Type:   status.RemoteConfigurationNotAvailable,
+					Status: configv1.ConditionFalse,
+					Reason: "AsExpected",
+				},
+			},
+		},
+		{
+			name: "remote config condition is True and should be update to False status",
+			dataGatherCR: v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   status.DataUploaded,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:   string(status.RemoteConfigurationNotAvailable),
+							Status: metav1.ConditionFalse,
+							Reason: "AsExpected",
+						},
+					},
+				},
+			},
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:   configv1.OperatorAvailable,
+							Status: configv1.ConditionTrue,
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+						},
+						{
+							Type:    status.RemoteConfigurationNotAvailable,
+							Status:  configv1.ConditionTrue,
+							Reason:  "NotAvailable",
+							Message: "This is a test error message",
+						},
+					},
+				},
+			},
+			expectedConditions: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:   configv1.OperatorAvailable,
+					Status: configv1.ConditionTrue,
+				},
+				{
+					Type:   configv1.OperatorDegraded,
+					Status: configv1.ConditionFalse,
+				},
+				{
+					Type:   status.RemoteConfigurationNotAvailable,
+					Status: configv1.ConditionFalse,
+					Reason: "AsExpected",
+				},
+			},
+		},
+		{
+			name: "remote config condition status is the same, but the reason is different",
+			dataGatherCR: v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						{
+							Type:   status.DataUploaded,
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:    string(status.RemoteConfigurationNotAvailable),
+							Status:  metav1.ConditionTrue,
+							Reason:  "NonHttp200Response",
+							Message: "Receive HTTP 404 response",
+						},
+					},
+				},
+			},
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:   configv1.OperatorAvailable,
+							Status: configv1.ConditionTrue,
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+						},
+						{
+							Type:    status.RemoteConfigurationNotAvailable,
+							Status:  configv1.ConditionTrue,
+							Reason:  "NotAvailable",
+							Message: "Cannot connect",
+						},
+					},
+				},
+			},
+			expectedConditions: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:   configv1.OperatorAvailable,
+					Status: configv1.ConditionTrue,
+				},
+				{
+					Type:   configv1.OperatorDegraded,
+					Status: configv1.ConditionFalse,
+				},
+				{
+					Type:    status.RemoteConfigurationNotAvailable,
+					Status:  configv1.ConditionTrue,
+					Reason:  "NonHttp200Response",
+					Message: "Receive HTTP 404 response",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			configCli := configFakeCli.NewSimpleClientset(&tt.insightsClusterOp)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, configCli.ConfigV1(), nil)
+			err := mockController.updateClusterOperatorConditions(ctx, &tt.dataGatherCR)
+			assert.NoError(t, err)
+			insightsCO, err := configCli.ConfigV1().ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedConditions, insightsCO.Status.Conditions)
 		})
 	}
 }

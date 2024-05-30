@@ -16,6 +16,7 @@ const (
 	NoUploadYetReason         = "NoUploadYet"
 	NoDataGatheringYetReason  = "NoDataGatheringYet"
 	NothingToProcessYetReason = "NothingToProcessYet"
+	UnknownReason             = "Unknown"
 )
 
 // DataUploadedCondition returns new "DataUploaded" status condition with provided status, reason and message
@@ -44,6 +45,16 @@ func DataRecordedCondition(status metav1.ConditionStatus, reason, message string
 func DataProcessedCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
 	return metav1.Condition{
 		Type:               DataProcessed,
+		LastTransitionTime: metav1.Now(),
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+	}
+}
+
+func RemoteConfigurationNotAvailableCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
+	return metav1.Condition{
+		Type:               string(RemoteConfigurationNotAvailable),
 		LastTransitionTime: metav1.Now(),
 		Status:             status,
 		Reason:             reason,
