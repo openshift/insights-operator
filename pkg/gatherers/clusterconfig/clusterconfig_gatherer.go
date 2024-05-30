@@ -73,6 +73,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"overlapping_namespace_uids":        (*Gatherer).GatherNamespacesWithOverlappingUIDs,
 	"pdbs":                              (*Gatherer).GatherPodDisruptionBudgets,
 	"pod_network_connectivity_checks":   (*Gatherer).GatherPodNetworkConnectivityChecks,
+	"number_of_pods_and_netnamespaces_with_sdn_annotations": (*Gatherer).GatherNumberOfPodsAndNetnamespacesWithSDNAnnotations,
 	"proxies":                           (*Gatherer).GatherClusterProxy,
 	"sap_config":                        (*Gatherer).GatherSAPConfig,
 	"sap_datahubs":                      (*Gatherer).GatherSAPDatahubs,
