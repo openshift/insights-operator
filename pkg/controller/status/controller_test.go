@@ -94,21 +94,21 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 	availableCondition := configv1.ClusterOperatorStatusCondition{
 		Type:               configv1.OperatorAvailable,
 		Status:             configv1.ConditionTrue,
-		Reason:             asExpectedReason,
+		Reason:             AsExpectedReason,
 		Message:            insightsAvailableMessage,
 		LastTransitionTime: lastTransitionTime,
 	}
 	progressingCondition := configv1.ClusterOperatorStatusCondition{
 		Type:               configv1.OperatorProgressing,
 		Status:             configv1.ConditionFalse,
-		Reason:             asExpectedReason,
+		Reason:             AsExpectedReason,
 		Message:            monitoringMsg,
 		LastTransitionTime: lastTransitionTime,
 	}
 	degradedCondition := configv1.ClusterOperatorStatusCondition{
 		Type:               configv1.OperatorDegraded,
 		Status:             configv1.ConditionFalse,
-		Reason:             asExpectedReason,
+		Reason:             AsExpectedReason,
 		Message:            insightsAvailableMessage,
 		LastTransitionTime: lastTransitionTime,
 	}
@@ -130,7 +130,7 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 				{
 					Type:               OperatorDisabled,
 					Status:             configv1.ConditionFalse,
-					Reason:             asExpectedReason,
+					Reason:             AsExpectedReason,
 					LastTransitionTime: lastTransitionTime,
 				},
 			},
@@ -174,7 +174,7 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	progressingCondition := configv1.ClusterOperatorStatusCondition{
 		Type:               configv1.OperatorProgressing,
 		Status:             configv1.ConditionFalse,
-		Reason:             asExpectedReason,
+		Reason:             AsExpectedReason,
 		Message:            monitoringMsg,
 		LastTransitionTime: lastTransitionTime,
 	}
@@ -203,7 +203,7 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 				{
 					Type:               OperatorDisabled,
 					Status:             configv1.ConditionFalse,
-					Reason:             asExpectedReason,
+					Reason:             AsExpectedReason,
 					LastTransitionTime: lastTransitionTime,
 				},
 			},

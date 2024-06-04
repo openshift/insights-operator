@@ -7,6 +7,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+var Invalid string = "Invalid"
+var Unavailable string = "Unavailable"
+
 // RemoteConfiguration is a structure to hold gathering rules with their version
 type RemoteConfiguration struct {
 	Version                   string          `json:"version"`

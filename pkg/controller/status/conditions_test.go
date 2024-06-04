@@ -484,8 +484,14 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 						LastTransitionTime: time,
 						Reason:             "",
 					},
-					RemoteConfigurationNotAvailable: {
-						Type:               RemoteConfigurationNotAvailable,
+					RemoteConfigurationAvailable: {
+						Type:               RemoteConfigurationAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					RemoteConfigurationValid: {
+						Type:               RemoteConfigurationValid,
 						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
 						Reason:             "",
@@ -542,8 +548,14 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 						LastTransitionTime: time,
 						Reason:             "",
 					},
-					RemoteConfigurationNotAvailable: {
-						Type:               RemoteConfigurationNotAvailable,
+					RemoteConfigurationAvailable: {
+						Type:               RemoteConfigurationAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					RemoteConfigurationValid: {
+						Type:               RemoteConfigurationValid,
 						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
 						Reason:             "",

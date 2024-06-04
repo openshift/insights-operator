@@ -18,8 +18,11 @@ const (
 	ClusterTransferAvailable configv1.ClusterStatusConditionType = "ClusterTransferAvailable"
 	// SCAAvailable is a condition type providing info about SCA controller status
 	SCAAvailable configv1.ClusterStatusConditionType = "SCAAvailable"
-
-	RemoteConfigurationNotAvailable configv1.ClusterStatusConditionType = "RemoteConfigurationNotAvailable"
+	// RemoteConfigurationAvailable is a condition type providing info about remote configuration (conditional gathering)
+	// availability
+	RemoteConfigurationAvailable configv1.ClusterStatusConditionType = "RemoteConfigurationAvailable"
+	// RemoteConfigurationInvalid is a condition type providing info about remote configuration content validity
+	RemoteConfigurationValid configv1.ClusterStatusConditionType = "RemoteConfigurationValid"
 )
 
 type conditionsMap map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition
@@ -60,8 +63,14 @@ func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *condi
 			LastTransitionTime: time,
 			Reason:             "",
 		},
-		RemoteConfigurationNotAvailable: {
-			Type:               RemoteConfigurationNotAvailable,
+		RemoteConfigurationAvailable: {
+			Type:               RemoteConfigurationAvailable,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
+		RemoteConfigurationValid: {
+			Type:               RemoteConfigurationValid,
 			Status:             configv1.ConditionUnknown,
 			LastTransitionTime: time,
 			Reason:             "",

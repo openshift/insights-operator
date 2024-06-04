@@ -1170,9 +1170,10 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 		dataGatherCR       v1alpha1.DataGather
 		insightsClusterOp  configv1.ClusterOperator
 		expectedConditions []configv1.ClusterOperatorStatusCondition
+		expectedErr        error
 	}{
 		{
-			name: "remote config condition is unknown and should be update to true status",
+			name: "remote config conditions are unknown and should be updated",
 			dataGatherCR: v1alpha1.DataGather{
 				Status: v1alpha1.DataGatherStatus{
 					Conditions: []metav1.Condition{
@@ -1181,8 +1182,12 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: metav1.ConditionTrue,
 						},
 						{
-							Type:    string(status.RemoteConfigurationNotAvailable),
-							Status:  metav1.ConditionTrue,
+							Type:   string(status.RemoteConfigurationValid),
+							Status: metav1.ConditionTrue,
+						},
+						{
+							Type:    string(status.RemoteConfigurationAvailable),
+							Status:  metav1.ConditionFalse,
 							Reason:  "TestReason",
 							Message: "This is a test error message",
 						},
@@ -1204,7 +1209,11 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: configv1.ConditionFalse,
 						},
 						{
-							Type:   status.RemoteConfigurationNotAvailable,
+							Type:   status.RemoteConfigurationAvailable,
+							Status: configv1.ConditionUnknown,
+						},
+						{
+							Type:   status.RemoteConfigurationValid,
 							Status: configv1.ConditionUnknown,
 						},
 					},
@@ -1220,16 +1229,24 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 					Status: configv1.ConditionFalse,
 				},
 				{
-					Type:    status.RemoteConfigurationNotAvailable,
-					Status:  configv1.ConditionTrue,
+					Type:    status.RemoteConfigurationAvailable,
+					Status:  configv1.ConditionFalse,
 					Reason:  "TestReason",
 					Message: "This is a test error message",
 				},
+				{
+					Type:   status.RemoteConfigurationValid,
+					Status: configv1.ConditionTrue,
+				},
 			},
+			expectedErr: nil,
 		},
 		{
 			name: "remote config condition does not exist in the DataGather CR",
 			dataGatherCR: v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "periodic-test",
+				},
 				Status: v1alpha1.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
@@ -1254,7 +1271,7 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: configv1.ConditionFalse,
 						},
 						{
-							Type:   status.RemoteConfigurationNotAvailable,
+							Type:   status.RemoteConfigurationAvailable,
 							Status: configv1.ConditionUnknown,
 						},
 					},
@@ -1270,10 +1287,11 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 					Status: configv1.ConditionFalse,
 				},
 				{
-					Type:   status.RemoteConfigurationNotAvailable,
+					Type:   status.RemoteConfigurationAvailable,
 					Status: configv1.ConditionUnknown,
 				},
 			},
+			expectedErr: fmt.Errorf("RemoteConfigurationAvailable condition not found in status of periodic-test dataGather"),
 		},
 		{
 			name: "remote config condition does not exist in the ClusterOperator CR",
@@ -1285,8 +1303,13 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: metav1.ConditionTrue,
 						},
 						{
-							Type:   string(status.RemoteConfigurationNotAvailable),
-							Status: metav1.ConditionFalse,
+							Type:   string(status.RemoteConfigurationAvailable),
+							Status: metav1.ConditionTrue,
+							Reason: "AsExpected",
+						},
+						{
+							Type:   string(status.RemoteConfigurationValid),
+							Status: metav1.ConditionTrue,
 							Reason: "AsExpected",
 						},
 					},
@@ -1319,8 +1342,13 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 					Status: configv1.ConditionFalse,
 				},
 				{
-					Type:   status.RemoteConfigurationNotAvailable,
-					Status: configv1.ConditionFalse,
+					Type:   status.RemoteConfigurationAvailable,
+					Status: configv1.ConditionTrue,
+					Reason: "AsExpected",
+				},
+				{
+					Type:   status.RemoteConfigurationValid,
+					Status: configv1.ConditionTrue,
 					Reason: "AsExpected",
 				},
 			},
@@ -1335,8 +1363,13 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: metav1.ConditionTrue,
 						},
 						{
-							Type:   string(status.RemoteConfigurationNotAvailable),
-							Status: metav1.ConditionFalse,
+							Type:   string(status.RemoteConfigurationAvailable),
+							Status: metav1.ConditionTrue,
+							Reason: "AsExpected",
+						},
+						{
+							Type:   string(status.RemoteConfigurationValid),
+							Status: metav1.ConditionTrue,
 							Reason: "AsExpected",
 						},
 					},
@@ -1357,8 +1390,13 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: configv1.ConditionFalse,
 						},
 						{
-							Type:   status.RemoteConfigurationNotAvailable,
-							Status: configv1.ConditionFalse,
+							Type:   status.RemoteConfigurationAvailable,
+							Status: configv1.ConditionTrue,
+							Reason: "AsExpected",
+						},
+						{
+							Type:   status.RemoteConfigurationValid,
+							Status: configv1.ConditionTrue,
 							Reason: "AsExpected",
 						},
 					},
@@ -1374,14 +1412,19 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 					Status: configv1.ConditionFalse,
 				},
 				{
-					Type:   status.RemoteConfigurationNotAvailable,
-					Status: configv1.ConditionFalse,
+					Type:   status.RemoteConfigurationAvailable,
+					Status: configv1.ConditionTrue,
+					Reason: "AsExpected",
+				},
+				{
+					Type:   status.RemoteConfigurationValid,
+					Status: configv1.ConditionTrue,
 					Reason: "AsExpected",
 				},
 			},
 		},
 		{
-			name: "remote config condition is True and should be update to False status",
+			name: "remote config condition are True and should be updated to False status",
 			dataGatherCR: v1alpha1.DataGather{
 				Status: v1alpha1.DataGatherStatus{
 					Conditions: []metav1.Condition{
@@ -1390,8 +1433,13 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: metav1.ConditionTrue,
 						},
 						{
-							Type:   string(status.RemoteConfigurationNotAvailable),
-							Status: metav1.ConditionFalse,
+							Type:   string(status.RemoteConfigurationAvailable),
+							Status: metav1.ConditionTrue,
+							Reason: "AsExpected",
+						},
+						{
+							Type:   string(status.RemoteConfigurationValid),
+							Status: metav1.ConditionTrue,
 							Reason: "AsExpected",
 						},
 					},
@@ -1412,10 +1460,16 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: configv1.ConditionFalse,
 						},
 						{
-							Type:    status.RemoteConfigurationNotAvailable,
-							Status:  configv1.ConditionTrue,
+							Type:    status.RemoteConfigurationAvailable,
+							Status:  configv1.ConditionFalse,
 							Reason:  "NotAvailable",
-							Message: "This is a test error message",
+							Message: "This is a unvailable error message",
+						},
+						{
+							Type:    status.RemoteConfigurationValid,
+							Status:  configv1.ConditionFalse,
+							Reason:  "Invalid",
+							Message: "This is a invalid error message",
 						},
 					},
 				},
@@ -1430,8 +1484,13 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 					Status: configv1.ConditionFalse,
 				},
 				{
-					Type:   status.RemoteConfigurationNotAvailable,
-					Status: configv1.ConditionFalse,
+					Type:   status.RemoteConfigurationAvailable,
+					Status: configv1.ConditionTrue,
+					Reason: "AsExpected",
+				},
+				{
+					Type:   status.RemoteConfigurationValid,
+					Status: configv1.ConditionTrue,
 					Reason: "AsExpected",
 				},
 			},
@@ -1446,10 +1505,16 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: metav1.ConditionTrue,
 						},
 						{
-							Type:    string(status.RemoteConfigurationNotAvailable),
-							Status:  metav1.ConditionTrue,
+							Type:    string(status.RemoteConfigurationAvailable),
+							Status:  metav1.ConditionFalse,
 							Reason:  "NonHttp200Response",
 							Message: "Receive HTTP 404 response",
+						},
+						{
+							Type:    string(status.RemoteConfigurationValid),
+							Status:  metav1.ConditionFalse,
+							Reason:  "Invalid",
+							Message: "Validation failed",
 						},
 					},
 				},
@@ -1469,10 +1534,16 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 							Status: configv1.ConditionFalse,
 						},
 						{
-							Type:    status.RemoteConfigurationNotAvailable,
-							Status:  configv1.ConditionTrue,
+							Type:    status.RemoteConfigurationAvailable,
+							Status:  configv1.ConditionFalse,
 							Reason:  "NotAvailable",
 							Message: "Cannot connect",
+						},
+						{
+							Type:    status.RemoteConfigurationValid,
+							Status:  configv1.ConditionFalse,
+							Reason:  "Unknown",
+							Message: "Cannot pass validation",
 						},
 					},
 				},
@@ -1487,10 +1558,16 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 					Status: configv1.ConditionFalse,
 				},
 				{
-					Type:    status.RemoteConfigurationNotAvailable,
-					Status:  configv1.ConditionTrue,
+					Type:    status.RemoteConfigurationAvailable,
+					Status:  configv1.ConditionFalse,
 					Reason:  "NonHttp200Response",
 					Message: "Receive HTTP 404 response",
+				},
+				{
+					Type:    status.RemoteConfigurationValid,
+					Status:  configv1.ConditionFalse,
+					Reason:  "Invalid",
+					Message: "Validation failed",
 				},
 			},
 		},
@@ -1501,8 +1578,8 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 			ctx := context.Background()
 			configCli := configFakeCli.NewSimpleClientset(&tt.insightsClusterOp)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, configCli.ConfigV1(), nil)
-			err := mockController.updateClusterOperatorConditions(ctx, &tt.dataGatherCR)
-			assert.NoError(t, err)
+			err := mockController.updateStatusBasedOnDataGatherCondition(ctx, &tt.dataGatherCR)
+			assert.Equal(t, tt.expectedErr, err)
 			insightsCO, err := configCli.ConfigV1().ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedConditions, insightsCO.Status.Conditions)

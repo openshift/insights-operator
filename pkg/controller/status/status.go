@@ -3,11 +3,12 @@ package status
 type statusID string
 
 const (
-	DisabledStatus     = "disabled"
-	UploadStatus       = "upload"
-	DownloadStatus     = "download"
-	ErrorStatus        = "error"
-	RemoteConfigStatus = "remoteConfig"
+	DisabledStatus              = "disabled"
+	UploadStatus                = "upload"
+	DownloadStatus              = "download"
+	ErrorStatus                 = "error"
+	RemoteConfigAvailableStatus = "remoteConfigAvailable"
+	RemoteConfigValidStatus     = "remoteConfigIValid"
 )
 
 type controllerStatus struct {

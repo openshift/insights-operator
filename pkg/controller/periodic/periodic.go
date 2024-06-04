@@ -218,12 +218,19 @@ func (c *Controller) Gather() {
 			if err != nil {
 				var remoteConfigErr conditional.RemoteConfigError
 				if errors.As(err, &remoteConfigErr) {
-					fmt.Println("======================== ERROR ", remoteConfigErr, remoteConfigErr.Reason)
-					c.statuses[name].UpdateStatus(controllerstatus.Summary{
-						Operation: controllerstatus.ReadingRemoteConfiguration,
-						Reason:    "NotAvailable",
-						Message:   err.Error(),
-					})
+					if remoteConfigErr.Reason == conditional.Invalid {
+						c.statuses[name].UpdateStatus(controllerstatus.Summary{
+							Operation: controllerstatus.ValidatingRemoteConfiguration,
+							Reason:    remoteConfigErr.Reason,
+							Message:   remoteConfigErr.Error(),
+						})
+					} else {
+						c.statuses[name].UpdateStatus(controllerstatus.Summary{
+							Operation: controllerstatus.ReadingRemoteConfiguration,
+							Reason:    remoteConfigErr.Reason,
+							Message:   remoteConfigErr.Error(),
+						})
+					}
 					return
 				}
 
@@ -412,71 +419,97 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 		klog.Errorf("Failed to copy the last DataGather status to \"cluster\" operator status: %v", err)
 		return
 	}
-	klog.Info("Operator status in \"insightsoperator.operator.openshift.io\" successfully updated")
 
-	err = c.updateClusterOperatorConditions(ctx, dataGatherFinished)
+	err = c.updateStatusBasedOnDataGatherCondition(ctx, dataGatherFinished)
 	if err != nil {
 		klog.Errorf("Failed to update Insights clusteroperator conditions: %v", err)
+		return
 	}
+	klog.Info("Operator status in \"insightsoperator.operator.openshift.io\" successfully updated")
 }
 
-// updateClusterOperatorConditions update the Insights ClusterOperator conditions based on the provided
+// updateStatusBasedOnDataGatherCondition update the Insights ClusterOperator conditions based on the provided
 // DataGather conditions.
-func (c *Controller) updateClusterOperatorConditions(ctx context.Context, dg *insightsv1alpha1.DataGather) error {
-	rnaDataGatherCon := status.GetConditionByType(dg, string(status.RemoteConfigurationNotAvailable))
-	if rnaDataGatherCon == nil {
-		return nil
+func (c *Controller) updateStatusBasedOnDataGatherCondition(ctx context.Context, dg *insightsv1alpha1.DataGather) error {
+	remAvailableDGCon := status.GetConditionByType(dg, string(status.RemoteConfigurationAvailable))
+	if remAvailableDGCon == nil {
+		return fmt.Errorf("%s condition not found in status of %s dataGather", status.RemoteConfigurationAvailable, dg.Name)
 	}
 
+	err := c.compareAndUpdateClusterOperatorCondition(ctx, status.RemoteConfigurationAvailable, remAvailableDGCon)
+	if err != nil {
+		return err
+	}
+
+	remValidDGCon := status.GetConditionByType(dg, string(status.RemoteConfigurationValid))
+	if remValidDGCon == nil {
+		return fmt.Errorf("%s condition not found in status of %s dataGather", status.RemoteConfigurationValid, dg.Name)
+	}
+
+	return c.compareAndUpdateClusterOperatorCondition(ctx, status.RemoteConfigurationValid, remValidDGCon)
+}
+
+// compareAndUpdateClusterOperatorCondition compares the provided dataGather condition to the specific
+// cluster operator status condition with the given type and then updates the clusteroperator condition
+func (c *Controller) compareAndUpdateClusterOperatorCondition(ctx context.Context,
+	conditionType v1.ClusterStatusConditionType, dataGatherCondition *metav1.Condition) error {
 	insightsCo, err := c.openshiftConfCli.ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	// RemoteConfiguration clusteroperator status condition that is updated
-	var rnaClusterOperatorCon *v1.ClusterOperatorStatusCondition
+	var clusterOperatorCon *v1.ClusterOperatorStatusCondition
 	for i := range insightsCo.Status.Conditions {
 		c := &insightsCo.Status.Conditions[i]
-		if c.Type == status.RemoteConfigurationNotAvailable {
-			rnaClusterOperatorCon = c
+		if c.Type == conditionType {
+			clusterOperatorCon = c
 		}
 	}
-
 	updatedConditions := make([]v1.ClusterOperatorStatusCondition, len(insightsCo.Status.Conditions))
 	_ = copy(updatedConditions, insightsCo.Status.Conditions)
 
-	if rnaClusterOperatorCon == nil {
-		rnaClusterOperatorCon = &v1.ClusterOperatorStatusCondition{
-			Type:               status.RemoteConfigurationNotAvailable,
-			Status:             v1.ConditionStatus(rnaDataGatherCon.Status),
-			LastTransitionTime: rnaDataGatherCon.LastTransitionTime,
-			Reason:             rnaDataGatherCon.Reason,
-			Message:            rnaDataGatherCon.Message,
+	if clusterOperatorCon == nil {
+		clusterOperatorCon = &v1.ClusterOperatorStatusCondition{
+			Type:               conditionType,
+			Status:             v1.ConditionStatus(dataGatherCondition.Status),
+			LastTransitionTime: dataGatherCondition.LastTransitionTime,
+			Reason:             dataGatherCondition.Reason,
+			Message:            dataGatherCondition.Message,
 		}
-		updatedConditions = append(updatedConditions, *rnaClusterOperatorCon)
+		updatedConditions = append(updatedConditions, *clusterOperatorCon)
 	} else {
-		if rnaClusterOperatorCon.Status == v1.ConditionStatus(rnaDataGatherCon.Status) {
-			if rnaClusterOperatorCon.Reason != rnaDataGatherCon.Reason {
-				rnaClusterOperatorCon.Reason = rnaDataGatherCon.Reason
-				rnaClusterOperatorCon.LastTransitionTime = rnaDataGatherCon.LastTransitionTime
-				rnaClusterOperatorCon.Message = rnaDataGatherCon.Message
+		if clusterOperatorCon.Status == v1.ConditionStatus(dataGatherCondition.Status) {
+			if clusterOperatorCon.Reason != dataGatherCondition.Reason {
+				clusterOperatorCon.Reason = dataGatherCondition.Reason
+				clusterOperatorCon.LastTransitionTime = dataGatherCondition.LastTransitionTime
+				clusterOperatorCon.Message = dataGatherCondition.Message
 			}
 		} else {
-			rnaClusterOperatorCon = &v1.ClusterOperatorStatusCondition{
-				Type:               status.RemoteConfigurationNotAvailable,
-				Status:             v1.ConditionStatus(rnaDataGatherCon.Status),
-				LastTransitionTime: rnaDataGatherCon.LastTransitionTime,
-				Reason:             rnaDataGatherCon.Reason,
-				Message:            rnaDataGatherCon.Message,
+			clusterOperatorCon = &v1.ClusterOperatorStatusCondition{
+				Type:               conditionType,
+				Status:             v1.ConditionStatus(dataGatherCondition.Status),
+				LastTransitionTime: dataGatherCondition.LastTransitionTime,
+				Reason:             dataGatherCondition.Reason,
+				Message:            dataGatherCondition.Message,
 			}
 		}
-		idx := getClusterOperatorConditionIndexByType(rnaClusterOperatorCon.Type, updatedConditions)
-		updatedConditions[idx] = *rnaClusterOperatorCon
+		idx := getClusterOperatorConditionIndexByType(clusterOperatorCon.Type, updatedConditions)
+		updatedConditions[idx] = *clusterOperatorCon
 	}
-
 	insightsCo.Status.Conditions = updatedConditions
 	_, err = c.openshiftConfCli.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{})
-
 	return err
+}
+
+func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionType, conditions []v1.ClusterOperatorStatusCondition) int {
+	var idx int
+	for i := range conditions {
+		con := conditions[i]
+		if con.Type == conType {
+			idx = i
+		}
+	}
+	return idx
 }
 
 // updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
@@ -671,6 +704,7 @@ func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insigh
 		status.DataRecordedCondition(metav1.ConditionUnknown, status.NoDataGatheringYetReason, ""),
 		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
 		status.RemoteConfigurationNotAvailableCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
+		status.RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
 	}
 	dg.Status.State = insightsv1alpha1.Pending
 	if job != nil {
@@ -782,15 +816,4 @@ func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
 		}
 	}
 	insights.IncrementCounterRequestSend(statusCode)
-}
-
-func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionType, conditions []v1.ClusterOperatorStatusCondition) int {
-	var idx int
-	for i := range conditions {
-		con := conditions[i]
-		if con.Type == conType {
-			idx = i
-		}
-	}
-	return idx
 }

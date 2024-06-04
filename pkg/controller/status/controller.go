@@ -32,7 +32,7 @@ const (
 	// as InsightsUploadDegraded
 	uploadFailuresCountThreshold = 5
 
-	asExpectedReason         = "AsExpected"
+	AsExpectedReason         = "AsExpected"
 	degradedReason           = "Degraded"
 	noTokenReason            = "NoToken"
 	upgradeableReason        = "InsightsUpgradeable"
@@ -62,7 +62,8 @@ type Controller struct {
 	reported Reported
 	start    time.Time
 
-	ctrlStatus *controllerStatus
+	ctrlStatus    *controllerStatus
+	isTechPreview bool
 
 	lock sync.Mutex
 }
@@ -71,7 +72,8 @@ type Controller struct {
 func NewController(client configv1client.ConfigV1Interface,
 	configurator configobserver.Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
-	namespace string) *Controller {
+	namespace string,
+	isTechPreview bool) *Controller {
 	c := &Controller{
 		name:            "insights",
 		statusCh:        make(chan struct{}, 1),
@@ -81,6 +83,7 @@ func NewController(client configv1client.ConfigV1Interface,
 		namespace:       namespace,
 		sources:         make(map[string]controllerstatus.StatusController),
 		ctrlStatus:      newControllerStatus(),
+		isTechPreview:   isTechPreview,
 	}
 	return c
 }
@@ -240,7 +243,9 @@ func (c *Controller) currentControllerStatus() (allReady bool) { //nolint: gocyc
 				degradingFailure = true
 			}
 		case controllerstatus.ReadingRemoteConfiguration.Name:
-			c.ctrlStatus.setStatus(RemoteConfigStatus, summary.Reason, summary.Message)
+			c.ctrlStatus.setStatus(RemoteConfigAvailableStatus, summary.Reason, summary.Message)
+		case controllerstatus.ValidatingRemoteConfiguration.Name:
+			c.ctrlStatus.setStatus(RemoteConfigValidStatus, summary.Reason, summary.Message)
 		}
 
 		if degradingFailure {
@@ -340,7 +345,7 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 			cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message)
 		}
 		if !cs.hasCondition(configv1.OperatorDegraded) {
-			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, asExpectedReason, "")
+			cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, AsExpectedReason, "")
 		}
 	}
 
@@ -349,13 +354,13 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil {
 		cs.setCondition(OperatorDisabled, configv1.ConditionTrue, ds.reason, ds.message)
 	} else {
-		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, asExpectedReason, "")
+		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, AsExpectedReason, "")
 	}
 	// handle when has errors
 	if es := c.ctrlStatus.getStatus(ErrorStatus); es != nil && !c.ctrlStatus.isDisabled() {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message)
 	} else {
-		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, asExpectedReason, insightsAvailableMessage)
+		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionFalse, AsExpectedReason, insightsAvailableMessage)
 	}
 
 	// handle when upload fails
@@ -372,18 +377,34 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 		cs.removeCondition(InsightsDownloadDegraded)
 	}
 
-	if rs := c.ctrlStatus.getStatus(RemoteConfigStatus); rs != nil {
-		cs.setCondition(RemoteConfigurationNotAvailable, configv1.ConditionTrue, rs.reason, rs.message)
-	} else {
-		cs.setCondition(RemoteConfigurationNotAvailable, configv1.ConditionFalse, asExpectedReason, "")
-	}
-
 	c.updateControllerConditionByReason(cs, SCAAvailable, sca.ControllerName, sca.AvailableReason, isInitializing)
 	c.updateControllerConditionByReason(cs,
 		ClusterTransferAvailable,
 		clustertransfer.ControllerName,
 		clustertransfer.AvailableReason,
 		isInitializing)
+
+	if c.isTechPreview {
+		return
+	}
+
+	// we set the following Remote Configuration conditions only in non-techpreview clusters
+	// In tech preview clusters, it's not handy to use this status controller, because there are
+	// two status conditions related to the single source of status (condition gatherer in this case)
+	if rs := c.ctrlStatus.getStatus(RemoteConfigAvailableStatus); rs != nil {
+		cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, rs.reason, rs.message)
+		// if the remote configuration is not available then we can't say it's valid or not
+		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, NoValidationYet, "")
+		return
+	}
+
+	cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionTrue, AsExpectedReason, "")
+
+	if rs := c.ctrlStatus.getStatus(RemoteConfigValidStatus); rs != nil {
+		cs.setCondition(RemoteConfigurationValid, configv1.ConditionFalse, rs.reason, rs.message)
+	} else {
+		cs.setCondition(RemoteConfigurationValid, configv1.ConditionTrue, AsExpectedReason, "")
+	}
 }
 
 func (c *Controller) updateControllerConditionByReason(cs *conditions,
@@ -445,15 +466,15 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 	// marked as disabled then it's reasonable to set Available=True
 	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil && !c.ctrlStatus.isHealthy() {
 		klog.Infof("The operator is marked as disabled")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg)
-		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, asExpectedReason, insightsAvailableMessage)
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMsg)
+		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, AsExpectedReason, insightsAvailableMessage)
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg)
 	}
 
 	if c.ctrlStatus.isHealthy() {
 		klog.Infof("The operator is healthy")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, asExpectedReason, monitoringMsg)
-		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, asExpectedReason, insightsAvailableMessage)
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMsg)
+		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, AsExpectedReason, insightsAvailableMessage)
 		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg)
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,6 +29,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils"
 )
@@ -107,9 +109,19 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		if closureErr != nil {
 			return nil, closureErr
 		}
-		return gatheringClosure, RemoteConfigError{
+
+		rcErr := RemoteConfigError{
 			Err: err,
 		}
+
+		var httpErr insightsclient.HttpError
+		if errors.As(err, &httpErr) {
+			rcErr.Reason = fmt.Sprintf("HttpStatus%d", httpErr.StatusCode)
+		} else {
+			rcErr.Reason = "NotAvailable"
+		}
+
+		return gatheringClosure, rcErr
 	}
 
 	remoteConfig, err := parseRemoteConfiguration(remoteConfigData)
@@ -121,7 +133,8 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 			return nil, closureErr
 		}
 		return gatheringClosure, RemoteConfigError{
-			Err: err,
+			Reason: Invalid,
+			Err:    err,
 		}
 	}
 
@@ -159,6 +172,15 @@ func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 
 func (g *Gatherer) validateAndCreateContainerLogRequestsClosure(remoteConfig RemoteConfiguration) (gatherers.GatheringClosure, error) {
 	// TODO validate g.remoteConfiguration.ContainerLogRequests
+	validRemoteConfig := true
+
+	if !validRemoteConfig {
+		return gatherers.GatheringClosure{}, RemoteConfigError{
+			Err:    fmt.Errorf("TBD - validation error"),
+			Reason: Invalid,
+		}
+	}
+
 	return g.GatherContainersLogs(remoteConfig.ContainerLogRequests)
 }
 
@@ -262,7 +284,10 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 			if backOff.Steps > 1 {
 				return false, nil
 			}
-			return true, fmt.Errorf("received HTTP %s from %s", resp.Status, endpoint)
+			return true, insightsclient.HttpError{
+				Err:        fmt.Errorf("received HTTP %s from %s", resp.Status, endpoint),
+				StatusCode: resp.StatusCode,
+			}
 		}
 		remoteConfigData, err = io.ReadAll(resp.Body)
 		defer resp.Body.Close()

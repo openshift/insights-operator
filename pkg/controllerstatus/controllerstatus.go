@@ -31,8 +31,11 @@ var (
 	PullingSCACerts = Operation{Name: "PullingSCACerts"}
 	// PullingClusterTransfer is an operator for pulling ClusterTransfer object from the OCM API endpoint
 	PullingClusterTransfer = Operation{Name: "PullingClusterTransfer"}
-
+	// ReadingRemoteConfiguration is an operation of reading the remote configuration (provided by the conditional
+	// gatherer endpoint)
 	ReadingRemoteConfiguration = Operation{Name: "ReadingRemoteConfiguration"}
+	// ValidatingRemoteConfiguration
+	ValidatingRemoteConfiguration = Operation{Name: "ValidatingRemoteConfiguration"}
 )
 
 // Summary represents the status summary of an Operation
