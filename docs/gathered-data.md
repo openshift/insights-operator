@@ -1416,6 +1416,31 @@ with 'x' strings preserving the same length.
 images running on the node.
 
 
+## NumberOfPodsAndNetnamespacesWithSDNAnnotations
+
+Collects number of Pods with the annotation:
+`pod.network.openshift.io/assign-macvlan`
+and also collects number of Netnamespaces with the annotation:
+`netnamespace.network.openshift.io/multicast-enabled: "true"`
+
+### Sample data
+- [docs/insights-archive-sample/aggregated/pods_and_netnamespaces_with_sdn_annotations.json](./insights-archive-sample/aggregated/pods_and_netnamespaces_with_sdn_annotations.json)
+
+### Location in archive
+- `aggregated/pods_and_netnamespaces_with_sdn_annotations.json`
+
+### Config ID
+`clusterconfig/pods_and_netnamespaces_with_sdn_annotations`
+
+### Released version
+- 4.17.0
+
+### Backported versions
+
+### Changes
+None
+
+
 ## OLMOperators
 
 Collects the list of installed OLM operators. Each OLM operator (in the list) contains
