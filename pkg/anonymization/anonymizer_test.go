@@ -116,7 +116,7 @@ func Test_GetNextIP(t *testing.T) {
 
 func getAnonymizer(t *testing.T) *Anonymizer {
 	clusterBaseDomain := "example.com"
-	clusterAPIServer := "example.apiserver.com" // in HyperShift, API Server does not share base domain
+	clusterConfigHost := "apiserver.com" // in HyperShift, API Server does not share base domain
 	networks := []string{
 		"127.0.0.0/8",
 		"192.168.0.0/16",
@@ -131,7 +131,7 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 	anonBuilder := &AnonBuilder{}
 	anonBuilder.
 		WithSensitiveValue(clusterBaseDomain, ClusterBaseDomainPlaceholder).
-		WithSensitiveValue(clusterAPIServer, ClusterAPIServerPlaceholder).
+		WithSensitiveValue(clusterConfigHost, ClusterHostPlaceholder).
 		WithConfigurator(mockConfigMapConfigurator).
 		WithDataPolicy(v1alpha1.ObfuscateNetworking).
 		WithNetworks(networks).
@@ -153,7 +153,7 @@ func Test_Anonymizer(t *testing.T) {
 	nameTestCases := []testCase{
 		{"node1.example.com", "node1.<CLUSTER_BASE_DOMAIN>"},
 		{"api.example.com/test", "api.<CLUSTER_BASE_DOMAIN>/test"},
-		{"https://example.apiserver.com:6443", "https://<CLUSTER_API_SERVER>:6443"},
+		{"https://example.apiserver.com:6443", "https://example.<CLUSTER_DOMAIN_HOST>:6443"},
 	}
 	dataTestCases := []testCase{
 		{"api.example.com\n127.0.0.1  ", "api.<CLUSTER_BASE_DOMAIN>\n127.0.0.1  "},
@@ -165,7 +165,7 @@ func Test_Anonymizer(t *testing.T) {
 		{"192.168.1.255  ", "192.168.0.3  "},
 		{"192.169.1.255  ", "0.0.0.0  "},
 		{`{"key1": "val1", "key2": "127.0.0.128"'}`, `{"key1": "val1", "key2": "127.0.0.2"'}`},
-		{`{"APIServerURL": "https://example.apiserver.com:6443"}`, `{"APIServerURL": "https://<CLUSTER_API_SERVER>:6443"}`},
+		{`{"APIServerURL": "https://example.apiserver.com:6443"}`, `{"APIServerURL": "https://example.<CLUSTER_DOMAIN_HOST>:6443"}`},
 	}
 
 	for _, testCase := range nameTestCases {
@@ -451,6 +451,7 @@ func TestNewAnonymizerFromConfigClient(t *testing.T) {
 				networkClient,
 				mockConfigMapConfigurator,
 				v1alpha1.ObfuscateNetworking,
+				make(map[string]string),
 			)
 			assert.NoError(t, err)
 			assert.NotNil(t, anonymizer)
