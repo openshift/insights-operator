@@ -56,8 +56,8 @@ const (
 	Ipv4Regex                            = `((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
 	Ipv4NetworkRegex                     = Ipv4Regex + "/([0-9]{1,2})"
 	Ipv4AddressOrNetworkRegex            = Ipv4Regex + "(/([0-9]{1,2}))?"
-	ClusterAPIServerPlaceholder          = "<CLUSTER_API_SERVER>"
 	ClusterBaseDomainPlaceholder         = "<CLUSTER_BASE_DOMAIN>"
+	ClusterHostPlaceholder               = "<CLUSTER_DOMAIN_HOST>"
 	UnableToCreateAnonymizerErrorMessage = "Unable to create anonymizer, " +
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
 	clusterNetworksRecordName = "config/network.json"
@@ -109,6 +109,7 @@ func NewAnonymizerFromConfigClient(
 	networkClient networkv1client.NetworkV1Interface,
 	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy,
+	sensitiveVals map[string]string,
 ) (*Anonymizer, error) {
 	anonBuilder := &AnonBuilder{}
 	anonBuilder.
@@ -120,19 +121,15 @@ func NewAnonymizerFromConfigClient(
 		WithRunningInCluster(true).
 		WithSecretsClient(kubeClient.CoreV1().Secrets(secretNamespace))
 
+	for value, placeholder := range sensitiveVals {
+		anonBuilder.WithSensitiveValue(value, placeholder)
+	}
+
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
 		return nil, err
 	}
 	anonBuilder.WithSensitiveValue(baseDomain, ClusterBaseDomainPlaceholder)
-
-	APIServerURLs, err := utils.GetClusterAPIServerInfo(ctx, configClient)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range APIServerURLs {
-		anonBuilder.WithSensitiveValue(v, ClusterAPIServerPlaceholder)
-	}
 
 	return anonBuilder.Build()
 }
@@ -310,15 +307,18 @@ func NewAnonymizerFromConfig(
 	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy,
 ) (*Anonymizer, error) {
+	sensitiveVals := make(map[string]string)
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
 		return nil, err
 	}
+	sensitiveVals[extractDomain(protoKubeConfig.Host)] = ClusterHostPlaceholder
 
 	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
 	if err != nil {
 		return nil, err
 	}
+	sensitiveVals[extractDomain(gatherProtoKubeConfig.Host)] = ClusterHostPlaceholder
 
 	configClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
@@ -329,8 +329,12 @@ func NewAnonymizerFromConfig(
 	if err != nil {
 		return nil, err
 	}
+	sensitiveVals[extractDomain(gatherKubeConfig.Host)] = ClusterHostPlaceholder
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient, configurator, dataPolicy)
+	return NewAnonymizerFromConfigClient(ctx,
+		kubeClient, gatherKubeClient, configClient, networkClient,
+		configurator, dataPolicy, sensitiveVals,
+	)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
@@ -541,4 +545,17 @@ func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 	}
 
 	return resultIP, false
+}
+
+// extractDomain truncates protocol, host and port of the URL argument
+// and returns the base domain
+func extractDomain(url string) string {
+	baseDomain := strings.Join(strings.Split(url, ".")[1:], ".") // removes protocol and host parts
+	domain := strings.Split(baseDomain, ":")[0]                  // removes port (if any)
+
+	if domain == "" { // in case the URL is malformed
+		return url
+	}
+
+	return domain
 }
