@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"time"
 
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
 
@@ -28,8 +29,8 @@ var ingressNamespaces = []string{
 type CertificateInfo struct {
 	Name        string           `json:"name"`
 	Namespace   string           `json:"namespace"`
-	NotBefore   metav1.Time      `json:"not_before"`
-	NotAfter    metav1.Time      `json:"not_after"`
+	NotBefore   time.Time        `json:"not_before"`
+	NotAfter    time.Time        `json:"not_after"`
 	Controllers []ControllerInfo `json:"controllers"`
 }
 
@@ -57,23 +58,23 @@ func gatherClusterIngressCertificates(
 	coreClient corev1client.CoreV1Interface,
 	operatorClient operatorclient.Interface) ([]record.Record, []error) {
 
+	const Filename = "aggregated/ingress_controllers_certs"
+
 	var certificates []*CertificateInfo
 	var errs []error
 
 	// Step 1: Collect router-ca and router-certs-default
-	routerCACert, routerCACertErr := getCertificateInfoFromSecret(ctx, coreClient, "openshift-ingress-operator", "router-ca")
-	if routerCACertErr != nil {
-		errs = append(errs, routerCACertErr)
-	} else {
-		certificates = append(certificates, routerCACert)
+	rCAinfo, err := getRouterCACertInfo(ctx, coreClient)
+	if err != nil {
+		errs = append(errs, err)
 	}
+	certificates = append(certificates, rCAinfo)
 
-	routerCertsDefaultCert, routerCertsDefaultCertErr := getCertificateInfoFromSecret(ctx, coreClient, "openshift-ingress", "router-certs-default")
-	if routerCertsDefaultCertErr != nil {
-		errs = append(errs, routerCertsDefaultCertErr)
-	} else {
-		certificates = append(certificates, routerCertsDefaultCert)
+	rCDinfo, err := getRouterCertsDefaultCertInfo(ctx, coreClient)
+	if err != nil {
+		errs = append(errs, err)
 	}
+	certificates = append(certificates, rCDinfo)
 
 	// Step 2: List all Ingress Controllers
 	for _, namespace := range ingressNamespaces {
@@ -97,7 +98,7 @@ func gatherClusterIngressCertificates(
 			}
 
 			if controller.Spec.DefaultCertificate != nil {
-				certName := controller.Spec.DefaultCertificate.Name
+				certName := controller.Spec.DefaultCertificate.Name // TODO - rename to secretname
 				certInfo, certErr := getCertificateInfoFromSecret(ctx, coreClient, namespace, certName)
 				if certErr != nil {
 					errs = append(errs, certErr)
@@ -129,7 +130,7 @@ func gatherClusterIngressCertificates(
 	if len(certificates) > 0 {
 		// Step 6: Generate the certificates record
 		records = append(records, record.Record{
-			Name: "config/ingress/certificates",
+			Name: Filename,
 			Item: record.JSONMarshaller{Object: certificates},
 		})
 	}
@@ -161,8 +162,34 @@ func getCertificateInfoFromSecret(ctx context.Context, coreClient corev1client.C
 	return &CertificateInfo{
 		Name:        secretName,
 		Namespace:   namespace,
-		NotBefore:   metav1.NewTime(cert.NotBefore),
-		NotAfter:    metav1.NewTime(cert.NotAfter),
+		NotBefore:   cert.NotBefore,
+		NotAfter:    cert.NotAfter,
 		Controllers: []ControllerInfo{},
 	}, nil
+}
+
+func getRouterCACertInfo(ctx context.Context, coreClient corev1client.CoreV1Interface) (*CertificateInfo, error) {
+	const (
+		routerCASecret    string = "router-ca"
+		routerCANamespace string = "openshift-ingress-operator"
+	)
+	certInfo, err := getCertificateInfoFromSecret(ctx, coreClient, routerCANamespace, routerCASecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return certInfo, nil
+}
+
+func getRouterCertsDefaultCertInfo(ctx context.Context, coreClient corev1client.CoreV1Interface) (*CertificateInfo, error) {
+	const (
+		routerCertsSecret    string = "router-certs-default"
+		routerCertsNamespace string = "openshift-ingress"
+	)
+	certInfo, err := getCertificateInfoFromSecret(ctx, coreClient, routerCertsNamespace, routerCertsSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return certInfo, nil
 }
