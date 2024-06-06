@@ -38,6 +38,9 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 			secretDef: []corev1.Secret{{
 				ObjectMeta: metav1.ObjectMeta{Name: "router-ca", Namespace: "openshift-ingress-operator"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{Name: "router-certs-default", Namespace: "openshift-ingress"},
+				Data:       map[string][]byte{"tls.crt": mockBytes},
 			}},
 			wantRecords: []record.Record{{
 				Name: "aggregated/ingress_controllers_certs",
@@ -49,12 +52,16 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 						Controllers: []ControllerInfo{
 							{Name: "test-ingress-controller", Namespace: "openshift-ingress-operator"},
 						},
+					}, {
+						Name:      "router-certs-default",
+						Namespace: "openshift-ingress",
+						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+						Controllers: []ControllerInfo{},
 					}},
 				},
 			}},
-			wantErrCount: 0,
 		}, {
-			name: "Custom Ingress Controller with custom certificate is added to the collection",
+			name: "Custom Ingress Controller with custom certificate adds a new entry to the collection",
 			ingressDef: []operatorv1.IngressController{{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-custom-ingress", Namespace: "openshift-ingress-operator"},
 				Spec: operatorv1.IngressControllerSpec{DefaultCertificate: &corev1.LocalObjectReference{
@@ -62,6 +69,9 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 				}}},
 			secretDef: []corev1.Secret{{
 				ObjectMeta: metav1.ObjectMeta{Name: "router-ca", Namespace: "openshift-ingress-operator"},
+				Data:       map[string][]byte{"tls.crt": mockBytes},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{Name: "router-certs-default", Namespace: "openshift-ingress"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
 			}, {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-custom-secret", Namespace: "openshift-ingress-operator"},
@@ -76,6 +86,11 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
 						Controllers: []ControllerInfo{},
 					}, {
+						Name:      "router-certs-default",
+						Namespace: "openshift-ingress",
+						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+						Controllers: []ControllerInfo{},
+					}, {
 						Name:      "test-custom-secret",
 						Namespace: "openshift-ingress-operator",
 						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
@@ -85,12 +100,20 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 					}},
 				},
 			}},
-			wantErrCount: 0,
+		}, {
+			name: "Cluster default certificates that fail to validate return an error per cert",
+			secretDef: []corev1.Secret{{
+				ObjectMeta: metav1.ObjectMeta{Name: "router-ca", Namespace: "openshift-ingress-operator"},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{Name: "router-certs-default", Namespace: "openshift-ingress"},
+			}},
+			wantErrCount: 2,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			operatorClient := operatorfake.NewSimpleClientset()
 			for _, ic := range tt.ingressDef {
 				assert.NoError(t,
@@ -102,7 +125,10 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 					coreClient.Tracker().Add(&sec))
 			}
 
+			// When
 			records, errs := gatherClusterIngressCertificates(context.TODO(), coreClient.CoreV1(), operatorClient)
+
+			// Assert
 			assert.EqualValues(t, tt.wantRecords, records)
 			assert.Len(t, errs, tt.wantErrCount)
 		})
