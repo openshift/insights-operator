@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 		name         string
 		ingressDef   []operatorv1.IngressController
 		secretDef    []corev1.Secret
-		wantRecords  []record.Record
+		wantInfo     []*CertificateInfo
 		wantErrCount int
 	}{
 		{
@@ -42,23 +41,18 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "router-certs-default", Namespace: "openshift-ingress"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
 			}},
-			wantRecords: []record.Record{{
-				Name: "aggregated/ingress_controllers_certs",
-				Item: record.JSONMarshaller{
-					Object: []*CertificateInfo{{
-						Name:      "router-ca",
-						Namespace: "openshift-ingress-operator",
-						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
-						Controllers: []ControllerInfo{
-							{Name: "test-ingress-controller", Namespace: "openshift-ingress-operator"},
-						},
-					}, {
-						Name:      "router-certs-default",
-						Namespace: "openshift-ingress",
-						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
-						Controllers: []ControllerInfo{},
-					}},
+			wantInfo: []*CertificateInfo{{
+				Name:      "router-ca",
+				Namespace: "openshift-ingress-operator",
+				NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+				Controllers: []ControllerInfo{
+					{Name: "test-ingress-controller", Namespace: "openshift-ingress-operator"},
 				},
+			}, {
+				Name:      "router-certs-default",
+				Namespace: "openshift-ingress",
+				NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+				Controllers: []ControllerInfo{},
 			}},
 		}, {
 			name: "Custom Ingress Controller with custom certificate adds a new entry to the collection",
@@ -77,27 +71,22 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "test-custom-secret", Namespace: "openshift-ingress-operator"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
 			}},
-			wantRecords: []record.Record{{
-				Name: "aggregated/ingress_controllers_certs",
-				Item: record.JSONMarshaller{
-					Object: []*CertificateInfo{{
-						Name:      "router-ca",
-						Namespace: "openshift-ingress-operator",
-						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
-						Controllers: []ControllerInfo{},
-					}, {
-						Name:      "router-certs-default",
-						Namespace: "openshift-ingress",
-						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
-						Controllers: []ControllerInfo{},
-					}, {
-						Name:      "test-custom-secret",
-						Namespace: "openshift-ingress-operator",
-						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
-						Controllers: []ControllerInfo{
-							{Name: "test-custom-ingress", Namespace: "openshift-ingress-operator"},
-						},
-					}},
+			wantInfo: []*CertificateInfo{{
+				Name:      "router-ca",
+				Namespace: "openshift-ingress-operator",
+				NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+				Controllers: []ControllerInfo{},
+			}, {
+				Name:      "router-certs-default",
+				Namespace: "openshift-ingress",
+				NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+				Controllers: []ControllerInfo{},
+			}, {
+				Name:      "test-custom-secret",
+				Namespace: "openshift-ingress-operator",
+				NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+				Controllers: []ControllerInfo{
+					{Name: "test-custom-ingress", Namespace: "openshift-ingress-operator"},
 				},
 			}},
 		}, {
@@ -111,26 +100,26 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
 			// Given
 			operatorClient := operatorfake.NewSimpleClientset()
-			for _, ic := range tt.ingressDef {
+			for _, ic := range tc.ingressDef {
 				assert.NoError(t,
 					operatorClient.Tracker().Add(ic.DeepCopy()))
 			}
 			coreClient := corefake.NewSimpleClientset()
-			for _, sec := range tt.secretDef {
+			for _, sec := range tc.secretDef {
 				assert.NoError(t,
 					coreClient.Tracker().Add(&sec))
 			}
 
 			// When
-			records, errs := gatherClusterIngressCertificates(context.TODO(), coreClient.CoreV1(), operatorClient)
+			test, errs := gatherClusterIngressCertificates(context.TODO(), coreClient.CoreV1(), operatorClient)
 
 			// Assert
-			assert.EqualValues(t, tt.wantRecords, records)
-			assert.Len(t, errs, tt.wantErrCount)
+			assert.ElementsMatch(t, tc.wantInfo, test)
+			assert.Len(t, errs, tc.wantErrCount)
 		})
 	}
 }
