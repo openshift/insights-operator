@@ -29,20 +29,44 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 		wantErrCount int
 	}{
 		{
-			name: "successful retrieval cluster ingress certificates", // update
+			name: "Custom Ingress controller with a cluster certificate is added to the collection",
 			ingressDef: []operatorv1.IngressController{{
-				ObjectMeta: metav1.ObjectMeta{Name: "example-ingress", Namespace: "openshift-ingress-operator"},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-ingress-controller", Namespace: "openshift-ingress-operator"},
 				Spec: operatorv1.IngressControllerSpec{DefaultCertificate: &corev1.LocalObjectReference{
-					Name: "test-secret-ingress"},
+					Name: "router-ca"},
+				}}},
+			secretDef: []corev1.Secret{{
+				ObjectMeta: metav1.ObjectMeta{Name: "router-ca", Namespace: "openshift-ingress-operator"},
+				Data:       map[string][]byte{"tls.crt": mockBytes},
+			}},
+			wantRecords: []record.Record{{
+				Name: "aggregated/ingress_controllers_certs",
+				Item: record.JSONMarshaller{
+					Object: []*CertificateInfo{{
+						Name:      "router-ca",
+						Namespace: "openshift-ingress-operator",
+						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
+						Controllers: []ControllerInfo{
+							{Name: "test-ingress-controller", Namespace: "openshift-ingress-operator"},
+						},
+					}},
+				},
+			}},
+			wantErrCount: 0,
+		}, {
+			name: "Custom Ingress Controller with custom certificate is added to the collection",
+			ingressDef: []operatorv1.IngressController{{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-custom-ingress", Namespace: "openshift-ingress-operator"},
+				Spec: operatorv1.IngressControllerSpec{DefaultCertificate: &corev1.LocalObjectReference{
+					Name: "test-custom-secret"},
 				}}},
 			secretDef: []corev1.Secret{{
 				ObjectMeta: metav1.ObjectMeta{Name: "router-ca", Namespace: "openshift-ingress-operator"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{Name: "test-secret-ingress", Namespace: "openshift-ingress-operator"},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-custom-secret", Namespace: "openshift-ingress-operator"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
-			},
-			},
+			}},
 			wantRecords: []record.Record{{
 				Name: "aggregated/ingress_controllers_certs",
 				Item: record.JSONMarshaller{
@@ -52,16 +76,15 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
 						Controllers: []ControllerInfo{},
 					}, {
-						Name:      "test-secret-ingress",
+						Name:      "test-custom-secret",
 						Namespace: "openshift-ingress-operator",
 						NotBefore: mockX509.NotBefore, NotAfter: mockX509.NotAfter,
 						Controllers: []ControllerInfo{
-							{Name: "example-ingress", Namespace: "openshift-ingress-operator"},
+							{Name: "test-custom-ingress", Namespace: "openshift-ingress-operator"},
 						},
 					}},
 				},
-			},
-			},
+			}},
 			wantErrCount: 0,
 		},
 	}
