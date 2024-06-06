@@ -127,6 +127,10 @@ func gatherClusterIngressCertificates(
 		}
 	}
 
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
 	var records []record.Record
 	if len(certificates) > 0 {
 		// Step 6: Generate the certificates record
