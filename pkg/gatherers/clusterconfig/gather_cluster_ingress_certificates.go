@@ -39,6 +39,8 @@ type CertificateInfoKey struct {
 	Namespace string `json:"namespace"`
 }
 
+// TODO Docssssss
+
 func (g *Gatherer) GatherClusterIngressCertificates(ctx context.Context) ([]record.Record, []error) {
 	const Filename = "aggregated/ingress_controllers_certs"
 
@@ -67,7 +69,7 @@ func gatherClusterIngressCertificates(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	operatorClient operatorclient.Interface) ([]*CertificateInfo, []error) {
-
+	//
 	var ingressAllowedNS = [2]string{"openshift-ingress-operator", "openshift-ingress"}
 
 	var certificatesInfo = make(map[CertificateInfoKey]*CertificateInfo)
@@ -79,7 +81,7 @@ func gatherClusterIngressCertificates(
 		errs = append(errs, err)
 	}
 	if rCAinfo != nil {
-		certificatesInfo[infereKey(*rCAinfo)] = rCAinfo
+		certificatesInfo[infereKey(rCAinfo)] = rCAinfo
 	}
 
 	rCDinfo, err := getRouterCertsDefaultCertInfo(ctx, coreClient)
@@ -87,7 +89,7 @@ func gatherClusterIngressCertificates(
 		errs = append(errs, err)
 	}
 	if rCDinfo != nil {
-		certificatesInfo[infereKey(*rCDinfo)] = rCDinfo
+		certificatesInfo[infereKey(rCDinfo)] = rCDinfo
 	}
 
 	// Step 2: List all Ingress Controllers
@@ -103,7 +105,8 @@ func gatherClusterIngressCertificates(
 		}
 
 		// Step 3: Filter Ingress Controllers with spec.defaultCertificate and get certificate info
-		for _, controller := range controllers.Items {
+		for i := range controllers.Items {
+			controller := controllers.Items[i]
 
 			// Step 4: Check the certificate limits
 			if len(certificatesInfo) >= ingressCertificatesLimits {
@@ -120,17 +123,17 @@ func gatherClusterIngressCertificates(
 				}
 
 				// Step 5: Add certificate info to the certificates list
-				c, exists := certificatesInfo[infereKey(*certInfo)]
+				c, exists := certificatesInfo[infereKey(certInfo)]
 				if exists {
 					c.Controllers = append(c.Controllers,
 						ControllerInfo{Name: controller.Name, Namespace: controller.Namespace},
 					)
-
+					//
 				} else {
 					certInfo.Controllers = append(certInfo.Controllers,
 						ControllerInfo{Name: controller.Name, Namespace: controller.Namespace},
 					)
-					certificatesInfo[infereKey(*certInfo)] = certInfo
+					certificatesInfo[infereKey(certInfo)] = certInfo
 				}
 			}
 		}
@@ -150,7 +153,10 @@ func gatherClusterIngressCertificates(
 	return ci, errs
 }
 
-func getCertificateInfoFromSecret(ctx context.Context, coreClient corev1client.CoreV1Interface, namespace, secretName string) (*CertificateInfo, error) {
+func getCertificateInfoFromSecret(
+	ctx context.Context, coreClient corev1client.CoreV1Interface,
+	namespace, secretName string) (*CertificateInfo, error) {
+	//
 	secret, err := coreClient.Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get secret '%s' in namespace '%s': %v", secretName, namespace, err)
@@ -206,6 +212,6 @@ func getRouterCertsDefaultCertInfo(ctx context.Context, coreClient corev1client.
 	return certInfo, nil
 }
 
-func infereKey(info CertificateInfo) CertificateInfoKey {
+func infereKey(info *CertificateInfo) CertificateInfoKey {
 	return CertificateInfoKey{Name: info.Name, Namespace: info.Namespace}
 }
