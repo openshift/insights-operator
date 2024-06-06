@@ -21,11 +21,6 @@ import (
 
 const ingressCertificatesLimits = 64
 
-var ingressNamespaces = []string{
-	"openshift-ingress-operator",
-	"openshift-ingress",
-}
-
 type CertificateInfo struct {
 	Name        string           `json:"name"`
 	Namespace   string           `json:"namespace"`
@@ -60,6 +55,8 @@ func gatherClusterIngressCertificates(
 
 	const Filename = "aggregated/ingress_controllers_certs"
 
+	var ingressAllowedNS = [2]string{"openshift-ingress-operator", "openshift-ingress"}
+
 	var certificates []*CertificateInfo
 	var errs []error
 
@@ -68,16 +65,20 @@ func gatherClusterIngressCertificates(
 	if err != nil {
 		errs = append(errs, err)
 	}
-	certificates = append(certificates, rCAinfo)
+	if rCAinfo != nil {
+		certificates = append(certificates, rCAinfo)
+	}
 
 	rCDinfo, err := getRouterCertsDefaultCertInfo(ctx, coreClient)
 	if err != nil {
 		errs = append(errs, err)
 	}
-	certificates = append(certificates, rCDinfo)
+	if rCDinfo != nil {
+		certificates = append(certificates, rCDinfo)
+	}
 
 	// Step 2: List all Ingress Controllers
-	for _, namespace := range ingressNamespaces {
+	for _, namespace := range ingressAllowedNS {
 		controllers, err := operatorClient.OperatorV1().IngressControllers(namespace).List(ctx, metav1.ListOptions{})
 		if errors.IsNotFound(err) {
 			klog.V(2).Infof("Ingress Controllers not found in '%s' namespace", namespace)
