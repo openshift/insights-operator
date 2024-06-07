@@ -39,8 +39,30 @@ type CertificateInfoKey struct {
 	Namespace string `json:"namespace"`
 }
 
-// TODO Docssssss
-
+// GatherClusterIngressCertificates Collects the certificate's NotBefore and NotAfter dates from the cluster's ingress controller certificates.
+// It also collects the name and namespace of any Ingress Controllers using the certificates.
+//
+// ### API Reference
+// - https://docs.openshift.com/container-platform/4.13/rest_api/operator_apis/ingresscontroller-operator-openshift-io-v1.html
+// - https://docs.openshift.com/container-platform/4.13/rest_api/security_apis/secret-v1.html
+//
+// ### Sample data
+// - docs/insights-archive-sample/aggregated/ingress_controllers_certs.json
+//
+// ### Location in archive
+// - `aggregated/ingress_controllers_certs.json`
+//
+// ### Config ID
+// `clusterconfig/ingress_certificates`
+//
+// ### Released version
+// - 4.17
+//
+// ### Backported versions
+// TBD
+//
+// ### Changes
+// None
 func (g *Gatherer) GatherClusterIngressCertificates(ctx context.Context) ([]record.Record, []error) {
 	const Filename = "aggregated/ingress_controllers_certs"
 
