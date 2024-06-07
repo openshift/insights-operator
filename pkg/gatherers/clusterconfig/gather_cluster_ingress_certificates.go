@@ -77,14 +77,11 @@ func (g *Gatherer) GatherClusterIngressCertificates(ctx context.Context) ([]reco
 	}
 
 	certificates, errs := gatherClusterIngressCertificates(ctx, gatherKubeClient.CoreV1(), operatorClient)
-	if len(errs) > 0 {
-		return nil, errs
-	}
 
 	return []record.Record{{
 		Name: Filename,
 		Item: record.JSONMarshaller{Object: certificates},
-	}}, nil
+	}}, errs
 }
 
 func gatherClusterIngressCertificates(
@@ -132,7 +129,7 @@ func gatherClusterIngressCertificates(
 
 			// Step 4: Check the certificate limits
 			if len(certificatesInfo) >= ingressCertificatesLimits {
-				klog.V(2).Infof("Reached the limit of ingress certificates (%d), skipping additional certificates", ingressCertificatesLimits)
+				errs = append(errs, fmt.Errorf("reached the limit of ingress certificates (%d), skipping additional certificates", ingressCertificatesLimits))
 				break
 			}
 
