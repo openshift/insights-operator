@@ -7,7 +7,7 @@
         "controllers": [
             {
                 "name": "test-ingresscontroller-name",
-                "namespace": "openshift-ingress"
+                "namespace": "openshift-ingress-operator"
             }
         ]
     },
