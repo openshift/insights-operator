@@ -69,6 +69,35 @@ None
 None
 
 
+## AggregatedMonitoringCRNames
+
+Collects instances outside of the `openshift-monitoring` of the following custom resources:
+- Kind: `Prometheus` Group: `monitoring.coreos.com`
+- Kind: `AlertManager` Group: `monitoring.coreos.com`
+
+### API Reference
+- https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/alertmanager-monitoring-coreos-com-v1.html
+- https://docs.openshift.com/container-platform/4.13/rest_api/monitoring_apis/prometheus-monitoring-coreos-com-v1.html
+
+### Sample data
+- [docs/insights-archive-sample/aggregated/custom_prometheuses_alertmanagers.json](./insights-archive-sample/aggregated/custom_prometheuses_alertmanagers.json)
+
+### Location in archive
+- `aggregated/custom_prometheuses_alertmanagers.json`
+
+### Config ID
+`clusterconfig/aggregated_monitoring_cr_names`
+
+### Released version
+- 4.16
+
+### Backported versions
+TBD
+
+### Changes
+None
+
+
 ## CRD
 
 Collects the specified Custom Resource Definitions.
