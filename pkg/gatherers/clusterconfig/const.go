@@ -74,6 +74,9 @@ var (
 		Version:  "v1alpha1",
 		Resource: "clusterserviceversions",
 	}
+	oscpGroupVersionResource = schema.GroupVersionResource{
+		Group: "core.openstack.org", Version: "v1beta1", Resource: "openstackcontrolplanes",
+	}
 )
 
 func init() { //nolint: gochecknoinits
