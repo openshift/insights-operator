@@ -66,6 +66,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"openshift_authentication_logs":     (*Gatherer).GatherOpenshiftAuthenticationLogs,
 	"openshift_logging":                 (*Gatherer).GatherOpenshiftLogging,
 	"openshift_machine_api_events":      (*Gatherer).GatherOpenshiftMachineAPIEvents,
+	"openstack_controlplanes":           (*Gatherer).GatherOpenstackControlplanes,
 	"operators":                         (*Gatherer).GatherClusterOperators,
 	"operators_pods_and_events":         (*Gatherer).GatherClusterOperatorPodsAndEvents,
 	"overlapping_namespace_uids":        (*Gatherer).GatherNamespacesWithOverlappingUIDs,

@@ -247,6 +247,13 @@ rules:
       - list
       - watch
   - apiGroups:
+      - core.openstack.org
+    resources:
+      - "*"
+    verbs:
+      - get
+      - list
+  - apiGroups:
       - installers.datahub.sap.com
     resources:
       - "*"
