@@ -1580,7 +1580,31 @@ None
 None
 
 
-## ## PodDefinition
+## OpenstackDataplanes
+
+Collects `openstackdataplanes.core.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanenodesets/openstack/openstack-edpm.json](./insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanenodesets/openstack/openstack-edpm.json)
+
+### Location in archive
+- `customresources/dataplane.openstack.org/openstackdataplanes/{namespace}/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_dataplanes`
+
+### Released version
+- 4.15
+
+### Changes
+None
+
+
+## PodDefinition
 
 Collects pod definition from pods that are
 firing one of the configured alerts.

@@ -79,3 +79,6 @@ anonymized by the Insights Operator. This list is subject to change.
   - Status.HTTPProxy
   - Status.HTTPSProxy
   - Status.NoProxy
+- OpenstackControlplanes
+  - IP Addresses
+  - Spec.dns.template.options
