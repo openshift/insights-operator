@@ -130,6 +130,14 @@
       "panic": null
     },
     {
+      "name": "clusterconfig/openstack_controlplanes",
+      "duration_in_ms": 25,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
       "name": "clusterconfig/scheduler_logs",
       "duration_in_ms": 617,
       "records_count": 0,
