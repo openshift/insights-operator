@@ -100,7 +100,7 @@ func gatherClusterIngressCertificates(
 		errs = append(errs, err)
 	}
 	if rCAinfo != nil {
-		certificatesInfo[infereKey(rCAinfo)] = rCAinfo
+		certificatesInfo[newCertificateInfoKey(rCAinfo)] = rCAinfo
 	}
 
 	rCDinfo, err := getRouterCertsDefaultCertInfo(ctx, coreClient)
@@ -108,7 +108,7 @@ func gatherClusterIngressCertificates(
 		errs = append(errs, err)
 	}
 	if rCDinfo != nil {
-		certificatesInfo[infereKey(rCDinfo)] = rCDinfo
+		certificatesInfo[newCertificateInfoKey(rCDinfo)] = rCDinfo
 	}
 
 	// Step 2: List all Ingress Controllers
@@ -129,7 +129,9 @@ func gatherClusterIngressCertificates(
 
 			// Step 4: Check the certificate limits
 			if len(certificatesInfo) >= ingressCertificatesLimits {
-				errs = append(errs, fmt.Errorf("reached the limit of ingress certificates (%d), skipping additional certificates", ingressCertificatesLimits))
+				errs = append(errs, fmt.Errorf(
+					"reached the limit of ingress certificates (%d), skipping additional certificates",
+					ingressCertificatesLimits))
 				break
 			}
 
@@ -142,7 +144,7 @@ func gatherClusterIngressCertificates(
 				}
 
 				// Step 5: Add certificate info to the certificates list
-				c, exists := certificatesInfo[infereKey(certInfo)]
+				c, exists := certificatesInfo[newCertificateInfoKey(certInfo)]
 				if exists {
 					c.Controllers = append(c.Controllers,
 						ControllerInfo{Name: controller.Name, Namespace: controller.Namespace},
@@ -152,7 +154,7 @@ func gatherClusterIngressCertificates(
 					certInfo.Controllers = append(certInfo.Controllers,
 						ControllerInfo{Name: controller.Name, Namespace: controller.Namespace},
 					)
-					certificatesInfo[infereKey(certInfo)] = certInfo
+					certificatesInfo[newCertificateInfoKey(certInfo)] = certInfo
 				}
 			}
 		}
@@ -161,11 +163,8 @@ func gatherClusterIngressCertificates(
 	var ci []*CertificateInfo
 	if len(certificatesInfo) > 0 {
 		// Step 6: Generate the certificates record
-		ci = make([]*CertificateInfo, len(certificatesInfo))
-		i := 0
 		for _, v := range certificatesInfo {
-			ci[i] = v
-			i++
+			ci = append(ci, v)
 		}
 	}
 
@@ -210,12 +209,7 @@ func getRouterCACertInfo(ctx context.Context, coreClient corev1client.CoreV1Inte
 		routerCASecret    string = "router-ca"
 		routerCANamespace string = "openshift-ingress-operator"
 	)
-	certInfo, err := getCertificateInfoFromSecret(ctx, coreClient, routerCANamespace, routerCASecret)
-	if err != nil {
-		return nil, err
-	}
-
-	return certInfo, nil
+	return getCertificateInfoFromSecret(ctx, coreClient, routerCANamespace, routerCASecret)
 }
 
 func getRouterCertsDefaultCertInfo(ctx context.Context, coreClient corev1client.CoreV1Interface) (*CertificateInfo, error) {
@@ -223,14 +217,9 @@ func getRouterCertsDefaultCertInfo(ctx context.Context, coreClient corev1client.
 		routerCertsSecret    string = "router-certs-default"
 		routerCertsNamespace string = "openshift-ingress"
 	)
-	certInfo, err := getCertificateInfoFromSecret(ctx, coreClient, routerCertsNamespace, routerCertsSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	return certInfo, nil
+	return getCertificateInfoFromSecret(ctx, coreClient, routerCertsNamespace, routerCertsSecret)
 }
 
-func infereKey(info *CertificateInfo) CertificateInfoKey {
+func newCertificateInfoKey(info *CertificateInfo) CertificateInfoKey {
 	return CertificateInfoKey{Name: info.Name, Namespace: info.Namespace}
 }
