@@ -68,9 +68,13 @@ func gatherOpenstackControlplanes(ctx context.Context, dynamicClient dynamic.Int
 }
 
 func prepareOpenStackControlPlane(data *unstructured.Unstructured) *unstructured.Unstructured {
+	fieldsToRemove := [][]string{
+		{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
+	}
 	fieldsToAnonymize := [][]string{
 		{"spec", "dns", "template", "options"},
 	}
+	data.Object = removeFields(data.Object, fieldsToRemove)
 	data.Object = anonymizeFields(data.Object, fieldsToAnonymize)
 	return data
 }
