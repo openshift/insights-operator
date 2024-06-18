@@ -36,6 +36,8 @@ kind: OpenStackControlPlane
 metadata:
   name: test-cr
   namespace: openstack
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: test_configuration
 spec:
   customService:
     string_field: test-string
@@ -52,6 +54,8 @@ kind: OpenStackControlPlane
 metadata:
   name: test-cr-1
   namespace: openstack-1
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: test_configuration
 spec:
   customService:
     string_field: test-string
@@ -62,6 +66,8 @@ kind: OpenStackControlPlane
 metadata:
   name: test-cr-2
   namespace: openstack-2
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: test_configuration
 spec:
   customService:
     string_field: test-string
@@ -117,6 +123,10 @@ spec:
 					}
 					assert.Exactly(t, "xxxxxxxxx", ip_address_value)
 					assert.Exactly(t, "test-string", string_field_value)
+					_, last_applied_configuration_found, err := unstructured.NestedFieldCopy(gatheredItem.Object, "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration")
+					if last_applied_configuration_found {
+						t.Fatal("Field 'metadata/annotations/kubectl.kubernetes.io/last-applied-configuration' was not removed from the gathered object")
+					}
 				}
 			}
 			assert.ElementsMatch(t, test.exp, recordNames)
