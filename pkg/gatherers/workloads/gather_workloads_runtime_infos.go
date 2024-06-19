@@ -6,24 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash"
+	"os"
 	"sync"
 	"time"
 
-	appsv1client "k8s.io/client-go/kubernetes/typed/apps/v1"
-
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/klog/v2"
-)
-
-var (
-	labelSelector = "app.kubernetes.io/name=insights-operator-runtime"
 )
 
 // Internal representation of workload infor returned by the insights-operator-runtime component.
@@ -40,28 +33,13 @@ func gatherWorkloadRuntimeInfos(
 	ctx context.Context,
 	h hash.Hash,
 	coreClient corev1client.CoreV1Interface,
-	appClient appsv1client.AppsV1Interface,
 	restConfig *rest.Config,
 ) (workloadRuntimes, error) {
 	start := time.Now()
 
-	workloadRuntimeInfos := make(workloadRuntimes)
-
-	klog.Infof("Deploying insights-operator-runtime...\n")
-	insightsOperatorRuntimeDaemonSet := newInsightsOperatorRuntimeDaemonSet()
-	if _, err := appClient.DaemonSets(namespace).Create(ctx, insightsOperatorRuntimeDaemonSet, metav1.CreateOptions{}); err != nil {
-		return workloadRuntimeInfos, err
-	}
-	defer undeployInsightsOperatorRuntimeDaemonSet(ctx, appClient)
-
-	err := apimachinerywait.PollUntilContextTimeout(ctx, time.Second*3, time.Minute*3, true, podsReady(coreClient, labelSelector))
-	if err != nil {
-		klog.Infof("error waiting for readiness %s\n", err)
-		return workloadRuntimeInfos, err
-	}
-	klog.Infof("insights-operator-runtime deployed and ready")
-
 	runtimePods := getInsightsOperatorRuntimePods(coreClient, ctx)
+
+	workloadRuntimeInfos := make(workloadRuntimes)
 
 	nodeWorkloadCh := make(chan workloadRuntimes)
 	var wg sync.WaitGroup
@@ -83,102 +61,10 @@ func gatherWorkloadRuntimeInfos(
 		mergeWorkloads(workloadRuntimeInfos, infos)
 	}
 
-	klog.Infof("Gather workload runtime infos in %s\n",
+	klog.Infof("Gathered workload runtime infos in %s\n",
 		time.Since(start).Round(time.Second).String())
 
 	return workloadRuntimeInfos, nil
-}
-
-func undeployInsightsOperatorRuntimeDaemonSet(ctx context.Context, appClient appsv1client.AppsV1Interface) error {
-	klog.Infof("Undeploy insights-operator-runtime\n")
-	return appClient.DaemonSets(namespace).Delete(ctx, "insights-operator-runtime", metav1.DeleteOptions{})
-}
-
-func newInsightsOperatorRuntimeDaemonSet() *appsv1.DaemonSet {
-	securityContextPrivileged := true
-	hostPathSocket := corev1.HostPathSocket
-	labels := map[string]string{"app.kubernetes.io/name": "insights-operator-runtime"}
-	annotations := map[string]string{"openshift.io/required-scc": "insights-operator-runtime-scc"}
-
-	return &appsv1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{Name: "insights-operator-runtime",
-			Namespace:   namespace,
-			Annotations: annotations,
-		},
-		Spec: appsv1.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: labels},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: "insights-operator-runtime-sa",
-					HostPID:            true,
-					Containers: []corev1.Container{{
-						Name:            "insights-operator-runtime",
-						Image:           "ghcr.io/jmesnil/insights-operator-runtime:latest",
-						ImagePullPolicy: corev1.PullAlways,
-						Env: []corev1.EnvVar{{
-							Name:  "CONTAINER_RUNTIME_ENDPOINT",
-							Value: "unix:///crio.sock",
-						}},
-						SecurityContext: &corev1.SecurityContext{
-							Privileged: &securityContextPrivileged,
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-								Add:  []corev1.Capability{"CAP_SYS_ADMIN"},
-							}},
-						VolumeMounts: []corev1.VolumeMount{{
-							MountPath: "/crio.sock",
-							Name:      "crio-socket",
-						}},
-					}},
-					Volumes: []corev1.Volume{{
-						Name: "crio-socket",
-						VolumeSource: corev1.VolumeSource{
-							HostPath: &corev1.HostPathVolumeSource{
-								Path: "/run/crio/crio.sock",
-								Type: &hostPathSocket,
-							},
-						}}},
-				},
-			},
-		},
-	}
-}
-
-// podsReady is a helper function that can be used to check that the selected pods are ready
-func podsReady(coreClient corev1client.CoreV1Interface, selector string) apimachinerywait.ConditionWithContextFunc {
-	return func(ctx context.Context) (bool, error) {
-		opts := metav1.ListOptions{
-			LabelSelector: selector,
-		}
-		pods, err := coreClient.Pods(namespace).List(ctx, opts)
-		if err != nil {
-			return false, err
-		}
-
-		totalPods := len(pods.Items)
-
-		if totalPods == 0 {
-			return false, nil
-		}
-
-		readyPods := 0
-		for _, pod := range pods.Items {
-			podReady := false
-			for _, cond := range pod.Status.Conditions {
-				if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-					podReady = true
-					break
-				}
-			}
-			if podReady {
-				readyPods++
-			}
-		}
-		return totalPods == readyPods, nil
-	}
 }
 
 // List the pods of the insights-operator-runtime component
@@ -190,9 +76,10 @@ func getInsightsOperatorRuntimePods(
 ) map[string]string {
 	runtimePods := make(map[string]string)
 
-	pods, err := coreClient.Pods(namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-	})
+	pods, err := coreClient.Pods(os.Getenv("POD_NAMESPACE")).
+		List(ctx, metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=insights-operator-runtime",
+		})
 	if err != nil {
 		return runtimePods
 	}
@@ -287,7 +174,7 @@ func getNodeWorkloadRuntimeInfos(
 
 	req := coreClient.RESTClient().
 		Post().
-		Namespace(namespace).
+		Namespace(os.Getenv("POD_NAMESPACE")).
 		Name(runtimePodName).
 		Resource("pods").
 		SubResource("exec").
