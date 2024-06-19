@@ -1,11 +1,15 @@
-
 FROM redhat/ubi9-minimal
 
+# adding tar so that `kubectl cp` can work and fetch the gathered data.
+# For the final integration, the base image would be registry.ci.openshift.org/ocp/4.17:base-rhel9
+# that already contains tar
 RUN microdnf update -y && microdnf -y install \
     tar
 
 COPY ./bin/insights-operator /usr/bin/
 COPY config/pod.yaml /etc/insights-operator/server.yaml
 COPY manifests /manifests
-LABEL io.openshift.release.operator=true
+# Do not start this instance of the insights-operator 
+# as it would conflict with the one already installed by OLM.
+# We just sleep so that the gather operation can be executed on that instance
 ENTRYPOINT ["sleep", "360000"]

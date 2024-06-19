@@ -39,7 +39,6 @@ const (
 	// limit the number of collected Pods in this gatherer. In the worst case, one Pod can add around 600 bytes (before compression)
 	// This limit can be removed in the future.
 	podsLimit = 8000
-	namespace = "openshift-insights"
 )
 
 // keys are namespace / pod / containerID and the final value is the workloadRuntimeInfoContainer for this container
@@ -87,12 +86,12 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 		return nil, []error{err}
 	}
 
-	return gatherWorkloadInfo(ctx, gatherKubeClient, gatherOpenShiftClient, imageConfig)
+	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient, imageConfig)
 }
 
 func gatherWorkloadInfo(
 	ctx context.Context,
-	clientSet *kubernetes.Clientset,
+	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
 	restConfig *rest.Config,
 ) ([]record.Record, []error) {
@@ -100,10 +99,7 @@ func gatherWorkloadInfo(
 
 	var errors = []error{}
 
-	coreClient := clientSet.CoreV1()
-	appClient := clientSet.AppsV1()
-
-	infos, err := gatherWorkloadRuntimeInfos(ctx, h, coreClient, appClient, restConfig)
+	infos, err := gatherWorkloadRuntimeInfos(ctx, h, coreClient, restConfig)
 	if err != nil {
 		errors = append(errors, err)
 	}
