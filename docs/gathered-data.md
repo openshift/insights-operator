@@ -1580,9 +1580,9 @@ None
 None
 
 
-## OpenstackDataplanes
+## OpenstackDataplaneNodeSets
 
-Collects `openstackdataplanes.core.openstack.org`
+Collects `openstackdataplanenodesets.core.openstack.org`
 resources from all namespaces
 
 ### API Reference
@@ -1592,10 +1592,10 @@ None
 - [docs/insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanenodesets/openstack/openstack-edpm.json](./insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanenodesets/openstack/openstack-edpm.json)
 
 ### Location in archive
-- `customresources/dataplane.openstack.org/openstackdataplanes/{namespace}/{name}.json`
+- `customresources/dataplane.openstack.org/openstackdataplanenodesets/{namespace}/{name}.json`
 
 ### Config ID
-`clusterconfig/openstack_dataplanes`
+`clusterconfig/openstack_dataplane_nodesets`
 
 ### Released version
 - 4.15

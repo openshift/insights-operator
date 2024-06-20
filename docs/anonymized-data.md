@@ -82,3 +82,6 @@ anonymized by the Insights Operator. This list is subject to change.
 - OpenstackControlplanes
   - IP Addresses
   - Spec.dns.template.options
+- OpenstackDataplaneNodeSets
+  - IP Addresses
+  - Status.allHostnames
