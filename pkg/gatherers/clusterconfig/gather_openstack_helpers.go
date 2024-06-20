@@ -47,3 +47,35 @@ func anonymizeFields(data map[string]interface{}, fieldsToAnonymize [][]string) 
 	}
 	return data
 }
+
+// nolint: goconst
+// This function anonymize fields with given names, looking in the whole provided 'data' structure
+func anonymizeCustomPathFields(data map[string]interface{}, fieldsToAnonymize []string) map[string]interface{} {
+	var fieldAnonymized bool
+	for fieldName, fieldValue := range data {
+		fieldAnonymized = false
+		for _, fieldToAnonymize := range fieldsToAnonymize {
+			if fieldName == fieldToAnonymize {
+				fieldValueStr, _ := fieldValue.(string)
+				// in case if field contains e.g. map[string]interface{} or list
+				// so that its string representation is empty, it is easier to just
+				// put 'xxx' in that place
+				if len(fieldValueStr) == 0 {
+					data[fieldName] = "xxx"
+				} else {
+					data[fieldName] = anonymize.String(fieldValueStr)
+				}
+				fieldAnonymized = true
+			}
+			if !fieldAnonymized {
+				switch fieldValue := fieldValue.(type) {
+				default:
+					continue
+				case map[string]interface{}:
+					data[fieldName] = anonymizeCustomPathFields(fieldValue, fieldsToAnonymize)
+				}
+			}
+		}
+	}
+	return data
+}

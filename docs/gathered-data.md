@@ -1706,7 +1706,31 @@ None
 None
 
 
-## ## PodDefinition
+## OpenstackDataplaneNodeSets
+
+Collects `openstackdataplanenodesets.core.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json)
+
+### Location in archive
+- `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanenodesets/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_dataplane_nodesets`
+
+### Released version
+- 4.17
+
+### Changes
+None
+
+
+## PodDefinition
 
 Collects pod definition from pods that are
 firing one of the configured alerts.

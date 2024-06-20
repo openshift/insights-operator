@@ -254,6 +254,13 @@ rules:
       - get
       - list
   - apiGroups:
+      - dataplane.openstack.org
+    resources:
+      - "*"
+    verbs:
+      - get
+      - list
+  - apiGroups:
       - installers.datahub.sap.com
     resources:
       - "*"

@@ -82,3 +82,9 @@ anonymized by the Insights Operator. This list is subject to change.
 - OpenstackControlplanes
   - IP Addresses
   - Spec.dns.template.options
+- OpenstackDataplaneNodeSets
+  - IP Addresses
+  - ansibleUser
+  - edpm_sshd_allowed_ranges
+  - dnsClusterAddresses
+  - Status.allHostnames
