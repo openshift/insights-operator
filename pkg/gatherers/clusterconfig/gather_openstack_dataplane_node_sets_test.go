@@ -51,9 +51,11 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: test_configuration
 spec:
+  nodeTemplate:
+    ansibleUser: openstack
   customService:
     string_field: test-string
-    ip_address: 10.0.0.10  
+    ip_address: 10.0.0.10
 status:
   allHostnames:
     edpm-compute-0:
@@ -74,9 +76,11 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: test_configuration
 spec:
+  nodeTemplate:
+    ansibleUser: openstack
   customService:
     string_field: test-string
-    ip_address: 10.0.0.10  
+    ip_address: 10.0.0.10
 status:
   allHostnames:
     edpm-compute-0:
@@ -91,9 +95,11 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: test_configuration
 spec:
+  nodeTemplate:
+    ansibleUser: openstack
   customService:
     string_field: test-string
-    ip_address: 10.0.0.10  
+    ip_address: 10.0.0.10
 status:
   allHostnames:
     edpm-compute-0:
@@ -138,6 +144,7 @@ status:
 					assertFieldValue(t, gatheredItem.Object, "test-string", "spec", "customService", "string_field")
 					assertFieldValue(t, gatheredItem.Object, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "status", "allHostnames", "edpm-compute-0", "ctlplane")
 					assertFieldValue(t, gatheredItem.Object, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "status", "allHostnames", "edpm-compute-0", "internalapi")
+					assertFieldValue(t, gatheredItem.Object, "xxxxxxxxx", "spec", "nodeTemplate", "ansibleUser")
 					_, last_applied_configuration_found, err := unstructured.NestedFieldCopy(gatheredItem.Object, "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration")
 					if last_applied_configuration_found {
 						t.Fatal("Field 'metadata/annotations/kubectl.kubernetes.io/last-applied-configuration' was not removed from the gathered object")

@@ -74,9 +74,13 @@ func prepareOpenStackDataPlaneNodeSet(data *unstructured.Unstructured) *unstruct
 		{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
 	}
 	fieldsToAnonymize := [][]string{}
+	customFieldsToAnonymize := []string{
+		"ansibleUser", "edpm_sshd_allowed_ranges", "dnsClusterAddresses",
+	}
 	data.Object = removeFields(data.Object, fieldsToRemove)
 	data.Object = anonymizeIpAddresses(data.Object)
 	data.Object = anonymizeFields(data.Object, fieldsToAnonymize)
+	data.Object = anonymizeCustomPathFields(data.Object, customFieldsToAnonymize)
 	data.Object = anonymizeStatusHostNames(data.Object)
 	return data
 }
