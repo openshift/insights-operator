@@ -7,16 +7,16 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func parseGatheringRules(jsonData string) (GatheringRules, error) {
-	var unmarshalledRules GatheringRules
+func parseRemoteConfiguration(data []byte) (RemoteConfiguration, error) {
+	var remoteConfig RemoteConfiguration
 
-	err := json.Unmarshal([]byte(jsonData), &unmarshalledRules)
+	err := json.Unmarshal(data, &remoteConfig)
 	if err != nil {
-		return GatheringRules{}, err
+		return RemoteConfiguration{}, err
 	}
 
 	var result []GatheringRule
-	for _, unmarshalledRule := range unmarshalledRules.Rules {
+	for _, unmarshalledRule := range remoteConfig.ConditionalGatheringRules {
 		unmarshalledRule.GatheringFunctions, err = parseGatheringFunctions(unmarshalledRule.GatheringFunctions)
 		if err != nil {
 			klog.Errorf("skipping a rule because of an error: %v %v", err, unmarshalledRule)
@@ -27,9 +27,9 @@ func parseGatheringRules(jsonData string) (GatheringRules, error) {
 	}
 
 	// changing to correctly parsed rules
-	unmarshalledRules.Rules = result
+	remoteConfig.ConditionalGatheringRules = result
 
-	return unmarshalledRules, nil
+	return remoteConfig, nil
 }
 
 func parseGatheringFunctions(gatheringFunctions GatheringFunctions) (GatheringFunctions, error) {

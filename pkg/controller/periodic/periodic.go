@@ -15,9 +15,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
+	v1 "github.com/openshift/api/config/v1"
 	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
 	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
@@ -26,6 +28,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/types"
@@ -62,6 +65,7 @@ type Controller struct {
 	pruneInterval       time.Duration
 	techPreview         bool
 	dgInf               DataGatherInformer
+	openshiftConfCli    configv1client.ConfigV1Interface
 }
 
 func NewWithTechPreview(
@@ -71,7 +75,8 @@ func NewWithTechPreview(
 	listGatherers []gatherers.Interface,
 	kubeClient kubernetes.Interface,
 	dataGatherClient insightsv1alpha1cli.InsightsV1alpha1Interface,
-	insightsOperatorCLI operatorv1client.InsightsOperatorInterface,
+	insightsOperatorCli operatorv1client.InsightsOperatorInterface,
+	openshiftConfCli configv1client.ConfigV1Interface,
 	dgInf DataGatherInformer,
 
 ) *Controller {
@@ -87,8 +92,9 @@ func NewWithTechPreview(
 		statuses:            statuses,
 		kubeClient:          kubeClient,
 		dataGatherClient:    dataGatherClient,
+		openshiftConfCli:    openshiftConfCli,
 		jobController:       jobController,
-		insightsOperatorCLI: insightsOperatorCLI,
+		insightsOperatorCLI: insightsOperatorCli,
 		pruneInterval:       1 * time.Hour,
 		techPreview:         true,
 		dgInf:               dgInf,
@@ -208,18 +214,37 @@ func (c *Controller) Gather() {
 			for i := range functionReports {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
-			if err == nil {
-				klog.Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
-				c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
+
+			if err != nil {
+				var remoteConfigErr conditional.RemoteConfigError
+				if errors.As(err, &remoteConfigErr) {
+					if remoteConfigErr.Reason == conditional.Invalid {
+						c.statuses[name].UpdateStatus(controllerstatus.Summary{
+							Operation: controllerstatus.ValidatingRemoteConfiguration,
+							Reason:    remoteConfigErr.Reason,
+							Message:   remoteConfigErr.Error(),
+						})
+					} else {
+						c.statuses[name].UpdateStatus(controllerstatus.Summary{
+							Operation: controllerstatus.ReadingRemoteConfiguration,
+							Reason:    remoteConfigErr.Reason,
+							Message:   remoteConfigErr.Error(),
+						})
+					}
+					return
+				}
+
+				utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
+				c.statuses[name].UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.GatheringReport,
+					Reason:    "PeriodicGatherFailed",
+					Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
+				})
 				return
 			}
 
-			utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
-			c.statuses[name].UpdateStatus(controllerstatus.Summary{
-				Operation: controllerstatus.GatheringReport,
-				Reason:    "PeriodicGatherFailed",
-				Message:   fmt.Sprintf("Source %s could not be retrieved: %v", name, err),
-			})
+			klog.Infof("Periodic gather %s completed in %s", name, time.Since(start).Truncate(time.Millisecond))
+			c.statuses[name].UpdateStatus(controllerstatus.Summary{Healthy: true})
 		}()
 	}
 	err := c.updateOperatorStatusCR(ctx, allFunctionReports, gatherTime)
@@ -394,7 +419,97 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 		klog.Errorf("Failed to copy the last DataGather status to \"cluster\" operator status: %v", err)
 		return
 	}
+
+	err = c.updateStatusBasedOnDataGatherCondition(ctx, dataGatherFinished)
+	if err != nil {
+		klog.Errorf("Failed to update Insights clusteroperator conditions: %v", err)
+		return
+	}
 	klog.Info("Operator status in \"insightsoperator.operator.openshift.io\" successfully updated")
+}
+
+// updateStatusBasedOnDataGatherCondition update the Insights ClusterOperator conditions based on the provided
+// DataGather conditions.
+func (c *Controller) updateStatusBasedOnDataGatherCondition(ctx context.Context, dg *insightsv1alpha1.DataGather) error {
+	remAvailableDGCon := status.GetConditionByType(dg, string(status.RemoteConfigurationAvailable))
+	if remAvailableDGCon == nil {
+		return fmt.Errorf("%s condition not found in status of %s dataGather", status.RemoteConfigurationAvailable, dg.Name)
+	}
+
+	err := c.compareAndUpdateClusterOperatorCondition(ctx, status.RemoteConfigurationAvailable, remAvailableDGCon)
+	if err != nil {
+		return err
+	}
+
+	remValidDGCon := status.GetConditionByType(dg, string(status.RemoteConfigurationValid))
+	if remValidDGCon == nil {
+		return fmt.Errorf("%s condition not found in status of %s dataGather", status.RemoteConfigurationValid, dg.Name)
+	}
+
+	return c.compareAndUpdateClusterOperatorCondition(ctx, status.RemoteConfigurationValid, remValidDGCon)
+}
+
+// compareAndUpdateClusterOperatorCondition compares the provided dataGather condition to the specific
+// cluster operator status condition with the given type and then updates the clusteroperator condition
+func (c *Controller) compareAndUpdateClusterOperatorCondition(ctx context.Context,
+	conditionType v1.ClusterStatusConditionType, dataGatherCondition *metav1.Condition) error {
+	insightsCo, err := c.openshiftConfCli.ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	// RemoteConfiguration clusteroperator status condition that is updated
+	var clusterOperatorCon *v1.ClusterOperatorStatusCondition
+	for i := range insightsCo.Status.Conditions {
+		c := &insightsCo.Status.Conditions[i]
+		if c.Type == conditionType {
+			clusterOperatorCon = c
+		}
+	}
+	updatedConditions := make([]v1.ClusterOperatorStatusCondition, len(insightsCo.Status.Conditions))
+	_ = copy(updatedConditions, insightsCo.Status.Conditions)
+
+	if clusterOperatorCon == nil {
+		clusterOperatorCon = &v1.ClusterOperatorStatusCondition{
+			Type:               conditionType,
+			Status:             v1.ConditionStatus(dataGatherCondition.Status),
+			LastTransitionTime: dataGatherCondition.LastTransitionTime,
+			Reason:             dataGatherCondition.Reason,
+			Message:            dataGatherCondition.Message,
+		}
+		updatedConditions = append(updatedConditions, *clusterOperatorCon)
+	} else {
+		if clusterOperatorCon.Status == v1.ConditionStatus(dataGatherCondition.Status) {
+			if clusterOperatorCon.Reason != dataGatherCondition.Reason {
+				clusterOperatorCon.Reason = dataGatherCondition.Reason
+				clusterOperatorCon.LastTransitionTime = dataGatherCondition.LastTransitionTime
+				clusterOperatorCon.Message = dataGatherCondition.Message
+			}
+		} else {
+			clusterOperatorCon = &v1.ClusterOperatorStatusCondition{
+				Type:               conditionType,
+				Status:             v1.ConditionStatus(dataGatherCondition.Status),
+				LastTransitionTime: dataGatherCondition.LastTransitionTime,
+				Reason:             dataGatherCondition.Reason,
+				Message:            dataGatherCondition.Message,
+			}
+		}
+		idx := getClusterOperatorConditionIndexByType(clusterOperatorCon.Type, updatedConditions)
+		updatedConditions[idx] = *clusterOperatorCon
+	}
+	insightsCo.Status.Conditions = updatedConditions
+	_, err = c.openshiftConfCli.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{})
+	return err
+}
+
+func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionType, conditions []v1.ClusterOperatorStatusCondition) int {
+	var idx int
+	for i := range conditions {
+		con := conditions[i]
+		if con.Type == conType {
+			idx = i
+		}
+	}
+	return idx
 }
 
 // updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
@@ -588,6 +703,8 @@ func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insigh
 		status.DataUploadedCondition(metav1.ConditionUnknown, status.NoUploadYetReason, ""),
 		status.DataRecordedCondition(metav1.ConditionUnknown, status.NoDataGatheringYetReason, ""),
 		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
+		status.RemoteConfigurationNotAvailableCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
+		status.RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
 	}
 	dg.Status.State = insightsv1alpha1.Pending
 	if job != nil {

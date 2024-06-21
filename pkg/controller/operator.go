@@ -180,7 +180,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient.ConfigV1(), configAggregator,
-		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"))
+		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"), insightsConfigAPIEnabled)
 
 	var anonymizer *anonymization.Anonymizer
 	var recdriver *diskrecorder.DiskRecorder
@@ -230,7 +230,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
 			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(),
-			operatorClient.OperatorV1().InsightsOperators(), dgInformer)
+			operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)
 		go periodicGather.PeriodicPrune(ctx)

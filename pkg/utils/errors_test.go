@@ -8,27 +8,44 @@ import (
 )
 
 func Test_sumErrors(t *testing.T) {
-	err := SumErrors([]error{})
-	assert.NoError(t, err)
+	tests := []struct {
+		name           string
+		inputErr       []error
+		expectNil      bool
+		expectedErrStr string
+	}{
+		{
+			name:           "empty slice of errors",
+			inputErr:       []error{},
+			expectNil:      true,
+			expectedErrStr: "",
+		},
+		{
+			name:           "single error as input",
+			inputErr:       []error{fmt.Errorf("test error")},
+			expectedErrStr: "test error",
+		},
+		{
+			name: "multiple errors as input",
+			inputErr: []error{
+				fmt.Errorf("error 3"),
+				fmt.Errorf("error 3"),
+				fmt.Errorf("error 2"),
+				fmt.Errorf("error 1"),
+				fmt.Errorf("error 5"),
+			},
+			expectedErrStr: "error 3, error 2, error 1, error 5",
+		},
+	}
 
-	err = SumErrors([]error{
-		fmt.Errorf("test error"),
-	})
-	assert.EqualError(t, err, "test error")
-
-	err = SumErrors([]error{
-		fmt.Errorf("error 1"),
-		fmt.Errorf("error 2"),
-		fmt.Errorf("error 3"),
-	})
-	assert.EqualError(t, err, "error 1, error 2, error 3")
-
-	err = SumErrors([]error{
-		fmt.Errorf("error 3"),
-		fmt.Errorf("error 3"),
-		fmt.Errorf("error 2"),
-		fmt.Errorf("error 1"),
-		fmt.Errorf("error 5"),
-	})
-	assert.EqualError(t, err, "error 1, error 2, error 3, error 5")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errResult := UniqueErrors(tt.inputErr)
+			if tt.expectNil {
+				assert.NoError(t, errResult)
+			} else {
+				assert.EqualError(t, errResult, tt.expectedErrStr)
+			}
+		})
+	}
 }

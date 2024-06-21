@@ -484,6 +484,18 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 						LastTransitionTime: time,
 						Reason:             "",
 					},
+					RemoteConfigurationAvailable: {
+						Type:               RemoteConfigurationAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					RemoteConfigurationValid: {
+						Type:               RemoteConfigurationValid,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
 				},
 			},
 		},
@@ -532,6 +544,18 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 					},
 					ClusterTransferAvailable: {
 						Type:               ClusterTransferAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					RemoteConfigurationAvailable: {
+						Type:               RemoteConfigurationAvailable,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					RemoteConfigurationValid: {
+						Type:               RemoteConfigurationValid,
 						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
 						Reason:             "",

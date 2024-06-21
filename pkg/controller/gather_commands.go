@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/recorder"
@@ -44,7 +46,7 @@ type GatherJob struct {
 // processingStatusClient is an interface to call the "processingStatusEndpoint" in
 // the "insights-results-aggregator" service running in console.redhat.com
 type processingStatusClient interface {
-	GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error)
+	GetWithPathParam(ctx context.Context, endpoint, requestID string, includeClusterID bool) (*http.Response, error)
 }
 
 // Gather runs a single gather and stores the generated archive, without uploading it.
@@ -130,7 +132,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 // 5. Recodrd the data into the Insights archive
 // 6. Get the latest archive and upload it
 // 7. Updates the status of the corresponding "datagathers.insights.openshift.io" resource continuously
-func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen
+func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen, gocyclo
 	klog.Info("Starting data gathering")
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
@@ -194,7 +196,35 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	allFunctionReports := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
+	remoteConfigAvailableCondition := status.RemoteConfigurationNotAvailableCondition(metav1.ConditionTrue, status.AsExpectedReason, "")
+	remoteConfigValidCondition := status.RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, status.NoValidationYet, "")
+	allFunctionReports, errsMap := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
+	if len(errsMap) > 0 {
+		var remoteConfigErr conditional.RemoteConfigError
+		conditionalErr := errsMap["conditional"]
+		if errors.As(conditionalErr, &remoteConfigErr) {
+			if remoteConfigErr.Reason == conditional.Invalid {
+				remoteConfigValidCondition.Status = metav1.ConditionFalse
+				remoteConfigValidCondition.Reason = remoteConfigErr.Reason
+				remoteConfigValidCondition.Message = remoteConfigErr.Error()
+			} else {
+				remoteConfigAvailableCondition.Status = metav1.ConditionFalse
+				remoteConfigAvailableCondition.Reason = remoteConfigErr.Reason
+				remoteConfigAvailableCondition.Message = remoteConfigErr.Error()
+			}
+		} else {
+			remoteConfigValidCondition.Status = metav1.ConditionTrue
+			remoteConfigValidCondition.Reason = "AsExpected"
+		}
+	}
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigAvailableCondition)
+	if err != nil {
+		klog.Error(err)
+	}
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigValidCondition)
+	if err != nil {
+		klog.Error(err)
+	}
 
 	// record data
 	dataRecordedCon := status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", "")
@@ -256,13 +286,15 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 // gatherAndReporFunctions calls all the defined gatherers, calculates their status and returns map of resulting
 // gatherer functions reports
-func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Interface,
-	dataGatherCR *insightsv1alpha1.DataGather, rec *recorder.Recorder) map[string]gather.GathererFunctionReport {
+func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Interface, // nolint: gocritic
+	dataGatherCR *insightsv1alpha1.DataGather, rec *recorder.Recorder) (map[string]gather.GathererFunctionReport, map[string]error) {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
+	errsMap := make(map[string]error)
 	for _, gatherer := range gatherersToRun {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers) // nolint: govet
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
+			errsMap[gatherer.GetName()] = err
 		}
 
 		for i := range functionReports {
@@ -280,7 +312,7 @@ func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Int
 		gs := status.CreateDataGatherGathererStatus(&fr)
 		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
 	}
-	return allFunctionReports
+	return allFunctionReports, errsMap
 }
 
 // updateDataGatherStatus updates DataGather status conditions with provided condition definition as well as
@@ -331,8 +363,8 @@ func wasDataProcessed(ctx context.Context,
 
 	var resp *http.Response
 	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {
-		resp, err = insightsCli.GetWithPathParams(ctx, // nolint: bodyclose
-			conf.DataReporting.ProcessingStatusEndpoint, insightsRequestID) // response body is closed later
+		resp, err = insightsCli.GetWithPathParam(ctx, // nolint: bodyclose
+			conf.DataReporting.ProcessingStatusEndpoint, insightsRequestID, true) // response body is closed later
 		if err != nil {
 			return false, err
 		}

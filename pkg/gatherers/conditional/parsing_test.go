@@ -7,23 +7,23 @@ import (
 )
 
 func Test_ParseConditionalGathererConfig(t *testing.T) { //nolint:funlen
-	config, err := parseGatheringRules("{}")
+	config, err := parseRemoteConfiguration([]byte("{}"))
 	assert.NoError(t, err)
 	assert.Empty(t, config)
 
-	config, err = parseGatheringRules(`{"rules": [{}]}`)
+	config, err = parseRemoteConfiguration([]byte(`{"conditional_gathering_rules": [{}]}`))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 
-	rules := config.Rules
+	rules := config.ConditionalGatheringRules
 	assert.Len(t, rules, 1)
 	assert.Nil(t, rules[0].Conditions)
 	assert.Empty(t, rules[0].GatheringFunctions)
 
 	// an invalid config should be unmarshalled
-	config, err = parseGatheringRules(`{
+	config, err = parseRemoteConfiguration([]byte(`{
 		"version": "1.0.0",
-		"rules": [
+		"conditional_gathering_rules": [
 			{
 				"conditions": [
 					{
@@ -45,12 +45,12 @@ func Test_ParseConditionalGathererConfig(t *testing.T) { //nolint:funlen
 			},
 			{}
 		]
-	}`)
+	}`))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 	assert.Equal(t, "1.0.0", config.Version)
 
-	rules = config.Rules
+	rules = config.ConditionalGatheringRules
 	assert.Len(t, rules, 2)
 	assert.Len(t, rules[0].Conditions, 2)
 	assert.Len(t, rules[0].GatheringFunctions, 2)
@@ -83,9 +83,9 @@ func Test_ParseConditionalGathererConfig(t *testing.T) { //nolint:funlen
 	assert.NotEmpty(t, errs)
 
 	// test the valid config
-	config, err = parseGatheringRules(`{
+	config, err = parseRemoteConfiguration([]byte(`{
 		"version": "1.0.0",
-		"rules": [
+		"conditional_gathering_rules": [
 			{
 				"conditions": [
 					{
@@ -106,11 +106,11 @@ func Test_ParseConditionalGathererConfig(t *testing.T) { //nolint:funlen
 				}
 			}
 		]
-	}`)
+	}`))
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 	assert.Equal(t, "1.0.0", config.Version)
 
-	errs = validateGatheringRules(config.Rules)
+	errs = validateGatheringRules(config.ConditionalGatheringRules)
 	assert.Empty(t, errs)
 }

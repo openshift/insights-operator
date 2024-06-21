@@ -3,6 +3,7 @@ package periodic
 import (
 	"context"
 	"fmt"
+	"os"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -76,6 +77,10 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 								{
 									Name:  "DATAGATHER_NAME",
 									Value: dataGatherName,
+								},
+								{
+									Name:  "RELEASE_VERSION",
+									Value: os.Getenv("RELEASE_VERSION"),
 								},
 							},
 							Resources: corev1.ResourceRequirements{

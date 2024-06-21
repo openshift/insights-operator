@@ -456,6 +456,6 @@ func (c *mockInsightsClient) RecvReport(_ context.Context, _ string) (*http.Resp
 	return nil, nil
 }
 
-func (c *mockInsightsClient) GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error) {
+func (c *mockInsightsClient) GetWithPathParam(ctx context.Context, endpoint, requestID string, includeClusterID bool) (*http.Response, error) {
 	return &c.response, c.err
 }

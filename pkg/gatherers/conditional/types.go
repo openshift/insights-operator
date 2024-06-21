@@ -1,13 +1,20 @@
 package conditional
 
 import (
+	"regexp"
+
 	"github.com/openshift/insights-operator/pkg/gatherers"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-// GatheringRules is a structure to hold gathering rules with their version
-type GatheringRules struct {
-	Version string          `json:"version"`
-	Rules   []GatheringRule `json:"rules"`
+var Invalid = "Invalid"
+var Unavailable = "Unavailable"
+
+// RemoteConfiguration is a structure to hold gathering rules with their version
+type RemoteConfiguration struct {
+	Version                   string          `json:"version"`
+	ConditionalGatheringRules []GatheringRule `json:"conditional_gathering_rules"`
+	ContainerLogRequests      []RawLogRequest `json:"container_logs"`
 }
 
 // GatheringRule is a rule consisting of conditions and gathering functions to run if all conditions are met,
@@ -52,3 +59,43 @@ type GathererFunctionBuilderPtr = func(*Gatherer, interface{}) (gatherers.Gather
 
 // AlertLabels defines alert labels as a string key/value pairs
 type AlertLabels map[string]string
+
+// RawLogRequest is type used to unmarshal the remote
+// configuration JSON
+type RawLogRequest struct {
+	Namespace    string   `json:"namespace"`
+	PodNameRegex string   `json:"pod_name_regex"`
+	Messages     []string `json:"messages"`
+	Previous     bool     `json:"previous,omitempty"`
+}
+
+// LogRequest is a "sanitized" type, because
+// there can be various requests for the same namespace and this type
+// helps prevent duplicate Pod name regular expressions and duplicate messages
+type LogRequest struct {
+	Namespace    string
+	PodNameRegex sets.Set[string]
+	Messages     sets.Set[string]
+	Previous     bool
+}
+
+// ContainerLogRequest is a type representing concrete and unique
+// container log request
+type ContainerLogRequest struct {
+	Namespace     string
+	PodName       string
+	ContainerName string
+	Previous      bool
+	MessageRegex  *regexp.Regexp
+}
+
+// RemoteConfigError is a custom error type used
+// when reading of the remote configuration fails
+type RemoteConfigError struct {
+	Err    error
+	Reason string
+}
+
+func (u RemoteConfigError) Error() string {
+	return u.Err.Error()
+}

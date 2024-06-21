@@ -94,7 +94,7 @@ func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.Ins
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelFunc()
 
-	resp, err := c.client.GetWithPathParams(ctx, reportEndpointTP, insightsRequestID)
+	resp, err := c.client.GetWithPathParam(ctx, reportEndpointTP, insightsRequestID, true)
 	if err != nil {
 		klog.Errorf("Unexpected error retrieving the report: %v", err)
 		c.UpdateStatus(controllerstatus.Summary{
@@ -318,7 +318,7 @@ type insightsReportClient interface {
 	RecvReport(ctx context.Context, endpoint string) (*http.Response, error)
 	IncrementRecvReportMetric(statusCode int)
 	GetClusterVersion() (*configv1.ClusterVersion, error)
-	GetWithPathParams(ctx context.Context, endpoint, requestID string) (*http.Response, error)
+	GetWithPathParam(ctx context.Context, endpoint, requestID string, includeClusterID bool) (*http.Response, error)
 }
 
 // readInsightsReportTechPreview reads the specified InsightsAnalysisReport and returns slice of active
