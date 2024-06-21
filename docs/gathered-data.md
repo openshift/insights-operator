@@ -1706,6 +1706,30 @@ None
 None
 
 
+## OpenstackDataplaneDeployments
+
+Collects `openstackdataplanedeployments.core.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanedeployments/edpm-deployment.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanedeployments/edpm-deployment.json)
+
+### Location in archive
+- `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanedeployments/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_dataplane_deployments`
+
+### Released version
+- 4.17
+
+### Changes
+None
+
+
 ## OpenstackDataplaneNodeSets
 
 Collects `openstackdataplanenodesets.core.openstack.org`

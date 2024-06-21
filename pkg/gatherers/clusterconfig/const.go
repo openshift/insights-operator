@@ -77,6 +77,9 @@ var (
 	oscpGroupVersionResource = schema.GroupVersionResource{
 		Group: "core.openstack.org", Version: "v1beta1", Resource: "openstackcontrolplanes",
 	}
+	osdpdGroupVersionResource = schema.GroupVersionResource{
+		Group: "dataplane.openstack.org", Version: "v1beta1", Resource: "openstackdataplanedeployments",
+	}
 	osdpnsGroupVersionResource = schema.GroupVersionResource{
 		Group: "dataplane.openstack.org", Version: "v1beta1", Resource: "openstackdataplanenodesets",
 	}
