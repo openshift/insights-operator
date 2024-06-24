@@ -402,12 +402,16 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather) error {
 	for _, recommendation := range report.Recommendations {
+		advisorLink, err := insights.CreateInsightsAdvisorLink(v1.ClusterID(report.ClusterID), recommendation.RuleFQDN, recommendation.ErrorKey)
+		if err != nil {
+			klog.Errorf("Failed to create console.redhat.com link: %v", err)
+			continue
+		}
 		healthCheck := insightsv1alpha1.HealthCheck{
 			Description: recommendation.Description,
 			TotalRisk:   int32(recommendation.TotalRisk),
 			State:       insightsv1alpha1.HealthCheckEnabled,
-			AdvisorURI: fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s",
-				report.ClusterID, recommendation.RuleFQDN, recommendation.ErrorKey),
+			AdvisorURI:  advisorLink,
 		}
 		dg.Status.InsightsReport.HealthChecks = append(dg.Status.InsightsReport.HealthChecks, healthCheck)
 	}
