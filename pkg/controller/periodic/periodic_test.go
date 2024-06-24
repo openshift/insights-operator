@@ -1040,13 +1040,13 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 					{
 						Description: "lorem-ipsum",
 						TotalRisk:   1,
-						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key1|test-error-key-1",
+						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key1%7Ctest-error-key-1",
 						State:       v1alpha1.HealthCheckEnabled,
 					},
 					{
 						Description: "lorem-ipsum bla bla test",
 						TotalRisk:   4,
-						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key2|test-error-key-2",
+						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key2%7Ctest-error-key-2",
 						State:       v1alpha1.HealthCheckEnabled,
 					},
 				},

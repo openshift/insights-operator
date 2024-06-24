@@ -44,7 +44,7 @@ func main() {
 		return
 	}
 	defer mdf.Close()
-	cleanRoot := "./"
+	cleanRoot := "./" // nolint: goconst
 
 	md := map[string]*DocBlock{}
 	err = walkDir(cleanRoot, md)
