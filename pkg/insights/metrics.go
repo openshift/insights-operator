@@ -2,6 +2,7 @@ package insights
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -74,16 +75,36 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		// There is ".report" at the end of the rule ID for some reason, which
 		// should not be inserted into the URL.
 		ruleIDStr = strings.TrimSuffix(ruleIDStr, ".report")
+
+		consoleURL, err := CreateInsightsAdvisorLink(c.clusterID, ruleIDStr, rec.ErrorKey)
+		if err != nil {
+			klog.Errorf("Failed to create console.redhat.com link: %v", err)
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc(c.metricName, "", []string{}, prometheus.Labels{
 				"description": rec.Description,
 				"total_risk":  totalRiskToStr(rec.TotalRisk),
-				"info_link":   fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", c.clusterID, ruleIDStr, rec.ErrorKey),
+				"info_link":   consoleURL,
 			}),
 			prometheus.GaugeValue,
 			1,
 		)
 	}
+}
+
+// createURL parses, creates and encodes all the necessary parameters for the Insights recommendation
+// link to the Insights advisor
+func CreateInsightsAdvisorLink(clusterID v1.ClusterID, ruleID, errorKey string) (string, error) {
+	consoleURL, err := url.Parse("https://console.redhat.com/openshift/insights/advisor/clusters")
+	if err != nil {
+		return "", err
+	}
+	consoleURL = consoleURL.JoinPath(string(clusterID))
+	params := url.Values{}
+	params.Add("first", fmt.Sprintf("%s|%s", ruleID, errorKey))
+	consoleURL.RawQuery = params.Encode()
+	return consoleURL.String(), nil
 }
 
 func (c *Collector) ClearState() {
