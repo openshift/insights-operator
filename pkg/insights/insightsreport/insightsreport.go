@@ -431,12 +431,18 @@ func (c *Controller) updateOperatorStatusCR(report types.SmartProxyReport, repor
 			klog.Errorf("Unable to extract recommendation's error key: %v", err)
 			continue
 		}
+
 		ruleIDStr := strings.TrimSuffix(string(rule.RuleID), ".report")
+		advisorLink, err := insights.CreateInsightsAdvisorLink(insights.RecommendationCollector.ClusterID(), ruleIDStr, errorKey)
+		if err != nil {
+			klog.Errorf("Failed to create console.redhat.com link: %v", err)
+			continue
+		}
 		healthCheck := v1.HealthCheck{
 			Description: rule.Description,
 			TotalRisk:   int32(rule.TotalRisk),
 			State:       v1.HealthCheckEnabled,
-			AdvisorURI:  fmt.Sprintf("https://console.redhat.com/openshift/insights/advisor/clusters/%s?first=%s|%s", insights.RecommendationCollector.ClusterID(), ruleIDStr, errorKey),
+			AdvisorURI:  advisorLink,
 		}
 
 		if rule.Disabled {
