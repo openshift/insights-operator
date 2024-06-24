@@ -1248,7 +1248,6 @@ Gathered metrics:
   - `console_helm_uninstalls_total`
   - `etcd_server_slow_apply_total`
   - `etcd_server_slow_read_indexes_total`
-  - followed by at most 1000 lines of `ALERTS` metric
 
 ### API Reference
 None
@@ -1282,6 +1281,7 @@ None
 - `openshift_apps_deploymentconfigs_strategy_total` introduced in version 4.13+ and backported to 4.12.5+ version
 - `etcd_server_slow_apply_total` introduced in version 4.16+
 - `etcd_server_slow_read_indexes_total` introduced in version 4.16+
+- `ALERTS` removed in version 4.17+
 
 
 ## MutatingWebhookConfigurations
