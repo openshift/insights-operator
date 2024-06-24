@@ -1,6 +1,7 @@
 package conditional
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -9,8 +10,9 @@ import (
 
 func parseRemoteConfiguration(data []byte) (RemoteConfiguration, error) {
 	var remoteConfig RemoteConfiguration
-
-	err := json.Unmarshal(data, &remoteConfig)
+	d := json.NewDecoder(bytes.NewReader(data))
+	d.DisallowUnknownFields()
+	err := d.Decode(&remoteConfig)
 	if err != nil {
 		return RemoteConfiguration{}, err
 	}

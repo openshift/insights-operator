@@ -13,6 +13,12 @@ var gatheringRuleJSONSchema string
 //go:embed gathering_rules.schema.json
 var gatheringRulesJSONSchema string
 
+//go:embed container_log.schema.json
+var containerLogJSONSchema string
+
+//go:embed container_logs.schema.json
+var containerLogsJSONSchema string
+
 // validateGatheringRules validates provided gathering rules, will return nil on success, or a list of errors
 func validateGatheringRules(gatheringRules []GatheringRule) []error {
 	if len(gatheringRules) == 0 {
@@ -46,6 +52,35 @@ func validateGatheringRules(gatheringRules []GatheringRule) []error {
 			errs = append(errs, fmt.Errorf("%s", err.String()))
 		}
 
+		return errs
+	}
+
+	return nil
+}
+
+func validateContainerLogRequests(containerLogRequests []RawLogRequest) []error {
+	schemaLoader := gojsonschema.NewSchemaLoader()
+
+	err := schemaLoader.AddSchemas(gojsonschema.NewStringLoader(containerLogJSONSchema))
+	if err != nil {
+		return []error{err}
+	}
+
+	schema, err := schemaLoader.Compile(gojsonschema.NewStringLoader(containerLogsJSONSchema))
+	if err != nil {
+		return []error{err}
+	}
+
+	result, err := schema.Validate(gojsonschema.NewGoLoader(containerLogRequests))
+	if err != nil {
+		return []error{err}
+	}
+
+	if !result.Valid() {
+		var errs []error
+		for _, err := range result.Errors() {
+			errs = append(errs, fmt.Errorf("%s", err.String()))
+		}
 		return errs
 	}
 

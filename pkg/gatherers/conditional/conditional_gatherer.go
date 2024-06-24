@@ -171,12 +171,11 @@ func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 }
 
 func (g *Gatherer) validateAndCreateContainerLogRequestsClosure(remoteConfig RemoteConfiguration) (gatherers.GatheringClosure, error) {
-	// TODO validate g.remoteConfiguration.ContainerLogRequests
-	validRemoteConfig := true
-
-	if !validRemoteConfig {
+	errs := validateContainerLogRequests(remoteConfig.ContainerLogRequests)
+	if len(errs) > 0 {
+		err := utils.UniqueErrors(errs)
 		return gatherers.GatheringClosure{}, RemoteConfigError{
-			Err:    fmt.Errorf("TBD - validation error"),
+			Err:    err,
 			Reason: Invalid,
 		}
 	}
