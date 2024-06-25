@@ -868,34 +868,6 @@ None
 None
 
 
-## HostSubnet
-
-Collects `HostSubnet` information.
-
-### API Reference
-- https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/hostsubnet.go
-- https://docs.openshift.com/container-platform/4.3/rest_api/index.html#hostsubnet-v1-network-openshift-io
-
-### Sample data
-- [docs/insights-archive-sample/config/hostsubnet](./insights-archive-sample/config/hostsubnet)
-
-### Location in archive
-- `config/hostsubnet/{name}.json`
-
-### Config ID
-`clusterconfig/host_subnets`
-
-### Released version
-- 4.6.0
-
-### Backported versions
-- 4.4.29+
-- 4.5.15+
-
-### Changes
-None
-
-
 ## ImageStreamsOfNamespace
 
 Closure which collects image streams from the provided namespace
@@ -1342,32 +1314,6 @@ and the UID range value from the `openshift.io/sa.scc.uid-range` annotation
 None
 
 
-## NetNamespace
-
-Collects `NetNamespaces` networking information.
-
-### API Reference
-- https://github.com/openshift/client-go/blob/master/network/clientset/versioned/typed/network/v1/netnamespace.go
-
-### Sample data
-- [docs/insights-archive-sample/config/netnamespaces.json](./insights-archive-sample/config/netnamespaces.json)
-
-### Location in archive
-- `config/netnamespaces.json`
-
-### Config ID
-`clusterconfig/netnamespaces`
-
-### Released version
-- 4.7.0
-
-### Backported versions
-- 4.6.20+
-
-### Changes
-None
-
-
 ## NodeLogs
 
 Collects control plane node logs from journal unit with following substrings:
@@ -1605,76 +1551,6 @@ None
 
 ### Backported versions
 None
-
-### Changes
-None
-
-
-## OpenshiftSDNControllerLogs
-
-Collects logs from `sdn-controller` pod in `openshift-sdn` namespace with
-following substrings:
-
-- "Node %s is not Ready": A node has been set offline for egress IPs because it is reported not ready at API
-- "Node %s may be offline... retrying": An egress node has failed the egress IP health check once,
-so it has big chances to be marked as offline soon or, at the very least, there has been a connectivity glitch.
-- "Node %s is offline": An egress node has failed enough probes to have been marked offline for egress IPs.
-If it has egress CIDRs assigned, its egress IPs have been moved to other nodes. Indicate issues at either the node
-or the network between the master and the node.
-- "Node %s is back online": This indicates that a node has recovered from the condition described
-at the previous message, by starting succeeding the egress IP health checks. Useful just in case that previous
-“Node %s is offline” messages are lost, so that we have a clue that there was failure previously.
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log](./insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log)
-- [docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-controller-l8gq9/errors.log](./insights-archive-sample/config/pod/openshift-sdn/logs/sdn-controller-l8gq9/errors.log)
-
-### Location in archive
-- `config/pod/openshift-sdn/logs/{pod-name}/errors.log`
-
-### Config ID
-`clusterconfig/openshift_sdn_controller_logs`
-
-### Released version
-- 4.7.0
-
-### Backported versions
-- 4.6.21+
-
-### Changes
-None
-
-
-## OpenshiftSDNLogs
-
-Collects logs from pods in `openshift-sdn` namespace with following substrings:
-- "Got OnEndpointsUpdate for unknown Endpoints",
-- "Got OnEndpointsDelete for unknown Endpoints",
-- "Unable to update proxy firewall for policy",
-- "Failed to update proxy firewall for policy",
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log](./insights-archive-sample/config/pod/openshift-sdn/logs/sdn-f2694/errors.log)
-
-### Location in archive
-- `config/pod/openshift-sdn/logs/{name}/errors.log`
-
-### Config ID
-`clusterconfig/openshift_sdn_logs`
-
-### Released version
-- 4.7.0
-
-### Backported versions
-- 4.6.19+
 
 ### Changes
 None
