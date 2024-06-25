@@ -160,6 +160,14 @@ metadata:
     capability.openshift.io/name: Insights
 rules:
   - apiGroups:
+      - "monitoring.coreos.com"
+    resources:
+      - alertmanagers
+      - prometheuses
+    verbs:
+      - get
+      - list
+  - apiGroups:
       - ""
     resources:
       - nodes

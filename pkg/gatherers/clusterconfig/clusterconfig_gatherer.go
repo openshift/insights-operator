@@ -27,6 +27,7 @@ type gathererFuncPtr = func(*Gatherer, context.Context) ([]record.Record, []erro
 
 var gatheringFunctions = map[string]gathererFuncPtr{
 	"active_alerts":                     (*Gatherer).GatherActiveAlerts,
+	"aggregated_monitoring_cr_names":    (*Gatherer).GatherAggregatedMonitoringCRNames,
 	"authentication":                    (*Gatherer).GatherClusterAuthentication,
 	"certificate_signing_requests":      (*Gatherer).GatherCertificateSigningRequests,
 	"ceph_cluster":                      (*Gatherer).GatherCephCluster,
