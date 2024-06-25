@@ -32,7 +32,9 @@ import (
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/types"
+	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -231,6 +233,11 @@ func (c *Controller) Gather() {
 							Message:   remoteConfigErr.Error(),
 						})
 					}
+					c.recorder.Record(record.Record{
+						Name:         "insights-operator/remote-configuration.json",
+						Item:         marshal.RawByte(remoteConfigErr.ConfigData),
+						AlwaysStored: true,
+					})
 					return
 				}
 

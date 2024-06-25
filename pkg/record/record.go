@@ -17,6 +17,9 @@ type Record struct {
 	Name     string
 	Captured time.Time
 	Item     Marshalable
+	// AlwaysStored marks the record as a priority - it will be always present
+	// in the archive regardles of the size limit. Use with caution.
+	AlwaysStored bool
 }
 
 // Marshal marshals the item and returns its fingerprint

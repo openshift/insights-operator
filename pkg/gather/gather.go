@@ -213,7 +213,8 @@ func RecordArchiveMetadata(
 	}
 
 	archiveMetadata := record.Record{
-		Name: recorder.MetadataRecordName,
+		Name:         recorder.MetadataRecordName,
+		AlwaysStored: true,
 		Item: record.JSONMarshaller{Object: ArchiveMetadata{
 			StatusReports:              functionReports,
 			MemoryBytesUsage:           uint64(memUsage),
