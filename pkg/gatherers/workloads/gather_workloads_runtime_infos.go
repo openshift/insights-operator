@@ -19,14 +19,9 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// Internal representation of workload infor returned by the insights-operator-runtime component.
-type insightsWorkloadRuntimeInfo struct {
-	OSReleaseID            string             `json:"os-release-id,omitempty"`
-	OSReleaseVersionID     string             `json:"os-release-version-id,omitempty"`
-	RuntimeKind            string             `json:"runtime-kind,omitempty"`
-	RuntimeKindVersion     string             `json:"runtime-kind-version,omitempty"`
-	RuntimeKindImplementer string             `json:"runtime-kind-implementer,omitempty"`
-	Runtimes               []RuntimeComponent `json:"runtimes,omitempty"`
+type podWithNodeName struct {
+	podName  string
+	nodeName string
 }
 
 func gatherWorkloadRuntimeInfos(
@@ -37,7 +32,10 @@ func gatherWorkloadRuntimeInfos(
 ) (workloadRuntimes, error) {
 	start := time.Now()
 
-	runtimePods := getInsightsOperatorRuntimePods(coreClient, ctx)
+	runtimePods, err := getInsightsOperatorRuntimePods(coreClient, ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	workloadRuntimeInfos := make(workloadRuntimes)
 
@@ -45,12 +43,12 @@ func gatherWorkloadRuntimeInfos(
 	var wg sync.WaitGroup
 	wg.Add(len(runtimePods))
 
-	for nodeName, runtimePodName := range runtimePods {
-		go func(nodeName string, runtimePodName string) {
+	for i := range runtimePods {
+		go func(podInfo podWithNodeName) {
 			defer wg.Done()
-			klog.Infof("Gathering workload runtime info for node %s...\n", nodeName)
-			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, h, coreClient, restConfig, runtimePodName)
-		}(nodeName, runtimePodName)
+			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
+			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, h, coreClient, restConfig, podInfo.podName)
+		}(runtimePods[i])
 	}
 	go func() {
 		wg.Wait()
@@ -73,45 +71,52 @@ func gatherWorkloadRuntimeInfos(
 func getInsightsOperatorRuntimePods(
 	coreClient corev1client.CoreV1Interface,
 	ctx context.Context,
-) map[string]string {
-	runtimePods := make(map[string]string)
-
+) ([]podWithNodeName, error) {
 	pods, err := coreClient.Pods(os.Getenv("POD_NAMESPACE")).
 		List(ctx, metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=insights-operator-runtime",
 		})
 	if err != nil {
-		return runtimePods
+		return nil, err
 	}
 
+	var runtimePods []podWithNodeName
 	for _, pod := range pods.Items {
-		runtimePods[pod.Spec.NodeName] = pod.ObjectMeta.Name
+		runtimePods = append(runtimePods, podWithNodeName{
+			podName:  pod.ObjectMeta.Name,
+			nodeName: pod.Spec.NodeName,
+		})
 	}
-	return runtimePods
+	return runtimePods, nil
 }
 
 // Merge the workloads from a single node into the global map
 func mergeWorkloads(global workloadRuntimes,
 	node workloadRuntimes,
 ) {
-	for namespace, nodePodWorkloads := range node {
-		if _, exists := global[namespace]; !exists {
-			// If the namespace doesn't exist in global, simply assign the value from node.
-			global[namespace] = nodePodWorkloads
-		} else {
-			// If the namespace exists, check the pods
-			for podName, containerWorkloads := range nodePodWorkloads {
-				if _, exists := global[namespace][podName]; !exists {
-					// If the namespace/pod doesn't exist in the global map, assign the value from the node.
-					global[namespace][podName] = containerWorkloads
+	/*
+		 	for namespace, nodePodWorkloads := range node {
+				if _, exists := global[namespace]; !exists {
+					// If the namespace doesn't exist in global, simply assign the value from node.
+					global[namespace] = nodePodWorkloads
 				} else {
-					// add the workload from the node
-					for containerID, runtimeInfo := range containerWorkloads {
-						global[namespace][podName][containerID] = runtimeInfo
+					// If the namespace exists, check the pods
+					for podName, containerWorkloads := range nodePodWorkloads {
+						if _, exists := global[namespace][podName]; !exists {
+							// If the namespace/pod doesn't exist in the global map, assign the value from the node.
+							global[namespace][podName] = containerWorkloads
+						} else {
+							// add the workload from the node
+							for containerID, runtimeInfo := range containerWorkloads {
+								global[namespace][podName][containerID] = runtimeInfo
+							}
+						}
 					}
 				}
 			}
-		}
+	*/
+	for cInfo, cRuntimeInfo := range node {
+		global[cInfo] = cRuntimeInfo
 	}
 }
 
@@ -120,34 +125,36 @@ func mergeWorkloads(global workloadRuntimes,
 // stored by the Insights operator as a map of namespace/pod-name/container-id/workloadRuntimeInfoContainer
 // where each value is hashed.
 func transformWorkload(h hash.Hash,
-	node map[string]map[string]map[string]insightsWorkloadRuntimeInfo,
+	node nodeRuntimeInfo,
 ) workloadRuntimes {
 
 	result := make(workloadRuntimes)
 
-	for podNamespace, podWorkloads := range node {
-		result[podNamespace] = make(map[string]map[string]workloadRuntimeInfoContainer)
-		for podName, containerWorkloads := range podWorkloads {
-			result[podNamespace][podName] = make(map[string]workloadRuntimeInfoContainer)
-			for containerID, info := range containerWorkloads {
-				runtimeInfo := workloadRuntimeInfoContainer{
-					Os:              hashString(h, info.OSReleaseID),
-					OsVersion:       hashString(h, info.OSReleaseVersionID),
-					Kind:            hashString(h, info.RuntimeKind),
-					KindVersion:     hashString(h, info.RuntimeKindVersion),
-					KindImplementer: hashString(h, info.RuntimeKindImplementer),
+	for nsName, nsRuntimeInfo := range node {
+		cInfo := containerInfo{
+			namespace: nsName,
+		}
+		for podName, podRuntimeInfo := range nsRuntimeInfo {
+			cInfo.pod = podName
+			for containerId, containerRuntimeInfo := range podRuntimeInfo {
+				cInfo.containerID = containerId
+				hashedContainerInfo := workloadRuntimeInfoContainer{
+					Os:              hashString(h, containerRuntimeInfo.OSReleaseID),
+					OsVersion:       hashString(h, containerRuntimeInfo.OSReleaseVersionID),
+					Kind:            hashString(h, containerRuntimeInfo.RuntimeKind),
+					KindVersion:     hashString(h, containerRuntimeInfo.RuntimeKindVersion),
+					KindImplementer: hashString(h, containerRuntimeInfo.RuntimeKindImplementer),
 				}
 
-				runtimeInfos := make([]RuntimeComponent, len(info.Runtimes))
-				for i, runtime := range info.Runtimes {
+				runtimeInfos := make([]RuntimeComponent, len(containerRuntimeInfo.Runtimes))
+				for i, runtime := range containerRuntimeInfo.Runtimes {
 					runtimeInfos[i] = RuntimeComponent{
 						Name:    hashString(h, runtime.Name),
 						Version: hashString(h, runtime.Version),
 					}
 				}
-				runtimeInfo.Runtimes = runtimeInfos
-				result[podNamespace][podName][containerID] = runtimeInfo
-
+				hashedContainerInfo.Runtimes = runtimeInfos
+				result[cInfo] = hashedContainerInfo
 			}
 		}
 	}
@@ -208,7 +215,7 @@ func getNodeWorkloadRuntimeInfos(
 
 	output := execOut.String()
 
-	var nodeOutput map[string]map[string]map[string]insightsWorkloadRuntimeInfo
+	var nodeOutput nodeRuntimeInfo
 	json.Unmarshal([]byte(output), &nodeOutput)
 
 	return transformWorkload(h, nodeOutput)
