@@ -42,11 +42,13 @@ const (
 )
 
 // keys are namespace / pod / containerID and the final value is the workloadRuntimeInfoContainer for this container
-type workloadRuntimes map[string]map[string]map[string]workloadRuntimeInfoContainer
+type workloadRuntimes map[containerInfo]workloadRuntimeInfoContainer
 
-var (
-	workloadRuntimeInfos workloadRuntimes
-)
+type containerInfo struct {
+	namespace   string
+	pod         string
+	containerID string
+}
 
 // GatherWorkloadInfo Collects summarized info about the workloads on a cluster
 // in a generic fashion
@@ -99,16 +101,14 @@ func gatherWorkloadInfo(
 
 	var errors = []error{}
 
-	infos, err := gatherWorkloadRuntimeInfos(ctx, h, coreClient, restConfig)
+	workloadInfos, err := gatherWorkloadRuntimeInfos(ctx, h, coreClient, restConfig)
 	if err != nil {
 		errors = append(errors, err)
 	}
-	workloadRuntimeInfos = infos
-
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, h, imageClient.Images())
 
 	start := time.Now()
-	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh)
+	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh, workloadInfos)
 	if err != nil {
 		errors = append(errors, err)
 		return nil, errors
@@ -141,6 +141,7 @@ func workloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageCh chan string,
+	workloadInfos workloadRuntimes,
 ) (bool, workloadPods, error) {
 	defer close(imageCh)
 	limitReached := false
@@ -196,7 +197,7 @@ func workloadInfo(
 				continue
 			}
 
-			podShape, ok := calculatePodShape(h, &pod)
+			podShape, ok := calculatePodShape(h, &pod, workloadInfos)
 			if !ok {
 				namespacePods.InvalidCount++
 				continue
@@ -248,15 +249,15 @@ func podCanBeIgnored(pod *corev1.Pod) bool {
 		len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers)
 }
 
-func calculatePodShape(h hash.Hash, pod *corev1.Pod) (workloadPodShape, bool) {
+func calculatePodShape(h hash.Hash, pod *corev1.Pod, workloadInfo workloadRuntimes) (workloadPodShape, bool) {
 	var podShape workloadPodShape
 	var ok bool
-	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.InitContainers, pod.Status.InitContainerStatuses)
+	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.InitContainers, pod.Status.InitContainerStatuses, workloadInfo)
 	if !ok {
 		return workloadPodShape{}, false
 	}
 
-	podShape.Containers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.Containers, pod.Status.ContainerStatuses)
+	podShape.Containers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.Containers, pod.Status.ContainerStatuses, workloadInfo)
 	if !ok {
 		return workloadPodShape{}, false
 	}
@@ -491,6 +492,7 @@ func calculateWorkloadContainerShapes(
 	podMeta metav1.ObjectMeta,
 	spec []corev1.Container,
 	status []corev1.ContainerStatus,
+	runtimesInfo workloadRuntimes,
 ) ([]workloadContainerShape, bool) {
 	shapes := make([]workloadContainerShape, 0, len(status))
 	for i := range status {
@@ -522,17 +524,17 @@ func calculateWorkloadContainerShapes(
 		}
 
 		var runtimeInfo workloadRuntimeInfoContainer
-
-		podNamespace := podMeta.Namespace
-		podName := podMeta.Name
-		containerID := status[i].ContainerID
-		if workloadNamespaces, ok := workloadRuntimeInfos[podNamespace]; ok {
-			if workloadPods, ok := workloadNamespaces[podName]; ok {
-				if workloadContainer, ok := workloadPods[containerID]; ok {
-					runtimeInfo = workloadContainer
-				}
-			}
+		conInfo := containerInfo{
+			namespace:   podMeta.Namespace,
+			pod:         podMeta.Name,
+			containerID: status[i].ContainerID,
 		}
+
+		if workloadRuntimeInfo, ok := runtimesInfo[conInfo]; ok {
+			runtimeInfo = workloadRuntimeInfo
+		}
+
+		// TODO do we want to add empty runtimeInfo ??
 
 		shapes = append(shapes, workloadContainerShape{
 			ImageID:      imageID,
