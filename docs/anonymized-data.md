@@ -84,6 +84,7 @@ anonymized by the Insights Operator. This list is subject to change.
   - Spec.dns.template.options
 - OpenstackDataplaneNodeSets
   - IP Addresses
+  - ansibleHost
   - ansibleUser
   - edpm_sshd_allowed_ranges
   - dnsClusterAddresses

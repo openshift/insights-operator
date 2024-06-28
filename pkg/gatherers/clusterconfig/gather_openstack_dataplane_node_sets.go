@@ -75,7 +75,7 @@ func prepareOpenStackDataPlaneNodeSet(data *unstructured.Unstructured) *unstruct
 	}
 	fieldsToAnonymize := [][]string{}
 	customFieldsToAnonymize := []string{
-		"ansibleUser", "edpm_sshd_allowed_ranges", "dnsClusterAddresses",
+		"ansibleHost", "ansibleUser", "edpm_sshd_allowed_ranges", "dnsClusterAddresses",
 	}
 	data.Object = removeFields(data.Object, fieldsToRemove)
 	data.Object = anonymizeIpAddresses(data.Object)
