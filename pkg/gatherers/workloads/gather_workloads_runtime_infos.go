@@ -40,9 +40,18 @@ func gatherWorkloadRuntimeInfos(
 	workloadRuntimeInfos := make(workloadRuntimes)
 
 	nodeWorkloadCh := make(chan workloadRuntimes)
+	var receiveWg sync.WaitGroup
+	receiveWg.Add(1)
+
+	go func() {
+		defer receiveWg.Done()
+		for infos := range nodeWorkloadCh {
+			mergeWorkloads(workloadRuntimeInfos, infos)
+		}
+	}()
+
 	var wg sync.WaitGroup
 	wg.Add(len(runtimePods))
-
 	for i := range runtimePods {
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
@@ -50,14 +59,10 @@ func gatherWorkloadRuntimeInfos(
 			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, h, coreClient, restConfig, podInfo.podName)
 		}(runtimePods[i])
 	}
-	go func() {
-		wg.Wait()
-		close(nodeWorkloadCh)
-	}()
 
-	for infos := range nodeWorkloadCh {
-		mergeWorkloads(workloadRuntimeInfos, infos)
-	}
+	wg.Wait()
+	close(nodeWorkloadCh)
+	receiveWg.Wait()
 
 	klog.Infof("Gathered workload runtime infos in %s\n",
 		time.Since(start).Round(time.Second).String())
