@@ -43,7 +43,7 @@ func Test_OpenStackDataPlaneNodeSets_Gather(t *testing.T) {
 			name:       "Test single OpenStackDataPlaneNodeSet CR",
 			namespaces: []string{"openstack"},
 			osdpnsYAML: []string{`
-apiVersion: core.openstack.org/v1beta1
+apiVersion: dataplane.openstack.org/v1beta1
 kind: OpenStackDataPlaneNodeSet
 metadata:
   name: test-cr
@@ -68,7 +68,7 @@ status:
 			name:       "Test Multiple OpenStackDataPlaneNodeSet CRs",
 			namespaces: []string{"openstack", "openstack"},
 			osdpnsYAML: []string{`
-apiVersion: core.openstack.org/v1beta1
+apiVersion: dataplane.openstack.org/v1beta1
 kind: OpenStackDataPlaneNodeSet
 metadata:
   name: test-cr-1
@@ -87,7 +87,7 @@ status:
       ctlplane: edpm-compute-0.ctlplane.example.com
       internalapi: edpm-compute-0.internalapi.example.com
 `, `
-apiVersion: core.openstack.org/v1beta1
+apiVersion: dataplane.openstack.org/v1beta1
 kind: OpenStackDataPlaneNodeSet
 metadata:
   name: test-cr-2
