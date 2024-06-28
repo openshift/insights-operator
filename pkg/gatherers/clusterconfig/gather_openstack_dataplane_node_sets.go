@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 )
 
-// GatherOpenstackDataplaneNodesets Collects `openstackdataplanenodesets.core.openstack.org`
+// GatherOpenstackDataplaneNodesets Collects `openstackdataplanenodesets.dataplane.openstack.org`
 // resources from all namespaces
 //
 // ### API Reference
@@ -28,7 +28,7 @@ import (
 // - `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanes/{name}.json`
 //
 // ### Config ID
-// `clusterconfig/openstack_dataplane_nodesets`
+// `clusterconfig/openstack_dataplanenodesets`
 //
 // ### Released version
 // - 4.17

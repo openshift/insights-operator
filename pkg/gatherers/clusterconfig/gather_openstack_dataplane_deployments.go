@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherOpenstackDataplaneDeployments Collects `openstackdataplanedeployments.core.openstack.org`
+// GatherOpenstackDataplaneDeployments Collects `openstackdataplanedeployments.dataplane.openstack.org`
 // resources from all namespaces
 //
 // ### API Reference
@@ -26,7 +26,7 @@ import (
 // - `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanedeployments/{name}.json`
 //
 // ### Config ID
-// `clusterconfig/openstack_dataplane_deployments`
+// `clusterconfig/openstack_dataplanedeployments`
 //
 // ### Released version
 // - 4.17

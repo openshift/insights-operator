@@ -1708,7 +1708,7 @@ None
 
 ## OpenstackDataplaneDeployments
 
-Collects `openstackdataplanedeployments.core.openstack.org`
+Collects `openstackdataplanedeployments.dataplane.openstack.org`
 resources from all namespaces
 
 ### API Reference
@@ -1721,7 +1721,7 @@ None
 - `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanedeployments/{name}.json`
 
 ### Config ID
-`clusterconfig/openstack_dataplane_deployments`
+`clusterconfig/openstack_dataplanedeployments`
 
 ### Released version
 - 4.17
@@ -1732,7 +1732,7 @@ None
 
 ## OpenstackDataplaneNodeSets
 
-Collects `openstackdataplanenodesets.core.openstack.org`
+Collects `openstackdataplanenodesets.dataplane.openstack.org`
 resources from all namespaces
 
 ### API Reference
@@ -1745,7 +1745,7 @@ None
 - `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanenodesets/{name}.json`
 
 ### Config ID
-`clusterconfig/openstack_dataplane_nodesets`
+`clusterconfig/openstack_dataplanenodesets`
 
 ### Released version
 - 4.17
