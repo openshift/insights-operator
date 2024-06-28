@@ -31,7 +31,7 @@ func Test_OpenStackDataPlaneDeployments_Gather(t *testing.T) {
 			name:       "Test single OpenStackDataPlaneDeployment CR",
 			namespaces: []string{"openstack"},
 			osdpdYAML: []string{`
-apiVersion: core.openstack.org/v1beta1
+apiVersion: dataplane.openstack.org/v1beta1
 kind: OpenStackDataPlaneDeployment
 metadata:
   name: test-cr
@@ -45,7 +45,7 @@ metadata:
 			name:       "Test Multiple OpenStackDataPlaneDeployment CRs",
 			namespaces: []string{"openstack", "openstack"},
 			osdpdYAML: []string{`
-apiVersion: core.openstack.org/v1beta1
+apiVersion: dataplane.openstack.org/v1beta1
 kind: OpenStackDataPlaneDeployment
 metadata:
   name: test-cr-1
@@ -53,7 +53,7 @@ metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: test_configuration
 `, `
-apiVersion: core.openstack.org/v1beta1
+apiVersion: dataplane.openstack.org/v1beta1
 kind: OpenStackDataPlaneDeployment
 metadata:
   name: test-cr-2
