@@ -79,3 +79,13 @@ anonymized by the Insights Operator. This list is subject to change.
   - Status.HTTPProxy
   - Status.HTTPSProxy
   - Status.NoProxy
+- OpenstackControlplanes
+  - IP Addresses
+  - Spec.dns.template.options
+- OpenstackDataplaneNodeSets
+  - IP Addresses
+  - ansibleHost
+  - ansibleUser
+  - edpm_sshd_allowed_ranges
+  - dnsClusterAddresses
+  - Status.allHostnames

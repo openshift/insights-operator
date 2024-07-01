@@ -1556,6 +1556,78 @@ None
 None
 
 
+## OpenstackControlplanes
+
+Collects `openstackcontrolplanes.core.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/customresources/core.openstack.org/openstackcontrolplanes/openstack/openstack-galera-network-isolation.json](./insights-archive-sample/customresources/core.openstack.org/openstackcontrolplanes/openstack/openstack-galera-network-isolation.json)
+
+### Location in archive
+- `customresources/core.openstack.org/openstackcontrolplanes/{namespace}/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_controlplanes`
+
+### Released version
+- 4.15
+
+### Changes
+None
+
+
+## OpenstackDataplaneDeployments
+
+Collects `openstackdataplanedeployments.dataplane.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanedeployments/openstack/edpm-deployment.json](./insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanedeployments/openstack/edpm-deployment.json)
+
+### Location in archive
+- `customresources/dataplane.openstack.org/openstackdataplanedeployments/{namespace}/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_dataplanedeployments`
+
+### Released version
+- 4.15
+
+### Changes
+None
+
+
+## OpenstackDataplaneNodeSets
+
+Collects `openstackdataplanenodesets.dataplane.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanenodesets/openstack/openstack-edpm.json](./insights-archive-sample/customresources/dataplane.openstack.org/openstackdataplanenodesets/openstack/openstack-edpm.json)
+
+### Location in archive
+- `customresources/dataplane.openstack.org/openstackdataplanenodesets/{namespace}/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_dataplanenodesets`
+
+### Released version
+- 4.15
+
+### Changes
+None
+
+
 ## PodDefinition
 
 Collects pod definition from pods that are

@@ -1,0 +1,135 @@
+package clusterconfig
+
+import (
+	"context"
+	"encoding/json"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+)
+
+func Test_OpenStackControlPlanes_Gather(t *testing.T) {
+	tests := []struct {
+		name       string
+		namespaces []string
+		oscpYAML   []string
+		exp        []string
+	}{
+		{
+			name:       "Test OpenStackControlPlane CR exists",
+			namespaces: []string{"openstack"},
+			oscpYAML:   []string{},
+			exp:        []string{},
+		},
+		{
+			name:       "Test single OpenStackControlPlane CR",
+			namespaces: []string{"openstack"},
+			oscpYAML: []string{`
+apiVersion: core.openstack.org/v1beta1
+kind: OpenStackControlPlane
+metadata:
+  name: test-cr
+  namespace: openstack
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: test_configuration
+spec:
+  customService:
+    string_field: test-string
+    ip_address: 10.0.0.10  
+`},
+			exp: []string{"customresources/core.openstack.org/openstackcontrolplanes/openstack/test-cr"},
+		},
+		{
+			name:       "Test Multiple OpenStackControlPlane CR",
+			namespaces: []string{"openstack-1", "openstack-2"},
+			oscpYAML: []string{`
+apiVersion: core.openstack.org/v1beta1
+kind: OpenStackControlPlane
+metadata:
+  name: test-cr-1
+  namespace: openstack-1
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: test_configuration
+spec:
+  customService:
+    string_field: test-string
+    ip_address: 10.0.0.10  
+`, `
+apiVersion: core.openstack.org/v1beta1
+kind: OpenStackControlPlane
+metadata:
+  name: test-cr-2
+  namespace: openstack-2
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: test_configuration
+spec:
+  customService:
+    string_field: test-string
+    ip_address: 10.0.0.10  
+`},
+			exp: []string{
+				"customresources/core.openstack.org/openstackcontrolplanes/openstack-1/test-cr-1",
+				"customresources/core.openstack.org/openstackcontrolplanes/openstack-2/test-cr-2",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+				oscpGroupVersionResource: "openstackcontrolplanesList",
+			})
+			decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+			testOscp := &unstructured.Unstructured{}
+			ctx := context.Background()
+
+			for i := range test.oscpYAML {
+				_, _, err := decUnstructured.Decode([]byte(test.oscpYAML[i]), nil, testOscp)
+				assert.NoError(t, err)
+				_, err = dynamicClient.Resource(oscpGroupVersionResource).
+					Namespace(test.namespaces[i]).
+					Create(ctx, testOscp, metav1.CreateOptions{})
+				assert.NoError(t, err)
+			}
+
+			records, errs := gatherOpenstackControlplanes(ctx, dynamicClient)
+			assert.Emptyf(t, errs, "Unexpected errors: %#v", errs)
+			var recordNames []string
+			for i := range records {
+				recordNames = append(recordNames, records[i].Name)
+				if len(test.oscpYAML) > 0 {
+					marshaledItem, _ := records[i].Item.Marshal()
+					gatheredItem := unstructured.Unstructured{}
+					json.Unmarshal(marshaledItem, &gatheredItem)
+					ip_address_value, found, err := unstructured.NestedFieldCopy(gatheredItem.Object, "spec", "customService", "ip_address")
+					if !found {
+						t.Fatal("Field 'ip_address' was not found in the gathered object")
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					string_field_value, found, err := unstructured.NestedFieldCopy(gatheredItem.Object, "spec", "customService", "string_field")
+					if !found {
+						t.Fatal("Field 'string_field' was not found in the gathered object")
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					assert.Exactly(t, "xxxxxxxxx", ip_address_value)
+					assert.Exactly(t, "test-string", string_field_value)
+					_, last_applied_configuration_found, err := unstructured.NestedFieldCopy(gatheredItem.Object, "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration")
+					if last_applied_configuration_found {
+						t.Fatal("Field 'metadata/annotations/kubectl.kubernetes.io/last-applied-configuration' was not removed from the gathered object")
+					}
+				}
+			}
+			assert.ElementsMatch(t, test.exp, recordNames)
+		})
+	}
+}
