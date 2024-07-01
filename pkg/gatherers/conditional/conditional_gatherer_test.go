@@ -339,7 +339,8 @@ func newEmptyGatherer(remoteConfig string, conditionalGathererEndpoint string) *
 						"namespace": "openshift-cluster-samples-operator"
 					}
 				}
-			}]
+			}],
+			"container_logs":[]
 		}`
 	}
 	if conditionalGathererEndpoint == "" {

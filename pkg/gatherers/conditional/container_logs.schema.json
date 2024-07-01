@@ -1,0 +1,23 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "container_logs.schema.json",
+    "title": "Container Log Request",
+    "descriptions": "Container Log Requests used in Rapid Recommendations",
+    "examples": [
+        [
+            {
+                "namespace": "openshift-etcd",
+                "pod_name_regex": ".*",
+                "messages": [
+                    "wal:\\ max\\ entry\\ size\\ limit\\ exceeded"
+                ]
+            }
+        ]
+    ],
+    "type": "array",
+    "description": "array of container log requests",
+    "uniqueItems": false,
+    "items": {
+        "$ref": "container_log.schema.json"
+    }
+}

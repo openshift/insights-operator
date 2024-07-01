@@ -1,0 +1,45 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "container_log.schema.json",
+    "title": "Container Log Request",
+    "descriptions": "Container Log Request used in Rapid Recommendations",
+    "examples": [
+        {
+            "namespace": "openshift-etcd",
+            "pod_name_regex": ".*",
+            "messages": [
+                "wal:\\ max\\ entry\\ size\\ limit\\ exceeded"
+            ]
+        }
+    ],
+    "type": "object",
+    "required": [
+        "namespace",
+        "pod_name_regex",
+        "messages"
+    ],
+    "properties": {
+        "namespace": {
+            "type": "string",
+            "description": "OpenShift namespace name",
+            "pattern": "^openshift-[a-zA-Z0-9_.-]{1,128}$|^kube-[a-zA-Z0-9_.-]{1,128}$"
+        },
+        "pod_name_regex": {
+            "type": "string",
+            "description": "Regular expression used to find matching Pods"
+        },
+        "messages": {
+            "type": "array",
+            "description": "The list of regular expressions used to filter the container logs",
+            "uniqueItems": false,
+            "items": {
+                "type": "string",
+                "description": "Regular expression used to filter the container log"
+            }
+        },
+        "previous": {
+            "type": "boolean",
+            "description": "Flag to distinguish filtering of the previous container's log"
+        } 
+    }
+}
