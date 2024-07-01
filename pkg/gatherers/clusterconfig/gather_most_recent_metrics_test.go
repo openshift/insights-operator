@@ -55,8 +55,7 @@ func Test_gatherMostRecentMetrics(t *testing.T) {
 			wantRecords: []record.Record{
 				{
 					Name: "config/metrics",
-					Item: marshal.RawByte(`test# ALERTS 1/1000
-test`),
+					Item: marshal.RawByte(`test`),
 				},
 			},
 			wantErrors: nil,
