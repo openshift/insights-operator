@@ -1,0 +1,8 @@
+{
+    "prometheuses": [
+        "example-prometheus-name"
+    ],
+    "alertmanagers": [
+        "example-alertmanager-name"
+    ]
+}
