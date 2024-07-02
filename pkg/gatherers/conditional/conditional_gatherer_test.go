@@ -23,7 +23,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 	assert.Equal(t, "conditional", gatherer.GetName())
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
 	assert.NoError(t, err)
-	assert.Len(t, gatheringFunctions, 2)
+	assert.Len(t, gatheringFunctions, 3)
 
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
 	var g interface{} = gatherer
@@ -40,7 +40,7 @@ func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(ctx)
 	assert.NoError(t, err)
-	assert.Len(t, gatheringFunctions, 4)
+	assert.Len(t, gatheringFunctions, 5)
 	_, found := gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
 }
@@ -54,7 +54,7 @@ func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(ctx)
 	assert.NoError(t, err)
-	assert.Len(t, gatheringFunctions, 4)
+	assert.Len(t, gatheringFunctions, 5)
 	_, found := gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
 
@@ -67,7 +67,7 @@ func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
 	// but we still expect the same rules (from the cache)
 	gatheringFunctions, err = gatherer.GetGatheringFunctions(ctx)
 	assert.EqualError(t, err, "404")
-	assert.Len(t, gatheringFunctions, 4)
+	assert.Len(t, gatheringFunctions, 5)
 	_, found = gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
 }
@@ -112,7 +112,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
 	assert.NoError(t, err)
 
-	assert.Len(t, gatheringFunctions, 2)
+	assert.Len(t, gatheringFunctions, 3)
 	_, found := gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
 }
@@ -127,7 +127,7 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(ctx)
 	assert.NoError(t, err)
 
-	assert.Len(t, gatheringFunctions, 4)
+	assert.Len(t, gatheringFunctions, 5)
 
 	_, found := gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
@@ -148,7 +148,7 @@ func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	gatheringFunctions, err = gatherer.GetGatheringFunctions(ctx)
 	assert.NoError(t, err)
 
-	assert.Len(t, gatheringFunctions, 2)
+	assert.Len(t, gatheringFunctions, 3)
 
 	_, found = gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)

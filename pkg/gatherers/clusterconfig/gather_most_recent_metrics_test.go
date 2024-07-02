@@ -57,6 +57,7 @@ func Test_gatherMostRecentMetrics(t *testing.T) {
 					Name: "config/metrics",
 					Item: marshal.RawByte(`test# ALERTS 1/1000
 test`),
+					AlwaysStored: true,
 				},
 			},
 			wantErrors: nil,

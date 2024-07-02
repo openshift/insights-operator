@@ -29,8 +29,10 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
+	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
+	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
 // numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint
@@ -212,6 +214,11 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 				remoteConfigAvailableCondition.Reason = remoteConfigErr.Reason
 				remoteConfigAvailableCondition.Message = remoteConfigErr.Error()
 			}
+			rec.Record(record.Record{
+				Name:         "insights-operator/remote-configuration.json",
+				Item:         marshal.RawByte(remoteConfigErr.ConfigData),
+				AlwaysStored: true,
+			})
 		} else {
 			remoteConfigValidCondition.Status = metav1.ConditionTrue
 			remoteConfigValidCondition.Reason = "AsExpected"
@@ -228,7 +235,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	// record data
 	dataRecordedCon := status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", "")
-	lastArchive, err := record(gather.FunctionReportsMapToArray(allFunctionReports), rec, recdriver, anonymizer)
+	lastArchive, err := recordAllData(gather.FunctionReportsMapToArray(allFunctionReports), rec, recdriver, anonymizer)
 	if err != nil {
 		klog.Errorf("Failed to record data archive: %v", err)
 		dataRecordedCon.Status = metav1.ConditionFalse
@@ -330,9 +337,9 @@ func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1
 	}
 }
 
-// record is a helper function recording the archive metadata as well as data.
+// recordAllData is a helper function recording the archive metadata as well as data.
 // Returns last known Insights archive and an error when recording failed.
-func record(functionReports []gather.GathererFunctionReport,
+func recordAllData(functionReports []gather.GathererFunctionReport,
 	rec *recorder.Recorder, recdriver *diskrecorder.DiskRecorder, anonymizer *anonymization.Anonymizer) (*insightsclient.Source, error) {
 	err := gather.RecordArchiveMetadata(functionReports, rec, anonymizer)
 	if err != nil {

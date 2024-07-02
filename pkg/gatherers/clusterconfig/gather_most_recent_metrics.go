@@ -124,7 +124,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 	data = append(data, []byte(fmt.Sprintf("# ALERTS %d/%d\n", totalAlertCount, metricsAlertsLinesLimit))...)
 	data = append(data, alerts...)
 	records := []record.Record{
-		{Name: "config/metrics", Item: marshal.RawByte(data)},
+		{Name: "config/metrics", Item: marshal.RawByte(data), AlwaysStored: true},
 	}
 
 	return records, nil

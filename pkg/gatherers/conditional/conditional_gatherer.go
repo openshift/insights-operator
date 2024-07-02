@@ -111,7 +111,8 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		}
 
 		rcErr := RemoteConfigError{
-			Err: err,
+			Err:        err,
+			ConfigData: []byte(defaultRemoteConfiguration),
 		}
 
 		var httpErr insightsclient.HttpError
@@ -133,8 +134,9 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 			return nil, closureErr
 		}
 		return gatheringClosure, RemoteConfigError{
-			Reason: Invalid,
-			Err:    err,
+			Reason:     Invalid,
+			Err:        err,
+			ConfigData: []byte(defaultRemoteConfiguration),
 		}
 	}
 
@@ -166,17 +168,22 @@ func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 		return nil, err
 	}
 	gatheringClosures["rapid_container_logs"] = containerLogReuquestClosure
-
+	gatheringClosures["remote_configuration"] = createGatherClosureForRemoteConfig(remoteConfiguration)
 	return gatheringClosures, nil
 }
 
 func (g *Gatherer) validateAndCreateContainerLogRequestsClosure(remoteConfig RemoteConfiguration) (gatherers.GatheringClosure, error) {
 	errs := validateContainerLogRequests(remoteConfig.ContainerLogRequests)
 	if len(errs) > 0 {
-		err := utils.UniqueErrors(errs)
+		remoteConfigData, err := json.Marshal(remoteConfig)
+		if err != nil {
+			klog.Errorf("Failed to marshal the invalid remote configuration: %v", err)
+		}
+		err = utils.UniqueErrors(errs)
 		return gatherers.GatheringClosure{}, RemoteConfigError{
-			Err:    err,
-			Reason: Invalid,
+			Err:        err,
+			Reason:     Invalid,
+			ConfigData: remoteConfigData,
 		}
 	}
 
@@ -466,4 +473,18 @@ func getConditionalGatheringFunctionName(funcName string, gatherParamsInterface 
 	funcName = strings.TrimSuffix(funcName, ",")
 
 	return funcName, nil
+}
+
+func createGatherClosureForRemoteConfig(rc RemoteConfiguration) gatherers.GatheringClosure {
+	return gatherers.GatheringClosure{
+		Run: func(context.Context) ([]record.Record, []error) {
+			return []record.Record{
+				{
+					Name:         "insights-operator/remote-configuration",
+					AlwaysStored: true,
+					Item:         record.JSONMarshaller{Object: rc},
+				},
+			}, nil
+		},
+	}
 }
