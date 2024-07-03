@@ -522,7 +522,7 @@ func calculateWorkloadContainerShapes(
 			firstArg = shortHash
 		}
 
-		var runtimeInfo workloadRuntimeInfoContainer
+		var runtimeInfo *workloadRuntimeInfoContainer
 		conInfo := containerInfo{
 			namespace:   podMeta.Namespace,
 			pod:         podMeta.Name,
@@ -530,10 +530,8 @@ func calculateWorkloadContainerShapes(
 		}
 
 		if workloadRuntimeInfo, ok := runtimesInfo[conInfo]; ok {
-			runtimeInfo = workloadRuntimeInfo
+			runtimeInfo = &workloadRuntimeInfo
 		}
-
-		// TODO do we want to add empty runtimeInfo ??
 
 		shapes = append(shapes, workloadContainerShape{
 			ImageID:      imageID,
