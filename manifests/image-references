@@ -9,4 +9,4 @@ spec:
   - name: insights-runtime-extractor
     from:
       kind: "DockerImage"
-      name: "ghcr.io/jmesnil/insights-operator-runtime:latest"
+      name: "ghcr.io/jmesnil/insights-runtime-extractor:latest"
