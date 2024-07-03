@@ -98,8 +98,8 @@ type workloadContainerShape struct {
 	// FirstArg is a hash of the first value in the arguments array, if any
 	// was set.
 	FirstArg string `json:"firstArg,omitempty"`
-	// Runtime info on the container
-	RuntimeInfo workloadRuntimeInfoContainer `json:"runtimeInfo,omitempty"`
+	// Runtime info on the container, if any info were gathered
+	RuntimeInfo *workloadRuntimeInfoContainer `json:"runtimeInfo,omitempty"`
 }
 
 type workloadRuntimeInfoContainer struct {
