@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: insights-operator-runtime
+  name: insights-runtime-extractor
   namespace: openshift-insights
   labels:
-    app.kubernetes.io/name: insights-operator-runtime
+    app.kubernetes.io/name: insights-runtime-extractor
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: insights-operator-runtime
+      app.kubernetes.io/name: insights-runtime-extractor
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: insights-operator-runtime
+        app.kubernetes.io/name: insights-runtime-extractor
     spec:
-      serviceAccountName: insights-operator-runtime-sa
+      serviceAccountName: insights-runtime-extractor-sa
       hostPID: true
       # Deploy the insights-runtime-extractor only on Linux worker nodes
       nodeSelector:
         kubernetes.io/os: linux
       containers:
-        - name: insights-operator-runtime
+        - name: insights-runtime-extractor
           # Replace the image field it is is coming from another image registry
           image: ghcr.io/jmesnil/insights-operator-runtime:latest
           imagePullPolicy: Always

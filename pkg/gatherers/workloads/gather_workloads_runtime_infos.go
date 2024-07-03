@@ -66,16 +66,16 @@ func gatherWorkloadRuntimeInfos(
 	return workloadRuntimeInfos, nil
 }
 
-// List the pods of the insights-operator-runtime component
+// List the pods of the insights-runtime-extractor component
 // and returns a map where the key is the name of the worker nodes
-// and the value the IP address of the  insights-operator-runtime's pod running on that worker node.
+// and the value the IP address of the  insights-runtime-extractor's pod running on that worker node.
 func getInsightsOperatorRuntimePodIPs(
 	coreClient corev1client.CoreV1Interface,
 	ctx context.Context,
 ) ([]podWithNodeName, error) {
 	pods, err := coreClient.Pods(os.Getenv("POD_NAMESPACE")).
 		List(ctx, metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=insights-operator-runtime",
+			LabelSelector: "app.kubernetes.io/name=insights-runtime-extractor",
 		})
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func hashString(h hash.Hash, s string) string {
 	return workloadHashString(h, s)
 }
 
-// Get all WorkloadRuntimeInfos for a single Node (using the insights-operator-runtime pod running on this node)
+// Get all WorkloadRuntimeInfos for a single Node (using the insights-runtime-extractor pod running on this node)
 // FIXME return an (workloadRuntimes, error)
 func getNodeWorkloadRuntimeInfos(
 	ctx context.Context,
