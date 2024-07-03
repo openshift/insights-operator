@@ -1,26 +1,23 @@
 package workloads
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"hash"
+	"io"
+	"net/http"
 	"os"
 	"sync"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/klog/v2"
 )
 
 type podWithNodeName struct {
-	podName  string
+	podIP    string
 	nodeName string
 }
 
@@ -28,11 +25,10 @@ func gatherWorkloadRuntimeInfos(
 	ctx context.Context,
 	h hash.Hash,
 	coreClient corev1client.CoreV1Interface,
-	restConfig *rest.Config,
 ) (workloadRuntimes, error) {
 	start := time.Now()
 
-	runtimePods, err := getInsightsOperatorRuntimePods(coreClient, ctx)
+	runtimePodIPs, err := getInsightsOperatorRuntimePodIPs(coreClient, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +47,13 @@ func gatherWorkloadRuntimeInfos(
 	}()
 
 	var wg sync.WaitGroup
-	wg.Add(len(runtimePods))
-	for i := range runtimePods {
+	wg.Add(len(runtimePodIPs))
+	for i := range runtimePodIPs {
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
-			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, h, coreClient, restConfig, podInfo.podName)
-		}(runtimePods[i])
+			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, h, podInfo.podIP)
+		}(runtimePodIPs[i])
 	}
 
 	wg.Wait()
@@ -72,8 +68,8 @@ func gatherWorkloadRuntimeInfos(
 
 // List the pods of the insights-operator-runtime component
 // and returns a map where the key is the name of the worker nodes
-// and the value the name of the  insights-operator-runtime's pod running on that worker node.
-func getInsightsOperatorRuntimePods(
+// and the value the IP address of the  insights-operator-runtime's pod running on that worker node.
+func getInsightsOperatorRuntimePodIPs(
 	coreClient corev1client.CoreV1Interface,
 	ctx context.Context,
 ) ([]podWithNodeName, error) {
@@ -88,7 +84,7 @@ func getInsightsOperatorRuntimePods(
 	var runtimePods []podWithNodeName
 	for _, pod := range pods.Items {
 		runtimePods = append(runtimePods, podWithNodeName{
-			podName:  pod.ObjectMeta.Name,
+			podIP:    pod.Status.PodIP,
 			nodeName: pod.Spec.NodeName,
 		})
 	}
@@ -99,27 +95,6 @@ func getInsightsOperatorRuntimePods(
 func mergeWorkloads(global workloadRuntimes,
 	node workloadRuntimes,
 ) {
-	/*
-		 	for namespace, nodePodWorkloads := range node {
-				if _, exists := global[namespace]; !exists {
-					// If the namespace doesn't exist in global, simply assign the value from node.
-					global[namespace] = nodePodWorkloads
-				} else {
-					// If the namespace exists, check the pods
-					for podName, containerWorkloads := range nodePodWorkloads {
-						if _, exists := global[namespace][podName]; !exists {
-							// If the namespace/pod doesn't exist in the global map, assign the value from the node.
-							global[namespace][podName] = containerWorkloads
-						} else {
-							// add the workload from the node
-							for containerID, runtimeInfo := range containerWorkloads {
-								global[namespace][podName][containerID] = runtimeInfo
-							}
-						}
-					}
-				}
-			}
-	*/
 	for cInfo, cRuntimeInfo := range node {
 		global[cInfo] = cRuntimeInfo
 	}
@@ -175,53 +150,36 @@ func hashString(h hash.Hash, s string) string {
 }
 
 // Get all WorkloadRuntimeInfos for a single Node (using the insights-operator-runtime pod running on this node)
+// FIXME return an (workloadRuntimes, error)
 func getNodeWorkloadRuntimeInfos(
 	ctx context.Context,
 	h hash.Hash,
-	coreClient corev1client.CoreV1Interface,
-	restConfig *rest.Config,
-	runtimePodName string,
+	runtimePodIP string,
 ) workloadRuntimes {
-	execCommand := []string{"/scan-containers"}
 
-	req := coreClient.RESTClient().
-		Post().
-		Namespace(os.Getenv("POD_NAMESPACE")).
-		Name(runtimePodName).
-		Resource("pods").
-		SubResource("exec").
-		VersionedParams(&corev1.PodExecOptions{
-			Command: execCommand,
-			Stdout:  true,
-			Stderr:  true,
-		}, scheme.ParameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(restConfig, "POST", req.URL())
+	extractorURL := fmt.Sprintf("http://%s:8000/gather_runtime_info", runtimePodIP)
+	request, err := http.NewRequestWithContext(ctx, "GET", extractorURL, nil)
 	if err != nil {
-		fmt.Printf("error: %s", err)
+		fmt.Printf("Failed to create request: %v\n", err)
+		return nil
 	}
-	var (
-		execOut bytes.Buffer
-		execErr bytes.Buffer
-	)
-
-	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
-		Stdout: &execOut,
-		Stderr: &execErr,
-		Tty:    false,
-	})
+	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
-		fmt.Printf("got insights operator runime error: %s\n", err)
-		fmt.Printf("command error output: %s\n", execErr.String())
-		fmt.Printf("command output: %s\n", execOut.String())
-	} else if execErr.Len() > 0 {
-		fmt.Printf("command execution got stderr: %s", execErr.String())
+		fmt.Printf("Failed to perform request: %v\n", err)
+		return nil
 	}
+	if resp.StatusCode != 200 {
+		return nil
+	}
+	defer resp.Body.Close()
 
-	output := execOut.String()
-
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Failed to read response body: %v\n", err)
+		return nil
+	}
 	var nodeOutput nodeRuntimeInfo
-	json.Unmarshal([]byte(output), &nodeOutput)
+	json.Unmarshal(body, &nodeOutput)
 
 	return transformWorkload(h, nodeOutput)
 }
