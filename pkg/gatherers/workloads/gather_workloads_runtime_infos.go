@@ -28,7 +28,7 @@ func gatherWorkloadRuntimeInfos(
 ) (workloadRuntimes, error) {
 	start := time.Now()
 
-	runtimePodIPs, err := getInsightsOperatorRuntimePodIPs(coreClient, ctx)
+	runtimePodIPs, err := getInsightsOperatorRuntimePodIPs(ctx, coreClient)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +70,8 @@ func gatherWorkloadRuntimeInfos(
 // and returns a map where the key is the name of the worker nodes
 // and the value the IP address of the  insights-runtime-extractor's pod running on that worker node.
 func getInsightsOperatorRuntimePodIPs(
-	coreClient corev1client.CoreV1Interface,
 	ctx context.Context,
+	coreClient corev1client.CoreV1Interface,
 ) ([]podWithNodeName, error) {
 	pods, err := coreClient.Pods(os.Getenv("POD_NAMESPACE")).
 		List(ctx, metav1.ListOptions{
