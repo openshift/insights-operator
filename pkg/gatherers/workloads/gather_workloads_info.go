@@ -88,20 +88,19 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 		return nil, []error{err}
 	}
 
-	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient, imageConfig)
+	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient)
 }
 
 func gatherWorkloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
-	restConfig *rest.Config,
 ) ([]record.Record, []error) {
 	h := sha256.New()
 
 	var errors = []error{}
 
-	workloadInfos, err := gatherWorkloadRuntimeInfos(ctx, h, coreClient, restConfig)
+	workloadInfos, err := gatherWorkloadRuntimeInfos(ctx, h, coreClient)
 	if err != nil {
 		errors = append(errors, err)
 	}

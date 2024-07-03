@@ -14,10 +14,11 @@ spec:
       labels:
         app.kubernetes.io/name: insights-operator-runtime
     spec:
-      # You must grant privileged via: oc adm policy add-scc-to-user -z insights-operator-runtime-sa -n insights-operator-runtime privileged
-      # in order for the insights-operator-runtime to work
       serviceAccountName: insights-operator-runtime-sa
       hostPID: true
+      # Deploy the insights-runtime-extractor only on Linux worker nodes
+      nodeSelector:
+        kubernetes.io/os: linux
       containers:
         - name: insights-operator-runtime
           # Replace the image field it is is coming from another image registry
@@ -40,6 +41,11 @@ spec:
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+              scheme: HTTP
       volumes:
         - name: crio-socket
           hostPath:
