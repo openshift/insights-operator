@@ -86,8 +86,9 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 	if r.anonymizer.IsObfuscationEnabled() {
 		memoryRecord = r.anonymizer.AnonymizeMemoryRecord(memoryRecord)
 	}
-	// we want to record our metadata file anyway
-	if r.size+recordSize > r.maxArchiveSize && rec.Name != MetadataRecordName {
+
+	// we want to record the "priority" files (with AlwaysStore=true) everytime regardless the archive size limit
+	if r.size+recordSize > r.maxArchiveSize && !rec.AlwaysStored {
 		errs = append(errs, fmt.Errorf(
 			"record %s(size=%d) exceeds the archive size limit %d and will not be included in the archive",
 			recordName, recordSize, r.maxArchiveSize,
