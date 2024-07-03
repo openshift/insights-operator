@@ -22,7 +22,7 @@ spec:
       containers:
         - name: insights-runtime-extractor
           # Replace the image field it is is coming from another image registry
-          image: ghcr.io/jmesnil/insights-operator-runtime:latest
+          image: ghcr.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
           resources:
             requests:
