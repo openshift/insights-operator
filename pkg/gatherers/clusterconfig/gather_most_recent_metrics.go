@@ -68,6 +68,7 @@ const (
 // - `openshift_apps_deploymentconfigs_strategy_total` introduced in version 4.13+ and backported to 4.12.5+ version
 // - `etcd_server_slow_apply_total` introduced in version 4.16+
 // - `etcd_server_slow_read_indexes_total` introduced in version 4.16+
+// - `haproxy_exporter_server_threshold` introduced in version 4.17+
 func (g *Gatherer) GatherMostRecentMetrics(ctx context.Context) ([]record.Record, []error) {
 	metricsRESTClient, err := rest.RESTClientFor(g.metricsGatherKubeConfig)
 	if err != nil {
@@ -91,6 +92,7 @@ func gatherMostRecentMetrics(ctx context.Context, metricsClient rest.Interface) 
 		Param("match[]", "openshift_apps_deploymentconfigs_strategy_total").
 		Param("match[]", "etcd_server_slow_apply_total").
 		Param("match[]", "etcd_server_slow_read_indexes_total").
+		Param("match[]", "haproxy_exporter_server_threshold").
 		DoRaw(ctx)
 	if err != nil {
 		klog.Errorf("Unable to retrieve most recent metrics: %v", err)
