@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -74,13 +75,17 @@ func gatherContainerLogs(
 		}
 	}()
 
+	// limiting the execution time of this gatherer to 5 minutes
+	shorterCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
 	var sendWG sync.WaitGroup
 	for _, logRequest := range namespaceToLogRequestMap {
 		klog.Infof("Start checking namespace %s for the Pod name pattern %s\n", logRequest.Namespace, logRequest.PodNameRegex)
 
 		for podNameRegex := range logRequest.PodNameRegex {
 			sendWG.Add(1)
-			go filterContainerLogs(ctx, coreClient, logRequest, podNameRegex, &sendWG, recCh)
+			go filterContainerLogs(shorterCtx, coreClient, logRequest, podNameRegex, &sendWG, recCh)
 		}
 	}
 	sendWG.Wait()
