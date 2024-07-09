@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/openshift/insights-operator/pkg/record"
@@ -59,9 +60,17 @@ func gatherOpenstackControlplanes(ctx context.Context, dynamicClient dynamic.Int
 				oscpGroupVersionResource.Group,
 				oscpGroupVersionResource.Resource,
 				oscp.GetName()),
-			Item: record.ResourceMarshaller{Resource: &openstackcontrolplanesList.Items[i]},
+			Item: record.ResourceMarshaller{Resource: prepareOpenStackControlPlane(&openstackcontrolplanesList.Items[i])},
 		})
 	}
 
 	return records, nil
+}
+
+func prepareOpenStackControlPlane(data *unstructured.Unstructured) *unstructured.Unstructured {
+	fieldsToAnonymize := [][]string{
+		{"spec", "dns", "template", "options"},
+	}
+	data.Object = anonymizeFields(data.Object, fieldsToAnonymize)
+	return data
 }
