@@ -3,15 +3,15 @@
   "kind": "OpenStackDataPlaneDeployment",
   "metadata": {
     "annotations": {},
-    "creationTimestamp": "2024-06-17T07:49:16Z",
+    "creationTimestamp": "2024-07-09T14:05:21Z",
     "generation": 1,
     "labels": {
       "created-by": "install_yamls"
     },
     "name": "edpm-deployment",
     "namespace": "openstack",
-    "resourceVersion": "6048471",
-    "uid": "5ced75a5-479f-4cf1-8948-32f90d4a1f79"
+    "resourceVersion": "194776",
+    "uid": "48024439-d65c-42d5-ab13-d5dff4f2ab69"
   },
   "spec": {
     "backoffLimit": 6,
@@ -23,21 +23,21 @@
   "status": {
     "conditions": [
       {
-        "lastTransitionTime": "2024-06-17T08:17:25Z",
+        "lastTransitionTime": "2024-07-09T14:29:55Z",
         "message": "Setup complete",
         "reason": "Ready",
         "status": "True",
         "type": "Ready"
       },
       {
-        "lastTransitionTime": "2024-06-17T08:17:25Z",
+        "lastTransitionTime": "2024-07-09T14:29:39Z",
         "message": "Deployment completed",
         "reason": "Ready",
         "status": "True",
         "type": "DeploymentReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T08:17:25Z",
+        "lastTransitionTime": "2024-07-09T14:05:40Z",
         "message": "Input data complete",
         "reason": "Ready",
         "status": "True",
@@ -49,133 +49,132 @@
       "ovncontroller-config": "nf9hb9h5bch64ch68h5b4h697h66ch78h8ch4h68dh687h8fhch5h567h5cdh589h687h7bhb6h545h644h65fh56fh585h695hc6hdch5f9hffq"
     },
     "containerImages": {
-      "CeilometerComputeImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-compute@sha256:9429dc3921e0ccf27a75e1030c93ff01d5d9f44a9788c954022a9ee410634d38",
-      "CeilometerIpmiImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-ipmi@sha256:3db23d6bff2f5727ed6d87c96f507a5a97864af9ac22ce66582a4e4ed7fa5073",
-      "EdpmIscsidImage": "quay.io/podified-antelope-centos9/openstack-iscsid@sha256:cc597b440ca9c22399e92bac91fd74e02b318338f71054883f34e2a85c22558f",
-      "EdpmLogrotateCrondImage": "quay.io/podified-antelope-centos9/openstack-cron@sha256:f4395e81c0fe6cc518932b20a6aea254a2294314172694a1df0182442a64563f",
-      "EdpmNeutronMetadataAgentImage": "quay.io/podified-antelope-centos9/openstack-neutron-metadata-agent-ovn@sha256:6daf5d44341966eacc83a706018695eeeabec857bb8158e0cce33af1f270fb5a",
+      "CeilometerComputeImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-compute@sha256:461f13352d475083ed2d43f7f888265c6f072ddfc48df8c180eda85f4cde787a",
+      "CeilometerIpmiImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-ipmi@sha256:d39eeaf79c0c91cc9ba820005bc379a68d13a90086079ebf71d6c3747dcc090e",
+      "EdpmIscsidImage": "quay.io/podified-antelope-centos9/openstack-iscsid@sha256:9952c5a94d7de8d83f641daf2daa3d37b79c6e0f16f978026ba7d3b5270749cc",
+      "EdpmLogrotateCrondImage": "quay.io/podified-antelope-centos9/openstack-cron@sha256:b7bf166f4f0c6ec6f3c3996048e369256057e1794eab4b0e9d98ddbeb2d11c86",
+      "EdpmNeutronMetadataAgentImage": "quay.io/podified-antelope-centos9/openstack-neutron-metadata-agent-ovn@sha256:7896620f5a899f0b864f07ae546b581a1cf6ff0ab0a5e440239453b1f47fc059",
       "EdpmNodeExporterImage": "quay.io/prometheus/node-exporter@sha256:39c642b2b337e38c18e80266fb14383754178202f40103646337722a594d984c",
-      "NovaComputeImage": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:3ec6bc67223b6c409059c3744e1fb45db47d77c0e7fde21e0b910ff95269adf1",
-      "OvnControllerImage": "quay.io/podified-antelope-centos9/openstack-ovn-controller@sha256:e5b6f693918d121761807829d6ed757e3791b28191bf0defe3ea83f912fd19e8"
+      "NovaComputeImage": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:65fe6a9e16c30376f11bb0c61aa0de5b1b87a7992f8907bf88975beb815671e8",
+      "OvnControllerImage": "quay.io/podified-antelope-centos9/openstack-ovn-controller@sha256:a2c9a83d8c557023f949b3af849fc28796fe541671e2e418021ee660fef8d76f"
     },
-    "deployed": true,
     "deployedVersion": "0.0.1",
     "nodeSetConditions": {
       "openstack-edpm-ipam": [
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment completed",
           "reason": "Ready",
           "status": "True",
           "type": "NodeSetDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for bootstrap service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceBootstrapDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for configure-network service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceConfigureNetworkDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for configure-os service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceConfigureOsDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for download-cache service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceDownloadCacheDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for install-certs service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceInstallCertsDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for install-os service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceInstallOsDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for libvirt service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceLibvirtDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for neutron-metadata service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceNeutronMetadataDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
-          "message": "Deployment ready for nova-custom service",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
+          "message": "Deployment ready for nova service",
           "reason": "Ready",
           "status": "True",
-          "type": "ServiceNovaCustomDeploymentReady"
+          "type": "ServiceNovaDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for ovn service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceOvnDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for reboot-os service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceRebootOsDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for repo-setup service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceRepoSetupDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for run-os service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceRunOsDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for ssh-known-hosts service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceSshKnownHostsDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for telemetry service",
           "reason": "Ready",
           "status": "True",
           "type": "ServiceTelemetryDeploymentReady"
         },
         {
-          "lastTransitionTime": "2024-06-17T08:17:25Z",
+          "lastTransitionTime": "2024-07-09T14:29:55Z",
           "message": "Deployment ready for validate-network service",
           "reason": "Ready",
           "status": "True",
@@ -184,20 +183,20 @@
       ]
     },
     "nodeSetHashes": {
-      "openstack-edpm-ipam": "n5f7h9ch5ch5d5h59ch5d8h5bdh55bh687h55ch58ch59h575h684h54bhd8h645h5ch685h89hd6h579h94h5bchbbh57h5c6h57bh6bh599h5dfh677q"
+      "openstack-edpm-ipam": "nd7h657h5d4h59dh94h5ddh667h5fch668h548h5d9h546h698h657h9h79h559hc4h545h5c7h78h89h54fh649h86h698h64dhd7h57bh58bh5bh76q"
     },
     "observedGeneration": 1,
     "secretHashes": {
-      "ceilometer-compute-config-data": "n546hb6hf8hc9h586h5bbhfch59bh68ch56bh64fh575h5chffh655hd6h569h698h5h568hf4h76h574h56dh7fh687h59bh79hcch9bh7fh675q",
-      "cert-libvirt-default-edpm-compute-0": "n667h5d8hf4h5b7h648h557hfhf9h56h85h54dh5fh677h54bh76h655h5f9h5f8h545h579h68hc4h558h5ffh65h557hd5h696h54dh544h598h5c4q",
-      "cert-neutron-metadata-default-edpm-compute-0": "n5c5h59fh655h664hdbh58dh5b5h5f6h56fh96h57ch76h9h58bh5dbhcdh5b9h55h64dh56hf7h668h75h5bdhf5h557h55fh5bh588h78h5b4hddq",
-      "cert-ovn-default-edpm-compute-0": "n654h67ch687h586h644h57fh5d8h5d4h695h5fch66dh69h598hf7h5f9h5bh575h546h698h5b9h5b6hf8hf4h5f6h5h679h86h678h57ch8bh658h5f5q",
-      "cert-telemetry-default-edpm-compute-0": "nc9hfbh649h5cfh564hd7h669h655hd4h697h5fch76hd4hf7h68h67dh58fh64fh695h668h65hf5h68h684h58h694h54bh5b9h59h59bh65chc8q",
+      "ceilometer-compute-config-data": "n7h9bh8bh574h58dh5dch68fh566h678h56dh6h55dhcchffh79h554h58ch57bh74h648h68bh55h5fh75hbdhffh686h7ch8dh5c5hf9h5c9q",
+      "cert-libvirt-default-edpm-compute-0": "n59fh6bhfdh698h687h684h55fh67bh648hcch5f4hbch79h68dhddh568h5fch667h5d4h5dchch56ch5f9hb4h579h99h655h647hb8hb9hb9hd6q",
+      "cert-neutron-metadata-default-edpm-compute-0": "nb7hfdh8bh64bh65ch5cfh5bbh5c8h5dch9fh79h7ch554hbh54dh66h658h5f5hb6h5d4h86hb7hdfh67h66hcfh5cch64ch574h74h654h558q",
+      "cert-ovn-default-edpm-compute-0": "n565h54dhfbh596h67bh65bh5f4h89h557h84h8fh586h547hd5h66bh57dh697h8dh55h5c4h78h56h54h676h56dh547h566h54bh54dh65hdhdbq",
+      "cert-telemetry-default-edpm-compute-0": "n546hf4h5b8h575h678h56dh5b8hc7hdfh59bh84h74h577h588hfchd4h675h679h546h5bch59hd5hbhc6h679h55hfbh5fbh5d9h687h95h678q",
       "libvirt-secret": "n5cch66dh647h88h55hb4h5bh9bh5f8h65bh67bh96hcfh568h65h565h66h64dh566h64bh687hd6h55h5b8h67hb7h65fh5dbh598h5ddh664h599q",
       "neutron-ovn-metadata-agent-neutron-config": "n8dh56dhcch94hd6h684h5f8h9chb7h58ch66h9bhc4h594h54dh648h8ch9dh56h558hb7h69h5cfh58dh5bbh697h5b4h64dh99h5cbh5d8h56cq",
-      "nova-cell1-compute-config": "n575h697h7ch695h5d9h5b4h85h64h6h99hfdh84h8ch76h58fh74h5f8hfdh56ch667h655h57bh5f6h89h77h544h64fh586h554h57fhfdh64fq",
+      "nova-cell1-compute-config": "n65fhbch67h7ch599h88h77h9ch577h655h5b9h647h57hdch5bdh58h65chffhd7h64h6bh589h54hd5h58dh54dh66dh556h7bh5b7h6h57bq",
       "nova-metadata-neutron-config": "n79h64ch5ffh575hcfh674h676h5ddhfdh564h75h549h5dfh5ch598h594h684h5f7h8fhcbh7bh684hbbh79h576h5dch66h7chcfh56dh9fh5fdq",
-      "nova-migration-ssh-key": "n574h56ch545h669h556h5c9h678h69h69h557h598h596h78h75h5cchb7h57ch689h9chfdh578h5c4h546hb8hfdh554h685h5dfh548h5dh657h5fq"
+      "nova-migration-ssh-key": "n99h59fh666h5c5hfdh64fh655h5f6h698hdbh656h5f7h685h649hf6h99h54h654h7bh85h54bhffh67h697h586h654hf4h647h648h85h596hf4q"
     }
   }
 }

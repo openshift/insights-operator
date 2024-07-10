@@ -3,9 +3,9 @@
   "kind": "OpenStackControlPlane",
   "metadata": {
     "annotations": {},
-    "creationTimestamp": "2024-06-10T14:09:17Z",
+    "creationTimestamp": "2024-07-09T12:20:02Z",
     "finalizers": [
-      "OpenStackControlPlane"
+      "openstack.org/openstackcontrolplane"
     ],
     "generation": 1,
     "labels": {
@@ -14,8 +14,8 @@
     },
     "name": "openstack-galera-network-isolation",
     "namespace": "openstack",
-    "resourceVersion": "6002235",
-    "uid": "11512593-c902-4f56-8812-bba5ca49aefa"
+    "resourceVersion": "97468",
+    "uid": "d6635518-58b9-46e3-85c9-2da4737fc9ca"
   },
   "spec": {
     "barbican": {
@@ -75,10 +75,18 @@
     },
     "cinder": {
       "apiOverride": {
-        "route": {}
+        "route": {
+          "metadata": {
+            "annotations": {
+              "api.cinder.openstack.org/timeout": "60s",
+              "haproxy.router.openshift.io/timeout": "60s"
+            }
+          }
+        }
       },
       "enabled": true,
       "template": {
+        "apiTimeout": 60,
         "cinderAPI": {
           "override": {
             "service": {
@@ -139,7 +147,8 @@
         "rabbitMqClusterName": "rabbitmq",
         "secret": "osp-secret",
         "serviceUser": "cinder"
-      }
+      },
+      "uniquePodNames": false
     },
     "designate": {
       "apiOverride": {
@@ -280,7 +289,7 @@
     "dns": {
       "enabled": true,
       "template": {
-        "containerImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:ab736d662ecc28e03dd173336e33a25dbbd107487b4cef3e872dc7e03cde2fd9",
+        "containerImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:a2d0bc9066872624a6c441134dd70bea556f1c72df1f426643f58311796b7e48",
         "dnsDataLabelSelectorValue": "dnsdata",
         "options": "xxx",
         "override": {
@@ -289,7 +298,7 @@
               "annotations": {
                 "metallb.universe.tf/address-pool": "ctlplane",
                 "metallb.universe.tf/allow-shared-ip": "ctlplane",
-                "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                "metallb.universe.tf/loadBalancerIPs": "192.168.64.28"
               }
             },
             "spec": {
@@ -324,11 +333,19 @@
     "glance": {
       "apiOverrides": {
         "default": {
-          "route": {}
+          "route": {
+            "metadata": {
+              "annotations": {
+                "api.glance.openstack.org/timeout": "60s",
+                "haproxy.router.openshift.io/timeout": "60s"
+              }
+            }
+          }
         }
       },
       "enabled": true,
       "template": {
+        "apiTimeout": 60,
         "databaseAccount": "glance",
         "databaseInstance": "openstack",
         "dbPurge": {
@@ -337,7 +354,8 @@
         },
         "glanceAPIs": {
           "default": {
-            "containerImage": "quay.io/podified-antelope-centos9/openstack-glance-api@sha256:9917af58838b18cd80b2b41d749a8c49ac84583972bb948e9eeea6ebd4c198f3",
+            "apiTimeout": 60,
+            "containerImage": "quay.io/podified-antelope-centos9/openstack-glance-api@sha256:eab78fb595ee9f42ce245b67f64b5c20aa8251bc84fda46c690129e80c94b087",
             "imageCache": {
               "cleanerScheduler": "*/30 * * * *",
               "prunerScheduler": "1 0 * * *",
@@ -364,7 +382,7 @@
             },
             "replicas": 1,
             "resources": {},
-            "storageRequest": "",
+            "storage": {},
             "tls": {
               "api": {
                 "internal": {},
@@ -393,8 +411,11 @@
         },
         "secret": "osp-secret",
         "serviceUser": "glance",
-        "storageRequest": "10G"
-      }
+        "storage": {
+          "storageRequest": "10G"
+        }
+      },
+      "uniquePodNames": false
     },
     "heat": {
       "apiOverride": {
@@ -591,10 +612,18 @@
     },
     "manila": {
       "apiOverride": {
-        "route": {}
+        "route": {
+          "metadata": {
+            "annotations": {
+              "api.manila.openstack.org/timeout": "60s",
+              "haproxy.router.openshift.io/timeout": "60s"
+            }
+          }
+        }
       },
       "enabled": false,
       "template": {
+        "apiTimeout": 60,
         "customServiceConfig": "# add your customization here",
         "databaseAccount": "manila",
         "dbPurge": {
@@ -725,7 +754,7 @@
       },
       "enabled": true,
       "template": {
-        "apiContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:0f5b7dbf04be39bd8d15012b173bcfcd941bbd188aebe15a47285fc0724c0f38",
+        "apiContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:5625ccb5cac4f85a135ad9e69a5f9fc1f72686af41a42b7587377c703c26e947",
         "apiDatabaseAccount": "nova-api",
         "apiDatabaseInstance": "openstack",
         "apiMessageBusInstance": "rabbitmq",
@@ -830,11 +859,11 @@
             }
           }
         },
-        "computeContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:3ec6bc67223b6c409059c3744e1fb45db47d77c0e7fde21e0b910ff95269adf1",
-        "conductorContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-conductor@sha256:da4a57508bd05160896fac2410e190b09de564b627accc9217e98b10251e83ff",
+        "computeContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:65fe6a9e16c30376f11bb0c61aa0de5b1b87a7992f8907bf88975beb815671e8",
+        "conductorContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-conductor@sha256:15d04f7d6d0af0265375904e8a02dfd4c66e1a6b4d2878613c0685ba27170713",
         "keystoneInstance": "keystone",
         "memcachedInstance": "memcached",
-        "metadataContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:0f5b7dbf04be39bd8d15012b173bcfcd941bbd188aebe15a47285fc0724c0f38",
+        "metadataContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:5625ccb5cac4f85a135ad9e69a5f9fc1f72686af41a42b7587377c703c26e947",
         "metadataServiceTemplate": {
           "customServiceConfig": "",
           "enabled": true,
@@ -856,13 +885,13 @@
           "resources": {},
           "tls": {}
         },
-        "novncproxyContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-novncproxy@sha256:d141cb8d071a2153ab7959272f0e8fb8111d0be8b6618e8c9d7f0bd066bd1910",
+        "novncproxyContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-novncproxy@sha256:47d76833c109a07a6b98ca6208a280a7405cc44194ef97eabb913b4504534ab4",
         "passwordSelectors": {
           "metadataSecret": "MetadataSecret",
           "service": "NovaPassword"
         },
         "preserveJobs": false,
-        "schedulerContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-scheduler@sha256:9b5504d0406fb8d49cfd0e6e4fa3db22b0aedc72fd0889be82e18ac1b8c9fce6",
+        "schedulerContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-scheduler@sha256:b9c3aaabe6ee633e9183ea17ff3c787470d80dd2acb201814c3cbbfaa4f52f47",
         "schedulerServiceTemplate": {
           "customServiceConfig": "",
           "replicas": 1,
@@ -882,8 +911,7 @@
         "databaseAccount": "octavia",
         "databaseInstance": "openstack",
         "lbMgmtNetwork": {
-          "manageLbMgmtNetworks": true,
-          "subnetIpVersion": 4
+          "manageLbMgmtNetworks": true
         },
         "octaviaAPI": {
           "customServiceConfig": "# add your customization here",
@@ -916,6 +944,8 @@
           "databaseInstance": "",
           "lbMgmtNetworkID": "",
           "lbSecurityGroupID": "",
+          "octaviaProviderSubnetCIDR": "",
+          "octaviaProviderSubnetGateway": "",
           "passwordSelectors": {
             "database": "OctaviaDatabasePassword",
             "service": "OctaviaPassword"
@@ -936,6 +966,8 @@
           "databaseInstance": "",
           "lbMgmtNetworkID": "",
           "lbSecurityGroupID": "",
+          "octaviaProviderSubnetCIDR": "",
+          "octaviaProviderSubnetGateway": "",
           "passwordSelectors": {
             "database": "OctaviaDatabasePassword",
             "service": "OctaviaPassword"
@@ -949,6 +981,7 @@
           "tenantName": "",
           "tls": {}
         },
+        "octaviaNetworkAttachment": "octavia",
         "octaviaWorker": {
           "amphoraImageOwnerID": "",
           "customServiceConfig": "# add your customization here",
@@ -956,6 +989,8 @@
           "databaseInstance": "",
           "lbMgmtNetworkID": "",
           "lbSecurityGroupID": "",
+          "octaviaProviderSubnetCIDR": "",
+          "octaviaProviderSubnetGateway": "",
           "passwordSelectors": {
             "database": "OctaviaDatabasePassword",
             "service": "OctaviaPassword"
@@ -986,7 +1021,6 @@
     },
     "openstackclient": {
       "template": {
-        "containerImage": "",
         "openStackConfigMap": "openstack-config",
         "openStackConfigSecret": "openstack-config-secret"
       }
@@ -1351,175 +1385,175 @@
   "status": {
     "conditions": [
       {
-        "lastTransitionTime": "2024-06-17T07:33:07Z",
+        "lastTransitionTime": "2024-07-09T12:38:02Z",
         "message": "Setup complete",
         "reason": "Ready",
         "status": "True",
         "type": "Ready"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:32:27Z",
+        "lastTransitionTime": "2024-07-09T12:28:18Z",
         "message": "OpenStackControlPlane Barbican completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneBarbicanReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:09:33Z",
+        "lastTransitionTime": "2024-07-09T12:20:09Z",
         "message": "OpenStackControlPlane CAs completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneCAReadyCondition"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:32:05Z",
+        "lastTransitionTime": "2024-07-09T12:25:54Z",
         "message": "OpenStackControlPlane Cinder completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneCinderReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:30:56Z",
+        "lastTransitionTime": "2024-07-09T12:28:18Z",
         "message": "OpenStackControlPlane Client completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneClientReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:30:15Z",
+        "lastTransitionTime": "2024-07-09T12:21:29Z",
         "message": "OpenStackControlPlane DNS completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneDNSReadyCondition"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:15:49Z",
+        "lastTransitionTime": "2024-07-09T12:24:58Z",
         "message": "OpenStackControlPlane barbican service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposeBarbicanReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:16:43Z",
+        "lastTransitionTime": "2024-07-09T12:25:24Z",
         "message": "OpenStackControlPlane cinder service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposeCinderReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:14:48Z",
+        "lastTransitionTime": "2024-07-09T12:23:42Z",
         "message": "OpenStackControlPlane glance service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposeGlanceReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:14:09Z",
+        "lastTransitionTime": "2024-07-09T12:23:10Z",
         "message": "OpenStackControlPlane keystone service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposeKeystoneAPIReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:18:43Z",
+        "lastTransitionTime": "2024-07-09T12:26:33Z",
         "message": "OpenStackControlPlane neutron service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposeNeutronReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:19:58Z",
+        "lastTransitionTime": "2024-07-09T12:28:18Z",
         "message": "OpenStackControlPlane nova service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposeNovaReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:14:14Z",
+        "lastTransitionTime": "2024-07-09T12:23:31Z",
         "message": "OpenStackControlPlane placement service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposePlacementAPIReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:12:38Z",
+        "lastTransitionTime": "2024-07-09T12:21:08Z",
         "message": "OpenStackControlPlane swift service exposed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneExposeSwiftReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:32:48Z",
+        "lastTransitionTime": "2024-07-09T12:25:06Z",
         "message": "OpenStackControlPlane Glance completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneGlanceReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:30:56Z",
+        "lastTransitionTime": "2024-07-09T12:24:01Z",
         "message": "OpenStackControlPlane KeystoneAPI completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneKeystoneAPIReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:30:35Z",
+        "lastTransitionTime": "2024-07-09T12:21:47Z",
         "message": "OpenStackControlPlane MariaDB completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneMariaDBReady"
       },
       {
-        "lastTransitionTime": "2024-06-10T14:12:21Z",
+        "lastTransitionTime": "2024-07-09T12:20:59Z",
         "message": "OpenStackControlPlane Memcached completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneMemcachedReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:32:50Z",
+        "lastTransitionTime": "2024-07-09T12:27:00Z",
         "message": "OpenStackControlPlane Neutron completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneNeutronReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:32:59Z",
+        "lastTransitionTime": "2024-07-09T12:29:03Z",
         "message": "OpenStackControlPlane Nova completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneNovaReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:30:05Z",
+        "lastTransitionTime": "2024-07-09T12:25:24Z",
         "message": "OpenStackControlPlane OVN completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneOVNReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:32:06Z",
+        "lastTransitionTime": "2024-07-09T12:25:56Z",
         "message": "OpenStackControlPlane PlacementAPI completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlanePlacementAPIReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:30:39Z",
+        "lastTransitionTime": "2024-07-09T12:22:17Z",
         "message": "OpenStackControlPlane RabbitMQ completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneRabbitMQReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:32:19Z",
+        "lastTransitionTime": "2024-07-09T12:38:02Z",
         "message": "OpenStackControlPlane Swift completed",
         "reason": "Ready",
         "status": "True",
         "type": "OpenStackControlPlaneSwiftReady"
       },
       {
-        "lastTransitionTime": "2024-06-17T07:33:07Z",
+        "lastTransitionTime": "2024-07-09T12:28:56Z",
         "message": "OpenStackControlPlane Telemetry completed",
         "reason": "Ready",
         "status": "True",
@@ -1527,48 +1561,48 @@
       }
     ],
     "containerImages": {
-      "aodhAPIImage": "quay.io/podified-antelope-centos9/openstack-aodh-api@sha256:1187a83a7e2160150d1af3e24f2bd15673300174beee1823e954aeeb53f924ea",
-      "aodhEvaluatorImage": "quay.io/podified-antelope-centos9/openstack-aodh-evaluator@sha256:f1968e3c5317e788e9f6c8f87d38bbe9b35af29846cef485d3a4e2a2a45273c8",
-      "aodhListenerImage": "quay.io/podified-antelope-centos9/openstack-aodh-listener@sha256:f1eda10ef399f07672111ae25a0531d71add29600cb1af311d4c3e23aca0ef62",
-      "aodhNotifierImage": "quay.io/podified-antelope-centos9/openstack-aodh-notifier@sha256:3509bc86778565318c28579ae783256c3a6c89cd0f2c7948f8b341ca8ca788aa",
-      "barbicanAPIImage": "quay.io/podified-antelope-centos9/openstack-barbican-api@sha256:cc1a122492c511de3210b56e79185e30d8d48e1530b194d452740f2d174fcbca",
-      "barbicanKeystoneListenerImage": "quay.io/podified-antelope-centos9/openstack-barbican-keystone-listener@sha256:4133f1d816aa6f33979bc8563c99feaeba2a647d20a0f092e57ee081fe93d935",
-      "barbicanWorkerImage": "quay.io/podified-antelope-centos9/openstack-barbican-worker@sha256:438a6f6dde2e840ebd67773203fd473ad3ac5d42d5725a778aacedb3ee013b75",
-      "ceilometerCentralImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-central@sha256:02502c34f860cea72a52d11b4d999cdc1f8b94cf0778c836ea587df7a33c0568",
-      "ceilometerComputeImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-compute@sha256:9429dc3921e0ccf27a75e1030c93ff01d5d9f44a9788c954022a9ee410634d38",
-      "ceilometerIpmiImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-ipmi@sha256:3db23d6bff2f5727ed6d87c96f507a5a97864af9ac22ce66582a4e4ed7fa5073",
-      "ceilometerNotificationImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-notification@sha256:9a64705c5d89b75d3c0e81027157704ad9a72abafcfb625fd8e8d53fcb494889",
-      "ceilometerProxyImage": "quay.io/podified-antelope-centos9/openstack-aodh-api@sha256:1187a83a7e2160150d1af3e24f2bd15673300174beee1823e954aeeb53f924ea",
+      "aodhAPIImage": "quay.io/podified-antelope-centos9/openstack-aodh-api@sha256:a7791990b6ebcb571050cb65701f533a56364703783d6be49d6f35b0be0bd3aa",
+      "aodhEvaluatorImage": "quay.io/podified-antelope-centos9/openstack-aodh-evaluator@sha256:24d630b558795e1442d9979ceeadf78813bee90688f970c6b80c358a297b7c71",
+      "aodhListenerImage": "quay.io/podified-antelope-centos9/openstack-aodh-listener@sha256:7eeab82350bf3b6de1ea782b1bf7b1780423ba8a55cf90c879613a3bb3faa84e",
+      "aodhNotifierImage": "quay.io/podified-antelope-centos9/openstack-aodh-notifier@sha256:71c4f4ff43907ede668739e93ac6aeca87a6a5254803b7da900a1e21e9e308f3",
+      "barbicanAPIImage": "quay.io/podified-antelope-centos9/openstack-barbican-api@sha256:0f25545a771c2e412d818eb225b4d7e169afbcb7bbae833c6b92de4d12fbbc31",
+      "barbicanKeystoneListenerImage": "quay.io/podified-antelope-centos9/openstack-barbican-keystone-listener@sha256:f61687b11a2c7f14fc7b61f2eb8887cab2353765d667e39e09905370eaefadc3",
+      "barbicanWorkerImage": "quay.io/podified-antelope-centos9/openstack-barbican-worker@sha256:1b032dea36706d32e69fdccb0da165b10a35750b0d5388ec729dc81ca5585a45",
+      "ceilometerCentralImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-central@sha256:5ad763a94c2354ac6e979179e0d62252715ab127e423d21a9cbf4ed94b916fa6",
+      "ceilometerComputeImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-compute@sha256:461f13352d475083ed2d43f7f888265c6f072ddfc48df8c180eda85f4cde787a",
+      "ceilometerIpmiImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-ipmi@sha256:d39eeaf79c0c91cc9ba820005bc379a68d13a90086079ebf71d6c3747dcc090e",
+      "ceilometerNotificationImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-notification@sha256:5371664b2ac49153df99c9fa7650bb1e6c2decf64d29c33503b483ee1fb9c808",
+      "ceilometerProxyImage": "quay.io/podified-antelope-centos9/openstack-aodh-api@sha256:a7791990b6ebcb571050cb65701f533a56364703783d6be49d6f35b0be0bd3aa",
       "ceilometerSgcoreImage": "quay.io/infrawatch/sg-core@sha256:d7a45bd3a061269b5d9fed64c24d8c2bd7122d64f30a91d36d92f92197df3ca0",
-      "cinderAPIImage": "quay.io/podified-antelope-centos9/openstack-cinder-api@sha256:b51c90805a299944db59910f0fabaddd98281273981826c467e75d206e48870f",
-      "cinderBackupImage": "quay.io/podified-antelope-centos9/openstack-cinder-backup@sha256:0b0d0090dd1f094b3c874300e8509303727999f771dfa86dcf44ab6ea33f9c32",
-      "cinderSchedulerImage": "quay.io/podified-antelope-centos9/openstack-cinder-scheduler@sha256:8738476dedc6f683d74c6b411248a2b31d53f1d3691dd40dbd68c8a74927fb92",
+      "cinderAPIImage": "quay.io/podified-antelope-centos9/openstack-cinder-api@sha256:070f0081836bdc2ed667ef026cbb254f9f85429d25ade88a6848692052b087b1",
+      "cinderBackupImage": "quay.io/podified-antelope-centos9/openstack-cinder-backup@sha256:08165b7fc8d0949db38a5339ed775a1a5eb2b40f155ae338bb2289af7967ef2b",
+      "cinderSchedulerImage": "quay.io/podified-antelope-centos9/openstack-cinder-scheduler@sha256:5ae39189be7b2045eee16b287d544a18e1dfc6325c21d840db0da3174e812fcc",
       "cinderVolumeImages": {
-        "default": "quay.io/podified-antelope-centos9/openstack-cinder-volume@sha256:45caf4c6c07e7f088a08bfffec3a4f64b8482af931134aa8a14ab9d09a7fb1b6"
+        "default": "quay.io/podified-antelope-centos9/openstack-cinder-volume@sha256:5b96ac3775cc478580a3f3a87ceacdff38884142fc0290f4e979502f95d9319f"
       },
-      "glanceAPIImage": "quay.io/podified-antelope-centos9/openstack-glance-api@sha256:9917af58838b18cd80b2b41d749a8c49ac84583972bb948e9eeea6ebd4c198f3",
-      "infraDnsmasqImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:ab736d662ecc28e03dd173336e33a25dbbd107487b4cef3e872dc7e03cde2fd9",
-      "infraMemcachedImage": "quay.io/podified-antelope-centos9/openstack-memcached@sha256:13750fc92408a0548ae82765b367908ab31d74719e298f24df9849ad38f0c3ca",
-      "keystoneAPIImage": "quay.io/podified-antelope-centos9/openstack-keystone@sha256:8616532664fb47a2fc0b6c9176a765d50e5e1d1e983155c6620fb63d16a8510a",
-      "mariadbImage": "quay.io/podified-antelope-centos9/openstack-mariadb@sha256:8c7afac2ba0f99f5ea654380b85450174a5bf8c42720f8ce76989428ddac07e3",
-      "neutronAPIImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:340609dd0292415c4c638fa402fbc295a4e4a0e47e01052fac4c065e9b6bbac2",
-      "novaAPIImage": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:0f5b7dbf04be39bd8d15012b173bcfcd941bbd188aebe15a47285fc0724c0f38",
-      "novaComputeImage": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:3ec6bc67223b6c409059c3744e1fb45db47d77c0e7fde21e0b910ff95269adf1",
-      "novaConductorImage": "quay.io/podified-antelope-centos9/openstack-nova-conductor@sha256:da4a57508bd05160896fac2410e190b09de564b627accc9217e98b10251e83ff",
-      "novaNovncImage": "quay.io/podified-antelope-centos9/openstack-nova-novncproxy@sha256:d141cb8d071a2153ab7959272f0e8fb8111d0be8b6618e8c9d7f0bd066bd1910",
-      "novaSchedulerImage": "quay.io/podified-antelope-centos9/openstack-nova-scheduler@sha256:9b5504d0406fb8d49cfd0e6e4fa3db22b0aedc72fd0889be82e18ac1b8c9fce6",
-      "openstackClientImage": "quay.io/podified-antelope-centos9/openstack-openstackclient@sha256:80c92efc9f76119311e0e2213bfdc7283e87e281ece3b7a555c3be1c6fe31ba9",
-      "ovnControllerImage": "quay.io/podified-antelope-centos9/openstack-ovn-controller@sha256:e5b6f693918d121761807829d6ed757e3791b28191bf0defe3ea83f912fd19e8",
-      "ovnControllerOvsImage": "quay.io/podified-antelope-centos9/openstack-ovn-base@sha256:0c91f3fe18962032cdb145f7d039f1b896615ee739c9cd1b5d67793b3c486eb5",
-      "ovnNbDbclusterImage": "quay.io/podified-antelope-centos9/openstack-ovn-nb-db-server@sha256:023b5f6ee1ef011c5a4972b5e511b19b7096144d2db5ce4f6a4db8a4d66b6827",
-      "ovnNorthdImage": "quay.io/podified-antelope-centos9/openstack-ovn-northd@sha256:ea58071abbfafcca91ae69a6e8a65fa64b28be7f131c0bf4c76deb9b17feaf76",
-      "ovnSbDbclusterImage": "quay.io/podified-antelope-centos9/openstack-ovn-sb-db-server@sha256:522fe2a2083607eee341efc2d22719b650f222ff77ce47917aafcf3a4c6a3a66",
-      "placementAPIImage": "quay.io/podified-antelope-centos9/openstack-placement-api@sha256:c36e9c0adf778926963592df947c025b87e05099324c8b9c0a0c5b300727ebf2",
-      "rabbitmqImage": "quay.io/podified-antelope-centos9/openstack-rabbitmq@sha256:77acf97832f03ad467b005bd6143986b9db770da6404aa3d3a02f55da2b2c6ad",
-      "swiftAccountImage": "quay.io/podified-antelope-centos9/openstack-swift-account@sha256:f41451514d897a4ebe353ee4811b4a5b6ee702515b551c84bfe7492d775c8eda",
-      "swiftContainerImage": "quay.io/podified-antelope-centos9/openstack-swift-container@sha256:f73569f32598652b1f309f51ab72d66908a0d32cae70956f7a3a1b892a44b648",
-      "swiftObjectImage": "quay.io/podified-antelope-centos9/openstack-swift-object@sha256:6ddd22a6bd25d9c7edbbfb99c4d8a20e13e7d6b542158463a87d426135635bed",
-      "swiftProxyImage": "quay.io/podified-antelope-centos9/openstack-swift-proxy-server@sha256:65614d7804347a895660a5bb1b29c1013b5879646f1eef19444259d8b8254ac6"
+      "glanceAPIImage": "quay.io/podified-antelope-centos9/openstack-glance-api@sha256:eab78fb595ee9f42ce245b67f64b5c20aa8251bc84fda46c690129e80c94b087",
+      "infraDnsmasqImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:a2d0bc9066872624a6c441134dd70bea556f1c72df1f426643f58311796b7e48",
+      "infraMemcachedImage": "quay.io/podified-antelope-centos9/openstack-memcached@sha256:9f99d0472b4b45f33a9635b05bc6533d07355cae5d68371441f96e3382ca1945",
+      "keystoneAPIImage": "quay.io/podified-antelope-centos9/openstack-keystone@sha256:fb1616376d2e5f313cc10754513f554939bb8d5b30f36417d35cb77b8230d240",
+      "mariadbImage": "quay.io/podified-antelope-centos9/openstack-mariadb@sha256:da215c8ad194883a11d7a5d7e82369a6880e176281f84b1606935f62c549c8a6",
+      "neutronAPIImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:a2d0bc9066872624a6c441134dd70bea556f1c72df1f426643f58311796b7e48",
+      "novaAPIImage": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:5625ccb5cac4f85a135ad9e69a5f9fc1f72686af41a42b7587377c703c26e947",
+      "novaComputeImage": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:65fe6a9e16c30376f11bb0c61aa0de5b1b87a7992f8907bf88975beb815671e8",
+      "novaConductorImage": "quay.io/podified-antelope-centos9/openstack-nova-conductor@sha256:15d04f7d6d0af0265375904e8a02dfd4c66e1a6b4d2878613c0685ba27170713",
+      "novaNovncImage": "quay.io/podified-antelope-centos9/openstack-nova-novncproxy@sha256:47d76833c109a07a6b98ca6208a280a7405cc44194ef97eabb913b4504534ab4",
+      "novaSchedulerImage": "quay.io/podified-antelope-centos9/openstack-nova-scheduler@sha256:b9c3aaabe6ee633e9183ea17ff3c787470d80dd2acb201814c3cbbfaa4f52f47",
+      "openstackClientImage": "quay.io/podified-antelope-centos9/openstack-openstackclient@sha256:a75317dca20a83264c02d61333520d10b19b34275faf70daef47d96c83dba817",
+      "ovnControllerImage": "quay.io/podified-antelope-centos9/openstack-ovn-controller@sha256:a2c9a83d8c557023f949b3af849fc28796fe541671e2e418021ee660fef8d76f",
+      "ovnControllerOvsImage": "quay.io/podified-antelope-centos9/openstack-ovn-base@sha256:4455db70d3e8cfbf2e423653bb8c85231aabe843b09fde25186b51cf7808af14",
+      "ovnNbDbclusterImage": "quay.io/podified-antelope-centos9/openstack-ovn-nb-db-server@sha256:c68c90b683a371a122f6a39221cb073a7de033c77650f6a6bf0b9a3d227bb5ef",
+      "ovnNorthdImage": "quay.io/podified-antelope-centos9/openstack-ovn-northd@sha256:ae56d40ecf53cc3a7a365ce3560a2b58c8485f77e7ca574d1d609155bb7c1871",
+      "ovnSbDbclusterImage": "quay.io/podified-antelope-centos9/openstack-ovn-sb-db-server@sha256:d3cc173b202ac6bbca432de7520cb07673d73b4a17730e143e2e32e52ce64564",
+      "placementAPIImage": "quay.io/podified-antelope-centos9/openstack-placement-api@sha256:1cf7236dd614b3c8de698c6882e4ed5e3af2b790d4bc7569ff53650030abb778",
+      "rabbitmqImage": "quay.io/podified-antelope-centos9/openstack-rabbitmq@sha256:36dd506bc00cc6c84b329f8bdd3057d09344541b1ff9bf626a6cf1a2ee59d873",
+      "swiftAccountImage": "quay.io/podified-antelope-centos9/openstack-swift-account@sha256:b49c96c8edff1c6cc720ca2d64f14c1f1c01656afc5bd4a1c9af892b9ec6d500",
+      "swiftContainerImage": "quay.io/podified-antelope-centos9/openstack-swift-container@sha256:203e2df94807363b0853ad433958f00d5dc5a9c72bea4be09d57a379c825276f",
+      "swiftObjectImage": "quay.io/podified-antelope-centos9/openstack-swift-object@sha256:9aae82e961000ef8eed09eff2c14d3716cdbdbe9e9f6880d5018a557ee2d7262",
+      "swiftProxyImage": "quay.io/podified-antelope-centos9/openstack-swift-proxy-server@sha256:47310e4cfd8460b8f624217bb90e014bbd52c9eba582eaaccfca0d9a9acd7fbe"
     },
     "deployedVersion": "0.0.1",
     "observedGeneration": 1,
@@ -1576,19 +1610,19 @@
       "caBundleSecretName": "combined-ca-bundle",
       "caList": [
         {
-          "expires": "2034-06-08T14:09:22Z",
+          "expires": "2034-07-07T12:20:05Z",
           "name": "rootca-public"
         },
         {
-          "expires": "2034-06-08T14:09:23Z",
+          "expires": "2034-07-07T12:20:07Z",
           "name": "rootca-internal"
         },
         {
-          "expires": "2034-06-08T14:09:27Z",
+          "expires": "2034-07-07T12:20:07Z",
           "name": "rootca-libvirt"
         },
         {
-          "expires": "2034-06-08T14:09:31Z",
+          "expires": "2034-07-07T12:20:08Z",
           "name": "rootca-ovn"
         }
       ]
