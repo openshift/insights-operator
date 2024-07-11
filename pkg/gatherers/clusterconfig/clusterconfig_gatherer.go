@@ -73,6 +73,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"openstack_controlplanes":           (*Gatherer).GatherOpenstackControlplanes,
 	"openstack_dataplanedeployments":    (*Gatherer).GatherOpenstackDataplaneDeployments,
 	"openstack_dataplanenodesets":       (*Gatherer).GatherOpenstackDataplaneNodeSets,
+	"openstack_version":                 (*Gatherer).GatherOpenstackVersions,
 	"operators":                         (*Gatherer).GatherClusterOperators,
 	"operators_pods_and_events":         (*Gatherer).GatherClusterOperatorPodsAndEvents,
 	"overlapping_namespace_uids":        (*Gatherer).GatherNamespacesWithOverlappingUIDs,

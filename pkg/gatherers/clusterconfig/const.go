@@ -83,6 +83,9 @@ var (
 	osdpnsGroupVersionResource = schema.GroupVersionResource{
 		Group: "dataplane.openstack.org", Version: "v1beta1", Resource: "openstackdataplanenodesets",
 	}
+	osvGroupVersionResource = schema.GroupVersionResource{
+		Group: "core.openstack.org", Version: "v1beta1", Resource: "openstackversions",
+	}
 )
 
 func init() { //nolint: gochecknoinits
