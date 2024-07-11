@@ -1627,6 +1627,30 @@ None
 
 ### Changes
 None
+ 
+
+## Openstackversions
+
+Collects `openstackversion.core.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json)
+
+### Location in archive
+- `namespaces/{namespace}/core.openstack.org/openstackversions/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_version`
+
+### Released version
+- 4.17
+
+### Changes
+None
 
 
 ## PodDefinition
