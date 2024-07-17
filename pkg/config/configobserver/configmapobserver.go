@@ -2,6 +2,7 @@ package configobserver
 
 import (
 	"context"
+	"reflect"
 	"sync"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -81,19 +82,24 @@ func (c *ConfigMapObserver) sync(ctx context.Context, _ factory.SyncContext) err
 		}
 		// config map doesn't exist so clear the config, notify and return
 		klog.Info(err)
-		c.insightsConfig = nil
-		c.notifyListeners()
+		// if the insightsConfig is nil then the map didn't exist and we don't need to notify
+		if c.insightsConfig != nil {
+			c.insightsConfig = nil
+			c.notifyListeners()
+		}
 		return nil
 	}
 	insightsConfig, err := readConfigAndDecode(cm)
 	if err != nil {
 		return err
 	}
-	// do not notify listeners on resync
-	if c.insightsConfig != insightsConfig {
-		c.insightsConfig = insightsConfig
-		c.notifyListeners()
+
+	// config hasn't change - do nothing
+	if reflect.DeepEqual(c.insightsConfig, insightsConfig) {
+		return nil
 	}
+	c.insightsConfig = insightsConfig
+	c.notifyListeners()
 	return nil
 }
 
