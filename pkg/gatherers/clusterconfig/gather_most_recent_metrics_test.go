@@ -54,10 +54,9 @@ func Test_gatherMostRecentMetrics(t *testing.T) {
 			metricsClient: &mockMostRecentMetricsClient{data: []byte(`test`)},
 			wantRecords: []record.Record{
 				{
-					Name: "config/metrics",
-					Item: marshal.RawByte(`test# ALERTS 1/1000
-test`),
+					Name:         "config/metrics",
 					AlwaysStored: true,
+					Item:         marshal.RawByte(`test`),
 				},
 			},
 			wantErrors: nil,

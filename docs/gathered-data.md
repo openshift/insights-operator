@@ -1220,7 +1220,6 @@ Gathered metrics:
   - `console_helm_uninstalls_total`
   - `etcd_server_slow_apply_total`
   - `etcd_server_slow_read_indexes_total`
-  - followed by at most 1000 lines of `ALERTS` metric
 
 ### API Reference
 None
@@ -1255,6 +1254,7 @@ None
 - `etcd_server_slow_apply_total` introduced in version 4.16+
 - `etcd_server_slow_read_indexes_total` introduced in version 4.16+
 - `haproxy_exporter_server_threshold` introduced in version 4.17+
+- `ALERTS` removed in version 4.17+
 
 
 ## MutatingWebhookConfigurations
