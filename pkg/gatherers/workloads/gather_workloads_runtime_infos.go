@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"hash"
 	"io"
 	"net/http"
 	"os"
@@ -23,7 +22,6 @@ type podWithNodeName struct {
 
 func gatherWorkloadRuntimeInfos(
 	ctx context.Context,
-	h hash.Hash,
 	coreClient corev1client.CoreV1Interface,
 ) (workloadRuntimes, error) {
 	start := time.Now()
@@ -52,7 +50,7 @@ func gatherWorkloadRuntimeInfos(
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
-			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, h, podInfo.podIP)
+			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, podInfo.podIP)
 		}(runtimePodIPs[i])
 	}
 
@@ -100,60 +98,10 @@ func mergeWorkloads(global workloadRuntimes,
 	}
 }
 
-// Transform the workload data from the insights operator runtime component (represented by
-// a map of namespace/pod-name/container-id/insightsWorkloadRuntimeInfo) into the data
-// stored by the Insights operator as a map of namespace/pod-name/container-id/workloadRuntimeInfoContainer
-// where each value is hashed.
-func transformWorkload(h hash.Hash,
-	node nodeRuntimeInfo,
-) workloadRuntimes {
-
-	result := make(workloadRuntimes)
-
-	for nsName, nsRuntimeInfo := range node {
-		cInfo := containerInfo{
-			namespace: nsName,
-		}
-		for podName, podRuntimeInfo := range nsRuntimeInfo {
-			cInfo.pod = podName
-			for containerId, containerRuntimeInfo := range podRuntimeInfo {
-				cInfo.containerID = containerId
-				hashedContainerInfo := workloadRuntimeInfoContainer{
-					Os:              hashString(h, containerRuntimeInfo.OSReleaseID),
-					OsVersion:       hashString(h, containerRuntimeInfo.OSReleaseVersionID),
-					Kind:            hashString(h, containerRuntimeInfo.RuntimeKind),
-					KindVersion:     hashString(h, containerRuntimeInfo.RuntimeKindVersion),
-					KindImplementer: hashString(h, containerRuntimeInfo.RuntimeKindImplementer),
-				}
-
-				runtimeInfos := make([]RuntimeComponent, len(containerRuntimeInfo.Runtimes))
-				for i, runtime := range containerRuntimeInfo.Runtimes {
-					runtimeInfos[i] = RuntimeComponent{
-						Name:    hashString(h, runtime.Name),
-						Version: hashString(h, runtime.Version),
-					}
-				}
-				hashedContainerInfo.Runtimes = runtimeInfos
-				result[cInfo] = hashedContainerInfo
-			}
-		}
-	}
-	return result
-}
-
-// hashString return a hash of the string if it is not empty (or the empty string otherwise)
-func hashString(h hash.Hash, s string) string {
-	if s == "" {
-		return s
-	}
-	return workloadHashString(h, s)
-}
-
 // Get all WorkloadRuntimeInfos for a single Node (using the insights-runtime-extractor pod running on this node)
 // FIXME return an (workloadRuntimes, error)
 func getNodeWorkloadRuntimeInfos(
 	ctx context.Context,
-	h hash.Hash,
 	runtimePodIP string,
 ) workloadRuntimes {
 
@@ -181,5 +129,22 @@ func getNodeWorkloadRuntimeInfos(
 	var nodeOutput nodeRuntimeInfo
 	json.Unmarshal(body, &nodeOutput)
 
-	return transformWorkload(h, nodeOutput)
+	result := make(workloadRuntimes)
+
+	// Transform the workload data from the insights operator runtime component (represented by
+	// a map of namespace/pod-name/container-id/workloadRuntimeInfoContainer) into the data
+	// stored by the Insights operator as a map of (namespace/pod-name/container-id) / workloadRuntimeInfoContainer
+	for nsName, nsRuntimeInfo := range nodeOutput {
+		for podName, podRuntimeInfo := range nsRuntimeInfo {
+			for containerId, containerRuntimeInfo := range podRuntimeInfo {
+				cInfo := containerInfo{
+					namespace:   nsName,
+					pod:         podName,
+					containerID: containerId,
+				}
+				result[cInfo] = containerRuntimeInfo
+			}
+		}
+	}
+	return result
 }

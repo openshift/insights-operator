@@ -96,15 +96,13 @@ func gatherWorkloadInfo(
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
 ) ([]record.Record, []error) {
-	h := sha256.New()
-
 	var errors = []error{}
 
-	workloadInfos, err := gatherWorkloadRuntimeInfos(ctx, h, coreClient)
+	workloadInfos, err := gatherWorkloadRuntimeInfos(ctx, coreClient)
 	if err != nil {
 		errors = append(errors, err)
 	}
-	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, h, imageClient.Images())
+	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
 	start := time.Now()
 	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh, workloadInfos)
@@ -302,7 +300,6 @@ func handleWorkloadImageInfo(
 // nolint: gocritic
 func gatherWorkloadImageInfo(
 	ctx context.Context,
-	h hash.Hash,
 	imageClient imageclient.ImageInterface,
 ) (chan string, <-chan workloadImageInfo) {
 	images := make(map[string]workloadImage)
@@ -310,6 +307,8 @@ func gatherWorkloadImageInfo(
 	imagesDoneCh := make(chan workloadImageInfo)
 
 	go func() {
+		h := sha256.New()
+
 		defer func() {
 			count := len(images)
 			for k, v := range images {
