@@ -10,3 +10,7 @@ spec:
     from:
       kind: "DockerImage"
       name: "ghcr.io/jmesnil/insights-runtime-extractor:latest"
+  - name: insights-runtime-exporter
+    from:
+      kind: "DockerImage"
+      name: "ghcr.io/jmesnil/insights-runtime-exporter:latest"

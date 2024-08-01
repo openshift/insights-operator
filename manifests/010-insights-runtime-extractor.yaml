@@ -20,14 +20,15 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       containers:
-        - name: insights-runtime-extractor
-          # Replace the image field it is is coming from another image registry
+        - name: exporter
+          image: ghcr.io/jmesnil/insights-runtime-exporter:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /data
+              name: data-volume
+        - name: extractor
           image: ghcr.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
-          resources:
-            requests:
-              memory: "20Mi"
-              cpu: "250m"
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
               value: unix:///crio.sock
@@ -41,13 +42,12 @@ spec:
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
-          livenessProbe:
-            httpGet:
-              path: /health/live
-              port: 8000
-              scheme: HTTP
+            - mountPath: /data
+              name: data-volume
       volumes:
         - name: crio-socket
           hostPath:
             path: /run/crio/crio.sock
             type: Socket
+        - name: data-volume
+          emptyDir: {}
