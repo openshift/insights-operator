@@ -25,24 +25,29 @@ type podWithNodeName struct {
 func gatherWorkloadRuntimeInfos(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
-) (workloadRuntimes, error) {
+) (workloadRuntimes, []error) {
 	start := time.Now()
 
 	runtimePodIPs, err := getInsightsOperatorRuntimePodIPs(ctx, coreClient)
 	if err != nil {
-		return nil, err
+		return nil, []error{err}
 	}
 
 	workloadRuntimeInfos := make(workloadRuntimes)
+	var errors = []error{}
 
-	nodeWorkloadCh := make(chan workloadRuntimes)
+	nodeWorkloadCh := make(chan workloadRuntimesResult)
 	var receiveWg sync.WaitGroup
 	receiveWg.Add(1)
 
 	go func() {
 		defer receiveWg.Done()
-		for infos := range nodeWorkloadCh {
-			mergeWorkloads(workloadRuntimeInfos, infos)
+		for infosRes := range nodeWorkloadCh {
+			if infosRes.Error != nil {
+				errors = append(errors, infosRes.Error)
+				return
+			}
+			mergeWorkloads(workloadRuntimeInfos, infosRes.WorkloadRuntimes)
 		}
 	}()
 
@@ -63,7 +68,7 @@ func gatherWorkloadRuntimeInfos(
 	klog.Infof("Gathered workload runtime infos in %s\n",
 		time.Since(start).Round(time.Second).String())
 
-	return workloadRuntimeInfos, nil
+	return workloadRuntimeInfos, errors
 }
 
 // List the pods of the insights-runtime-extractor component
@@ -103,35 +108,43 @@ func mergeWorkloads(global workloadRuntimes,
 	}
 }
 
+type workloadRuntimesResult struct {
+	WorkloadRuntimes workloadRuntimes
+	Error            error
+}
+
 // Get all WorkloadRuntimeInfos for a single Node (using the insights-runtime-extractor pod running on this node)
 // FIXME return an (workloadRuntimes, error)
 func getNodeWorkloadRuntimeInfos(
 	ctx context.Context,
 	runtimePodIP string,
-) workloadRuntimes {
+) workloadRuntimesResult {
 
 	extractorURL := fmt.Sprintf("http://%s:8000/gather_runtime_info", runtimePodIP)
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	request, err := http.NewRequestWithContext(ctx, "GET", extractorURL, nil)
 	if err != nil {
-		fmt.Printf("Failed to create request: %v\n", err)
-		return nil
+		return workloadRuntimesResult{
+			Error: err,
+		}
 	}
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
-		fmt.Printf("Failed to perform request: %v\n", err)
-		return nil
+		return workloadRuntimesResult{
+			Error: err,
+		}
 	}
 	if resp.StatusCode != 200 {
-		return nil
+		return workloadRuntimesResult{}
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("Failed to read response body: %v\n", err)
-		return nil
+		return workloadRuntimesResult{
+			Error: err,
+		}
 	}
 	var nodeOutput nodeRuntimeInfo
 	json.Unmarshal(body, &nodeOutput)
@@ -153,5 +166,8 @@ func getNodeWorkloadRuntimeInfos(
 			}
 		}
 	}
-	return result
+	return workloadRuntimesResult{
+		WorkloadRuntimes: result,
+		Error:            err,
+	}
 }

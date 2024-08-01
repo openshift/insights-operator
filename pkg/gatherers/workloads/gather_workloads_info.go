@@ -98,10 +98,8 @@ func gatherWorkloadInfo(
 ) ([]record.Record, []error) {
 	var errors = []error{}
 
-	workloadInfos, err := gatherWorkloadRuntimeInfos(ctx, coreClient)
-	if err != nil {
-		errors = append(errors, err)
-	}
+	workloadInfos, errs := gatherWorkloadRuntimeInfos(ctx, coreClient)
+	errors = append(errors, errs...)
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
 	start := time.Now()
