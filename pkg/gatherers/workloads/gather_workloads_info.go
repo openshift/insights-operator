@@ -127,10 +127,7 @@ func gatherWorkloadInfo(
 		errors = append(errors, fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit))
 	}
 
-	if len(errors) > 0 {
-		return records, errors
-	}
-	return records, nil
+	return records, errors
 }
 
 // nolint: funlen, gocritic, gocyclo
