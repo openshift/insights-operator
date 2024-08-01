@@ -106,6 +106,8 @@ func getNodeWorkloadRuntimeInfos(
 ) workloadRuntimes {
 
 	extractorURL := fmt.Sprintf("http://%s:8000/gather_runtime_info", runtimePodIP)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
 	request, err := http.NewRequestWithContext(ctx, "GET", extractorURL, nil)
 	if err != nil {
 		fmt.Printf("Failed to create request: %v\n", err)
