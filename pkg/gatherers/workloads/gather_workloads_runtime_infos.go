@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
@@ -81,10 +83,13 @@ func getInsightsOperatorRuntimePodIPs(
 
 	var runtimePods []podWithNodeName
 	for _, pod := range pods.Items {
-		runtimePods = append(runtimePods, podWithNodeName{
-			podIP:    pod.Status.PodIP,
-			nodeName: pod.Spec.NodeName,
-		})
+		running := pod.Status.Phase == corev1.PodRunning
+		if running {
+			runtimePods = append(runtimePods, podWithNodeName{
+				podIP:    pod.Status.PodIP,
+				nodeName: pod.Spec.NodeName,
+			})
+		}
 	}
 	return runtimePods, nil
 }
