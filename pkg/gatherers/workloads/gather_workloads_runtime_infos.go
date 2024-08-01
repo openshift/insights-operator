@@ -45,7 +45,7 @@ func gatherWorkloadRuntimeInfos(
 		for infosRes := range nodeWorkloadCh {
 			if infosRes.Error != nil {
 				errors = append(errors, infosRes.Error)
-				return
+				continue
 			}
 			mergeWorkloads(workloadRuntimeInfos, infosRes.WorkloadRuntimes)
 		}
