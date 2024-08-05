@@ -1,0 +1,1631 @@
+{
+  "apiVersion": "core.openstack.org/v1beta1",
+  "kind": "OpenStackControlPlane",
+  "metadata": {
+    "annotations": {},
+    "creationTimestamp": "2024-07-09T12:20:02Z",
+    "finalizers": [
+      "openstack.org/openstackcontrolplane"
+    ],
+    "generation": 1,
+    "labels": {
+      "core.openstack.org/openstackcontrolplane": "",
+      "created-by": "install_yamls"
+    },
+    "name": "openstack-galera-network-isolation",
+    "namespace": "openstack",
+    "resourceVersion": "97468",
+    "uid": "d6635518-58b9-46e3-85c9-2da4737fc9ca"
+  },
+  "spec": {
+    "barbican": {
+      "apiOverride": {
+        "route": {}
+      },
+      "enabled": true,
+      "template": {
+        "barbicanAPI": {
+          "enableSecureRBAC": true,
+          "override": {
+            "service": {
+              "internal": {
+                "metadata": {
+                  "annotations": {
+                    "metallb.universe.tf/address-pool": "internalapi",
+                    "metallb.universe.tf/allow-shared-ip": "internalapi",
+                    "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                  }
+                },
+                "spec": {
+                  "type": "LoadBalancer"
+                }
+              }
+            }
+          },
+          "replicas": 1,
+          "resources": {},
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "barbicanKeystoneListener": {
+          "replicas": 1,
+          "resources": {}
+        },
+        "barbicanWorker": {
+          "replicas": 1,
+          "resources": {}
+        },
+        "databaseAccount": "barbican",
+        "databaseInstance": "openstack",
+        "passwordSelectors": {
+          "service": "BarbicanPassword",
+          "simplecryptokek": "BarbicanSimpleCryptoKEK"
+        },
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "secret": "osp-secret",
+        "serviceAccount": "",
+        "serviceUser": "barbican",
+        "simpleCryptoBackendSecret": "osp-secret"
+      }
+    },
+    "cinder": {
+      "apiOverride": {
+        "route": {
+          "metadata": {
+            "annotations": {
+              "api.cinder.openstack.org/timeout": "60s",
+              "haproxy.router.openshift.io/timeout": "60s"
+            }
+          }
+        }
+      },
+      "enabled": true,
+      "template": {
+        "apiTimeout": 60,
+        "cinderAPI": {
+          "override": {
+            "service": {
+              "internal": {
+                "metadata": {
+                  "annotations": {
+                    "metallb.universe.tf/address-pool": "internalapi",
+                    "metallb.universe.tf/allow-shared-ip": "internalapi",
+                    "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                  }
+                },
+                "spec": {
+                  "type": "LoadBalancer"
+                }
+              }
+            }
+          },
+          "replicas": 1,
+          "resources": {},
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "cinderBackup": {
+          "networkAttachments": [
+            "storage"
+          ],
+          "replicas": 0,
+          "resources": {}
+        },
+        "cinderScheduler": {
+          "replicas": 1,
+          "resources": {}
+        },
+        "cinderVolumes": {
+          "volume1": {
+            "networkAttachments": [
+              "storage"
+            ],
+            "replicas": 0,
+            "resources": {}
+          }
+        },
+        "databaseAccount": "cinder",
+        "databaseInstance": "openstack",
+        "dbPurge": {
+          "age": 30,
+          "schedule": "1 0 * * *"
+        },
+        "memcachedInstance": "memcached",
+        "passwordSelectors": {
+          "service": "CinderPassword"
+        },
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "secret": "osp-secret",
+        "serviceUser": "cinder"
+      },
+      "uniquePodNames": false
+    },
+    "designate": {
+      "apiOverride": {
+        "route": {}
+      },
+      "enabled": false,
+      "template": {
+        "None": "",
+        "backendMdnsServerProtocol": "",
+        "backendWorkerServerProtocol": "",
+        "customServiceConfig": "# add your customization here",
+        "databaseAccount": "designate",
+        "databaseInstance": "openstack",
+        "designateAPI": {
+          "None": "",
+          "backendMdnsServerProtocol": "",
+          "backendWorkerServerProtocol": "",
+          "databaseAccount": "designate",
+          "override": {
+            "service": {
+              "internal": {
+                "metadata": {
+                  "annotations": {
+                    "metallb.universe.tf/address-pool": "internalapi",
+                    "metallb.universe.tf/allow-shared-ip": "internalapi",
+                    "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                  }
+                },
+                "spec": {
+                  "type": "LoadBalancer"
+                }
+              }
+            }
+          },
+          "passwordSelectors": {
+            "service": "DesignatePassword"
+          },
+          "replicas": 1,
+          "resources": {},
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "designate"
+        },
+        "designateBackendbind9": {
+          "None": "",
+          "backendMdnsServerProtocol": "",
+          "backendWorkerServerProtocol": "",
+          "databaseAccount": "designate",
+          "networkAttachments": [
+            "designate"
+          ],
+          "passwordSelectors": {
+            "service": "DesignatePassword"
+          },
+          "replicas": 0,
+          "resources": {},
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "designate"
+        },
+        "designateCentral": {
+          "None": "",
+          "backendMdnsServerProtocol": "",
+          "backendWorkerServerProtocol": "",
+          "databaseAccount": "designate",
+          "passwordSelectors": {
+            "service": "DesignatePassword"
+          },
+          "replicas": 1,
+          "resources": {},
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "designate"
+        },
+        "designateMdns": {
+          "None": "",
+          "backendMdnsServerProtocol": "",
+          "backendWorkerServerProtocol": "",
+          "databaseAccount": "designate",
+          "networkAttachments": [
+            "designate"
+          ],
+          "passwordSelectors": {
+            "service": "DesignatePassword"
+          },
+          "replicas": 0,
+          "resources": {},
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "designate"
+        },
+        "designateProducer": {
+          "None": "",
+          "backendMdnsServerProtocol": "",
+          "backendWorkerServerProtocol": "",
+          "databaseAccount": "designate",
+          "passwordSelectors": {
+            "service": "DesignatePassword"
+          },
+          "replicas": 0,
+          "resources": {},
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "designate"
+        },
+        "designateUnbound": {
+          "replicas": 1,
+          "resources": {},
+          "serviceAccount": ""
+        },
+        "designateWorker": {
+          "None": "",
+          "backendMdnsServerProtocol": "",
+          "backendWorkerServerProtocol": "",
+          "databaseAccount": "designate",
+          "networkAttachments": [
+            "designate"
+          ],
+          "passwordSelectors": {
+            "service": "DesignatePassword"
+          },
+          "replicas": 0,
+          "resources": {},
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "designate"
+        },
+        "passwordSelectors": {
+          "service": "DesignatePassword"
+        },
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "resources": {},
+        "secret": "osp-secret",
+        "serviceUser": "designate"
+      }
+    },
+    "dns": {
+      "enabled": true,
+      "template": {
+        "containerImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:a2d0bc9066872624a6c441134dd70bea556f1c72df1f426643f58311796b7e48",
+        "dnsDataLabelSelectorValue": "dnsdata",
+        "options": "xxx",
+        "override": {
+          "service": {
+            "metadata": {
+              "annotations": {
+                "metallb.universe.tf/address-pool": "ctlplane",
+                "metallb.universe.tf/allow-shared-ip": "ctlplane",
+                "metallb.universe.tf/loadBalancerIPs": "192.168.64.28"
+              }
+            },
+            "spec": {
+              "type": "LoadBalancer"
+            }
+          }
+        },
+        "replicas": 1
+      }
+    },
+    "galera": {
+      "enabled": true,
+      "templates": {
+        "openstack": {
+          "adoptionRedirect": {},
+          "replicas": 1,
+          "secret": "osp-secret",
+          "storageClass": "local-storage",
+          "storageRequest": "10G",
+          "tls": {}
+        },
+        "openstack-cell1": {
+          "adoptionRedirect": {},
+          "replicas": 1,
+          "secret": "osp-secret",
+          "storageClass": "local-storage",
+          "storageRequest": "10G",
+          "tls": {}
+        }
+      }
+    },
+    "glance": {
+      "apiOverrides": {
+        "default": {
+          "route": {
+            "metadata": {
+              "annotations": {
+                "api.glance.openstack.org/timeout": "60s",
+                "haproxy.router.openshift.io/timeout": "60s"
+              }
+            }
+          }
+        }
+      },
+      "enabled": true,
+      "template": {
+        "apiTimeout": 60,
+        "databaseAccount": "glance",
+        "databaseInstance": "openstack",
+        "dbPurge": {
+          "age": 30,
+          "schedule": "1 0 * * *"
+        },
+        "glanceAPIs": {
+          "default": {
+            "apiTimeout": 60,
+            "containerImage": "quay.io/podified-antelope-centos9/openstack-glance-api@sha256:eab78fb595ee9f42ce245b67f64b5c20aa8251bc84fda46c690129e80c94b087",
+            "imageCache": {
+              "cleanerScheduler": "*/30 * * * *",
+              "prunerScheduler": "1 0 * * *",
+              "size": ""
+            },
+            "networkAttachments": [
+              "storage"
+            ],
+            "override": {
+              "service": {
+                "internal": {
+                  "metadata": {
+                    "annotations": {
+                      "metallb.universe.tf/address-pool": "internalapi",
+                      "metallb.universe.tf/allow-shared-ip": "internalapi",
+                      "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                    }
+                  },
+                  "spec": {
+                    "type": "LoadBalancer"
+                  }
+                }
+              }
+            },
+            "replicas": 1,
+            "resources": {},
+            "storage": {},
+            "tls": {
+              "api": {
+                "internal": {},
+                "public": {}
+              }
+            },
+            "type": "single"
+          }
+        },
+        "imageCache": {
+          "cleanerScheduler": "",
+          "prunerScheduler": "",
+          "size": ""
+        },
+        "keystoneEndpoint": "default",
+        "memcachedInstance": "memcached",
+        "passwordSelectors": {
+          "service": "GlancePassword"
+        },
+        "preserveJobs": false,
+        "quotas": {
+          "imageCountTotal": 0,
+          "imageCountUpload": 0,
+          "imageSizeTotal": 0,
+          "imageStageTotal": 0
+        },
+        "secret": "osp-secret",
+        "serviceUser": "glance",
+        "storage": {
+          "storageRequest": "10G"
+        }
+      },
+      "uniquePodNames": false
+    },
+    "heat": {
+      "apiOverride": {
+        "route": {}
+      },
+      "cnfAPIOverride": {
+        "route": {}
+      },
+      "enabled": false,
+      "template": {
+        "databaseAccount": "heat",
+        "databaseInstance": "openstack",
+        "heatAPI": {
+          "override": {
+            "service": {
+              "internal": {
+                "metadata": {
+                  "annotations": {
+                    "metallb.universe.tf/address-pool": "internalapi",
+                    "metallb.universe.tf/allow-shared-ip": "internalapi",
+                    "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                  }
+                },
+                "spec": {
+                  "type": "LoadBalancer"
+                }
+              }
+            }
+          },
+          "replicas": 1,
+          "resources": {},
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "heatCfnAPI": {
+          "override": {},
+          "replicas": 1,
+          "resources": {},
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "heatEngine": {
+          "replicas": 1,
+          "resources": {}
+        },
+        "memcachedInstance": "memcached",
+        "passwordSelectors": {
+          "authEncryptionKey": "HeatAuthEncryptionKey",
+          "service": "HeatPassword"
+        },
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "secret": "osp-secret",
+        "serviceUser": "heat"
+      }
+    },
+    "horizon": {
+      "apiOverride": {
+        "route": {}
+      },
+      "enabled": false,
+      "template": {
+        "customServiceConfig": "# add your customization here",
+        "memcachedInstance": "memcached",
+        "override": {},
+        "preserveJobs": false,
+        "replicas": 1,
+        "resources": {},
+        "secret": "osp-secret",
+        "tls": {}
+      }
+    },
+    "ironic": {
+      "apiOverride": {},
+      "enabled": false,
+      "inspectorOverride": {},
+      "template": {
+        "customServiceConfig": "# add your customization here",
+        "databaseAccount": "ironic",
+        "databaseInstance": "openstack",
+        "ironicAPI": {
+          "customServiceConfig": "# add your customization here",
+          "override": {},
+          "replicas": 1,
+          "resources": {},
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "ironicConductors": [
+          {
+            "conductorGroup": "",
+            "customServiceConfig": "# add your customization here",
+            "replicas": 1,
+            "resources": {},
+            "storageClass": "",
+            "storageRequest": "10G"
+          }
+        ],
+        "ironicInspector": {
+          "customServiceConfig": "# add your customization here",
+          "databaseAccount": "ironic-inspector",
+          "override": {},
+          "passwordSelectors": {
+            "service": "IronicInspectorPassword"
+          },
+          "preserveJobs": true,
+          "replicas": 1,
+          "resources": {},
+          "serviceUser": "ironic-inspector",
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "ironicNeutronAgent": {
+          "customServiceConfig": "# add your customization here",
+          "rabbitMqClusterName": "rabbitmq",
+          "replicas": 1,
+          "resources": {}
+        },
+        "passwordSelectors": {
+          "service": "IronicPassword"
+        },
+        "preserveJobs": true,
+        "rabbitMqClusterName": "rabbitmq",
+        "rpcTransport": "json-rpc",
+        "secret": "osp-secret",
+        "serviceUser": "ironic",
+        "standalone": false,
+        "storageClass": "local-storage"
+      }
+    },
+    "keystone": {
+      "apiOverride": {
+        "route": {}
+      },
+      "enabled": true,
+      "template": {
+        "adminProject": "admin",
+        "adminUser": "admin",
+        "databaseAccount": "keystone",
+        "databaseInstance": "openstack",
+        "enableSecureRBAC": true,
+        "memcachedInstance": "memcached",
+        "override": {
+          "service": {
+            "internal": {
+              "metadata": {
+                "annotations": {
+                  "metallb.universe.tf/address-pool": "internalapi",
+                  "metallb.universe.tf/allow-shared-ip": "internalapi",
+                  "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                }
+              },
+              "spec": {
+                "type": "LoadBalancer"
+              }
+            }
+          }
+        },
+        "passwordSelectors": {
+          "admin": "AdminPassword"
+        },
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "region": "regionOne",
+        "replicas": 1,
+        "resources": {},
+        "secret": "osp-secret",
+        "tls": {
+          "api": {
+            "internal": {},
+            "public": {}
+          }
+        },
+        "trustFlushArgs": "",
+        "trustFlushSchedule": "1 * * * *",
+        "trustFlushSuspend": false
+      }
+    },
+    "manila": {
+      "apiOverride": {
+        "route": {
+          "metadata": {
+            "annotations": {
+              "api.manila.openstack.org/timeout": "60s",
+              "haproxy.router.openshift.io/timeout": "60s"
+            }
+          }
+        }
+      },
+      "enabled": false,
+      "template": {
+        "apiTimeout": 60,
+        "customServiceConfig": "# add your customization here",
+        "databaseAccount": "manila",
+        "dbPurge": {
+          "age": 30,
+          "schedule": "1 0 * * *"
+        },
+        "debug": {
+          "dbPurge": false
+        },
+        "manilaAPI": {
+          "customServiceConfig": "# add your customization here",
+          "networkAttachments": [
+            "internalapi"
+          ],
+          "override": {
+            "service": {
+              "internal": {
+                "metadata": {
+                  "annotations": {
+                    "metallb.universe.tf/address-pool": "internalapi",
+                    "metallb.universe.tf/allow-shared-ip": "internalapi",
+                    "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                  }
+                },
+                "spec": {
+                  "type": "LoadBalancer"
+                }
+              }
+            }
+          },
+          "replicas": 1,
+          "resources": {},
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "manilaScheduler": {
+          "customServiceConfig": "# add your customization here",
+          "replicas": 1,
+          "resources": {}
+        },
+        "manilaShares": {
+          "share1": {
+            "customServiceConfig": "# add your customization here",
+            "networkAttachments": [
+              "storage"
+            ],
+            "replicas": 1,
+            "resources": {}
+          }
+        },
+        "memcachedInstance": "memcached",
+        "passwordSelectors": {
+          "service": "ManilaPassword"
+        },
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "serviceUser": "manila"
+      }
+    },
+    "memcached": {
+      "enabled": true,
+      "templates": {
+        "memcached": {
+          "replicas": 1,
+          "tls": {}
+        }
+      }
+    },
+    "neutron": {
+      "apiOverride": {
+        "route": {
+          "metadata": {
+            "annotations": {
+              "haproxy.router.openshift.io/timeout": "120s"
+            }
+          }
+        }
+      },
+      "enabled": true,
+      "template": {
+        "databaseAccount": "neutron",
+        "databaseInstance": "openstack",
+        "memcachedInstance": "memcached",
+        "networkAttachments": [
+          "internalapi"
+        ],
+        "override": {
+          "service": {
+            "internal": {
+              "metadata": {
+                "annotations": {
+                  "metallb.universe.tf/address-pool": "internalapi",
+                  "metallb.universe.tf/allow-shared-ip": "internalapi",
+                  "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                }
+              },
+              "spec": {
+                "type": "LoadBalancer"
+              }
+            }
+          }
+        },
+        "passwordSelectors": {
+          "service": "NeutronPassword"
+        },
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "replicas": 1,
+        "resources": {},
+        "secret": "osp-secret",
+        "serviceUser": "neutron",
+        "tls": {
+          "api": {
+            "internal": {},
+            "public": {}
+          },
+          "ovn": {}
+        }
+      }
+    },
+    "nova": {
+      "apiOverride": {
+        "route": {}
+      },
+      "enabled": true,
+      "template": {
+        "apiContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:5625ccb5cac4f85a135ad9e69a5f9fc1f72686af41a42b7587377c703c26e947",
+        "apiDatabaseAccount": "nova-api",
+        "apiDatabaseInstance": "openstack",
+        "apiMessageBusInstance": "rabbitmq",
+        "apiServiceTemplate": {
+          "customServiceConfig": "",
+          "override": {
+            "service": {
+              "internal": {
+                "metadata": {
+                  "annotations": {
+                    "metallb.universe.tf/address-pool": "internalapi",
+                    "metallb.universe.tf/allow-shared-ip": "internalapi",
+                    "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                  }
+                },
+                "spec": {
+                  "type": "LoadBalancer"
+                }
+              }
+            }
+          },
+          "replicas": 1,
+          "resources": {},
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "cellTemplates": {
+          "cell0": {
+            "cellDatabaseAccount": "nova-cell0",
+            "cellDatabaseInstance": "openstack",
+            "cellMessageBusInstance": "rabbitmq",
+            "conductorServiceTemplate": {
+              "customServiceConfig": "",
+              "replicas": 1,
+              "resources": {}
+            },
+            "dbPurge": {
+              "archiveAge": 30,
+              "purgeAge": 90,
+              "schedule": "0 0 * * *"
+            },
+            "hasAPIAccess": true,
+            "memcachedInstance": "",
+            "metadataServiceTemplate": {
+              "customServiceConfig": "",
+              "enabled": false,
+              "override": {},
+              "replicas": 1,
+              "resources": {},
+              "tls": {}
+            },
+            "noVNCProxyServiceTemplate": {
+              "customServiceConfig": "",
+              "enabled": false,
+              "override": {},
+              "replicas": 1,
+              "resources": {},
+              "tls": {
+                "service": {},
+                "vencrypt": {}
+              }
+            }
+          },
+          "cell1": {
+            "cellDatabaseAccount": "nova-cell1",
+            "cellDatabaseInstance": "openstack-cell1",
+            "cellMessageBusInstance": "rabbitmq-cell1",
+            "conductorServiceTemplate": {
+              "customServiceConfig": "",
+              "replicas": 1,
+              "resources": {}
+            },
+            "dbPurge": {
+              "archiveAge": 30,
+              "purgeAge": 90,
+              "schedule": "0 0 * * *"
+            },
+            "hasAPIAccess": true,
+            "memcachedInstance": "",
+            "metadataServiceTemplate": {
+              "customServiceConfig": "",
+              "enabled": false,
+              "override": {},
+              "replicas": 1,
+              "resources": {},
+              "tls": {}
+            },
+            "noVNCProxyServiceTemplate": {
+              "customServiceConfig": "",
+              "enabled": true,
+              "override": {},
+              "replicas": 1,
+              "resources": {},
+              "tls": {
+                "service": {},
+                "vencrypt": {}
+              }
+            }
+          }
+        },
+        "computeContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:65fe6a9e16c30376f11bb0c61aa0de5b1b87a7992f8907bf88975beb815671e8",
+        "conductorContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-conductor@sha256:15d04f7d6d0af0265375904e8a02dfd4c66e1a6b4d2878613c0685ba27170713",
+        "keystoneInstance": "keystone",
+        "memcachedInstance": "memcached",
+        "metadataContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:5625ccb5cac4f85a135ad9e69a5f9fc1f72686af41a42b7587377c703c26e947",
+        "metadataServiceTemplate": {
+          "customServiceConfig": "",
+          "enabled": true,
+          "override": {
+            "service": {
+              "metadata": {
+                "annotations": {
+                  "metallb.universe.tf/address-pool": "internalapi",
+                  "metallb.universe.tf/allow-shared-ip": "internalapi",
+                  "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                }
+              },
+              "spec": {
+                "type": "LoadBalancer"
+              }
+            }
+          },
+          "replicas": 1,
+          "resources": {},
+          "tls": {}
+        },
+        "novncproxyContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-novncproxy@sha256:47d76833c109a07a6b98ca6208a280a7405cc44194ef97eabb913b4504534ab4",
+        "passwordSelectors": {
+          "metadataSecret": "MetadataSecret",
+          "service": "NovaPassword"
+        },
+        "preserveJobs": false,
+        "schedulerContainerImageURL": "quay.io/podified-antelope-centos9/openstack-nova-scheduler@sha256:b9c3aaabe6ee633e9183ea17ff3c787470d80dd2acb201814c3cbbfaa4f52f47",
+        "schedulerServiceTemplate": {
+          "customServiceConfig": "",
+          "replicas": 1,
+          "resources": {}
+        },
+        "secret": "osp-secret",
+        "serviceUser": "nova"
+      }
+    },
+    "octavia": {
+      "apiOverride": {},
+      "enabled": false,
+      "template": {
+        "amphoraImageContainerImage": "",
+        "apacheContainerImage": "",
+        "customServiceConfig": "# add your customization here",
+        "databaseAccount": "octavia",
+        "databaseInstance": "openstack",
+        "lbMgmtNetwork": {
+          "manageLbMgmtNetworks": true
+        },
+        "octaviaAPI": {
+          "customServiceConfig": "# add your customization here",
+          "databaseAccount": "octavia",
+          "databaseInstance": "",
+          "override": {},
+          "passwordSelectors": {
+            "database": "OctaviaDatabasePassword",
+            "service": "OctaviaPassword"
+          },
+          "persistenceDatabaseAccount": "octavia-persistence",
+          "preserveJobs": false,
+          "replicas": 1,
+          "resources": {},
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "octavia",
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            },
+            "ovn": {}
+          }
+        },
+        "octaviaHealthManager": {
+          "amphoraImageOwnerID": "",
+          "customServiceConfig": "# add your customization here",
+          "databaseAccount": "",
+          "databaseInstance": "",
+          "lbMgmtNetworkID": "",
+          "lbSecurityGroupID": "",
+          "octaviaProviderSubnetCIDR": "",
+          "octaviaProviderSubnetGateway": "",
+          "passwordSelectors": {
+            "database": "OctaviaDatabasePassword",
+            "service": "OctaviaPassword"
+          },
+          "persistenceDatabaseAccount": "",
+          "resources": {},
+          "role": "",
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "",
+          "tenantName": "",
+          "tls": {}
+        },
+        "octaviaHousekeeping": {
+          "amphoraImageOwnerID": "",
+          "customServiceConfig": "# add your customization here",
+          "databaseAccount": "",
+          "databaseInstance": "",
+          "lbMgmtNetworkID": "",
+          "lbSecurityGroupID": "",
+          "octaviaProviderSubnetCIDR": "",
+          "octaviaProviderSubnetGateway": "",
+          "passwordSelectors": {
+            "database": "OctaviaDatabasePassword",
+            "service": "OctaviaPassword"
+          },
+          "persistenceDatabaseAccount": "",
+          "resources": {},
+          "role": "",
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "",
+          "tenantName": "",
+          "tls": {}
+        },
+        "octaviaNetworkAttachment": "octavia",
+        "octaviaWorker": {
+          "amphoraImageOwnerID": "",
+          "customServiceConfig": "# add your customization here",
+          "databaseAccount": "",
+          "databaseInstance": "",
+          "lbMgmtNetworkID": "",
+          "lbSecurityGroupID": "",
+          "octaviaProviderSubnetCIDR": "",
+          "octaviaProviderSubnetGateway": "",
+          "passwordSelectors": {
+            "database": "OctaviaDatabasePassword",
+            "service": "OctaviaPassword"
+          },
+          "persistenceDatabaseAccount": "",
+          "resources": {},
+          "role": "",
+          "secret": "",
+          "serviceAccount": "",
+          "serviceUser": "",
+          "tenantName": "",
+          "tls": {}
+        },
+        "passwordSelectors": {
+          "database": "OctaviaDatabasePassword",
+          "service": "OctaviaPassword"
+        },
+        "persistenceDatabaseAccount": "octavia-persistence",
+        "preserveJobs": false,
+        "rabbitMqClusterName": "rabbitmq",
+        "resources": {},
+        "secret": "osp-secret",
+        "serviceUser": "octavia",
+        "sshPrivkeySecret": "octavia-ssh-privkey-secret",
+        "sshPubkey": "octavia-ssh-pubkey",
+        "tenantName": "service"
+      }
+    },
+    "openstackclient": {
+      "template": {
+        "openStackConfigMap": "openstack-config",
+        "openStackConfigSecret": "openstack-config-secret"
+      }
+    },
+    "ovn": {
+      "enabled": true,
+      "template": {
+        "ovnController": {
+          "external-ids": {
+            "enable-chassis-as-gateway": true,
+            "ovn-bridge": "br-int",
+            "ovn-encap-type": "geneve",
+            "system-id": "random"
+          },
+          "networkAttachment": "tenant",
+          "nicMappings": {
+            "datacentre": "ospbr"
+          },
+          "resources": {},
+          "tls": {}
+        },
+        "ovnDBCluster": {
+          "ovndbcluster-nb": {
+            "dbType": "NB",
+            "electionTimer": 10000,
+            "inactivityProbe": 60000,
+            "logLevel": "info",
+            "networkAttachment": "internalapi",
+            "probeIntervalToActive": 60000,
+            "replicas": 1,
+            "resources": {},
+            "storageRequest": "10G",
+            "tls": {}
+          },
+          "ovndbcluster-sb": {
+            "dbType": "SB",
+            "electionTimer": 10000,
+            "inactivityProbe": 60000,
+            "logLevel": "info",
+            "networkAttachment": "internalapi",
+            "probeIntervalToActive": 60000,
+            "replicas": 1,
+            "resources": {},
+            "storageRequest": "10G",
+            "tls": {}
+          }
+        },
+        "ovnNorthd": {
+          "logLevel": "info",
+          "nThreads": 1,
+          "replicas": 1,
+          "resources": {},
+          "tls": {}
+        }
+      }
+    },
+    "placement": {
+      "apiOverride": {
+        "route": {}
+      },
+      "enabled": true,
+      "template": {
+        "customServiceConfig": "",
+        "databaseAccount": "placement",
+        "databaseInstance": "openstack",
+        "override": {
+          "service": {
+            "internal": {
+              "metadata": {
+                "annotations": {
+                  "metallb.universe.tf/address-pool": "internalapi",
+                  "metallb.universe.tf/allow-shared-ip": "internalapi",
+                  "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                }
+              },
+              "spec": {
+                "type": "LoadBalancer"
+              }
+            }
+          }
+        },
+        "passwordSelectors": {
+          "service": "PlacementPassword"
+        },
+        "preserveJobs": false,
+        "replicas": 1,
+        "resources": {},
+        "secret": "osp-secret",
+        "serviceUser": "placement",
+        "tls": {
+          "api": {
+            "internal": {},
+            "public": {}
+          }
+        }
+      }
+    },
+    "rabbitmq": {
+      "enabled": true,
+      "templates": {
+        "rabbitmq": {
+          "delayStartSeconds": 30,
+          "override": {
+            "service": {
+              "metadata": {
+                "annotations": {
+                  "metallb.universe.tf/address-pool": "internalapi",
+                  "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                }
+              },
+              "spec": {
+                "type": "LoadBalancer"
+              }
+            }
+          },
+          "persistence": {
+            "storage": "10Gi"
+          },
+          "rabbitmq": {},
+          "replicas": 1,
+          "resources": {
+            "limits": {
+              "cpu": "2",
+              "memory": "2Gi"
+            },
+            "requests": {
+              "cpu": "1",
+              "memory": "2Gi"
+            }
+          },
+          "secretBackend": {
+            "externalSecret": {}
+          },
+          "service": {
+            "type": "ClusterIP"
+          },
+          "terminationGracePeriodSeconds": 604800,
+          "tls": {}
+        },
+        "rabbitmq-cell1": {
+          "delayStartSeconds": 30,
+          "override": {
+            "service": {
+              "metadata": {
+                "annotations": {
+                  "metallb.universe.tf/address-pool": "internalapi",
+                  "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                }
+              },
+              "spec": {
+                "type": "LoadBalancer"
+              }
+            }
+          },
+          "persistence": {
+            "storage": "10Gi"
+          },
+          "rabbitmq": {},
+          "replicas": 1,
+          "resources": {
+            "limits": {
+              "cpu": "2",
+              "memory": "2Gi"
+            },
+            "requests": {
+              "cpu": "1",
+              "memory": "2Gi"
+            }
+          },
+          "secretBackend": {
+            "externalSecret": {}
+          },
+          "service": {
+            "type": "ClusterIP"
+          },
+          "terminationGracePeriodSeconds": 604800,
+          "tls": {}
+        }
+      }
+    },
+    "secret": "osp-secret",
+    "storageClass": "local-storage",
+    "swift": {
+      "enabled": true,
+      "proxyOverride": {
+        "route": {}
+      },
+      "template": {
+        "memcachedInstance": "memcached",
+        "storageClass": "",
+        "swiftProxy": {
+          "ceilometerEnabled": false,
+          "encryptionEnabled": false,
+          "memcachedInstance": "memcached",
+          "networkAttachments": [
+            "storage"
+          ],
+          "override": {
+            "service": {
+              "internal": {
+                "metadata": {
+                  "annotations": {
+                    "metallb.universe.tf/address-pool": "internalapi",
+                    "metallb.universe.tf/allow-shared-ip": "internalapi",
+                    "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+                  }
+                },
+                "spec": {
+                  "type": "LoadBalancer"
+                }
+              }
+            }
+          },
+          "passwordSelectors": {
+            "service": "SwiftPassword"
+          },
+          "rabbitMqClusterName": "rabbitmq",
+          "replicas": 1,
+          "secret": "osp-secret",
+          "serviceUser": "swift",
+          "tls": {
+            "api": {
+              "internal": {},
+              "public": {}
+            }
+          }
+        },
+        "swiftRing": {
+          "minPartHours": 1,
+          "partPower": 10,
+          "ringReplicas": 1,
+          "tls": {}
+        },
+        "swiftStorage": {
+          "containerSharderEnabled": false,
+          "memcachedInstance": "memcached",
+          "networkAttachments": [
+            "storage"
+          ],
+          "replicas": 1,
+          "storageClass": "local-storage",
+          "storageRequest": "10Gi"
+        }
+      }
+    },
+    "telemetry": {
+      "alertmanagerOverride": {},
+      "aodhApiOverride": {},
+      "enabled": true,
+      "prometheusOverride": {},
+      "template": {
+        "autoscaling": {
+          "aodh": {
+            "customServiceConfig": "# add your customization here",
+            "databaseAccount": "aodh",
+            "databaseInstance": "openstack",
+            "override": {},
+            "passwordSelector": {
+              "aodhService": "AodhPassword",
+              "ceilometerService": "CeilometerPassword"
+            },
+            "preserveJobs": false,
+            "rabbitMqClusterName": "rabbitmq",
+            "secret": "osp-secret",
+            "serviceUser": "aodh",
+            "tls": {
+              "api": {
+                "internal": {},
+                "public": {}
+              }
+            }
+          },
+          "enabled": false,
+          "heatInstance": "heat"
+        },
+        "ceilometer": {
+          "customServiceConfig": "# add your customization here",
+          "enabled": true,
+          "passwordSelector": {
+            "aodhService": "AodhPassword",
+            "ceilometerService": "CeilometerPassword"
+          },
+          "rabbitMqClusterName": "rabbitmq",
+          "secret": "osp-secret",
+          "serviceUser": "ceilometer",
+          "tls": {}
+        },
+        "logging": {
+          "annotations": {
+            "metallb.universe.tf/address-pool": "internalapi",
+            "metallb.universe.tf/allow-shared-ip": "internalapi",
+            "metallb.universe.tf/loadBalancerIPs": "0.0.0.0"
+          },
+          "cloNamespace": "openshift-logging",
+          "enabled": false,
+          "ipaddr": "0.0.0.0",
+          "port": 10514,
+          "rsyslogQueueSize": 10000,
+          "rsyslogQueueType": "linkedList",
+          "rsyslogRetries": 100,
+          "targetPort": 10514
+        },
+        "metricStorage": {
+          "enabled": false,
+          "monitoringStack": {
+            "alertingEnabled": true,
+            "dashboardsEnabled": false,
+            "dataplaneNetwork": "ctlplane",
+            "scrapeInterval": "30s",
+            "storage": {
+              "persistent": {
+                "pvcStorageRequest": "20G",
+                "pvcStorageSelector": {}
+              },
+              "retention": "24h",
+              "strategy": "persistent"
+            }
+          },
+          "prometheusTls": {}
+        }
+      }
+    },
+    "tls": {
+      "ingress": {
+        "ca": {
+          "duration": "87600h0m0s"
+        },
+        "cert": {
+          "duration": "43800h0m0s"
+        },
+        "enabled": true
+      },
+      "podLevel": {
+        "enabled": true,
+        "internal": {
+          "ca": {
+            "duration": "87600h0m0s"
+          },
+          "cert": {
+            "duration": "43800h0m0s"
+          }
+        },
+        "libvirt": {
+          "ca": {
+            "duration": "87600h0m0s"
+          },
+          "cert": {
+            "duration": "43800h0m0s"
+          }
+        },
+        "ovn": {
+          "ca": {
+            "duration": "87600h0m0s"
+          },
+          "cert": {
+            "duration": "43800h0m0s"
+          }
+        }
+      }
+    }
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastTransitionTime": "2024-07-09T12:38:02Z",
+        "message": "Setup complete",
+        "reason": "Ready",
+        "status": "True",
+        "type": "Ready"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:28:18Z",
+        "message": "OpenStackControlPlane Barbican completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneBarbicanReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:20:09Z",
+        "message": "OpenStackControlPlane CAs completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneCAReadyCondition"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:25:54Z",
+        "message": "OpenStackControlPlane Cinder completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneCinderReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:28:18Z",
+        "message": "OpenStackControlPlane Client completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneClientReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:21:29Z",
+        "message": "OpenStackControlPlane DNS completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneDNSReadyCondition"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:24:58Z",
+        "message": "OpenStackControlPlane barbican service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposeBarbicanReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:25:24Z",
+        "message": "OpenStackControlPlane cinder service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposeCinderReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:23:42Z",
+        "message": "OpenStackControlPlane glance service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposeGlanceReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:23:10Z",
+        "message": "OpenStackControlPlane keystone service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposeKeystoneAPIReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:26:33Z",
+        "message": "OpenStackControlPlane neutron service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposeNeutronReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:28:18Z",
+        "message": "OpenStackControlPlane nova service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposeNovaReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:23:31Z",
+        "message": "OpenStackControlPlane placement service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposePlacementAPIReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:21:08Z",
+        "message": "OpenStackControlPlane swift service exposed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneExposeSwiftReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:25:06Z",
+        "message": "OpenStackControlPlane Glance completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneGlanceReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:24:01Z",
+        "message": "OpenStackControlPlane KeystoneAPI completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneKeystoneAPIReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:21:47Z",
+        "message": "OpenStackControlPlane MariaDB completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneMariaDBReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:20:59Z",
+        "message": "OpenStackControlPlane Memcached completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneMemcachedReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:27:00Z",
+        "message": "OpenStackControlPlane Neutron completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneNeutronReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:29:03Z",
+        "message": "OpenStackControlPlane Nova completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneNovaReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:25:24Z",
+        "message": "OpenStackControlPlane OVN completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneOVNReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:25:56Z",
+        "message": "OpenStackControlPlane PlacementAPI completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlanePlacementAPIReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:22:17Z",
+        "message": "OpenStackControlPlane RabbitMQ completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneRabbitMQReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:38:02Z",
+        "message": "OpenStackControlPlane Swift completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneSwiftReady"
+      },
+      {
+        "lastTransitionTime": "2024-07-09T12:28:56Z",
+        "message": "OpenStackControlPlane Telemetry completed",
+        "reason": "Ready",
+        "status": "True",
+        "type": "OpenStackControlPlaneTelemetryReady"
+      }
+    ],
+    "containerImages": {
+      "aodhAPIImage": "quay.io/podified-antelope-centos9/openstack-aodh-api@sha256:a7791990b6ebcb571050cb65701f533a56364703783d6be49d6f35b0be0bd3aa",
+      "aodhEvaluatorImage": "quay.io/podified-antelope-centos9/openstack-aodh-evaluator@sha256:24d630b558795e1442d9979ceeadf78813bee90688f970c6b80c358a297b7c71",
+      "aodhListenerImage": "quay.io/podified-antelope-centos9/openstack-aodh-listener@sha256:7eeab82350bf3b6de1ea782b1bf7b1780423ba8a55cf90c879613a3bb3faa84e",
+      "aodhNotifierImage": "quay.io/podified-antelope-centos9/openstack-aodh-notifier@sha256:71c4f4ff43907ede668739e93ac6aeca87a6a5254803b7da900a1e21e9e308f3",
+      "barbicanAPIImage": "quay.io/podified-antelope-centos9/openstack-barbican-api@sha256:0f25545a771c2e412d818eb225b4d7e169afbcb7bbae833c6b92de4d12fbbc31",
+      "barbicanKeystoneListenerImage": "quay.io/podified-antelope-centos9/openstack-barbican-keystone-listener@sha256:f61687b11a2c7f14fc7b61f2eb8887cab2353765d667e39e09905370eaefadc3",
+      "barbicanWorkerImage": "quay.io/podified-antelope-centos9/openstack-barbican-worker@sha256:1b032dea36706d32e69fdccb0da165b10a35750b0d5388ec729dc81ca5585a45",
+      "ceilometerCentralImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-central@sha256:5ad763a94c2354ac6e979179e0d62252715ab127e423d21a9cbf4ed94b916fa6",
+      "ceilometerComputeImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-compute@sha256:461f13352d475083ed2d43f7f888265c6f072ddfc48df8c180eda85f4cde787a",
+      "ceilometerIpmiImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-ipmi@sha256:d39eeaf79c0c91cc9ba820005bc379a68d13a90086079ebf71d6c3747dcc090e",
+      "ceilometerNotificationImage": "quay.io/podified-antelope-centos9/openstack-ceilometer-notification@sha256:5371664b2ac49153df99c9fa7650bb1e6c2decf64d29c33503b483ee1fb9c808",
+      "ceilometerProxyImage": "quay.io/podified-antelope-centos9/openstack-aodh-api@sha256:a7791990b6ebcb571050cb65701f533a56364703783d6be49d6f35b0be0bd3aa",
+      "ceilometerSgcoreImage": "quay.io/infrawatch/sg-core@sha256:d7a45bd3a061269b5d9fed64c24d8c2bd7122d64f30a91d36d92f92197df3ca0",
+      "cinderAPIImage": "quay.io/podified-antelope-centos9/openstack-cinder-api@sha256:070f0081836bdc2ed667ef026cbb254f9f85429d25ade88a6848692052b087b1",
+      "cinderBackupImage": "quay.io/podified-antelope-centos9/openstack-cinder-backup@sha256:08165b7fc8d0949db38a5339ed775a1a5eb2b40f155ae338bb2289af7967ef2b",
+      "cinderSchedulerImage": "quay.io/podified-antelope-centos9/openstack-cinder-scheduler@sha256:5ae39189be7b2045eee16b287d544a18e1dfc6325c21d840db0da3174e812fcc",
+      "cinderVolumeImages": {
+        "default": "quay.io/podified-antelope-centos9/openstack-cinder-volume@sha256:5b96ac3775cc478580a3f3a87ceacdff38884142fc0290f4e979502f95d9319f"
+      },
+      "glanceAPIImage": "quay.io/podified-antelope-centos9/openstack-glance-api@sha256:eab78fb595ee9f42ce245b67f64b5c20aa8251bc84fda46c690129e80c94b087",
+      "infraDnsmasqImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:a2d0bc9066872624a6c441134dd70bea556f1c72df1f426643f58311796b7e48",
+      "infraMemcachedImage": "quay.io/podified-antelope-centos9/openstack-memcached@sha256:9f99d0472b4b45f33a9635b05bc6533d07355cae5d68371441f96e3382ca1945",
+      "keystoneAPIImage": "quay.io/podified-antelope-centos9/openstack-keystone@sha256:fb1616376d2e5f313cc10754513f554939bb8d5b30f36417d35cb77b8230d240",
+      "mariadbImage": "quay.io/podified-antelope-centos9/openstack-mariadb@sha256:da215c8ad194883a11d7a5d7e82369a6880e176281f84b1606935f62c549c8a6",
+      "neutronAPIImage": "quay.io/podified-antelope-centos9/openstack-neutron-server@sha256:a2d0bc9066872624a6c441134dd70bea556f1c72df1f426643f58311796b7e48",
+      "novaAPIImage": "quay.io/podified-antelope-centos9/openstack-nova-api@sha256:5625ccb5cac4f85a135ad9e69a5f9fc1f72686af41a42b7587377c703c26e947",
+      "novaComputeImage": "quay.io/podified-antelope-centos9/openstack-nova-compute@sha256:65fe6a9e16c30376f11bb0c61aa0de5b1b87a7992f8907bf88975beb815671e8",
+      "novaConductorImage": "quay.io/podified-antelope-centos9/openstack-nova-conductor@sha256:15d04f7d6d0af0265375904e8a02dfd4c66e1a6b4d2878613c0685ba27170713",
+      "novaNovncImage": "quay.io/podified-antelope-centos9/openstack-nova-novncproxy@sha256:47d76833c109a07a6b98ca6208a280a7405cc44194ef97eabb913b4504534ab4",
+      "novaSchedulerImage": "quay.io/podified-antelope-centos9/openstack-nova-scheduler@sha256:b9c3aaabe6ee633e9183ea17ff3c787470d80dd2acb201814c3cbbfaa4f52f47",
+      "openstackClientImage": "quay.io/podified-antelope-centos9/openstack-openstackclient@sha256:a75317dca20a83264c02d61333520d10b19b34275faf70daef47d96c83dba817",
+      "ovnControllerImage": "quay.io/podified-antelope-centos9/openstack-ovn-controller@sha256:a2c9a83d8c557023f949b3af849fc28796fe541671e2e418021ee660fef8d76f",
+      "ovnControllerOvsImage": "quay.io/podified-antelope-centos9/openstack-ovn-base@sha256:4455db70d3e8cfbf2e423653bb8c85231aabe843b09fde25186b51cf7808af14",
+      "ovnNbDbclusterImage": "quay.io/podified-antelope-centos9/openstack-ovn-nb-db-server@sha256:c68c90b683a371a122f6a39221cb073a7de033c77650f6a6bf0b9a3d227bb5ef",
+      "ovnNorthdImage": "quay.io/podified-antelope-centos9/openstack-ovn-northd@sha256:ae56d40ecf53cc3a7a365ce3560a2b58c8485f77e7ca574d1d609155bb7c1871",
+      "ovnSbDbclusterImage": "quay.io/podified-antelope-centos9/openstack-ovn-sb-db-server@sha256:d3cc173b202ac6bbca432de7520cb07673d73b4a17730e143e2e32e52ce64564",
+      "placementAPIImage": "quay.io/podified-antelope-centos9/openstack-placement-api@sha256:1cf7236dd614b3c8de698c6882e4ed5e3af2b790d4bc7569ff53650030abb778",
+      "rabbitmqImage": "quay.io/podified-antelope-centos9/openstack-rabbitmq@sha256:36dd506bc00cc6c84b329f8bdd3057d09344541b1ff9bf626a6cf1a2ee59d873",
+      "swiftAccountImage": "quay.io/podified-antelope-centos9/openstack-swift-account@sha256:b49c96c8edff1c6cc720ca2d64f14c1f1c01656afc5bd4a1c9af892b9ec6d500",
+      "swiftContainerImage": "quay.io/podified-antelope-centos9/openstack-swift-container@sha256:203e2df94807363b0853ad433958f00d5dc5a9c72bea4be09d57a379c825276f",
+      "swiftObjectImage": "quay.io/podified-antelope-centos9/openstack-swift-object@sha256:9aae82e961000ef8eed09eff2c14d3716cdbdbe9e9f6880d5018a557ee2d7262",
+      "swiftProxyImage": "quay.io/podified-antelope-centos9/openstack-swift-proxy-server@sha256:47310e4cfd8460b8f624217bb90e014bbd52c9eba582eaaccfca0d9a9acd7fbe"
+    },
+    "deployedVersion": "0.0.1",
+    "observedGeneration": 1,
+    "tls": {
+      "caBundleSecretName": "combined-ca-bundle",
+      "caList": [
+        {
+          "expires": "2034-07-07T12:20:05Z",
+          "name": "rootca-public"
+        },
+        {
+          "expires": "2034-07-07T12:20:07Z",
+          "name": "rootca-internal"
+        },
+        {
+          "expires": "2034-07-07T12:20:07Z",
+          "name": "rootca-libvirt"
+        },
+        {
+          "expires": "2034-07-07T12:20:08Z",
+          "name": "rootca-ovn"
+        }
+      ]
+    }
+  }
+}
