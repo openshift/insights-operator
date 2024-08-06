@@ -41,6 +41,15 @@ const (
 	podsLimit = 8000
 )
 
+// keys are namespace / pod / containerID and the final value is the workloadRuntimeInfoContainer for this container
+type workloadRuntimes map[containerInfo]workloadRuntimeInfoContainer
+
+type containerInfo struct {
+	namespace   string
+	pod         string
+	containerID string
+}
+
 // GatherWorkloadInfo Collects summarized info about the workloads on a cluster
 // in a generic fashion
 //
@@ -87,12 +96,17 @@ func gatherWorkloadInfo(
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
 ) ([]record.Record, []error) {
+	var errors = []error{}
+
+	workloadInfos, errs := gatherWorkloadRuntimeInfos(ctx, coreClient)
+	errors = append(errors, errs...)
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
 	start := time.Now()
-	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh)
+	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh, workloadInfos)
 	if err != nil {
-		return nil, []error{err}
+		errors = append(errors, err)
+		return nil, errors
 	}
 
 	workloadImageResize(info.PodCount)
@@ -108,9 +122,10 @@ func gatherWorkloadInfo(
 	handleWorkloadImageInfo(ctx, &info, start, imagesDoneCh)
 
 	if limitReached {
-		return records, []error{fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit)}
+		errors = append(errors, fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit))
 	}
-	return records, nil
+
+	return records, errors
 }
 
 // nolint: funlen, gocritic, gocyclo
@@ -118,6 +133,7 @@ func workloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageCh chan string,
+	workloadInfos workloadRuntimes,
 ) (bool, workloadPods, error) {
 	defer close(imageCh)
 	limitReached := false
@@ -173,7 +189,7 @@ func workloadInfo(
 				continue
 			}
 
-			podShape, ok := calculatePodShape(h, &pod)
+			podShape, ok := calculatePodShape(h, &pod, workloadInfos)
 			if !ok {
 				namespacePods.InvalidCount++
 				continue
@@ -225,15 +241,15 @@ func podCanBeIgnored(pod *corev1.Pod) bool {
 		len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers)
 }
 
-func calculatePodShape(h hash.Hash, pod *corev1.Pod) (workloadPodShape, bool) {
+func calculatePodShape(h hash.Hash, pod *corev1.Pod, workloadInfo workloadRuntimes) (workloadPodShape, bool) {
 	var podShape workloadPodShape
 	var ok bool
-	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.Spec.InitContainers, pod.Status.InitContainerStatuses)
+	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.InitContainers, pod.Status.InitContainerStatuses, workloadInfo)
 	if !ok {
 		return workloadPodShape{}, false
 	}
 
-	podShape.Containers, ok = calculateWorkloadContainerShapes(h, pod.Spec.Containers, pod.Status.ContainerStatuses)
+	podShape.Containers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.Containers, pod.Status.ContainerStatuses, workloadInfo)
 	if !ok {
 		return workloadPodShape{}, false
 	}
@@ -402,7 +418,9 @@ func workloadContainerShapesEqual(a, b []workloadContainerShape) bool {
 		return false
 	}
 	for i := range a {
-		if a[i] != b[i] {
+		if a[i].ImageID != b[i].ImageID ||
+			a[i].FirstArg != b[i].FirstArg ||
+			a[i].FirstCommand != b[i].FirstCommand {
 			return false
 		}
 	}
@@ -464,8 +482,10 @@ func idForImageReference(s string) string {
 // can't be met (invalid status, no imageID) false is returned.
 func calculateWorkloadContainerShapes(
 	h hash.Hash,
+	podMeta metav1.ObjectMeta,
 	spec []corev1.Container,
 	status []corev1.ContainerStatus,
+	runtimesInfo workloadRuntimes,
 ) ([]workloadContainerShape, bool) {
 	shapes := make([]workloadContainerShape, 0, len(status))
 	for i := range status {
@@ -496,11 +516,24 @@ func calculateWorkloadContainerShapes(
 			firstArg = shortHash
 		}
 
+		var runtimeInfo *workloadRuntimeInfoContainer
+		conInfo := containerInfo{
+			namespace:   podMeta.Namespace,
+			pod:         podMeta.Name,
+			containerID: status[i].ContainerID,
+		}
+
+		if workloadRuntimeInfo, ok := runtimesInfo[conInfo]; ok {
+			runtimeInfo = &workloadRuntimeInfo
+		}
+
 		shapes = append(shapes, workloadContainerShape{
 			ImageID:      imageID,
 			FirstCommand: firstCommand,
 			FirstArg:     firstArg,
+			RuntimeInfo:  runtimeInfo,
 		})
+
 	}
 	return shapes, true
 }
