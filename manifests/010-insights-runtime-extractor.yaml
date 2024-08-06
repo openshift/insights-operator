@@ -26,6 +26,12 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: data-volume
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
         - name: extractor
           image: ghcr.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
