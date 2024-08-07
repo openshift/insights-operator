@@ -30,7 +30,8 @@ import (
 // - 4.16
 //
 // ### Backported versions
-// TBD
+// - 4.15.20+
+// - 4.14.32+
 //
 // ### Changes
 // None

@@ -92,7 +92,8 @@ Collects instances outside of the `openshift-monitoring` of the following custom
 - 4.16
 
 ### Backported versions
-TBD
+- 4.15.20+
+- 4.14.32+
 
 ### Changes
 None
@@ -747,29 +748,8 @@ None
 
 ## ContainersLogs
 
-Collects either current or previous containers logs for pods firing one of the
-alerts from the conditions fetched from insights conditions service.
-
-### API Reference
-None
-
-### Sample data
-- [docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log](./insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log)
-
-### Location in archive
-- `conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log`
-
-### Config ID
-`conditional/containers_logs`
-
-### Released version
-- 4.10.0
-
-### Backported versions
-None
-
-### Changes
-None
+refers to the Rapid Recommendations
+(see https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md).
 
 
 ## CostManagementMetricsConfigs

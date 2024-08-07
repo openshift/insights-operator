@@ -1,5 +1,5 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 82e7c86ab5707ee3ccc6adbf78656a7a1e1daa12-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: f7c5ffd753f6c93c3bf634bb3c74957cc759938f-->
 ## 4.15
 
 ### Data Enhancement
