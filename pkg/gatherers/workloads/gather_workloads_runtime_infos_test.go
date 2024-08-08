@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
+	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
 func TestMergeWokloads(t *testing.T) {
@@ -191,6 +196,137 @@ func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr.Error(), result.Error.Error())
 			}
+		})
+	}
+}
+
+func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
+	tests := []struct {
+		name           string
+		pods           []*v1.Pod
+		expectedErr    error
+		expectedResult []podWithNodeName
+	}{
+		{
+			name:           "empty Pod list",
+			pods:           []*v1.Pod{},
+			expectedErr:    nil,
+			expectedResult: []podWithNodeName(nil),
+		},
+		{
+			name: "Pod doesn't have the required label",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: "openshift-insights",
+					},
+				},
+			},
+			expectedErr:    nil,
+			expectedResult: []podWithNodeName(nil),
+		},
+		{
+			name: "Pod has the required label, but it is not running",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: "openshift-insights",
+						Labels: map[string]string{
+							"app.kubernetes.io/name": "insights-runtime-extractor",
+						},
+					},
+				},
+			},
+			expectedErr:    nil,
+			expectedResult: []podWithNodeName(nil),
+		},
+		{
+			name: "some Pods found",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-1",
+						Namespace: "openshift-insights",
+						Labels: map[string]string{
+							"app.kubernetes.io/name": "insights-runtime-extractor",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-2",
+						Namespace: "openshift-insights",
+						Labels: map[string]string{
+							"app.kubernetes.io/name": "insights-runtime-extractor",
+						},
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node-foo",
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+						PodIP: "127.0.0.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-3",
+						Namespace: "openshift-another",
+						Labels: map[string]string{
+							"app.kubernetes.io/name": "insights-runtime-extractor",
+						},
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node-bar",
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+						PodIP: "127.0.0.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod-4",
+						Namespace: "openshift-insights",
+						Labels: map[string]string{
+							"app.kubernetes.io/name": "insights-runtime-extractor",
+						},
+					},
+					Spec: v1.PodSpec{
+						NodeName: "node-bar",
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+						PodIP: "127.0.0.10",
+					},
+				},
+			},
+			expectedErr: nil,
+			expectedResult: []podWithNodeName{
+				{
+					nodeName: "node-foo",
+					podIP:    "127.0.0.1",
+				},
+				{
+					nodeName: "node-bar",
+					podIP:    "127.0.0.10",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cli := kubefake.NewSimpleClientset()
+			err := utils.AddObjectsToClientSet[[]*v1.Pod](cli, tt.pods)
+			assert.NoError(t, err)
+			err = os.Setenv("POD_NAMESPACE", "openshift-insights")
+			assert.NoError(t, err)
+			result, err := getInsightsOperatorRuntimePodIPs(context.Background(), cli.CoreV1())
+			assert.Equal(t, tt.expectedErr, err)
+			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }
