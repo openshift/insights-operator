@@ -96,17 +96,17 @@ func gatherWorkloadInfo(
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
 ) ([]record.Record, []error) {
-	var errors = []error{}
+	var errs = []error{}
 
-	workloadInfos, errs := gatherWorkloadRuntimeInfos(ctx, coreClient)
-	errors = append(errors, errs...)
+	workloadInfos, runtimeInfoErrs := gatherWorkloadRuntimeInfos(ctx, coreClient)
+	errs = append(errs, runtimeInfoErrs...)
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
 	start := time.Now()
 	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh, workloadInfos)
 	if err != nil {
-		errors = append(errors, err)
-		return nil, errors
+		errs = append(errs, err)
+		return nil, errs
 	}
 
 	workloadImageResize(info.PodCount)
@@ -122,10 +122,10 @@ func gatherWorkloadInfo(
 	handleWorkloadImageInfo(ctx, &info, start, imagesDoneCh)
 
 	if limitReached {
-		errors = append(errors, fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit))
+		errs = append(errs, fmt.Errorf("the %d limit for number of pods gathered was reached", podsLimit))
 	}
 
-	return records, errors
+	return records, errs
 }
 
 // nolint: funlen, gocritic, gocyclo
@@ -244,12 +244,14 @@ func podCanBeIgnored(pod *corev1.Pod) bool {
 func calculatePodShape(h hash.Hash, pod *corev1.Pod, workloadInfo workloadRuntimes) (workloadPodShape, bool) {
 	var podShape workloadPodShape
 	var ok bool
-	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.InitContainers, pod.Status.InitContainerStatuses, workloadInfo)
+	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, &pod.ObjectMeta, pod.Spec.InitContainers,
+		pod.Status.InitContainerStatuses, workloadInfo)
 	if !ok {
 		return workloadPodShape{}, false
 	}
 
-	podShape.Containers, ok = calculateWorkloadContainerShapes(h, pod.ObjectMeta, pod.Spec.Containers, pod.Status.ContainerStatuses, workloadInfo)
+	podShape.Containers, ok = calculateWorkloadContainerShapes(h, &pod.ObjectMeta, pod.Spec.Containers,
+		pod.Status.ContainerStatuses, workloadInfo)
 	if !ok {
 		return workloadPodShape{}, false
 	}
@@ -482,7 +484,7 @@ func idForImageReference(s string) string {
 // can't be met (invalid status, no imageID) false is returned.
 func calculateWorkloadContainerShapes(
 	h hash.Hash,
-	podMeta metav1.ObjectMeta,
+	podMeta *metav1.ObjectMeta,
 	spec []corev1.Container,
 	status []corev1.ContainerStatus,
 	runtimesInfo workloadRuntimes,
@@ -533,7 +535,6 @@ func calculateWorkloadContainerShapes(
 			FirstArg:     firstArg,
 			RuntimeInfo:  runtimeInfo,
 		})
-
 	}
 	return shapes, true
 }

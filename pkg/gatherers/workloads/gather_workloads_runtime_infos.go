@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	corev1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +58,8 @@ func gatherWorkloadRuntimeInfos(
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
-			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, podInfo.podIP)
+			extractorURL := fmt.Sprintf("http://%s:8000/gather_runtime_info", podInfo.podIP)
+			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, extractorURL)
 		}(runtimePodIPs[i])
 	}
 
@@ -87,7 +89,8 @@ func getInsightsOperatorRuntimePodIPs(
 	}
 
 	var runtimePods []podWithNodeName
-	for _, pod := range pods.Items {
+	for i := range pods.Items {
+		pod := &pods.Items[i]
 		running := pod.Status.Phase == corev1.PodRunning
 		if running {
 			runtimePods = append(runtimePods, podWithNodeName{
@@ -117,13 +120,11 @@ type workloadRuntimesResult struct {
 // FIXME return an (workloadRuntimes, error)
 func getNodeWorkloadRuntimeInfos(
 	ctx context.Context,
-	runtimePodIP string,
+	url string,
 ) workloadRuntimesResult {
-
-	extractorURL := fmt.Sprintf("http://%s:8000/gather_runtime_info", runtimePodIP)
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, "GET", extractorURL, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return workloadRuntimesResult{
 			Error: err,
@@ -136,7 +137,12 @@ func getNodeWorkloadRuntimeInfos(
 		}
 	}
 	if resp.StatusCode != 200 {
-		return workloadRuntimesResult{}
+		return workloadRuntimesResult{
+			Error: insightsclient.HttpError{
+				StatusCode: resp.StatusCode,
+				Err:        fmt.Errorf("%s", resp.Status),
+			},
+		}
 	}
 	defer resp.Body.Close()
 
@@ -147,7 +153,12 @@ func getNodeWorkloadRuntimeInfos(
 		}
 	}
 	var nodeOutput nodeRuntimeInfo
-	json.Unmarshal(body, &nodeOutput)
+	err = json.Unmarshal(body, &nodeOutput)
+	if err != nil {
+		return workloadRuntimesResult{
+			Error: err,
+		}
+	}
 
 	result := make(workloadRuntimes)
 
@@ -156,11 +167,11 @@ func getNodeWorkloadRuntimeInfos(
 	// stored by the Insights operator as a map of (namespace/pod-name/container-id) / workloadRuntimeInfoContainer
 	for nsName, nsRuntimeInfo := range nodeOutput {
 		for podName, podRuntimeInfo := range nsRuntimeInfo {
-			for containerId, containerRuntimeInfo := range podRuntimeInfo {
+			for containerID, containerRuntimeInfo := range podRuntimeInfo {
 				cInfo := containerInfo{
 					namespace:   nsName,
 					pod:         podName,
-					containerID: containerId,
+					containerID: containerID,
 				}
 				result[cInfo] = containerRuntimeInfo
 			}
