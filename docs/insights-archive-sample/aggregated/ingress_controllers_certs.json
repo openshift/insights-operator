@@ -1,0 +1,21 @@
+[
+    {
+        "name": "router-ca",
+        "namespace": "openshift-ingress-operator",
+        "not_before": "2024-06-07T07:27:34Z",
+        "not_after": "2026-06-07T07:27:35Z",
+        "controllers": [
+            {
+                "name": "test-ingresscontroller-name",
+                "namespace": "openshift-ingress-operator"
+            }
+        ]
+    },
+    {
+        "name": "router-certs-default",
+        "namespace": "openshift-ingress",
+        "not_before": "2024-06-07T07:27:35Z",
+        "not_after": "2026-06-07T07:27:36Z",
+        "controllers": []
+    }
+]
