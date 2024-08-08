@@ -1,13 +1,16 @@
 package workloads
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMergeWokloads(t *testing.T) {
-
 	tests := []struct {
 		name     string
 		global   workloadRuntimes
@@ -127,5 +130,67 @@ func TestMergeWokloads(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.global)
 		})
 	}
+}
 
+func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
+	tests := []struct {
+		name         string
+		data         []byte
+		status       int
+		expectedErr  error
+		expectedData workloadRuntimes
+	}{
+		{
+			name:         "data cannot be parsed",
+			data:         []byte("this is not json"),
+			status:       http.StatusOK,
+			expectedErr:  fmt.Errorf("invalid character 'h' in literal true (expecting 'r')"),
+			expectedData: nil,
+		},
+		{
+			name:         "server returns non-200 HTTP response",
+			data:         []byte("this is not json"),
+			status:       http.StatusInternalServerError,
+			expectedErr:  fmt.Errorf("%d %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)),
+			expectedData: nil,
+		},
+		{
+			name:        "server returns 200 HTTP response with data",
+			data:        []byte(`{"test-namespace": {"test-pod-1": {"cri-o://foo-1": {"os": "rhel", "runtimes": [{"name": "runtime-A"}]}}}}`),
+			status:      http.StatusOK,
+			expectedErr: nil,
+			expectedData: workloadRuntimes{
+				containerInfo{
+					namespace:   "test-namespace",
+					pod:         "test-pod-1",
+					containerID: "cri-o://foo-1",
+				}: workloadRuntimeInfoContainer{
+					Os: "rhel",
+					Runtimes: []RuntimeComponent{
+						{
+							Name: "runtime-A",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.status)
+				_, err := w.Write(tt.data)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}))
+			ctx := context.Background()
+			result := getNodeWorkloadRuntimeInfos(ctx, httpServer.URL)
+			assert.Equal(t, tt.expectedData, result.WorkloadRuntimes)
+			if tt.expectedErr != nil {
+				assert.Equal(t, tt.expectedErr.Error(), result.Error.Error())
+			}
+		})
+	}
 }
