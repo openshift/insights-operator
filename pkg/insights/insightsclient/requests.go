@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"runtime"
 
 	"k8s.io/klog/v2"
 
@@ -192,7 +193,16 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(scaArchPayload)))
+	arch := runtime.GOARCH
+	klog.Infof("Arch at run time %s", arch)
+	if runtime.GOARCH == "amd64" {
+		arch = "x86_64"
+		klog.Infof("Arch at if condition %s", arch)
+	} else if runtime.GOARCH == "arm64" {
+		arch = "aarch64"
+		klog.Infof("Arch at elif condition %s", arch)
+	}
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(fmt.Sprintf(scaArchPayload, arch))))
 	if err != nil {
 		return nil, err
 	}
