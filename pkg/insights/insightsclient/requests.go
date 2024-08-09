@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"runtime"
 
 	"k8s.io/klog/v2"
 
@@ -192,7 +193,7 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(scaArchPayload)))
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(fmt.Sprintf(scaArchPayload, runtime.GOARCH))))
 	if err != nil {
 		return nil, err
 	}
