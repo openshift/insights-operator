@@ -1,0 +1,17 @@
+
+# Only the "operator" service account in the openshift-insights namespace
+# can access the insights-runtime-extractor API
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-rbac-proxy
+  namespace: openshift-insights
+data:
+  config.yaml: |+
+    authorization:
+      static:
+        - path: /gather_runtime_info
+          resourceRequest: false
+          user:
+            name: system:serviceaccount:openshift-insights:operator
+          verb: get

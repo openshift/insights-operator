@@ -6,4 +6,6 @@ podman push quay.io/jmesnil/insights-operator-with-runtime
 
 oc apply -f ./manifests/06a-deployment-with-runtime.yaml
 oc apply -f ./manifests/010-clusterrole-insights-runtime-extractor.yaml
+oc apply -f ./manifests/010-insights-runtime-extractor-service.yaml
+oc apply -f ./manifests/010-insights-runtime-extractor-proxy-configmap.yaml
 oc apply -f ./manifests/010-insights-runtime-extractor.yaml

@@ -2,6 +2,7 @@ package workloads
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,9 +13,9 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/klog/v2"
 )
 
@@ -58,7 +59,7 @@ func gatherWorkloadRuntimeInfos(
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
-			extractorURL := fmt.Sprintf("http://%s:8000/gather_runtime_info", podInfo.podIP)
+			extractorURL := fmt.Sprintf("https://%s:8000/gather_runtime_info", podInfo.podIP)
 			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, extractorURL)
 		}(runtimePodIPs[i])
 	}
@@ -117,20 +118,50 @@ type workloadRuntimesResult struct {
 }
 
 // Get all WorkloadRuntimeInfos for a single Node (using the insights-runtime-extractor pod running on this node)
-// FIXME return an (workloadRuntimes, error)
 func getNodeWorkloadRuntimeInfos(
 	ctx context.Context,
 	url string,
 ) workloadRuntimesResult {
+	const (
+		tokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+		// Use the certificate authority from the service to verify the TLS connection to the insights-runtime-extractor
+		rootCAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
+	)
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
+
+	// Read the token for the operator service account
+	token, err := os.ReadFile(tokenFile)
+	if err != nil {
+		return workloadRuntimesResult{
+			Error: err,
+		}
+	}
+
+	caCertPool, err := certutil.NewPool(rootCAFile)
+	if err != nil {
+		return workloadRuntimesResult{
+			Error: err,
+		}
+	}
+
+	authClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: false,
+				RootCAs:            caCertPool,
+				ServerName:         "exporter.openshift-insights.svc.cluster.local",
+			},
+		},
+	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return workloadRuntimesResult{
 			Error: err,
 		}
 	}
-	resp, err := http.DefaultClient.Do(request)
+	request.Header.Set("Authorization", "Bearer "+string(token))
+	resp, err := authClient.Do(request)
 	if err != nil {
 		return workloadRuntimesResult{
 			Error: err,
