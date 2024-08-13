@@ -14,3 +14,7 @@ spec:
     from:
       kind: "DockerImage"
       name: "ghcr.io/jmesnil/insights-runtime-exporter:latest"
+  - name: kube-rbac-proxy
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-kube-rbac-proxy:latest

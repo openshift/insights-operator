@@ -20,6 +20,30 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       containers:
+        - name: kube-rbac-proxy
+          image: quay.io/openshift/origin-kube-rbac-proxy:latest
+          args:
+            - '--secure-listen-address=$(IP):8000'
+            - '--upstream=http://127.0.0.1:8000'
+            - '--config-file=/etc/kube-rbac-proxy/config.yaml'
+            - '--tls-cert-file=/etc/tls/private/tls.crt'
+            - '--tls-private-key-file=/etc/tls/private/tls.key'
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
+            - mountPath: /etc/kube-rbac-proxy
+              name: kube-rbac-proxy-cm
+          env:
+            - name: IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          ports:
+            - name: https
+              containerPort: 8000
+              protocol: TCP
         - name: exporter
           image: ghcr.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
@@ -57,3 +81,9 @@ spec:
             type: Socket
         - name: data-volume
           emptyDir: {}
+        - name: kube-rbac-proxy-cm
+          configMap:
+            name: kube-rbac-proxy
+        - name: insights-runtime-extractor-tls
+          secret:
+            secretName: insights-runtime-extractor-tls
