@@ -98,7 +98,11 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().SCA.Endpoint,
 		c.configurator.Config().SCA.Interval)
 
-	data, err := c.requestSCAWithExpBackoff(ctx, endpoint)
+	architectures, err := c.gatherArchitectures(ctx)
+	if err != nil {
+		klog.Warningf("Gathering nodes architectures failed: %s", err.Error())
+	}
+	responses, err := c.requestSCAWithExpBackoff(ctx, endpoint, architectures)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
 		errMsg := fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err)
@@ -125,17 +129,19 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 		return
 	}
 
-	var ocmRes Response
-	err = json.Unmarshal(data, &ocmRes)
-	if err != nil {
-		klog.Errorf("Unable to decode response: %v", err)
-		return
-	}
-	// check & update the secret here
-	err = c.checkSecret(ctx, &ocmRes)
-	if err != nil {
-		klog.Errorf("Error when checking the %s secret: %v", secretName, err)
-		return
+	for idx := range responses {
+		var ocmRes Response
+		err = json.Unmarshal(responses[idx], &ocmRes)
+		if err != nil {
+			klog.Errorf("Unable to decode response: %v", err)
+			return
+		}
+		// check & update the secret here
+		err = c.checkSecret(ctx, &ocmRes)
+		if err != nil {
+			klog.Errorf("Error when checking the %s secret: %v", secretName, err)
+			return
+		}
 	}
 
 	klog.Infof("%s secret successfully updated", secretName)
@@ -222,7 +228,7 @@ func getArch() string {
 // requestSCAWithExpBackoff queries OCM API with exponential backoff.
 // Returns HttpError (see insightsclient.go) in case of any HTTP error response from OCM API.
 // The exponential backoff is applied only for HTTP errors >= 500.
-func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string) ([]byte, error) {
+func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string, architectures map[string]struct{}) ([][]byte, error) {
 	bo := wait.Backoff{
 		Duration: c.configurator.Config().SCA.Interval / 32, // 15 min by default
 		Factor:   2,
@@ -231,30 +237,35 @@ func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint stri
 		Cap:      c.configurator.Config().SCA.Interval,
 	}
 
-	var data []byte
+	klog.Infof("Nodes architectures: %s", architectures)
+	var responses [][]byte
+	responses = make([][]byte, len(architectures))
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {
-		var err error
-		data, err = c.client.RecvSCACerts(ctx, endpoint, getArch())
-		if err != nil {
-			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
-			if !insightsclient.IsHttpError(err) {
-				return true, err
-			}
-			httpErr := err.(insightsclient.HttpError)
-			// try again only in case of 500 or higher
-			if httpErr.StatusCode >= http.StatusInternalServerError {
-				// check the number of steps to prevent "timeout waiting for condition" error - we want to propagate the HTTP error
-				if bo.Steps > 1 {
-					klog.Errorf("%v. Trying again in %s", httpErr, bo.Step())
-					return false, nil
+		for arch := range architectures {
+			data, err := c.client.RecvSCACerts(ctx, endpoint, arch)
+			if err != nil {
+				// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
+				if !insightsclient.IsHttpError(err) {
+					return true, err
 				}
+				httpErr := err.(insightsclient.HttpError)
+				// try again only in case of 500 or higher
+				if httpErr.StatusCode >= http.StatusInternalServerError {
+					// check the number of steps to prevent "timeout waiting for condition" error - we want to propagate the HTTP error
+					if bo.Steps > 1 {
+						klog.Errorf("%v. Trying again in %s", httpErr, bo.Step())
+						return false, nil
+					}
+				}
+				return true, httpErr
 			}
-			return true, httpErr
+
+			responses = append(responses, data)
 		}
 		return true, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return responses, nil
 }
