@@ -219,7 +219,7 @@ func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 	var data []byte
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {
 		var err error
-		data, err = c.client.RecvSCACerts(c.ctx, endpoint)
+		data, err = c.client.RecvSCACerts(c.ctx, endpoint, "x86_64")
 		if err != nil {
 			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
 			if !insightsclient.IsHttpError(err) {
