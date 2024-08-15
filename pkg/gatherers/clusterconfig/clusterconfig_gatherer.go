@@ -46,6 +46,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"image_registries":                  (*Gatherer).GatherClusterImageRegistry,
 	"infrastructures":                   (*Gatherer).GatherClusterInfrastructure,
 	"ingress":                           (*Gatherer).GatherClusterIngress,
+	"ingress_certificates":              (*Gatherer).GatherClusterIngressCertificates,
 	"install_plans":                     (*Gatherer).GatherInstallPlans,
 	"jaegers":                           (*Gatherer).GatherJaegerCR,
 	"kube_controller_manager_logs":      (*Gatherer).GatherKubeControllerManagerLogs,
