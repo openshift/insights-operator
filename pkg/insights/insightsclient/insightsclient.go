@@ -41,7 +41,7 @@ type Client struct {
 	maxBytes     int64
 	metricsName  string
 	authorizer   Authorizer
-	configClient *configv1client.Clientset
+	configClient configv1client.Interface
 }
 
 type Authorizer interface {
@@ -89,7 +89,7 @@ func IsHttpError(err error) bool {
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
 // New creates a Client
-func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, configClient *configv1client.Clientset) *Client {
+func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, configClient configv1client.Interface) *Client {
 	if client == nil {
 		client = &http.Client{}
 	}
