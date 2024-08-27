@@ -32,8 +32,11 @@ type recordWithError struct {
 
 var sinceSeconds = int64(6 * 60 * 60)
 
-// GatherContainersLogs refers to the Rapid Recommendations
-// (see https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md).
+// GatherContainersLogs is used for more dynamic log gathering based on the
+// [Rapid Recommendations](https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md).
+//
+// In general this function finds the Pods (and containers) that match the requested data and filters all the container logs
+// to match the specific messages up to a maximum of 6 hours old.
 func (g *Gatherer) GatherContainersLogs(rawLogRequests []RawLogRequest) (gatherers.GatheringClosure, error) { // nolint: dupl
 	return gatherers.GatheringClosure{
 		Run: func(ctx context.Context) ([]record.Record, []error) {
