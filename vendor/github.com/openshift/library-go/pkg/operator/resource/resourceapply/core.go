@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourcehelper"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -18,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	coreclientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 )
 
 // TODO find  way to create a registry of these based on struct mapping or some such that forces users to get this right
@@ -94,7 +96,7 @@ func ApplyNamespaceImproved(ctx context.Context, client coreclientv1.NamespacesG
 		requiredCopy := required.DeepCopy()
 		actual, err := client.Namespaces().
 			Create(ctx, resourcemerge.WithCleanLabelsAndAnnotations(requiredCopy).(*corev1.Namespace), metav1.CreateOptions{})
-		reportCreateEvent(recorder, requiredCopy, err)
+		resourcehelper.ReportCreateEvent(recorder, requiredCopy, err)
 		cache.UpdateCachedResourceMetadata(required, actual)
 		return actual, true, err
 	}
@@ -106,11 +108,11 @@ func ApplyNamespaceImproved(ctx context.Context, client coreclientv1.NamespacesG
 		return existing, false, nil
 	}
 
-	modified := resourcemerge.BoolPtr(false)
+	modified := false
 	existingCopy := existing.DeepCopy()
 
-	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
-	if !*modified {
+	resourcemerge.EnsureObjectMeta(&modified, &existingCopy.ObjectMeta, required.ObjectMeta)
+	if !modified {
 		cache.UpdateCachedResourceMetadata(required, existingCopy)
 		return existingCopy, false, nil
 	}
@@ -120,7 +122,7 @@ func ApplyNamespaceImproved(ctx context.Context, client coreclientv1.NamespacesG
 	}
 
 	actual, err := client.Namespaces().Update(ctx, existingCopy, metav1.UpdateOptions{})
-	reportUpdateEvent(recorder, required, err)
+	resourcehelper.ReportUpdateEvent(recorder, required, err)
 	cache.UpdateCachedResourceMetadata(required, actual)
 	return actual, true, err
 }
@@ -141,7 +143,7 @@ func ApplyServiceImproved(ctx context.Context, client coreclientv1.ServicesGette
 		requiredCopy := required.DeepCopy()
 		actual, err := client.Services(requiredCopy.Namespace).
 			Create(ctx, resourcemerge.WithCleanLabelsAndAnnotations(requiredCopy).(*corev1.Service), metav1.CreateOptions{})
-		reportCreateEvent(recorder, requiredCopy, err)
+		resourcehelper.ReportCreateEvent(recorder, requiredCopy, err)
 		cache.UpdateCachedResourceMetadata(required, actual)
 		return actual, true, err
 	}
@@ -153,12 +155,12 @@ func ApplyServiceImproved(ctx context.Context, client coreclientv1.ServicesGette
 		return existing, false, nil
 	}
 
-	modified := resourcemerge.BoolPtr(false)
+	modified := false
 	existingCopy := existing.DeepCopy()
 
 	// This will catch also changes between old `required.spec` and current `required.spec`, because
 	// the annotation from SetSpecHashAnnotation will be different.
-	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
+	resourcemerge.EnsureObjectMeta(&modified, &existingCopy.ObjectMeta, required.ObjectMeta)
 	selectorSame := equality.Semantic.DeepEqual(existingCopy.Spec.Selector, required.Spec.Selector)
 
 	typeSame := false
@@ -168,7 +170,7 @@ func ApplyServiceImproved(ctx context.Context, client coreclientv1.ServicesGette
 		typeSame = true
 	}
 
-	if selectorSame && typeSame && !*modified {
+	if selectorSame && typeSame && !modified {
 		cache.UpdateCachedResourceMetadata(required, existingCopy)
 		return existingCopy, false, nil
 	}
@@ -181,7 +183,7 @@ func ApplyServiceImproved(ctx context.Context, client coreclientv1.ServicesGette
 	}
 
 	actual, err := client.Services(required.Namespace).Update(ctx, existingCopy, metav1.UpdateOptions{})
-	reportUpdateEvent(recorder, required, err)
+	resourcehelper.ReportUpdateEvent(recorder, required, err)
 	cache.UpdateCachedResourceMetadata(required, actual)
 	return actual, true, err
 }
@@ -193,7 +195,7 @@ func ApplyPodImproved(ctx context.Context, client coreclientv1.PodsGetter, recor
 		requiredCopy := required.DeepCopy()
 		actual, err := client.Pods(requiredCopy.Namespace).
 			Create(ctx, resourcemerge.WithCleanLabelsAndAnnotations(requiredCopy).(*corev1.Pod), metav1.CreateOptions{})
-		reportCreateEvent(recorder, requiredCopy, err)
+		resourcehelper.ReportCreateEvent(recorder, requiredCopy, err)
 		cache.UpdateCachedResourceMetadata(required, actual)
 		return actual, true, err
 	}
@@ -205,11 +207,11 @@ func ApplyPodImproved(ctx context.Context, client coreclientv1.PodsGetter, recor
 		return existing, false, nil
 	}
 
-	modified := resourcemerge.BoolPtr(false)
+	modified := false
 	existingCopy := existing.DeepCopy()
 
-	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
-	if !*modified {
+	resourcemerge.EnsureObjectMeta(&modified, &existingCopy.ObjectMeta, required.ObjectMeta)
+	if !modified {
 		cache.UpdateCachedResourceMetadata(required, existingCopy)
 		return existingCopy, false, nil
 	}
@@ -219,7 +221,7 @@ func ApplyPodImproved(ctx context.Context, client coreclientv1.PodsGetter, recor
 	}
 
 	actual, err := client.Pods(required.Namespace).Update(ctx, existingCopy, metav1.UpdateOptions{})
-	reportUpdateEvent(recorder, required, err)
+	resourcehelper.ReportUpdateEvent(recorder, required, err)
 	cache.UpdateCachedResourceMetadata(required, actual)
 	return actual, true, err
 }
@@ -231,7 +233,7 @@ func ApplyServiceAccountImproved(ctx context.Context, client coreclientv1.Servic
 		requiredCopy := required.DeepCopy()
 		actual, err := client.ServiceAccounts(requiredCopy.Namespace).
 			Create(ctx, resourcemerge.WithCleanLabelsAndAnnotations(requiredCopy).(*corev1.ServiceAccount), metav1.CreateOptions{})
-		reportCreateEvent(recorder, requiredCopy, err)
+		resourcehelper.ReportCreateEvent(recorder, requiredCopy, err)
 		cache.UpdateCachedResourceMetadata(required, actual)
 		return actual, true, err
 	}
@@ -243,11 +245,11 @@ func ApplyServiceAccountImproved(ctx context.Context, client coreclientv1.Servic
 		return existing, false, nil
 	}
 
-	modified := resourcemerge.BoolPtr(false)
+	modified := false
 	existingCopy := existing.DeepCopy()
 
-	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
-	if !*modified {
+	resourcemerge.EnsureObjectMeta(&modified, &existingCopy.ObjectMeta, required.ObjectMeta)
+	if !modified {
 		cache.UpdateCachedResourceMetadata(required, existingCopy)
 		return existingCopy, false, nil
 	}
@@ -255,7 +257,7 @@ func ApplyServiceAccountImproved(ctx context.Context, client coreclientv1.Servic
 		klog.Infof("ServiceAccount %q changes: %v", required.Namespace+"/"+required.Name, JSONPatchNoError(existing, required))
 	}
 	actual, err := client.ServiceAccounts(required.Namespace).Update(ctx, existingCopy, metav1.UpdateOptions{})
-	reportUpdateEvent(recorder, required, err)
+	resourcehelper.ReportUpdateEvent(recorder, required, err)
 	cache.UpdateCachedResourceMetadata(required, actual)
 	return actual, true, err
 }
@@ -267,7 +269,7 @@ func ApplyConfigMapImproved(ctx context.Context, client coreclientv1.ConfigMapsG
 		requiredCopy := required.DeepCopy()
 		actual, err := client.ConfigMaps(requiredCopy.Namespace).
 			Create(ctx, resourcemerge.WithCleanLabelsAndAnnotations(requiredCopy).(*corev1.ConfigMap), metav1.CreateOptions{})
-		reportCreateEvent(recorder, requiredCopy, err)
+		resourcehelper.ReportCreateEvent(recorder, requiredCopy, err)
 		cache.UpdateCachedResourceMetadata(required, actual)
 		return actual, true, err
 	}
@@ -279,10 +281,10 @@ func ApplyConfigMapImproved(ctx context.Context, client coreclientv1.ConfigMapsG
 		return existing, false, nil
 	}
 
-	modified := resourcemerge.BoolPtr(false)
+	modified := false
 	existingCopy := existing.DeepCopy()
 
-	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
+	resourcemerge.EnsureObjectMeta(&modified, &existingCopy.ObjectMeta, required.ObjectMeta)
 
 	// injected by cluster-network-operator: https://github.com/openshift/cluster-network-operator/blob/acc819ee0f3424a341b9ad4e1e83ca0a742c230a/docs/architecture.md?L192#configmap-ca-injector
 	caBundleInjected := required.Labels["config.openshift.io/inject-trusted-cabundle"] == "true"
@@ -325,7 +327,7 @@ func ApplyConfigMapImproved(ctx context.Context, client coreclientv1.ConfigMapsG
 	}
 
 	dataSame := len(modifiedKeys) == 0
-	if dataSame && !*modified {
+	if dataSame && !modified {
 		cache.UpdateCachedResourceMetadata(required, existingCopy)
 		return existingCopy, false, nil
 	}
@@ -349,7 +351,7 @@ func ApplyConfigMapImproved(ctx context.Context, client coreclientv1.ConfigMapsG
 	if klog.V(2).Enabled() {
 		klog.Infof("ConfigMap %q changes: %v", required.Namespace+"/"+required.Name, JSONPatchNoError(existing, required))
 	}
-	reportUpdateEvent(recorder, required, err, details)
+	resourcehelper.ReportUpdateEvent(recorder, required, err, details)
 	cache.UpdateCachedResourceMetadata(required, actual)
 	return actual, true, err
 }
@@ -385,7 +387,7 @@ func ApplySecretImproved(ctx context.Context, client coreclientv1.SecretsGetter,
 		requiredCopy := required.DeepCopy()
 		actual, err := client.Secrets(requiredCopy.Namespace).
 			Create(ctx, resourcemerge.WithCleanLabelsAndAnnotations(requiredCopy).(*corev1.Secret), metav1.CreateOptions{})
-		reportCreateEvent(recorder, requiredCopy, err)
+		resourcehelper.ReportCreateEvent(recorder, requiredCopy, err)
 		cache.UpdateCachedResourceMetadata(requiredInput, actual)
 		return actual, true, err
 	}
@@ -395,7 +397,7 @@ func ApplySecretImproved(ctx context.Context, client coreclientv1.SecretsGetter,
 
 	existingCopy := existing.DeepCopy()
 
-	resourcemerge.EnsureObjectMeta(resourcemerge.BoolPtr(false), &existingCopy.ObjectMeta, required.ObjectMeta)
+	resourcemerge.EnsureObjectMeta(ptr.To(false), &existingCopy.ObjectMeta, required.ObjectMeta)
 
 	switch required.Type {
 	case corev1.SecretTypeServiceAccountToken:
@@ -437,7 +439,7 @@ func ApplySecretImproved(ctx context.Context, client coreclientv1.SecretsGetter,
 	 */
 	if existingCopy.Type == existing.Type {
 		actual, err = client.Secrets(required.Namespace).Update(ctx, existingCopy, metav1.UpdateOptions{})
-		reportUpdateEvent(recorder, existingCopy, err)
+		resourcehelper.ReportUpdateEvent(recorder, existingCopy, err)
 
 		if err == nil {
 			return actual, true, err
@@ -449,12 +451,12 @@ func ApplySecretImproved(ctx context.Context, client coreclientv1.SecretsGetter,
 
 	// if the field was immutable on a secret, we're going to be stuck until we delete it.  Try to delete and then create
 	deleteErr := client.Secrets(required.Namespace).Delete(ctx, existingCopy.Name, metav1.DeleteOptions{})
-	reportDeleteEvent(recorder, existingCopy, deleteErr)
+	resourcehelper.ReportDeleteEvent(recorder, existingCopy, deleteErr)
 
 	// clear the RV and track the original actual and error for the return like our create value.
 	existingCopy.ResourceVersion = ""
 	actual, err = client.Secrets(required.Namespace).Create(ctx, existingCopy, metav1.CreateOptions{})
-	reportCreateEvent(recorder, existingCopy, err)
+	resourcehelper.ReportCreateEvent(recorder, existingCopy, err)
 	cache.UpdateCachedResourceMetadata(requiredInput, actual)
 	return actual, true, err
 }
@@ -466,7 +468,7 @@ func SyncConfigMap(ctx context.Context, client coreclientv1.ConfigMapsGetter, re
 
 // SyncPartialConfigMap does what SyncConfigMap does but it only synchronizes a subset of keys given by `syncedKeys`.
 // SyncPartialConfigMap will delete the target if `syncedKeys` are set but the source does not contain any of these keys.
-func SyncPartialConfigMap(ctx context.Context, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, sourceNamespace, sourceName, targetNamespace, targetName string, syncedKeys sets.String, ownerRefs []metav1.OwnerReference) (*corev1.ConfigMap, bool, error) {
+func SyncPartialConfigMap(ctx context.Context, client coreclientv1.ConfigMapsGetter, recorder events.Recorder, sourceNamespace, sourceName, targetNamespace, targetName string, syncedKeys sets.Set[string], ownerRefs []metav1.OwnerReference) (*corev1.ConfigMap, bool, error) {
 	source, err := client.ConfigMaps(sourceNamespace).Get(ctx, sourceName, metav1.GetOptions{})
 	switch {
 	case apierrors.IsNotFound(err):
@@ -527,7 +529,7 @@ func SyncSecret(ctx context.Context, client coreclientv1.SecretsGetter, recorder
 
 // SyncPartialSecret does what SyncSecret does but it only synchronizes a subset of keys given by `syncedKeys`.
 // SyncPartialSecret will delete the target if `syncedKeys` are set but the source does not contain any of these keys.
-func SyncPartialSecret(ctx context.Context, client coreclientv1.SecretsGetter, recorder events.Recorder, sourceNamespace, sourceName, targetNamespace, targetName string, syncedKeys sets.String, ownerRefs []metav1.OwnerReference) (*corev1.Secret, bool, error) {
+func SyncPartialSecret(ctx context.Context, client coreclientv1.SecretsGetter, recorder events.Recorder, sourceNamespace, sourceName, targetNamespace, targetName string, syncedKeys sets.Set[string], ownerRefs []metav1.OwnerReference) (*corev1.Secret, bool, error) {
 	source, err := client.Secrets(sourceNamespace).Get(ctx, sourceName, metav1.GetOptions{})
 	switch {
 	case apierrors.IsNotFound(err):
@@ -601,7 +603,7 @@ func DeleteNamespace(ctx context.Context, client coreclientv1.NamespacesGetter, 
 	if err != nil {
 		return nil, false, err
 	}
-	reportDeleteEvent(recorder, required, err)
+	resourcehelper.ReportDeleteEvent(recorder, required, err)
 	return nil, true, nil
 }
 
@@ -613,7 +615,7 @@ func DeleteService(ctx context.Context, client coreclientv1.ServicesGetter, reco
 	if err != nil {
 		return nil, false, err
 	}
-	reportDeleteEvent(recorder, required, err)
+	resourcehelper.ReportDeleteEvent(recorder, required, err)
 	return nil, true, nil
 }
 
@@ -625,7 +627,7 @@ func DeletePod(ctx context.Context, client coreclientv1.PodsGetter, recorder eve
 	if err != nil {
 		return nil, false, err
 	}
-	reportDeleteEvent(recorder, required, err)
+	resourcehelper.ReportDeleteEvent(recorder, required, err)
 	return nil, true, nil
 }
 
@@ -637,7 +639,7 @@ func DeleteServiceAccount(ctx context.Context, client coreclientv1.ServiceAccoun
 	if err != nil {
 		return nil, false, err
 	}
-	reportDeleteEvent(recorder, required, err)
+	resourcehelper.ReportDeleteEvent(recorder, required, err)
 	return nil, true, nil
 }
 
@@ -649,7 +651,7 @@ func DeleteConfigMap(ctx context.Context, client coreclientv1.ConfigMapsGetter, 
 	if err != nil {
 		return nil, false, err
 	}
-	reportDeleteEvent(recorder, required, err)
+	resourcehelper.ReportDeleteEvent(recorder, required, err)
 	return nil, true, nil
 }
 
@@ -661,6 +663,6 @@ func DeleteSecret(ctx context.Context, client coreclientv1.SecretsGetter, record
 	if err != nil {
 		return nil, false, err
 	}
-	reportDeleteEvent(recorder, required, err)
+	resourcehelper.ReportDeleteEvent(recorder, required, err)
 	return nil, true, nil
 }
