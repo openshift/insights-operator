@@ -113,6 +113,6 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 	GatherLogsOfNamespace:         (*Gatherer).BuildGatherLogsOfNamespace,
 	GatherImageStreamsOfNamespace: (*Gatherer).BuildGatherImageStreamsOfNamespace,
 	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
-	GatherContainersLogs:          (*Gatherer).BuildGatherContainersLogs,
+	GatherContainersLogs:          (*Gatherer).BuildLegacyGatherContainersLogs,
 	GatherPodDefinition:           (*Gatherer).BuildGatherPodDefinition,
 }
