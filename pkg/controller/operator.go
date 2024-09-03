@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	v1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/features"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	insightsv1alpha1client "github.com/openshift/client-go/insights/clientset/versioned"
@@ -131,7 +131,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
-	insightsConfigAPIEnabled := featureGates.Enabled(v1.FeatureGateInsightsConfigAPI)
+	insightsConfigAPIEnabled := featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {

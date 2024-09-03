@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	v1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/features"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
@@ -183,7 +183,7 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 		if err != nil {
 			klog.Exit(err)
 		}
-		operator.InsightsConfigAPIEnabled = featureGates.Enabled(v1.FeatureGateInsightsConfigAPI)
+		operator.InsightsConfigAPIEnabled = featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
 
 		err = operator.Gather(ctx, clientConfig, protoConfig)
 		if err != nil {
