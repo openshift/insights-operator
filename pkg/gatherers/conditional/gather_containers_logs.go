@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// BuildGatherContainersLogs Collects either current or previous containers logs for pods firing one of the
+// BuildLegacyGatherContainersLogs Collects either current or previous containers logs for pods firing one of the
 // alerts from the conditions fetched from insights conditions service.
 //
 // ### API Reference
@@ -36,7 +36,7 @@ import (
 //
 // ### Changes
 // None
-func (g *Gatherer) BuildGatherContainersLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
+func (g *Gatherer) BuildLegacyGatherContainersLogs(paramsInterface interface{}) (gatherers.GatheringClosure, error) { // nolint: dupl
 	params, ok := paramsInterface.(GatherContainersLogsParams)
 	if !ok {
 		return gatherers.GatheringClosure{}, fmt.Errorf(
