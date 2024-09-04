@@ -1683,6 +1683,104 @@ None
 
 ## PodDefinition
 
+## OpenstackControlplanes
+
+Collects `openstackcontrolplanes.core.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackcontrolplanes/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackcontrolplanes/openstack-galera-network-isolation.json)
+
+### Location in archive
+- `namespaces/{namespace}/core.openstack.org/openstackcontrolplanes/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_controlplanes`
+
+### Released version
+- 4.17
+
+### Changes
+None
+
+
+## OpenstackDataplaneDeployments
+
+Collects `openstackdataplanedeployments.dataplane.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanedeployments/edpm-deployment.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanedeployments/edpm-deployment.json)
+
+### Location in archive
+- `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanedeployments/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_dataplanedeployments`
+
+### Released version
+- 4.17
+
+### Changes
+None
+
+
+## OpenstackDataplaneNodeSets
+
+Collects `openstackdataplanenodesets.dataplane.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json)
+
+### Location in archive
+- `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanenodesets/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_dataplanenodesets`
+
+### Released version
+- 4.17
+
+### Changes
+None
+ 
+
+## Openstackversions
+
+Collects `openstackversion.core.openstack.org`
+resources from all namespaces
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json)
+
+### Location in archive
+- `namespaces/{namespace}/core.openstack.org/openstackversions/{name}.json`
+
+### Config ID
+`clusterconfig/openstack_version`
+
+### Released version
+- 4.17
+
+### Changes
+None
+
+
+## PodDefinition
+
 Collects pod definition from pods that are
 firing one of the configured alerts.
 

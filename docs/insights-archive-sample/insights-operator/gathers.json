@@ -130,6 +130,38 @@
       "panic": null
     },
     {
+      "name": "clusterconfig/openstack_controlplanes",
+      "duration_in_ms": 25,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openstack_dataplanedeployments",
+      "duration_in_ms": 9,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openstack_dataplanenodesets",
+      "duration_in_ms": 9,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
+      "name": "clusterconfig/openstack_version",
+      "duration_in_ms": 25,
+      "records_count": 1,
+      "errors": null,
+      "warnings": null,
+      "panic": null
+    },
+    {
       "name": "clusterconfig/scheduler_logs",
       "duration_in_ms": 617,
       "records_count": 0,
