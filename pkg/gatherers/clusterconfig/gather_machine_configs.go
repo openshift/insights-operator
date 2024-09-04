@@ -7,13 +7,20 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	mcfgclientset "github.com/openshift/client-go/machineconfiguration/clientset/versioned"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-// GatherMachineConfigs Collects `MachineConfigs` definitions. Following data is intentionally removed from the definitions:
+// GatherMachineConfigs Collects definitions of in-use 'MachineConfigs'. MachineConfig is used when it's referenced in
+// a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig` and `machineconfiguration.openshift.io/currentConfig`
+// annotations
+// Following data is intentionally removed from the definitions:
 // - `spec.config.storage.files`
 // - `spec.config.passwd.users`
 //
@@ -42,11 +49,18 @@ func (g *Gatherer) GatherMachineConfigs(ctx context.Context) ([]record.Record, [
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	return gatherMachineConfigs(ctx, gatherDynamicClient)
+	var errs []error
+	inUseMachineConfigs, err := getInUseMachineConfigs(ctx, g.gatherKubeConfig)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	records, gatherErrs := gatherMachineConfigs(ctx, gatherDynamicClient, inUseMachineConfigs)
+	errs = append(errs, gatherErrs...)
+	return records, errs
 }
 
-func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
+func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface,
+	inUseMachineConfigs sets.Set[string]) ([]record.Record, []error) {
 	mcList, err := dynamicClient.Resource(machineConfigGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -54,10 +68,15 @@ func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface) 
 	if err != nil {
 		return nil, []error{err}
 	}
+
 	records := []record.Record{}
 	var errs []error
 	for i := range mcList.Items {
 		mc := mcList.Items[i]
+		// skip machine configs which are not in use
+		if len(inUseMachineConfigs) != 0 && !inUseMachineConfigs.Has(mc.GetName()) {
+			continue
+		}
 		// remove the sensitive content by overwriting the values
 		err := unstructured.SetNestedField(mc.Object, nil, "spec", "config", "storage", "files")
 		if err != nil {
@@ -78,4 +97,49 @@ func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface) 
 		return records, errs
 	}
 	return records, nil
+}
+
+// GetInUseMachineConfigs filters in-use MachineConfig resources and returns set of their names.
+func getInUseMachineConfigs(ctx context.Context, clientConfig *rest.Config) (sets.Set[string], error) {
+	// Create a set to store in-use configs
+	inuseConfigs := sets.New[string]()
+
+	machineConfigClient, err := mcfgclientset.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	poolList, err := machineConfigClient.MachineconfigurationV1().MachineConfigPools().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("getting MachineConfigPools failed: %w", err)
+	}
+
+	for i := range poolList.Items {
+		pool := poolList.Items[i]
+		// Get the rendered config name from the status section
+		inuseConfigs.Insert(pool.Status.Configuration.Name)
+		inuseConfigs.Insert(pool.Spec.Configuration.Name)
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	nodeList, err := kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for i := range nodeList.Items {
+		node := nodeList.Items[i]
+		current, ok := node.Annotations["machineconfiguration.openshift.io/currentConfig"]
+		if ok {
+			inuseConfigs.Insert(current)
+		}
+		desired, ok := node.Annotations["machineconfiguration.openshift.io/desiredConfig"]
+		if ok {
+			inuseConfigs.Insert(desired)
+		}
+	}
+
+	return inuseConfigs, nil
 }
