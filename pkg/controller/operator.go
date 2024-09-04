@@ -272,9 +272,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	statusReporter.AddSources(scaController)
 	go scaController.Run(ctx)
 
-	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), configAggregator, insightsClient)
+	clusterTransferController := clustertransfer.New(kubeClient.CoreV1(), configAggregator, insightsClient)
 	statusReporter.AddSources(clusterTransferController)
-	go clusterTransferController.Run()
+	go clusterTransferController.Run(ctx)
 
 	promRulesController := insights.NewPrometheusRulesController(configAggregator, controller.KubeConfig)
 	go promRulesController.Start(ctx)

@@ -25,10 +25,17 @@ const (
 	AvailableReason = "PullSecretUpdated"
 )
 
+var (
+	disconnectedReason           = "Disconnected"
+	noClusterTransfer            = "NoClusterTransfer"
+	moreAcceptedClusterTransfers = "MoreAcceptedClusterTransfers"
+	dataCorrupted                = "DataCorrupted"
+	unexpectedData               = "UnexpectedData"
+)
+
 type Controller struct {
 	controllerstatus.StatusController
 	coreClient   corev1client.CoreV1Interface
-	ctx          context.Context
 	configurator configobserver.Interface
 	client       clusterTransferClient
 	pullSecret   *v1.Secret
@@ -39,31 +46,29 @@ type clusterTransferClient interface {
 }
 
 // New creates new instance of the cluster transfer controller
-func New(ctx context.Context,
-	coreClient corev1client.CoreV1Interface,
+func New(coreClient corev1client.CoreV1Interface,
 	configurator configobserver.Interface,
 	insightsClient clusterTransferClient) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New(ControllerName),
 		coreClient:       coreClient,
-		ctx:              ctx,
 		configurator:     configurator,
 		client:           insightsClient,
 	}
 }
 
 // Run periodically queries the OCM API and update pull-secret accordingly
-func (c *Controller) Run() {
+func (c *Controller) Run(ctx context.Context) {
 	cfg := c.configurator.Config()
 	endpoint := cfg.ClusterTransfer.Endpoint
 	interval := cfg.ClusterTransfer.Interval
 	configCh, cancel := c.configurator.ConfigChanged()
 	defer cancel()
-	c.requestDataAndUpdateSecret(endpoint)
+	c.requestDataAndUpdateSecret(ctx, endpoint)
 	for {
 		select {
 		case <-time.After(interval):
-			c.requestDataAndUpdateSecret(endpoint)
+			c.requestDataAndUpdateSecret(ctx, endpoint)
 		case <-configCh:
 			cfg := c.configurator.Config()
 			interval = cfg.ClusterTransfer.Interval
@@ -74,7 +79,7 @@ func (c *Controller) Run() {
 
 // requestDataAndUpdateSecret queries the provided endpoint. If there is any data
 // in the response then check if a secret update is required, and if so, perform the update.
-func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
+func (c *Controller) requestDataAndUpdateSecret(ctx context.Context, endpoint string) {
 	klog.Infof("checking the availability of cluster transfer. Next check is in %s", c.configurator.Config().ClusterTransfer.Interval)
 	data, err := c.requestClusterTransferWithExponentialBackoff(endpoint)
 	if err != nil {
@@ -88,14 +93,14 @@ func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
 		}
 		// we are probably in disconnected environment
 		klog.Errorf(msg)
-		c.updateStatus(true, msg, "Disconnected", nil)
+		c.updateStatus(true, msg, disconnectedReason, nil)
 		return
 	}
 
 	// there's no cluster transfer for the cluster - HTTP 204
 	if len(data) == 0 {
 		klog.Info("no available accepted cluster transfer")
-		c.updateStatus(true, "no available cluster transfer", "NoClusterTransfer", nil)
+		c.updateStatus(true, "no available cluster transfer", noClusterTransfer, nil)
 		return
 	}
 	// deserialize the data from the OCM API
@@ -103,10 +108,10 @@ func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
 	if err != nil {
 		msg := fmt.Sprintf("unable to deserialize the cluster transfer API response: %v", err)
 		klog.Error(msg)
-		c.updateStatus(false, msg, "UnexpectedData", nil)
+		c.updateStatus(false, msg, unexpectedData, nil)
 		return
 	}
-	c.checkCTListAndOptionallyUpdatePS(ctList)
+	c.checkCTListAndOptionallyUpdatePS(ctx, ctList)
 }
 
 // checkCTListAndOptionallyUpdatePS checks the provided cluster transfer list length,
@@ -114,34 +119,34 @@ func (c *Controller) requestDataAndUpdateSecret(endpoint string) {
 // and do nothing. If there is only one accepted cluster transfer then
 // check if the `pull-secret` needs to be updated. If the `pull-secret` needs to be updated then
 // update it and update the controller status, otherwise just update the controller status.
-func (c *Controller) checkCTListAndOptionallyUpdatePS(ctList *clusterTransferList) {
+func (c *Controller) checkCTListAndOptionallyUpdatePS(ctx context.Context, ctList *clusterTransferList) {
 	if ctList.Total > 1 {
 		msg := "there are more accepted cluster transfers. The pull-secret will not be updated!"
 		klog.Infof(msg)
-		c.updateStatus(true, msg, "MoreAcceptedClusterTransfers", nil)
+		c.updateStatus(true, msg, moreAcceptedClusterTransfers, nil)
 		return
 	}
 	// this should not happen. This is just safe check
 	if len(ctList.Transfers) != 1 {
 		msg := "unexpected number of cluster transfers received from the API"
 		klog.Infof(msg)
-		c.updateStatus(true, msg, "UnexpectedData", nil)
+		c.updateStatus(true, msg, unexpectedData, nil)
 		return
 	}
 
 	newPullSecret := []byte(ctList.Transfers[0].Secret)
 	var statusMsg, reason string
 	// check if the pull-secret needs to be updated
-	updating, err := c.isUpdateRequired(newPullSecret)
+	updating, err := c.isUpdateRequired(ctx, newPullSecret)
 	if err != nil {
 		statusMsg = fmt.Sprintf("new pull-secret check failed: %v", err)
 		klog.Errorf(statusMsg)
-		c.updateStatus(false, statusMsg, "DataCorrupted", nil)
+		c.updateStatus(false, statusMsg, dataCorrupted, nil)
 		return
 	}
 	if updating {
 		klog.Info("updating the pull-secret content")
-		err = c.updatePullSecret(newPullSecret)
+		err = c.updatePullSecret(ctx, newPullSecret)
 		if err != nil {
 			statusMsg = fmt.Sprintf("failed to update pull-secret: %v", err)
 			klog.Errorf(statusMsg)
@@ -160,8 +165,8 @@ func (c *Controller) checkCTListAndOptionallyUpdatePS(ctList *clusterTransferLis
 }
 
 // isUpdateRequired checks if an update of the pull-secret is required or not.
-func (c *Controller) isUpdateRequired(newData []byte) (bool, error) {
-	pullSecret, err := c.getPullSecret()
+func (c *Controller) isUpdateRequired(ctx context.Context, newData []byte) (bool, error) {
+	pullSecret, err := c.getPullSecret(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -180,9 +185,9 @@ func (c *Controller) isUpdateRequired(newData []byte) (bool, error) {
 
 // updatePullSecret creates a JSON merge patch of existing and new pull-secret data.
 // The result of the patch is used for pull-secret data update.
-func (c *Controller) updatePullSecret(newData []byte) error {
+func (c *Controller) updatePullSecret(ctx context.Context, newData []byte) error {
 	if c.pullSecret == nil {
-		ps, err := c.getPullSecret()
+		ps, err := c.getPullSecret(ctx)
 		if err != nil {
 			return err
 		}
@@ -196,7 +201,7 @@ func (c *Controller) updatePullSecret(newData []byte) error {
 	}
 
 	c.pullSecret.Data[v1.DockerConfigJsonKey] = updatedData
-	_, err = c.coreClient.Secrets("openshift-config").Update(c.ctx, c.pullSecret, metav1.UpdateOptions{})
+	_, err = c.coreClient.Secrets("openshift-config").Update(ctx, c.pullSecret, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -260,8 +265,8 @@ func (c *Controller) updateStatus(healthy bool, msg, reason string, httpErr *ins
 }
 
 // getPullSecret gets pull-secret as *v1.Secret
-func (c *Controller) getPullSecret() (*v1.Secret, error) {
-	return c.coreClient.Secrets("openshift-config").Get(c.ctx, "pull-secret", metav1.GetOptions{})
+func (c *Controller) getPullSecret(ctx context.Context) (*v1.Secret, error) {
+	return c.coreClient.Secrets("openshift-config").Get(ctx, "pull-secret", metav1.GetOptions{})
 }
 
 // isUpdatedPullSecretContentSame checks if the updatedPS content is different
