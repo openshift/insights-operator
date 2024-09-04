@@ -268,9 +268,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return fmt.Errorf("unable to set initial cluster status: %v", err)
 	}
 
-	scaController := sca.New(ctx, kubeClient.CoreV1(), configAggregator, insightsClient)
+	scaController := sca.New(kubeClient.CoreV1(), configAggregator, insightsClient)
 	statusReporter.AddSources(scaController)
-	go scaController.Run()
+	go scaController.Run(ctx)
 
 	clusterTransferController := clustertransfer.New(ctx, kubeClient.CoreV1(), configAggregator, insightsClient)
 	statusReporter.AddSources(clusterTransferController)
