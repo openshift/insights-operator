@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -34,7 +35,6 @@ const (
 type Controller struct {
 	controllerstatus.StatusController
 	coreClient   corev1client.CoreV1Interface
-	ctx          context.Context
 	configurator configobserver.Interface
 	client       *insightsclient.Client
 }
@@ -48,19 +48,18 @@ type Response struct {
 }
 
 // New creates new instance
-func New(ctx context.Context, coreClient corev1client.CoreV1Interface, configurator configobserver.Interface,
+func New(coreClient corev1client.CoreV1Interface, configurator configobserver.Interface,
 	insightsClient *insightsclient.Client) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New(ControllerName),
 		coreClient:       coreClient,
-		ctx:              ctx,
 		configurator:     configurator,
 		client:           insightsClient,
 	}
 }
 
 // Run periodically queries the OCM API and update corresponding secret accordingly
-func (c *Controller) Run() {
+func (c *Controller) Run(ctx context.Context) {
 	cfg := c.configurator.Config()
 	endpoint := cfg.SCA.Endpoint
 	interval := cfg.SCA.Interval
@@ -68,13 +67,13 @@ func (c *Controller) Run() {
 	configCh, cancel := c.configurator.ConfigChanged()
 	defer cancel()
 	if !disabled {
-		c.requestDataAndCheckSecret(endpoint)
+		c.requestDataAndCheckSecret(ctx, endpoint)
 	}
 	for {
 		select {
 		case <-time.After(interval):
 			if !disabled {
-				c.requestDataAndCheckSecret(endpoint)
+				c.requestDataAndCheckSecret(ctx, endpoint)
 			} else {
 				msg := "Pulling of the SCA certs from the OCM API is disabled"
 				klog.Warning(msg)
@@ -95,10 +94,11 @@ func (c *Controller) Run() {
 	}
 }
 
-func (c *Controller) requestDataAndCheckSecret(endpoint string) {
+func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint string) {
 	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().SCA.Endpoint,
 		c.configurator.Config().SCA.Interval)
-	data, err := c.requestSCAWithExpBackoff(endpoint)
+
+	data, err := c.requestSCAWithExpBackoff(ctx, endpoint)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
 		errMsg := fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err)
@@ -131,13 +131,13 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 		klog.Errorf("Unable to decode response: %v", err)
 		return
 	}
-
 	// check & update the secret here
-	err = c.checkSecret(&ocmRes)
+	err = c.checkSecret(ctx, &ocmRes)
 	if err != nil {
 		klog.Errorf("Error when checking the %s secret: %v", secretName, err)
 		return
 	}
+
 	klog.Infof("%s secret successfully updated", secretName)
 	c.StatusController.UpdateStatus(controllerstatus.Summary{
 		Operation:          controllerstatus.PullingSCACerts,
@@ -151,12 +151,12 @@ func (c *Controller) requestDataAndCheckSecret(endpoint string) {
 // checkSecret checks "etc-pki-entitlement" secret in the "openshift-config-managed" namespace.
 // If the secret doesn't exist then it will create a new one.
 // If the secret already exist then it will update the data.
-func (c *Controller) checkSecret(ocmData *Response) error {
-	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(c.ctx, secretName, metav1.GetOptions{})
+func (c *Controller) checkSecret(ctx context.Context, ocmData *Response) error {
+	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(ctx, secretName, metav1.GetOptions{})
 
 	// if the secret doesn't exist then create one
 	if errors.IsNotFound(err) {
-		_, err = c.createSecret(ocmData)
+		_, err = c.createSecret(ctx, ocmData)
 		if err != nil {
 			return err
 		}
@@ -166,14 +166,14 @@ func (c *Controller) checkSecret(ocmData *Response) error {
 		return err
 	}
 
-	_, err = c.updateSecret(scaSec, ocmData)
+	_, err = c.updateSecret(ctx, scaSec, ocmData)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Controller) createSecret(ocmData *Response) (*v1.Secret, error) {
+func (c *Controller) createSecret(ctx context.Context, ocmData *Response) (*v1.Secret, error) {
 	newSCA := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -185,7 +185,7 @@ func (c *Controller) createSecret(ocmData *Response) (*v1.Secret, error) {
 		},
 		Type: v1.SecretTypeOpaque,
 	}
-	cm, err := c.coreClient.Secrets(targetNamespaceName).Create(c.ctx, newSCA, metav1.CreateOptions{})
+	cm, err := c.coreClient.Secrets(targetNamespaceName).Create(ctx, newSCA, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -193,22 +193,36 @@ func (c *Controller) createSecret(ocmData *Response) (*v1.Secret, error) {
 }
 
 // updateSecret updates provided secret with given data
-func (c *Controller) updateSecret(s *v1.Secret, ocmData *Response) (*v1.Secret, error) {
+func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *Response) (*v1.Secret, error) {
 	s.Data = map[string][]byte{
 		entitlementAttrName:    []byte(ocmData.Cert),
 		entitlementKeyAttrName: []byte(ocmData.Key),
 	}
-	s, err := c.coreClient.Secrets(s.Namespace).Update(c.ctx, s, metav1.UpdateOptions{})
+	s, err := c.coreClient.Secrets(s.Namespace).Update(ctx, s, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
 	}
 	return s, nil
 }
 
+// getArch check the value of GOARCH and return a valid representation for
+// OCM certificates API
+func getArch() string {
+	validArchs := map[string]string{
+		"amd64": "x86_64",
+		"i386":  "x86",
+	}
+
+	if translation, ok := validArchs[runtime.GOARCH]; ok {
+		return translation
+	}
+	return runtime.GOARCH
+}
+
 // requestSCAWithExpBackoff queries OCM API with exponential backoff.
 // Returns HttpError (see insightsclient.go) in case of any HTTP error response from OCM API.
 // The exponential backoff is applied only for HTTP errors >= 500.
-func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
+func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
 		Duration: c.configurator.Config().SCA.Interval / 32, // 15 min by default
 		Factor:   2,
@@ -216,10 +230,11 @@ func (c *Controller) requestSCAWithExpBackoff(endpoint string) ([]byte, error) {
 		Steps:    ocm.FailureCountThreshold,
 		Cap:      c.configurator.Config().SCA.Interval,
 	}
+
 	var data []byte
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {
 		var err error
-		data, err = c.client.RecvSCACerts(c.ctx, endpoint)
+		data, err = c.client.RecvSCACerts(ctx, endpoint, getArch())
 		if err != nil {
 			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
 			if !insightsclient.IsHttpError(err) {
