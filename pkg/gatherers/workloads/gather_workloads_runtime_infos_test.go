@@ -191,7 +191,7 @@ func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 				}
 			}))
 			ctx := context.Background()
-			result := getNodeWorkloadRuntimeInfos(ctx, httpServer.URL)
+			result := getNodeWorkloadRuntimeInfos(ctx, httpServer.URL, "", http.DefaultClient)
 			assert.Equal(t, tt.expectedData, result.WorkloadRuntimes)
 			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr.Error(), result.Error.Error())
