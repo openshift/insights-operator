@@ -518,7 +518,12 @@ func calculateWorkloadContainerShapes(
 			firstArg = shortHash
 		}
 
-		var runtimeInfo *workloadRuntimeInfoContainer
+		containerShape := workloadContainerShape{
+			ImageID:      imageID,
+			FirstCommand: firstCommand,
+			FirstArg:     firstArg,
+		}
+
 		conInfo := containerInfo{
 			namespace:   podMeta.Namespace,
 			pod:         podMeta.Name,
@@ -526,15 +531,10 @@ func calculateWorkloadContainerShapes(
 		}
 
 		if workloadRuntimeInfo, ok := runtimesInfo[conInfo]; ok {
-			runtimeInfo = &workloadRuntimeInfo
+			containerShape.RuntimeInfo = &workloadRuntimeInfo
 		}
 
-		shapes = append(shapes, workloadContainerShape{
-			ImageID:      imageID,
-			FirstCommand: firstCommand,
-			FirstArg:     firstArg,
-			RuntimeInfo:  runtimeInfo,
-		})
+		shapes = append(shapes, containerShape)
 	}
 	return shapes, true
 }

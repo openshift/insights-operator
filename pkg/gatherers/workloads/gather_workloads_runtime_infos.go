@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"sync"
 	"time"
 
@@ -209,6 +210,10 @@ func getNodeWorkloadRuntimeInfos(
 	for nsName, nsRuntimeInfo := range nodeOutput {
 		for podName, podRuntimeInfo := range nsRuntimeInfo {
 			for containerID, containerRuntimeInfo := range podRuntimeInfo {
+				// skip empty runtime info
+				if reflect.DeepEqual(containerRuntimeInfo, workloadRuntimeInfoContainer{}) {
+					continue
+				}
 				cInfo := containerInfo{
 					namespace:   nsName,
 					pod:         podName,
