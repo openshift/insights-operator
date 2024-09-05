@@ -14,3 +14,10 @@ metadata:
     openshift.io/cluster-monitoring: "true"
     openshift.io/run-level: "" # specify no run-level turns it off on install and upgrades
     name: openshift-insights
+    # Requires privileged for the insights-runtime-extractor container
+    # This namespace should be guarded with:
+    # release.openshift.io/feature-set: TechPreviewNoUpgrade
+    # so that it is only enabled when the feature is enabled
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
