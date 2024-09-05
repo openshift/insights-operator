@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: insights-runtime-extractor
+      annotations:
+        openshift.io/required-scc: insights-runtime-extractor-scc
     spec:
       serviceAccountName: insights-runtime-extractor-sa
       hostPID: true
@@ -34,6 +36,13 @@ spec:
               name: insights-runtime-extractor-tls
             - mountPath: /etc/kube-rbac-proxy
               name: kube-rbac-proxy-cm
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: true
           env:
             - name: IP
               valueFrom:
