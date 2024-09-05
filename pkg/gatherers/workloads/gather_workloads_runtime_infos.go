@@ -60,7 +60,17 @@ func gatherWorkloadRuntimeInfos(
 			defer wg.Done()
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
 			extractorURL := fmt.Sprintf("https://%s:8000/gather_runtime_info", podInfo.podIP)
-			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, extractorURL)
+			httpCli, err := createHTTPClient()
+			if err != nil {
+				klog.Errorf("Failed to initialize the HTTP client: %v", err)
+				return
+			}
+			tokenData, err := readToken()
+			if err != nil {
+				klog.Errorf("Failed to read the serviceaccount token: %v", err)
+				return
+			}
+			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, extractorURL, string(tokenData), httpCli)
 		}(runtimePodIPs[i])
 	}
 
@@ -117,32 +127,13 @@ type workloadRuntimesResult struct {
 	Error            error
 }
 
-// Get all WorkloadRuntimeInfos for a single Node (using the insights-runtime-extractor pod running on this node)
-func getNodeWorkloadRuntimeInfos(
-	ctx context.Context,
-	url string,
-) workloadRuntimesResult {
-	const (
-		tokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-		// Use the certificate authority from the service to verify the TLS connection to the insights-runtime-extractor
-		rootCAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
-	)
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	defer cancel()
-
-	// Read the token for the operator service account
-	token, err := os.ReadFile(tokenFile)
-	if err != nil {
-		return workloadRuntimesResult{
-			Error: err,
-		}
-	}
+func createHTTPClient() (*http.Client, error) {
+	// Use the certificate authority from the service to verify the TLS connection to the insights-runtime-extractor
+	const rootCAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 
 	caCertPool, err := certutil.NewPool(rootCAFile)
 	if err != nil {
-		return workloadRuntimesResult{
-			Error: err,
-		}
+		return nil, err
 	}
 
 	authClient := &http.Client{
@@ -151,17 +142,36 @@ func getNodeWorkloadRuntimeInfos(
 				InsecureSkipVerify: false,
 				RootCAs:            caCertPool,
 				ServerName:         "exporter.openshift-insights.svc.cluster.local",
+				MinVersion:         tls.VersionTLS12,
 			},
 		},
 	}
+	return authClient, nil
+}
+
+func readToken() ([]byte, error) {
+	// Read the token for the operator service account
+	return os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+}
+
+// Get all WorkloadRuntimeInfos for a single Node (using the insights-runtime-extractor pod running on this node)
+func getNodeWorkloadRuntimeInfos(
+	ctx context.Context,
+	url string,
+	token string,
+	httpCli *http.Client,
+) workloadRuntimesResult {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return workloadRuntimesResult{
 			Error: err,
 		}
 	}
-	request.Header.Set("Authorization", "Bearer "+string(token))
-	resp, err := authClient.Do(request)
+	request.Header.Set("Authorization", "Bearer "+token)
+	resp, err := httpCli.Do(request)
 	if err != nil {
 		return workloadRuntimesResult{
 			Error: err,
