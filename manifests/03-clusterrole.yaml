@@ -345,6 +345,14 @@ rules:
     verbs:
       - get
       - list
+  - apiGroups:
+      - nmstate.io
+    resources:
+      - nodenetworkconfigurationpolicies
+      - nodenetworkstates
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
