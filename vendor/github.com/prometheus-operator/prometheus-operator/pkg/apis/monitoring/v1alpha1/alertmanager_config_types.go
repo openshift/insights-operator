@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
+	"regexp"
 	"strings"
 
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -41,8 +43,8 @@ const (
 // +kubebuilder:resource:categories="prometheus-operator",shortName="amcfg"
 // +kubebuilder:storageversion
 
-// AlertmanagerConfig defines a namespaced AlertmanagerConfig to be aggregated
-// across multiple namespaces configuring one Alertmanager cluster.
+// AlertmanagerConfig configures the Prometheus Alertmanager,
+// specifying how alerts should be grouped, inhibited and notified to external systems.
 type AlertmanagerConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -158,6 +160,9 @@ type Receiver struct {
 	OpsGenieConfigs []OpsGenieConfig `json:"opsgenieConfigs,omitempty"`
 	// List of PagerDuty configurations.
 	PagerDutyConfigs []PagerDutyConfig `json:"pagerdutyConfigs,omitempty"`
+	// List of Discord configurations.
+	// +optional
+	DiscordConfigs []DiscordConfig `json:"discordConfigs,omitempty"`
 	// List of Slack configurations.
 	SlackConfigs []SlackConfig `json:"slackConfigs,omitempty"`
 	// List of webhook configurations.
@@ -174,6 +179,11 @@ type Receiver struct {
 	SNSConfigs []SNSConfig `json:"snsConfigs,omitempty"`
 	// List of Telegram configurations.
 	TelegramConfigs []TelegramConfig `json:"telegramConfigs,omitempty"`
+	// List of Webex configurations.
+	WebexConfigs []WebexConfig `json:"webexConfigs,omitempty"`
+	// List of MSTeams configurations.
+	// It requires Alertmanager >= 0.26.0.
+	MSTeamsConfigs []MSTeamsConfig `json:"msteamsConfigs,omitempty"`
 }
 
 // PagerDutyConfig configures notifications via PagerDuty.
@@ -254,6 +264,32 @@ type PagerDutyLinkConfig struct {
 	// Text that describes the purpose of the link, and can be used as the link's text.
 	// +optional
 	Text string `json:"alt,omitempty"`
+}
+
+// DiscordConfig configures notifications via Discord.
+// See https://prometheus.io/docs/alerting/latest/configuration/#discord_config
+type DiscordConfig struct {
+	// Whether or not to notify about resolved alerts.
+	// +optional
+	SendResolved *bool `json:"sendResolved,omitempty"`
+
+	// The secret's key that contains the Discord webhook URL.
+	// The secret needs to be in the same namespace as the AlertmanagerConfig
+	// object and accessible by the Prometheus Operator.
+	// +required
+	APIURL v1.SecretKeySelector `json:"apiURL"`
+
+	// The template of the message's title.
+	// +optional
+	Title *string `json:"title,omitempty"`
+
+	// The template of the message's body.
+	// +optional
+	Message *string `json:"message,omitempty"`
+
+	// HTTP client configuration.
+	// +optional
+	HTTPConfig *HTTPConfig `json:"httpConfig,omitempty"`
 }
 
 // SlackConfig configures notifications via Slack.
@@ -527,9 +563,12 @@ type OpsGenieConfigResponder struct {
 	Username string `json:"username,omitempty"`
 	// Type of responder.
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Enum=team;teams;user;escalation;schedule
 	Type string `json:"type"`
 }
+
+const opsgenieValidTypesRe = `^(team|teams|user|escalation|schedule)$`
+
+var opsgenieTypeMatcher = regexp.MustCompile(opsgenieValidTypesRe)
 
 // Validate ensures OpsGenieConfigResponder is valid.
 func (r *OpsGenieConfigResponder) Validate() error {
@@ -537,7 +576,18 @@ func (r *OpsGenieConfigResponder) Validate() error {
 		return errors.New("responder must have at least an ID, a Name or an Username defined")
 	}
 
-	return nil
+	if strings.Contains(r.Type, "{{") {
+		_, err := template.New("").Parse(r.Type)
+		if err != nil {
+			return fmt.Errorf("responder %v type is not a valid template: %w", r, err)
+		}
+		return nil
+	}
+
+	if opsgenieTypeMatcher.MatchString(strings.ToLower(r.Type)) {
+		return nil
+	}
+	return fmt.Errorf("opsGenieConfig responder %v type does not match valid options %s", r, opsgenieValidTypesRe)
 }
 
 // HTTPConfig defines a client HTTP configuration.
@@ -569,6 +619,33 @@ type HTTPConfig struct {
 	// FollowRedirects specifies whether the client should follow HTTP 3xx redirects.
 	// +optional
 	FollowRedirects *bool `json:"followRedirects,omitempty"`
+}
+
+// WebexConfig configures notification via Cisco Webex
+// See https://prometheus.io/docs/alerting/latest/configuration/#webex_config
+type WebexConfig struct {
+	// Whether to notify about resolved alerts.
+	// +optional
+	SendResolved *bool `json:"sendResolved,omitempty"`
+
+	// The Webex Teams API URL i.e. https://webexapis.com/v1/messages
+	// Provide if different from the default API URL.
+	// +optional
+	APIURL *URL `json:"apiURL,omitempty"`
+
+	// The HTTP client's configuration.
+	// You must supply the bot token via the `httpConfig.authorization` field.
+	// +optional
+	HTTPConfig *HTTPConfig `json:"httpConfig,omitempty"`
+
+	// Message template
+	// +optional
+	Message *string `json:"message,omitempty"`
+
+	// ID of the Webex Teams room where to send the messages.
+	// +kubebuilder:validation:MinLength=1
+	// +required
+	RoomID string `json:"roomID"`
 }
 
 // WeChatConfig configures notifications via WeChat.
@@ -641,10 +718,10 @@ type EmailConfig struct {
 	Headers []KeyValue `json:"headers,omitempty"`
 	// The HTML body of the email notification.
 	// +optional
-	HTML string `json:"html,omitempty"`
+	HTML *string `json:"html,omitempty"`
 	// The text body of the email notification.
 	// +optional
-	Text string `json:"text,omitempty"`
+	Text *string `json:"text,omitempty"`
 	// The SMTP TLS requirement.
 	// Note that Go does not support unencrypted connections to remote SMTP endpoints.
 	// +optional
@@ -700,13 +777,25 @@ type PushoverConfig struct {
 	// The secret's key that contains the recipient user's user key.
 	// The secret needs to be in the same namespace as the AlertmanagerConfig
 	// object and accessible by the Prometheus Operator.
-	// +kubebuilder:validation:Required
+	// Either `userKey` or `userKeyFile` is required.
+	// +optional
 	UserKey *v1.SecretKeySelector `json:"userKey,omitempty"`
+	// The user key file that contains the recipient user's user key.
+	// Either `userKey` or `userKeyFile` is required.
+	// It requires Alertmanager >= v0.26.0.
+	// +optional
+	UserKeyFile *string `json:"userKeyFile,omitempty"`
 	// The secret's key that contains the registered application's API token, see https://pushover.net/apps.
 	// The secret needs to be in the same namespace as the AlertmanagerConfig
 	// object and accessible by the Prometheus Operator.
-	// +kubebuilder:validation:Required
+	// Either `token` or `tokenFile` is required.
+	// +optional
 	Token *v1.SecretKeySelector `json:"token,omitempty"`
+	// The token file that contains the registered application's API token, see https://pushover.net/apps.
+	// Either `token` or `tokenFile` is required.
+	// It requires Alertmanager >= v0.26.0.
+	// +optional
+	TokenFile *string `json:"tokenFile,omitempty"`
 	// Notification title.
 	// +optional
 	Title string `json:"title,omitempty"`
@@ -719,6 +808,9 @@ type PushoverConfig struct {
 	// A title for supplementary URL, otherwise just the URL is shown
 	// +optional
 	URLTitle string `json:"urlTitle,omitempty"`
+	// The name of a device to send the notification to
+	// +optional
+	Device *string `json:"device,omitempty"`
 	// The name of one of the sounds supported by device clients to override the user's default sound choice
 	// +optional
 	Sound string `json:"sound,omitempty"`
@@ -792,11 +884,23 @@ type TelegramConfig struct {
 	// If not specified, default API URL will be used.
 	// +optional
 	APIURL string `json:"apiURL,omitempty"`
-	// Telegram bot token
+	// Telegram bot token. It is mutually exclusive with `botTokenFile`.
 	// The secret needs to be in the same namespace as the AlertmanagerConfig
 	// object and accessible by the Prometheus Operator.
+	//
+	// Either `botToken` or `botTokenFile` is required.
+	//
+	//+optional
 	BotToken *v1.SecretKeySelector `json:"botToken,omitempty"`
+	// File to read the Telegram bot token from. It is mutually exclusive with `botToken`.
+	// Either `botToken` or `botTokenFile` is required.
+	//
+	// It requires Alertmanager >= v0.26.0.
+	//
+	// +optional
+	BotTokenFile *string `json:"botTokenFile,omitempty"`
 	// The Telegram chat ID.
+	// +required
 	ChatID int64 `json:"chatID,omitempty"`
 	// Message template
 	// +optional
@@ -808,6 +912,30 @@ type TelegramConfig struct {
 	//+kubebuilder:validation:Enum=MarkdownV2;Markdown;HTML
 	// +optional
 	ParseMode string `json:"parseMode,omitempty"`
+	// HTTP client configuration.
+	// +optional
+	HTTPConfig *HTTPConfig `json:"httpConfig,omitempty"`
+}
+
+// MSTeamsConfig configures notifications via Microsoft Teams.
+// It requires Alertmanager >= 0.26.0.
+type MSTeamsConfig struct {
+	// Whether to notify about resolved alerts.
+	// +optional
+	SendResolved *bool `json:"sendResolved,omitempty"`
+	// MSTeams webhook URL.
+	// +kubebuilder:validation:Required
+	WebhookURL v1.SecretKeySelector `json:"webhookUrl"`
+	// Message title template.
+	// +optional
+	Title *string `json:"title,omitempty"`
+	// Message summary template.
+	// It requires Alertmanager >= 0.27.0.
+	// +optional
+	Summary *string `json:"summary,omitempty"`
+	// Message body template.
+	// +optional
+	Text *string `json:"text,omitempty"`
 	// HTTP client configuration.
 	// +optional
 	HTTPConfig *HTTPConfig `json:"httpConfig,omitempty"`
@@ -852,8 +980,8 @@ type Matcher struct {
 	// +optional
 	MatchType MatchType `json:"matchType,omitempty"`
 	// Whether to match on equality (false) or regular-expression (true).
-	// Deprecated as of AlertManager >= v0.22.0 where a user should use MatchType instead.
 	// +optional
+	// Deprecated: for AlertManager >= v0.22.0, `matchType` should be used instead.
 	Regex bool `json:"regex,omitempty"`
 }
 
@@ -988,7 +1116,7 @@ type DayOfMonthRange struct {
 
 // MonthRange is an inclusive range of months of the year beginning in January
 // Months can be specified by name (e.g 'January') by numerical month (e.g '1') or as an inclusive range (e.g 'January:March', '1:3', '1:March')
-// +kubebuilder:validation:Pattern=`^((?i)january|february|march|april|may|june|july|august|september|october|november|december|[1-12])(?:((:((?i)january|february|march|april|may|june|july|august|september|october|november|december|[1-12]))$)|$)`
+// +kubebuilder:validation:Pattern=`^((?i)january|february|march|april|may|june|july|august|september|october|november|december|1[0-2]|[1-9])(?:((:((?i)january|february|march|april|may|june|july|august|september|october|november|december|1[0-2]|[1-9]))$)|$)`
 type MonthRange string
 
 // YearRange is an inclusive range of years
@@ -1075,3 +1203,7 @@ var monthsInv = map[int]Month{
 	11: November,
 	12: December,
 }
+
+// URL represents a valid URL
+// +kubebuilder:validation:Pattern=`^https?://.+$`
+type URL string
