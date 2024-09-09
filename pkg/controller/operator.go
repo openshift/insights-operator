@@ -131,8 +131,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
-	insightsConfigAPIEnabled := featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
 
+	insightsConfigAPIEnabled := featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
 		if err = os.MkdirAll(s.StoragePath, 0777); err != nil {
