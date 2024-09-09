@@ -11,9 +11,9 @@ import (
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
-	gatherer := workloads.New(nil, nil)
+	gatherer := workloads.New(nil, nil, false)
 	assert.Equal(t, "workloads", gatherer.GetName())
-	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
+	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
 	assert.NoError(t, err)
 	assert.Greater(t, len(gatheringFunctions), 0)
 

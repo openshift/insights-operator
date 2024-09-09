@@ -63,12 +63,13 @@ func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
 	anonymizer *anonymization.Anonymizer, configObserver configobserver.Interface,
 	insightsClient *insightsclient.Client,
+	runtimeExtractorEnabled bool,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,
 		anonymizer, configObserver,
 	)
-	workloadsGatherer := workloads.New(gatherKubeConfig, gatherProtoKubeConfig)
+	workloadsGatherer := workloads.New(gatherKubeConfig, gatherProtoKubeConfig, runtimeExtractorEnabled)
 	conditionalGatherer := conditional.New(
 		gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig, configObserver, insightsClient,
 	)
