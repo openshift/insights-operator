@@ -43,7 +43,7 @@ import (
 // - 4.8.5
 //
 // ### Changes
-// None
+// - gathers only in-use MachineConfigs since 4.18+
 func (g *Gatherer) GatherMachineConfigs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {

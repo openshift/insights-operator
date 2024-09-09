@@ -1103,7 +1103,7 @@ Following data is intentionally removed from the definitions:
 - 4.8.5
 
 ### Changes
-None
+- gathers only in-use MachineConfigs since 4.18+
 
 
 ## MachineHealthCheck
