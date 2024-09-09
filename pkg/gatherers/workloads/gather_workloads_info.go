@@ -88,18 +88,23 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 		return nil, []error{err}
 	}
 
-	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient)
+	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient, g.runtimeExtractorEnabled)
 }
 
 func gatherWorkloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
+	runtimeExtractorEnabed bool,
 ) ([]record.Record, []error) {
 	var errs = []error{}
 
-	workloadInfos, runtimeInfoErrs := gatherWorkloadRuntimeInfos(ctx, coreClient)
-	errs = append(errs, runtimeInfoErrs...)
+	var workloadInfos workloadRuntimes
+	if runtimeExtractorEnabed {
+		var runtimeInfoErrs []error
+		workloadInfos, runtimeInfoErrs = gatherWorkloadRuntimeInfos(ctx, coreClient)
+		errs = append(errs, runtimeInfoErrs...)
+	}
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
 	start := time.Now()
