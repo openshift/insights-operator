@@ -747,29 +747,11 @@ None
 
 ## ContainersLogs
 
-Collects either current or previous containers logs for pods firing one of the
-alerts from the conditions fetched from insights conditions service.
+is used for more dynamic log gathering based on the
+[Rapid Recommendations](https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md).
 
-### API Reference
-None
-
-### Sample data
-- [docs/insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log](./insights-archive-sample/conditional/namespaces/openshift-cluster-samples-operator/pods/cluster-samples-operator-8ffb9b45f-49mjr/containers/cluster-samples-operator-watch/logs/last-100-lines.log)
-
-### Location in archive
-- `conditional/namespaces/{namespace}/pods/{pod}/containers/{container}/{logs|logs-previous}/last-{tail-length}-lines.log`
-
-### Config ID
-`conditional/containers_logs`
-
-### Released version
-- 4.10.0
-
-### Backported versions
-None
-
-### Changes
-None
+In general this function finds the Pods (and containers) that match the requested data and filters all the container logs
+to match the specific messages up to a maximum of 6 hours old.
 
 
 ## CostManagementMetricsConfigs
@@ -1354,6 +1336,56 @@ None
 None
 
 
+## NodeNetworkConfigurationPolicy
+
+Collects cluster scope "nodenetworkconfigurationpolicy.nmstate.io/v1"
+resources
+
+### API Reference
+- https://github.com/nmstate/kubernetes-nmstate/blob/main/api/v1/nodenetworkconfigurationpolicy_types.go
+
+### Sample data
+- [docs/insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkconfigurationpolicies/etcd-quorum-guard.json](./insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkconfigurationpolicies/etcd-quorum-guard.json)
+
+### Location in archive
+- `cluster-scoped-resources/nmstate.io/nodenetworkconfigurationpolicies/{name}.json`
+
+### Config ID
+`clusterconfig/nodenetworkconfigurationpolicies`
+
+### Released version
+- 4.18.0
+
+### Backported versions
+
+### Changes
+
+
+## NodeNetworkState
+
+Collects cluster scope "nodenetworkstate.nmstate.io/v1beta1"
+resources
+
+### API Reference
+- https://github.com/nmstate/kubernetes-nmstate/blob/main/api/v1beta1/nodenetworkstate_types.go
+
+### Sample data
+- [docs/insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkstates/etcd-quorum-guard.json](./insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkstates/etcd-quorum-guard.json)
+
+### Location in archive
+- `cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.json`
+
+### Config ID
+`clusterconfig/nodenetworkstates`
+
+### Released version
+- 4.18.0
+
+### Backported versions
+
+### Changes
+
+
 ## Nodes
 
 Collects all node resources.
@@ -1607,17 +1639,17 @@ None
 
 ## OpenstackDataplaneNodeSets
 
-Collects `openstackdataplanenodesets.dataplane.openstack.org`
+GatherOpenstackDataplaneNodesets Collects `openstackdataplanenodesets.dataplane.openstack.org`
 resources from all namespaces
 
 ### API Reference
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json)
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json)
 
 ### Location in archive
-- `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanenodesets/{name}.json`
+- `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanes/{name}.json`
 
 ### Config ID
 `clusterconfig/openstack_dataplanenodesets`
@@ -1627,9 +1659,9 @@ None
 
 ### Changes
 None
- 
 
-## Openstackversions
+
+## OpenstackVersions
 
 Collects `openstackversion.core.openstack.org`
 resources from all namespaces
@@ -1638,10 +1670,10 @@ resources from all namespaces
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json)
+- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json)
 
 ### Location in archive
-- `namespaces/{namespace}/core.openstack.org/openstackversions/{name}.json`
+- `namespaces/{namespace}/core.openstack.org/openstackversion/{name}.json`
 
 ### Config ID
 `clusterconfig/openstack_version`

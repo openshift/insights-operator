@@ -1,0 +1,13 @@
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+    name: node-network-config-policy-test
+spec:
+  desiredStates:
+    interfaces:
+      - name: test-interface
+        state: test-state
+        type: test-type
+status:
+    currentState:
+       dnsResolver: {}
