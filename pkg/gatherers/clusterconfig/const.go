@@ -86,6 +86,9 @@ var (
 	osvGroupVersionResource = schema.GroupVersionResource{
 		Group: "core.openstack.org", Version: "v1beta1", Resource: "openstackversions",
 	}
+
+	nodeNetConfPoliciesV1GVR = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1", Resource: "nodenetworkconfigurationpolicies"}
+	nodeNetStatesV1Beta1GVR  = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1beta1", Resource: "nodenetworkstates"}
 )
 
 func init() { //nolint: gochecknoinits
