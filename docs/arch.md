@@ -5,9 +5,11 @@ The main goal of the Insights Operator is to periodically gather anonymized data
 Insights Operator does not manage any application. As usual with operator applications, most of the code is structured in the `pkg` package and `pkg/controller/operator.go` hosts the operator controller. Typically, operator controllers read configuration and start some periodical tasks.
 
 ## How the Insights operator reads configuration
+
 The Insights Operator's configuration is a combination of the file [config/pod.yaml](../config/pod.yaml)(basically default configuration hardcoded in the image) and the configuration stored in either the `support` secret in the `openshift-config` namespace or the `insights-config` configmap in the `openshift-insights` namespace. Neither the secret nor the configmap exist by default, but when they do, they override the default settings which IO reads from the `config/pod.yaml`. The configmap takes precedent over the secret.
 The `insights-config` configmap provides the following configuration structure:
-```
+
+```yaml
 dataReporting:
     interval: 30m0s,
     uploadEndpoint: https://console.redhat.com/api/ingress/v1/upload,
@@ -31,6 +33,7 @@ proxy:
 ```
 
 The `support` secret provides following configuration attributes:
+
 - `endpoint` - upload endpoint. Overwritten by `dataReporting/uploadEndpoint` from the configmap. Default is `https://console.redhat.com/api/ingress/v1/upload`.
 - `interval` - data gathering & uploading frequency. Overwritten by `dataReporting/interval` from the configmap. Default is `2h`.
 - `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator. Overwritten by `proxy/httpProxy`, `proxy/httpsProxy` and `proxy/noProxy`, respectively, from the configmap.
@@ -71,14 +74,16 @@ type: Opaque
 ```shell script
 oc get secret support -n openshift-config -o=json | jq -r .data.endpoint | base64 -d
 ```
-```
+
+```shell
 https://console.redhat.com/api/ingress/v1/upload
 ```
 
 ```shell script
 oc get secret support -n openshift-config -o=json | jq -r .data.interval | base64 -d
 ```
-```
+
+```shell
 2h
 ```
 
@@ -107,12 +112,14 @@ The configuration secrets are periodically refreshed by the [configobserver](../
 configCh, cancelFn := c.configurator.ConfigChanged()
 ```
 
-Internally the configObserver has an array of subscribers, so all of them will get the signal.
+Internally the `configObserver` has an array of subscribers, so all of them will get the signal.
 
 ## How the Insights operator schedules tasks
+
 A commonly used pattern in the Insights Operator is that the task is run as a go routine and performs its own cycle of periodic actions.
 These actions are mostly started from the `operator.go`. They are usually using `wait.Until` - runs function periodically after short delay until end is signalled.
 There are these main tasks scheduled:
+
 - Gatherer
 - Uploader
 - Downloader (Report gatherer)
@@ -145,9 +152,23 @@ The data from this gatherer is stored in the `/config/workload_info.json` file i
 
 Defined in [conditional_gatherer.go](../pkg/gatherers/conditional/conditional_gatherer.go). This gatherer is run regularly (2h by default), but it only gathers some data when a corresponding condition is met. The conditions and corresponding gathering functions are defined in an external service (https://console.redhat.com/api/gathering/gathering_rules). A typical example of a condition is when an alert is firing. This also means that this gatherer relies on the availability of Prometheus metrics and alerts.
 
-The data from this gatherer is stored under the `/conditional` directory in the archive.
+The functionality of this gatherer was extended in the 4.17 version. The value of the `conditionalGathererEndpoint` was updated and the endpoint serves an updated content. The main addition is the field `container_logs` in the content provided by the external service. This field was added during the implementation of the [Rapid Recommendations](https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md) OpenShift enhancement proposal and it contains an array of so called container log requests. Container log request might look as follows:
+
+```json
+        {
+            "namespace": "openshift-cloud-credential-operator",
+            "pod_name_regex": ".*",
+            "messages": [
+                "googleapis\\.com.*proxyconnect\\ tcp:\\ dial\\ tcp.*i/o\\ timeout"
+            ]
+        }
+```
+
+The `namespace` defines the namespace name. The `pod_name_regex` defines a regular expression to match Pod names (in the given namespace) and finally `messages` define a list of regular expressions to filter all the matching container logs. There is one optional attribute `previous` saying whether you want to filter the log of a previous container.
+
 
 ## Downloading and exposing Insights Analysis
+
 After every successful upload of archive, the operator waits (see the `reportPullingDelay` config attribute) and
 then it tries to download the latest Insights analysis result of the latest archive (created by the Insights pipeline
 in `console.redhat.com`). The report is verified by checking the `LastCheckedAt` timestamp (see
@@ -157,6 +178,7 @@ attribute). The successfully downloaded Insights report is parsed and the number
 recommendations are exposed via `health_statuses_insights` Prometheus metric.
 
 Code: Example of reported metrics:
+
 ```prometheus
 # HELP health_statuses_insights [ALPHA] Information about the cluster health status as detected by Insights tooling.
 # TYPE health_statuses_insights gauge
@@ -188,30 +210,38 @@ health_statuses_insights{metric="total"} 2
 > The alerts are defined [here](../manifests/08-prometheus_rule.yaml)
 
 ### Scheduling and running of Uploader
+
 The `operator.go` starts background task defined in `pkg/insights/insightsuploader/insightsuploader.go`. The insights uploader periodically checks if there is any data to upload. If no data is found, the uploader continues with next cycle.
 The uploader triggers the `wait.Until` function, which waits until the configuration changes, or it is time to upload. After start of the operator, there is some waiting time before the very first upload. This time is defined by `initialDelay`. If no error occurred while sending the POST request, then the next uploader check is defined as `wait.Jitter(interval, 1.2)`, where interval is the gathering interval.
 
 ## How Uploader authenticates to console.redhat.com
+
 The HTTP communication with the external service (e.g uploading the Insights archive or downloading the Insights analysis) is defined in the [insightsclient package](../pkg/insights/insightsclient/). The HTTP transport is encrypted with TLS (see the `clientTransport()` function defined in the `pkg/insights/insightsclient/insightsclient.go`. This function (and the `prepareRequest` function) uses `pkg/authorizer/clusterauthorizer.go` to respect the proxy settings and to authorize (i.e add the authorization header with respective token value) the requests. The user defined certificates in the `/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt` are taken into account (see the cluster wide proxy setting in the [OCP documentation](https://docs.openshift.com/container-platform/latest/networking/enable-cluster-wide-proxy.html)).
 
 ## Summarising the content before upload
+
 Summarizer is defined by `pkg/recorder/diskrecorder/diskrecorder.go` and is merging all existing archives. That is, it merges together all archives with name matching pattern `insights-*.tar.gz`, which weren't removed and which are newer than the last check time. Then mergeReader is taking one file after another and adding all of them to archive under their path.
 If the file names are unstable (for example reading from Api with Limit and reaching the Limit), it could merge together more files than specified in Api limit.
 
 ## Scheduling the ConfigObserver
+
 Another background task is from `pkg/config/configobserver/configobserver.go`. The observer creates `configObserver` by calling `configObserver.New`, which sets default observing interval to 5 minutes.
 The `Start` method runs again `wait.Until` every 5 minutes and reads both `support` and `pull-secret` secrets.
 
 ## Scheduling diskpruner and what it does
+
 By default Insights Operator Gather is calling diskrecorder to save newly collected data in a new file, but doesn't remove old. This is the task of diskpruner. Observer calls `recorder.PeriodicallyPrune()` function. It is again using wait.Until pattern and runs approximately after every second interval.
 Internally it calls `diskrecorder.Prune` with `maxAge = interval*6*24` (with 2h it is 12 days) everything older is going to be removed from the archive path (by default `/tmp/insights-operator`).
 
 ## How the Insights operator sets operator status
+
 The operator status is based on K8s [Pod conditions](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions).
 Code: How Insights Operator status conditions looks like:
+
 ```shell script
 oc get co insights -o=json | jq '.status.conditions'
 ```
+
 ```json
 [
   {
@@ -261,18 +291,36 @@ oc get co insights -o=json | jq '.status.conditions'
     "reason": "AsExpected",
     "status": "True",
     "type": "Available"
-  }
+  },
+  {
+    "lastTransitionTime": "2024-09-09T12:16:20Z",
+    "reason": "AsExpected",
+    "status": "True",
+    "type": "RemoteConfigurationValid"
+  },
+  {
+    "lastTransitionTime": "2024-09-09T12:16:20Z",
+    "reason": "AsExpected",
+    "status": "True",
+    "type": "RemoteConfigurationAvailable"
+  },
 ]
 ```
+
 A condition is defined by its type. You may notice that there are some non-standard clusteroperator conditions. They are:
+
 - `SCAAvailable` - based on the SCA (Simple Content Access) controller in `pkg/ocm/sca/sca.go` and provides information about the status of downloading the SCA entitlements.
 - `ClusterTransferAvailable` - based on the cluster transfer controller in `pkg/ocm/clustertransfer/cluster_transfer.go` and provides information about the availability of cluster transfers.
 - `Disabled` - indicates whether data gathering is disabled or enabled. Note that when the operator is `Disabled=True`, it is still also `Available=True`, which is strange at first glance, but the Cluster Version Operator (CVO) checks that all the clusteroperators are `Available=True` during the OpenShift installation. If they are not, the installation will fail, which happens in disconnected environments/clusters where the Insights operator is usually `Disabled=True` (because there is no `cloud.openshift.com` token in the `pull-secret`). You can find more about this topic in:
   - https://pkg.go.dev/github.com/openshift/api/config/v1#ClusterStatusConditionType - note that when the Insights Operator is `Disabled=True` then it does not require immediate administrator intervention (and thus it still reports `Available=True`) - i.e nobody should be paged in this situation
   - https://github.com/openshift/enhancements/blob/master/dev-guide/cluster-version-operator/dev/clusteroperator.md#conditions
+- `RemoteConfigurationAvailable` refers to the remote configuration (originally known as Gathering conditions) provided by the external service (see the [Conditional gatherer](#conditional-gatherer)). This condition tells whether the endpoint was available (HTTP 200 status code) or not.
+- `RemoteConfigurationValid` refers to the remote configuration (originally known as Gathering conditions) provided by the external service (see the [Conditional gatherer](#conditional-gatherer)). This conditions tells whether the content read from the endpoint is a valid JSON and can be parsed by the operator.
 
 In addition to the above clusteroperator conditions, there are some intermediate clusteroperator conditions. These are:
+
 - `UploadDegraded` - this condition occurs when there is any unsuccessful upload of the Insights data (if the number of the upload attemp is equal or greater than 5 then the operator is marked as **Degraded**). Example is:
+  
   ```json
     {
       "lastTransitionTime": "2022-05-18T10:12:23Z",
@@ -283,7 +331,9 @@ In addition to the above clusteroperator conditions, there are some intermediate
      },
 
   ```
+
 - `InsightsDownloadDegraded` - this condition occurs when there is any unsuccessful download of the Insights analysis. Example is:
+  
   ```json
     {
       "lastTransitionTime": "2022-05-18T10:17:49Z",
@@ -300,6 +350,7 @@ the operator status from its internal list of sources. Any component which wants
 SimpleReporter, which returns its actual status. The Simple reporter is defined in `controllerstatus`.
 
 Code: In `operator.go` components are adding their reporters to Status Sources:
+
 ```go
 statusReporter.AddSources(uploader)
 ```
@@ -308,13 +359,15 @@ This periodic status updater calls `updateStatus `which sets the operator status
 The uploader `updateStatus` determines if it is safe to upload, if cluster operator status is healthy. It relies on fact that `updateStatus` is called on start of status cycle.
 
 ## How is Insights Operator using various API Clients
+
 Internally Insights operator talks to Kubernetes API server over HTTP REST queries. Each query is authenticated by a Bearer token,
 to simulate see an actual Rest query being used, you can try:
 
 ```shell script
 oc get pods -A -v=9
 ```
-```
+
+```text
 I1006 12:26:33.972634   66541 loader.go:375] Config loaded from file:  /home/mkunc/.kube/config
 I1006 12:26:33.977546   66541 round_trippers.go:423] curl -k -v -XGET  -H "Accept: application/json;as=Table;v=v1;g=meta.k8s.io,application/json;as=Table;v=v1beta1;g=meta.k8s.io,application/json" -H "User-Agent: oc/4.5.0 (linux/amd64) kubernetes/9933eb9" -H "Authorization: Bearer Xy9HoVzNdsRifGr3oCIl7pfxwkeqE2u058avw6o969w" 'https://api.sharedocp4upi43.lab.upshift.rdu2.redhat.com:6443/api/v1/pods?limit=500'
 I1006 12:26:36.075230   66541 round_trippers.go:443] GET https://api.sharedocp4upi43.lab.upshift.rdu2.redhat.com:6443/api/v1/pods?limit=500 200 OK in 2097 milliseconds
@@ -337,6 +390,7 @@ Reason for doing this is that there are many clients every one of which is cheap
 On the other hand its quite cumbersome to pass around a bunch of clients, the number of which is changing by the day, with no benefit.
 
 ## How are the credentials used in clients
+
 In IO deployment [manifest](manifests/06-deployment.yaml) is specified service account operator (serviceAccountName: operator). This is the account under which insights operator runs or reads its configuration or also reads the metrics.
 Because Insights Operator needs quite powerful credentials to access cluster-wide resources, it has one more service account called gather. It is created
 in [manifest](manifests/03-clusterrole.yaml).
@@ -346,12 +400,14 @@ Code: To verify if gather account has right permissions to call verb list from a
 ```shell script
 kubectl auth can-i list machinesets --as=system:serviceaccount:openshift-insights:gather
 ```
-```
+
+```shell
 yes
 ```
 
 This account is used to impersonate any clients which are being used in Gather Api calls. The impersonated account is set in operator go:
 Code: In Operator.go specific Api client is using impersonated account
+
 ```go
 	gatherKubeConfig := rest.CopyConfig(controller.KubeConfig)
 	if len(s.Impersonate) > 0 {
@@ -362,6 +418,7 @@ Code: In Operator.go specific Api client is using impersonated account
 ```
 
 Code: The impersonated account is specified in config/pod.yaml (or config/local.yaml) using:
+
 ```yaml
 impersonate: system:serviceaccount:openshift-insights:gather
 ```
@@ -372,22 +429,26 @@ Note: I was only able to test missing permissions on OCP 4.3, the versions above
 don't have RBAC enabled.
 
 Code: Example error returned from Api, in this case downloading Get config from imageregistry.
+
 ```
 configs.imageregistry.operator.openshift.io "cluster" is forbidden: User "system:serviceaccount:openshift-insights:gather" cannot get resource "configs" in API group "imageregistry.operator.openshift.io" at the cluster scope
 ```
 
 ## How API extensions works
+
 If any cloud native application wants to add some Kubernetes Api endpoint, it needs to define it using [K8s Api extensions](https://kubernetes.io/docs/concepts/extend-kubernetes/) and it would need to define Custom Resource Definition. Openshift itself defines them for [github.com/openshift/api](github.com/openshift/api) (ClusterOperators, Proxy, Image, ..). Thus for using api of Openshift, we need to use Openshift's client-go generated client.
 If we would need to use Api of some other Operators, we would need to find if Operator is defining Api.
 
 Typically when operator defines a new CRD type, this type would be defined inside of its repo (for example [Machine Config Operator's MachineConfig](https://github.com/openshift/machine-config-operator/tree/master/pkg/apis/machineconfiguration.openshift.io)).
 
 To talk to specific Api, we need to have generated clientset and generated lister types from the CRD type. There might be three possibilities:
+
 - Operator doesn't generate clientset nor lister types
 - Operator generate only lister types
 - Operator generates both, clientset and lister types
 
 Machine Config Operator defines:
+
 - its Lister types [here](https://github.com/openshift/machine-config-operator/tree/master/pkg/generated/listers/machineconfiguration.openshift.io/v1)
 - its ClientSet [here](https://github.com/openshift/machine-config-operator/blob/master/pkg/generated/clientset/versioned/clientset.go)
 
