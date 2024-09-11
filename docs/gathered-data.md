@@ -1077,7 +1077,10 @@ None
 
 ## MachineConfigs
 
-Collects `MachineConfigs` definitions. Following data is intentionally removed from the definitions:
+Collects definitions of in-use 'MachineConfigs'. MachineConfig is used when it's referenced in
+a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig` and `machineconfiguration.openshift.io/currentConfig`
+annotations
+Following data is intentionally removed from the definitions:
 - `spec.config.storage.files`
 - `spec.config.passwd.users`
 
@@ -1100,7 +1103,7 @@ Collects `MachineConfigs` definitions. Following data is intentionally removed f
 - 4.8.5
 
 ### Changes
-None
+- gathers only in-use MachineConfigs since 4.18+
 
 
 ## MachineHealthCheck
