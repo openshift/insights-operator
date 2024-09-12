@@ -18,6 +18,7 @@ import (
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
+	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer("", "")
 
 	assert.Equal(t, "conditional", gatherer.GetName())
@@ -32,6 +33,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 }
 
 func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
+	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer("", "")
 
 	ctx := context.Background()
@@ -46,6 +48,7 @@ func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 }
 
 func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
+	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer("", "")
 
 	ctx := context.Background()
@@ -73,6 +76,7 @@ func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
 }
 
 func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
+	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gathererConfig := `{
 		"version": "1.0.0",
 		"conditional_gathering_rules": [{
@@ -107,6 +111,7 @@ func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
 }
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
+	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer("", "")
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
@@ -118,6 +123,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 }
 
 func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
+	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer("", "")
 
 	ctx := context.Background()
@@ -281,12 +287,14 @@ func TestGetGatheringFunctions(t *testing.T) {
 		name                  string
 		endpoint              string
 		remoteConfig          string
+		releaseVersionEnvVar  string
 		expectedErrMsg        string
 		expectRemoteConfigErr bool
 	}{
 		{
 			name:                  "remote configuration is available and can be parsed",
 			endpoint:              "/gathering_rules",
+			releaseVersionEnvVar:  "1.2.3",
 			remoteConfig:          "",
 			expectedErrMsg:        "",
 			expectRemoteConfigErr: false,
@@ -294,6 +302,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 		{
 			name:                  "remote configuration is not available",
 			endpoint:              "not valid endpoint",
+			releaseVersionEnvVar:  "1.2.3",
 			remoteConfig:          "",
 			expectedErrMsg:        "endpoint not supported",
 			expectRemoteConfigErr: true,
@@ -302,13 +311,23 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                  "remote configuration is available, but cannot be parsed",
 			endpoint:              "/gathering_rules",
 			remoteConfig:          `{not json}`,
+			releaseVersionEnvVar:  "1.2.3",
 			expectedErrMsg:        "invalid character 'n' looking for beginning of object key string",
+			expectRemoteConfigErr: true,
+		},
+		{
+			name:                  "remote configuration is not available, because RELEASE_VERSION is set with empty",
+			endpoint:              "/gathering_rules",
+			releaseVersionEnvVar:  "",
+			remoteConfig:          "",
+			expectedErrMsg:        "environmental variable RELEASE_VERSION is not set or has empty value",
 			expectRemoteConfigErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("RELEASE_VERSION", tt.releaseVersionEnvVar)
 			gatherer := newEmptyGatherer(tt.remoteConfig, tt.endpoint)
 			_, err := gatherer.GetGatheringFunctions(context.Background())
 			if err != nil {
