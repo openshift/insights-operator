@@ -270,7 +270,11 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	ocpVersion := os.Getenv("RELEASE_VERSION")
+	ocpVersion, ok := os.LookupEnv("RELEASE_VERSION")
+	if !ok || ocpVersion == "" {
+		return nil, fmt.Errorf("environmental variable RELEASE_VERSION is not set or has empty value")
+	}
+
 	backOff := wait.Backoff{
 		Duration: 30 * time.Second,
 		Factor:   2,
@@ -278,6 +282,7 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 		Steps:    3,
 		Cap:      3 * time.Minute,
 	}
+	endpointWithVersion := fmt.Sprintf(endpoint, ocpVersion)
 	var remoteConfigData []byte
 	err = wait.ExponentialBackoffWithContext(ctx, backOff, func(ctx context.Context) (done bool, err error) {
 		resp, err := g.insightsCli.GetWithPathParam(ctx, endpoint, ocpVersion, false)
@@ -291,7 +296,7 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 				return false, nil
 			}
 			return true, insightsclient.HttpError{
-				Err:        fmt.Errorf("received HTTP %s from %s", resp.Status, endpoint),
+				Err:        fmt.Errorf("received HTTP %s from %s", resp.Status, endpointWithVersion),
 				StatusCode: resp.StatusCode,
 			}
 		}
