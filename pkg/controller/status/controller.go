@@ -391,6 +391,14 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 	// we set the following Remote Configuration conditions only in non-techpreview clusters
 	// In tech preview clusters, it's not handy to use this status controller, because there are
 	// two status conditions related to the single source of status (condition gatherer in this case)
+	if c.ctrlStatus.isDisabled() {
+		status := c.ctrlStatus.getStatus(DisabledStatus)
+		cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, status.reason, status.message)
+		// if the remote configuration is not available then we can't say it's valid or not
+		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, NoValidationYet, "")
+		return
+	}
+
 	if rs := c.ctrlStatus.getStatus(RemoteConfigAvailableStatus); rs != nil {
 		cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, rs.reason, rs.message)
 		// if the remote configuration is not available then we can't say it's valid or not
