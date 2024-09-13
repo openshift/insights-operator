@@ -47,6 +47,7 @@ var (
 	trueB                            = true
 	deletePropagationBackground      = metav1.DeletePropagationBackground
 	dataUplodedConditionNotAvailable = "DataUploadedConditionNotAvailable"
+	gatheringDisabledReason          = "GatheringDisabled"
 )
 
 // Controller periodically runs gatherers, records their results to the recorder
@@ -324,20 +325,34 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 					klog.Infof("DataGather %s resource state is %s. Not triggering any data gathering", dgName, dataGather.Status.State)
 					return
 				}
+				if c.image == "" {
+					image, err := c.getInsightsImage(ctx)
+					if err != nil {
+						klog.Errorf("Can't get operator image. Gathering will not run: %v", err)
+						return
+					}
+					c.image = image
+				}
+
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
-				c.runJobAndCheckResults(ctx, dataGather)
+				c.runJobAndCheckResults(ctx, dataGather, c.image)
 			}()
 		}
 	}
 }
 
 func (c *Controller) GatherJob() {
-	if c.isGatheringDisabled() {
-		klog.Info("Gather is disabled by configuration.")
-		return
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
 	defer cancel()
+
+	if c.isGatheringDisabled() {
+		klog.Info("Gather is disabled by configuration.")
+		err := c.setRemoteConfigConditionsWhenDisabled(ctx)
+		if err != nil {
+			klog.Errorf("Failed to update operator's conditions in disabled state: %v ", err)
+		}
+		return
+	}
 
 	if c.image == "" {
 		image, err := c.getInsightsImage(ctx)
@@ -355,7 +370,7 @@ func (c *Controller) GatherJob() {
 		klog.Errorf("Failed to create a new DataGather resource: %v", err)
 		return
 	}
-	c.runJobAndCheckResults(ctx, dataGatherCR)
+	c.runJobAndCheckResults(ctx, dataGatherCR, c.image)
 }
 
 // runJobAndCheckResults creates a new data gathering job in techpreview
@@ -363,9 +378,9 @@ func (c *Controller) GatherJob() {
 // (in the external data pipeline) by reading the corresponding DataGather status conditions.
 // If the processing was successful, a new Insights analysis report is loaded; if not,
 // it returns with the providing the info in the log message.
-func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather) {
+func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, c.image, c.configAggregator.Config().DataReporting.StoragePath)
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, c.configAggregator.Config().DataReporting.StoragePath)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -827,4 +842,33 @@ func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
 		}
 	}
 	insights.IncrementCounterRequestSend(statusCode)
+}
+
+// setRemoteConfigConditionsWhenDisabled updates the RemoteConfig clusteroperator conditions
+// in a disabled cluster. It means that the RemoteConfigurationAvailable=False and RemoteConfigurationValid=Unknown.
+func (c *Controller) setRemoteConfigConditionsWhenDisabled(ctx context.Context) error {
+	insightsCo, err := c.openshiftConfCli.ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	raIdx := getClusterOperatorConditionIndexByType(status.RemoteConfigurationAvailable, insightsCo.Status.Conditions)
+	insightsCo.Status.Conditions[raIdx] = v1.ClusterOperatorStatusCondition{
+		Type:               status.RemoteConfigurationAvailable,
+		Status:             v1.ConditionFalse,
+		Reason:             gatheringDisabledReason,
+		Message:            "Data gathering is disabled",
+		LastTransitionTime: metav1.Now(),
+	}
+	raIdx = getClusterOperatorConditionIndexByType(status.RemoteConfigurationValid, insightsCo.Status.Conditions)
+	insightsCo.Status.Conditions[raIdx] = v1.ClusterOperatorStatusCondition{
+		Type:               status.RemoteConfigurationValid,
+		Status:             v1.ConditionUnknown,
+		Reason:             status.NoValidationYet,
+		LastTransitionTime: metav1.Now(),
+	}
+	_, err = c.openshiftConfCli.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
