@@ -515,23 +515,32 @@ func (c *Controller) compareAndUpdateClusterOperatorCondition(ctx context.Contex
 				Message:            dataGatherCondition.Message,
 			}
 		}
-		idx := getClusterOperatorConditionIndexByType(clusterOperatorCon.Type, updatedConditions)
-		updatedConditions[idx] = *clusterOperatorCon
+		idx, ok := getClusterOperatorConditionIndexByType(clusterOperatorCon.Type, updatedConditions)
+		if !ok {
+			updatedConditions = append(updatedConditions, *clusterOperatorCon)
+		} else {
+			updatedConditions[idx] = *clusterOperatorCon
+		}
 	}
 	insightsCo.Status.Conditions = updatedConditions
 	_, err = c.openshiftConfCli.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{})
 	return err
 }
 
-func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionType, conditions []v1.ClusterOperatorStatusCondition) int {
-	var idx int
+// getClusterOperatorConditionIndexByType tries to find index of the cluster operator status condition with the corresponding type.
+// If the condition is found, the corresponding index and true are returned. If the condition is not found then it returns -1 and false.
+func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionType,
+	conditions []v1.ClusterOperatorStatusCondition) (int, bool) {
+	idx := -1
+	found := false
 	for i := range conditions {
 		con := conditions[i]
 		if con.Type == conType {
 			idx = i
+			found = true
 		}
 	}
-	return idx
+	return idx, found
 }
 
 // updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
@@ -851,20 +860,41 @@ func (c *Controller) setRemoteConfigConditionsWhenDisabled(ctx context.Context) 
 	if err != nil {
 		return err
 	}
-	raIdx := getClusterOperatorConditionIndexByType(status.RemoteConfigurationAvailable, insightsCo.Status.Conditions)
-	insightsCo.Status.Conditions[raIdx] = v1.ClusterOperatorStatusCondition{
+	remoteConfAvailableCon := v1.ClusterOperatorStatusCondition{
 		Type:               status.RemoteConfigurationAvailable,
 		Status:             v1.ConditionFalse,
 		Reason:             gatheringDisabledReason,
 		Message:            "Data gathering is disabled",
 		LastTransitionTime: metav1.Now(),
 	}
-	raIdx = getClusterOperatorConditionIndexByType(status.RemoteConfigurationValid, insightsCo.Status.Conditions)
-	insightsCo.Status.Conditions[raIdx] = v1.ClusterOperatorStatusCondition{
+
+	remoteConfValidCon := v1.ClusterOperatorStatusCondition{
 		Type:               status.RemoteConfigurationValid,
 		Status:             v1.ConditionUnknown,
 		Reason:             status.NoValidationYet,
 		LastTransitionTime: metav1.Now(),
+	}
+
+	if len(insightsCo.Status.Conditions) == 0 {
+		insightsCo.Status.Conditions = append(insightsCo.Status.Conditions, remoteConfAvailableCon, remoteConfValidCon)
+	} else {
+		updatedConditions := make([]v1.ClusterOperatorStatusCondition, len(insightsCo.Status.Conditions))
+		_ = copy(updatedConditions, insightsCo.Status.Conditions)
+
+		rcaIdx, ok := getClusterOperatorConditionIndexByType(status.RemoteConfigurationAvailable, updatedConditions)
+		if !ok {
+			updatedConditions = append(updatedConditions, remoteConfAvailableCon)
+		} else {
+			updatedConditions[rcaIdx] = remoteConfAvailableCon
+		}
+
+		rcvIdx, ok := getClusterOperatorConditionIndexByType(status.RemoteConfigurationValid, updatedConditions)
+		if !ok {
+			updatedConditions = append(updatedConditions, remoteConfValidCon)
+		} else {
+			updatedConditions[rcvIdx] = remoteConfValidCon
+		}
+		insightsCo.Status.Conditions = updatedConditions
 	}
 	_, err = c.openshiftConfCli.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{})
 	if err != nil {
