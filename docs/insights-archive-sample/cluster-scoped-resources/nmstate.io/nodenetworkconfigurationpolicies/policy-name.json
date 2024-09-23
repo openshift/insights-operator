@@ -1,0 +1,52 @@
+{
+    "apiVersion": "nmstate.io/v1",
+    "kind": "NodeNetworkConfigurationPolicy",
+    "metadata": {
+        "annotations": {
+            "nmstate.io/webhook-mutating-timestamp": "1724753787619122019"
+        },
+        "creationTimestamp": "2024-08-27T10:16:27Z",
+        "generation": 1,
+        "name": "policy-name",
+        "resourceVersion": "140132",
+        "uid": "d5e205ba-b034-42d1-bd93-a1dde9738aeb"
+    },
+    "spec": {
+        "desiredState": {
+            "interfaces": [
+                {
+                    "name": "br0",
+                    "state": "up",
+                    "type": "linux-bridge"
+                }
+            ]
+        }
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastHeartbeatTime": "2024-08-27T11:52:07Z",
+                "lastTransitionTime": "2024-08-27T11:52:07Z",
+                "message": "5/5 nodes successfully configured",
+                "reason": "SuccessfullyConfigured",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "lastHeartbeatTime": "2024-08-27T11:52:07Z",
+                "lastTransitionTime": "2024-08-27T11:52:07Z",
+                "reason": "SuccessfullyConfigured",
+                "status": "False",
+                "type": "Degraded"
+            },
+            {
+                "lastHeartbeatTime": "2024-08-27T11:52:07Z",
+                "lastTransitionTime": "2024-08-27T11:52:07Z",
+                "reason": "ConfigurationProgressing",
+                "status": "False",
+                "type": "Progressing"
+            }
+        ],
+        "lastUnavailableNodeCountUpdate": "2024-08-27T10:16:37Z"
+    }
+}
