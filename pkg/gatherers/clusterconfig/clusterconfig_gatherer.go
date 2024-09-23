@@ -62,6 +62,8 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"networks":                          (*Gatherer).GatherClusterNetwork,
 	"node_logs":                         (*Gatherer).GatherNodeLogs,
 	"nodes":                             (*Gatherer).GatherNodes,
+	"nodenetworkconfigurationpolicies":  (*Gatherer).GatherNodeNetworkConfigurationPolicy,
+	"nodenetworkstates":                 (*Gatherer).GatherNodeNetworkState,
 	"oauths":                            (*Gatherer).GatherClusterOAuth,
 	"olm_operators":                     (*Gatherer).GatherOLMOperators,
 	"openshift_apiserver_operator_logs": (*Gatherer).GatherOpenShiftAPIServerOperatorLogs,
