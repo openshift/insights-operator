@@ -1,5 +1,91 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: f7c5ffd753f6c93c3bf634bb3c74957cc759938f-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: fe79045c36e15dd16c01651b99c9a1099b0a7179-->
+
+## 4.17
+
+### Data Enhancement
+- [#963](https://github.com/openshift/insights-operator/pull/963) Start collecting haproxy_exporter_server_threshold metric
+- [#942](https://github.com/openshift/insights-operator/pull/942) gather aggregated numbers of Pods and Netnamespaces with SDN annotations
+- [#941](https://github.com/openshift/insights-operator/pull/941) Collect aggregated Prometheus Alertmanager instances
+
+### Feature
+- [#951](https://github.com/openshift/insights-operator/pull/951) Integration of the OpenStack CRs into the insights-operator
+- [#959](https://github.com/openshift/insights-operator/pull/959) always store remote configuration and metrics in the archive
+- [#953](https://github.com/openshift/insights-operator/pull/953) introduce JSON schema & validation for rapid container logs
+- [#944](https://github.com/openshift/insights-operator/pull/944) rapid recommendations with new status condition
+
+### Bugfix
+- [#968](https://github.com/openshift/insights-operator/pull/968) fix the configmapobserver notifications
+- [#952](https://github.com/openshift/insights-operator/pull/952) properly encode the URL for the advisor links
+- [#947](https://github.com/openshift/insights-operator/pull/947) Add new use cases for networking obfuscation
+- [#936](https://github.com/openshift/insights-operator/pull/936) Add new use cases that requires anonymization
+
+### Others
+- [#964](https://github.com/openshift/insights-operator/pull/964) limit the time for the new rapid container logs & update the endpoint
+- [#954](https://github.com/openshift/insights-operator/pull/954) remove firing alerts from the config/metrics file
+- [#966](https://github.com/openshift/insights-operator/pull/966) update OWNERS file...again
+- [#955](https://github.com/openshift/insights-operator/pull/955) remove SDN related gatherers
+- [#943](https://github.com/openshift/insights-operator/pull/943) update OWNERS list
+
+### Misc
+- [#998](https://github.com/openshift/insights-operator/pull/998) populate the endpoint parameter when there's an error
+- [#989](https://github.com/openshift/insights-operator/pull/989) collect some nmstate customresources (#…
+- [#991](https://github.com/openshift/insights-operator/pull/991) Not able to enable repositories during entitled build in OCP Cluster on IBM-Z
+- [#945](https://github.com/openshift/insights-operator/pull/945) Ingress controller related certificates' validate dates gathering
+- [#940](https://github.com/openshift/insights-operator/pull/940) Updating ose-insights-operator-container image to be consistent with ART for 4.17
+- [#939](https://github.com/openshift/insights-operator/pull/939) Updating ose-insights-operator-container image to be consistent with ART for 4.17
+
+## 4.16
+
+### Data Enhancement
+- [#895](https://github.com/openshift/insights-operator/pull/895) bump loglevel of operator to normal
+- [#898](https://github.com/openshift/insights-operator/pull/898) adjust log level of some rather important messages
+- [#897](https://github.com/openshift/insights-operator/pull/897) gather etcd_server_slow metrics
+
+### Feature
+- [#974](https://github.com/openshift/insights-operator/pull/974) Integration of the OpenStack CRs into the insights-operator
+- [#888](https://github.com/openshift/insights-operator/pull/888) (refactor) job completion uses event instead polling
+
+### Bugfix
+- [#957](https://github.com/openshift/insights-operator/pull/957) properly encode the URL for the advisor links
+- [#929](https://github.com/openshift/insights-operator/pull/929) anonymization - externalIP can be nil
+- [#921](https://github.com/openshift/insights-operator/pull/921) use retrywatcher when watching job
+- [#907](https://github.com/openshift/insights-operator/pull/907) add permission for prometheus to be able to read metrics
+- [#894](https://github.com/openshift/insights-operator/pull/894) support loglevel controller
+- [#882](https://github.com/openshift/insights-operator/pull/882) changelog script - parse arguments as time
+
+### Others
+- [#924](https://github.com/openshift/insights-operator/pull/924) bump golang.org/x/net version
+- [#923](https://github.com/openshift/insights-operator/pull/923) increase archive size
+- [#922](https://github.com/openshift/insights-operator/pull/922) DVO metrics gatherer minor changes
+- [#889](https://github.com/openshift/insights-operator/pull/889) (refactor) reduce cognitive and adding unit tests
+- [#919](https://github.com/openshift/insights-operator/pull/919) minor logging update when data gathering is disabled
+- [#920](https://github.com/openshift/insights-operator/pull/920) delete all active jobs during restart
+- [#918](https://github.com/openshift/insights-operator/pull/918) update protobuf version
+- [#915](https://github.com/openshift/insights-operator/pull/915) set required-scc for openshift workloads
+- [#912](https://github.com/openshift/insights-operator/pull/912) extend clusteroperators gatherer to collect status of insightsoperato…
+- [#916](https://github.com/openshift/insights-operator/pull/916) update dependencies
+- [#913](https://github.com/openshift/insights-operator/pull/913) update the gathered CPU usage metric
+- [#911](https://github.com/openshift/insights-operator/pull/911) adjust loglevel for  some further messages
+- [#899](https://github.com/openshift/insights-operator/pull/899) Add extra check in ids to bypass validations
+- [#880](https://github.com/openshift/insights-operator/pull/880) fix helmchart gather unit test
+- [#893](https://github.com/openshift/insights-operator/pull/893) another attempt to fix security warning for changelog script
+- [#881](https://github.com/openshift/insights-operator/pull/881) OpenShift & K8s versions bump up
+- [#866](https://github.com/openshift/insights-operator/pull/866) fix errors handling + docs + lint
+
+### Misc
+- [#995](https://github.com/openshift/insights-operator/pull/995) collect some nmstate customresources
+- [#977](https://github.com/openshift/insights-operator/pull/977) Start collecting haproxy_exporter_server_threshold metric
+- [#970](https://github.com/openshift/insights-operator/pull/970) Ingress controller related certificates' validate dates gathering
+- [#969](https://github.com/openshift/insights-operator/pull/969) fix the configmapobserver notifications
+- [#948](https://github.com/openshift/insights-operator/pull/948) Collect aggregated Prometheus Alertmanager instances
+- [#946](https://github.com/openshift/insights-operator/pull/946) gather aggregated numbers of Pods and Netnamespaces with SDN annotations
+- [#914](https://github.com/openshift/insights-operator/pull/914) Apply hypershift cluster-profile for ibm-cloud-managed
+- [#908](https://github.com/openshift/insights-operator/pull/908) Apply hypershift cluster-profile for ibm-cloud-managed
+- [#892](https://github.com/openshift/insights-operator/pull/892) Adding insights-config configuration description to arch.md
+- [#885](https://github.com/openshift/insights-operator/pull/885) Updating ose-insights-operator-container image to be consistent with ART
+- [#871](https://github.com/openshift/insights-operator/pull/871) Updating ose-insights-operator-container image to be consistent with ART
+
 ## 4.15
 
 ### Data Enhancement
