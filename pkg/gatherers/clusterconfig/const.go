@@ -74,6 +74,9 @@ var (
 		Version:  "v1alpha1",
 		Resource: "clusterserviceversions",
 	}
+
+	nodeNetConfPoliciesV1GVR = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1", Resource: "nodenetworkconfigurationpolicies"}
+	nodeNetStatesV1Beta1GVR  = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1beta1", Resource: "nodenetworkstates"}
 )
 
 func init() { //nolint: gochecknoinits

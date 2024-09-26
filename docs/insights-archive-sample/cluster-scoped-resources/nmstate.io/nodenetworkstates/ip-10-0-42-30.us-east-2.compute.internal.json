@@ -1,0 +1,620 @@
+{
+    "apiVersion": "nmstate.io/v1beta1",
+    "kind": "NodeNetworkState",
+    "metadata": {
+        "creationTimestamp": "2024-08-27T12:50:37Z",
+        "generation": 1,
+        "labels": {
+            "nmstate.io/force-nns-refresh": "1724763038818557189"
+        },
+        "name": "ip-10-0-42-30.us-east-2.compute.internal",
+        "ownerReferences": [
+            {
+                "apiVersion": "v1",
+                "kind": "Node",
+                "name": "ip-10-0-42-30.us-east-2.compute.internal",
+                "uid": "0ca81670-5779-4945-b03a-a784ee3e0d4b"
+            }
+        ],
+        "resourceVersion": "179811",
+        "uid": "89dcfaae-ed36-468c-bb6a-cbf70ece3fc5"
+    },
+    "status": {
+        "currentState": {
+            "dns-resolver": {
+                "config": {
+                    "search": null,
+                    "server": null
+                },
+                "running": {
+                    "search": [
+                        "us-east-2.compute.internal"
+                    ],
+                    "server": [
+                        "10.0.0.2"
+                    ]
+                }
+            },
+            "interfaces": [
+                {
+                    "bridge": {
+                        "options": {
+                            "datapath": "",
+                            "fail-mode": "",
+                            "mcast-snooping-enable": false,
+                            "rstp": false,
+                            "stp": {
+                                "enabled": false
+                            }
+                        },
+                        "port": [
+                            {
+                                "name": "br-ex"
+                            },
+                            {
+                                "name": "ens5"
+                            },
+                            {
+                                "name": "patch-br-ex_ip-10-0-42-30.us-east-2.compute.internal-to-br-int"
+                            }
+                        ]
+                    },
+                    "identifier": "name",
+                    "ipv4": {
+                        "auto-dns": true,
+                        "auto-gateway": true,
+                        "auto-route-table-id": 0,
+                        "auto-routes": true,
+                        "dhcp": true,
+                        "dhcp-send-hostname": true,
+                        "enabled": true
+                    },
+                    "ipv6": {
+                        "addr-gen-mode": "stable-privacy",
+                        "auto-dns": true,
+                        "auto-gateway": true,
+                        "auto-route-table-id": 0,
+                        "auto-routes": true,
+                        "autoconf": true,
+                        "dhcp": true,
+                        "dhcp-send-hostname": true,
+                        "enabled": true
+                    },
+                    "lldp": {
+                        "enabled": false
+                    },
+                    "name": "br-ex",
+                    "ovs-db": {
+                        "external_ids": {},
+                        "other_config": {
+                            "hwaddr": "06:6E:1A:65:90:AF"
+                        }
+                    },
+                    "state": "up",
+                    "type": "ovs-bridge",
+                    "wait-ip": "any"
+                },
+                {
+                    "accept-all-mac-addresses": false,
+                    "controller": "br-ex",
+                    "ethtool": {
+                        "feature": {
+                            "highdma": true,
+                            "rx-gro": true,
+                            "rx-gro-list": false,
+                            "rx-udp-gro-forwarding": false,
+                            "tx-checksum-ip-generic": true,
+                            "tx-generic-segmentation": true,
+                            "tx-gre-csum-segmentation": true,
+                            "tx-gre-segmentation": true,
+                            "tx-gso-list": true,
+                            "tx-ipxip4-segmentation": true,
+                            "tx-ipxip6-segmentation": true,
+                            "tx-nocache-copy": false,
+                            "tx-scatter-gather-fraglist": true,
+                            "tx-sctp-segmentation": true,
+                            "tx-tcp-ecn-segmentation": true,
+                            "tx-tcp-mangleid-segmentation": true,
+                            "tx-tcp-segmentation": true,
+                            "tx-tcp6-segmentation": true,
+                            "tx-udp-segmentation": true,
+                            "tx-udp_tnl-csum-segmentation": true,
+                            "tx-udp_tnl-segmentation": true,
+                            "tx-vlan-hw-insert": true,
+                            "tx-vlan-stag-hw-insert": true
+                        }
+                    },
+                    "identifier": "name",
+                    "ipv4": {
+                        "address": [
+                            {
+                                "ip": "10.0.42.30",
+                                "preferred-life-time": "2803sec",
+                                "prefix-length": 19,
+                                "valid-life-time": "2803sec"
+                            },
+                            {
+                                "ip": "169.254.0.2",
+                                "prefix-length": 17
+                            }
+                        ],
+                        "auto-dns": true,
+                        "auto-gateway": true,
+                        "auto-route-metric": 48,
+                        "auto-route-table-id": 0,
+                        "auto-routes": true,
+                        "dhcp": true,
+                        "dhcp-send-hostname": true,
+                        "enabled": true
+                    },
+                    "ipv6": {
+                        "addr-gen-mode": "stable-privacy",
+                        "address": [
+                            {
+                                "ip": "fe80::ffa0:1a6c:baf0:aeba",
+                                "prefix-length": 64
+                            }
+                        ],
+                        "auto-dns": true,
+                        "auto-gateway": true,
+                        "auto-route-metric": 48,
+                        "auto-route-table-id": 0,
+                        "auto-routes": true,
+                        "autoconf": true,
+                        "dhcp": true,
+                        "dhcp-send-hostname": true,
+                        "enabled": true
+                    },
+                    "lldp": {
+                        "enabled": false
+                    },
+                    "mac-address": "xxxxxxxxxxxxxxxxx",
+                    "max-mtu": 65535,
+                    "min-mtu": 68,
+                    "mptcp": {
+                        "address-flags": []
+                    },
+                    "mtu": 9001,
+                    "name": "br-ex",
+                    "profile-name": "ovs-if-br-ex",
+                    "state": "up",
+                    "type": "ovs-interface",
+                    "wait-ip": "ipv4"
+                },
+                {
+                    "accept-all-mac-addresses": false,
+                    "controller": "br-int",
+                    "ethtool": {
+                        "feature": {
+                            "highdma": true,
+                            "rx-gro": true,
+                            "rx-gro-list": false,
+                            "rx-udp-gro-forwarding": false,
+                            "tx-checksum-ip-generic": true,
+                            "tx-generic-segmentation": true,
+                            "tx-gre-csum-segmentation": true,
+                            "tx-gre-segmentation": true,
+                            "tx-gso-list": true,
+                            "tx-ipxip4-segmentation": true,
+                            "tx-ipxip6-segmentation": true,
+                            "tx-nocache-copy": false,
+                            "tx-scatter-gather-fraglist": true,
+                            "tx-sctp-segmentation": true,
+                            "tx-tcp-ecn-segmentation": true,
+                            "tx-tcp-mangleid-segmentation": true,
+                            "tx-tcp-segmentation": true,
+                            "tx-tcp6-segmentation": true,
+                            "tx-udp-segmentation": true,
+                            "tx-udp_tnl-csum-segmentation": true,
+                            "tx-udp_tnl-segmentation": true,
+                            "tx-vlan-hw-insert": true,
+                            "tx-vlan-stag-hw-insert": true
+                        }
+                    },
+                    "ipv4": {
+                        "enabled": false
+                    },
+                    "ipv6": {
+                        "enabled": false
+                    },
+                    "mac-address": "xxxxxxxxxxxxxxxxx",
+                    "max-mtu": 65535,
+                    "min-mtu": 68,
+                    "mtu": 8901,
+                    "name": "br-int",
+                    "state": "ignore",
+                    "type": "ovs-interface"
+                },
+                {
+                    "accept-all-mac-addresses": false,
+                    "bridge": {
+                        "options": {
+                            "group-addr": "01:80:C2:00:00:00",
+                            "group-forward-mask": 0,
+                            "group-fwd-mask": 0,
+                            "hash-max": 4096,
+                            "mac-ageing-time": 300,
+                            "multicast-last-member-count": 2,
+                            "multicast-last-member-interval": 100,
+                            "multicast-membership-interval": 26000,
+                            "multicast-querier": false,
+                            "multicast-querier-interval": 25500,
+                            "multicast-query-interval": 12500,
+                            "multicast-query-response-interval": 1000,
+                            "multicast-query-use-ifaddr": false,
+                            "multicast-router": "auto",
+                            "multicast-snooping": true,
+                            "multicast-startup-query-count": 2,
+                            "multicast-startup-query-interval": 3125,
+                            "stp": {
+                                "enabled": true,
+                                "forward-delay": 15,
+                                "hello-time": 2,
+                                "max-age": 20,
+                                "priority": 32768
+                            },
+                            "vlan-default-pvid": 1,
+                            "vlan-protocol": "802.1q"
+                        },
+                        "port": []
+                    },
+                    "ethtool": {
+                        "feature": {
+                            "highdma": true,
+                            "rx-gro": true,
+                            "rx-gro-list": false,
+                            "rx-udp-gro-forwarding": false,
+                            "tx-checksum-ip-generic": true,
+                            "tx-esp-segmentation": true,
+                            "tx-fcoe-segmentation": true,
+                            "tx-generic-segmentation": true,
+                            "tx-gre-csum-segmentation": true,
+                            "tx-gre-segmentation": true,
+                            "tx-gso-list": true,
+                            "tx-gso-partial": true,
+                            "tx-gso-robust": true,
+                            "tx-ipxip4-segmentation": true,
+                            "tx-ipxip6-segmentation": true,
+                            "tx-nocache-copy": false,
+                            "tx-scatter-gather-fraglist": true,
+                            "tx-sctp-segmentation": true,
+                            "tx-tcp-ecn-segmentation": true,
+                            "tx-tcp-mangleid-segmentation": true,
+                            "tx-tcp-segmentation": true,
+                            "tx-tcp6-segmentation": true,
+                            "tx-tunnel-remcsum-segmentation": true,
+                            "tx-udp-segmentation": true,
+                            "tx-udp_tnl-csum-segmentation": true,
+                            "tx-udp_tnl-segmentation": true,
+                            "tx-vlan-hw-insert": true,
+                            "tx-vlan-stag-hw-insert": true
+                        }
+                    },
+                    "identifier": "name",
+                    "ipv4": {
+                        "dhcp": false,
+                        "enabled": false
+                    },
+                    "ipv6": {
+                        "autoconf": false,
+                        "dhcp": false,
+                        "enabled": false
+                    },
+                    "lldp": {
+                        "enabled": false
+                    },
+                    "mac-address": "xxxxxxxxxxxxxxxxx",
+                    "max-mtu": 65535,
+                    "min-mtu": 68,
+                    "mtu": 1500,
+                    "name": "br0",
+                    "state": "up",
+                    "type": "linux-bridge",
+                    "wait-ip": "any"
+                },
+                {
+                    "accept-all-mac-addresses": false,
+                    "controller": "br-ex",
+                    "driver": "ena",
+                    "ethernet": {},
+                    "ethtool": {
+                        "coalesce": {
+                            "adaptive-rx": false,
+                            "rx-usecs": 0,
+                            "tx-usecs": 64
+                        },
+                        "feature": {
+                            "highdma": true,
+                            "rx-checksum": true,
+                            "rx-gro": true,
+                            "rx-gro-list": false,
+                            "rx-hashing": true,
+                            "rx-udp-gro-forwarding": true,
+                            "tx-checksum-ipv4": true,
+                            "tx-generic-segmentation": true,
+                            "tx-nocache-copy": false
+                        },
+                        "ring": {
+                            "rx": 1024,
+                            "rx-max": 16384,
+                            "tx": 1024,
+                            "tx-max": 1024
+                        }
+                    },
+                    "identifier": "name",
+                    "ipv4": {
+                        "enabled": false
+                    },
+                    "ipv6": {
+                        "enabled": false
+                    },
+                    "lldp": {
+                        "enabled": false
+                    },
+                    "mac-address": "xxxxxxxxxxxxxxxxx",
+                    "max-mtu": 9216,
+                    "min-mtu": 128,
+                    "mtu": 9001,
+                    "name": "ens5",
+                    "permanent-mac-address": "06:6E:1A:65:90:AF",
+                    "profile-name": "ovs-if-phys0",
+                    "state": "up",
+                    "type": "ethernet"
+                },
+                {
+                    "accept-all-mac-addresses": false,
+                    "controller": "ovs-system",
+                    "ethernet": {},
+                    "ethtool": {
+                        "feature": {
+                            "rx-checksum": true,
+                            "rx-gro": true,
+                            "rx-gro-list": false,
+                            "rx-udp-gro-forwarding": false,
+                            "tx-checksum-ip-generic": true,
+                            "tx-generic-segmentation": true,
+                            "tx-gso-list": true,
+                            "tx-nocache-copy": false,
+                            "tx-scatter-gather-fraglist": true,
+                            "tx-sctp-segmentation": true,
+                            "tx-tcp-ecn-segmentation": true,
+                            "tx-tcp-mangleid-segmentation": true,
+                            "tx-tcp-segmentation": true,
+                            "tx-tcp6-segmentation": true,
+                            "tx-udp-segmentation": true
+                        }
+                    },
+                    "ipv4": {
+                        "enabled": false
+                    },
+                    "ipv6": {
+                        "address": [
+                            {
+                                "ip": "fe80::9c02:67ff:fe1b:85a9",
+                                "prefix-length": 64
+                            }
+                        ],
+                        "enabled": true
+                    },
+                    "mac-address": "xxxxxxxxxxxxxxxxx",
+                    "max-mtu": 65465,
+                    "min-mtu": 68,
+                    "mtu": 65000,
+                    "name": "genev_sys_6081",
+                    "state": "ignore",
+                    "type": "ethernet"
+                },
+                {
+                    "accept-all-mac-addresses": false,
+                    "ethtool": {
+                        "feature": {
+                            "rx-gro": true,
+                            "rx-gro-list": false,
+                            "rx-udp-gro-forwarding": false,
+                            "tx-generic-segmentation": true,
+                            "tx-gso-list": true,
+                            "tx-sctp-segmentation": true,
+                            "tx-tcp-ecn-segmentation": true,
+                            "tx-tcp-mangleid-segmentation": true,
+                            "tx-tcp-segmentation": true,
+                            "tx-tcp6-segmentation": true,
+                            "tx-udp-segmentation": true
+                        }
+                    },
+                    "ipv4": {
+                        "address": [
+                            {
+                                "ip": "127.0.0.1",
+                                "prefix-length": 8
+                            }
+                        ],
+                        "enabled": true
+                    },
+                    "ipv6": {
+                        "address": [
+                            {
+                                "ip": "::1",
+                                "prefix-length": 128
+                            }
+                        ],
+                        "enabled": true
+                    },
+                    "mac-address": "xxxxxxxxxxxxxxxxx",
+                    "mtu": 65536,
+                    "name": "lo",
+                    "state": "up",
+                    "type": "loopback"
+                },
+                {
+                    "accept-all-mac-addresses": false,
+                    "controller": "br-int",
+                    "ethtool": {
+                        "feature": {
+                            "highdma": true,
+                            "rx-gro": true,
+                            "rx-gro-list": false,
+                            "rx-udp-gro-forwarding": false,
+                            "tx-checksum-ip-generic": true,
+                            "tx-generic-segmentation": true,
+                            "tx-gre-csum-segmentation": true,
+                            "tx-gre-segmentation": true,
+                            "tx-gso-list": true,
+                            "tx-ipxip4-segmentation": true,
+                            "tx-ipxip6-segmentation": true,
+                            "tx-nocache-copy": false,
+                            "tx-scatter-gather-fraglist": true,
+                            "tx-sctp-segmentation": true,
+                            "tx-tcp-ecn-segmentation": true,
+                            "tx-tcp-mangleid-segmentation": true,
+                            "tx-tcp-segmentation": true,
+                            "tx-tcp6-segmentation": true,
+                            "tx-udp-segmentation": true,
+                            "tx-udp_tnl-csum-segmentation": true,
+                            "tx-udp_tnl-segmentation": true,
+                            "tx-vlan-hw-insert": true,
+                            "tx-vlan-stag-hw-insert": true
+                        }
+                    },
+                    "ipv4": {
+                        "address": [
+                            {
+                                "ip": "10.128.8.2",
+                                "prefix-length": 23
+                            }
+                        ],
+                        "enabled": true
+                    },
+                    "ipv6": {
+                        "address": [
+                            {
+                                "ip": "fe80::d467:b7ff:fea4:ef90",
+                                "prefix-length": 64
+                            }
+                        ],
+                        "enabled": true
+                    },
+                    "mac-address": "xxxxxxxxxxxxxxxxx",
+                    "max-mtu": 65535,
+                    "min-mtu": 68,
+                    "mptcp": {
+                        "address-flags": []
+                    },
+                    "mtu": 8901,
+                    "name": "ovn-k8s-mp0",
+                    "ovs-db": {
+                        "external_ids": {
+                            "iface-id": "k8s-ip-10-0-42-30.us-east-2.compute.internal",
+                            "ovn-installed": "true",
+                            "ovn-installed-ts": "1724763030075"
+                        },
+                        "other_config": {}
+                    },
+                    "state": "ignore",
+                    "type": "ovs-interface"
+                },
+                {
+                    "controller": "br-ex",
+                    "name": "patch-br-ex_ip-10-0-42-30.us-east-2.compute.internal-to-br-int",
+                    "patch": {
+                        "peer": "patch-br-int-to-br-ex_ip-10-0-42-30.us-east-2.compute.internal"
+                    },
+                    "state": "ignore",
+                    "type": "ovs-interface"
+                },
+                {
+                    "controller": "br-int",
+                    "name": "patch-br-int-to-br-ex_ip-10-0-42-30.us-east-2.compute.internal",
+                    "patch": {
+                        "peer": "patch-br-ex_ip-10-0-42-30.us-east-2.compute.internal-to-br-int"
+                    },
+                    "state": "ignore",
+                    "type": "ovs-interface"
+                }
+            ],
+            "ovn": {
+                "bridge-mappings": [
+                    {
+                        "bridge": "br-ex",
+                        "localnet": "physnet"
+                    }
+                ]
+            },
+            "routes": {
+                "config": [
+                    {
+                        "destination": "172.30.0.0/16",
+                        "next-hop-address": "10.128.8.1",
+                        "next-hop-interface": "ovn-k8s-mp0",
+                        "table-id": 7
+                    },
+                    {
+                        "destination": "10.128.0.0/14",
+                        "next-hop-address": "10.128.8.1",
+                        "next-hop-interface": "ovn-k8s-mp0",
+                        "table-id": 254
+                    },
+                    {
+                        "destination": "169.254.0.1/32",
+                        "next-hop-address": "0.0.0.0",
+                        "next-hop-interface": "br-ex",
+                        "table-id": 254
+                    },
+                    {
+                        "destination": "169.254.0.3/32",
+                        "next-hop-address": "10.128.8.1",
+                        "next-hop-interface": "ovn-k8s-mp0",
+                        "table-id": 254
+                    },
+                    {
+                        "destination": "172.30.0.0/16",
+                        "next-hop-address": "169.254.0.4",
+                        "next-hop-interface": "br-ex",
+                        "table-id": 254
+                    }
+                ],
+                "running": [
+                    {
+                        "destination": "172.30.0.0/16",
+                        "next-hop-address": "10.128.8.1",
+                        "next-hop-interface": "ovn-k8s-mp0",
+                        "table-id": 7
+                    },
+                    {
+                        "destination": "10.128.0.0/14",
+                        "next-hop-address": "10.128.8.1",
+                        "next-hop-interface": "ovn-k8s-mp0",
+                        "table-id": 254
+                    },
+                    {
+                        "destination": "169.254.0.1/32",
+                        "next-hop-address": "0.0.0.0",
+                        "next-hop-interface": "br-ex",
+                        "table-id": 254
+                    },
+                    {
+                        "destination": "169.254.0.3/32",
+                        "next-hop-address": "10.128.8.1",
+                        "next-hop-interface": "ovn-k8s-mp0",
+                        "table-id": 254
+                    },
+                    {
+                        "destination": "172.30.0.0/16",
+                        "next-hop-address": "169.254.0.4",
+                        "next-hop-interface": "br-ex",
+                        "table-id": 254
+                    },
+                    {
+                        "destination": "0.0.0.0/0",
+                        "metric": 48,
+                        "next-hop-address": "10.0.32.1",
+                        "next-hop-interface": "br-ex",
+                        "table-id": 254
+                    }
+                ]
+            }
+        },
+        "handlerNmstateVersion": "nmstatectl 2.2.33",
+        "hostNetworkManagerVersion": "1.46.0",
+        "lastSuccessfulUpdateTime": "2024-08-27T13:32:43Z"
+    }
+}

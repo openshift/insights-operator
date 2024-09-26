@@ -1392,6 +1392,56 @@ None
 None
 
 
+## NodeNetworkConfigurationPolicy
+
+Collects cluster scope "nodenetworkconfigurationpolicy.nmstate.io/v1"
+resources
+
+### API Reference
+- https://github.com/nmstate/kubernetes-nmstate/blob/main/api/v1/nodenetworkconfigurationpolicy_types.go
+
+### Sample data
+- [docs/insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkconfigurationpolicies/etcd-quorum-guard.json](./insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkconfigurationpolicies/etcd-quorum-guard.json)
+
+### Location in archive
+- `cluster-scoped-resources/nmstate.io/nodenetworkconfigurationpolicies/{name}.json`
+
+### Config ID
+`clusterconfig/nodenetworkconfigurationpolicies`
+
+### Released version
+- 4.18.0
+
+### Backported versions
+
+### Changes
+
+
+## NodeNetworkState
+
+Collects cluster scope "nodenetworkstate.nmstate.io/v1beta1"
+resources
+
+### API Reference
+- https://github.com/nmstate/kubernetes-nmstate/blob/main/api/v1beta1/nodenetworkstate_types.go
+
+### Sample data
+- [docs/insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkstates/etcd-quorum-guard.json](./insights-archive-sample/cluster-scoped-resources/nmstate.io/nodenetworkstates/etcd-quorum-guard.json)
+
+### Location in archive
+- `cluster-scoped-resources/nmstate.io/nodenetworkstates/{name}.json`
+
+### Config ID
+`clusterconfig/nodenetworkstates`
+
+### Released version
+- 4.18.0
+
+### Backported versions
+
+### Changes
+
+
 ## Nodes
 
 Collects all node resources.
