@@ -1586,3 +1586,141 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 		})
 	}
 }
+
+func TestSetRemoteConfigConditionsWhenDisabled(t *testing.T) {
+	expectedRemoteConfigurationAvailable := configv1.ClusterOperatorStatusCondition{
+		Type:    status.RemoteConfigurationAvailable,
+		Status:  configv1.ConditionFalse,
+		Reason:  gatheringDisabledReason,
+		Message: "Data gathering is disabled",
+	}
+	expectedRemoteConfigurationValid := configv1.ClusterOperatorStatusCondition{
+		Type:   status.RemoteConfigurationValid,
+		Status: configv1.ConditionUnknown,
+		Reason: status.NoValidationYet,
+	}
+
+	tests := []struct {
+		name                              string
+		insightsClusterOp                 configv1.ClusterOperator
+		expectedLenghtOfUpdatedConditions int
+	}{
+		{
+			name: "Insights clusteroperator conditions are empty",
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{},
+			},
+			expectedLenghtOfUpdatedConditions: 2,
+		},
+		{
+			name: `Insights clusteroperator conditions are not empty, 
+			but remote configuration conditions don't exist`,
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:    configv1.OperatorAvailable,
+							Status:  configv1.ConditionTrue,
+							Reason:  "AsExpected",
+							Message: "",
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+							Reason: "AsExpected",
+						},
+					},
+				},
+			},
+			expectedLenghtOfUpdatedConditions: 4,
+		},
+		{
+			name: `Remote Configuration conditions are updated as expected`,
+			insightsClusterOp: configv1.ClusterOperator{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "insights",
+				},
+				Status: configv1.ClusterOperatorStatus{
+					Conditions: []configv1.ClusterOperatorStatusCondition{
+						{
+							Type:    configv1.OperatorAvailable,
+							Status:  configv1.ConditionTrue,
+							Reason:  "AsExpected",
+							Message: "",
+						},
+						{
+							Type:   configv1.OperatorDegraded,
+							Status: configv1.ConditionFalse,
+							Reason: "AsExpected",
+						},
+						{
+							Type:    status.RemoteConfigurationAvailable,
+							Status:  configv1.ConditionTrue,
+							Reason:  "AsExpected",
+							Message: "",
+						},
+						{
+							Type:   status.RemoteConfigurationValid,
+							Status: configv1.ConditionTrue,
+							Reason: "AsExpected",
+						},
+					},
+				},
+			},
+			expectedLenghtOfUpdatedConditions: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			configCli := configFakeCli.NewSimpleClientset(&tt.insightsClusterOp)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, configCli.ConfigV1(), nil)
+			err := mockController.setRemoteConfigConditionsWhenDisabled(ctx)
+			assert.NoError(t, err)
+
+			insightsCO, err := configCli.ConfigV1().ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
+			assert.NoError(t, err)
+			assert.Len(t, insightsCO.Status.Conditions, tt.expectedLenghtOfUpdatedConditions)
+			actualRCA := getConditionByType(insightsCO.Status.Conditions, status.RemoteConfigurationAvailable)
+			assert.True(t, areConditionsSameExceptTransitionTime(actualRCA, &expectedRemoteConfigurationAvailable))
+			actualRCV := getConditionByType(insightsCO.Status.Conditions, status.RemoteConfigurationValid)
+			assert.True(t, areConditionsSameExceptTransitionTime(actualRCV, &expectedRemoteConfigurationValid))
+		})
+	}
+}
+
+func areConditionsSameExceptTransitionTime(a, b *configv1.ClusterOperatorStatusCondition) bool {
+	if a.Type != b.Type {
+		return false
+	}
+
+	if a.Status != b.Status {
+		return false
+	}
+
+	if a.Reason != b.Reason {
+		return false
+	}
+
+	if a.Message != b.Message {
+		return false
+	}
+	return true
+}
+
+func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
+	ctype configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
+	for _, c := range conditions {
+		if c.Type == ctype {
+			return &c
+		}
+	}
+	return nil
+}
