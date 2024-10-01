@@ -395,14 +395,14 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 		status := c.ctrlStatus.getStatus(DisabledStatus)
 		cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, status.reason, status.message)
 		// if the remote configuration is not available then we can't say it's valid or not
-		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, NoValidationYet, "")
+		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, RemoteConfNotValidatedYet, "")
 		return
 	}
 
 	if rs := c.ctrlStatus.getStatus(RemoteConfigAvailableStatus); rs != nil {
 		cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, rs.reason, rs.message)
 		// if the remote configuration is not available then we can't say it's valid or not
-		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, NoValidationYet, "")
+		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, RemoteConfNotValidatedYet, "")
 		return
 	}
 
