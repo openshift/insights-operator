@@ -1597,7 +1597,7 @@ func TestSetRemoteConfigConditionsWhenDisabled(t *testing.T) {
 	expectedRemoteConfigurationValid := configv1.ClusterOperatorStatusCondition{
 		Type:   status.RemoteConfigurationValid,
 		Status: configv1.ConditionUnknown,
-		Reason: status.NoValidationYet,
+		Reason: status.RemoteConfNotValidatedYet,
 	}
 
 	tests := []struct {

@@ -28,7 +28,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
-	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/insights"
 	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"github.com/openshift/insights-operator/pkg/insights/types"
@@ -218,30 +217,37 @@ func (c *Controller) Gather() {
 				allFunctionReports[functionReports[i].FuncName] = functionReports[i]
 			}
 
-			if err != nil {
-				var remoteConfigErr conditional.RemoteConfigError
-				if errors.As(err, &remoteConfigErr) {
-					if remoteConfigErr.Reason == conditional.Invalid {
-						c.statuses[name].UpdateStatus(controllerstatus.Summary{
-							Operation: controllerstatus.ValidatingRemoteConfiguration,
-							Reason:    remoteConfigErr.Reason,
-							Message:   remoteConfigErr.Error(),
-						})
-					} else {
-						c.statuses[name].UpdateStatus(controllerstatus.Summary{
-							Operation: controllerstatus.ReadingRemoteConfiguration,
-							Reason:    remoteConfigErr.Reason,
-							Message:   remoteConfigErr.Error(),
-						})
-					}
-					c.recorder.Record(record.Record{
-						Name:         "insights-operator/remote-configuration.json",
-						Item:         marshal.RawByte(remoteConfigErr.ConfigData),
-						AlwaysStored: true,
-					})
-					return
+			if g, ok := gatherer.(gatherers.GathererUsingRemoteConfig); ok {
+				remoteConfigStatus := g.RemoteConfigStatus()
+
+				var statusMessage string
+				if remoteConfigStatus.Err != nil {
+					statusMessage = remoteConfigStatus.Err.Error()
 				}
 
+				c.statuses[name].UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.ReadingRemoteConfiguration,
+					Healthy:   remoteConfigStatus.ConfigAvailable,
+					Reason:    remoteConfigStatus.AvailableReason,
+					Message:   statusMessage,
+				})
+
+				c.statuses[name].UpdateStatus(controllerstatus.Summary{
+					Operation: controllerstatus.ValidatingRemoteConfiguration,
+					Healthy:   remoteConfigStatus.ConfigValid,
+					Reason:    remoteConfigStatus.ValidReason,
+					Message:   statusMessage,
+				})
+
+				c.recorder.Record(record.Record{
+					Name:         "insights-operator/remote-configuration.json",
+					Item:         marshal.RawByte(remoteConfigStatus.ConfigData),
+					AlwaysStored: true,
+				})
+				return
+			}
+
+			if err != nil {
 				utilruntime.HandleError(fmt.Errorf("%v failed after %s with: %v", name, time.Since(start).Truncate(time.Millisecond), err))
 				c.statuses[name].UpdateStatus(controllerstatus.Summary{
 					Operation: controllerstatus.GatheringReport,
@@ -871,7 +877,7 @@ func (c *Controller) setRemoteConfigConditionsWhenDisabled(ctx context.Context) 
 	remoteConfValidCon := v1.ClusterOperatorStatusCondition{
 		Type:               status.RemoteConfigurationValid,
 		Status:             v1.ConditionUnknown,
-		Reason:             status.NoValidationYet,
+		Reason:             status.RemoteConfNotValidatedYet,
 		LastTransitionTime: metav1.Now(),
 	}
 
