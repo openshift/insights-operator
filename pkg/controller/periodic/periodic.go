@@ -220,24 +220,25 @@ func (c *Controller) Gather() {
 			if g, ok := gatherer.(gatherers.GathererUsingRemoteConfig); ok {
 				remoteConfigStatus := g.RemoteConfigStatus()
 
-				var statusMessage string
-				if remoteConfigStatus.Err != nil {
-					statusMessage = remoteConfigStatus.Err.Error()
+				newStatus := controllerstatus.Summary{
+					Healthy:   true,
+					Operation: controllerstatus.RemoteConfigurationStatus,
+					Reason:    remoteConfigStatus.AvailableReason,
 				}
 
-				c.statuses[name].UpdateStatus(controllerstatus.Summary{
-					Operation: controllerstatus.ReadingRemoteConfiguration,
-					Healthy:   remoteConfigStatus.ConfigAvailable,
-					Reason:    remoteConfigStatus.AvailableReason,
-					Message:   statusMessage,
-				})
+				if !remoteConfigStatus.ConfigValid {
+					newStatus.Healthy = false
+					newStatus.Reason = remoteConfigStatus.ValidReason
+					newStatus.Message = remoteConfigStatus.Err.Error()
+				}
 
-				c.statuses[name].UpdateStatus(controllerstatus.Summary{
-					Operation: controllerstatus.ValidatingRemoteConfiguration,
-					Healthy:   remoteConfigStatus.ConfigValid,
-					Reason:    remoteConfigStatus.ValidReason,
-					Message:   statusMessage,
-				})
+				if !remoteConfigStatus.ConfigAvailable {
+					newStatus.Healthy = false
+					newStatus.Reason = remoteConfigStatus.AvailableReason
+					newStatus.Message = remoteConfigStatus.Err.Error()
+				}
+
+				c.statuses[name].UpdateStatus(newStatus)
 
 				c.recorder.Record(record.Record{
 					Name:         "insights-operator/remote-configuration.json",
