@@ -105,11 +105,6 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	if err != nil {
 		// failed to get the remote configuration -> use default
 		klog.Infof(err.Error())
-		gatheringClosure, closureErr := g.useBuiltInRemoteConfiguration(ctx)
-		if closureErr != nil {
-			return nil, closureErr
-		}
-
 		g.remoteConfigStatus.ConfigAvailable = false
 		g.remoteConfigStatus.Err = err
 		g.remoteConfigStatus.ConfigData = []byte(defaultRemoteConfiguration)
@@ -122,7 +117,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 			g.remoteConfigStatus.AvailableReason = NotAvailableReason
 		}
 
-		return gatheringClosure, nil
+		return g.useBuiltInRemoteConfiguration(ctx)
 	}
 	g.remoteConfigStatus.ConfigAvailable = true
 	g.remoteConfigStatus.AvailableReason = AsExpectedReason
@@ -131,17 +126,27 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	if err != nil {
 		// failed to parse the remote configuration -> use default
 		klog.Infof("Failed to parse the remote configuration data: %v. Using the default built-in configuration", err)
-		gatheringClosure, closureErr := g.useBuiltInRemoteConfiguration(ctx)
-		if closureErr != nil {
-			return nil, closureErr
-		}
-
 		g.remoteConfigStatus.ConfigValid = false
 		g.remoteConfigStatus.Err = err
 		g.remoteConfigStatus.ValidReason = InvalidReason
 		g.remoteConfigStatus.ConfigData = []byte(defaultRemoteConfiguration)
 
-		return gatheringClosure, nil
+		return g.useBuiltInRemoteConfiguration(ctx)
+	}
+
+	errs := validateContainerLogRequests(remoteConfig.ContainerLogRequests)
+	if len(errs) > 0 {
+		validationErr := utils.UniqueErrors(errs)
+		klog.Infof("Failed to validate the remote configuration data: %v", validationErr)
+		remoteConfigData, err := json.Marshal(remoteConfig)
+		if err != nil {
+			klog.Errorf("Failed to marshal the invalid remote configuration: %v", err)
+		}
+		g.remoteConfigStatus.ConfigData = remoteConfigData
+		g.remoteConfigStatus.ConfigValid = false
+		g.remoteConfigStatus.Err = validationErr
+		g.remoteConfigStatus.ValidReason = InvalidReason
+		return g.useBuiltInRemoteConfiguration(ctx)
 	}
 
 	g.remoteConfigStatus.ConfigValid = true
@@ -172,32 +177,14 @@ func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-
-	containerLogReuquestClosure, err := g.validateAndCreateContainerLogRequestsClosure(remoteConfiguration)
+	rapidContainerLogsClosure, err := g.GatherContainersLogs(remoteConfiguration.ContainerLogRequests)
 	if err != nil {
 		return nil, err
 	}
-	gatheringClosures["rapid_container_logs"] = containerLogReuquestClosure
+
+	gatheringClosures["rapid_container_logs"] = rapidContainerLogsClosure
 	gatheringClosures["remote_configuration"] = createGatherClosureForRemoteConfig(remoteConfiguration)
 	return gatheringClosures, nil
-}
-
-func (g *Gatherer) validateAndCreateContainerLogRequestsClosure(remoteConfig RemoteConfiguration) (gatherers.GatheringClosure, error) {
-	errs := validateContainerLogRequests(remoteConfig.ContainerLogRequests)
-	if len(errs) > 0 {
-		remoteConfigData, err := json.Marshal(remoteConfig)
-		if err != nil {
-			klog.Errorf("Failed to marshal the invalid remote configuration: %v", err)
-		}
-		err = utils.UniqueErrors(errs)
-		g.remoteConfigStatus.ConfigData = remoteConfigData
-		g.remoteConfigStatus.ConfigValid = false
-		g.remoteConfigStatus.Err = err
-		g.remoteConfigStatus.ValidReason = InvalidReason
-		return gatherers.GatheringClosure{}, nil
-	}
-
-	return g.GatherContainersLogs(remoteConfig.ContainerLogRequests)
 }
 
 func (g *Gatherer) createConditionalGatheringFunctions(ctx context.Context,

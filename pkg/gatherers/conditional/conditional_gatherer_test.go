@@ -82,41 +82,6 @@ func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
 	assert.True(t, found)
 }
 
-func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
-	t.Setenv("RELEASE_VERSION", "1.2.3")
-	gathererConfig := `{
-		"version": "1.0.0",
-		"conditional_gathering_rules": [{
-			"conditions": [{
-				"type": "alert_is_firing",
-				"alert": {
-					"name": "SamplesImagestreamImportFailing"
-				}
-			}],
-			"gathering_functions": {
-				"logs_of_namespace": {
-					"namespace": "not-openshift-cluster-samples-operator",
-					"tail_lines": 100
-				}
-			}
-		}]
-	}` // invalid namespace (doesn't start with openshift-)
-
-	gatherer := newEmptyGatherer(gathererConfig, "")
-
-	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
-	assert.NoError(t, err)
-
-	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
-	assert.EqualError(
-		t,
-		err,
-		"got invalid config for conditional gatherer: 0.gathering_functions.logs_of_namespace.namespace: "+
-			"Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'",
-	)
-	assert.Empty(t, gatheringFunctions)
-}
-
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer("", "")
