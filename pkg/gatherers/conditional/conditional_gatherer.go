@@ -134,7 +134,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		return g.useBuiltInRemoteConfiguration(ctx)
 	}
 
-	errs := validateContainerLogRequests(remoteConfig.ContainerLogRequests)
+	errs := validateRemoteConfig(remoteConfig)
 	if len(errs) > 0 {
 		validationErr := utils.UniqueErrors(errs)
 		klog.Infof("Failed to validate the remote configuration data: %v", validationErr)
@@ -173,10 +173,7 @@ func (g *Gatherer) useBuiltInRemoteConfiguration(ctx context.Context) (map[strin
 // conditional gathering functions and the new ("rapid") container logs function
 func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 	remoteConfiguration RemoteConfiguration) (map[string]gatherers.GatheringClosure, error) {
-	gatheringClosures, err := g.createConditionalGatheringFunctions(ctx, remoteConfiguration)
-	if err != nil {
-		return nil, err
-	}
+	gatheringClosures := g.createConditionalGatheringFunctions(ctx, remoteConfiguration)
 	rapidContainerLogsClosure, err := g.GatherContainersLogs(remoteConfiguration.ContainerLogRequests)
 	if err != nil {
 		return nil, err
@@ -188,12 +185,7 @@ func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 }
 
 func (g *Gatherer) createConditionalGatheringFunctions(ctx context.Context,
-	remoteConfiguration RemoteConfiguration) (map[string]gatherers.GatheringClosure, error) {
-	errs := validateGatheringRules(remoteConfiguration.ConditionalGatheringRules)
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.UniqueErrors(errs))
-	}
-
+	remoteConfiguration RemoteConfiguration) map[string]gatherers.GatheringClosure {
 	g.updateCache(ctx)
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
@@ -249,7 +241,7 @@ func (g *Gatherer) createConditionalGatheringFunctions(ctx context.Context,
 		},
 	}
 
-	return gatheringFunctions, nil
+	return gatheringFunctions
 }
 
 // getRemoteConfiguration returns json version of the rules from the server
