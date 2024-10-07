@@ -92,7 +92,7 @@ func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface,
 		mc := items[i]
 		// skip machine configs which are not in use
 		if len(inUseMachineConfigs) != 0 && !inUseMachineConfigs.Has(mc.GetName()) {
-			count.UnusedCount += 1
+			count.UnusedCount++
 			continue
 		}
 		// remove the sensitive content by overwriting the values
