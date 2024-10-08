@@ -16,6 +16,28 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 )
 
+var testRemoteConfig = `{
+			"version": "1.0.0",
+			"conditional_gathering_rules": [{
+				"conditions": [
+					{
+						"type": "` + string(AlertIsFiring) + `",
+						"alert": { "name": "SamplesImagestreamImportFailing" }
+					}
+				],
+				"gathering_functions": {
+					"logs_of_namespace": {
+						"namespace": "openshift-cluster-samples-operator",
+						"tail_lines": 100
+					},
+					"image_streams_of_namespace": {
+						"namespace": "openshift-cluster-samples-operator"
+					}
+				}
+			}],
+			"container_logs":[]
+		}`
+
 func Test_Gatherer_Basic(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer("", "")
@@ -273,6 +295,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 				AvailableReason: AsExpectedReason,
 				ValidReason:     AsExpectedReason,
 				Err:             nil,
+				ConfigData:      []byte(testRemoteConfig),
 			},
 		},
 		{
@@ -374,27 +397,7 @@ func TestBuiltInConfigIsUsed(t *testing.T) {
 
 func newEmptyGatherer(remoteConfig string, conditionalGathererEndpoint string) *Gatherer { // nolint:gocritic
 	if len(remoteConfig) == 0 {
-		remoteConfig = `{
-			"version": "1.0.0",
-			"conditional_gathering_rules": [{
-				"conditions": [
-					{
-						"type": "` + string(AlertIsFiring) + `",
-						"alert": { "name": "SamplesImagestreamImportFailing" }
-					}
-				],
-				"gathering_functions": {
-					"logs_of_namespace": {
-						"namespace": "openshift-cluster-samples-operator",
-						"tail_lines": 100
-					},
-					"image_streams_of_namespace": {
-						"namespace": "openshift-cluster-samples-operator"
-					}
-				}
-			}],
-			"container_logs":[]
-		}`
+		remoteConfig = testRemoteConfig
 	}
 	if conditionalGathererEndpoint == "" {
 		conditionalGathererEndpoint = "/gathering_rules"
