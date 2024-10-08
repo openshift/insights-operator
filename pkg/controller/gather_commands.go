@@ -33,6 +33,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
+	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 )
 
 // numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint
@@ -43,6 +44,7 @@ var numberOfStatusQueryRetries = 3
 type GatherJob struct {
 	config.Controller
 	InsightsConfigAPIEnabled bool
+	RuntimeExtractorEnabled  bool
 }
 
 // processingStatusClient is an interface to call the "processingStatusEndpoint" in
@@ -108,7 +110,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient,
+		configAggregator, insightsClient, g.RuntimeExtractorEnabled,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
@@ -188,8 +190,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsHTTPCli,
-	)
+		configAggregator, insightsHTTPCli, g.RuntimeExtractorEnabled)
 	uploader := insightsuploader.New(nil, insightsHTTPCli, configAggregator, nil, nil, 0)
 
 	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)
@@ -418,4 +419,22 @@ func (g *GatherJob) storagePathExists() error {
 		}
 	}
 	return nil
+}
+
+func featureGateAcces(ctx context.Context, kubeConfig *rest.Config) (featuregates.FeatureGate, error) {
+	configClient, err := configv1client.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	fg, err := configClient.ConfigV1().FeatureGates().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	fgAccess, err := featuregates.NewHardcodedFeatureGateAccessFromFeatureGate(fg, os.Getenv("RELEASE_VERSION"))
+	if err != nil {
+		return nil, err
+	}
+
+	return fgAccess.CurrentFeatureGates()
 }

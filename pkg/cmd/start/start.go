@@ -184,7 +184,7 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 			klog.Exit(err)
 		}
 		operator.InsightsConfigAPIEnabled = featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
-
+		operator.RuntimeExtractorEnabled = featureGates.Enabled(features.FeatureGateInsightsRuntimeExtractor)
 		err = operator.Gather(ctx, clientConfig, protoConfig)
 		if err != nil {
 			klog.Error(err)

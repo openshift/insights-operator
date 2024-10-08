@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: insights-runtime-extractor-sa
+  namespace: openshift-insights
+---
+# The insights-runtime-extractor-role requires:
+# * access to authentication.k8s.io so that its kube-rbac-proxy
+#   can verify the client tokens
+# * access to securitycontextconstraints to set its scc.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: insights-runtime-extractor-role
+  namespace: openshift-insights
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - insights-runtime-extractor-scc
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insights-runtime-extractor
+  namespace: openshift-insights
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: insights-runtime-extractor-role
+subjects:
+  - kind: ServiceAccount
+    name: insights-runtime-extractor-sa
+    namespace: openshift-insights
+---
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: insights-runtime-extractor-scc
+  namespace: openshift-insights
+allowHostDirVolumePlugin: true
+allowHostPID: true
+allowPrivilegedContainer: true
+allowedCapabilities:
+- CAP_SYS_ADMIN
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+seccompProfiles:
+- runtime/default
+---
