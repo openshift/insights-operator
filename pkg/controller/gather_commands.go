@@ -15,7 +15,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/api/features"
 	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
@@ -43,6 +42,7 @@ var numberOfStatusQueryRetries = 3
 type GatherJob struct {
 	config.Controller
 	InsightsConfigAPIEnabled bool
+	RuntimeExtractorEnabled  bool
 }
 
 // processingStatusClient is an interface to call the "processingStatusEndpoint" in
@@ -108,7 +108,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient, false,
+		configAggregator, insightsClient, g.RuntimeExtractorEnabled,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
@@ -165,11 +165,6 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	featureGate, err := featureGateAcces(ctx, kubeConfig)
-	if err != nil {
-		return err
-	}
-
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(g.Controller, kubeClient)
 	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
@@ -193,8 +188,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsHTTPCli, featureGate.Enabled(features.FeatureGateInsightsRuntimeExtractor),
-	)
+		configAggregator, insightsHTTPCli, g.RuntimeExtractorEnabled)
 	uploader := insightsuploader.New(nil, insightsHTTPCli, configAggregator, nil, nil, 0)
 
 	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)
