@@ -151,6 +151,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 
 	g.remoteConfigStatus.ConfigValid = true
 	g.remoteConfigStatus.ValidReason = AsExpectedReason
+	g.remoteConfigStatus.ConfigData = remoteConfigData
 	return g.createAllGatheringFunctions(ctx, remoteConfig)
 }
 
