@@ -33,9 +33,11 @@ type UnusedMachineConfigsCount struct {
 // - https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
 //
 // ### Sample data
+// - docs/insights-archive-sample/aggregated/unused_machine_configs_count.json
 // - docs/insights-archive-sample/config/machineconfigs/75-worker-sap-data-intelligence.json
 //
 // ### Location in archive
+// - `aggregated/unused_machine_configs_count.json`
 // - `config/machineconfigs/{resource}.json`
 //
 // ### Config ID
