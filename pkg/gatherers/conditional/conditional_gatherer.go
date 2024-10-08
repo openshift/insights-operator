@@ -138,11 +138,11 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	if len(errs) > 0 {
 		validationErr := utils.UniqueErrors(errs)
 		klog.Infof("Failed to validate the remote configuration data: %v", validationErr)
-		remoteConfigData, err := json.Marshal(remoteConfig)
+		configData, err := json.Marshal(remoteConfig)
 		if err != nil {
 			klog.Errorf("Failed to marshal the invalid remote configuration: %v", err)
 		}
-		g.remoteConfigStatus.ConfigData = remoteConfigData
+		g.remoteConfigStatus.ConfigData = configData
 		g.remoteConfigStatus.ConfigValid = false
 		g.remoteConfigStatus.Err = validationErr
 		g.remoteConfigStatus.ValidReason = InvalidReason
