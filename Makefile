@@ -31,6 +31,7 @@ export LDFLAGS="-X k8s.io/client-go/pkg/version.gitCommit=${CLIENTGO_COMMIT} \
 # Configuration
 CONFIG ?= config/local.yaml
 RUN_FLAGS ?= -v4
+BUILD_FLAGS ?= -tags strictfipsruntime
 
 # Tools
 CONTAINER_RUNTIME := $(shell command -v podman 2> /dev/null || echo docker)
@@ -94,7 +95,7 @@ run: ## Executes the insights operator
 		$(RUN_FLAGS)
 
 build: ## Compiles the insights operator
-	go build -o ./bin/insights-operator ./cmd/insights-operator
+	go build $(BUILD_FLAGS) -o ./bin/insights-operator ./cmd/insights-operator
 .PHONY: build
 
 .PHONY: build-debug
