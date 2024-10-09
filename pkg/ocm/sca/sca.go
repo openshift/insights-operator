@@ -211,6 +211,8 @@ func getArch() string {
 	validArchs := map[string]string{
 		"amd64": "x86_64",
 		"i386":  "x86",
+		"386":   "x86",
+		"arm64": "aarch64",
 	}
 
 	if translation, ok := validArchs[runtime.GOARCH]; ok {
