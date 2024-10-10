@@ -33,7 +33,7 @@ import (
 const (
 	responseBodyLogLen = 1024
 	insightsReqId      = "x-rh-insights-request-id"
-	scaArchPayload     = `{"type": "sca","arch": "x86_64"}`
+	scaArchPayload     = `{"type": "sca","arch": "%s"}`
 )
 
 type Client struct {
