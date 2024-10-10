@@ -2,7 +2,6 @@ package conditional
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +15,28 @@ import (
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gatherers"
 )
+
+var testRemoteConfig = `{
+			"version": "1.0.0",
+			"conditional_gathering_rules": [{
+				"conditions": [
+					{
+						"type": "` + string(AlertIsFiring) + `",
+						"alert": { "name": "SamplesImagestreamImportFailing" }
+					}
+				],
+				"gathering_functions": {
+					"logs_of_namespace": {
+						"namespace": "openshift-cluster-samples-operator",
+						"tail_lines": 100
+					},
+					"image_streams_of_namespace": {
+						"namespace": "openshift-cluster-samples-operator"
+					}
+				}
+			}],
+			"container_logs":[]
+		}`
 
 func Test_Gatherer_Basic(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
@@ -67,47 +88,20 @@ func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
 		err: fmt.Errorf("404"),
 	}
 
-	// but we still expect the same rules (from the cache)
 	gatheringFunctions, err = gatherer.GetGatheringFunctions(ctx)
-	assert.EqualError(t, err, "404")
+	// no error because built-in config should be used
+	assert.NoError(t, err)
+	assert.Equal(t, gatherers.RemoteConfigStatus{
+		Err:             fmt.Errorf("404"),
+		AvailableReason: "NotAvailable",
+		ValidReason:     "NoValidation",
+		ConfigData:      []byte(defaultRemoteConfiguration),
+		ConfigAvailable: false,
+		ConfigValid:     true,
+	}, gatherer.remoteConfigStatus)
 	assert.Len(t, gatheringFunctions, 5)
 	_, found = gatheringFunctions["conditional_gatherer_rules"]
 	assert.True(t, found)
-}
-
-func Test_Gatherer_GetGatheringFunctions_InvalidConfig(t *testing.T) {
-	t.Setenv("RELEASE_VERSION", "1.2.3")
-	gathererConfig := `{
-		"version": "1.0.0",
-		"conditional_gathering_rules": [{
-			"conditions": [{
-				"type": "alert_is_firing",
-				"alert": {
-					"name": "SamplesImagestreamImportFailing"
-				}
-			}],
-			"gathering_functions": {
-				"logs_of_namespace": {
-					"namespace": "not-openshift-cluster-samples-operator",
-					"tail_lines": 100
-				}
-			}
-		}]
-	}` // invalid namespace (doesn't start with openshift-)
-
-	gatherer := newEmptyGatherer(gathererConfig, "")
-
-	err := gatherer.updateAlertsCache(context.TODO(), newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
-	assert.NoError(t, err)
-
-	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.TODO())
-	assert.EqualError(
-		t,
-		err,
-		"got invalid config for conditional gatherer: 0.gathering_functions.logs_of_namespace.namespace: "+
-			"Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'",
-	)
-	assert.Empty(t, gatheringFunctions)
 }
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
@@ -284,44 +278,67 @@ func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
 
 func TestGetGatheringFunctions(t *testing.T) {
 	tests := []struct {
-		name                  string
-		endpoint              string
-		remoteConfig          string
-		releaseVersionEnvVar  string
-		expectedErrMsg        string
-		expectRemoteConfigErr bool
+		name                 string
+		endpoint             string
+		remoteConfig         string
+		releaseVersionEnvVar string
+		remoteConfigStatus   gatherers.RemoteConfigStatus
 	}{
 		{
-			name:                  "remote configuration is available and can be parsed",
-			endpoint:              "/gathering_rules",
-			releaseVersionEnvVar:  "1.2.3",
-			remoteConfig:          "",
-			expectedErrMsg:        "",
-			expectRemoteConfigErr: false,
+			name:                 "remote configuration is available and can be parsed",
+			endpoint:             "/gathering_rules",
+			releaseVersionEnvVar: "1.2.3",
+			remoteConfig:         "",
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: true,
+				ConfigValid:     true,
+				AvailableReason: AsExpectedReason,
+				ValidReason:     AsExpectedReason,
+				Err:             nil,
+				ConfigData:      []byte(testRemoteConfig),
+			},
 		},
 		{
-			name:                  "remote configuration is not available",
-			endpoint:              "not valid endpoint",
-			releaseVersionEnvVar:  "1.2.3",
-			remoteConfig:          "",
-			expectedErrMsg:        "endpoint not supported",
-			expectRemoteConfigErr: true,
+			name:                 "remote configuration is not available",
+			endpoint:             "not valid endpoint",
+			releaseVersionEnvVar: "1.2.3",
+			remoteConfig:         "",
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: false,
+				ConfigValid:     false,
+				AvailableReason: NotAvailableReason,
+				ValidReason:     "NoValidation",
+				ConfigData:      []byte(defaultRemoteConfiguration),
+				Err:             fmt.Errorf("endpoint not supported"),
+			},
 		},
 		{
-			name:                  "remote configuration is available, but cannot be parsed",
-			endpoint:              "/gathering_rules",
-			remoteConfig:          `{not json}`,
-			releaseVersionEnvVar:  "1.2.3",
-			expectedErrMsg:        "invalid character 'n' looking for beginning of object key string",
-			expectRemoteConfigErr: true,
+			name:                 "remote configuration is available, but cannot be parsed",
+			endpoint:             "/gathering_rules",
+			remoteConfig:         `{not json}`,
+			releaseVersionEnvVar: "1.2.3",
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: true,
+				ConfigValid:     false,
+				AvailableReason: AsExpectedReason,
+				ValidReason:     InvalidReason,
+				ConfigData:      []byte(defaultRemoteConfiguration),
+				Err:             fmt.Errorf("invalid character 'n' looking for beginning of object key string"),
+			},
 		},
 		{
-			name:                  "remote configuration is not available, because RELEASE_VERSION is set with empty",
-			endpoint:              "/gathering_rules",
-			releaseVersionEnvVar:  "",
-			remoteConfig:          "",
-			expectedErrMsg:        "environmental variable RELEASE_VERSION is not set or has empty value",
-			expectRemoteConfigErr: true,
+			name:                 "remote configuration is not available, because RELEASE_VERSION is set with empty",
+			endpoint:             "/gathering_rules",
+			releaseVersionEnvVar: "",
+			remoteConfig:         "",
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: false,
+				ConfigValid:     false,
+				AvailableReason: NotAvailableReason,
+				ValidReason:     "NoValidation",
+				ConfigData:      []byte(defaultRemoteConfiguration),
+				Err:             fmt.Errorf("environmental variable RELEASE_VERSION is not set or has empty value"),
+			},
 		},
 	}
 
@@ -330,37 +347,57 @@ func TestGetGatheringFunctions(t *testing.T) {
 			t.Setenv("RELEASE_VERSION", tt.releaseVersionEnvVar)
 			gatherer := newEmptyGatherer(tt.remoteConfig, tt.endpoint)
 			_, err := gatherer.GetGatheringFunctions(context.Background())
-			if err != nil {
-				assert.EqualError(t, err, tt.expectedErrMsg)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.remoteConfigStatus.ConfigAvailable, gatherer.RemoteConfigStatus().ConfigAvailable)
+			assert.Equal(t, tt.remoteConfigStatus.ConfigValid, gatherer.RemoteConfigStatus().ConfigValid)
+			assert.Equal(t, tt.remoteConfigStatus.ConfigData, gatherer.RemoteConfigStatus().ConfigData)
+			assert.Equal(t, tt.remoteConfigStatus.AvailableReason, gatherer.RemoteConfigStatus().AvailableReason)
+			assert.Equal(t, tt.remoteConfigStatus.ValidReason, gatherer.RemoteConfigStatus().ValidReason)
+			if tt.remoteConfigStatus.Err != nil {
+				assert.EqualError(t, gatherer.remoteConfigStatus.Err, tt.remoteConfigStatus.Err.Error())
 			}
-			assert.Equal(t, tt.expectRemoteConfigErr, errors.As(err, &RemoteConfigError{}))
 		})
 	}
 }
 
+func TestBuiltInConfigIsUsed(t *testing.T) {
+	// simulate that the remote config is not available
+	gatherer := newEmptyGatherer("", "non existing endpoint")
+	// override default configuration
+	defaultRemoteConfiguration = `{
+	"container_logs": [
+		{"namespace": "openshift-test-ns","pod_name_regex": "test-name","messages":["test"]}
+		],
+	"conditional_gathering_rules":[
+		{
+			"conditions": [
+                {
+                    "alert": {
+                        "name": "APIRemovedInNextEUSReleaseInUse"
+                    },
+                    "type": "alert_is_firing"
+                }
+            ],
+            "gathering_functions": {
+                "api_request_counts_of_resource_from_alert": {
+                    "alert_name": "APIRemovedInNextEUSReleaseInUse"
+                }
+            }
+		}
+	]
+	}`
+	gatheringClosures, err := gatherer.GetGatheringFunctions(context.Background())
+	assert.NoError(t, err)
+	containerLogClosure, ok := gatheringClosures["rapid_container_logs"]
+	assert.True(t, ok)
+	assert.NotNil(t, containerLogClosure)
+	assert.False(t, gatherer.RemoteConfigStatus().ConfigAvailable)
+	assert.Equal(t, defaultRemoteConfiguration, string(gatherer.RemoteConfigStatus().ConfigData))
+}
+
 func newEmptyGatherer(remoteConfig string, conditionalGathererEndpoint string) *Gatherer { // nolint:gocritic
 	if len(remoteConfig) == 0 {
-		remoteConfig = `{
-			"version": "1.0.0",
-			"conditional_gathering_rules": [{
-				"conditions": [
-					{
-						"type": "` + string(AlertIsFiring) + `",
-						"alert": { "name": "SamplesImagestreamImportFailing" }
-					}
-				],
-				"gathering_functions": {
-					"logs_of_namespace": {
-						"namespace": "openshift-cluster-samples-operator",
-						"tail_lines": 100
-					},
-					"image_streams_of_namespace": {
-						"namespace": "openshift-cluster-samples-operator"
-					}
-				}
-			}],
-			"container_logs":[]
-		}`
+		remoteConfig = testRemoteConfig
 	}
 	if conditionalGathererEndpoint == "" {
 		conditionalGathererEndpoint = "/gathering_rules"
