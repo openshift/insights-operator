@@ -76,9 +76,15 @@ type RawLogRequest struct {
 // there can be various requests for the same namespace and this type
 // helps prevent duplicate Pod name regular expressions and duplicate messages
 type LogRequest struct {
-	Namespace    string
-	PodNameRegex sets.Set[string]
-	Messages     sets.Set[string]
+	Namespace              string
+	PodNameRegexToMessages map[PodNameRegexPrevious]sets.Set[string]
+}
+
+// PodNameRegexPrevious is a helper struct storing
+// the Pod name regular expression value together with
+// a flag saying whether it is for previous container log or not
+type PodNameRegexPrevious struct {
+	PodNameRegex string
 	Previous     bool
 }
 
