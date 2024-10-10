@@ -16,7 +16,8 @@ const (
 	NoUploadYetReason         = "NoUploadYet"
 	NoDataGatheringYetReason  = "NoDataGatheringYet"
 	NothingToProcessYetReason = "NothingToProcessYet"
-	NoValidationYet           = "NoValidationYet"
+	RemoteConfNotValidatedYet = "NoValidationYet"
+	RemoteConfNotRequestedYet = "RemoteConfigNotRequestedYet"
 	UnknownReason             = "Unknown"
 )
 

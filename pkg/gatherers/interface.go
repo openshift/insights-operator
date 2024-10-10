@@ -28,7 +28,26 @@ type CustomPeriodGatherer interface {
 	UpdateLastProcessingTime()
 }
 
+type GathererUsingRemoteConfig interface {
+	Interface
+
+	// RemoteConfigStatus provides information about the availability and validity of the remote configuration
+	// used as source of the data gathering
+	RemoteConfigStatus() RemoteConfigStatus
+}
+
 // GatheringClosure is a struct containing a closure each gatherer returns
 type GatheringClosure struct {
 	Run func(context.Context) ([]record.Record, []error)
+}
+
+// RemoteConfigStatus is a struct providing information about the availability
+// and validity of the remote configuration
+type RemoteConfigStatus struct {
+	Err             error
+	AvailableReason string
+	ValidReason     string
+	ConfigData      []byte
+	ConfigAvailable bool
+	ConfigValid     bool
 }

@@ -7,8 +7,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-var Invalid = "Invalid"
-var Unavailable = "Unavailable"
+var (
+	InvalidReason      = "Invalid"
+	AsExpectedReason   = "AsExpected"
+	NotAvailableReason = "NotAvailable"
+)
 
 // RemoteConfiguration is a structure to hold gathering rules with their version
 type RemoteConfiguration struct {
@@ -87,16 +90,4 @@ type ContainerLogRequest struct {
 	ContainerName string
 	Previous      bool
 	MessageRegex  *regexp.Regexp
-}
-
-// RemoteConfigError is a custom error type used
-// when reading of the remote configuration fails
-type RemoteConfigError struct {
-	Err        error
-	Reason     string
-	ConfigData []byte
-}
-
-func (u RemoteConfigError) Error() string {
-	return u.Err.Error()
 }

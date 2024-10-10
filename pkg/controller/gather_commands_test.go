@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/controller/status"
+	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type MockProcessingStatusClient struct {
@@ -104,4 +107,120 @@ func TestWasDataProcessed(t *testing.T) {
 			assert.Equal(t, tt.expectedProcessed, processed)
 		})
 	}
+}
+
+func TestCreateRemoteConfigConditions(t *testing.T) {
+	tests := []struct {
+		name                             string
+		remoteConfigStatus               *gatherers.RemoteConfigStatus
+		expectedRemoteConfigAvailableCon metav1.Condition
+		expectedRemoteConfigValidCon     metav1.Condition
+	}{
+		{
+			name:               "Remote Config status is nil/unknown",
+			remoteConfigStatus: nil,
+			expectedRemoteConfigAvailableCon: metav1.Condition{
+				Type:    string(status.RemoteConfigurationAvailable),
+				Status:  metav1.ConditionUnknown,
+				Reason:  status.RemoteConfNotRequestedYet,
+				Message: "",
+			},
+			expectedRemoteConfigValidCon: metav1.Condition{
+				Type:    string(status.RemoteConfigurationValid),
+				Status:  metav1.ConditionUnknown,
+				Reason:  status.RemoteConfNotValidatedYet,
+				Message: "",
+			},
+		},
+		{
+			name: "Remote Config status is available and valid",
+			remoteConfigStatus: &gatherers.RemoteConfigStatus{
+				AvailableReason: status.AsExpectedReason,
+				ValidReason:     status.AsExpectedReason,
+				ConfigAvailable: true,
+				ConfigValid:     true,
+			},
+			expectedRemoteConfigAvailableCon: metav1.Condition{
+				Type:    string(status.RemoteConfigurationAvailable),
+				Status:  metav1.ConditionTrue,
+				Reason:  status.AsExpectedReason,
+				Message: "",
+			},
+			expectedRemoteConfigValidCon: metav1.Condition{
+				Type:    string(status.RemoteConfigurationValid),
+				Status:  metav1.ConditionTrue,
+				Reason:  status.AsExpectedReason,
+				Message: "",
+			},
+		},
+		{
+			name: "Remote Config status is unvailable",
+			remoteConfigStatus: &gatherers.RemoteConfigStatus{
+				AvailableReason: "Failed",
+				ConfigAvailable: false,
+				ConfigValid:     false,
+				Err:             fmt.Errorf("endpoint not reachable"),
+			},
+			expectedRemoteConfigAvailableCon: metav1.Condition{
+				Type:    string(status.RemoteConfigurationAvailable),
+				Status:  metav1.ConditionFalse,
+				Reason:  "Failed",
+				Message: "endpoint not reachable",
+			},
+			expectedRemoteConfigValidCon: metav1.Condition{
+				Type:    string(status.RemoteConfigurationValid),
+				Status:  metav1.ConditionUnknown,
+				Reason:  status.RemoteConfNotValidatedYet,
+				Message: "",
+			},
+		},
+		{
+			name: "Remote Config status is available but invalid",
+			remoteConfigStatus: &gatherers.RemoteConfigStatus{
+				AvailableReason: status.AsExpectedReason,
+				ValidReason:     "Invalid",
+				ConfigAvailable: true,
+				ConfigValid:     false,
+				Err:             fmt.Errorf("cannot parse"),
+			},
+			expectedRemoteConfigAvailableCon: metav1.Condition{
+				Type:   string(status.RemoteConfigurationAvailable),
+				Status: metav1.ConditionTrue,
+				Reason: status.AsExpectedReason,
+			},
+			expectedRemoteConfigValidCon: metav1.Condition{
+				Type:    string(status.RemoteConfigurationValid),
+				Status:  metav1.ConditionFalse,
+				Reason:  "Invalid",
+				Message: "cannot parse",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rcAvailableCon, rcValidCon := createRemoteConfigConditions(tt.remoteConfigStatus)
+			assert.True(t, conditionsEqual(&rcAvailableCon, &tt.expectedRemoteConfigAvailableCon))
+			assert.True(t, conditionsEqual(&rcValidCon, &tt.expectedRemoteConfigValidCon))
+		})
+	}
+}
+
+func conditionsEqual(a, b *metav1.Condition) bool {
+	if a.Type != b.Type {
+		return false
+	}
+	if a.Status != b.Status {
+		return false
+	}
+	if a.Reason != b.Reason {
+		return false
+	}
+	if a.Message != b.Message {
+		return false
+	}
+	if a.ObservedGeneration != b.ObservedGeneration {
+		return false
+	}
+	return true
 }

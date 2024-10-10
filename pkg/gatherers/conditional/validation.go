@@ -19,6 +19,17 @@ var containerLogJSONSchema string
 //go:embed container_logs.schema.json
 var containerLogsJSONSchema string
 
+// validateRemoteConfig validates the both main parts of the remote configuration.
+// the original conditional gathering rules as well as the container logs
+func validateRemoteConfig(remoteConfig RemoteConfiguration) []error {
+	var errs []error
+	gatheringRulesErrs := validateGatheringRules(remoteConfig.ConditionalGatheringRules)
+	errs = append(errs, gatheringRulesErrs...)
+	containerLogErrs := validateContainerLogRequests(remoteConfig.ContainerLogRequests)
+	errs = append(errs, containerLogErrs...)
+	return errs
+}
+
 // validateGatheringRules validates provided gathering rules, will return nil on success, or a list of errors
 func validateGatheringRules(gatheringRules []GatheringRule) []error {
 	if len(gatheringRules) == 0 {

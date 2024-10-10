@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,7 +25,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
-	"github.com/openshift/insights-operator/pkg/gatherers/conditional"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/insights/insightsuploader"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -198,32 +196,15 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	remoteConfigAvailableCondition := status.RemoteConfigurationNotAvailableCondition(metav1.ConditionTrue, status.AsExpectedReason, "")
-	remoteConfigValidCondition := status.RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, status.NoValidationYet, "")
-	allFunctionReports, errsMap := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
-	if len(errsMap) > 0 {
-		var remoteConfigErr conditional.RemoteConfigError
-		conditionalErr := errsMap["conditional"]
-		if errors.As(conditionalErr, &remoteConfigErr) {
-			if remoteConfigErr.Reason == conditional.Invalid {
-				remoteConfigValidCondition.Status = metav1.ConditionFalse
-				remoteConfigValidCondition.Reason = remoteConfigErr.Reason
-				remoteConfigValidCondition.Message = remoteConfigErr.Error()
-			} else {
-				remoteConfigAvailableCondition.Status = metav1.ConditionFalse
-				remoteConfigAvailableCondition.Reason = remoteConfigErr.Reason
-				remoteConfigAvailableCondition.Message = remoteConfigErr.Error()
-			}
-			rec.Record(record.Record{
-				Name:         "insights-operator/remote-configuration.json",
-				Item:         marshal.RawByte(remoteConfigErr.ConfigData),
-				AlwaysStored: true,
-			})
-		} else {
-			remoteConfigValidCondition.Status = metav1.ConditionTrue
-			remoteConfigValidCondition.Reason = "AsExpected"
-		}
+	allFunctionReports, remoteConfStatus := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
+	if remoteConfStatus != nil {
+		rec.Record(record.Record{
+			Name:         "insights-operator/remote-configuration.json",
+			Item:         marshal.RawByte(remoteConfStatus.ConfigData),
+			AlwaysStored: true,
+		})
 	}
+	remoteConfigAvailableCondition, remoteConfigValidCondition := createRemoteConfigConditions(remoteConfStatus)
 	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigAvailableCondition)
 	if err != nil {
 		klog.Error(err)
@@ -294,18 +275,23 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 // gatherAndReporFunctions calls all the defined gatherers, calculates their status and returns map of resulting
 // gatherer functions reports
 func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Interface, // nolint: gocritic
-	dataGatherCR *insightsv1alpha1.DataGather, rec *recorder.Recorder) (map[string]gather.GathererFunctionReport, map[string]error) {
+	dataGatherCR *insightsv1alpha1.DataGather,
+	rec *recorder.Recorder) (map[string]gather.GathererFunctionReport, *gatherers.RemoteConfigStatus) {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
-	errsMap := make(map[string]error)
+	var remoteConfStatus gatherers.RemoteConfigStatus
+
 	for _, gatherer := range gatherersToRun {
 		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers) // nolint: govet
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
-			errsMap[gatherer.GetName()] = err
 		}
 
 		for i := range functionReports {
 			allFunctionReports[functionReports[i].FuncName] = functionReports[i]
+		}
+
+		if gathererUsingRemoteConf, ok := gatherer.(gatherers.GathererUsingRemoteConfig); ok {
+			remoteConfStatus = gathererUsingRemoteConf.RemoteConfigStatus()
 		}
 	}
 
@@ -319,7 +305,7 @@ func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Int
 		gs := status.CreateDataGatherGathererStatus(&fr)
 		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
 	}
-	return allFunctionReports, errsMap
+	return allFunctionReports, &remoteConfStatus
 }
 
 // updateDataGatherStatus updates DataGather status conditions with provided condition definition as well as
@@ -418,4 +404,45 @@ func (g *GatherJob) storagePathExists() error {
 		}
 	}
 	return nil
+}
+
+// createRemoteConfigConditions create RemoteConfiguration conditions based on the provided RemoteConfigStatus
+func createRemoteConfigConditions(
+	remoteConfStatus *gatherers.RemoteConfigStatus) (remoteConfigAvailableCondition, remoteConfigValidCondition metav1.Condition) {
+	remoteConfigAvailableCondition =
+		status.RemoteConfigurationNotAvailableCondition(metav1.ConditionUnknown, status.RemoteConfNotRequestedYet, "")
+	remoteConfigValidCondition =
+		status.RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, status.RemoteConfNotValidatedYet, "")
+
+	if remoteConfStatus == nil {
+		return
+	}
+
+	remoteConfigAvailableCondition.Status = boolToConditionStatus(remoteConfStatus.ConfigAvailable)
+	remoteConfigAvailableCondition.Reason = remoteConfStatus.AvailableReason
+	if !remoteConfStatus.ConfigAvailable {
+		remoteConfigAvailableCondition.Message = remoteConfStatus.Err.Error()
+	}
+
+	// set the remoteConfigValidCondition only if the remoteConfig is available
+	if remoteConfStatus.ConfigAvailable {
+		remoteConfigValidCondition.Status = boolToConditionStatus(remoteConfStatus.ConfigValid)
+		remoteConfigValidCondition.Reason = remoteConfStatus.ValidReason
+		if !remoteConfStatus.ConfigValid {
+			remoteConfigValidCondition.Message = remoteConfStatus.Err.Error()
+		}
+	}
+	return
+}
+
+// boolToConditionStatus is a helper function to conver bool type
+// tp the ConditionStatus type
+func boolToConditionStatus(b bool) metav1.ConditionStatus {
+	var conditionStatus metav1.ConditionStatus
+	if b {
+		conditionStatus = metav1.ConditionTrue
+	} else {
+		conditionStatus = metav1.ConditionFalse
+	}
+	return conditionStatus
 }
