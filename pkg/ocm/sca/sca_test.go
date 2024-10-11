@@ -19,13 +19,13 @@ var (
 func Test_SCAController_SecretIsCreated(t *testing.T) {
 	kube := kubefake.NewSimpleClientset()
 	coreClient := kube.CoreV1()
-	scaController := New(context.TODO(), coreClient, nil, nil)
+	scaController := New(coreClient, nil, nil)
 
 	testRes := &Response{
 		Key:  "secret key",
 		Cert: "secret cert",
 	}
-	err := scaController.checkSecret(testRes)
+	err := scaController.checkSecret(context.Background(), testRes)
 	assert.NoError(t, err, "failed to check the secret")
 
 	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
@@ -52,12 +52,12 @@ func Test_SCAController_SecretIsUpdated(t *testing.T) {
 	}
 	_, err := coreClient.Secrets(targetNamespaceName).Create(context.Background(), existingSec, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	scaController := New(context.TODO(), coreClient, nil, nil)
+	scaController := New(coreClient, nil, nil)
 	testRes := &Response{
 		Key:  "new secret testing key",
 		Cert: "new secret testing cert",
 	}
-	err = scaController.checkSecret(testRes)
+	err = scaController.checkSecret(context.Background(), testRes)
 	assert.NoError(t, err, "failed to check the secret")
 
 	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})

@@ -180,7 +180,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	return nil, fmt.Errorf("report response status code: %d", resp.StatusCode)
 }
 
-func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error) {
+func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architecture string) ([]byte, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -192,7 +192,8 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(scaArchPayload)))
+	payload := fmt.Sprintf(scaArchPayload, architecture)
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(payload)))
 	if err != nil {
 		return nil, err
 	}
@@ -200,6 +201,7 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string) ([]byte, error
 	c.client.Transport = clientTransport(c.authorizer)
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
+	klog.Infof("Asking for SCA certificate for %s architecture", architecture)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
