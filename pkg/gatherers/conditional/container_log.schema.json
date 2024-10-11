@@ -34,7 +34,7 @@
             "uniqueItems": false,
             "items": {
                 "type": "string",
-                "description": "Regular expression used to filter the container log. The Go's Match (https://pkg.go.dev/regexp#Regexp.Match) function is used, so if a log line has a match, it is included in the collected data."
+                "description": "Regular expression used to filter the container log. The collected data will include all lines matching the regular expression (as implemented by https://pkg.go.dev/regexp#Regexp.Match)."
             }
         },
         "previous": {
