@@ -97,8 +97,9 @@ func gatherContainerLogs(
 	return records, errs
 }
 
+// mapKeysToSlice converts the set of keys of provided map to a slice of strings
 func mapKeysToSlice(m map[PodNameRegexPrevious]sets.Set[string]) []string {
-	var keys []string
+	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k.PodNameRegex)
 	}
