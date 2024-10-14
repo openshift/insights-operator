@@ -17,6 +17,11 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
+// UnusedMachineConfigsCount represents the count of unused MachineConfig in the cluster
+type UnusedMachineConfigsCount struct {
+	UnusedCount uint `json:"unused_machineconfigs_count"`
+}
+
 // GatherMachineConfigs Collects definitions of in-use 'MachineConfigs'. MachineConfig is used when it's referenced in
 // a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig` and `machineconfiguration.openshift.io/currentConfig`
 // annotations
@@ -28,9 +33,11 @@ import (
 // - https://docs.openshift.com/container-platform/4.7/rest_api/machine_apis/machineconfig-machineconfiguration-openshift-io-v1.html
 //
 // ### Sample data
+// - docs/insights-archive-sample/aggregated/unused_machine_configs_count.json
 // - docs/insights-archive-sample/config/machineconfigs/75-worker-sap-data-intelligence.json
 //
 // ### Location in archive
+// - `aggregated/unused_machine_configs_count.json`
 // - `config/machineconfigs/{resource}.json`
 //
 // ### Config ID
@@ -59,22 +66,35 @@ func (g *Gatherer) GatherMachineConfigs(ctx context.Context) ([]record.Record, [
 	return records, errs
 }
 
-func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface,
-	inUseMachineConfigs sets.Set[string]) ([]record.Record, []error) {
+func gatherAllMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface) ([]unstructured.Unstructured, error) {
 	mcList, err := dynamicClient.Resource(machineConfigGroupVersionResource).List(ctx, metav1.ListOptions{})
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	return mcList.Items, nil
+}
+
+func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface,
+	inUseMachineConfigs sets.Set[string]) ([]record.Record, []error) {
+	const unusedCountFilename string = "aggregated/unused_machine_configs_count"
+	count := UnusedMachineConfigsCount{UnusedCount: 0}
+
+	items, err := gatherAllMachineConfigs(ctx, dynamicClient)
 	if err != nil {
 		return nil, []error{err}
 	}
 
 	records := []record.Record{}
 	var errs []error
-	for i := range mcList.Items {
-		mc := mcList.Items[i]
+	for i := range items {
+		mc := items[i]
 		// skip machine configs which are not in use
 		if len(inUseMachineConfigs) != 0 && !inUseMachineConfigs.Has(mc.GetName()) {
+			count.UnusedCount++
 			continue
 		}
 		// remove the sensitive content by overwriting the values
@@ -96,6 +116,11 @@ func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface,
 	if len(errs) > 0 {
 		return records, errs
 	}
+
+	records = append(records, record.Record{
+		Name: unusedCountFilename,
+		Item: record.JSONMarshaller{Object: count},
+	})
 	return records, nil
 }
 

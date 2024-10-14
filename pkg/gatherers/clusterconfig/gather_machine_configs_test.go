@@ -43,7 +43,7 @@ func TestGatherMachineConfigs(t *testing.T) {
 			name:                    "no machine configs exists",
 			machineConfigYAMLs:      []string{},
 			inUseMachineConfigs:     sets.Set[string]{},
-			expectedNumberOfRecords: 0,
+			expectedNumberOfRecords: 1,
 		},
 		{
 			name: "one machine config which is in use",
@@ -53,11 +53,11 @@ kind: MachineConfig
 metadata: 
   name: 75-worker-sap-data-intelligence`},
 			inUseMachineConfigs:     sets.Set[string]{"75-worker-sap-data-intelligence": {}},
-			expectedNumberOfRecords: 1,
+			expectedNumberOfRecords: 2,
 		},
 		{
 			name:                    "two machine configs but only one in use",
-			expectedNumberOfRecords: 1,
+			expectedNumberOfRecords: 2,
 			machineConfigYAMLs: []string{
 				`apiVersion: machineconfiguration.openshift.io/v1
 kind: MachineConfig
@@ -72,7 +72,7 @@ metadata:
 		},
 		{
 			name:                    "no machine config in use",
-			expectedNumberOfRecords: 0,
+			expectedNumberOfRecords: 1,
 			machineConfigYAMLs: []string{
 				`apiVersion: machineconfiguration.openshift.io/v1
 kind: MachineConfig
@@ -87,7 +87,7 @@ metadata:
 		},
 		{
 			name:                    "two machine configs in use",
-			expectedNumberOfRecords: 2,
+			expectedNumberOfRecords: 3,
 			machineConfigYAMLs: []string{
 				`apiVersion: machineconfiguration.openshift.io/v1
 kind: MachineConfig
