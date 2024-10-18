@@ -32,6 +32,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"certificate_signing_requests":      (*Gatherer).GatherCertificateSigningRequests,
 	"ceph_cluster":                      (*Gatherer).GatherCephCluster,
 	"cluster_apiserver":                 (*Gatherer).GatherClusterAPIServer,
+	"clusterroles":                      (*Gatherer).GatherClusterRoles,
 	"config_maps":                       (*Gatherer).GatherConfigMaps,
 	"container_images":                  (*Gatherer).GatherContainerImages,
 	"container_runtime_configs":         (*Gatherer).GatherContainerRuntimeConfig,
