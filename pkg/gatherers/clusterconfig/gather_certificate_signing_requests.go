@@ -28,7 +28,7 @@ import (
 // - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 //
 // ### Sample data
-// None
+// - docs/insights-archive-sample/config/certificatesigningrequests/csr-test.json
 //
 // ### Location in archive
 // - `config/certificatesigningrequests`

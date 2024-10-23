@@ -22,9 +22,10 @@ type UnusedMachineConfigsCount struct {
 	UnusedCount uint `json:"unused_machineconfigs_count"`
 }
 
-// GatherMachineConfigs Collects definitions of in-use 'MachineConfigs'. MachineConfig is used when it's referenced in
-// a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig` and `machineconfiguration.openshift.io/currentConfig`
-// annotations
+// GatherMachineConfigs Collects definitions of in-use 'MachineConfigs' and aggregated number of non-used 'MachineConfigs'.
+// MachineConfig is used when it's referenced in a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig`
+// and `machineconfiguration.openshift.io/currentConfig` annotations
+//
 // Following data is intentionally removed from the definitions:
 // - `spec.config.storage.files`
 // - `spec.config.passwd.users`
@@ -50,7 +51,7 @@ type UnusedMachineConfigsCount struct {
 // - 4.8.5
 //
 // ### Changes
-// - gathers only in-use MachineConfigs since 4.18+
+// - gathers only in-use MachineConfigs and aggregated number of non-used MachineConfigs since 4.18+
 func (g *Gatherer) GatherMachineConfigs(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
