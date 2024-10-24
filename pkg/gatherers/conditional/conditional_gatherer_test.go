@@ -1,6 +1,7 @@
 package conditional
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"io"
@@ -40,7 +41,7 @@ var testRemoteConfig = `{
 
 func Test_Gatherer_Basic(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
-	gatherer := newEmptyGatherer("", "")
+	gatherer := newEmptyGatherer(nil, "")
 
 	assert.Equal(t, "conditional", gatherer.GetName())
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
@@ -55,7 +56,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 
 func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
-	gatherer := newEmptyGatherer("", "")
+	gatherer := newEmptyGatherer(nil, "")
 
 	ctx := context.Background()
 	err := gatherer.updateAlertsCache(ctx, newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
@@ -70,7 +71,7 @@ func Test_Gatherer_GetGatheringFunctions(t *testing.T) {
 
 func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
-	gatherer := newEmptyGatherer("", "")
+	gatherer := newEmptyGatherer(nil, "")
 
 	ctx := context.Background()
 	err := gatherer.updateAlertsCache(ctx, newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
@@ -106,7 +107,7 @@ func Test_Gatherer_GetGatheringFunctions_BuiltInConfigIsUsed(t *testing.T) {
 
 func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
-	gatherer := newEmptyGatherer("", "")
+	gatherer := newEmptyGatherer(nil, "")
 
 	gatheringFunctions, err := gatherer.GetGatheringFunctions(context.Background())
 	assert.NoError(t, err)
@@ -118,7 +119,7 @@ func Test_Gatherer_GetGatheringFunctions_NoConditionsAreSatisfied(t *testing.T) 
 
 func Test_Gatherer_GetGatheringFunctions_ConditionIsSatisfied(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
-	gatherer := newEmptyGatherer("", "")
+	gatherer := newEmptyGatherer(nil, "")
 
 	ctx := context.Background()
 	err := gatherer.updateAlertsCache(ctx, newFakeClientWithAlerts("SamplesImagestreamImportFailing"))
@@ -212,7 +213,7 @@ func newFakeClientWithAlerts(alerts ...string) *fake.RESTClient {
 }
 
 func Test_Gatherer_doesClusterVersionMatch(t *testing.T) {
-	gatherer := newEmptyGatherer("", "")
+	gatherer := newEmptyGatherer(nil, "")
 
 	type testCase struct {
 		expectedVersion string
@@ -280,7 +281,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 	tests := []struct {
 		name                 string
 		endpoint             string
-		remoteConfig         string
+		remoteMockClient     *MockGatheringRulesServiceClient
 		releaseVersionEnvVar string
 		remoteConfigStatus   gatherers.RemoteConfigStatus
 	}{
@@ -288,7 +289,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration is available and can be parsed",
 			endpoint:             "/gathering_rules",
 			releaseVersionEnvVar: "1.2.3",
-			remoteConfig:         "",
+			remoteMockClient:     &MockGatheringRulesServiceClient{},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: true,
 				ConfigValid:     true,
@@ -302,7 +303,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration is not available",
 			endpoint:             "not valid endpoint",
 			releaseVersionEnvVar: "1.2.3",
-			remoteConfig:         "",
+			remoteMockClient:     &MockGatheringRulesServiceClient{},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: false,
 				ConfigValid:     false,
@@ -315,7 +316,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 		{
 			name:                 "remote configuration is available, but cannot be parsed",
 			endpoint:             "/gathering_rules",
-			remoteConfig:         `{not json}`,
+			remoteMockClient:     &MockGatheringRulesServiceClient{value: `{not json}`},
 			releaseVersionEnvVar: "1.2.3",
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: true,
@@ -330,7 +331,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration is not available, because RELEASE_VERSION is set with empty",
 			endpoint:             "/gathering_rules",
 			releaseVersionEnvVar: "",
-			remoteConfig:         "",
+			remoteMockClient:     &MockGatheringRulesServiceClient{},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: false,
 				ConfigValid:     false,
@@ -340,12 +341,54 @@ func TestGetGatheringFunctions(t *testing.T) {
 				Err:             fmt.Errorf("environmental variable RELEASE_VERSION is not set or has empty value"),
 			},
 		},
+		{
+			name:                 "remote configuration returns 500 error",
+			endpoint:             "/gathering_rules",
+			releaseVersionEnvVar: "1.2.3",
+			remoteMockClient:     &MockGatheringRulesServiceClient{status: 500},
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: false,
+				ConfigValid:     false,
+				AvailableReason: "HttpStatus500",
+				ValidReason:     "NoValidation",
+				ConfigData:      []byte(defaultRemoteConfiguration),
+				Err:             nil, // Err is not nil but we are not interested in checking the actual value
+			},
+		},
+		{
+			name:                 "remote configuration returns 400 error",
+			endpoint:             "/gathering_rules",
+			releaseVersionEnvVar: "1.2.3",
+			remoteMockClient:     &MockGatheringRulesServiceClient{status: 400},
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: false,
+				ConfigValid:     false,
+				AvailableReason: "HttpStatus400",
+				ValidReason:     "NoValidation",
+				ConfigData:      []byte(defaultRemoteConfiguration),
+				Err:             nil,
+			},
+		},
+		{
+			name:                 "remote configuration returns 404 error",
+			endpoint:             "/gathering_rules",
+			releaseVersionEnvVar: "1.2.3",
+			remoteMockClient:     &MockGatheringRulesServiceClient{status: 404},
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: false,
+				ConfigValid:     false,
+				AvailableReason: "HttpStatus404",
+				ValidReason:     "NoValidation",
+				ConfigData:      []byte(defaultRemoteConfiguration),
+				Err:             nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("RELEASE_VERSION", tt.releaseVersionEnvVar)
-			gatherer := newEmptyGatherer(tt.remoteConfig, tt.endpoint)
+			gatherer := newEmptyGatherer(tt.remoteMockClient, tt.endpoint)
 			_, err := gatherer.GetGatheringFunctions(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.remoteConfigStatus.ConfigAvailable, gatherer.RemoteConfigStatus().ConfigAvailable)
@@ -362,7 +405,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 
 func TestBuiltInConfigIsUsed(t *testing.T) {
 	// simulate that the remote config is not available
-	gatherer := newEmptyGatherer("", "non existing endpoint")
+	gatherer := newEmptyGatherer(nil, "non existing endpoint")
 	// override default configuration
 	defaultRemoteConfiguration = `{
 	"container_logs": [
@@ -395,10 +438,7 @@ func TestBuiltInConfigIsUsed(t *testing.T) {
 	assert.Equal(t, defaultRemoteConfiguration, string(gatherer.RemoteConfigStatus().ConfigData))
 }
 
-func newEmptyGatherer(remoteConfig string, conditionalGathererEndpoint string) *Gatherer { // nolint:gocritic
-	if len(remoteConfig) == 0 {
-		remoteConfig = testRemoteConfig
-	}
+func newEmptyGatherer(remoteConfig *MockGatheringRulesServiceClient, conditionalGathererEndpoint string) *Gatherer { // nolint:gocritic
 	if conditionalGathererEndpoint == "" {
 		conditionalGathererEndpoint = "/gathering_rules"
 	}
@@ -409,18 +449,23 @@ func newEmptyGatherer(remoteConfig string, conditionalGathererEndpoint string) *
 	}
 	mockConfigurator := config.NewMockConfigMapConfigurator(testConf)
 
+	if remoteConfig == nil {
+		remoteConfig = &MockGatheringRulesServiceClient{}
+	}
+
 	return New(
 		nil,
 		nil,
 		nil,
 		mockConfigurator,
-		&MockGatheringRulesServiceClient{Conf: remoteConfig},
+		remoteConfig,
 	)
 }
 
 type MockGatheringRulesServiceClient struct {
-	Conf string
-	err  error
+	status int
+	value  string
+	err    error
 }
 
 func (s *MockGatheringRulesServiceClient) GetWithPathParam(_ context.Context, endpoint, _ string, _ bool) (*http.Response, error) {
@@ -429,8 +474,8 @@ func (s *MockGatheringRulesServiceClient) GetWithPathParam(_ context.Context, en
 	}
 	if strings.HasSuffix(endpoint, "gathering_rules") {
 		resp := &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(strings.NewReader(s.Conf)),
+			StatusCode: cmp.Or(s.status, http.StatusOK),
+			Body:       io.NopCloser(strings.NewReader(cmp.Or(s.value, testRemoteConfig))),
 		}
 		return resp, nil
 	}
