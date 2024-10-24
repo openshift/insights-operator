@@ -1,0 +1,867 @@
+{
+    "metadata": {
+        "name": "vsystem-867f4b77cc-pqcns",
+        "generateName": "vsystem-867f4b77cc-",
+        "namespace": "di-288312",
+        "uid": "0ebe8b8b-5449-4a41-bea5-9884e89f66d8",
+        "resourceVersion": "970028273",
+        "creationTimestamp": "2024-03-26T10:43:59Z",
+        "labels": {
+            "app": "vora",
+            "datahub.sap.com/app": "vsystem",
+            "datahub.sap.com/app-component": "vsystem",
+            "pod-template-hash": "867f4b77cc",
+            "vora-component": "vsystem"
+        },
+        "annotations": {
+            "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.129.2.44\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+            "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.129.2.44\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+            "openshift.io/scc": "anyuid"
+        },
+        "ownerReferences": [
+            {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "vsystem-867f4b77cc",
+                "uid": "ca82db22-ef61-49db-ad84-35e502375121",
+                "controller": true,
+                "blockOwnerDeletion": true
+            }
+        ]
+    },
+    "spec": {
+        "volumes": [
+            {
+                "name": "tls-store-key",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.keystore",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "tls-store-cert",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.truststore",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "jwt-public-key",
+                "secret": {
+                    "secretName": "vora.conf.secop.jwtiss.truststore",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "uaa-tls-cert",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.ca-bundle",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "hana-tls-cert",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.ca-bundle",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "agent-config",
+                "configMap": {
+                    "name": "vsystem-agent-configmap",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "user-root-ca-dir",
+                "projected": {
+                    "sources": [
+                        {
+                            "secret": {
+                                "name": "vora.conf.secop.client.ca.truststore"
+                            }
+                        },
+                        {
+                            "secret": {
+                                "name": "vora.conf.secop.client.ca.keystore"
+                            }
+                        }
+                    ],
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "vsystem-root-ca-cert",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.inter-ca",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "vsystem-root-ca-key",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.inter-ca-keystore",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "auth-cert-tls",
+                "secret": {
+                    "secretName": "auth-client-cert",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "vsystem-root-ca-dir",
+                "secret": {
+                    "secretName": "ca-bundle.pem",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "vsystem-tls-cert",
+                "secret": {
+                    "secretName": "vsystem-client-cert",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "kube-api-access-9x7tw",
+                "projected": {
+                    "sources": [
+                        {
+                            "serviceAccountToken": {
+                                "expirationSeconds": 3607,
+                                "path": "token"
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "name": "kube-root-ca.crt",
+                                "items": [
+                                    {
+                                        "key": "ca.crt",
+                                        "path": "ca.crt"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "downwardAPI": {
+                                "items": [
+                                    {
+                                        "path": "namespace",
+                                        "fieldRef": {
+                                            "apiVersion": "v1",
+                                            "fieldPath": "metadata.namespace"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "name": "openshift-service-ca.crt",
+                                "items": [
+                                    {
+                                        "key": "service-ca.crt",
+                                        "path": "service-ca.crt"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "defaultMode": 420
+                }
+            }
+        ],
+        "initContainers": [
+            {
+                "name": "vsystem-hana-init",
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem-hana-init:3.3.30",
+                "command": [
+                    "/bin/sh",
+                    "-c"
+                ],
+                "args": [
+                    "/bin/run_hana_init \u0026\u0026 /bin/run_vflow_init"
+                ],
+                "env": [
+                    {
+                        "name": "LD_LIBRARY_PATH",
+                        "value": "/usr/lib64:$LD_LIBRARY_PATH"
+                    },
+                    {
+                        "name": "HANA_SYSTEM_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vora.conf.hana-password",
+                                "key": "password.json"
+                            }
+                        }
+                    },
+                    {
+                        "name": "HANA_VSYSTEM_USER_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vsystem-user-hana-credentials",
+                                "key": "password"
+                            }
+                        }
+                    },
+                    {
+                        "name": "HANA_TARGET_SCHEMA",
+                        "value": "VSYS"
+                    },
+                    {
+                        "name": "HANA_HOST",
+                        "value": "hana-service"
+                    },
+                    {
+                        "name": "HANA_PORT",
+                        "value": "30017"
+                    },
+                    {
+                        "name": "HANA_USER_VSYSTEM",
+                        "value": "VSYSTEM"
+                    },
+                    {
+                        "name": "HANA_VFLOW_USER",
+                        "value": "VFLOW"
+                    },
+                    {
+                        "name": "HANA_VFLOW_USER_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vflow-user-hana-credentials",
+                                "key": "password"
+                            }
+                        }
+                    },
+                    {
+                        "name": "HANA_TLS_CERT_PATH",
+                        "value": "/etc/certs/hana/vora.conf.secop.tlsconfig.ca-bundle"
+                    }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                    {
+                        "name": "hana-tls-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs/hana"
+                    },
+                    {
+                        "name": "kube-api-access-9x7tw",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "Always",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "MKNOD"
+                        ]
+                    }
+                }
+            }
+        ],
+        "containers": [
+            {
+                "name": "vsystem",
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem:3.3.30",
+                "command": [
+                    "vsystem/vsystem"
+                ],
+                "args": [
+                    "server",
+                    "--k8s-namespace=di-288312",
+                    "--tls-key-file=/etc/certs/key/vora.conf.secop.tlsconfig.keystore",
+                    "--tls-cert-file=/etc/certs/cert/vora.conf.secop.tlsconfig.truststore",
+                    "--jwt-public-key=/etc/keys/public/vora.conf.secop.jwtiss.truststore",
+                    "--jwt-public-key-secret-name=vora.conf.secop.jwtiss.truststore",
+                    "--datahub-component-version=3.3.30",
+                    "--datahub-package-version=3.3.81",
+                    "--jwt-issuer=https://uaa:8080/oauth/token",
+                    "--audit-log-server=https://auditlog:3030",
+                    "--agent-initial-port=30000",
+                    "--agent-config=/etc/agent/config/agentconfig.yaml",
+                    "--agent-liveness-probe-on-workloads=/etc/agent/config/agentLivenessProbeOnWorkloads.yaml",
+                    "--root-ca-auto-generate=false",
+                    "--root-ca-dir=/etc/certs/root-ca",
+                    "--user-root-ca-dir=/etc/user-pki/root-ca-cert",
+                    "--root-ca-cert-file=/etc/pki/root-ca-cert/vora.conf.secop.tlsconfig.inter-ca",
+                    "--root-ca-key-file=/etc/pki/root-ca-key/vora.conf.secop.tlsconfig.inter-ca-keystore",
+                    "--root-ca-cert-secret=vora.conf.secop.tlsconfig.inter-ca",
+                    "--root-ca-key-secret=vora.conf.secop.tlsconfig.inter-ca-keystore",
+                    "--root-ca-dir-secret=ca-bundle.pem",
+                    "--application-runtime-pvc=vsystem-application-runtime-storage",
+                    "--trc=info",
+                    "--tls-cert-file-internal=/etc/certs/vsystem/client-cert.pem",
+                    "--tls-key-file-internal=/etc/certs/vsystem/client-key.pem",
+                    "--datahub-deployment-info-config-store=system-info",
+                    "--workload-controller-worker=32"
+                ],
+                "ports": [
+                    {
+                        "name": "vsystem",
+                        "containerPort": 8797,
+                        "protocol": "TCP"
+                    },
+                    {
+                        "name": "vsystem-routing",
+                        "containerPort": 8791,
+                        "protocol": "TCP"
+                    },
+                    {
+                        "name": "vsys-internal",
+                        "containerPort": 8796,
+                        "protocol": "TCP"
+                    }
+                ],
+                "envFrom": [
+                    {
+                        "configMapRef": {
+                            "name": "vsystem-configmap"
+                        }
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "WORKLOADS_ENABLE_INITPROCESS",
+                        "value": "true"
+                    },
+                    {
+                        "name": "SERVER_TIMEOUT",
+                        "value": "20m0s"
+                    },
+                    {
+                        "name": "HANDLER_TIMEOUT",
+                        "value": "10m0s"
+                    },
+                    {
+                        "name": "UAA_TOKEN_INTROSPECTION_CLIENT_ID",
+                        "value": "clientid-token-introspection"
+                    },
+                    {
+                        "name": "UAA_TOKEN_INTROSPECTION_CLIENT_SECRET",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "clientid-token-introspection",
+                                "key": "secret"
+                            }
+                        }
+                    },
+                    {
+                        "name": "UAA_ENDPOINT",
+                        "value": "uaa:8080"
+                    },
+                    {
+                        "name": "UAA_TLS_CERT_PATH",
+                        "value": "/etc/certs/vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "HANA_HOST",
+                        "value": "hana-service"
+                    },
+                    {
+                        "name": "HANA_PORT",
+                        "value": "30017"
+                    },
+                    {
+                        "name": "HANA_USER_VSYSTEM",
+                        "value": "VSYSTEM"
+                    },
+                    {
+                        "name": "HANA_VSYSTEM_USER_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vsystem-user-hana-credentials",
+                                "key": "password"
+                            }
+                        }
+                    },
+                    {
+                        "name": "HANA_TARGET_SCHEMA",
+                        "value": "VSYS"
+                    },
+                    {
+                        "name": "HANA_TLS_CERT_PATH",
+                        "value": "/etc/certs/hana/vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "HANA_TLS_SECRET_NAME",
+                        "value": "vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "HANA_TLS_SECRET_FILE",
+                        "value": "vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "EXTENDED_SERVICE_ACCOUNT",
+                        "value": "mlf-deployment-api"
+                    },
+                    {
+                        "name": "BLOCK_WORKLOADS_ACCESS_TO_HANA",
+                        "value": "true"
+                    },
+                    {
+                        "name": "ENABLE_NEW_SGW",
+                        "value": "true"
+                    },
+                    {
+                        "name": "ENABLE_VFLOW_AGENT_INJECTION",
+                        "value": "true"
+                    },
+                    {
+                        "name": "HANA_VFLOW_USER_PASSWORD_SECRET_NAME",
+                        "value": "vflow-user-hana-credentials"
+                    },
+                    {
+                        "name": "HANA_VFLOW_USER_PASSWORD_SECRET_FILENAME",
+                        "value": "password"
+                    },
+                    {
+                        "name": "HANA_VFLOW_USER",
+                        "value": "VFLOW"
+                    }
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "2",
+                        "memory": "1Gi"
+                    },
+                    "requests": {
+                        "cpu": "500m",
+                        "memory": "256Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "tls-store-key",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs/key"
+                    },
+                    {
+                        "name": "tls-store-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs/cert"
+                    },
+                    {
+                        "name": "jwt-public-key",
+                        "readOnly": true,
+                        "mountPath": "/etc/keys/public"
+                    },
+                    {
+                        "name": "agent-config",
+                        "mountPath": "/etc/agent/config"
+                    },
+                    {
+                        "name": "user-root-ca-dir",
+                        "mountPath": "/etc/user-pki/root-ca-cert"
+                    },
+                    {
+                        "name": "vsystem-root-ca-cert",
+                        "mountPath": "/etc/pki/root-ca-cert"
+                    },
+                    {
+                        "name": "vsystem-root-ca-key",
+                        "mountPath": "/etc/pki/root-ca-key"
+                    },
+                    {
+                        "name": "vsystem-root-ca-dir",
+                        "mountPath": "/etc/certs/root-ca"
+                    },
+                    {
+                        "name": "vsystem-tls-cert",
+                        "mountPath": "/etc/certs/vsystem"
+                    },
+                    {
+                        "name": "uaa-tls-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs"
+                    },
+                    {
+                        "name": "hana-tls-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs/hana"
+                    },
+                    {
+                        "name": "kube-api-access-9x7tw",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "livenessProbe": {
+                    "httpGet": {
+                        "path": "/liveness",
+                        "port": 8798,
+                        "scheme": "HTTP"
+                    },
+                    "initialDelaySeconds": 60,
+                    "timeoutSeconds": 1,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "failureThreshold": 3
+                },
+                "readinessProbe": {
+                    "httpGet": {
+                        "path": "/readiness",
+                        "port": 8797,
+                        "scheme": "HTTPS"
+                    },
+                    "initialDelaySeconds": 5,
+                    "timeoutSeconds": 1,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "Always",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "MKNOD"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "auth",
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem-auth:3.3.30",
+                "args": [
+                    "-initial-user-secret-name=vora.conf.initial.user",
+                    "-k8s-namespace=di-288312",
+                    "--root-ca-dir=/etc/certs/root-ca",
+                    "--user-root-ca-dir=/etc/user-pki/root-ca-cert",
+                    "--user-root-ca-cert-file=ca.crt",
+                    "--user-root-ca-key-file=vora.conf.secop.client.ca.keystore",
+                    "--tls-cert-file-auth=/etc/certs/auth/client-cert.pem",
+                    "--tls-key-file-auth=/etc/certs/auth/client-key.pem",
+                    "-audit-log-server=https://auditlog:3030",
+                    "--trc=info"
+                ],
+                "ports": [
+                    {
+                        "name": "auth",
+                        "containerPort": 2884,
+                        "protocol": "TCP"
+                    }
+                ],
+                "envFrom": [
+                    {
+                        "configMapRef": {
+                            "name": "vsystem-configmap"
+                        }
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "SERVER_TIMEOUT",
+                        "value": "20m0s"
+                    },
+                    {
+                        "name": "HANDLER_TIMEOUT",
+                        "value": "10m0s"
+                    },
+                    {
+                        "name": "HANA_SYSTEM_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vora.conf.hana-password",
+                                "key": "password.json"
+                            }
+                        }
+                    },
+                    {
+                        "name": "UAA_TLS_CERT_PATH",
+                        "value": "/etc/certs/vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "UAA_ENDPOINT",
+                        "value": "uaa:8080"
+                    },
+                    {
+                        "name": "UAA_ADMIN_CLIENT_ID",
+                        "value": "admin"
+                    },
+                    {
+                        "name": "UAA_ADMIN_CLIENT_SECRET",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vora.conf.secop.oauth.clients.admin",
+                                "key": "secret"
+                            }
+                        }
+                    },
+                    {
+                        "name": "UAA_TOKEN_INTROSPECTION_CLIENT_ID",
+                        "value": "clientid-token-introspection"
+                    },
+                    {
+                        "name": "UAA_TOKEN_INTROSPECTION_CLIENT_SECRET",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "clientid-token-introspection",
+                                "key": "secret"
+                            }
+                        }
+                    },
+                    {
+                        "name": "HANA_USER_VSYSTEM",
+                        "value": "VSYSTEM"
+                    },
+                    {
+                        "name": "HANA_VSYSTEM_USER_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vsystem-user-hana-credentials",
+                                "key": "password"
+                            }
+                        }
+                    },
+                    {
+                        "name": "HANA_TARGET_SCHEMA",
+                        "value": "VSYS"
+                    },
+                    {
+                        "name": "HANA_TLS_CERT_PATH",
+                        "value": "/etc/certs/hana/vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "HANA_HOST",
+                        "value": "hana-service"
+                    },
+                    {
+                        "name": "HANA_PORT",
+                        "value": "30017"
+                    }
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "800m",
+                        "memory": "1Gi"
+                    },
+                    "requests": {
+                        "cpu": "200m",
+                        "memory": "128Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "jwt-public-key",
+                        "readOnly": true,
+                        "mountPath": "/etc/keys/public"
+                    },
+                    {
+                        "name": "uaa-tls-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs"
+                    },
+                    {
+                        "name": "hana-tls-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs/hana"
+                    },
+                    {
+                        "name": "auth-cert-tls",
+                        "mountPath": "/etc/certs/auth"
+                    },
+                    {
+                        "name": "vsystem-root-ca-dir",
+                        "mountPath": "/etc/certs/root-ca"
+                    },
+                    {
+                        "name": "user-root-ca-dir",
+                        "mountPath": "/etc/user-pki/root-ca-cert"
+                    },
+                    {
+                        "name": "kube-api-access-9x7tw",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "livenessProbe": {
+                    "httpGet": {
+                        "path": "/liveness",
+                        "port": 2885,
+                        "scheme": "HTTP"
+                    },
+                    "initialDelaySeconds": 60,
+                    "timeoutSeconds": 1,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "failureThreshold": 3
+                },
+                "readinessProbe": {
+                    "httpGet": {
+                        "path": "/readiness",
+                        "port": 2886,
+                        "scheme": "HTTP"
+                    },
+                    "initialDelaySeconds": 5,
+                    "timeoutSeconds": 1,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "Always",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "MKNOD"
+                        ]
+                    }
+                }
+            }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "nodeSelector": {
+            "node-role.kubernetes.io/sdi": ""
+        },
+        "serviceAccountName": "vora-vsystem-di-288312",
+        "serviceAccount": "vora-vsystem-di-288312",
+        "nodeName": "pvx510.wdf.sap.corp",
+        "securityContext": {
+            "seLinuxOptions": {
+                "level": "s0:c29,c24"
+            }
+        },
+        "imagePullSecrets": [
+            {
+                "name": "slp-docker-registry-pull-secret"
+            }
+        ],
+        "schedulerName": "default-scheduler",
+        "tolerations": [
+            {
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            },
+            {
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            },
+            {
+                "key": "node.kubernetes.io/memory-pressure",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+            }
+        ],
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority"
+    },
+    "status": {
+        "phase": "Pending",
+        "conditions": [
+            {
+                "type": "Initialized",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:43:59Z",
+                "reason": "ContainersNotInitialized",
+                "message": "containers with incomplete status: [vsystem-hana-init]"
+            },
+            {
+                "type": "Ready",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:43:59Z",
+                "reason": "ContainersNotReady",
+                "message": "containers with unready status: [vsystem auth]"
+            },
+            {
+                "type": "ContainersReady",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:43:59Z",
+                "reason": "ContainersNotReady",
+                "message": "containers with unready status: [vsystem auth]"
+            },
+            {
+                "type": "PodScheduled",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:43:59Z"
+            }
+        ],
+        "hostIP": "10.67.106.109",
+        "podIP": "10.129.2.44",
+        "podIPs": [
+            {
+                "ip": "10.129.2.44"
+            }
+        ],
+        "startTime": "2024-03-26T10:43:59Z",
+        "initContainerStatuses": [
+            {
+                "name": "vsystem-hana-init",
+                "state": {
+                    "waiting": {
+                        "reason": "CrashLoopBackOff",
+                        "message": "back-off 5m0s restarting failed container=vsystem-hana-init pod=vsystem-867f4b77cc-pqcns_di-288312(0ebe8b8b-5449-4a41-bea5-9884e89f66d8)"
+                    }
+                },
+                "lastState": {
+                    "terminated": {
+                        "exitCode": 1,
+                        "reason": "Error",
+                        "message": "could not connect to hana: connection to db cannot be established: -10709: Connect failed (connect timeout expired)",
+                        "startedAt": "2024-04-27T09:53:24Z",
+                        "finishedAt": "2024-04-27T09:54:24Z",
+                        "containerID": "cri-o://74dcf44306016a54d4c372569d4193709010d66bdc3e86037bd034612159efb8"
+                    }
+                },
+                "ready": false,
+                "restartCount": 7527,
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem-hana-init:3.3.30",
+                "imageID": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem-hana-init@sha256:5375cfa9c9a7f9e017b14b1668762885997fc15ef0a3ab87cc3f6639a0cd03aa",
+                "containerID": "cri-o://74dcf44306016a54d4c372569d4193709010d66bdc3e86037bd034612159efb8"
+            }
+        ],
+        "containerStatuses": [
+            {
+                "name": "auth",
+                "state": {
+                    "waiting": {
+                        "reason": "PodInitializing"
+                    }
+                },
+                "lastState": {},
+                "ready": false,
+                "restartCount": 0,
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem-auth:3.3.30",
+                "imageID": "",
+                "started": false
+            },
+            {
+                "name": "vsystem",
+                "state": {
+                    "waiting": {
+                        "reason": "PodInitializing"
+                    }
+                },
+                "lastState": {},
+                "ready": false,
+                "restartCount": 0,
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem:3.3.30",
+                "imageID": "",
+                "started": false
+            }
+        ],
+        "qosClass": "Burstable"
+    }
+}

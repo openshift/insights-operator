@@ -1,0 +1,350 @@
+{
+    "metadata": {
+        "name": "default-2k58azz-backup-deletion-5rdw4",
+        "generateName": "default-2k58azz-backup-deletion-",
+        "namespace": "di-288312",
+        "uid": "67aca38b-a761-4e7f-a4d9-3877d65a45f7",
+        "resourceVersion": "969331085",
+        "creationTimestamp": "2024-04-27T00:00:21Z",
+        "labels": {
+            "bdh-uninstall": "cleanup",
+            "controller-uid": "3a5c7d08-b686-4963-b45f-6c0b12f692d3",
+            "job-name": "default-2k58azz-backup-deletion",
+            "job-type": "com.sap.datahub.installers.scripts"
+        },
+        "annotations": {
+            "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.131.0.253\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+            "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.131.0.253\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+            "openshift.io/scc": "anyuid"
+        },
+        "ownerReferences": [
+            {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "name": "default-2k58azz-backup-deletion",
+                "uid": "3a5c7d08-b686-4963-b45f-6c0b12f692d3",
+                "controller": true,
+                "blockOwnerDeletion": true
+            }
+        ]
+    },
+    "spec": {
+        "volumes": [
+            {
+                "name": "script",
+                "configMap": {
+                    "name": "com.sap.datahub.installers.scripts.backup.delete-backup.3.3.81",
+                    "defaultMode": 493
+                }
+            },
+            {
+                "name": "common",
+                "configMap": {
+                    "name": "com.sap.datahub.installers.scripts.common.3.3.81",
+                    "defaultMode": 493
+                }
+            },
+            {
+                "name": "rclone-volume",
+                "secret": {
+                    "secretName": "com.sap.datahub.installers.br.rclone-configuration",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "kube-api-access-thtl5",
+                "projected": {
+                    "sources": [
+                        {
+                            "serviceAccountToken": {
+                                "expirationSeconds": 3607,
+                                "path": "token"
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "name": "kube-root-ca.crt",
+                                "items": [
+                                    {
+                                        "key": "ca.crt",
+                                        "path": "ca.crt"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "downwardAPI": {
+                                "items": [
+                                    {
+                                        "path": "namespace",
+                                        "fieldRef": {
+                                            "apiVersion": "v1",
+                                            "fieldPath": "metadata.namespace"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "configMap": {
+                                "name": "openshift-service-ca.crt",
+                                "items": [
+                                    {
+                                        "key": "service-ca.crt",
+                                        "path": "service-ca.crt"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "defaultMode": 420
+                }
+            }
+        ],
+        "containers": [
+            {
+                "name": "script",
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/datahub-operator-installer-base:3.3.21",
+                "command": [
+                    "/scripts/common/backup_restore.sh",
+                    "--delete-snapshot"
+                ],
+                "workingDir": "/scripts",
+                "env": [
+                    {
+                        "name": "POD_NAME",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.name"
+                            }
+                        }
+                    },
+                    {
+                        "name": "NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "apiVersion": "v1",
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
+                    },
+                    {
+                        "name": "JOB_NAME",
+                        "value": "datahub.backup.delete-backup"
+                    },
+                    {
+                        "name": "SCRIPTS_ROOT",
+                        "value": "/scripts"
+                    },
+                    {
+                        "name": "LOCAL_PATH",
+                        "value": "/tmp"
+                    },
+                    {
+                        "name": "NAMESPACE",
+                        "value": "di-288312"
+                    },
+                    {
+                        "name": "ADDITIONAL_FIELDS_TO_DELETE_BEFORE_RESTORE"
+                    },
+                    {
+                        "name": "CONFIG_KEY",
+                        "value": "REMOTE"
+                    },
+                    {
+                        "name": "REMOTE_PATH",
+                        "value": "dh-smoketest/288312"
+                    },
+                    {
+                        "name": "ID",
+                        "value": "7hs7tle"
+                    },
+                    {
+                        "name": "COMPONENT",
+                        "value": "kubernetes"
+                    },
+                    {
+                        "name": "BACKUP_NAME",
+                        "value": "1705500302"
+                    },
+                    {
+                        "name": "PACKAGE_VERSION",
+                        "value": "3.3.81"
+                    },
+                    {
+                        "name": "EXTRA_BACKUP_METADATA",
+                        "value": "deployments: vsystem,storage-gateway,diagnostic\n"
+                    },
+                    {
+                        "name": "RCLONE_CONF",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "com.sap.datahub.installers.br.rclone-configuration",
+                                "key": "rclone.conf"
+                            }
+                        }
+                    },
+                    {
+                        "name": "RCLONE_CONF_GCP",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "com.sap.datahub.installers.br.rclone-configuration",
+                                "key": "gcs.json",
+                                "optional": true
+                            }
+                        }
+                    },
+                    {
+                        "name": "RCLONE_NO_CHECK_CERTIFICATE",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "com.sap.datahub.installers.br.rclone-configuration",
+                                "key": "RCLONE_NO_CHECK_CERTIFICATE",
+                                "optional": true
+                            }
+                        }
+                    },
+                    {
+                        "name": "RCLONE_CA_CERT",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "com.sap.datahub.installers.br.rclone-configuration",
+                                "key": "RCLONE_CA_CERT",
+                                "optional": true
+                            }
+                        }
+                    }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                    {
+                        "name": "script",
+                        "mountPath": "/scripts"
+                    },
+                    {
+                        "name": "common",
+                        "mountPath": "/scripts/common"
+                    },
+                    {
+                        "name": "rclone-volume",
+                        "mountPath": "/home/1000/.config/rclone"
+                    },
+                    {
+                        "name": "kube-api-access-thtl5",
+                        "readOnly": true,
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                    "capabilities": {
+                        "drop": [
+                            "MKNOD"
+                        ]
+                    }
+                }
+            }
+        ],
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "nodeSelector": {
+            "node-role.kubernetes.io/sdi": ""
+        },
+        "serviceAccountName": "datahub-postaction-sa",
+        "serviceAccount": "datahub-postaction-sa",
+        "nodeName": "pvx508.wdf.sap.corp",
+        "securityContext": {
+            "seLinuxOptions": {
+                "level": "s0:c29,c24"
+            }
+        },
+        "imagePullSecrets": [
+            {
+                "name": "slp-docker-registry-pull-secret"
+            }
+        ],
+        "schedulerName": "default-scheduler",
+        "tolerations": [
+            {
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            },
+            {
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            }
+        ],
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority"
+    },
+    "status": {
+        "phase": "Failed",
+        "conditions": [
+            {
+                "type": "Initialized",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-04-27T00:00:21Z"
+            },
+            {
+                "type": "Ready",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-04-27T00:00:25Z",
+                "reason": "PodFailed"
+            },
+            {
+                "type": "ContainersReady",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-04-27T00:00:25Z",
+                "reason": "PodFailed"
+            },
+            {
+                "type": "PodScheduled",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-04-27T00:00:21Z"
+            }
+        ],
+        "hostIP": "10.67.106.107",
+        "podIP": "10.131.0.253",
+        "podIPs": [
+            {
+                "ip": "10.131.0.253"
+            }
+        ],
+        "startTime": "2024-04-27T00:00:21Z",
+        "containerStatuses": [
+            {
+                "name": "script",
+                "state": {
+                    "terminated": {
+                        "exitCode": 1,
+                        "reason": "Error",
+                        "startedAt": "2024-04-27T00:00:24Z",
+                        "finishedAt": "2024-04-27T00:00:24Z",
+                        "containerID": "cri-o://843d5248c7a3183b80e68e7e56c1c273b3350b280832b35330530651a7c95da3"
+                    }
+                },
+                "lastState": {},
+                "ready": false,
+                "restartCount": 0,
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/datahub-operator-installer-base:3.3.21",
+                "imageID": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/datahub-operator-installer-base@sha256:792c706d7185076630d2951b76354e6f887d001e30aff93583511287be11468b",
+                "containerID": "cri-o://843d5248c7a3183b80e68e7e56c1c273b3350b280832b35330530651a7c95da3",
+                "started": false
+            }
+        ],
+        "qosClass": "BestEffort"
+    }
+}

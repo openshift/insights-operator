@@ -1,0 +1,77 @@
+{
+    "TypeMeta": {},
+    "ObjectMeta": {
+        "name": "csr-test",
+        "uid": "b50a1f16-43e8-4135-ac5b-83e346cc3547",
+        "resourceVersion": "42526",
+        "creationTimestamp": "2024-10-23T11:13:05Z",
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"certificates.k8s.io/v1\",\"kind\":\"CertificateSigningRequest\",\"metadata\":{\"annotations\":{},\"name\":\"csr-test\"},\"spec\":{\"expirationSeconds\":86400,\"groups\":[\"system:nodes\",\"system:authenticated\"],\"request\":\"LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQnhEQ0NBUzBDQVFBd1ZqRUxNQWtHQTFVRUJoTUNRMW94RFRBTEJnTlZCQWdNQkVKeWJtOHhEVEFMQmdOVgpCQWNNQkVKeWJtOHhDekFKQmdOVkJBb01BbEpJTVEwd0N3WURWUVFMREFSMFpYTjBNUTB3Q3dZRFZRUUREQVIwClpYTjBNSUdmTUEwR0NTcUdTSWIzRFFFQkFRVUFBNEdOQURDQmlRS0JnUURFanJnOHFGWnhpMkR5bmVsMVQrNDgKcU9qWWkwdVZjZ2xQcUJrWC9HUTluRkQyVFFRaHBlbFVHb21XMSt0ajEzZmt6MFBHZHlSK3RjT1BKNjdjc25BRAp0R2VveGlmSkcxZU1HNkZEWm9leVJIWkpTR3FEQVJXN1VCVTMwSjBJcFB6Z1hyRG9zN0dTSlJwU043M2ZBWFRmCk40MUo0UFo5akx0ODN5MklqZmswd3dJREFRQUJvQzR3RVFZSktvWklodmNOQVFrQ01RUU1BbEpJTUJrR0NTcUcKU0liM0RRRUpCekVNREFwb1pXeHNiM2R2Y214a01BMEdDU3FHU0liM0RRRUJDd1VBQTRHQkFGNUlqWkk0NnJObwpsemZrelZ4RER0Q0s1TGQ0NnRYMkhDNFd2WnVQRVJxN2tIZ3ZrYm9GMzlmNnA3bXJZWnRCcHU4eTlNZEJBT1p6Cm5BTDJma3ZXSExMYnFjZndhQzVrTEwyTk9abndZVTFIa0d1QTlaQzFSM2FiTW4wUWZWMHd6ZzNubUNqRnRpWFEKYy9POXBaTk1NL0YzOUxXZkt0dWNOVjRjeTNkVkZxNm0KLS0tLS1FTkQgQ0VSVElGSUNBVEUgUkVRVUVTVC0tLS0tCg==\",\"signerName\":\"kubernetes.io/kube-apiserver-client\",\"usages\":[\"digital signature\",\"client auth\"],\"username\":\"system:node:ip-10-0-95-169.us-west-1.compute.internal\"}}\n"
+        },
+        "managedFields": [
+            {
+                "manager": "kubectl-client-side-apply",
+                "operation": "Update",
+                "apiVersion": "certificates.k8s.io/v1",
+                "time": "2024-10-23T11:13:05Z",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "Spec": {
+        "UID": "",
+        "Username": "kube:admin",
+        "Groups": [
+            "system:cluster-admins",
+            "system:authenticated"
+        ],
+        "Usages": [
+            "digital signature",
+            "client auth"
+        ],
+        "Request": {
+            "ValidSignature": true,
+            "SignatureAlgorithm": "SHA256-RSA",
+            "PublicKeyAlgorithm": "RSA",
+            "DNSNames": [],
+            "EmailAddresses": [],
+            "IPAddresses": [],
+            "URIs": [],
+            "Subject": {
+                "Country": [
+                    "xx"
+                ],
+                "Organization": [
+                    "xx"
+                ],
+                "OrganizationalUnit": [
+                    "xxxx"
+                ],
+                "Locality": [
+                    "xxxx"
+                ],
+                "Province": [
+                    "xxxx"
+                ],
+                "StreetAddress": [],
+                "PostalCode": [],
+                "SerialNumber": "",
+                "CommonName": "xxxx",
+                "Names": null,
+                "ExtraNames": null
+            }
+        }
+    },
+    "Status": {
+        "Conditions": null,
+        "Cert": null
+    }
+}

@@ -30,7 +30,10 @@ import (
 // - https://pkg.go.dev/k8s.io/client-go/dynamic
 //
 // ### Sample data
-// None
+// - docs/insights-archive-sample/config/pod/di-288312/auditlog-retention-28566720-t22qj.json
+// - docs/insights-archive-sample/config/pod/di-288312/data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc5fvmg8.json
+// - docs/insights-archive-sample/config/pod/di-288312/default-2k58azz-backup-deletion-5rdw4.json
+// - docs/insights-archive-sample/config/pod/di-288312/vsystem-867f4b77cc-pqcns.json
 //
 // ### Location in archive
 // - `config/pod/{namespace}/{name}.json`
