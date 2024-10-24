@@ -281,7 +281,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 	tests := []struct {
 		name                 string
 		endpoint             string
-		remoteConfig         *MockGatheringRulesServiceClient
+		remoteMockClient     *MockGatheringRulesServiceClient
 		releaseVersionEnvVar string
 		remoteConfigStatus   gatherers.RemoteConfigStatus
 	}{
@@ -289,7 +289,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration is available and can be parsed",
 			endpoint:             "/gathering_rules",
 			releaseVersionEnvVar: "1.2.3",
-			remoteConfig:         &MockGatheringRulesServiceClient{},
+			remoteMockClient:     &MockGatheringRulesServiceClient{},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: true,
 				ConfigValid:     true,
@@ -303,7 +303,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration is not available",
 			endpoint:             "not valid endpoint",
 			releaseVersionEnvVar: "1.2.3",
-			remoteConfig:         &MockGatheringRulesServiceClient{},
+			remoteMockClient:     &MockGatheringRulesServiceClient{},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: false,
 				ConfigValid:     false,
@@ -316,7 +316,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 		{
 			name:                 "remote configuration is available, but cannot be parsed",
 			endpoint:             "/gathering_rules",
-			remoteConfig:         &MockGatheringRulesServiceClient{value: `{not json}`},
+			remoteMockClient:     &MockGatheringRulesServiceClient{value: `{not json}`},
 			releaseVersionEnvVar: "1.2.3",
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: true,
@@ -331,7 +331,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration is not available, because RELEASE_VERSION is set with empty",
 			endpoint:             "/gathering_rules",
 			releaseVersionEnvVar: "",
-			remoteConfig:         &MockGatheringRulesServiceClient{},
+			remoteMockClient:     &MockGatheringRulesServiceClient{},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: false,
 				ConfigValid:     false,
@@ -345,7 +345,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration returns 500 error",
 			endpoint:             "/gathering_rules",
 			releaseVersionEnvVar: "1.2.3",
-			remoteConfig:         &MockGatheringRulesServiceClient{status: 500},
+			remoteMockClient:     &MockGatheringRulesServiceClient{status: 500},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: false,
 				ConfigValid:     false,
@@ -359,7 +359,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration returns 400 error",
 			endpoint:             "/gathering_rules",
 			releaseVersionEnvVar: "1.2.3",
-			remoteConfig:         &MockGatheringRulesServiceClient{status: 400},
+			remoteMockClient:     &MockGatheringRulesServiceClient{status: 400},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: false,
 				ConfigValid:     false,
@@ -373,7 +373,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			name:                 "remote configuration returns 404 error",
 			endpoint:             "/gathering_rules",
 			releaseVersionEnvVar: "1.2.3",
-			remoteConfig:         &MockGatheringRulesServiceClient{status: 404},
+			remoteMockClient:     &MockGatheringRulesServiceClient{status: 404},
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: false,
 				ConfigValid:     false,
@@ -388,7 +388,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("RELEASE_VERSION", tt.releaseVersionEnvVar)
-			gatherer := newEmptyGatherer(tt.remoteConfig, tt.endpoint)
+			gatherer := newEmptyGatherer(tt.remoteMockClient, tt.endpoint)
 			_, err := gatherer.GetGatheringFunctions(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.remoteConfigStatus.ConfigAvailable, gatherer.RemoteConfigStatus().ConfigAvailable)
