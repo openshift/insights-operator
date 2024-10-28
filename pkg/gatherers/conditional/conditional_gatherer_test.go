@@ -39,6 +39,9 @@ var testRemoteConfig = `{
 			"container_logs":[]
 		}`
 
+
+var testRemoteConfigInvalid = `{"version":"1.0.0","conditional_gathering_rules":[{"conditions":[{"type":"` + string(AlertIsFiring) + `","alert":{"name":"SamplesImagestreamImportFailing"}}],"gathering_functions":{"logs_of_namespace":{"namespace":"openshift-cluster-samples-operator","tail_lines":100},"image_streams_of_namespace":{"namespace":"openshift-cluster-samples-operator"}}}],"container_logs":[{"namespace":"test-namespace","pod_name_regex":"container-log-test","messages":[".*"]}]}`
+
 func Test_Gatherer_Basic(t *testing.T) {
 	t.Setenv("RELEASE_VERSION", "1.2.3")
 	gatherer := newEmptyGatherer(nil, "")
@@ -325,6 +328,20 @@ func TestGetGatheringFunctions(t *testing.T) {
 				ValidReason:     InvalidReason,
 				ConfigData:      []byte(defaultRemoteConfiguration),
 				Err:             fmt.Errorf("invalid character 'n' looking for beginning of object key string"),
+			},
+		},
+		{
+			name:                 "remote configuration is available, can be parsed but does not pass validation",
+			endpoint:             "/gathering_rules",
+			remoteMockClient:     &MockGatheringRulesServiceClient{value: testRemoteConfigInvalid},
+			releaseVersionEnvVar: "1.2.3",
+			remoteConfigStatus: gatherers.RemoteConfigStatus{
+				ConfigAvailable: true,
+				ConfigValid:     false,
+				AvailableReason: AsExpectedReason,
+				ValidReason:     InvalidReason,
+				ConfigData:      []byte(testRemoteConfigInvalid),
+				Err:             fmt.Errorf("0.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$|^kube-[a-zA-Z0-9_.-]{1,128}$'"),
 			},
 		},
 		{
