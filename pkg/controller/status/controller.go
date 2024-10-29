@@ -242,10 +242,8 @@ func (c *Controller) currentControllerStatus() (allReady bool) { //nolint: gocyc
 					ocm.FailureCountThreshold)
 				degradingFailure = true
 			}
-		case controllerstatus.ReadingRemoteConfiguration.Name:
+		case controllerstatus.RemoteConfigurationStatus.Name:
 			c.ctrlStatus.setStatus(RemoteConfigAvailableStatus, summary.Reason, summary.Message)
-		case controllerstatus.ValidatingRemoteConfiguration.Name:
-			c.ctrlStatus.setStatus(RemoteConfigValidStatus, summary.Reason, summary.Message)
 		}
 
 		if degradingFailure {
@@ -395,24 +393,25 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 		status := c.ctrlStatus.getStatus(DisabledStatus)
 		cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, status.reason, status.message)
 		// if the remote configuration is not available then we can't say it's valid or not
-		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, NoValidationYet, "")
+		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, RemoteConfNotValidatedYet, "")
 		return
 	}
 
 	if rs := c.ctrlStatus.getStatus(RemoteConfigAvailableStatus); rs != nil {
-		cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, rs.reason, rs.message)
-		// if the remote configuration is not available then we can't say it's valid or not
-		cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, NoValidationYet, "")
+		if rs.reason == "Invalid" {
+			cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionTrue, AsExpectedReason, "")
+			// if the remote configuration is not available then we can't say it's valid or not
+			cs.setCondition(RemoteConfigurationValid, configv1.ConditionFalse, rs.reason, rs.message)
+		} else {
+			cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionFalse, rs.reason, rs.message)
+			// if the remote configuration is not available then we can't say it's valid or not
+			cs.setCondition(RemoteConfigurationValid, configv1.ConditionUnknown, RemoteConfNotValidatedYet, "")
+		}
 		return
 	}
 
 	cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionTrue, AsExpectedReason, "")
-
-	if rs := c.ctrlStatus.getStatus(RemoteConfigValidStatus); rs != nil {
-		cs.setCondition(RemoteConfigurationValid, configv1.ConditionFalse, rs.reason, rs.message)
-	} else {
-		cs.setCondition(RemoteConfigurationValid, configv1.ConditionTrue, AsExpectedReason, "")
-	}
+	cs.setCondition(RemoteConfigurationValid, configv1.ConditionTrue, AsExpectedReason, "")
 }
 
 func (c *Controller) updateControllerConditionByReason(cs *conditions,

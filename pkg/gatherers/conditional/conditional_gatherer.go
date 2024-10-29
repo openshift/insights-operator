@@ -44,10 +44,11 @@ type Gatherer struct {
 	imageKubeConfig         *rest.Config
 	gatherKubeConfig        *rest.Config
 	// there can be multiple instances of the same alert
-	firingAlerts   map[string][]AlertLabels
-	clusterVersion string
-	configurator   configobserver.Interface
-	insightsCli    InsightsGetClient
+	firingAlerts       map[string][]AlertLabels
+	clusterVersion     string
+	configurator       configobserver.Interface
+	insightsCli        InsightsGetClient
+	remoteConfigStatus gatherers.RemoteConfigStatus
 }
 
 type InsightsGetClient interface {
@@ -74,6 +75,7 @@ func New(
 		gatherKubeConfig:        gatherKubeConfig,
 		configurator:            configurator,
 		insightsCli:             insightsCli,
+		remoteConfigStatus:      gatherers.RemoteConfigStatus{},
 	}
 }
 
@@ -102,45 +104,59 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	remoteConfigData, err := g.getRemoteConfiguration(ctx)
 	if err != nil {
 		// failed to get the remote configuration -> use default
-		klog.Infof("Failed to read data from the %s endpoint: %v. Using the default built-in configuration",
-			g.configurator.Config().DataReporting.ConditionalGathererEndpoint, err)
-
-		gatheringClosure, closureErr := g.useBuiltInRemoteConfiguration(ctx)
-		if closureErr != nil {
-			return nil, closureErr
-		}
-
-		rcErr := RemoteConfigError{
-			Err:        err,
-			ConfigData: []byte(defaultRemoteConfiguration),
-		}
+		klog.Infof(err.Error())
+		g.remoteConfigStatus.ConfigAvailable = false
+		g.remoteConfigStatus.Err = err
+		g.remoteConfigStatus.ConfigData = []byte(defaultRemoteConfiguration)
+		g.remoteConfigStatus.ValidReason = "NoValidation"
 
 		var httpErr insightsclient.HttpError
 		if errors.As(err, &httpErr) {
-			rcErr.Reason = fmt.Sprintf("HttpStatus%d", httpErr.StatusCode)
+			g.remoteConfigStatus.AvailableReason = fmt.Sprintf("HttpStatus%d", httpErr.StatusCode)
 		} else {
-			rcErr.Reason = "NotAvailable"
+			g.remoteConfigStatus.AvailableReason = NotAvailableReason
 		}
 
-		return gatheringClosure, rcErr
+		return g.useBuiltInRemoteConfiguration(ctx)
 	}
+	g.remoteConfigStatus.ConfigAvailable = true
+	g.remoteConfigStatus.AvailableReason = AsExpectedReason
 
 	remoteConfig, err := parseRemoteConfiguration(remoteConfigData)
 	if err != nil {
 		// failed to parse the remote configuration -> use default
-		klog.Infof("Failed to parse the remote configuration data : %v. Using the default built-in configuration", err)
-		gatheringClosure, closureErr := g.useBuiltInRemoteConfiguration(ctx)
-		if closureErr != nil {
-			return nil, closureErr
-		}
-		return gatheringClosure, RemoteConfigError{
-			Reason:     Invalid,
-			Err:        err,
-			ConfigData: []byte(defaultRemoteConfiguration),
-		}
+		klog.Infof("Failed to parse the remote configuration data: %v. Using the default built-in configuration", err)
+		g.remoteConfigStatus.ConfigValid = false
+		g.remoteConfigStatus.Err = err
+		g.remoteConfigStatus.ValidReason = InvalidReason
+		g.remoteConfigStatus.ConfigData = []byte(defaultRemoteConfiguration)
+
+		return g.useBuiltInRemoteConfiguration(ctx)
 	}
 
+	errs := validateRemoteConfig(remoteConfig)
+	if len(errs) > 0 {
+		validationErr := utils.UniqueErrors(errs)
+		klog.Infof("Failed to validate the remote configuration data: %v", validationErr)
+		configData, err := json.Marshal(remoteConfig)
+		if err != nil {
+			klog.Errorf("Failed to marshal the invalid remote configuration: %v", err)
+		}
+		g.remoteConfigStatus.ConfigData = configData
+		g.remoteConfigStatus.ConfigValid = false
+		g.remoteConfigStatus.Err = validationErr
+		g.remoteConfigStatus.ValidReason = InvalidReason
+		return g.useBuiltInRemoteConfiguration(ctx)
+	}
+
+	g.remoteConfigStatus.ConfigValid = true
+	g.remoteConfigStatus.ValidReason = AsExpectedReason
+	g.remoteConfigStatus.ConfigData = remoteConfigData
 	return g.createAllGatheringFunctions(ctx, remoteConfig)
+}
+
+func (g *Gatherer) RemoteConfigStatus() gatherers.RemoteConfigStatus {
+	return g.remoteConfigStatus
 }
 
 // useBuiltInRemoteConfiguration is a helper function parsing the default/built-in remote configuration and
@@ -158,45 +174,19 @@ func (g *Gatherer) useBuiltInRemoteConfiguration(ctx context.Context) (map[strin
 // conditional gathering functions and the new ("rapid") container logs function
 func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 	remoteConfiguration RemoteConfiguration) (map[string]gatherers.GatheringClosure, error) {
-	gatheringClosures, err := g.createConditionalGatheringFunctions(ctx, remoteConfiguration)
+	gatheringClosures := g.createConditionalGatheringFunctions(ctx, remoteConfiguration)
+	rapidContainerLogsClosure, err := g.GatherContainersLogs(remoteConfiguration.ContainerLogRequests)
 	if err != nil {
 		return nil, err
 	}
 
-	containerLogReuquestClosure, err := g.validateAndCreateContainerLogRequestsClosure(remoteConfiguration)
-	if err != nil {
-		return nil, err
-	}
-	gatheringClosures["rapid_container_logs"] = containerLogReuquestClosure
+	gatheringClosures["rapid_container_logs"] = rapidContainerLogsClosure
 	gatheringClosures["remote_configuration"] = createGatherClosureForRemoteConfig(remoteConfiguration)
 	return gatheringClosures, nil
 }
 
-func (g *Gatherer) validateAndCreateContainerLogRequestsClosure(remoteConfig RemoteConfiguration) (gatherers.GatheringClosure, error) {
-	errs := validateContainerLogRequests(remoteConfig.ContainerLogRequests)
-	if len(errs) > 0 {
-		remoteConfigData, err := json.Marshal(remoteConfig)
-		if err != nil {
-			klog.Errorf("Failed to marshal the invalid remote configuration: %v", err)
-		}
-		err = utils.UniqueErrors(errs)
-		return gatherers.GatheringClosure{}, RemoteConfigError{
-			Err:        err,
-			Reason:     Invalid,
-			ConfigData: remoteConfigData,
-		}
-	}
-
-	return g.GatherContainersLogs(remoteConfig.ContainerLogRequests)
-}
-
 func (g *Gatherer) createConditionalGatheringFunctions(ctx context.Context,
-	remoteConfiguration RemoteConfiguration) (map[string]gatherers.GatheringClosure, error) {
-	errs := validateGatheringRules(remoteConfiguration.ConditionalGatheringRules)
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("got invalid config for conditional gatherer: %v", utils.UniqueErrors(errs))
-	}
-
+	remoteConfiguration RemoteConfiguration) map[string]gatherers.GatheringClosure {
 	g.updateCache(ctx)
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
@@ -252,7 +242,7 @@ func (g *Gatherer) createConditionalGatheringFunctions(ctx context.Context,
 		},
 	}
 
-	return gatheringFunctions, nil
+	return gatheringFunctions
 }
 
 // getRemoteConfiguration returns json version of the rules from the server
@@ -296,7 +286,7 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 				return false, nil
 			}
 			return true, insightsclient.HttpError{
-				Err:        fmt.Errorf("received HTTP %s from %s", resp.Status, endpointWithVersion),
+				Err:        fmt.Errorf("received HTTP %s from %s. Using the default built-in configuration", resp.Status, endpointWithVersion),
 				StatusCode: resp.StatusCode,
 			}
 		}
