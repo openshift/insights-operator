@@ -58,8 +58,10 @@ var stackTraceRegex = regexp.MustCompile(`\.go:\d+\s\+0x`)
 // None
 //
 // ### Sample data
-// - docs/insights-archive-sample/pod
-// - docs/insights-archive-sample/events
+// - docs/insights-archive-sample/config/openshift-authentication-operator/authentication-operator-6d65456dc7-9d2qx.json
+// - docs/insights-archive-sample/config/openshift-storage-operator/cluster-storage-operator-6974bfb5c6-tppp7.json
+// - docs/insights-archive-sample/config/openshift-etcd-operator/etcd-operator-78bb597755-r6lgn.json
+// - docs/insights-archive-sample/config/openshift-monitoring-operator/cluster-monitoring-operator-6c785d75f6-t79zv.json
 //
 // ### Location in archive
 // - `config/pod/{namespace}/{pod}.json`

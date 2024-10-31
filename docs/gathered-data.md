@@ -174,7 +174,7 @@ when `Now < ValidBefore` or `Now > ValidAfter`
 - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 
 ### Sample data
-None
+- [docs/insights-archive-sample/config/certificatesigningrequests/csr-test.json](./insights-archive-sample/config/certificatesigningrequests/csr-test.json)
 
 ### Location in archive
 - `config/certificatesigningrequests`
@@ -515,8 +515,10 @@ information includes:
 None
 
 ### Sample data
-- [docs/insights-archive-sample/pod](./insights-archive-sample/pod)
-- [docs/insights-archive-sample/events](./insights-archive-sample/events)
+- [docs/insights-archive-sample/config/openshift-authentication-operator/authentication-operator-6d65456dc7-9d2qx.json](./insights-archive-sample/config/openshift-authentication-operator/authentication-operator-6d65456dc7-9d2qx.json)
+- [docs/insights-archive-sample/config/openshift-storage-operator/cluster-storage-operator-6974bfb5c6-tppp7.json](./insights-archive-sample/config/openshift-storage-operator/cluster-storage-operator-6974bfb5c6-tppp7.json)
+- [docs/insights-archive-sample/config/openshift-etcd-operator/etcd-operator-78bb597755-r6lgn.json](./insights-archive-sample/config/openshift-etcd-operator/etcd-operator-78bb597755-r6lgn.json)
+- [docs/insights-archive-sample/config/openshift-monitoring-operator/cluster-monitoring-operator-6c785d75f6-t79zv.json](./insights-archive-sample/config/openshift-monitoring-operator/cluster-monitoring-operator-6c785d75f6-t79zv.json)
 
 ### Location in archive
 - `config/pod/{namespace}/{pod}.json`
@@ -1102,9 +1104,10 @@ None
 
 ## MachineConfigs
 
-Collects definitions of in-use 'MachineConfigs'. MachineConfig is used when it's referenced in
-a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig` and `machineconfiguration.openshift.io/currentConfig`
-annotations
+Collects definitions of in-use 'MachineConfigs' and aggregated number of non-used 'MachineConfigs'.
+MachineConfig is used when it's referenced in a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig`
+and `machineconfiguration.openshift.io/currentConfig` annotations
+
 Following data is intentionally removed from the definitions:
 - `spec.config.storage.files`
 - `spec.config.passwd.users`
@@ -1130,7 +1133,7 @@ Following data is intentionally removed from the definitions:
 - 4.8.5
 
 ### Changes
-- gathers only in-use MachineConfigs since 4.18+
+- gathers only in-use MachineConfigs and aggregated number of non-used MachineConfigs since 4.18+
 
 
 ## MachineHealthCheck
@@ -1901,7 +1904,10 @@ Collects information about pods running in SAP/SDI namespaces.
 - https://pkg.go.dev/k8s.io/client-go/dynamic
 
 ### Sample data
-None
+- [docs/insights-archive-sample/config/pod/di-288312/auditlog-retention-28566720-t22qj.json](./insights-archive-sample/config/pod/di-288312/auditlog-retention-28566720-t22qj.json)
+- [docs/insights-archive-sample/config/pod/di-288312/data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc5fvmg8.json](./insights-archive-sample/config/pod/di-288312/data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc5fvmg8.json)
+- [docs/insights-archive-sample/config/pod/di-288312/default-2k58azz-backup-deletion-5rdw4.json](./insights-archive-sample/config/pod/di-288312/default-2k58azz-backup-deletion-5rdw4.json)
+- [docs/insights-archive-sample/config/pod/di-288312/vsystem-867f4b77cc-pqcns.json](./insights-archive-sample/config/pod/di-288312/vsystem-867f4b77cc-pqcns.json)
 
 ### Location in archive
 - `config/pod/{namespace}/{name}.json`
