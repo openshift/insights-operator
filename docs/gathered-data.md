@@ -604,6 +604,31 @@ None
 None
 
 
+## ClusterRoles
+
+Collects definition of the "admin" and "edit" cluster roles.
+
+### API Reference
+- https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/rbac/types.go
+
+### Sample data
+- [docs/insights-archive-sample/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles](./insights-archive-sample/cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles)
+
+### Location in archive
+- `cluster-scoped-resources/rbac.authorization.k8s.io/clusterroles/`
+
+### Config ID
+`clusterconfig/clusterroles`
+
+### Released version
+- 4.18.0
+
+### Backported versions
+
+### Changes
+None
+
+
 ## ClusterVersion
 
 Collects the `ClusterVersion` (including the cluster ID) with the name
