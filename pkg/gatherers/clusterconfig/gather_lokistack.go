@@ -63,7 +63,11 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 	var records []record.Record
 	for i := range loggingResourceList.Items {
 		item := loggingResourceList.Items[i]
-		anonymizeLokiStackNamespace(item.Object)
+		err = anonymizeLokiStackNamespace(item.Object)
+		if err != nil {
+			// not storing resource with non-anonymized data
+			continue
+		}
 		records = append(records, record.Record{
 			Name: fmt.Sprintf("config/lokistack/%s/%s", item.GetUID(), item.GetName()),
 			Item: record.ResourceMarshaller{Resource: &item},
@@ -74,16 +78,22 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 
 // anonymizeLokiStackNamespace tries to get an array of sensitive fields defined in the LokiStack
 // and anonymize potentially sensitive data - e.g. url, credentials
-func anonymizeLokiStackNamespace(obj map[string]interface{}) {
+func anonymizeLokiStackNamespace(obj map[string]interface{}) error {
 	namespace, err := utils.NestedStringWrapper(obj, "metadata", "namespace")
 	if err != nil {
 		// namespace not found, weird, but ok. Return silently
-		return
+		klog.V(2).Info("Resource doesn't have namespace")
+		return nil
 	}
 
 	if strings.HasPrefix(namespace, "openshift-") {
-		return
+		// These namespaces don't need anonymization
+		return nil
 	}
 
-	unstructured.SetNestedField(obj, anonymize.String(namespace), "metadata", "namespace")
+	err = unstructured.SetNestedField(obj, anonymize.String(namespace), "metadata", "namespace")
+	if err != nil {
+		klog.V(2).ErrorS(err, "Failed to anonymize the namespace")
+	}
+	return err
 }
