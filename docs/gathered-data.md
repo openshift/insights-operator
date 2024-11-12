@@ -1481,35 +1481,6 @@ None
 None
 
 
-## OpenShiftAPIServerOperatorLogs
-
-Collects logs from `openshift-apiserver-operator` with following substrings:
-- "the server has received too many requests and has asked us"
-- "because serving request timed out and response had been started"
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log](./insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log)
-
-### Location in archive
-- `config/pod/openshift-apiserver-operator/logs/{pod-name}/errors.log`
-
-### Config ID
-`clusterconfig/openshift_apiserver_operator_logs`
-
-### Released version
-- 4.7.0
-
-### Backported versions
-None
-
-### Changes
-None
-
-
 ## OpenshiftAuthenticationLogs
 
 Collects logs from pods in `openshift-authentication` namespace with following
