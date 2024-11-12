@@ -1837,39 +1837,6 @@ Collects information about pods running in SAP/SDI namespaces.
 None
 
 
-## SAPVsystemIptablesLogs
-
-Collects logs from SAP `vsystem-iptables` containers
-including one from license management pods with the following substring:
-  - "can't initialize iptables table",
-
-> **Note**
-> This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/sdi/logs/license-manager-da1d2e8fadfb8dd7022f08-4hjh7-6887768c5b-qzxb6/errors.log](./insights-archive-sample/config/pod/sdi/logs/license-manager-da1d2e8fadfb8dd7022f08-4hjh7-6887768c5b-qzxb6/errors.log)
-
-### Location in archive
-- `config/pod/{namespace}/logs/{pod-name}/errors.log`
-
-### Config ID
-`clusterconfig/sap_license_management_logs`
-
-### Released version
-- 4.8.2
-
-### Backported versions
-- 4.7.5+
-- 4.6.25+
-
-### Changes
-None
-
-
 ## SchedulerLogs
 
 Collects logs from pods in `openshift-kube-scheduler-namespace` from app

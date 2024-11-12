@@ -79,7 +79,6 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"proxies":                           (*Gatherer).GatherClusterProxy,
 	"sap_config":                        (*Gatherer).GatherSAPConfig,
 	"sap_datahubs":                      (*Gatherer).GatherSAPDatahubs,
-	"sap_license_management_logs":       (*Gatherer).GatherSAPVsystemIptablesLogs,
 	"sap_pods":                          (*Gatherer).GatherSAPPods,
 	"schedulers":                        (*Gatherer).GatherSchedulers,
 	"scheduler_logs":                    (*Gatherer).GatherSchedulerLogs,
