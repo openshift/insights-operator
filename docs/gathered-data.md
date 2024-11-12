@@ -1837,35 +1837,6 @@ Collects information about pods running in SAP/SDI namespaces.
 None
 
 
-## SchedulerLogs
-
-Collects logs from pods in `openshift-kube-scheduler-namespace` from app
-`openshift-kube-scheduler` with following substring:
-- "PodTopologySpread"
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-None
-
-### Location in archive
-- `config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log`
-
-### Config ID
-`clusterconfig/scheduler_logs`
-
-### Released version
-- 4.10.0
-
-### Backported versions
-None
-
-### Changes
-None
-
-
 ## Schedulers
 
 Collects information about schedulers

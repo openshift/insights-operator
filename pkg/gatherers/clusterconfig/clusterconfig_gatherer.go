@@ -81,7 +81,6 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"sap_datahubs":                      (*Gatherer).GatherSAPDatahubs,
 	"sap_pods":                          (*Gatherer).GatherSAPPods,
 	"schedulers":                        (*Gatherer).GatherSchedulers,
-	"scheduler_logs":                    (*Gatherer).GatherSchedulerLogs,
 	"service_accounts":                  (*Gatherer).GatherServiceAccounts,
 	"silenced_alerts":                   (*Gatherer).GatherSilencedAlerts,
 	"storage_classes":                   (*Gatherer).GatherStorageClasses,
