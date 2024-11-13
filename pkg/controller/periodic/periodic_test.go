@@ -242,6 +242,9 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 			expected: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "periodic-gathering-",
+					Annotations: map[string]string{
+						"openshift.io/required-scc": "restricted-v2",
+					},
 				},
 				Spec: v1alpha1.DataGatherSpec{
 					DataPolicy: "",
@@ -255,6 +258,9 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 			expected: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "periodic-gathering-",
+					Annotations: map[string]string{
+						"openshift.io/required-scc": "restricted-v2",
+					},
 				},
 				Spec: v1alpha1.DataGatherSpec{
 					DataPolicy: "ClearText",
@@ -272,6 +278,9 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 			expected: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "periodic-gathering-",
+					Annotations: map[string]string{
+						"openshift.io/required-scc": "restricted-v2",
+					},
 				},
 				Spec: v1alpha1.DataGatherSpec{
 					DataPolicy: "ObfuscateNetworking",
