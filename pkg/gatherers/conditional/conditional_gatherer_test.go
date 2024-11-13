@@ -39,7 +39,6 @@ var testRemoteConfig = `{
 			"container_logs":[]
 		}`
 
-
 var testRemoteConfigInvalid = `{"version":"1.0.0","conditional_gathering_rules":[{"conditions":[{"type":"` + string(AlertIsFiring) + `","alert":{"name":"SamplesImagestreamImportFailing"}}],"gathering_functions":{"logs_of_namespace":{"namespace":"openshift-cluster-samples-operator","tail_lines":100}}}],"container_logs":[{"namespace":"test-namespace","pod_name_regex":"container-log-test","messages":[".*"]}]}`
 
 func Test_Gatherer_Basic(t *testing.T) {
