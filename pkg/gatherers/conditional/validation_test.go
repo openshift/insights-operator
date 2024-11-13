@@ -136,7 +136,6 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 }
 
 func Test_Validation_InvalidConditions(t *testing.T) {
-
 	var tooManyConditions []ConditionWithParams
 	for i := 0; i < 9; i++ {
 		tooManyConditions = append(tooManyConditions, ConditionWithParams{
@@ -145,7 +144,6 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				Name: "test" + fmt.Sprint(i),
 			},
 		})
-
 	}
 
 	testCases := []validationTestCase{
