@@ -55,7 +55,7 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 				{
 					Type: AlertIsFiring,
 					Alert: &AlertConditionParams{
-						Name: "test" + fmt.Sprint(i),
+						Name: "testInvalid" + fmt.Sprint(i),
 					},
 				},
 			},
