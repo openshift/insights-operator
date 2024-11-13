@@ -140,13 +140,13 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 	var tooManyConditions []ConditionWithParams
 	for i := 0; i < 9; i++ {
 		tooManyConditions = append(tooManyConditions, ConditionWithParams{
-					Type: AlertIsFiring,
-					Alert: &AlertConditionParams{
-						Name: "test" + fmt.Sprint(i),
-					},
-				})
-			
-		}
+			Type: AlertIsFiring,
+			Alert: &AlertConditionParams{
+				Name: "test" + fmt.Sprint(i),
+			},
+		})
+
+	}
 
 	testCases := []validationTestCase{
 		{
@@ -543,7 +543,7 @@ func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
 							Namespace: "openshift-namespace",
 							Container: "???container",
 							TailLines: 3,
-							Previous: false,
+							Previous:  false,
 						},
 					},
 				},
@@ -563,7 +563,7 @@ func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
 							Namespace: "openshift-namespace",
 							Container: strings.Repeat("x", 130),
 							TailLines: 3,
-							Previous: false,
+							Previous:  false,
 						},
 					},
 				},
@@ -583,7 +583,7 @@ func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
 							Namespace: "openshift-namespace",
 							Container: "container",
 							TailLines: 4097,
-							Previous: false,
+							Previous:  false,
 						},
 					},
 				},
