@@ -31,7 +31,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
-	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 )
 
 // numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint
@@ -446,22 +445,4 @@ func boolToConditionStatus(b bool) metav1.ConditionStatus {
 		conditionStatus = metav1.ConditionFalse
 	}
 	return conditionStatus
-}
-
-func featureGateAcces(ctx context.Context, kubeConfig *rest.Config) (featuregates.FeatureGate, error) {
-	configClient, err := configv1client.NewForConfig(kubeConfig)
-	if err != nil {
-		return nil, err
-	}
-	fg, err := configClient.ConfigV1().FeatureGates().Get(ctx, "cluster", metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	fgAccess, err := featuregates.NewHardcodedFeatureGateAccessFromFeatureGate(fg, os.Getenv("RELEASE_VERSION"))
-	if err != nil {
-		return nil, err
-	}
-
-	return fgAccess.CurrentFeatureGates()
 }
