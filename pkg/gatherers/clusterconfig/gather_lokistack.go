@@ -63,8 +63,8 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 
 	var records []record.Record
 	var errs []error
-	var otherNamespaceError bool = false
-	var tooManyResourcesError bool = false
+	var otherNamespaceError = false
+	var tooManyResourcesError = false
 
 	for index := range loggingResourceList.Items {
 		item := loggingResourceList.Items[index]
@@ -73,25 +73,25 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 		if namespace != "openshift-logging" {
 			if !otherNamespaceError {
 				otherNamespaceError = true
-				errs = append(errs, fmt.Errorf("Found more resources than expected (expected 1)"))
+				errs = append(errs, fmt.Errorf("found more resources than expected (expected 1)"))
 			}
 
 			continue
-		} else {
-			if len(records) > LokiStackResourceLimit {
-				if !tooManyResourcesError {
-					errs = append(errs, fmt.Errorf(
-						"Found %d resources, limit (%d) reached",
-						len(loggingResourceList.Items), LokiStackResourceLimit),
-					)
-				}
-				continue
+		}
+
+		if len(records) > LokiStackResourceLimit {
+			if !tooManyResourcesError {
+				errs = append(errs, fmt.Errorf(
+					"found %d resources, limit (%d) reached",
+					len(loggingResourceList.Items), LokiStackResourceLimit),
+				)
 			}
-			record, err := fillLokiStackRecord(item)
-			records = append(records, *record)
-			if err != nil {
-				errs = append(errs, err)
-			}
+			continue
+		}
+		anonymizedRecord, err := fillLokiStackRecord(item)
+		records = append(records, *anonymizedRecord)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
@@ -117,10 +117,6 @@ func fillLokiStackRecord(item unstructured.Unstructured) (*record.Record, error)
 // removeLimitsTenant tries to get an array of sensitive fields defined in the LokiStack
 // and anonymize potentially sensitive data - e.g. url, credentials
 func removeLimitsTenant(obj map[string]interface{}) error {
-	// unstructured.RemoveNestedField(obj, "spec", "limits", "tenants", "application", "streams", "selector")
-	// unstructured.RemoveNestedField(obj, "spec", "limits", "tenants", "audit", "streams", "selector")
-	// unstructured.RemoveNestedField(obj, "spec", "limits", "tenants", "infrastructure", "streams", "selector")
-
 	for _, tenant := range []string{"application", "infrastructure", "audit"} {
 		klog.V(2).Infof("Anonymizing %s tenant", tenant)
 		streamSlice, ok, err := unstructured.NestedSlice(obj, "spec", "limits", "tenants", tenant, "retention", "streams")
@@ -140,7 +136,11 @@ func removeLimitsTenant(obj map[string]interface{}) error {
 			unstructured.RemoveNestedField(streamMap, "selector")
 		}
 
-		unstructured.SetNestedSlice(obj, streamSlice, "spec", "limits", "tenants", tenant, "retention", "streams")
+		err = unstructured.SetNestedSlice(obj, streamSlice, "spec", "limits", "tenants", tenant, "retention", "streams")
+		if err != nil {
+			klog.V(2).Infof("Failed to set the anonymized slice for tenant %s", tenant)
+			return err
+		}
 	}
 
 	return nil
