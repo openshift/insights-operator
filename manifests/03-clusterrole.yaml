@@ -353,12 +353,6 @@ rules:
     verbs:
       - get
       - list
-  - apiGroups:
-      - ""
-    verbs:
-      - create
-    resources:
-      - pods/exec
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
