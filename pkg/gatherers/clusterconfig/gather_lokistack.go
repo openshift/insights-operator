@@ -51,7 +51,10 @@ func (g *Gatherer) GatherLokiStack(ctx context.Context) ([]record.Record, []erro
 
 func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	klog.V(2).Info("Start LokiStack gathering")
-	loggingResourceList, err := dynamicClient.Resource(lokiStackResource).List(ctx, metav1.ListOptions{Limit: LokiStackResourceLimit})
+	loggingResourceList, err := dynamicClient.Resource(lokiStackResource).
+		Namespace("openshift-logging").
+		List(ctx, metav1.ListOptions{Limit: LokiStackResourceLimit})
+
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
@@ -60,33 +63,11 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 		return nil, []error{err}
 	}
 
+	var records []record.Record
 	var errs []error
 
 	numItems := len(loggingResourceList.Items)
-	if numItems == 1 {
-		klog.V(2).Info("There is only one LokiStack. Let's get the Namespace")
-		item := loggingResourceList.Items[0]
-		if item.GetNamespace() != "openshift-logging" {
-			return nil, []error{fmt.Errorf("Found resource, but in wrong namespace")}
-		}
-
-		if err := removeLimitsTenant(item.Object); err != nil {
-			return []record.Record{}, []error{err}
-		}
-
-		return []record.Record{
-			{
-				Name: fmt.Sprintf(
-					"namespace/%s/%s/%s/%s",
-					item.GetNamespace(),
-					lokiStackResource.Group,
-					lokiStackResource.Resource,
-					item.GetName()),
-				Item: record.ResourceMarshaller{Resource: &item},
-			},
-		}, nil
-
-	} else if numItems > 1 {
+	if numItems > 1 {
 		errs = append(errs, fmt.Errorf("Found more resources than expected (expected 1)"))
 	}
 
@@ -94,8 +75,33 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 		errs = append(errs, fmt.Errorf("Found more than %d resources", LokiStackResourceLimit))
 	}
 
+	for index, _ := range loggingResourceList.Items {
+		item := loggingResourceList.Items[index]
+		record, err := fillLokiStackRecord(item)
+		records = append(records, *record)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
 	// numItems == 0
-	return nil, errs
+	return records, errs
+}
+
+func fillLokiStackRecord(item unstructured.Unstructured) (*record.Record, error) {
+	if err := removeLimitsTenant(item.Object); err != nil {
+		return nil, err
+	}
+
+	return &record.Record{
+		Name: fmt.Sprintf(
+			"namespace/%s/%s/%s/%s",
+			item.GetNamespace(),
+			lokiStackResource.Group,
+			lokiStackResource.Resource,
+			item.GetName()),
+		Item: record.ResourceMarshaller{Resource: &item},
+	}, nil
 }
 
 // removeLimitsTenant tries to get an array of sensitive fields defined in the LokiStack
