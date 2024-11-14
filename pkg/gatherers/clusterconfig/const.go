@@ -30,11 +30,6 @@ var (
 	// logNodeMaxLines sets the maximum number of lines of the node log to be stored per node
 	logNodeMaxLines = 50
 
-	// logDefaultSinceSeconds is used in calls to common.CollectLogsFromContainers
-	logDefaultSinceSeconds = int64(86400) // last day
-	// logDefaultLimitBytes is used in calls to common.CollectLogsFromContainers
-	logDefaultLimitBytes = int64(1024 * 64) // maximum 64 kb of logs
-
 	defaultNamespaces           = []string{"default", "kube-system", "kube-public", "openshift"}
 	datahubGroupVersionResource = schema.GroupVersionResource{
 		Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs",
