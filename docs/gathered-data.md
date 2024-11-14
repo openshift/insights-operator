@@ -778,7 +778,17 @@ None
 is used for more dynamic log gathering based on the
 [Rapid Recommendations](https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md).
 
-In general this function finds the Pods (and containers) that match the requested data and filters all the container logs
+The remote configuration data is fetched from the Conditional Gathering service (the endpoint is defined
+[here](https://github.com/openshift/insights-operator/blob/master/config/pod.yaml#L8)). If the remote endpoint is not available
+or the data cannot be parsed or validated (using JSON schema defined
+[here](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/container_log.schema.json)), the default
+built-in configuration (see [here](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/default_remote_configuration.json))
+is used. In case of any issues, user should check the respective clusteroperator conditions (see more information
+[here](https://github.com/openshift/insights-operator/blob/master/docs/arch.md#how-the-insights-operator-sets-operator-status)) of the Insights Operator.
+
+The configuration used for the data gathering is always stored in the Insights archive in the `insights-operator/remote-configuration.json` file.
+
+The gatherer finds the Pods (and containers) that match the requested data and filters all the container logs
 to match the specific messages up to a maximum of 6 hours old.
 
 
