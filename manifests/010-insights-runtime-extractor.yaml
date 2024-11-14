@@ -54,7 +54,7 @@ spec:
               containerPort: 8000
               protocol: TCP
         - name: exporter
-          image: ghcr.io/jmesnil/insights-runtime-exporter:latest
+          image: quay.io/openshift/origin-insights-runtime-exporter:latest
           imagePullPolicy: Always
           volumeMounts:
             - mountPath: /data
@@ -66,7 +66,7 @@ spec:
               drop:
                 - ALL
         - name: extractor
-          image: ghcr.io/jmesnil/insights-runtime-extractor:latest
+          image: quay.io/openshift/origin-insights-runtime-extractor:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
