@@ -51,9 +51,7 @@ func (g *Gatherer) GatherLokiStack(ctx context.Context) ([]record.Record, []erro
 
 func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	klog.V(2).Info("Start LokiStack gathering")
-	loggingResourceList, err := dynamicClient.Resource(lokiStackResource).
-		Namespace("openshift-logging").
-		List(ctx, metav1.ListOptions{Limit: LokiStackResourceLimit})
+	loggingResourceList, err := dynamicClient.Resource(lokiStackResource).List(ctx, metav1.ListOptions{})
 
 	if errors.IsNotFound(err) {
 		return nil, nil
@@ -65,26 +63,38 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 
 	var records []record.Record
 	var errs []error
+	var otherNamespaceError bool = false
+	var tooManyResourcesError bool = false
 
-	numItems := len(loggingResourceList.Items)
-	if numItems > 1 {
-		errs = append(errs, fmt.Errorf("Found more resources than expected (expected 1)"))
-	}
-
-	if loggingResourceList.GetContinue() != "" {
-		errs = append(errs, fmt.Errorf("Found more than %d resources", LokiStackResourceLimit))
-	}
-
-	for index, _ := range loggingResourceList.Items {
+	for index := range loggingResourceList.Items {
 		item := loggingResourceList.Items[index]
-		record, err := fillLokiStackRecord(item)
-		records = append(records, *record)
-		if err != nil {
-			errs = append(errs, err)
+
+		namespace := item.GetNamespace()
+		if namespace != "openshift-logging" {
+			if !otherNamespaceError {
+				otherNamespaceError = true
+				errs = append(errs, fmt.Errorf("Found more resources than expected (expected 1)"))
+			}
+
+			continue
+		} else {
+			if len(records) > LokiStackResourceLimit {
+				if !tooManyResourcesError {
+					errs = append(errs, fmt.Errorf(
+						"Found %d resources, limit (%d) reached",
+						len(loggingResourceList.Items), LokiStackResourceLimit),
+					)
+				}
+				continue
+			}
+			record, err := fillLokiStackRecord(item)
+			records = append(records, *record)
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
 
-	// numItems == 0
 	return records, errs
 }
 
