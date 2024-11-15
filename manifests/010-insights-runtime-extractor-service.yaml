@@ -4,14 +4,20 @@
 apiVersion: v1
 kind: Service
 metadata:
+  name: exporter
+  namespace: openshift-insights
   annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/feature-set: TechPreviewNoUpgrade
+    capability.openshift.io/name: Insights
     # The insights-runtime-extractor-tls is used by the insights-runtime-extractor's kube-rbac-proxy container
     # to configure its TLS certificate
     service.beta.openshift.io/serving-cert-secret-name: insights-runtime-extractor-tls
   labels:
     app.kubernetes.io/name: insights-runtime-extractor
-  name: exporter
-  namespace: openshift-insights
 spec:
   selector:
     app.kubernetes.io/name: insights-runtime-extractor

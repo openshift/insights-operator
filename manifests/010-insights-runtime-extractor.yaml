@@ -3,6 +3,13 @@ kind: DaemonSet
 metadata:
   name: insights-runtime-extractor
   namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/feature-set: TechPreviewNoUpgrade
+    capability.openshift.io/name: Insights
   labels:
     app.kubernetes.io/name: insights-runtime-extractor
 spec:

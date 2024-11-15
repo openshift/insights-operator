@@ -4,6 +4,13 @@ kind: ServiceAccount
 metadata:
   name: insights-runtime-extractor-sa
   namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/feature-set: TechPreviewNoUpgrade
+    capability.openshift.io/name: Insights
 ---
 # The insights-runtime-extractor-role requires:
 # * access to authentication.k8s.io so that its kube-rbac-proxy
@@ -14,6 +21,13 @@ kind: ClusterRole
 metadata:
   name: insights-runtime-extractor-role
   namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/feature-set: TechPreviewNoUpgrade
+    capability.openshift.io/name: Insights
 rules:
 - apiGroups:
   - authentication.k8s.io
@@ -41,6 +55,13 @@ kind: ClusterRoleBinding
 metadata:
   name: insights-runtime-extractor
   namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/feature-set: TechPreviewNoUpgrade
+    capability.openshift.io/name: Insights
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -55,6 +76,13 @@ kind: SecurityContextConstraints
 metadata:
   name: insights-runtime-extractor-scc
   namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    release.openshift.io/feature-set: TechPreviewNoUpgrade
+    capability.openshift.io/name: Insights
 allowHostDirVolumePlugin: true
 allowHostPID: true
 allowPrivilegedContainer: true
