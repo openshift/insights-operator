@@ -73,6 +73,7 @@ type containerInfo struct {
 //
 // ### Changes
 // - Image repository is now collected if it comes from outside the Red Hat domain
+// - [Tech Preview] runtime info for workloads are collected (since 4.18.0)
 func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
