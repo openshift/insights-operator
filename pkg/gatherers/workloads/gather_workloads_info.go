@@ -100,8 +100,6 @@ func gatherWorkloadInfo(
 ) ([]record.Record, []error) {
 	var errs = []error{}
 
-	klog.Infof("Extracting runtime info from workloads: %t", runtimeExtractorEnabed)
-
 	var workloadInfos workloadRuntimes
 	if runtimeExtractorEnabed {
 		var runtimeInfoErrs []error

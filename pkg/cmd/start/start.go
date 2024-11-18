@@ -288,10 +288,50 @@ func runGatherAndUpload(operator *controller.GatherJob,
 		protoConfig.AcceptContentTypes = pbAcceptContentTypes
 		protoConfig.ContentType = pbContentType
 
+		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
+
+		// before calling the Gather logic, this command must check the featuregate status.
+		configClient, err := configv1client.NewForConfig(clientConfig)
+		if err != nil {
+			klog.Exitf("error: building client: %v", err)
+		}
+		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
+
+		missingVersion := "0.0.1-snapshot"
+		desiredVersion := missingVersion
+		if envVersion, exists := os.LookupEnv("RELEASE_VERSION"); exists {
+			desiredVersion = envVersion
+		}
+		// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
+		featureGateAccessor := featuregates.NewFeatureGateAccess(
+			desiredVersion, missingVersion,
+			configInformers.Config().V1().ClusterVersions(), configInformers.Config().V1().FeatureGates(),
+			events.NewLoggingEventRecorder("insights-gather"),
+		)
+		go featureGateAccessor.Run(ctx)
+		go configInformers.Start(ctx.Done())
+
+		select {
+		case <-featureGateAccessor.InitialFeatureGatesObserved():
+			featureGates, _ := featureGateAccessor.CurrentFeatureGates()
+			klog.Infof("FeatureGates initialized: knownFeatureGates=%v", featureGates.KnownFeatures())
+		case <-time.After(1 * time.Minute):
+			klog.Errorf("timed out waiting for FeatureGate detection")
+			klog.Exit(fmt.Errorf("timed out waiting for FeatureGate detection"))
+		}
+
+		featureGates, err := featureGateAccessor.CurrentFeatureGates()
+		if err != nil {
+			klog.Exit(err)
+		}
+		operator.InsightsConfigAPIEnabled = featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
+		operator.RuntimeExtractorEnabled = featureGates.Enabled(features.FeatureGateInsightsRuntimeExtractor)
+
 		err = operator.GatherAndUpload(clientConfig, protoConfig)
 		if err != nil {
 			klog.Exit(err)
 		}
+		cancel()
 		os.Exit(0)
 	}
 }
