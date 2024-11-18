@@ -1601,7 +1601,7 @@ resources from all namespaces
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json)
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json)
 
 ### Location in archive
 - `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanes/{name}.json`
@@ -1625,7 +1625,7 @@ resources from all namespaces
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json)
+- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json)
 
 ### Location in archive
 - `namespaces/{namespace}/core.openstack.org/openstackversion/{name}.json`
