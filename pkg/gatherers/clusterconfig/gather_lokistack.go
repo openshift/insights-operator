@@ -16,21 +16,25 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-const LokiStackResourceLimit = 20
+const lokiStackResourceLimit = 20
 
-// GatherOpenshiftLogging Collects `clusterlogging.logging.openshift.io` resources.
+// GatherLokiStack Collects `lokistacks.loki.grafana.com` resources.
+//
+// The gatherer will collect up to 20 resources from `openshift-logging` namespace
+// and it will report errors if it finds a `LokiStack` resource in a different namespace
+// or if there are more than 20 `LokiStacks` in the `openshift-logging` namespace.
 //
 // ### API Reference
-// - https://github.com/openshift/cluster-logging-operator/blob/master/pkg/apis/logging/v1/clusterlogging_types.go
+// None
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/logging/openshift-logging/instance.json
+// - docs/insights-archive-sample/namespaces/openshift-logging/.json
 //
 // ### Location in archive
-// - `namespace/openshift-logging/group/resource/{name}.json`
+// - `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
 //
 // ### Config ID
-// `clusterconfig/openshift_logging`
+// `clusterconfig/lokistacks
 //
 // ### Released version
 // - 4.18.0
@@ -73,17 +77,17 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 		if namespace != "openshift-logging" {
 			if !otherNamespaceError {
 				otherNamespaceError = true
-				errs = append(errs, fmt.Errorf("found more resources than expected (expected 1)"))
+				errs = append(errs, fmt.Errorf("found resource in an unexpected namespace"))
 			}
 
 			continue
 		}
 
-		if len(records) > LokiStackResourceLimit {
+		if len(records) > lokiStackResourceLimit {
 			if !tooManyResourcesError {
 				errs = append(errs, fmt.Errorf(
 					"found %d resources, limit (%d) reached",
-					len(loggingResourceList.Items), LokiStackResourceLimit),
+					len(loggingResourceList.Items), lokiStackResourceLimit),
 				)
 			}
 			continue
