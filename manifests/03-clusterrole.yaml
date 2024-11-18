@@ -582,19 +582,6 @@ roleRef:
   kind: Role
   name: insights-operator-etc-pki-entitlement
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: insights-runtime-extractor-sa
-  namespace: openshift-insights
-  annotations:
-    include.release.openshift.io/hypershift: "true"
-    include.release.openshift.io/ibm-cloud-managed: "true"
-    include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
-    release.openshift.io/feature-set: TechPreviewNoUpgrade
-    capability.openshift.io/name: Insights
----
 # The insights-runtime-extractor-role requires:
 # * access to authentication.k8s.io so that its kube-rbac-proxy
 #   can verify the client tokens
