@@ -28,6 +28,7 @@ const (
 	serviceCACertPath    = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 	pbContentType        = "application/vnd.kubernetes.protobuf"
 	pbAcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	missingVersion       = "0.0.1-snapshot"
 )
 
 // NewOperator create the command for running the Insights Operator.
@@ -155,7 +156,6 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 		}
 		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
-		missingVersion := "0.0.1-snapshot"
 		desiredVersion := missingVersion
 		if envVersion, exists := os.LookupEnv("RELEASE_VERSION"); exists {
 			desiredVersion = envVersion
@@ -297,7 +297,6 @@ func runGatherAndUpload(operator *controller.GatherJob,
 		}
 		configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 
-		missingVersion := "0.0.1-snapshot"
 		desiredVersion := missingVersion
 		if envVersion, exists := os.LookupEnv("RELEASE_VERSION"); exists {
 			desiredVersion = envVersion
