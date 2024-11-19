@@ -1,0 +1,703 @@
+{
+    "metadata": {
+        "name": "data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc5fvmg8",
+        "generateName": "data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc54-",
+        "namespace": "di-288312",
+        "uid": "a083ed7f-35c9-4c48-ba59-71a35b9174ea",
+        "resourceVersion": "915443997",
+        "creationTimestamp": "2024-03-26T10:43:59Z",
+        "labels": {
+            "datahub.sap.com/app": "vsystem",
+            "datahub.sap.com/app-component": "vsystem-app",
+            "datahub.sap.com/app-version": "3.3.30",
+            "datahub.sap.com/package-version": "3.3.81",
+            "pod-template-hash": "547b57cc54",
+            "vsystem.datahub.sap.com/app": "data-hub-flow-agent-1a3a7e88888b7fe0630189",
+            "vsystem.datahub.sap.com/component": "app",
+            "vsystem.datahub.sap.com/template": "data-hub-flow-agent",
+            "vsystem.datahub.sap.com/tenant": "slv-default",
+            "vsystem.datahub.sap.com/tenant-uid": "7ff38662ec96458e800610eae37b665c"
+        },
+        "annotations": {
+            "cluster-autoscaler.kubernetes.io/safe-to-evict": "false",
+            "openshift.io/scc": "privileged",
+            "vsystem.datahub.sap.com/app-restart-timestamp": "2023-03-20 03:45:52 +0000 UTC"
+        },
+        "ownerReferences": [
+            {
+                "apiVersion": "apps/v1",
+                "kind": "ReplicaSet",
+                "name": "data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc54",
+                "uid": "d9a4afa5-086b-4d5e-8f0c-edcb9d0e06a7",
+                "controller": true,
+                "blockOwnerDeletion": true
+            }
+        ]
+    },
+    "spec": {
+        "volumes": [
+            {
+                "name": "dh-cluster-ca-bundle",
+                "secret": {
+                    "secretName": "ca-bundle.pem",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "vrep",
+                "persistentVolumeClaim": {
+                    "claimName": "8420516ffe2a4d10986beb9c66ee4f60"
+                }
+            },
+            {
+                "name": "vsystem-public-jwt-key",
+                "secret": {
+                    "secretName": "vora.conf.secop.jwtiss.truststore",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "vsystem-apps-sa-token",
+                "secret": {
+                    "secretName": "vsystem-apps-sa-token",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "uaa-tls-cert",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.ca-bundle",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "dns-persistency",
+                "emptyDir": {}
+            },
+            {
+                "name": "hana-tls-cert",
+                "secret": {
+                    "secretName": "vora.conf.secop.tlsconfig.ca-bundle",
+                    "defaultMode": 420
+                }
+            },
+            {
+                "name": "agent-cert-tls",
+                "secret": {
+                    "secretName": "data-hub-flow-agent-1a3a7e88888b7fe0630189",
+                    "defaultMode": 420
+                }
+            }
+        ],
+        "initContainers": [
+            {
+                "name": "vsystem-iptables",
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem:3.3.30",
+                "command": [
+                    "/vsystem/init.sh",
+                    "/vsystem/iptables.sh"
+                ],
+                "args": [
+                    "8050:30000",
+                    "8796 8795 8794 50070 1024 8798 8793 30001"
+                ],
+                "envFrom": [
+                    {
+                        "configMapRef": {
+                            "name": "vsystem-configmap"
+                        }
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "HANA_HOST",
+                        "value": "hana-service"
+                    },
+                    {
+                        "name": "BLOCK_UNKNOWN_PORTS",
+                        "value": "true"
+                    },
+                    {
+                        "name": "ENABLE_NEW_SGW",
+                        "value": "true"
+                    },
+                    {
+                        "name": "NAMESPACE",
+                        "value": "di-288312"
+                    }
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "50m",
+                        "memory": "128Mi"
+                    },
+                    "requests": {
+                        "cpu": "2m",
+                        "memory": "6Mi"
+                    }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "Always",
+                "securityContext": {
+                    "capabilities": {
+                        "add": [
+                            "NET_ADMIN",
+                            "NET_RAW"
+                        ]
+                    },
+                    "runAsUser": 0
+                }
+            }
+        ],
+        "containers": [
+            {
+                "name": "flowagent-service",
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/flowagent-service:3.3.33",
+                "command": [
+                    "/etc/bootstrap.sh"
+                ],
+                "ports": [
+                    {
+                        "containerPort": 8050,
+                        "protocol": "TCP"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "http_proxy"
+                    },
+                    {
+                        "name": "https_proxy"
+                    },
+                    {
+                        "name": "no_proxy",
+                        "value": ",vsystem,vsystem-internal,storagegateway"
+                    },
+                    {
+                        "name": "HTTP_PROXY"
+                    },
+                    {
+                        "name": "HTTPS_PROXY"
+                    },
+                    {
+                        "name": "NO_PROXY",
+                        "value": ",vsystem,vsystem-internal,storagegateway"
+                    },
+                    {
+                        "name": "LOG_LEVEL",
+                        "value": "info"
+                    },
+                    {
+                        "name": "CONNECTION_MGMT_URL",
+                        "value": "http://vsystem-internal:8796/app/datahub-app-connection"
+                    },
+                    {
+                        "name": "VSYSTEM_PUBLIC_KEY_FILEPATH",
+                        "value": "/etc/keys/public/vora.conf.secop.jwtiss.truststore"
+                    },
+                    {
+                        "name": "AXINO_SERVICE_ENABLED",
+                        "value": "true"
+                    },
+                    {
+                        "name": "FILE_UPLOAD_SIZE_MB",
+                        "value": "-1"
+                    },
+                    {
+                        "name": "FILE_UPLOAD_THREADS",
+                        "value": "-1"
+                    },
+                    {
+                        "name": "VSYSTEM_APP_ID",
+                        "value": "slv-default~_vora_tenant~data-hub-flow-agent-1a3a7e88888b7fe0630189"
+                    },
+                    {
+                        "name": "VSYSTEM_SECRET"
+                    },
+                    {
+                        "name": "VSYSTEM_TENANT",
+                        "value": "slv-default"
+                    },
+                    {
+                        "name": "VSYSTEM_USER",
+                        "value": "_vora_tenant"
+                    },
+                    {
+                        "name": "VSYSTEM_PUBLIC_KEY",
+                        "value": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApSSSs56YJceShvByY+/zvI5lfEiEWqrWYxO6TUMEdKcmp+FqoFCfWPAyDrRGhA6FNwwyfxicKPSMoL5vxXoI+r+ZoRydkE3LNOkxgYgypT6LKXCpQACPiz+nOG2MFxx/ZVVa9STzqQWkb1E4M/ix8oqEhA+Flkm6fzfUDPB1u7vdS+yIdBgRFtSdSFC4uNdcbwq1PCX+i+GsEBk/UJlIjYyXzJfmNyD3/70MVfaCP7POmP6w/LjkcURD5nbDMK1r8nnpI9/2tEX0GfJtvfIddZ5Jk9IJZecNtOkBFAxdQOe/6cIuPMJfyEeXZEnCPZyJFZGObc7sXoMb0P3qbupNnwIDAQAB"
+                    },
+                    {
+                        "name": "VSYSTEM_TEMPLATE_ID",
+                        "value": "data-hub-flow-agent"
+                    },
+                    {
+                        "name": "APP_GRACE_PERIOD",
+                        "value": "0"
+                    },
+                    {
+                        "name": "VSYSTEM_INSTANCE_SPACE",
+                        "value": "tenant"
+                    },
+                    {
+                        "name": "VSYSTEM_JWT_ISSUER",
+                        "value": "https://slv-default.uaa:8080/oauth/token"
+                    },
+                    {
+                        "name": "DATA_INTEGRATION_SERVICE",
+                        "value": "false"
+                    },
+                    {
+                        "name": "NAMESPACE",
+                        "value": "di-288312"
+                    },
+                    {
+                        "name": "DATAHUB_PACKAGE_VERSION",
+                        "value": "3.3.81"
+                    }
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "4",
+                        "memory": "3Gi"
+                    },
+                    "requests": {
+                        "cpu": "0",
+                        "memory": "1Gi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "dh-cluster-ca-bundle",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs/root-ca"
+                    },
+                    {
+                        "name": "vrep",
+                        "mountPath": "/vrep"
+                    },
+                    {
+                        "name": "vsystem-public-jwt-key",
+                        "readOnly": true,
+                        "mountPath": "/etc/keys/public"
+                    }
+                ],
+                "readinessProbe": {
+                    "httpGet": {
+                        "path": "/health",
+                        "port": 30001,
+                        "scheme": "HTTP"
+                    },
+                    "timeoutSeconds": 1,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "failureThreshold": 3
+                },
+                "lifecycle": {
+                    "preStop": {
+                        "httpGet": {
+                            "path": "/wait-for-termination",
+                            "port": 8793,
+                            "scheme": "HTTP"
+                        }
+                    }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "Always",
+                "securityContext": {
+                    "runAsUser": 999,
+                    "runAsGroup": 999,
+                    "runAsNonRoot": true,
+                    "allowPrivilegeEscalation": false
+                }
+            },
+            {
+                "name": "vsystem-agent",
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem:3.3.30",
+                "args": [
+                    "agent",
+                    "--trc=info",
+                    "--vsystem-address=https://vsystem:8797/",
+                    "--tls-cert-file-agent=/etc/certs/agent/client-cert.pem",
+                    "--tls-key-file-agent=/etc/certs/agent/client-key.pem",
+                    "--root-ca-dir=/etc/certs/root-ca",
+                    "--k8s-namespace=di-288312",
+                    "--port=30000:8050:http",
+                    "--probe=30001:8050:/health"
+                ],
+                "ports": [
+                    {
+                        "name": "agent-api",
+                        "containerPort": 8796,
+                        "protocol": "TCP"
+                    }
+                ],
+                "envFrom": [
+                    {
+                        "configMapRef": {
+                            "name": "vsystem-configmap"
+                        }
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "SERVER_TIMEOUT",
+                        "value": "20m0s"
+                    },
+                    {
+                        "name": "HANDLER_TIMEOUT",
+                        "value": "10m0s"
+                    },
+                    {
+                        "name": "DNS_MOUNT_PATH",
+                        "value": "/var/lib/vsystem/dns"
+                    },
+                    {
+                        "name": "UAA_TOKEN_INTROSPECTION_CLIENT_ID",
+                        "value": "clientid-token-introspection"
+                    },
+                    {
+                        "name": "UAA_TOKEN_INTROSPECTION_CLIENT_SECRET",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "clientid-token-introspection",
+                                "key": "secret"
+                            }
+                        }
+                    },
+                    {
+                        "name": "UAA_ENDPOINT",
+                        "value": "uaa:8080"
+                    },
+                    {
+                        "name": "UAA_TLS_CERT_PATH",
+                        "value": "/etc/certs/vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "UAA_CLIENT_ID",
+                        "value": "admin"
+                    },
+                    {
+                        "name": "HANA_HOST",
+                        "value": "hana-service"
+                    },
+                    {
+                        "name": "HANA_PORT",
+                        "value": "30017"
+                    },
+                    {
+                        "name": "HANA_USER_VSYSTEM",
+                        "value": "VSYSTEM"
+                    },
+                    {
+                        "name": "HANA_VSYSTEM_USER_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "vsystem-user-hana-credentials",
+                                "key": "password"
+                            }
+                        }
+                    },
+                    {
+                        "name": "HANA_TARGET_SCHEMA",
+                        "value": "VSYS"
+                    },
+                    {
+                        "name": "HANA_TLS_CERT_PATH",
+                        "value": "/etc/certs/hana/vora.conf.secop.tlsconfig.ca-bundle"
+                    },
+                    {
+                        "name": "VSYSTEM_DATALAKE_ADDRESS",
+                        "value": "https://storagegateway:14000/"
+                    },
+                    {
+                        "name": "VSYSTEM_AUDITLOG_ADDRESS",
+                        "value": "https://auditlog:3030"
+                    },
+                    {
+                        "name": "MAX_IDLE_CONNECTIONS",
+                        "value": "128"
+                    },
+                    {
+                        "name": "MAX_OPEN_CONNECTIONS",
+                        "value": "256"
+                    },
+                    {
+                        "name": "MAX_IDLE_CONNECTION_TIME",
+                        "value": "5m"
+                    },
+                    {
+                        "name": "ROUTING_POLICY_REFRESH_PERIOD",
+                        "value": "120s"
+                    },
+                    {
+                        "name": "VSYSTEM_APP_ID",
+                        "value": "slv-default~_vora_tenant~data-hub-flow-agent-1a3a7e88888b7fe0630189"
+                    },
+                    {
+                        "name": "VSYSTEM_SECRET"
+                    },
+                    {
+                        "name": "VSYSTEM_TENANT",
+                        "value": "slv-default"
+                    },
+                    {
+                        "name": "VSYSTEM_USER",
+                        "value": "_vora_tenant"
+                    },
+                    {
+                        "name": "VSYSTEM_PUBLIC_KEY",
+                        "value": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApSSSs56YJceShvByY+/zvI5lfEiEWqrWYxO6TUMEdKcmp+FqoFCfWPAyDrRGhA6FNwwyfxicKPSMoL5vxXoI+r+ZoRydkE3LNOkxgYgypT6LKXCpQACPiz+nOG2MFxx/ZVVa9STzqQWkb1E4M/ix8oqEhA+Flkm6fzfUDPB1u7vdS+yIdBgRFtSdSFC4uNdcbwq1PCX+i+GsEBk/UJlIjYyXzJfmNyD3/70MVfaCP7POmP6w/LjkcURD5nbDMK1r8nnpI9/2tEX0GfJtvfIddZ5Jk9IJZecNtOkBFAxdQOe/6cIuPMJfyEeXZEnCPZyJFZGObc7sXoMb0P3qbupNnwIDAQAB"
+                    },
+                    {
+                        "name": "VSYSTEM_TEMPLATE_ID",
+                        "value": "data-hub-flow-agent"
+                    },
+                    {
+                        "name": "APP_GRACE_PERIOD",
+                        "value": "0"
+                    },
+                    {
+                        "name": "VSYSTEM_INSTANCE_SPACE",
+                        "value": "tenant"
+                    },
+                    {
+                        "name": "VSYSTEM_JWT_ISSUER",
+                        "value": "https://slv-default.uaa:8080/oauth/token"
+                    },
+                    {
+                        "name": "DATA_INTEGRATION_SERVICE",
+                        "value": "false"
+                    },
+                    {
+                        "name": "NAMESPACE",
+                        "value": "di-288312"
+                    },
+                    {
+                        "name": "DATAHUB_PACKAGE_VERSION",
+                        "value": "3.3.81"
+                    }
+                ],
+                "resources": {
+                    "limits": {
+                        "cpu": "350m",
+                        "memory": "256Mi"
+                    },
+                    "requests": {
+                        "cpu": "50m",
+                        "memory": "32Mi"
+                    }
+                },
+                "volumeMounts": [
+                    {
+                        "name": "vsystem-apps-sa-token",
+                        "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                    },
+                    {
+                        "name": "uaa-tls-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs"
+                    },
+                    {
+                        "name": "dh-cluster-ca-bundle",
+                        "mountPath": "/etc/certs/root-ca"
+                    },
+                    {
+                        "name": "hana-tls-cert",
+                        "readOnly": true,
+                        "mountPath": "/etc/certs/hana"
+                    },
+                    {
+                        "name": "dns-persistency",
+                        "mountPath": "/var/lib/vsystem/dns"
+                    },
+                    {
+                        "name": "agent-cert-tls",
+                        "mountPath": "/etc/certs/agent"
+                    }
+                ],
+                "livenessProbe": {
+                    "httpGet": {
+                        "path": "/liveness",
+                        "port": 8798,
+                        "scheme": "HTTP"
+                    },
+                    "initialDelaySeconds": 10,
+                    "timeoutSeconds": 1,
+                    "periodSeconds": 10,
+                    "successThreshold": 1,
+                    "failureThreshold": 3
+                },
+                "readinessProbe": {
+                    "httpGet": {
+                        "path": "/readiness",
+                        "port": 8795,
+                        "scheme": "HTTP"
+                    },
+                    "initialDelaySeconds": 2,
+                    "timeoutSeconds": 1,
+                    "periodSeconds": 1,
+                    "successThreshold": 1,
+                    "failureThreshold": 3
+                },
+                "lifecycle": {
+                    "preStop": {
+                        "exec": {
+                            "command": [
+                                "/bin/sh",
+                                "-c",
+                                "sleep 5"
+                            ]
+                        }
+                    }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "Always"
+            }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "nodeSelector": {
+            "node-role.kubernetes.io/sdi": ""
+        },
+        "serviceAccountName": "default",
+        "serviceAccount": "default",
+        "automountServiceAccountToken": false,
+        "nodeName": "pvx507.wdf.sap.corp",
+        "securityContext": {},
+        "imagePullSecrets": [
+            {
+                "name": "slp-docker-registry-pull-secret"
+            }
+        ],
+        "schedulerName": "default-scheduler",
+        "tolerations": [
+            {
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            },
+            {
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 300
+            },
+            {
+                "key": "node.kubernetes.io/memory-pressure",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+            }
+        ],
+        "hostAliases": [
+            {
+                "ip": "127.0.0.1",
+                "hostnames": [
+                    "vsystem-internal"
+                ]
+            },
+            {
+                "ip": "127.0.0.2",
+                "hostnames": [
+                    "datalake"
+                ]
+            },
+            {
+                "ip": "127.0.0.3",
+                "hostnames": [
+                    "storagegateway-agent"
+                ]
+            }
+        ],
+        "priority": 0,
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority"
+    },
+    "status": {
+        "phase": "Pending",
+        "conditions": [
+            {
+                "type": "Initialized",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:44:03Z",
+                "reason": "ContainersNotInitialized",
+                "message": "containers with incomplete status: [vsystem-iptables]"
+            },
+            {
+                "type": "Ready",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:44:03Z",
+                "reason": "ContainersNotReady",
+                "message": "containers with unready status: [flowagent-service vsystem-agent]"
+            },
+            {
+                "type": "ContainersReady",
+                "status": "False",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:44:03Z",
+                "reason": "ContainersNotReady",
+                "message": "containers with unready status: [flowagent-service vsystem-agent]"
+            },
+            {
+                "type": "PodScheduled",
+                "status": "True",
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-03-26T10:43:59Z"
+            }
+        ],
+        "hostIP": "10.67.106.106",
+        "startTime": "2024-03-26T10:44:03Z",
+        "initContainerStatuses": [
+            {
+                "name": "vsystem-iptables",
+                "state": {
+                    "waiting": {
+                        "reason": "PodInitializing"
+                    }
+                },
+                "lastState": {},
+                "ready": false,
+                "restartCount": 0,
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem:3.3.30",
+                "imageID": ""
+            }
+        ],
+        "containerStatuses": [
+            {
+                "name": "flowagent-service",
+                "state": {
+                    "waiting": {
+                        "reason": "PodInitializing"
+                    }
+                },
+                "lastState": {},
+                "ready": false,
+                "restartCount": 0,
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/flowagent-service:3.3.33",
+                "imageID": "",
+                "started": false
+            },
+            {
+                "name": "vsystem-agent",
+                "state": {
+                    "waiting": {
+                        "reason": "PodInitializing"
+                    }
+                },
+                "lastState": {},
+                "ready": false,
+                "restartCount": 0,
+                "image": "pvx092.wdf.sap.corp/slvi/288312/com.sap.datahub.linuxx86_64/vsystem:3.3.30",
+                "imageID": "",
+                "started": false
+            }
+        ],
+        "qosClass": "Burstable"
+    }
+}

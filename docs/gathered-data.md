@@ -174,7 +174,7 @@ when `Now < ValidBefore` or `Now > ValidAfter`
 - https://docs.openshift.com/container-platform/4.3/rest_api/index.html#certificatesigningrequestlist-v1beta1certificates
 
 ### Sample data
-None
+- [docs/insights-archive-sample/config/certificatesigningrequests/csr-test.json](./insights-archive-sample/config/certificatesigningrequests/csr-test.json)
 
 ### Location in archive
 - `config/certificatesigningrequests`
@@ -515,8 +515,10 @@ information includes:
 None
 
 ### Sample data
-- [docs/insights-archive-sample/pod](./insights-archive-sample/pod)
-- [docs/insights-archive-sample/events](./insights-archive-sample/events)
+- [docs/insights-archive-sample/config/openshift-authentication-operator/authentication-operator-6d65456dc7-9d2qx.json](./insights-archive-sample/config/openshift-authentication-operator/authentication-operator-6d65456dc7-9d2qx.json)
+- [docs/insights-archive-sample/config/openshift-storage-operator/cluster-storage-operator-6974bfb5c6-tppp7.json](./insights-archive-sample/config/openshift-storage-operator/cluster-storage-operator-6974bfb5c6-tppp7.json)
+- [docs/insights-archive-sample/config/openshift-etcd-operator/etcd-operator-78bb597755-r6lgn.json](./insights-archive-sample/config/openshift-etcd-operator/etcd-operator-78bb597755-r6lgn.json)
+- [docs/insights-archive-sample/config/openshift-monitoring-operator/cluster-monitoring-operator-6c785d75f6-t79zv.json](./insights-archive-sample/config/openshift-monitoring-operator/cluster-monitoring-operator-6c785d75f6-t79zv.json)
 
 ### Location in archive
 - `config/pod/{namespace}/{pod}.json`
@@ -776,7 +778,17 @@ None
 is used for more dynamic log gathering based on the
 [Rapid Recommendations](https://github.com/openshift/enhancements/blob/master/enhancements/insights/rapid-recommendations.md).
 
-In general this function finds the Pods (and containers) that match the requested data and filters all the container logs
+The remote configuration data is fetched from the Conditional Gathering service (the endpoint is defined
+[here](https://github.com/openshift/insights-operator/blob/master/config/pod.yaml#L8)). If the remote endpoint is not available
+or the data cannot be parsed or validated (using JSON schema defined
+[here](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/container_log.schema.json)), the default
+built-in configuration (see [here](https://github.com/openshift/insights-operator/blob/master/pkg/gatherers/conditional/default_remote_configuration.json))
+is used. In case of any issues, user should check the respective clusteroperator conditions (see more information
+[here](https://github.com/openshift/insights-operator/blob/master/docs/arch.md#how-the-insights-operator-sets-operator-status)) of the Insights Operator.
+
+The configuration used for the data gathering is always stored in the Insights archive in the `insights-operator/remote-configuration.json` file.
+
+The gatherer finds the Pods (and containers) that match the requested data and filters all the container logs
 to match the specific messages up to a maximum of 6 hours old.
 
 
@@ -959,37 +971,6 @@ None
 None
 
 
-## KubeControllerManagerLogs
-
-Collects logs from `kube-controller-manager` pods in the
-`openshift-kube-controller-manager` namespace with following substrings:
-- "Internal error occurred: error resolving resource",
-- "syncing garbage collector with updated resources from discovery",
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.10/rest_api/workloads_apis/pod-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/openshift-kube-controller-manager/logs/kube-controller-manager-ip-10-0-168-11.us-east-2.compute.internal/errors.log](./insights-archive-sample/config/pod/openshift-kube-controller-manager/logs/kube-controller-manager-ip-10-0-168-11.us-east-2.compute.internal/errors.log)
-
-### Location in archive
-- `config/pod/openshift-kube-controller-manager/logs/{pod-name}/errors.log`
-
-### Config ID
-`clusterconfig/kube_controller_manager_logs`
-
-### Released version
-- 4.11.0
-
-### Backported versions
-- 4.10.6+
-- 4.9.27+
-
-### Changes
-None
-
-
 ## LogsOfNamespace
 
 Collects logs from pods in the provided namespace.
@@ -1102,9 +1083,10 @@ None
 
 ## MachineConfigs
 
-Collects definitions of in-use 'MachineConfigs'. MachineConfig is used when it's referenced in
-a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig` and `machineconfiguration.openshift.io/currentConfig`
-annotations
+Collects definitions of in-use 'MachineConfigs' and aggregated number of non-used 'MachineConfigs'.
+MachineConfig is used when it's referenced in a MachineConfigPool or in Node `machineconfiguration.openshift.io/desiredConfig`
+and `machineconfiguration.openshift.io/currentConfig` annotations
+
 Following data is intentionally removed from the definitions:
 - `spec.config.storage.files`
 - `spec.config.passwd.users`
@@ -1130,7 +1112,7 @@ Following data is intentionally removed from the definitions:
 - 4.8.5
 
 ### Changes
-- gathers only in-use MachineConfigs since 4.18+
+- gathers only in-use MachineConfigs and aggregated number of non-used MachineConfigs since 4.18+
 
 
 ## MachineHealthCheck
@@ -1509,64 +1491,6 @@ None
 None
 
 
-## OpenShiftAPIServerOperatorLogs
-
-Collects logs from `openshift-apiserver-operator` with following substrings:
-- "the server has received too many requests and has asked us"
-- "because serving request timed out and response had been started"
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log](./insights-archive-sample/config/pod/openshift-apiserver-operator/logs/openshift-apiserver-operator-6ddb679b87-4kn55/errors.log)
-
-### Location in archive
-- `config/pod/openshift-apiserver-operator/logs/{pod-name}/errors.log`
-
-### Config ID
-`clusterconfig/openshift_apiserver_operator_logs`
-
-### Released version
-- 4.7.0
-
-### Backported versions
-None
-
-### Changes
-None
-
-
-## OpenshiftAuthenticationLogs
-
-Collects logs from pods in `openshift-authentication` namespace with following
-substring:
-- "AuthenticationError: invalid resource name"
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/openshift-authentication/logs/oauth-openshift-6c98668d5b-ftt5n/errors.log](./insights-archive-sample/config/pod/openshift-authentication/logs/oauth-openshift-6c98668d5b-ftt5n/errors.log)
-
-### Location in archive
-- `config/pod/openshift-authentication/logs/{pod-name}/errors.log`
-
-### Config ID
-`clusterconfig/openshift_authentication_logs`
-
-### Released version
-- 4.7.0
-
-### Backported versions
-None
-
-### Changes
-None
-
-
 ## OpenshiftLogging
 
 Collects `clusterlogging.logging.openshift.io` resources.
@@ -1677,7 +1601,7 @@ resources from all namespaces
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json)
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json)
 
 ### Location in archive
 - `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanes/{name}.json`
@@ -1701,7 +1625,7 @@ resources from all namespaces
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json)
+- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json)
 
 ### Location in archive
 - `namespaces/{namespace}/core.openstack.org/openstackversion/{name}.json`
@@ -1901,7 +1825,10 @@ Collects information about pods running in SAP/SDI namespaces.
 - https://pkg.go.dev/k8s.io/client-go/dynamic
 
 ### Sample data
-None
+- [docs/insights-archive-sample/config/pod/di-288312/auditlog-retention-28566720-t22qj.json](./insights-archive-sample/config/pod/di-288312/auditlog-retention-28566720-t22qj.json)
+- [docs/insights-archive-sample/config/pod/di-288312/data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc5fvmg8.json](./insights-archive-sample/config/pod/di-288312/data-hub-flow-agent-1a3a7e88888b7fe0630189-qcwhm-547b57cc5fvmg8.json)
+- [docs/insights-archive-sample/config/pod/di-288312/default-2k58azz-backup-deletion-5rdw4.json](./insights-archive-sample/config/pod/di-288312/default-2k58azz-backup-deletion-5rdw4.json)
+- [docs/insights-archive-sample/config/pod/di-288312/vsystem-867f4b77cc-pqcns.json](./insights-archive-sample/config/pod/di-288312/vsystem-867f4b77cc-pqcns.json)
 
 ### Location in archive
 - `config/pod/{namespace}/{name}.json`
@@ -1915,68 +1842,6 @@ None
 ### Backported versions
 - 4.7.5+
 - 4.6.25+
-
-### Changes
-None
-
-
-## SAPVsystemIptablesLogs
-
-Collects logs from SAP `vsystem-iptables` containers
-including one from license management pods with the following substring:
-  - "can't initialize iptables table",
-
-> **Note**
-> This data is collected only if the `installers.datahub.sap.com` resource is found in the cluster.
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-- [docs/insights-archive-sample/config/pod/sdi/logs/license-manager-da1d2e8fadfb8dd7022f08-4hjh7-6887768c5b-qzxb6/errors.log](./insights-archive-sample/config/pod/sdi/logs/license-manager-da1d2e8fadfb8dd7022f08-4hjh7-6887768c5b-qzxb6/errors.log)
-
-### Location in archive
-- `config/pod/{namespace}/logs/{pod-name}/errors.log`
-
-### Config ID
-`clusterconfig/sap_license_management_logs`
-
-### Released version
-- 4.8.2
-
-### Backported versions
-- 4.7.5+
-- 4.6.25+
-
-### Changes
-None
-
-
-## SchedulerLogs
-
-Collects logs from pods in `openshift-kube-scheduler-namespace` from app
-`openshift-kube-scheduler` with following substring:
-- "PodTopologySpread"
-
-### API Reference
-- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/pod_expansion.go#L48
-- https://docs.openshift.com/container-platform/4.6/rest_api/workloads_apis/pod-core-v1.html#apiv1namespacesnamespacepodsnamelog
-
-### Sample data
-None
-
-### Location in archive
-- `config/pod/openshift-kube-scheduler/logs/{pod-name}/messages.log`
-
-### Config ID
-`clusterconfig/scheduler_logs`
-
-### Released version
-- 4.10.0
-
-### Backported versions
-None
 
 ### Changes
 None
