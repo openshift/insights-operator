@@ -360,7 +360,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 				ConfigValid:     false,
 				AvailableReason: AsExpectedReason,
 				ValidReason:     InvalidReason,
-				ConfigData:      []byte(collapseString(testRemoteConfigInvalid)),
+				ConfigData:      []byte(defaultRemoteConfiguration),
 				Err:             fmt.Errorf("0.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$|^kube-[a-zA-Z0-9_.-]{1,128}$'"),
 			},
 		},
@@ -438,13 +438,6 @@ func TestGetGatheringFunctions(t *testing.T) {
 			}
 		})
 	}
-}
-
-func collapseString(s string) string {
-	x := strings.ReplaceAll(s, "\n", "")
-	x = strings.ReplaceAll(x, "\t", "")
-	x = strings.ReplaceAll(x, " ", "")
-	return x
 }
 
 func TestBuiltInConfigIsUsed(t *testing.T) {
