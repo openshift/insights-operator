@@ -14,16 +14,18 @@ import (
 var workloadsGathererPeriod = time.Hour * 12
 
 type Gatherer struct {
-	gatherKubeConfig      *rest.Config
-	gatherProtoKubeConfig *rest.Config
-	lastProcessingTime    time.Time
+	gatherKubeConfig        *rest.Config
+	gatherProtoKubeConfig   *rest.Config
+	lastProcessingTime      time.Time
+	runtimeExtractorEnabled bool
 }
 
-func New(gatherKubeConfig, gatherProtoKubeConfig *rest.Config) *Gatherer {
+func New(gatherKubeConfig, gatherProtoKubeConfig *rest.Config, runtimeExtractorEnabled bool) *Gatherer {
 	return &Gatherer{
-		gatherKubeConfig:      gatherKubeConfig,
-		gatherProtoKubeConfig: gatherProtoKubeConfig,
-		lastProcessingTime:    time.Unix(0, 0),
+		gatherKubeConfig:        gatherKubeConfig,
+		gatherProtoKubeConfig:   gatherProtoKubeConfig,
+		lastProcessingTime:      time.Unix(0, 0),
+		runtimeExtractorEnabled: runtimeExtractorEnabled,
 	}
 }
 
