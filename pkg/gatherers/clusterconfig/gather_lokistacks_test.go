@@ -70,7 +70,7 @@ metadata:
 
 	testLokiStack := &unstructured.Unstructured{}
 
-	for idx := range lokiStackResourceLimit {
+	for idx := 0; idx < lokiStackResourceLimit; idx++ {
 		lokiStackYAML := fmt.Sprintf(lokiStackYAMLTmpl, idx)
 		_, _, err := decUnstructured.Decode([]byte(lokiStackYAML), nil, testLokiStack)
 		if err != nil {
@@ -112,7 +112,7 @@ metadata:
 	testLokiStack := &unstructured.Unstructured{}
 
 	// prepare limit + 1 resources in the right namespace
-	for idx := range lokiStackResourceLimit + 1 {
+	for idx := 0; idx < lokiStackResourceLimit+1; idx++ {
 		lokiStackYAML := fmt.Sprintf(lokiStackYAMLTmpl, idx)
 		_, _, err := decUnstructured.Decode([]byte(lokiStackYAML), nil, testLokiStack)
 		if err != nil {
