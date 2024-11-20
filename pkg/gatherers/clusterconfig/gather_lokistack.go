@@ -31,7 +31,7 @@ const lokiStackResourceLimit = 20
 // - docs/insights-archive-sample/namespaces/openshift-logging/.json
 //
 // ### Location in archive
-// - `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
+// - `namespace/openshift-logging/loki.grafana.com/lokistacks/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/lokistacks
@@ -83,7 +83,7 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 			continue
 		}
 
-		if len(records) > lokiStackResourceLimit {
+		if len(records) >= lokiStackResourceLimit {
 			if !tooManyResourcesError {
 				errs = append(errs, fmt.Errorf(
 					"found %d resources, limit (%d) reached",
