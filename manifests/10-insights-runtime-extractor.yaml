@@ -22,12 +22,14 @@ spec:
         app.kubernetes.io/name: insights-runtime-extractor
       annotations:
         openshift.io/required-scc: insights-runtime-extractor-scc
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     spec:
       serviceAccountName: insights-runtime-extractor-sa
       hostPID: true
       # Deploy the insights-runtime-extractor only on Linux worker nodes
       nodeSelector:
         kubernetes.io/os: linux
+      priorityClassName: openshift-user-critical
       containers:
         - name: kube-rbac-proxy
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
@@ -60,6 +62,10 @@ spec:
             - name: https
               containerPort: 8000
               protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 100Mi
         - name: exporter
           image: quay.io/openshift/origin-insights-runtime-exporter:latest
           imagePullPolicy: Always
@@ -72,12 +78,20 @@ spec:
             capabilities:
               drop:
                 - ALL
+          resources: 
+            requests:
+              cpu: 10m
+              memory: 200Mi
         - name: extractor
           image: quay.io/openshift/origin-insights-runtime-extractor:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
               value: unix:///crio.sock
+          resources: 
+            requests:
+              cpu: 10m
+              memory: 200Mi
           securityContext:
             privileged: true
             capabilities:
