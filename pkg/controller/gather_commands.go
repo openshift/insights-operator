@@ -41,6 +41,7 @@ var numberOfStatusQueryRetries = 3
 type GatherJob struct {
 	config.Controller
 	InsightsConfigAPIEnabled bool
+	RuntimeExtractorEnabled  bool
 }
 
 // processingStatusClient is an interface to call the "processingStatusEndpoint" in
@@ -106,7 +107,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient,
+		configAggregator, insightsClient, g.RuntimeExtractorEnabled,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
@@ -186,8 +187,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsHTTPCli,
-	)
+		configAggregator, insightsHTTPCli, g.RuntimeExtractorEnabled)
 	uploader := insightsuploader.New(nil, insightsHTTPCli, configAggregator, nil, nil, 0)
 
 	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)

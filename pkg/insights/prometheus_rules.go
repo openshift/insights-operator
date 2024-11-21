@@ -92,6 +92,9 @@ func (p *PrometheusRulesController) checkAlertsDisabled(ctx context.Context) {
 
 // createInsightsAlerts creates Insights Prometheus Rules definitions (including alerts)
 func (p *PrometheusRulesController) createInsightsAlerts(ctx context.Context) error {
+
+	forDuration := monitoringv1.Duration(durationString)
+
 	pr := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      rulesName,
@@ -105,7 +108,7 @@ func (p *PrometheusRulesController) createInsightsAlerts(ctx context.Context) er
 						{
 							Alert: insightsDisabledAlert,
 							Expr:  intstr.FromString("max without (job, pod, service, instance) (cluster_operator_conditions{name=\"insights\", condition=\"Disabled\"} == 1)"),
-							For:   monitoringv1.Duration(durationString),
+							For:   &forDuration,
 							Labels: map[string]string{
 								"severity":  info,
 								"namespace": namespaceName,
@@ -118,7 +121,7 @@ func (p *PrometheusRulesController) createInsightsAlerts(ctx context.Context) er
 						{
 							Alert: simpleContentAccessNotAvailableAlert,
 							Expr:  intstr.FromString(" max without (job, pod, service, instance) (max_over_time(cluster_operator_conditions{name=\"insights\", condition=\"SCAAvailable\", reason=\"NotFound\"}[5m]) == 0)"),
-							For:   monitoringv1.Duration(durationString),
+							For:   &forDuration,
 							Labels: map[string]string{
 								"severity":  info,
 								"namespace": namespaceName,
@@ -131,7 +134,7 @@ func (p *PrometheusRulesController) createInsightsAlerts(ctx context.Context) er
 						{
 							Alert: insightsRecommendationActiveAlert,
 							Expr:  intstr.FromString("insights_recommendation_active == 1"),
-							For:   monitoringv1.Duration(durationString),
+							For:   &forDuration,
 							Labels: map[string]string{
 								"severity": info,
 							},
