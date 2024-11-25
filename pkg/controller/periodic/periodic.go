@@ -719,6 +719,9 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherer
 	dataGatherCR := insightsv1alpha1.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: periodicGatheringPrefix,
+			Annotations: map[string]string{
+				"openshift.io/required-scc": "restricted-v2",
+			},
 		},
 		Spec: insightsv1alpha1.DataGatherSpec{
 			DataPolicy: dataPolicy,
