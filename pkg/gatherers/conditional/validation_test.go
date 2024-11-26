@@ -2,6 +2,7 @@ package conditional
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,7 +55,7 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 				{
 					Type: AlertIsFiring,
 					Alert: &AlertConditionParams{
-						Name: "test" + fmt.Sprint(i),
+						Name: "testInvalid" + fmt.Sprint(i),
 					},
 				},
 			},
@@ -135,6 +136,16 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 }
 
 func Test_Validation_InvalidConditions(t *testing.T) {
+	var tooManyConditions []ConditionWithParams
+	for i := 0; i < 9; i++ {
+		tooManyConditions = append(tooManyConditions, ConditionWithParams{
+			Type: AlertIsFiring,
+			Alert: &AlertConditionParams{
+				Name: "test" + fmt.Sprint(i),
+			},
+		})
+	}
+
 	testCases := []validationTestCase{
 		{
 			Name: "invalid condition types",
@@ -225,6 +236,88 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 			Errors: []string{
 				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
+			},
+		},
+		{
+			Name: "Cluster version cannot be empty",
+			Rules: []GatheringRule{{
+				Conditions: []ConditionWithParams{
+					{
+						Type: ClusterVersionMatches,
+						ClusterVersionMatches: &ClusterVersionMatchesConditionParams{
+							Version: "",
+						},
+					},
+				},
+			}},
+			Errors: []string{
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
+				`0.conditions.0.cluster_version_matches.version: String length must be greater than or equal to 1`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
+			},
+		},
+		{
+			Name: "Cluster version cannot exceed 64 chars",
+			Rules: []GatheringRule{{
+				Conditions: []ConditionWithParams{
+					{
+						Type: ClusterVersionMatches,
+						ClusterVersionMatches: &ClusterVersionMatchesConditionParams{
+							Version: rand.String(65), // too long,
+						},
+					},
+				},
+			}},
+			Errors: []string{
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
+				`0.conditions.0.cluster_version_matches.version: String length must be less than or equal to 64`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
+			},
+		},
+		{
+			Name: "Alert name is invalid",
+			Rules: []GatheringRule{{
+				Conditions: []ConditionWithParams{
+					{
+						Type: AlertIsFiring,
+						Alert: &AlertConditionParams{
+							Name: "??--..",
+						},
+					},
+				},
+			}},
+			Errors: []string{
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
+				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
+			},
+		},
+		{
+			Name: "Alert name is too long",
+			Rules: []GatheringRule{{
+				Conditions: []ConditionWithParams{
+					{
+						Type: AlertIsFiring,
+						Alert: &AlertConditionParams{
+							Name: strings.Repeat("x", 130),
+						},
+					},
+				},
+			}},
+			Errors: []string{
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
+				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
+			},
+		},
+		{
+			Name: "Too many conditions",
+			Rules: []GatheringRule{{
+				Conditions: tooManyConditions,
+			}},
+			Errors: []string{
+				`0.conditions: Array must have at most 8 items`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -355,6 +448,146 @@ func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
 			},
 			Errors: []string{
 				`0.gathering_functions: Must have at least 1 properties`,
+			},
+		},
+		{
+			Name: "GatherAPIRequestCounts invalid alert name",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherAPIRequestCounts: GatherAPIRequestCountsParams{
+							AlertName: "??--..",
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.api_request_counts_of_resource_from_alert.alert_name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+			},
+		},
+		{
+			Name: "GatherAPIRequestCounts too long alert name",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherAPIRequestCounts: GatherAPIRequestCountsParams{
+							AlertName: strings.Repeat("x", 130),
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.api_request_counts_of_resource_from_alert.alert_name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+			},
+		},
+		{
+			Name: "GatherImageStreamsOfNamespace invalid namespace",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherImageStreamsOfNamespace: GatherImageStreamsOfNamespaceParams{
+							Namespace: "invalid_namespace",
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.image_streams_of_namespace.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'`,
+			},
+		},
+		{
+			Name: "GatherImageStreamsOfNamespace invalid namespace 2",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherImageStreamsOfNamespace: GatherImageStreamsOfNamespaceParams{
+							Namespace: "openshift-???",
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.image_streams_of_namespace.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'`,
+			},
+		},
+		{
+			Name: "GatherImageStreamsOfNamespace too long namespace",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherImageStreamsOfNamespace: GatherImageStreamsOfNamespaceParams{
+							Namespace: "openshift-" + strings.Repeat("x", 130),
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.image_streams_of_namespace.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'`,
+			},
+		},
+		{
+			Name: "GatherContainersLogs invalid container name",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherContainersLogs: GatherContainersLogsParams{
+							AlertName: "NonExistingAlert",
+							Namespace: "openshift-namespace",
+							Container: "???container",
+							TailLines: 3,
+							Previous:  false,
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.containers_logs.container: Does not match pattern '^[a-zA-Z0-9_.-]{1,128}$'`,
+			},
+		},
+		{
+			Name: "GatherContainersLogs too long container name",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherContainersLogs: GatherContainersLogsParams{
+							AlertName: "NonExistingAlert",
+							Namespace: "openshift-namespace",
+							Container: strings.Repeat("x", 130),
+							TailLines: 3,
+							Previous:  false,
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.containers_logs.container: Does not match pattern '^[a-zA-Z0-9_.-]{1,128}$'`,
+			},
+		},
+		{
+			Name: "GatherContainersLogs too many tail lines",
+			Rules: []GatheringRule{
+				{
+					Conditions: []ConditionWithParams{},
+					GatheringFunctions: map[GatheringFunctionName]interface{}{
+						GatherContainersLogs: GatherContainersLogsParams{
+							AlertName: "NonExistingAlert",
+							Namespace: "openshift-namespace",
+							Container: "container",
+							TailLines: 4097,
+							Previous:  false,
+						},
+					},
+				},
+			},
+			Errors: []string{
+				`0.gathering_functions.containers_logs.tail_lines: Must be less than or equal to 4096`,
 			},
 		},
 	}
