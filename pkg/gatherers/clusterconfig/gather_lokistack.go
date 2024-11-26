@@ -75,6 +75,7 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 
 		namespace := item.GetNamespace()
 		if namespace != "openshift-logging" {
+			klog.Infof("LokiStack resource found in an unexpected namespace %s", namespace)
 			if !otherNamespaceError {
 				otherNamespaceError = true
 				errs = append(errs, fmt.Errorf("found resource in an unexpected namespace"))
