@@ -34,6 +34,9 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dataGatherName,
 			Namespace: insightsNamespace,
+			Annotations: map[string]string{
+				"openshift.io/required-scc": "restricted-v2",
+			},
 		},
 		Spec: batchv1.JobSpec{
 			// backoff limit is 0 - we dont' want to restart the gathering immediately in case of failure
