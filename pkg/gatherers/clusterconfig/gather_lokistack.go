@@ -5,6 +5,7 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
@@ -74,7 +75,7 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 		item := loggingResourceList.Items[index]
 
 		namespace := item.GetNamespace()
-		if namespace != "openshift-logging" {
+		if !strings.HasPrefix(namespace, "openshift-") {
 			klog.Infof("LokiStack resource found in an unexpected namespace %s", namespace)
 			if !otherNamespaceError {
 				otherNamespaceError = true
