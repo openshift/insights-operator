@@ -49,6 +49,9 @@ var (
 	openshiftLoggingResource = schema.GroupVersionResource{
 		Group: "logging.openshift.io", Version: "v1", Resource: "clusterloggings",
 	}
+	lokiStackResource = schema.GroupVersionResource{
+		Group: "loki.grafana.com", Version: "v1", Resource: "lokistacks",
+	}
 	storageClusterResource = schema.GroupVersionResource{
 		Group: "ocs.openshift.io", Version: "v1", Resource: "storageclusters",
 	}
