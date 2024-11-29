@@ -1046,6 +1046,36 @@ None
 None
 
 
+## LokiStack
+
+Collects `lokistacks.loki.grafana.com` resources.
+
+The gatherer will collect up to 20 resources from `openshift-logging` namespace
+and it will report errors if it finds a `LokiStack` resource in a different namespace
+or if there are more than 20 `LokiStacks` in the `openshift-logging` namespace.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openshift-logging/.json](./insights-archive-sample/namespaces/openshift-logging/.json)
+
+### Location in archive
+- `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
+
+### Config ID
+`clusterconfig/lokistacks
+
+### Released version
+- 4.18.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## Machine
 
 Collects `Machine` information.
