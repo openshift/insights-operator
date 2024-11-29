@@ -132,7 +132,12 @@ func Test_Validation_InvalidGatheringRules(t *testing.T) {
 		},
 	}
 
-	assertValidationTestCases(t, testCases)
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			errs := validateGatheringRules(tc.Rules)
+			assertErrsMatchStrings(t, errs, tc.Errors, tc.Name)
+		})
+	}
 }
 
 func Test_Validation_InvalidConditions(t *testing.T) {
@@ -160,12 +165,12 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
+				`0.conditions.0.type: 0.conditions.0.type does not match: "alert_is_firing"`,
 				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0: alert is required`,
-				`0.conditions.0.type: 0.conditions.0.type does not match: "alert_is_firing"`,
+				`0.conditions.1.type: 0.conditions.1.type does not match: "alert_is_firing"`,
 				`0.conditions.1: Must validate at least one schema (anyOf)`,
 				`0.conditions.1: alert is required`,
-				`0.conditions.1.type: 0.conditions.1.type does not match: "alert_is_firing"`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -198,8 +203,8 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
-				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -216,9 +221,9 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
-				`0.gathering_functions: Invalid type. Expected: object, given: null`,
-				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
+				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
 		{
@@ -234,8 +239,8 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
-				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -252,8 +257,8 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
-				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.cluster_version_matches.version: String length must be greater than or equal to 1`,
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -270,8 +275,8 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
-				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.cluster_version_matches.version: String length must be less than or equal to 64`,
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -288,8 +293,8 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
-				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -306,8 +311,8 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 				},
 			}},
 			Errors: []string{
-				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.conditions.0.alert.name: Does not match pattern '^[a-zA-Z0-9_]{1,128}$'`,
+				`0.conditions.0: Must validate at least one schema (anyOf)`,
 				`0.gathering_functions: Invalid type. Expected: object, given: null`,
 			},
 		},
@@ -323,7 +328,12 @@ func Test_Validation_InvalidConditions(t *testing.T) {
 		},
 	}
 
-	assertValidationTestCases(t, testCases)
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			errs := validateGatheringRules(tc.Rules)
+			assertErrsMatchStrings(t, errs, tc.Errors, tc.Name)
+		})
+	}
 }
 
 func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
@@ -382,9 +392,9 @@ func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
 				},
 			},
 			Errors: []string{
+				`0.gathering_functions.image_streams_of_namespace.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'`,
 				`0.gathering_functions.logs_of_namespace.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'`,
 				`0.gathering_functions.logs_of_namespace.tail_lines: Must be greater than or equal to 1`,
-				`0.gathering_functions.image_streams_of_namespace.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$'`,
 			},
 		},
 		{
@@ -592,13 +602,11 @@ func Test_Validation_InvalidGatheringFunctions(t *testing.T) { //nolint:funlen
 		},
 	}
 
-	assertValidationTestCases(t, testCases)
-}
-
-func assertValidationTestCases(t *testing.T, validationTestCases []validationTestCase) {
-	for _, testCase := range validationTestCases {
-		errs := validateGatheringRules(testCase.Rules)
-		assertErrsMatchStrings(t, errs, testCase.Errors, testCase.Name)
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			errs := validateGatheringRules(tc.Rules)
+			assertErrsMatchStrings(t, errs, tc.Errors, tc.Name)
+		})
 	}
 }
 
@@ -608,5 +616,5 @@ func assertErrsMatchStrings(t *testing.T, errs []error, expectedStrings []string
 		errStrings = append(errStrings, err.Error())
 	}
 
-	assert.ElementsMatchf(t, expectedStrings, errStrings, message)
+	assert.Equal(t, expectedStrings, errStrings, message)
 }
