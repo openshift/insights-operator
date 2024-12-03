@@ -87,6 +87,7 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 
 		if len(records) >= lokiStackResourceLimit {
 			if !tooManyResourcesError {
+				tooManyResourcesError = true
 				errs = append(errs, fmt.Errorf(
 					"found %d resources, limit (%d) reached",
 					len(loggingResourceList.Items), lokiStackResourceLimit),
