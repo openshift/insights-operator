@@ -18,7 +18,6 @@ func Test_HandleTasksConcurrently(t *testing.T) {
 	var tasks []Task
 
 	for i := 0; i < N; i++ {
-		i := i
 		tasks = append(tasks, Task{
 			Name: fmt.Sprintf("task_%v", i),
 			F: gatherers.GatheringClosure{

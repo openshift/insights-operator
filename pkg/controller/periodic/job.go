@@ -118,7 +118,7 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 
 // WaitForJobCompletion listen the Kubernetes events to check if job finished.
 func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.Job) error {
-	watcherFnc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+	watcherFnc := func(_ metav1.ListOptions) (apiWatch.Interface, error) {
 		return j.kubeClient.BatchV1().Jobs(insightsNamespace).
 			Watch(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", job.Name)})
 	}

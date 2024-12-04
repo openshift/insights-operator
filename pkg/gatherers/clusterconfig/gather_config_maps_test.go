@@ -53,7 +53,6 @@ func Test_ConfigMap_Anonymizer(t *testing.T) {
 	}
 
 	for _, tt := range cases {
-		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			t.Parallel()
 			cml, err := readConfigMapsTestData()
