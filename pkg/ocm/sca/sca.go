@@ -114,7 +114,7 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 			})
 			return
 		}
-		klog.Warningf(errMsg)
+		klog.Warning(errMsg)
 		c.StatusController.UpdateStatus(controllerstatus.Summary{
 			Operation:          controllerstatus.PullingSCACerts,
 			Healthy:            true,

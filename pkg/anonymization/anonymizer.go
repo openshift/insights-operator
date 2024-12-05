@@ -522,7 +522,8 @@ func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 	intValue := big.NewInt(0)
 
 	for byteIndex, byteValue := range originalIP {
-		shiftTo := uint((len(originalIP) - byteIndex - 1) * 8)
+		// TODO - introduce proper int -> uint conversion
+		shiftTo := uint((len(originalIP) - byteIndex - 1) * 8) //nolint:gosec
 		intValue = intValue.Or(
 			intValue, big.NewInt(0).Lsh(big.NewInt(int64(byteValue)), shiftTo),
 		)

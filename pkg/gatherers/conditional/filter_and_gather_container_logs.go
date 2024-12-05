@@ -130,7 +130,7 @@ func filterContainerLogs(ctx context.Context,
 	podToContainers, errs := createPodToContainersAndMessagesMapping(ctx, coreClient, logRequest)
 	if len(errs) > 0 {
 		errMessage := fmt.Sprintf("Failed to get matching pod names for namespace %s: %v\n", logRequest.Namespace, utils.UniqueErrors(errs))
-		klog.Errorf(errMessage)
+		klog.Error(errMessage)
 		for _, err := range errs {
 			recCh <- &recordWithError{
 				r:   nil,

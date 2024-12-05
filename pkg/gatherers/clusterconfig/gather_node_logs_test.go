@@ -23,7 +23,7 @@ import (
 )
 
 func Test_nodeLogRecords(t *testing.T) {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	rc := testRESTClient(t, s)
@@ -83,7 +83,7 @@ Aug 21 17:00:38 ip-10-57-11-201 hyperkube[1445]: W0826 17:00:38.117634    1445 c
 Aug 26 17:00:14 ip-10-57-11-201 hyperkube[1445]: E0826 17:00:14.128025    1445 kubelet.go:1882] "Skipping pod synchronization" err="[container runtime status check may not have completed yet, PLEG is not healthy: pleg has yet to be successful]"`
 
 	// nolint: errcheck
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		gz := testGzipped(serverData)
 		out, _ := io.ReadAll(gz)
 		w.WriteHeader(http.StatusOK)

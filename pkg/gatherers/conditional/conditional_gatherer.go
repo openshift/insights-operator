@@ -104,7 +104,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	remoteConfigData, err := g.getRemoteConfiguration(ctx)
 	if err != nil {
 		// failed to get the remote configuration -> use default
-		klog.Infof(err.Error())
+		klog.Info(err.Error())
 		g.remoteConfigStatus.ConfigAvailable = false
 		g.remoteConfigStatus.Err = err
 		g.remoteConfigStatus.ConfigData = []byte(defaultRemoteConfiguration)

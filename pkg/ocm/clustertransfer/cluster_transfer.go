@@ -92,7 +92,7 @@ func (c *Controller) requestDataAndUpdateSecret(ctx context.Context, endpoint st
 			return
 		}
 		// we are probably in disconnected environment
-		klog.Errorf(msg)
+		klog.Error(msg)
 		c.updateStatus(true, msg, disconnectedReason, nil)
 		return
 	}
@@ -122,14 +122,14 @@ func (c *Controller) requestDataAndUpdateSecret(ctx context.Context, endpoint st
 func (c *Controller) checkCTListAndOptionallyUpdatePS(ctx context.Context, ctList *clusterTransferList) {
 	if ctList.Total > 1 {
 		msg := "there are more accepted cluster transfers. The pull-secret will not be updated!"
-		klog.Infof(msg)
+		klog.Info(msg)
 		c.updateStatus(true, msg, moreAcceptedClusterTransfers, nil)
 		return
 	}
 	// this should not happen. This is just safe check
 	if len(ctList.Transfers) != 1 {
 		msg := "unexpected number of cluster transfers received from the API"
-		klog.Infof(msg)
+		klog.Info(msg)
 		c.updateStatus(true, msg, unexpectedData, nil)
 		return
 	}
@@ -140,7 +140,7 @@ func (c *Controller) checkCTListAndOptionallyUpdatePS(ctx context.Context, ctLis
 	updating, err := c.isUpdateRequired(ctx, newPullSecret)
 	if err != nil {
 		statusMsg = fmt.Sprintf("new pull-secret check failed: %v", err)
-		klog.Errorf(statusMsg)
+		klog.Error(statusMsg)
 		c.updateStatus(false, statusMsg, dataCorrupted, nil)
 		return
 	}
@@ -149,7 +149,7 @@ func (c *Controller) checkCTListAndOptionallyUpdatePS(ctx context.Context, ctLis
 		err = c.updatePullSecret(ctx, newPullSecret)
 		if err != nil {
 			statusMsg = fmt.Sprintf("failed to update pull-secret: %v", err)
-			klog.Errorf(statusMsg)
+			klog.Error(statusMsg)
 			c.updateStatus(false, statusMsg, "UpdateFailed", nil)
 			return
 		}
