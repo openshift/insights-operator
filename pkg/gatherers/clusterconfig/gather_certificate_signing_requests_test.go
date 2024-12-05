@@ -22,7 +22,6 @@ func Test_gatherCertificateSigningRequests(t *testing.T) {
 	}
 
 	for _, tt := range files {
-		tt := tt
 		t.Run(tt.dataFile, func(t *testing.T) {
 			t.Parallel()
 
@@ -86,7 +85,6 @@ func Test_gatherCertificateSigningRequestsFilters(t *testing.T) {
 
 	for i, tt := range files {
 		n := csrName(tt.csr, fmt.Sprintf("[n/a:%d]", i))
-		tt := tt
 		t.Run(n, func(t *testing.T) {
 			t.Parallel()
 

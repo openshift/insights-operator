@@ -229,7 +229,6 @@ func Test_GatherNamespaceEvents(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := gatherNamespaceEvents(tt.args.ctx, tt.args.coreClient, tt.args.namespace, 1*time.Minute)
@@ -289,7 +288,6 @@ func Test_FetchPodContainerLog(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if err := fetchPodContainerLog(
@@ -373,7 +371,6 @@ func Test_IsHealthyOperator(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := isHealthyOperator(tt.args.operator); got != tt.want {
@@ -513,7 +510,6 @@ func Test_NamespacesForOperator(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := namespacesForOperator(tt.args.operator); !reflect.DeepEqual(got, tt.want) {

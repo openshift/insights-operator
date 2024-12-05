@@ -495,19 +495,19 @@ func TestCollectAndRecordGathererPanic(t *testing.T) {
 
 func TestCollectAndRecordGathererDuplicateRecords(t *testing.T) {
 	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
-		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
+		"function_1": {Run: func(_ context.Context) ([]record.Record, []error) {
 			return []record.Record{{
 				Name: "record_1",
 				Item: record.JSONMarshaller{Object: "content_1"},
 			}}, nil
 		}},
-		"function_2": {Run: func(ctx context.Context) ([]record.Record, []error) {
+		"function_2": {Run: func(_ context.Context) ([]record.Record, []error) {
 			return []record.Record{{
 				Name: "record_1",
 				Item: record.JSONMarshaller{Object: "content_2"},
 			}}, nil
 		}},
-		"function_3": {Run: func(ctx context.Context) ([]record.Record, []error) {
+		"function_3": {Run: func(_ context.Context) ([]record.Record, []error) {
 			return []record.Record{{
 				Name: "record_2",
 				Item: record.JSONMarshaller{Object: "content_1"},
@@ -563,7 +563,7 @@ func TestCollectAndRecordGathererDuplicateRecords(t *testing.T) {
 
 func TestCollectAndRecordGathererWarning(t *testing.T) {
 	gatherer := &MockGathererWithProvidedFunctions{Functions: map[string]gatherers.GatheringClosure{
-		"function_1": {Run: func(ctx context.Context) ([]record.Record, []error) {
+		"function_1": {Run: func(_ context.Context) ([]record.Record, []error) {
 			return nil, []error{&types.Warning{UnderlyingValue: fmt.Errorf("test warning")}}
 		}},
 	}}

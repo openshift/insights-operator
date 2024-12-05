@@ -42,7 +42,7 @@ func NewOperatorCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			err := cmd.Help()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
