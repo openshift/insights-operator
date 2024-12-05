@@ -124,7 +124,7 @@ func (c *Collector) FQName() string {
 	return c.metricName
 }
 
-func totalRiskToStr(totalRisk int) string {
+func totalRiskToStr(totalRisk int32) string {
 	switch totalRisk {
 	case 1:
 		return "Low"

@@ -4,8 +4,6 @@ linters-settings:
   funlen:
     lines: 100
     statements: 50
-  gci:
-    local-prefixes: github.com/golangci/golangci-lint
   goconst:
     min-len: 2
     min-occurrences: 2
@@ -39,7 +37,7 @@ linters-settings:
           - condition
           - return
   govet:
-    check-shadowing: true
+    shadow: true
     settings:
       printf:
         funcs:
@@ -62,14 +60,16 @@ linters-settings:
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
+  gci:
+    sections:
+      prefix: github.com/golangci/golangci-lint
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    - copyloopvar
     - exhaustive
     - funlen
     - gochecknoinits
@@ -90,13 +90,11 @@ linters:
     - noctx
     - rowserrcheck
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
 
   # don't enable:
@@ -130,10 +128,10 @@ issues:
         - funlen
         - gosec
         - dupl
-
-run:
-  timeout: 5m
-  skip-dirs:
+  exclude-dirs:
     - tests/integration
     - pkg/insights
     - pkg/dependencymagnet
+
+run:
+  timeout: 5m

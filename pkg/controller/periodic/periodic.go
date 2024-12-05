@@ -562,7 +562,7 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 		}
 		healthCheck := insightsv1alpha1.HealthCheck{
 			Description: recommendation.Description,
-			TotalRisk:   int32(recommendation.TotalRisk),
+			TotalRisk:   recommendation.TotalRisk,
 			State:       insightsv1alpha1.HealthCheckEnabled,
 			AdvisorURI:  advisorLink,
 		}

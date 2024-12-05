@@ -108,8 +108,8 @@ func NewGatherAndUpload() *cobra.Command {
 }
 
 // Starts a single gather, main responsibility is loading in the necessary configs.
-func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
+func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, _ []string) {
+	return func(cmd *cobra.Command, _ []string) {
 		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
 			klog.Exit("error: --config is required")
 		}
@@ -195,8 +195,8 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 }
 
 // Boilerplate for running an operator and handling command line arguments.
-func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
+func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, _ []string) {
+	return func(cmd *cobra.Command, _ []string) {
 		// boilerplate for the "normal" command
 		defer serviceability.BehaviorOnPanic(os.Getenv("OPENSHIFT_ON_PANIC"), version.Get())()
 		defer serviceability.Profile(os.Getenv("OPENSHIFT_PROFILE")).Stop()
@@ -249,8 +249,8 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 
 // Starts a single gather, main responsibility is loading in the necessary configs.
 func runGatherAndUpload(operator *controller.GatherJob,
-	cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
+	cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, _ []string) {
+	return func(cmd *cobra.Command, _ []string) {
 		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
 			klog.Exit("error: --config is required")
 		}

@@ -35,7 +35,7 @@ type RuleWithContentResponse struct {
 	Reason          string      `json:"reason"`
 	Resolution      string      `json:"resolution"`
 	MoreInfo        string      `json:"more_info"`
-	TotalRisk       int         `json:"total_risk"`
+	TotalRisk       int32       `json:"total_risk"`
 	RiskOfChange    int         `json:"risk_of_change"`
 	Disabled        bool        `json:"disabled"`
 	DisableFeedback string      `json:"disable_feedback"`
@@ -62,13 +62,13 @@ type InsightsRecommendation struct {
 	// Because of that, it is a string instead of the special ErrorKey type.
 	ErrorKey    string
 	Description string
-	TotalRisk   int
+	TotalRisk   int32
 }
 
 type Recommendation struct {
 	ErrorKey    string `json:"error_key"`
 	Description string `json:"description"`
-	TotalRisk   int    `json:"total_risk"`
+	TotalRisk   int32  `json:"total_risk"`
 	RuleFQDN    string `json:"rule_fqdn"`
 }
 

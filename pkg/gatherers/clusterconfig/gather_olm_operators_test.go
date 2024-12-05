@@ -84,7 +84,6 @@ func Test_OLMOperators_Gather(t *testing.T) {
 	}
 
 	for _, tt := range cases {
-		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			olmOpContent, err := readFromFile(tt.olmOperatorFileName)
 			if err != nil {
