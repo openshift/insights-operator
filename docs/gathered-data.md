@@ -1002,15 +1002,15 @@ None
 
 Collects `lokistacks.loki.grafana.com` resources.
 
-The gatherer will collect up to 20 resources from `openshift-logging` namespace
+The gatherer will collect up to 20 resources from `openshift-*` namespaces
 and it will report errors if it finds a `LokiStack` resource in a different namespace
-or if there are more than 20 `LokiStacks` in the `openshift-logging` namespace.
+or if there are more than 20 `LokiStacks` in the `openshift-*` namespaces.
 
 ### API Reference
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openshift-logging/.json](./insights-archive-sample/namespaces/openshift-logging/.json)
+- [docs/insights-archive-sample/namespaces/openshift-logging/lokistack-sample.json](./insights-archive-sample/namespaces/openshift-logging/lokistack-sample.json)
 
 ### Location in archive
 - `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
@@ -1019,7 +1019,7 @@ None
 `clusterconfig/lokistacks
 
 ### Released version
-- 4.18.0
+- 4.19.0
 
 ### Backported versions
 None
@@ -1631,7 +1631,7 @@ resources from all namespaces
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm-ipam.json)
+- [docs/insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json](./insights-archive-sample/namespaces/openstack/dataplane.openstack.org/openstackdataplanenodesets/openstack-edpm.json)
 
 ### Location in archive
 - `namespaces/{namespace}/dataplane.openstack.org/openstackdataplanes/{name}.json`
@@ -1655,7 +1655,7 @@ resources from all namespaces
 None
 
 ### Sample data
-- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversions/openstack-galera-network-isolation.json)
+- [docs/insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json](./insights-archive-sample/namespaces/openstack/core.openstack.org/openstackversion/openstack-galera-network-isolation.json)
 
 ### Location in archive
 - `namespaces/{namespace}/core.openstack.org/openstackversion/{name}.json`
@@ -2094,5 +2094,6 @@ None
 
 ### Changes
 - Image repository is now collected if it comes from outside the Red Hat domain
+- [Tech Preview] runtime info for workloads are collected (since 4.18.0)
 
 
