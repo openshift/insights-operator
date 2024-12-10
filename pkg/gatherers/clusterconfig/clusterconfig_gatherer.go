@@ -26,6 +26,7 @@ type Gatherer struct {
 type gathererFuncPtr = func(*Gatherer, context.Context) ([]record.Record, []error)
 
 var gatheringFunctions = map[string]gathererFuncPtr{
+<<<<<<< HEAD
 	"active_alerts":                     (*Gatherer).GatherActiveAlerts,
 	"aggregated_monitoring_cr_names":    (*Gatherer).GatherAggregatedMonitoringCRNames,
 	"authentication":                    (*Gatherer).GatherClusterAuthentication,
@@ -50,6 +51,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"install_plans":                     (*Gatherer).GatherInstallPlans,
 	"jaegers":                           (*Gatherer).GatherJaegerCR,
 	"kube_controller_manager_logs":      (*Gatherer).GatherKubeControllerManagerLogs,
+	"lokistack":                         (*Gatherer).GatherLokiStack,
 	"machine_autoscalers":               (*Gatherer).GatherMachineAutoscalers,
 	"machine_config_pools":              (*Gatherer).GatherMachineConfigPool,
 	"machine_configs":                   (*Gatherer).GatherMachineConfigs,
