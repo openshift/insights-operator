@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"reflect"
@@ -60,7 +61,8 @@ func gatherWorkloadRuntimeInfos(
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
-			extractorURL := fmt.Sprintf("https://%s:8000/gather_runtime_info", podInfo.podIP)
+			hostPort := net.JoinHostPort(podInfo.podIP, "8000")
+			extractorURL := fmt.Sprintf("https://%s/gather_runtime_info", hostPort)
 			httpCli, err := createHTTPClient()
 			if err != nil {
 				klog.Errorf("Failed to initialize the HTTP client: %v", err)
