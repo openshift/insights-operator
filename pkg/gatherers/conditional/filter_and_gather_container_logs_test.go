@@ -404,7 +404,7 @@ func TestCreatePodToContainersMap(t *testing.T) {
 
 			mapResult, errs := createPodToContainersAndMessagesMapping(context.Background(), cli.CoreV1(), tt.logRequest)
 			if len(tt.expectedErrs) > 0 {
-				assert.Equal(t, tt.expectedErrs, errs)
+				assert.ElementsMatch(t, tt.expectedErrs, errs)
 			}
 			assert.EqualValues(t, tt.expectedMap, mapResult)
 		})
