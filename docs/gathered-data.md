@@ -1016,6 +1016,36 @@ None
 None
 
 
+## LokiStack
+
+Collects `lokistacks.loki.grafana.com` resources.
+
+The gatherer will collect up to 20 resources from `openshift-*` namespaces
+and it will report errors if it finds a `LokiStack` resource in a different namespace
+or if there are more than 20 `LokiStacks` in the `openshift-*` namespaces.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openshift-logging/lokistack-sample.json](./insights-archive-sample/namespaces/openshift-logging/lokistack-sample.json)
+
+### Location in archive
+- `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
+
+### Config ID
+`clusterconfig/lokistacks
+
+### Released version
+- 4.19.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## Machine
 
 Collects `Machine` information.
@@ -2193,5 +2223,6 @@ None
 
 ### Changes
 - Image repository is now collected if it comes from outside the Red Hat domain
+- [Tech Preview] runtime info for workloads are collected (since 4.18.0)
 
 
