@@ -4,11 +4,14 @@ import (
 	"context"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	operatorapiv1 "github.com/openshift/api/operator/v1"
+	applyoperatorv1 "github.com/openshift/client-go/operator/applyconfigurations/operator/v1"
 	operatorclientv1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
+	"github.com/openshift/library-go/pkg/apiserver/jsonpatch"
 )
 
 type genericClient struct {
@@ -89,4 +92,43 @@ func (p *genericClient) GetOperatorStateWithQuorum(_ context.Context) (spec *ope
 	}
 
 	return &resource.Spec.OperatorSpec, &resource.Status.OperatorStatus, resource.ResourceVersion, nil
+}
+
+func (p *genericClient) ApplyOperatorSpec(ctx context.Context,
+	fieldManager string,
+	applyConfiguration *applyoperatorv1.OperatorSpecApplyConfiguration) (err error) {
+	desiredSpecApplyConf := &applyoperatorv1.InsightsOperatorApplyConfiguration{
+		Spec: &applyoperatorv1.InsightsOperatorSpecApplyConfiguration{
+			OperatorSpecApplyConfiguration: *applyConfiguration,
+		},
+	}
+	_, err = p.client.InsightsOperators().Apply(ctx, desiredSpecApplyConf, metav1.ApplyOptions{
+		FieldManager: fieldManager,
+	})
+	return err
+}
+
+func (p *genericClient) ApplyOperatorStatus(ctx context.Context,
+	fieldManager string,
+	applyConfiguration *applyoperatorv1.OperatorStatusApplyConfiguration) (err error) {
+	desiredStattusApplyConf := &applyoperatorv1.InsightsOperatorApplyConfiguration{
+		Status: &applyoperatorv1.InsightsOperatorStatusApplyConfiguration{
+			OperatorStatusApplyConfiguration: *applyConfiguration,
+		},
+	}
+
+	_, err = p.client.InsightsOperators().ApplyStatus(ctx, desiredStattusApplyConf, metav1.ApplyOptions{
+		FieldManager: fieldManager,
+	})
+	return err
+}
+
+func (p *genericClient) PatchOperatorStatus(ctx context.Context,
+	jsonPatch *jsonpatch.PatchSet) (err error) {
+	jpData, err := jsonPatch.Marshal()
+	if err != nil {
+		return err
+	}
+	_, err = p.client.InsightsOperators().Patch(ctx, "cluster", types.JSONPatchType, jpData, metav1.PatchOptions{}, "/status")
+	return err
 }
