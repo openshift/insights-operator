@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller"
@@ -51,7 +52,7 @@ func NewOperator() *cobra.Command {
 			},
 		},
 	}
-	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), operator.Run)
+	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), operator.Run, clock.RealClock{})
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start the operator",
@@ -71,7 +72,7 @@ func NewGather() *cobra.Command {
 			Interval:                    30 * time.Minute,
 		},
 	}
-	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil)
+	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil, clock.RealClock{})
 	cmd := &cobra.Command{
 		Use:   "gather",
 		Short: "Does a single gather, without uploading it",
@@ -97,7 +98,7 @@ func NewGatherAndUpload() *cobra.Command {
 			ReportEndpointTechPreview:   "https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/request/%s/report",
 		},
 	}
-	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil)
+	cfg := controllercmd.NewControllerCommandConfig("openshift-insights-operator", version.Get(), nil, clock.RealClock{})
 	cmd := &cobra.Command{
 		Use:   "gather-and-upload",
 		Short: "Runs the data gathering as job, uploads the data, waits for Insights analysis report and ends",
@@ -165,7 +166,7 @@ func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerComm
 		featureGateAccessor := featuregates.NewFeatureGateAccess(
 			desiredVersion, missingVersion,
 			configInformers.Config().V1().ClusterVersions(), configInformers.Config().V1().FeatureGates(),
-			events.NewLoggingEventRecorder("insights-gather"),
+			events.NewLoggingEventRecorder("insights-gather", clock.RealClock{}),
 		)
 		go featureGateAccessor.Run(ctx)
 		go configInformers.Start(ctx.Done())
@@ -236,7 +237,7 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 			}
 		}()
 
-		builder := controllercmd.NewController("openshift-insights-operator", operator.Run).
+		builder := controllercmd.NewController("openshift-insights-operator", operator.Run, clock.RealClock{}).
 			WithKubeConfigFile(cmd.Flags().Lookup("kubeconfig").Value.String(), nil).
 			WithLeaderElection(operatorConfig.LeaderElection, "", "openshift-insights-operator-lock").
 			WithServer(operatorConfig.ServingInfo, operatorConfig.Authentication, operatorConfig.Authorization).
@@ -305,7 +306,7 @@ func runGatherAndUpload(operator *controller.GatherJob,
 		featureGateAccessor := featuregates.NewFeatureGateAccess(
 			desiredVersion, missingVersion,
 			configInformers.Config().V1().ClusterVersions(), configInformers.Config().V1().FeatureGates(),
-			events.NewLoggingEventRecorder("insights-gather"),
+			events.NewLoggingEventRecorder("insights-gather", clock.RealClock{}),
 		)
 		go featureGateAccessor.Run(ctx)
 		go configInformers.Start(ctx.Done())
