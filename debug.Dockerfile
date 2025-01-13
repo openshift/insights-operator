@@ -2,7 +2,6 @@ FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.23-openshift-4.19 AS 
 RUN GOFLAGS='' go install github.com/go-delve/delve/cmd/dlv@v1.24.0
 WORKDIR /go/src/github.com/openshift/insights-operator
 COPY . .
-ENV GOEXPERIMENT=strictfipsruntime
 RUN make build-debug
 
 FROM registry.ci.openshift.org/ocp/4.19:base-rhel9
