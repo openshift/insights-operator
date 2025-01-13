@@ -6,7 +6,7 @@ RUN make build-debug
 
 FROM registry.ci.openshift.org/ocp/4.19:base-rhel9
 COPY --from=builder /go/src/github.com/openshift/insights-operator/bin/insights-operator /usr/bin/
-COPY --from=builder /usr/bin/dlv /usr/bin/
+COPY --from=builder /go/bin/dlv /usr/bin/
 COPY config/pod.yaml /etc/insights-operator/server.yaml
 COPY manifests /manifests
 LABEL io.openshift.release.operator=true
