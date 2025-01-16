@@ -65,7 +65,7 @@ func (p *PrometheusRulesController) Start(ctx context.Context) {
 func (p *PrometheusRulesController) checkAlertsDisabled(ctx context.Context) {
 	disableInsightsAlerts := p.configurator.Config().Alerting.Disabled
 
-	if disableInsightsAlerts && p.promRulesExist {
+	if disableInsightsAlerts {
 		err := p.removeInsightsAlerts(ctx)
 		if err != nil {
 			klog.Errorf("Failed to remove Insights Prometheus rules definition: %v", err)
