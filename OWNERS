@@ -1,8 +1,10 @@
 approvers:
 - tremes
 - ncaak
+- opokornyy
 reviewers:
 - tremes
 - ncaak
+- opokornyy
 
 component: "Insights Operator"
