@@ -6,6 +6,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Mapping of kubernetes architecture labels to the format used by SCA API
+var kubernetesArchMapping = map[string]string{
+	"386":     "x86",
+	"amd64":   "x86_64",
+	"ppc":     "ppc",
+	"ppc64":   "ppc64",
+	"ppc64le": "ppc64le",
+	"s390":    "s390",
+	"s390x":   "s390x",
+	"ia64":    "ia64",
+	"arm64":   "aarch64",
+}
+
 // gatherArchitectures connects to K8S API to retrieve the list of
 // nodes and create a set of the present architectures
 func (c *Controller) gatherArchitectures(ctx context.Context) (map[string]struct{}, error) {
@@ -17,7 +30,8 @@ func (c *Controller) gatherArchitectures(ctx context.Context) (map[string]struct
 	architectures := make(map[string]struct{})
 	for i := range nodes.Items {
 		nodeArch := nodes.Items[i].Status.NodeInfo.Architecture
-		architectures[nodeArch] = struct{}{}
+		architectures[kubernetesArchMapping[nodeArch]] = struct{}{}
 	}
+
 	return architectures, nil
 }
