@@ -19,12 +19,12 @@ const (
 	notFoundDataErr   = "can't find %s in the %s secret data"
 )
 
-var testingSCACertData = []SCACertData{
+var testingSCACertData = []CertData{
 	{
 		Cert: "testing-cert",
 		Key:  "testing-key",
 		ID:   "testing-id",
-		Metadata: SCACertMetadata{
+		Metadata: CertMetadata{
 			Arch: "aarch64",
 		},
 		OrgID: "testing-org-id",
@@ -33,7 +33,7 @@ var testingSCACertData = []SCACertData{
 		Cert: "testing-cert",
 		Key:  "testing-key",
 		ID:   "testing-id",
-		Metadata: SCACertMetadata{
+		Metadata: CertMetadata{
 			Arch: "x86_64",
 		},
 		OrgID: "testing-org-id",
@@ -45,7 +45,7 @@ func Test_SCAController_SecretIsCreated(t *testing.T) {
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 
-	testRes := &SCACertData{
+	testRes := &CertData{
 		Key:  "secret key",
 		Cert: "secret cert",
 	}
@@ -77,7 +77,7 @@ func Test_SCAController_SecretIsUpdated(t *testing.T) {
 	_, err := coreClient.Secrets(targetNamespaceName).Create(context.Background(), existingSec, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	scaController := New(coreClient, nil, nil)
-	testRes := &SCACertData{
+	testRes := &CertData{
 		Key:  "new secret testing key",
 		Cert: "new secret testing cert",
 	}
@@ -97,7 +97,7 @@ func Test_SCAController_ProcessSingleResponse(t *testing.T) {
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 
-	testingResponses := SCAResponse{
+	testingResponses := Response{
 		Items: testingSCACertData[:1],
 		Kind:  "EntitlementCertificatesList",
 		Total: 1,
@@ -120,7 +120,7 @@ func Test_SCAController_ProcessMultipleResponses(t *testing.T) {
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 
-	testingResponses := SCAResponse{
+	testingResponses := Response{
 		Items: testingSCACertData,
 		Kind:  "EntitlementCertificatesList",
 		Total: 2,

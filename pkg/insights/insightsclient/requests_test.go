@@ -165,13 +165,13 @@ func TestClient_RecvSCACerts(t *testing.T) {
 		"aarch64": {},
 	}
 
-	expectedResponse := sca.SCAResponse{
-		Items: []sca.SCACertData{
+	expectedResponse := sca.Response{
+		Items: []sca.CertData{
 			{
 				Cert: "testing-cert",
 				Key:  "testing-key",
 				ID:   "testing-id",
-				Metadata: sca.SCACertMetadata{
+				Metadata: sca.CertMetadata{
 					Arch: "aarch64",
 				},
 				OrgID: "testing-org-id",
@@ -180,7 +180,7 @@ func TestClient_RecvSCACerts(t *testing.T) {
 				Cert: "testing-cert",
 				Key:  "testing-key",
 				ID:   "testing-id",
-				Metadata: sca.SCACertMetadata{
+				Metadata: sca.CertMetadata{
 					Arch: "x86_64",
 				},
 				OrgID: "testing-org-id",
@@ -193,7 +193,7 @@ func TestClient_RecvSCACerts(t *testing.T) {
 	certsBytes, err := insightsClient.RecvSCACerts(context.Background(), endpoint, architectures)
 	assert.NoError(t, err)
 
-	var certReponse sca.SCAResponse
+	var certReponse sca.Response
 	assert.NoError(t, json.Unmarshal(certsBytes, &certReponse))
 	assert.Equal(t, expectedResponse, certReponse)
 }

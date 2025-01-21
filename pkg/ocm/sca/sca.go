@@ -24,7 +24,7 @@ import (
 const (
 	targetNamespaceName    = "openshift-config-managed" //nolint: gosec
 	secretName             = "etc-pki-entitlement"      //nolint: gosec
-	secretArchName         = "etc-pki-entitlement-%s"
+	secretArchName         = "etc-pki-entitlement-%s"   //nolint: gosec
 	entitlementAttrName    = "entitlement.pem"
 	entitlementKeyAttrName = "entitlement-key.pem"
 	ControllerName         = "scaController"
@@ -32,7 +32,7 @@ const (
 )
 
 // Mapping of architecture format used by SCA API to the format used by kubernetes
-var archMapping map[string]string = map[string]string{
+var archMapping = map[string]string{
 	"x86":     "386",
 	"x86_64":  "amd64",
 	"ppc":     "ppc",
@@ -52,24 +52,24 @@ type Controller struct {
 	client       *insightsclient.Client
 }
 
-// SCAResponse structure is used to unmarshall the OCM SCA response.
-type SCAResponse struct {
-	Items []SCACertData `json:"items"`
-	Kind  string        `json:"kind"`
-	Total int           `json:"total"`
+// Response structure is used to unmarshall the OCM SCA response.
+type Response struct {
+	Items []CertData `json:"items"`
+	Kind  string     `json:"kind"`
+	Total int        `json:"total"`
 }
 
-// SCACertData holds the SCA certificate
-type SCACertData struct {
-	ID       string          `json:"id"`
-	OrgID    string          `json:"organization_id"`
-	Key      string          `json:"key"`
-	Cert     string          `json:"cert"`
-	Metadata SCACertMetadata `json:"metadata"`
+// CertData holds the SCA certificate
+type CertData struct {
+	ID       string       `json:"id"`
+	OrgID    string       `json:"organization_id"`
+	Key      string       `json:"key"`
+	Cert     string       `json:"cert"`
+	Metadata CertMetadata `json:"metadata"`
 }
 
 // ResonseMetadata structure is used to unmarshall the OCM SCA response metadata.
-type SCACertMetadata struct {
+type CertMetadata struct {
 	Arch string `json:"arch"`
 }
 
@@ -173,7 +173,7 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 	})
 }
 
-func (c *Controller) processResponses(ctx context.Context, responses SCAResponse) error {
+func (c *Controller) processResponses(ctx context.Context, responses Response) error {
 	if responses.Total == 1 {
 		// If there is only one architecture then we will use the secret name "etc-pki-entitlement"
 		// without the arch suffix to keep the backward compatibility
@@ -196,7 +196,7 @@ func (c *Controller) processResponses(ctx context.Context, responses SCAResponse
 // secret in the "openshift-config-managed" namespace.
 // If the secret doesn't exist then it will create a new one.
 // If the secret already exist then it will update the data.
-func (c *Controller) checkSecret(ctx context.Context, ocmData *SCACertData, secretArchName string) error {
+func (c *Controller) checkSecret(ctx context.Context, ocmData *CertData, secretArchName string) error {
 	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(ctx, secretArchName, metav1.GetOptions{})
 
 	// if the secret doesn't exist then create one
@@ -218,7 +218,7 @@ func (c *Controller) checkSecret(ctx context.Context, ocmData *SCACertData, secr
 	return nil
 }
 
-func (c *Controller) createSecret(ctx context.Context, ocmData *SCACertData, secretArchName string) (*v1.Secret, error) {
+func (c *Controller) createSecret(ctx context.Context, ocmData *CertData, secretArchName string) (*v1.Secret, error) {
 	newSCA := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretArchName,
@@ -240,7 +240,7 @@ func (c *Controller) createSecret(ctx context.Context, ocmData *SCACertData, sec
 }
 
 // updateSecret updates provided secret with given data
-func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *SCACertData) (*v1.Secret, error) {
+func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *CertData) (*v1.Secret, error) {
 	s.Data = map[string][]byte{
 		entitlementAttrName:    []byte(ocmData.Cert),
 		entitlementKeyAttrName: []byte(ocmData.Key),
@@ -257,7 +257,7 @@ func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *SC
 // requestSCAWithExpBackoff queries OCM API with exponential backoff.
 // Returns HttpError (see insightsclient.go) in case of any HTTP error response from OCM API.
 // The exponential backoff is applied only for HTTP errors >= 500.
-func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string, architectures map[string]struct{}) (*SCAResponse, error) {
+func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string, architectures map[string]struct{}) (*Response, error) {
 	bo := wait.Backoff{
 		Duration: c.configurator.Config().SCA.Interval / 32, // 15 min by default
 		Factor:   2,
@@ -268,7 +268,7 @@ func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint stri
 
 	klog.Infof("Nodes architectures: %s", architectures)
 
-	var responses SCAResponse
+	var responses Response
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {
 		data, err := c.client.RecvSCACerts(ctx, endpoint, architectures)
 		if err != nil {
