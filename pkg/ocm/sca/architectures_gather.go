@@ -2,6 +2,7 @@ package sca
 
 import (
 	"context"
+	"runtime"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,6 +20,15 @@ var kubernetesArchMapping = map[string]string{
 	"arm64":   "aarch64",
 }
 
+func getArch(arch string) string {
+	if translation, ok := kubernetesArchMapping[arch]; ok {
+		return translation
+	}
+
+	// Default to the arch of a node where operator is running
+	return kubernetesArchMapping[runtime.GOARCH]
+}
+
 // gatherArchitectures connects to K8S API to retrieve the list of
 // nodes and create a set of the present architectures
 func (c *Controller) gatherArchitectures(ctx context.Context) (map[string]struct{}, error) {
@@ -30,7 +40,7 @@ func (c *Controller) gatherArchitectures(ctx context.Context) (map[string]struct
 	architectures := make(map[string]struct{})
 	for i := range nodes.Items {
 		nodeArch := nodes.Items[i].Status.NodeInfo.Architecture
-		architectures[kubernetesArchMapping[nodeArch]] = struct{}{}
+		architectures[getArch(nodeArch)] = struct{}{}
 	}
 
 	return architectures, nil
