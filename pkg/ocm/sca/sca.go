@@ -127,7 +127,8 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 
 	architectures, err := c.gatherArchitectures(ctx)
 	if err != nil {
-		klog.Warningf("Gathering nodes architectures failed: %s", err.Error())
+		klog.Errorf("Gathering nodes architectures failed: %s", err.Error())
+		return
 	}
 
 	responses, err := c.requestSCAWithExpBackoff(ctx, endpoint, architectures)
@@ -159,14 +160,12 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 
 	err = c.processResponses(ctx, *responses)
 	if err != nil {
-		klog.Errorf("Error when checking the sca secret: %v", err)
 		return
 	}
 
-	klog.Info("sca secret successfully updated")
 	c.UpdateStatus(controllerstatus.Summary{
 		Operation:          controllerstatus.PullingSCACerts,
-		Message:            fmt.Sprintf("SCA certs successfully updated in the %s secret", secretName),
+		Message:            "SCA certs successfully updated",
 		Healthy:            true,
 		LastTransitionTime: time.Now(),
 		Reason:             AvailableReason,
@@ -203,6 +202,7 @@ func (c *Controller) checkSecret(ctx context.Context, ocmData *CertData, secretA
 	if errors.IsNotFound(err) {
 		_, err = c.createSecret(ctx, ocmData, secretArchName)
 		if err != nil {
+			klog.Errorf("Error when checking the %s secret: %v", secretArchName, err)
 			return err
 		}
 		return nil
@@ -213,6 +213,7 @@ func (c *Controller) checkSecret(ctx context.Context, ocmData *CertData, secretA
 
 	_, err = c.updateSecret(ctx, scaSec, ocmData)
 	if err != nil {
+		klog.Errorf("Error when checking the %s secret: %v", secretName, err)
 		return err
 	}
 	return nil
@@ -236,6 +237,8 @@ func (c *Controller) createSecret(ctx context.Context, ocmData *CertData, secret
 		return nil, err
 	}
 
+	klog.Infof("%s secret successfully created", newSCA.Name)
+
 	return cm, nil
 }
 
@@ -250,6 +253,8 @@ func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *Ce
 	if err != nil {
 		return nil, err
 	}
+
+	klog.Infof("%s secret successfully updated", s.Name)
 
 	return s, nil
 }
@@ -268,9 +273,10 @@ func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint stri
 
 	klog.Infof("Nodes architectures: %s", architectures)
 
-	var responses Response
-	err := wait.ExponentialBackoff(bo, func() (bool, error) {
-		data, err := c.client.RecvSCACerts(ctx, endpoint, architectures)
+	var err error
+	var data []byte
+	err = wait.ExponentialBackoff(bo, func() (bool, error) {
+		data, err = c.client.RecvSCACerts(ctx, endpoint, architectures)
 		if err != nil {
 			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
 			if !insightsclient.IsHttpError(err) {
@@ -288,17 +294,18 @@ func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint stri
 			return true, httpErr
 		}
 
-		err = json.Unmarshal(data, &responses)
-		if err != nil {
-			klog.Errorf("Unable to decode response: %v", err)
-			return true, err
-		}
-
 		return true, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &responses, nil
+	var response Response
+	err = json.Unmarshal(data, &response)
+	if err != nil {
+		klog.Errorf("Unable to decode response: %v", err)
+		return nil, err
+	}
+
+	return &response, nil
 }
