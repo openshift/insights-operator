@@ -93,6 +93,13 @@ spec:
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
               value: unix:///crio.sock
+          livenessProbe:
+            exec:
+              command:
+                - crictl
+                - info
+              periodSeconds: 10
+              failureThreshold: 2
           resources: 
             requests:
               cpu: 10m
