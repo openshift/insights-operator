@@ -22,13 +22,14 @@ import (
 )
 
 const (
-	targetNamespaceName    = "openshift-config-managed" //nolint: gosec
-	secretName             = "etc-pki-entitlement"      //nolint: gosec
-	secretArchName         = "etc-pki-entitlement-%s"   //nolint: gosec
-	entitlementAttrName    = "entitlement.pem"
-	entitlementKeyAttrName = "entitlement-key.pem"
-	ControllerName         = "scaController"
-	AvailableReason        = "Updated"
+	targetNamespaceName        = "openshift-config-managed" //nolint: gosec
+	secretName                 = "etc-pki-entitlement"      //nolint: gosec
+	secretArchName             = "etc-pki-entitlement-%s"   //nolint: gosec
+	entitlementAttrName        = "entitlement.pem"
+	entitlementKeyAttrName     = "entitlement-key.pem"
+	ControllerName             = "scaController"
+	AvailableReason            = "Updated"
+	SCAProcessingFailureReason = "FailedToProcessSCACerts"
 )
 
 // Mapping of architecture format used by SCA API to the format used by kubernetes
@@ -160,6 +161,13 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 
 	err = c.processResponses(ctx, *responses)
 	if err != nil {
+		c.UpdateStatus(controllerstatus.Summary{
+			Operation:          controllerstatus.PullingSCACerts,
+			Message:            "Failed to process SCA certs: " + err.Error(),
+			Healthy:            false,
+			LastTransitionTime: time.Now(),
+			Reason:             SCAProcessingFailureReason,
+		})
 		return
 	}
 
@@ -202,18 +210,19 @@ func (c *Controller) checkSecret(ctx context.Context, ocmData *CertData, secretA
 	if errors.IsNotFound(err) {
 		_, err = c.createSecret(ctx, ocmData, secretArchName)
 		if err != nil {
-			klog.Errorf("Error when checking the %s secret: %v", secretArchName, err)
+			klog.Errorf("Error when creating the %s secret: %v", secretArchName, err)
 			return err
 		}
 		return nil
 	}
 	if err != nil {
+		klog.Errorf("Error getting the %s secret: %v", secretArchName, err)
 		return err
 	}
 
 	_, err = c.updateSecret(ctx, scaSec, ocmData)
 	if err != nil {
-		klog.Errorf("Error when checking the %s secret: %v", secretName, err)
+		klog.Errorf("Error when updating the %s secret: %v", secretName, err)
 		return err
 	}
 	return nil
