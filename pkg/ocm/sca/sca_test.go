@@ -92,53 +92,57 @@ func Test_SCAController_SecretIsUpdated(t *testing.T) {
 	assert.Equal(t, "new secret testing cert", string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
 }
 
-func Test_SCAController_ProcessSingleResponse(t *testing.T) {
+func Test_SCAController_ProcessResponses(t *testing.T) {
 	kube := kubefake.NewSimpleClientset()
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 
-	testingResponses := Response{
-		Items: testingSCACertData[:1],
-		Kind:  "EntitlementCertificatesList",
-		Total: 1,
+	testCases := []struct {
+		name     string
+		response Response
+	}{
+		{
+			name: "single architecture",
+			response: Response{
+				Items: testingSCACertData[:1],
+				Kind:  "EntitlementCertificatesList",
+				Total: 1,
+			},
+		},
+		{
+			name: "multiple architectures",
+			response: Response{
+				Items: testingSCACertData,
+				Kind:  "EntitlementCertificatesList",
+				Total: 2,
+			},
+		},
 	}
 
-	err := scaController.processResponses(context.Background(), testingResponses)
-	assert.NoError(t, err, "failed to process the response")
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			err := scaController.processResponses(context.Background(), tt.response)
+			assert.NoError(t, err, "failed to process the response")
 
-	// Should create one secret without the arch suffix to keep backward compatibility
-	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
-	assert.NoError(t, err, "can't get secret")
-	assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
-	assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
-	assert.Equal(t, testingResponses.Items[0].Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
-	assert.Equal(t, testingResponses.Items[0].Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
-}
+			for i, response := range tt.response.Items {
+				testSecretName := secretName
+				if tt.response.Total > 1 {
+					// Multiple architectures should create a secret with the arch suffix
+					testSecretName = fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch])
+				}
 
-func Test_SCAController_ProcessMultipleResponses(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
-	coreClient := kube.CoreV1()
-	scaController := New(coreClient, nil, nil)
+				testSecret, err := coreClient.Secrets(targetNamespaceName).Get(
+					context.Background(),
+					testSecretName,
+					metav1.GetOptions{},
+				)
 
-	testingResponses := Response{
-		Items: testingSCACertData,
-		Kind:  "EntitlementCertificatesList",
-		Total: 2,
-	}
-
-	err := scaController.processResponses(context.Background(), testingResponses)
-	assert.NoError(t, err, "failed to process the response")
-
-	for _, response := range testingResponses.Items {
-		testSecret, err := coreClient.Secrets(targetNamespaceName).Get(
-			context.Background(),
-			fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch]),
-			metav1.GetOptions{},
-		)
-		assert.NoError(t, err, "can't get secret")
-		assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, testSecret.Name)
-		assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, testSecret.Name)
-		assert.Equal(t, response.Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, testSecret.Name)
-		assert.Equal(t, response.Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, testSecret.Name)
+				assert.NoError(t, err, "can't get secret")
+				assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
+				assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
+				assert.Equal(t, tt.response.Items[i].Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
+				assert.Equal(t, tt.response.Items[i].Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
+			}
+		})
 	}
 }
