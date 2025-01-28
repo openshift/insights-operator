@@ -97,6 +97,7 @@ rules:
       - ""
     resources:
       - namespaces
+      - persistentvolumeclaims
     verbs:
       - get
   - apiGroups:
