@@ -16,13 +16,13 @@
 
 package v1
 
-// ExemplarsApplyConfiguration represents a declarative configuration of the Exemplars type for use
+// ExemplarsApplyConfiguration represents an declarative configuration of the Exemplars type for use
 // with apply.
 type ExemplarsApplyConfiguration struct {
 	MaxSize *int64 `json:"maxSize,omitempty"`
 }
 
-// ExemplarsApplyConfiguration constructs a declarative configuration of the Exemplars type for use with
+// ExemplarsApplyConfiguration constructs an declarative configuration of the Exemplars type for use with
 // apply.
 func Exemplars() *ExemplarsApplyConfiguration {
 	return &ExemplarsApplyConfiguration{}

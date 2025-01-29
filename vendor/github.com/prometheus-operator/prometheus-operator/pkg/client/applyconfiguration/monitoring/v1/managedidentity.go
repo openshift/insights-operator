@@ -16,13 +16,13 @@
 
 package v1
 
-// ManagedIdentityApplyConfiguration represents a declarative configuration of the ManagedIdentity type for use
+// ManagedIdentityApplyConfiguration represents an declarative configuration of the ManagedIdentity type for use
 // with apply.
 type ManagedIdentityApplyConfiguration struct {
 	ClientID *string `json:"clientId,omitempty"`
 }
 
-// ManagedIdentityApplyConfiguration constructs a declarative configuration of the ManagedIdentity type for use with
+// ManagedIdentityApplyConfiguration constructs an declarative configuration of the ManagedIdentity type for use with
 // apply.
 func ManagedIdentity() *ManagedIdentityApplyConfiguration {
 	return &ManagedIdentityApplyConfiguration{}

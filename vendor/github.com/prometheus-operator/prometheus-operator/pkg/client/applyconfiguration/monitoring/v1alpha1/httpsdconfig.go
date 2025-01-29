@@ -22,21 +22,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// HTTPSDConfigApplyConfiguration represents a declarative configuration of the HTTPSDConfig type for use
+// HTTPSDConfigApplyConfiguration represents an declarative configuration of the HTTPSDConfig type for use
 // with apply.
 type HTTPSDConfigApplyConfiguration struct {
 	URL                                        *string                                           `json:"url,omitempty"`
 	RefreshInterval                            *v1.Duration                                      `json:"refreshInterval,omitempty"`
 	BasicAuth                                  *monitoringv1.BasicAuthApplyConfiguration         `json:"basicAuth,omitempty"`
 	Authorization                              *monitoringv1.SafeAuthorizationApplyConfiguration `json:"authorization,omitempty"`
-	OAuth2                                     *monitoringv1.OAuth2ApplyConfiguration            `json:"oauth2,omitempty"`
+	TLSConfig                                  *monitoringv1.SafeTLSConfigApplyConfiguration     `json:"tlsConfig,omitempty"`
 	monitoringv1.ProxyConfigApplyConfiguration `json:",inline"`
-	TLSConfig                                  *monitoringv1.SafeTLSConfigApplyConfiguration `json:"tlsConfig,omitempty"`
-	FollowRedirects                            *bool                                         `json:"followRedirects,omitempty"`
-	EnableHTTP2                                *bool                                         `json:"enableHTTP2,omitempty"`
 }
 
-// HTTPSDConfigApplyConfiguration constructs a declarative configuration of the HTTPSDConfig type for use with
+// HTTPSDConfigApplyConfiguration constructs an declarative configuration of the HTTPSDConfig type for use with
 // apply.
 func HTTPSDConfig() *HTTPSDConfigApplyConfiguration {
 	return &HTTPSDConfigApplyConfiguration{}
@@ -74,11 +71,11 @@ func (b *HTTPSDConfigApplyConfiguration) WithAuthorization(value *monitoringv1.S
 	return b
 }
 
-// WithOAuth2 sets the OAuth2 field in the declarative configuration to the given value
+// WithTLSConfig sets the TLSConfig field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the OAuth2 field is set to the value of the last call.
-func (b *HTTPSDConfigApplyConfiguration) WithOAuth2(value *monitoringv1.OAuth2ApplyConfiguration) *HTTPSDConfigApplyConfiguration {
-	b.OAuth2 = value
+// If called multiple times, the TLSConfig field is set to the value of the last call.
+func (b *HTTPSDConfigApplyConfiguration) WithTLSConfig(value *monitoringv1.SafeTLSConfigApplyConfiguration) *HTTPSDConfigApplyConfiguration {
+	b.TLSConfig = value
 	return b
 }
 
@@ -117,29 +114,5 @@ func (b *HTTPSDConfigApplyConfiguration) WithProxyConnectHeader(entries map[stri
 	for k, v := range entries {
 		b.ProxyConnectHeader[k] = v
 	}
-	return b
-}
-
-// WithTLSConfig sets the TLSConfig field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TLSConfig field is set to the value of the last call.
-func (b *HTTPSDConfigApplyConfiguration) WithTLSConfig(value *monitoringv1.SafeTLSConfigApplyConfiguration) *HTTPSDConfigApplyConfiguration {
-	b.TLSConfig = value
-	return b
-}
-
-// WithFollowRedirects sets the FollowRedirects field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the FollowRedirects field is set to the value of the last call.
-func (b *HTTPSDConfigApplyConfiguration) WithFollowRedirects(value bool) *HTTPSDConfigApplyConfiguration {
-	b.FollowRedirects = &value
-	return b
-}
-
-// WithEnableHTTP2 sets the EnableHTTP2 field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the EnableHTTP2 field is set to the value of the last call.
-func (b *HTTPSDConfigApplyConfiguration) WithEnableHTTP2(value bool) *HTTPSDConfigApplyConfiguration {
-	b.EnableHTTP2 = &value
 	return b
 }

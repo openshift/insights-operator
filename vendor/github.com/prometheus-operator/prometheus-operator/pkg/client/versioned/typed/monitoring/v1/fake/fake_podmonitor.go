@@ -42,24 +42,22 @@ var podmonitorsKind = v1.SchemeGroupVersion.WithKind("PodMonitor")
 
 // Get takes name of the podMonitor, and returns the corresponding podMonitor object, and an error if there is any.
 func (c *FakePodMonitors) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.PodMonitor, err error) {
-	emptyResult := &v1.PodMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetActionWithOptions(podmonitorsResource, c.ns, name, options), emptyResult)
+		Invokes(testing.NewGetAction(podmonitorsResource, c.ns, name), &v1.PodMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.PodMonitor), err
 }
 
 // List takes label and field selectors, and returns the list of PodMonitors that match those selectors.
 func (c *FakePodMonitors) List(ctx context.Context, opts metav1.ListOptions) (result *v1.PodMonitorList, err error) {
-	emptyResult := &v1.PodMonitorList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListActionWithOptions(podmonitorsResource, podmonitorsKind, c.ns, opts), emptyResult)
+		Invokes(testing.NewListAction(podmonitorsResource, podmonitorsKind, c.ns, opts), &v1.PodMonitorList{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -78,30 +76,28 @@ func (c *FakePodMonitors) List(ctx context.Context, opts metav1.ListOptions) (re
 // Watch returns a watch.Interface that watches the requested podMonitors.
 func (c *FakePodMonitors) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchActionWithOptions(podmonitorsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchAction(podmonitorsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a podMonitor and creates it.  Returns the server's representation of the podMonitor, and an error, if there is any.
 func (c *FakePodMonitors) Create(ctx context.Context, podMonitor *v1.PodMonitor, opts metav1.CreateOptions) (result *v1.PodMonitor, err error) {
-	emptyResult := &v1.PodMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateActionWithOptions(podmonitorsResource, c.ns, podMonitor, opts), emptyResult)
+		Invokes(testing.NewCreateAction(podmonitorsResource, c.ns, podMonitor), &v1.PodMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.PodMonitor), err
 }
 
 // Update takes the representation of a podMonitor and updates it. Returns the server's representation of the podMonitor, and an error, if there is any.
 func (c *FakePodMonitors) Update(ctx context.Context, podMonitor *v1.PodMonitor, opts metav1.UpdateOptions) (result *v1.PodMonitor, err error) {
-	emptyResult := &v1.PodMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateActionWithOptions(podmonitorsResource, c.ns, podMonitor, opts), emptyResult)
+		Invokes(testing.NewUpdateAction(podmonitorsResource, c.ns, podMonitor), &v1.PodMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.PodMonitor), err
 }
@@ -116,7 +112,7 @@ func (c *FakePodMonitors) Delete(ctx context.Context, name string, opts metav1.D
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakePodMonitors) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionActionWithOptions(podmonitorsResource, c.ns, opts, listOpts)
+	action := testing.NewDeleteCollectionAction(podmonitorsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1.PodMonitorList{})
 	return err
@@ -124,12 +120,11 @@ func (c *FakePodMonitors) DeleteCollection(ctx context.Context, opts metav1.Dele
 
 // Patch applies the patch and returns the patched podMonitor.
 func (c *FakePodMonitors) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.PodMonitor, err error) {
-	emptyResult := &v1.PodMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(podmonitorsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
+		Invokes(testing.NewPatchSubresourceAction(podmonitorsResource, c.ns, name, pt, data, subresources...), &v1.PodMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.PodMonitor), err
 }
@@ -147,12 +142,11 @@ func (c *FakePodMonitors) Apply(ctx context.Context, podMonitor *monitoringv1.Po
 	if name == nil {
 		return nil, fmt.Errorf("podMonitor.Name must be provided to Apply")
 	}
-	emptyResult := &v1.PodMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(podmonitorsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
+		Invokes(testing.NewPatchSubresourceAction(podmonitorsResource, c.ns, *name, types.ApplyPatchType, data), &v1.PodMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.PodMonitor), err
 }

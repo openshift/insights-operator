@@ -16,14 +16,14 @@
 
 package v1
 
-// NamespaceSelectorApplyConfiguration represents a declarative configuration of the NamespaceSelector type for use
+// NamespaceSelectorApplyConfiguration represents an declarative configuration of the NamespaceSelector type for use
 // with apply.
 type NamespaceSelectorApplyConfiguration struct {
 	Any        *bool    `json:"any,omitempty"`
 	MatchNames []string `json:"matchNames,omitempty"`
 }
 
-// NamespaceSelectorApplyConfiguration constructs a declarative configuration of the NamespaceSelector type for use with
+// NamespaceSelectorApplyConfiguration constructs an declarative configuration of the NamespaceSelector type for use with
 // apply.
 func NamespaceSelector() *NamespaceSelectorApplyConfiguration {
 	return &NamespaceSelectorApplyConfiguration{}

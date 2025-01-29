@@ -14,7 +14,7 @@ require (
 	github.com/openshift/installer v1.4.17
 	github.com/openshift/library-go v0.0.0-20250127111945-0f76e23726cd
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.79.2
-	github.com/prometheus-operator/prometheus-operator/pkg/client v0.79.2
+	github.com/prometheus-operator/prometheus-operator/pkg/client v0.76.2
 	github.com/prometheus/client_golang v1.20.5
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace

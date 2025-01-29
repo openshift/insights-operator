@@ -16,13 +16,13 @@
 
 package v1
 
-// ThanosRulerWebSpecApplyConfiguration represents a declarative configuration of the ThanosRulerWebSpec type for use
+// ThanosRulerWebSpecApplyConfiguration represents an declarative configuration of the ThanosRulerWebSpec type for use
 // with apply.
 type ThanosRulerWebSpecApplyConfiguration struct {
 	WebConfigFileFieldsApplyConfiguration `json:",inline"`
 }
 
-// ThanosRulerWebSpecApplyConfiguration constructs a declarative configuration of the ThanosRulerWebSpec type for use with
+// ThanosRulerWebSpecApplyConfiguration constructs an declarative configuration of the ThanosRulerWebSpec type for use with
 // apply.
 func ThanosRulerWebSpec() *ThanosRulerWebSpecApplyConfiguration {
 	return &ThanosRulerWebSpecApplyConfiguration{}

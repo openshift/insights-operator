@@ -16,7 +16,7 @@
 
 package v1alpha1
 
-// InhibitRuleApplyConfiguration represents a declarative configuration of the InhibitRule type for use
+// InhibitRuleApplyConfiguration represents an declarative configuration of the InhibitRule type for use
 // with apply.
 type InhibitRuleApplyConfiguration struct {
 	TargetMatch []MatcherApplyConfiguration `json:"targetMatch,omitempty"`
@@ -24,7 +24,7 @@ type InhibitRuleApplyConfiguration struct {
 	Equal       []string                    `json:"equal,omitempty"`
 }
 
-// InhibitRuleApplyConfiguration constructs a declarative configuration of the InhibitRule type for use with
+// InhibitRuleApplyConfiguration constructs an declarative configuration of the InhibitRule type for use with
 // apply.
 func InhibitRule() *InhibitRuleApplyConfiguration {
 	return &InhibitRuleApplyConfiguration{}

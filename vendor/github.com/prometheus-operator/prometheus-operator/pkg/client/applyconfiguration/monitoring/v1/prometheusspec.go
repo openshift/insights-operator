@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
-// PrometheusSpecApplyConfiguration represents a declarative configuration of the PrometheusSpec type for use
+// PrometheusSpecApplyConfiguration represents an declarative configuration of the PrometheusSpec type for use
 // with apply.
 type PrometheusSpecApplyConfiguration struct {
 	CommonPrometheusFieldsApplyConfiguration `json:",inline"`
@@ -47,11 +47,11 @@ type PrometheusSpecApplyConfiguration struct {
 	AllowOverlappingBlocks                   *bool                                           `json:"allowOverlappingBlocks,omitempty"`
 	Exemplars                                *ExemplarsApplyConfiguration                    `json:"exemplars,omitempty"`
 	EvaluationInterval                       *monitoringv1.Duration                          `json:"evaluationInterval,omitempty"`
-	RuleQueryOffset                          *monitoringv1.Duration                          `json:"ruleQueryOffset,omitempty"`
 	EnableAdminAPI                           *bool                                           `json:"enableAdminAPI,omitempty"`
+	TSDB                                     *TSDBSpecApplyConfiguration                     `json:"tsdb,omitempty"`
 }
 
-// PrometheusSpecApplyConfiguration constructs a declarative configuration of the PrometheusSpec type for use with
+// PrometheusSpecApplyConfiguration constructs an declarative configuration of the PrometheusSpec type for use with
 // apply.
 func PrometheusSpec() *PrometheusSpecApplyConfiguration {
 	return &PrometheusSpecApplyConfiguration{}
@@ -267,24 +267,6 @@ func (b *PrometheusSpecApplyConfiguration) WithEnableRemoteWriteReceiver(value b
 	return b
 }
 
-// WithEnableOTLPReceiver sets the EnableOTLPReceiver field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the EnableOTLPReceiver field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithEnableOTLPReceiver(value bool) *PrometheusSpecApplyConfiguration {
-	b.EnableOTLPReceiver = &value
-	return b
-}
-
-// WithRemoteWriteReceiverMessageVersions adds the given value to the RemoteWriteReceiverMessageVersions field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the RemoteWriteReceiverMessageVersions field.
-func (b *PrometheusSpecApplyConfiguration) WithRemoteWriteReceiverMessageVersions(values ...monitoringv1.RemoteWriteMessageVersion) *PrometheusSpecApplyConfiguration {
-	for i := range values {
-		b.RemoteWriteReceiverMessageVersions = append(b.RemoteWriteReceiverMessageVersions, values[i])
-	}
-	return b
-}
-
 // WithEnableFeatures adds the given value to the EnableFeatures field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the EnableFeatures field.
@@ -457,35 +439,11 @@ func (b *PrometheusSpecApplyConfiguration) WithRemoteWrite(values ...*RemoteWrit
 	return b
 }
 
-// WithOTLP sets the OTLP field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the OTLP field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithOTLP(value *OTLPConfigApplyConfiguration) *PrometheusSpecApplyConfiguration {
-	b.OTLP = value
-	return b
-}
-
 // WithSecurityContext sets the SecurityContext field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecurityContext field is set to the value of the last call.
 func (b *PrometheusSpecApplyConfiguration) WithSecurityContext(value corev1.PodSecurityContext) *PrometheusSpecApplyConfiguration {
 	b.SecurityContext = &value
-	return b
-}
-
-// WithDNSPolicy sets the DNSPolicy field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the DNSPolicy field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithDNSPolicy(value monitoringv1.DNSPolicy) *PrometheusSpecApplyConfiguration {
-	b.DNSPolicy = &value
-	return b
-}
-
-// WithDNSConfig sets the DNSConfig field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the DNSConfig field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithDNSConfig(value *PodDNSConfigApplyConfiguration) *PrometheusSpecApplyConfiguration {
-	b.DNSConfig = value
 	return b
 }
 
@@ -642,14 +600,6 @@ func (b *PrometheusSpecApplyConfiguration) WithEnforcedKeepDroppedTargets(value 
 // If called multiple times, the EnforcedBodySizeLimit field is set to the value of the last call.
 func (b *PrometheusSpecApplyConfiguration) WithEnforcedBodySizeLimit(value monitoringv1.ByteSize) *PrometheusSpecApplyConfiguration {
 	b.EnforcedBodySizeLimit = &value
-	return b
-}
-
-// WithNameValidationScheme sets the NameValidationScheme field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the NameValidationScheme field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithNameValidationScheme(value monitoringv1.NameValidationSchemeOptions) *PrometheusSpecApplyConfiguration {
-	b.NameValidationScheme = &value
 	return b
 }
 
@@ -827,22 +777,6 @@ func (b *PrometheusSpecApplyConfiguration) WithServiceDiscoveryRole(value monito
 	return b
 }
 
-// WithTSDB sets the TSDB field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the TSDB field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithTSDB(value *TSDBSpecApplyConfiguration) *PrometheusSpecApplyConfiguration {
-	b.TSDB = value
-	return b
-}
-
-// WithRuntime sets the Runtime field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Runtime field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithRuntime(value *RuntimeConfigApplyConfiguration) *PrometheusSpecApplyConfiguration {
-	b.Runtime = value
-	return b
-}
-
 // WithBaseImage sets the BaseImage field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the BaseImage field is set to the value of the last call.
@@ -1013,18 +947,18 @@ func (b *PrometheusSpecApplyConfiguration) WithEvaluationInterval(value monitori
 	return b
 }
 
-// WithRuleQueryOffset sets the RuleQueryOffset field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the RuleQueryOffset field is set to the value of the last call.
-func (b *PrometheusSpecApplyConfiguration) WithRuleQueryOffset(value monitoringv1.Duration) *PrometheusSpecApplyConfiguration {
-	b.RuleQueryOffset = &value
-	return b
-}
-
 // WithEnableAdminAPI sets the EnableAdminAPI field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the EnableAdminAPI field is set to the value of the last call.
 func (b *PrometheusSpecApplyConfiguration) WithEnableAdminAPI(value bool) *PrometheusSpecApplyConfiguration {
 	b.EnableAdminAPI = &value
+	return b
+}
+
+// WithTSDB sets the TSDB field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the TSDB field is set to the value of the last call.
+func (b *PrometheusSpecApplyConfiguration) WithTSDB(value *TSDBSpecApplyConfiguration) *PrometheusSpecApplyConfiguration {
+	b.TSDB = value
 	return b
 }

@@ -42,24 +42,22 @@ var servicemonitorsKind = v1.SchemeGroupVersion.WithKind("ServiceMonitor")
 
 // Get takes name of the serviceMonitor, and returns the corresponding serviceMonitor object, and an error if there is any.
 func (c *FakeServiceMonitors) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.ServiceMonitor, err error) {
-	emptyResult := &v1.ServiceMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetActionWithOptions(servicemonitorsResource, c.ns, name, options), emptyResult)
+		Invokes(testing.NewGetAction(servicemonitorsResource, c.ns, name), &v1.ServiceMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.ServiceMonitor), err
 }
 
 // List takes label and field selectors, and returns the list of ServiceMonitors that match those selectors.
 func (c *FakeServiceMonitors) List(ctx context.Context, opts metav1.ListOptions) (result *v1.ServiceMonitorList, err error) {
-	emptyResult := &v1.ServiceMonitorList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListActionWithOptions(servicemonitorsResource, servicemonitorsKind, c.ns, opts), emptyResult)
+		Invokes(testing.NewListAction(servicemonitorsResource, servicemonitorsKind, c.ns, opts), &v1.ServiceMonitorList{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -78,30 +76,28 @@ func (c *FakeServiceMonitors) List(ctx context.Context, opts metav1.ListOptions)
 // Watch returns a watch.Interface that watches the requested serviceMonitors.
 func (c *FakeServiceMonitors) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchActionWithOptions(servicemonitorsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchAction(servicemonitorsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a serviceMonitor and creates it.  Returns the server's representation of the serviceMonitor, and an error, if there is any.
 func (c *FakeServiceMonitors) Create(ctx context.Context, serviceMonitor *v1.ServiceMonitor, opts metav1.CreateOptions) (result *v1.ServiceMonitor, err error) {
-	emptyResult := &v1.ServiceMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateActionWithOptions(servicemonitorsResource, c.ns, serviceMonitor, opts), emptyResult)
+		Invokes(testing.NewCreateAction(servicemonitorsResource, c.ns, serviceMonitor), &v1.ServiceMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.ServiceMonitor), err
 }
 
 // Update takes the representation of a serviceMonitor and updates it. Returns the server's representation of the serviceMonitor, and an error, if there is any.
 func (c *FakeServiceMonitors) Update(ctx context.Context, serviceMonitor *v1.ServiceMonitor, opts metav1.UpdateOptions) (result *v1.ServiceMonitor, err error) {
-	emptyResult := &v1.ServiceMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateActionWithOptions(servicemonitorsResource, c.ns, serviceMonitor, opts), emptyResult)
+		Invokes(testing.NewUpdateAction(servicemonitorsResource, c.ns, serviceMonitor), &v1.ServiceMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.ServiceMonitor), err
 }
@@ -116,7 +112,7 @@ func (c *FakeServiceMonitors) Delete(ctx context.Context, name string, opts meta
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeServiceMonitors) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionActionWithOptions(servicemonitorsResource, c.ns, opts, listOpts)
+	action := testing.NewDeleteCollectionAction(servicemonitorsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1.ServiceMonitorList{})
 	return err
@@ -124,12 +120,11 @@ func (c *FakeServiceMonitors) DeleteCollection(ctx context.Context, opts metav1.
 
 // Patch applies the patch and returns the patched serviceMonitor.
 func (c *FakeServiceMonitors) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.ServiceMonitor, err error) {
-	emptyResult := &v1.ServiceMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(servicemonitorsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
+		Invokes(testing.NewPatchSubresourceAction(servicemonitorsResource, c.ns, name, pt, data, subresources...), &v1.ServiceMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.ServiceMonitor), err
 }
@@ -147,12 +142,11 @@ func (c *FakeServiceMonitors) Apply(ctx context.Context, serviceMonitor *monitor
 	if name == nil {
 		return nil, fmt.Errorf("serviceMonitor.Name must be provided to Apply")
 	}
-	emptyResult := &v1.ServiceMonitor{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(servicemonitorsResource, c.ns, *name, types.ApplyPatchType, data, opts.ToPatchOptions()), emptyResult)
+		Invokes(testing.NewPatchSubresourceAction(servicemonitorsResource, c.ns, *name, types.ApplyPatchType, data), &v1.ServiceMonitor{})
 
 	if obj == nil {
-		return emptyResult, err
+		return nil, err
 	}
 	return obj.(*v1.ServiceMonitor), err
 }

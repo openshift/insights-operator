@@ -20,13 +20,13 @@ import (
 	v1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 )
 
-// TSDBSpecApplyConfiguration represents a declarative configuration of the TSDBSpec type for use
+// TSDBSpecApplyConfiguration represents an declarative configuration of the TSDBSpec type for use
 // with apply.
 type TSDBSpecApplyConfiguration struct {
 	OutOfOrderTimeWindow *v1.Duration `json:"outOfOrderTimeWindow,omitempty"`
 }
 
-// TSDBSpecApplyConfiguration constructs a declarative configuration of the TSDBSpec type for use with
+// TSDBSpecApplyConfiguration constructs an declarative configuration of the TSDBSpec type for use with
 // apply.
 func TSDBSpec() *TSDBSpecApplyConfiguration {
 	return &TSDBSpecApplyConfiguration{}
