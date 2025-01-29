@@ -31,9 +31,11 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
-func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, image string, dataReporting config.DataReporting) (*batchv1.Job, error) {
-	// TODO: also prunning of the old jobs data needs to be implemented
-
+//
+//nolint:funlen
+func (j *JobController) CreateGathererJob(
+	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting,
+) (*batchv1.Job, error) {
 	volumeSource := j.createVolumeSource(ctx, dataReporting.PersistentVolumeClaimName)
 
 	gj := &batchv1.Job{
@@ -108,6 +110,38 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 								{
 									Name:      serviceCABundle,
 									MountPath: serviceCABundlePath,
+								},
+							},
+						},
+						{
+							Name:    "cleanup-job",
+							Image:   "registry.redhat.io/ubi8/ubi-minimal:latest",
+							Command: []string{"sh", "-c"},
+							Args: []string{`
+								echo "Starting archives cleanup"
+
+								ARCHIVES_COUNT=$(ls -p "$ARCHIVES_PATH" | grep -v / | wc -l)
+								if [ $ARCHIVES_COUNT -lt 5 ]; then
+									echo "No cleanup needed"
+									exit 0
+								fi
+
+								FILE_TO_DELETE=$(ls -pt "$ARCHIVES_PATH" | grep -v / | tail -n 1)
+								echo "Deleting $FILE_TO_DELETE"
+								rm -f "$ARCHIVES_PATH/$FILE_TO_DELETE"
+
+								echo "Archives cleanup finished"
+							`},
+							Env: []corev1.EnvVar{
+								{
+									Name:  "ARCHIVES_PATH",
+									Value: dataReporting.StoragePath,
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "archives-path",
+									MountPath: dataReporting.StoragePath,
 								},
 							},
 						},
