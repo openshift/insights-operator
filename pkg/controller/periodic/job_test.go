@@ -30,7 +30,7 @@ func TestCreateGathererJob(t *testing.T) {
 			createdJob, err := jc.CreateGathererJob(context.Background(), tt.dataGatherName, tt.imageName, tt.volumeMountPath)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.dataGatherName, createdJob.Name)
-			assert.Len(t, createdJob.Spec.Template.Spec.Containers, 1)
+			assert.Len(t, createdJob.Spec.Template.Spec.Containers, 2)
 			assert.Equal(t, tt.imageName, createdJob.Spec.Template.Spec.Containers[0].Image)
 			// we mount to volumes
 			assert.Len(t, createdJob.Spec.Template.Spec.Containers[0].VolumeMounts, 2)
