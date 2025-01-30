@@ -24,44 +24,40 @@ import (
 
 func intOrError(i int64, err error) ref.Val {
 	if err != nil {
-		return types.NewErrFromString(err.Error())
+		return types.NewErr(err.Error())
 	}
 	return types.Int(i)
 }
 
 func bytesOrError(bytes []byte, err error) ref.Val {
 	if err != nil {
-		return types.NewErrFromString(err.Error())
+		return types.NewErr(err.Error())
 	}
 	return types.Bytes(bytes)
 }
 
 func stringOrError(str string, err error) ref.Val {
 	if err != nil {
-		return types.NewErrFromString(err.Error())
+		return types.NewErr(err.Error())
 	}
 	return types.String(str)
 }
 
 func listStringOrError(strs []string, err error) ref.Val {
 	if err != nil {
-		return types.NewErrFromString(err.Error())
+		return types.NewErr(err.Error())
 	}
 	return types.DefaultTypeAdapter.NativeToValue(strs)
 }
 
-func extractIdent(target ast.Expr) (string, bool) {
+func macroTargetMatchesNamespace(ns string, target ast.Expr) bool {
 	switch target.Kind() {
 	case ast.IdentKind:
-		return target.AsIdent(), true
+		if target.AsIdent() != ns {
+			return false
+		}
+		return true
 	default:
-		return "", false
+		return false
 	}
-}
-
-func macroTargetMatchesNamespace(ns string, target ast.Expr) bool {
-	if id, found := extractIdent(target); found {
-		return id == ns
-	}
-	return false
 }

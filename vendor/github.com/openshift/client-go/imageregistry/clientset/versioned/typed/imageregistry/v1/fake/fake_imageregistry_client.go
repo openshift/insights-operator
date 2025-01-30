@@ -13,11 +13,11 @@ type FakeImageregistryV1 struct {
 }
 
 func (c *FakeImageregistryV1) Configs() v1.ConfigInterface {
-	return newFakeConfigs(c)
+	return &FakeConfigs{c}
 }
 
 func (c *FakeImageregistryV1) ImagePruners() v1.ImagePrunerInterface {
-	return newFakeImagePruners(c)
+	return &FakeImagePruners{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

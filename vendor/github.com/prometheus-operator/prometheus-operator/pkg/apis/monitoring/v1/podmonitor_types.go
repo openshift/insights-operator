@@ -31,14 +31,7 @@ const (
 // +k8s:openapi-gen=true
 // +kubebuilder:resource:categories="prometheus-operator",shortName="pmon"
 
-// The `PodMonitor` custom resource definition (CRD) defines how `Prometheus` and `PrometheusAgent` can scrape metrics from a group of pods.
-// Among other things, it allows to specify:
-// * The pods to scrape via label selectors.
-// * The container ports to scrape.
-// * Authentication credentials to use.
-// * Target and metric relabeling.
-//
-// `Prometheus` and `PrometheusAgent` objects select `PodMonitor` objects using label and namespace selectors.
+// PodMonitor defines monitoring for a set of pods.
 type PodMonitor struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -71,26 +64,15 @@ type PodMonitorSpec struct {
 	//
 	PodTargetLabels []string `json:"podTargetLabels,omitempty"`
 
-	// Defines how to scrape metrics from the selected pods.
+	// List of endpoints part of this PodMonitor.
 	//
 	// +optional
 	PodMetricsEndpoints []PodMetricsEndpoint `json:"podMetricsEndpoints"`
 
-	// Label selector to select the Kubernetes `Pod` objects to scrape metrics from.
+	// Label selector to select the Kubernetes `Pod` objects.
 	Selector metav1.LabelSelector `json:"selector"`
-
-	// Mechanism used to select the endpoints to scrape.
-	// By default, the selection process relies on relabel configurations to filter the discovered targets.
-	// Alternatively, you can opt in for role selectors, which may offer better efficiency in large clusters.
-	// Which strategy is best for your use case needs to be carefully evaluated.
-	//
-	// It requires Prometheus >= v2.17.0.
-	//
-	// +optional
-	SelectorMechanism *SelectorMechanism `json:"selectorMechanism,omitempty"`
-
-	// `namespaceSelector` defines in which namespace(s) Prometheus should discover the pods.
-	// By default, the pods are discovered in the same namespace as the `PodMonitor` object but it is possible to select pods across different/all namespaces.
+	// Selector to select which namespaces the Kubernetes `Pods` objects
+	// are discovered from.
 	NamespaceSelector NamespaceSelector `json:"namespaceSelector,omitempty"`
 
 	// `sampleLimit` defines a per-scrape limit on the number of scraped samples
@@ -116,12 +98,6 @@ type PodMonitorSpec struct {
 	// +optional
 	ScrapeProtocols []ScrapeProtocol `json:"scrapeProtocols,omitempty"`
 
-	// The protocol to use if a scrape returns blank, unparseable, or otherwise invalid Content-Type.
-	//
-	// It requires Prometheus >= v3.0.0.
-	// +optional
-	FallbackScrapeProtocol *ScrapeProtocol `json:"fallbackScrapeProtocol,omitempty"`
-
 	// Per-scrape limit on number of labels that will be accepted for a sample.
 	//
 	// It requires Prometheus >= v2.27.0.
@@ -140,9 +116,6 @@ type PodMonitorSpec struct {
 	//
 	// +optional
 	LabelValueLengthLimit *uint64 `json:"labelValueLengthLimit,omitempty"`
-
-	NativeHistogramConfig `json:",inline"`
-
 	// Per-scrape limit on the number of targets dropped by relabeling
 	// that will be kept in memory. 0 means no limit.
 	//
@@ -154,7 +127,7 @@ type PodMonitorSpec struct {
 	// `attachMetadata` defines additional metadata which is added to the
 	// discovered targets.
 	//
-	// It requires Prometheus >= v2.35.0.
+	// It requires Prometheus >= v2.37.0.
 	//
 	// +optional
 	AttachMetadata *AttachMetadata `json:"attachMetadata,omitempty"`
@@ -194,22 +167,15 @@ func (l *PodMonitorList) DeepCopyObject() runtime.Object {
 //
 // +k8s:openapi-gen=true
 type PodMetricsEndpoint struct {
-	// The `Pod` port name which exposes the endpoint.
+	// Name of the Pod port which this endpoint refers to.
 	//
-	// It takes precedence over the `portNumber` and `targetPort` fields.
-	// +optional
-	Port *string `json:"port,omitempty"`
-
-	// The `Pod` port number which exposes the endpoint.
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=65535
-	// +optional
-	PortNumber *int32 `json:"portNumber,omitempty"`
+	// It takes precedence over `targetPort`.
+	Port string `json:"port,omitempty"`
 
 	// Name or number of the target port of the `Pod` object behind the Service, the
 	// port must be specified with container port property.
 	//
-	// Deprecated: use 'port' or 'portNumber' instead.
+	// Deprecated: use 'port' instead.
 	TargetPort *intstr.IntOrString `json:"targetPort,omitempty"`
 
 	// HTTP path from which to scrape for metrics.

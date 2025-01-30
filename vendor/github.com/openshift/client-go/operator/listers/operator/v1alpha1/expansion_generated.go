@@ -2,10 +2,6 @@
 
 package v1alpha1
 
-// ClusterVersionOperatorListerExpansion allows custom methods to be added to
-// ClusterVersionOperatorLister.
-type ClusterVersionOperatorListerExpansion interface{}
-
 // EtcdBackupListerExpansion allows custom methods to be added to
 // EtcdBackupLister.
 type EtcdBackupListerExpansion interface{}

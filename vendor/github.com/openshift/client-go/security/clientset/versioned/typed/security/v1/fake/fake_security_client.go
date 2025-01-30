@@ -13,23 +13,23 @@ type FakeSecurityV1 struct {
 }
 
 func (c *FakeSecurityV1) PodSecurityPolicyReviews(namespace string) v1.PodSecurityPolicyReviewInterface {
-	return newFakePodSecurityPolicyReviews(c, namespace)
+	return &FakePodSecurityPolicyReviews{c, namespace}
 }
 
 func (c *FakeSecurityV1) PodSecurityPolicySelfSubjectReviews(namespace string) v1.PodSecurityPolicySelfSubjectReviewInterface {
-	return newFakePodSecurityPolicySelfSubjectReviews(c, namespace)
+	return &FakePodSecurityPolicySelfSubjectReviews{c, namespace}
 }
 
 func (c *FakeSecurityV1) PodSecurityPolicySubjectReviews(namespace string) v1.PodSecurityPolicySubjectReviewInterface {
-	return newFakePodSecurityPolicySubjectReviews(c, namespace)
+	return &FakePodSecurityPolicySubjectReviews{c, namespace}
 }
 
 func (c *FakeSecurityV1) RangeAllocations() v1.RangeAllocationInterface {
-	return newFakeRangeAllocations(c)
+	return &FakeRangeAllocations{c}
 }
 
 func (c *FakeSecurityV1) SecurityContextConstraints() v1.SecurityContextConstraintsInterface {
-	return newFakeSecurityContextConstraints(c)
+	return &FakeSecurityContextConstraints{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

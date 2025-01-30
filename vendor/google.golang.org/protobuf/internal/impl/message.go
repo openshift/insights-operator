@@ -30,8 +30,8 @@ type MessageInfo struct {
 	// Desc is the underlying message descriptor type and must be populated.
 	Desc protoreflect.MessageDescriptor
 
-	// Deprecated: Exporter will be removed the next time we bump
-	// protoimpl.GenVersion. See https://github.com/golang/protobuf/issues/1640
+	// Exporter must be provided in a purego environment in order to provide
+	// access to unexported fields.
 	Exporter exporter
 
 	// OneofWrappers is list of pointers to oneof wrapper struct types.
@@ -77,9 +77,6 @@ func (mi *MessageInfo) initOnce() {
 	mi.initMu.Lock()
 	defer mi.initMu.Unlock()
 	if mi.initDone == 1 {
-		return
-	}
-	if opaqueInitHook(mi) {
 		return
 	}
 
@@ -136,9 +133,6 @@ type structInfo struct {
 	extensionOffset offset
 	extensionType   reflect.Type
 
-	lazyOffset     offset
-	presenceOffset offset
-
 	fieldsByNumber        map[protoreflect.FieldNumber]reflect.StructField
 	oneofsByName          map[protoreflect.Name]reflect.StructField
 	oneofWrappersByType   map[reflect.Type]protoreflect.FieldNumber
@@ -151,8 +145,6 @@ func (mi *MessageInfo) makeStructInfo(t reflect.Type) structInfo {
 		weakOffset:      invalidOffset,
 		unknownOffset:   invalidOffset,
 		extensionOffset: invalidOffset,
-		lazyOffset:      invalidOffset,
-		presenceOffset:  invalidOffset,
 
 		fieldsByNumber:        map[protoreflect.FieldNumber]reflect.StructField{},
 		oneofsByName:          map[protoreflect.Name]reflect.StructField{},
@@ -165,28 +157,24 @@ fieldLoop:
 		switch f := t.Field(i); f.Name {
 		case genid.SizeCache_goname, genid.SizeCacheA_goname:
 			if f.Type == sizecacheType {
-				si.sizecacheOffset = offsetOf(f)
+				si.sizecacheOffset = offsetOf(f, mi.Exporter)
 				si.sizecacheType = f.Type
 			}
 		case genid.WeakFields_goname, genid.WeakFieldsA_goname:
 			if f.Type == weakFieldsType {
-				si.weakOffset = offsetOf(f)
+				si.weakOffset = offsetOf(f, mi.Exporter)
 				si.weakType = f.Type
 			}
 		case genid.UnknownFields_goname, genid.UnknownFieldsA_goname:
 			if f.Type == unknownFieldsAType || f.Type == unknownFieldsBType {
-				si.unknownOffset = offsetOf(f)
+				si.unknownOffset = offsetOf(f, mi.Exporter)
 				si.unknownType = f.Type
 			}
 		case genid.ExtensionFields_goname, genid.ExtensionFieldsA_goname, genid.ExtensionFieldsB_goname:
 			if f.Type == extensionFieldsType {
-				si.extensionOffset = offsetOf(f)
+				si.extensionOffset = offsetOf(f, mi.Exporter)
 				si.extensionType = f.Type
 			}
-		case "lazyFields", "XXX_lazyUnmarshalInfo":
-			si.lazyOffset = offsetOf(f)
-		case "XXX_presence":
-			si.presenceOffset = offsetOf(f)
 		default:
 			for _, s := range strings.Split(f.Tag.Get("protobuf"), ",") {
 				if len(s) > 0 && strings.Trim(s, "0123456789") == "" {

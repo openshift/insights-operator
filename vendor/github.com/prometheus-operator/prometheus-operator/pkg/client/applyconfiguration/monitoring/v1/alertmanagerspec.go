@@ -19,7 +19,7 @@ package v1
 import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // AlertmanagerSpecApplyConfiguration represents an declarative configuration of the AlertmanagerSpec type for use
@@ -60,20 +60,17 @@ type AlertmanagerSpecApplyConfiguration struct {
 	AdditionalPeers                     []string                                             `json:"additionalPeers,omitempty"`
 	ClusterAdvertiseAddress             *string                                              `json:"clusterAdvertiseAddress,omitempty"`
 	ClusterGossipInterval               *monitoringv1.GoDuration                             `json:"clusterGossipInterval,omitempty"`
-	ClusterLabel                        *string                                              `json:"clusterLabel,omitempty"`
 	ClusterPushpullInterval             *monitoringv1.GoDuration                             `json:"clusterPushpullInterval,omitempty"`
 	ClusterPeerTimeout                  *monitoringv1.GoDuration                             `json:"clusterPeerTimeout,omitempty"`
 	PortName                            *string                                              `json:"portName,omitempty"`
 	ForceEnableClusterMode              *bool                                                `json:"forceEnableClusterMode,omitempty"`
-	AlertmanagerConfigSelector          *metav1.LabelSelectorApplyConfiguration              `json:"alertmanagerConfigSelector,omitempty"`
-	AlertmanagerConfigNamespaceSelector *metav1.LabelSelectorApplyConfiguration              `json:"alertmanagerConfigNamespaceSelector,omitempty"`
+	AlertmanagerConfigSelector          *metav1.LabelSelector                                `json:"alertmanagerConfigSelector,omitempty"`
 	AlertmanagerConfigMatcherStrategy   *AlertmanagerConfigMatcherStrategyApplyConfiguration `json:"alertmanagerConfigMatcherStrategy,omitempty"`
+	AlertmanagerConfigNamespaceSelector *metav1.LabelSelector                                `json:"alertmanagerConfigNamespaceSelector,omitempty"`
 	MinReadySeconds                     *uint32                                              `json:"minReadySeconds,omitempty"`
 	HostAliases                         []HostAliasApplyConfiguration                        `json:"hostAliases,omitempty"`
 	Web                                 *AlertmanagerWebSpecApplyConfiguration               `json:"web,omitempty"`
 	AlertmanagerConfiguration           *AlertmanagerConfigurationApplyConfiguration         `json:"alertmanagerConfiguration,omitempty"`
-	AutomountServiceAccountToken        *bool                                                `json:"automountServiceAccountToken,omitempty"`
-	EnableFeatures                      []string                                             `json:"enableFeatures,omitempty"`
 }
 
 // AlertmanagerSpecApplyConfiguration constructs an declarative configuration of the AlertmanagerSpec type for use with
@@ -388,14 +385,6 @@ func (b *AlertmanagerSpecApplyConfiguration) WithClusterGossipInterval(value mon
 	return b
 }
 
-// WithClusterLabel sets the ClusterLabel field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ClusterLabel field is set to the value of the last call.
-func (b *AlertmanagerSpecApplyConfiguration) WithClusterLabel(value string) *AlertmanagerSpecApplyConfiguration {
-	b.ClusterLabel = &value
-	return b
-}
-
 // WithClusterPushpullInterval sets the ClusterPushpullInterval field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ClusterPushpullInterval field is set to the value of the last call.
@@ -431,16 +420,8 @@ func (b *AlertmanagerSpecApplyConfiguration) WithForceEnableClusterMode(value bo
 // WithAlertmanagerConfigSelector sets the AlertmanagerConfigSelector field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AlertmanagerConfigSelector field is set to the value of the last call.
-func (b *AlertmanagerSpecApplyConfiguration) WithAlertmanagerConfigSelector(value *metav1.LabelSelectorApplyConfiguration) *AlertmanagerSpecApplyConfiguration {
-	b.AlertmanagerConfigSelector = value
-	return b
-}
-
-// WithAlertmanagerConfigNamespaceSelector sets the AlertmanagerConfigNamespaceSelector field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the AlertmanagerConfigNamespaceSelector field is set to the value of the last call.
-func (b *AlertmanagerSpecApplyConfiguration) WithAlertmanagerConfigNamespaceSelector(value *metav1.LabelSelectorApplyConfiguration) *AlertmanagerSpecApplyConfiguration {
-	b.AlertmanagerConfigNamespaceSelector = value
+func (b *AlertmanagerSpecApplyConfiguration) WithAlertmanagerConfigSelector(value metav1.LabelSelector) *AlertmanagerSpecApplyConfiguration {
+	b.AlertmanagerConfigSelector = &value
 	return b
 }
 
@@ -449,6 +430,14 @@ func (b *AlertmanagerSpecApplyConfiguration) WithAlertmanagerConfigNamespaceSele
 // If called multiple times, the AlertmanagerConfigMatcherStrategy field is set to the value of the last call.
 func (b *AlertmanagerSpecApplyConfiguration) WithAlertmanagerConfigMatcherStrategy(value *AlertmanagerConfigMatcherStrategyApplyConfiguration) *AlertmanagerSpecApplyConfiguration {
 	b.AlertmanagerConfigMatcherStrategy = value
+	return b
+}
+
+// WithAlertmanagerConfigNamespaceSelector sets the AlertmanagerConfigNamespaceSelector field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AlertmanagerConfigNamespaceSelector field is set to the value of the last call.
+func (b *AlertmanagerSpecApplyConfiguration) WithAlertmanagerConfigNamespaceSelector(value metav1.LabelSelector) *AlertmanagerSpecApplyConfiguration {
+	b.AlertmanagerConfigNamespaceSelector = &value
 	return b
 }
 
@@ -486,23 +475,5 @@ func (b *AlertmanagerSpecApplyConfiguration) WithWeb(value *AlertmanagerWebSpecA
 // If called multiple times, the AlertmanagerConfiguration field is set to the value of the last call.
 func (b *AlertmanagerSpecApplyConfiguration) WithAlertmanagerConfiguration(value *AlertmanagerConfigurationApplyConfiguration) *AlertmanagerSpecApplyConfiguration {
 	b.AlertmanagerConfiguration = value
-	return b
-}
-
-// WithAutomountServiceAccountToken sets the AutomountServiceAccountToken field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the AutomountServiceAccountToken field is set to the value of the last call.
-func (b *AlertmanagerSpecApplyConfiguration) WithAutomountServiceAccountToken(value bool) *AlertmanagerSpecApplyConfiguration {
-	b.AutomountServiceAccountToken = &value
-	return b
-}
-
-// WithEnableFeatures adds the given value to the EnableFeatures field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the EnableFeatures field.
-func (b *AlertmanagerSpecApplyConfiguration) WithEnableFeatures(values ...string) *AlertmanagerSpecApplyConfiguration {
-	for i := range values {
-		b.EnableFeatures = append(b.EnableFeatures, values[i])
-	}
 	return b
 }

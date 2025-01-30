@@ -12,20 +12,16 @@ type FakeOperatorV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeOperatorV1alpha1) ClusterVersionOperators() v1alpha1.ClusterVersionOperatorInterface {
-	return newFakeClusterVersionOperators(c)
-}
-
 func (c *FakeOperatorV1alpha1) EtcdBackups() v1alpha1.EtcdBackupInterface {
-	return newFakeEtcdBackups(c)
+	return &FakeEtcdBackups{c}
 }
 
 func (c *FakeOperatorV1alpha1) ImageContentSourcePolicies() v1alpha1.ImageContentSourcePolicyInterface {
-	return newFakeImageContentSourcePolicies(c)
+	return &FakeImageContentSourcePolicies{c}
 }
 
 func (c *FakeOperatorV1alpha1) OLMs() v1alpha1.OLMInterface {
-	return newFakeOLMs(c)
+	return &FakeOLMs{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -3,26 +3,31 @@
 package fake
 
 import (
+	"context"
+
 	v1 "github.com/openshift/api/authorization/v1"
-	authorizationv1 "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
-	gentype "k8s.io/client-go/gentype"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	testing "k8s.io/client-go/testing"
 )
 
-// fakeSelfSubjectRulesReviews implements SelfSubjectRulesReviewInterface
-type fakeSelfSubjectRulesReviews struct {
-	*gentype.FakeClient[*v1.SelfSubjectRulesReview]
+// FakeSelfSubjectRulesReviews implements SelfSubjectRulesReviewInterface
+type FakeSelfSubjectRulesReviews struct {
 	Fake *FakeAuthorizationV1
+	ns   string
 }
 
-func newFakeSelfSubjectRulesReviews(fake *FakeAuthorizationV1, namespace string) authorizationv1.SelfSubjectRulesReviewInterface {
-	return &fakeSelfSubjectRulesReviews{
-		gentype.NewFakeClient[*v1.SelfSubjectRulesReview](
-			fake.Fake,
-			namespace,
-			v1.SchemeGroupVersion.WithResource("selfsubjectrulesreviews"),
-			v1.SchemeGroupVersion.WithKind("SelfSubjectRulesReview"),
-			func() *v1.SelfSubjectRulesReview { return &v1.SelfSubjectRulesReview{} },
-		),
-		fake,
+var selfsubjectrulesreviewsResource = v1.SchemeGroupVersion.WithResource("selfsubjectrulesreviews")
+
+var selfsubjectrulesreviewsKind = v1.SchemeGroupVersion.WithKind("SelfSubjectRulesReview")
+
+// Create takes the representation of a selfSubjectRulesReview and creates it.  Returns the server's representation of the selfSubjectRulesReview, and an error, if there is any.
+func (c *FakeSelfSubjectRulesReviews) Create(ctx context.Context, selfSubjectRulesReview *v1.SelfSubjectRulesReview, opts metav1.CreateOptions) (result *v1.SelfSubjectRulesReview, err error) {
+	emptyResult := &v1.SelfSubjectRulesReview{}
+	obj, err := c.Fake.
+		Invokes(testing.NewCreateActionWithOptions(selfsubjectrulesreviewsResource, c.ns, selfSubjectRulesReview, opts), emptyResult)
+
+	if obj == nil {
+		return emptyResult, err
 	}
+	return obj.(*v1.SelfSubjectRulesReview), err
 }

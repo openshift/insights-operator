@@ -29,7 +29,7 @@ type DataGather struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec holds user settable values for configuration
-	// +required
+	// +kubebuilder:validation:Required
 	Spec DataGatherSpec `json:"spec"`
 	// status holds observed values from the cluster. They may not be overridden.
 	// +optional
@@ -84,7 +84,7 @@ type GathererState string
 // gathererConfig allows to configure specific gatherers
 type GathererConfig struct {
 	// name is the name of specific gatherer
-	// +required
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// state allows you to configure specific gatherer. Valid values are "Enabled", "Disabled" and omitted.
 	// When omitted, this means no opinion and the platform is left to choose a reasonable default.
@@ -126,10 +126,12 @@ type DataGatherStatus struct {
 	// +optional
 	Gatherers []GathererStatus `json:"gatherers,omitempty"`
 	// startTime is the time when Insights data gathering started.
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="startTime is immutable once set"
 	// +optional
 	StartTime metav1.Time `json:"startTime,omitempty"`
 	// finishTime is the time when Insights data gathering finished.
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="finishTime is immutable once set"
 	// +optional
 	FinishTime metav1.Time `json:"finishTime,omitempty"`
@@ -140,6 +142,7 @@ type DataGatherStatus struct {
 	// insightsRequestID is an Insights request ID to track the status of the
 	// Insights analysis (in console.redhat.com processing pipeline) for the corresponding Insights data archive.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="insightsRequestID is immutable once set"
+	// +kubebuilder:validation:Optional
 	// +optional
 	InsightsRequestID string `json:"insightsRequestID,omitempty"`
 	// insightsReport provides general Insights analysis results.
@@ -157,18 +160,18 @@ type GathererStatus struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
-	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type"`
 	// name is the name of the gatherer.
-	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=256
 	// +kubebuilder:validation:MinLength=5
 	Name string `json:"name"`
 	// lastGatherDuration represents the time spent gathering.
-	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Type=string
-	// +kubebuilder:validation:Pattern="^(([0-9]+(?:\\.[0-9]+)?(ns|us|µs|μs|ms|s|m|h))+)$"
+	// +kubebuilder:validation:Pattern="^([1-9][0-9]*(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
 	LastGatherDuration metav1.Duration `json:"lastGatherDuration"`
 }
 
@@ -194,25 +197,25 @@ type InsightsReport struct {
 // healthCheck represents an Insights health check attributes.
 type HealthCheck struct {
 	// description provides basic description of the healtcheck.
-	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=2048
 	// +kubebuilder:validation:MinLength=10
 	Description string `json:"description"`
 	// totalRisk of the healthcheck. Indicator of the total risk posed
 	// by the detected issue; combination of impact and likelihood. The values can be from 1 to 4,
 	// and the higher the number, the more important the issue.
-	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=4
 	TotalRisk int32 `json:"totalRisk"`
 	// advisorURI provides the URL link to the Insights Advisor.
-	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^https:\/\/\S+`
 	AdvisorURI string `json:"advisorURI"`
 	// state determines what the current state of the health check is.
 	// Health check is enabled by default and can be disabled
 	// by the user in the Insights advisor user interface.
-	// +required
+	// +kubebuilder:validation:Required
 	State HealthCheckState `json:"state"`
 }
 
@@ -235,17 +238,17 @@ type ObjectReference struct {
 	// This value should consist of only lowercase alphanumeric characters, hyphens and periods.
 	// Example: "", "apps", "build.openshift.io", etc.
 	// +kubebuilder:validation:Pattern:="^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
-	// +required
+	// +kubebuilder:validation:Required
 	Group string `json:"group"`
 	// resource is the type that is being referenced.
 	// It is normally the plural form of the resource kind in lowercase.
 	// This value should consist of only lowercase alphanumeric characters and hyphens.
 	// Example: "deployments", "deploymentconfigs", "pods", etc.
-	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern:="^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
 	Resource string `json:"resource"`
 	// name of the referent.
-	// +required
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// namespace of the referent.
 	// +optional

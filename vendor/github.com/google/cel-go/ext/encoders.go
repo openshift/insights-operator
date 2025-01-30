@@ -16,7 +16,6 @@ package ext
 
 import (
 	"encoding/base64"
-	"math"
 
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
@@ -37,7 +36,7 @@ import (
 // Examples:
 //
 //	base64.decode('aGVsbG8=')  // return b'hello'
-//	base64.decode('aGVsbG8')   // return b'hello'
+//	base64.decode('aGVsbG8')   // error
 //
 // # Base64.Encode
 //
@@ -48,34 +47,17 @@ import (
 // Examples:
 //
 //	base64.encode(b'hello') // return b'aGVsbG8='
-func Encoders(options ...EncodersOption) cel.EnvOption {
-	l := &encoderLib{version: math.MaxUint32}
-	for _, o := range options {
-		l = o(l)
-	}
-	return cel.Lib(l)
+func Encoders() cel.EnvOption {
+	return cel.Lib(encoderLib{})
 }
 
-// EncodersOption declares a functional operator for configuring encoder extensions.
-type EncodersOption func(*encoderLib) *encoderLib
+type encoderLib struct{}
 
-// EncodersVersion sets the library version for encoder extensions.
-func EncodersVersion(version uint32) EncodersOption {
-	return func(lib *encoderLib) *encoderLib {
-		lib.version = version
-		return lib
-	}
-}
-
-type encoderLib struct {
-	version uint32
-}
-
-func (*encoderLib) LibraryName() string {
+func (encoderLib) LibraryName() string {
 	return "cel.lib.ext.encoders"
 }
 
-func (*encoderLib) CompileOptions() []cel.EnvOption {
+func (encoderLib) CompileOptions() []cel.EnvOption {
 	return []cel.EnvOption{
 		cel.Function("base64.decode",
 			cel.Overload("base64_decode_string", []*cel.Type{cel.StringType}, cel.BytesType,
@@ -92,19 +74,12 @@ func (*encoderLib) CompileOptions() []cel.EnvOption {
 	}
 }
 
-func (*encoderLib) ProgramOptions() []cel.ProgramOption {
+func (encoderLib) ProgramOptions() []cel.ProgramOption {
 	return []cel.ProgramOption{}
 }
 
 func base64DecodeString(str string) ([]byte, error) {
-	b, err := base64.StdEncoding.DecodeString(str)
-	if err == nil {
-		return b, nil
-	}
-	if _, tryAltEncoding := err.(base64.CorruptInputError); tryAltEncoding {
-		return base64.RawStdEncoding.DecodeString(str)
-	}
-	return nil, err
+	return base64.StdEncoding.DecodeString(str)
 }
 
 func base64EncodeBytes(bytes []byte) (string, error) {

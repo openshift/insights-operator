@@ -141,8 +141,7 @@ func convertHTTPConfigTo(in *HTTPConfig) *v1alpha1.HTTPConfig {
 		OAuth2:            in.OAuth2,
 		BearerTokenSecret: convertSecretKeySelectorTo(in.BearerTokenSecret),
 		TLSConfig:         in.TLSConfig,
-		ProxyURLOriginal:  in.ProxyURLOriginal,
-		ProxyConfig:       in.ProxyConfig,
+		ProxyURL:          in.ProxyURL,
 		FollowRedirects:   in.FollowRedirects,
 	}
 }
@@ -252,7 +251,6 @@ func convertPagerDutyConfigTo(in PagerDutyConfig) v1alpha1.PagerDutyConfig {
 		PagerDutyImageConfigs: convertPagerDutyImageConfigsTo(in.PagerDutyImageConfigs),
 		PagerDutyLinkConfigs:  convertPagerDutyLinkConfigsTo(in.PagerDutyLinkConfigs),
 		HTTPConfig:            convertHTTPConfigTo(in.HTTPConfig),
-		Source:                in.Source,
 	}
 }
 
@@ -445,7 +443,6 @@ func convertTelegramConfigTo(in TelegramConfig) v1alpha1.TelegramConfig {
 		BotToken:             convertSecretKeySelectorTo(in.BotToken),
 		BotTokenFile:         in.BotTokenFile,
 		ChatID:               in.ChatID,
-		MessageThreadID:      in.MessageThreadID,
 		Message:              in.Message,
 		DisableNotifications: in.DisableNotifications,
 		ParseMode:            in.ParseMode,
