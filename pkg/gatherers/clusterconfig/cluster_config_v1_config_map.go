@@ -59,16 +59,9 @@ func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *instal
 		installConfig.Platform.GCP.ProjectID = anonymize.String(installConfig.Platform.GCP.ProjectID)
 	}
 	if installConfig.Platform.VSphere != nil {
-		for i := range installConfig.Platform.VSphere.VCenters {
-			vCenter := installConfig.Platform.VSphere.VCenters[i]
-
-			vCenter.Username = anonymize.String(vCenter.Username)
-			vCenter.Password = anonymize.String(vCenter.Password)
-			for j := range vCenter.Datacenters {
-				vCenter.Datacenters[j] = anonymize.String(vCenter.Datacenters[j])
-			}
-			installConfig.Platform.VSphere.VCenters[i] = vCenter
-		}
+		installConfig.Platform.VSphere.Datacenter = anonymize.String(installConfig.Platform.VSphere.Datacenter)
+		installConfig.Platform.VSphere.Username = anonymize.String(installConfig.Platform.VSphere.Username)
+		installConfig.Platform.VSphere.Password = anonymize.String(installConfig.Platform.VSphere.Password)
 	}
 	if installConfig.Platform.OpenStack != nil {
 		installConfig.Platform.OpenStack.Cloud = anonymize.String(installConfig.Platform.OpenStack.Cloud)

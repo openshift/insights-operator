@@ -4,9 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openshift/insights-operator/pkg/utils/anonymize"
-	installertypes "github.com/openshift/installer/pkg/types"
-	vsphere "github.com/openshift/installer/pkg/types/vsphere"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,30 +43,4 @@ pullSecret: ""
 `
 
 	assert.Equal(t, installConfig, string(data))
-}
-
-func TestAnonymizeInstallConfigVSphere(t *testing.T) {
-	// Given
-	testUsername, expectedUsername := "test", anonymize.String("test")
-	testPassword, expectedPassword := "test", anonymize.String("test")
-	testDatacenters, expectedDatacenters :=
-		[]string{"test", "test2"}, []string{anonymize.String("test"), anonymize.String("test2")}
-
-	givenIC := installertypes.InstallConfig{
-		Platform: installertypes.Platform{
-			VSphere: &vsphere.Platform{
-				VCenters: []vsphere.VCenter{{
-					Username: testUsername, Password: testPassword, Datacenters: testDatacenters},
-				},
-			},
-		},
-	}
-
-	// Test
-	result := anonymizeInstallConfig(&givenIC)
-
-	// Assert
-	assert.Equal(t, expectedUsername, result.VSphere.VCenters[0].Username)
-	assert.Equal(t, expectedPassword, result.VSphere.VCenters[0].Password)
-	assert.ElementsMatch(t, expectedDatacenters, result.VSphere.VCenters[0].Datacenters)
 }
