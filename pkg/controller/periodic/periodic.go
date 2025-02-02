@@ -80,7 +80,6 @@ func NewWithTechPreview(
 	insightsOperatorCli operatorv1client.InsightsOperatorInterface,
 	openshiftConfCli configv1client.ConfigV1Interface,
 	dgInf DataGatherInformer,
-
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -387,7 +386,7 @@ func (c *Controller) GatherJob() {
 // it returns with the providing the info in the log message.
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, c.configAggregator.Config().DataReporting.StoragePath)
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -481,7 +480,8 @@ func (c *Controller) updateStatusBasedOnDataGatherCondition(ctx context.Context,
 // compareAndUpdateClusterOperatorCondition compares the provided dataGather condition to the specific
 // cluster operator status condition with the given type and then updates the clusteroperator condition
 func (c *Controller) compareAndUpdateClusterOperatorCondition(ctx context.Context,
-	conditionType v1.ClusterStatusConditionType, dataGatherCondition *metav1.Condition) error {
+	conditionType v1.ClusterStatusConditionType, dataGatherCondition *metav1.Condition,
+) error {
 	insightsCo, err := c.openshiftConfCli.ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -537,7 +537,8 @@ func (c *Controller) compareAndUpdateClusterOperatorCondition(ctx context.Contex
 // getClusterOperatorConditionIndexByType tries to find index of the cluster operator status condition with the corresponding type.
 // If the condition is found, the corresponding index and true are returned. If the condition is not found then it returns -1 and false.
 func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionType,
-	conditions []v1.ClusterOperatorStatusCondition) (int, bool) {
+	conditions []v1.ClusterOperatorStatusCondition,
+) (int, bool) {
 	idx := -1
 	found := false
 	for i := range conditions {
@@ -553,7 +554,8 @@ func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionTyp
 // updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
 // updates the provided DataGather resource with all important attributes.
 func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
-	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather) error {
+	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather,
+) error {
 	for _, recommendation := range report.Recommendations {
 		advisorLink, err := insights.CreateInsightsAdvisorLink(v1.ClusterID(report.ClusterID), recommendation.RuleFQDN, recommendation.ErrorKey)
 		if err != nil {
@@ -578,7 +580,8 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 // copyDataGatherStatusToOperatorStatus gets the "cluster" "insightsoperator.operator.openshift.io" resource
 // and updates its status with values from the provided "datagather.insights.openshift.io" resource.
 func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
-	dataGather *insightsv1alpha1.DataGather) (*operatorv1.InsightsOperator, error) {
+	dataGather *insightsv1alpha1.DataGather,
+) (*operatorv1.InsightsOperator, error) {
 	operator, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -597,7 +600,8 @@ func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
 // updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last
 // gathering details.
 func (c *Controller) updateOperatorStatusCR(ctx context.Context, allFunctionReports map[string]gather.GathererFunctionReport,
-	gatherTime metav1.Time) error {
+	gatherTime metav1.Time,
+) error {
 	insightsOperatorCR, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -715,7 +719,8 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 // with generate name prefix "periodic-gathering-". Returns the newly created
 // resource or an error if the creation failed.
 func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherers []string,
-	dataPolicy insightsv1alpha1.DataPolicy) (*insightsv1alpha1.DataGather, error) {
+	dataPolicy insightsv1alpha1.DataPolicy,
+) (*insightsv1alpha1.DataGather, error) {
 	dataGatherCR := insightsv1alpha1.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: periodicGatheringPrefix,

@@ -14,6 +14,7 @@ dataReporting:
     interval: 30m0s,
     uploadEndpoint: https://console.redhat.com/api/ingress/v1/upload,
     storagePath: /var/lib/insights-operator,
+    persistentVolumeClaimName: "",
     downloadEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports,
     conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules,
     obfuscation: [workload_names networking]
@@ -36,6 +37,7 @@ The `support` secret provides following configuration attributes:
 
 - `endpoint` - upload endpoint. Overwritten by `dataReporting/uploadEndpoint` from the configmap. Default is `https://console.redhat.com/api/ingress/v1/upload`.
 - `interval` - data gathering & uploading frequency. Overwritten by `dataReporting/interval` from the configmap. Default is `2h`.
+- `persistentVolumeClaimName` - specifies the PVC where the created archive from on-demand gathering will be stored. If not specified, ephemeral storage will be used
 - `httpProxy`, `httpsProxy`, `noProxy` eventually to set custom proxy, which overrides cluster proxy just for the Insights Operator. Overwritten by `proxy/httpProxy`, `proxy/httpsProxy` and `proxy/noProxy`, respectively, from the configmap.
 - `enableGlobalObfuscation` - to enable the global obfuscation of the IP addresses and the cluster domain name. Overwritten by `dataReporting/obfuscation` from the configmap. To enable it via configmap, set the `dataReporting/obfuscation` to [`networking`]. Default value is `false`.
 - `reportEndpoint` - download endpoint. From this endpoint, the Insights operator downloads the latest Insights analysis. Overwritten by `dataReporting/downloadEndpoint` from the configmap. Default value is `https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports` (where `%s` must be replaced with the cluster ID).
