@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"k8s.io/klog/v2"
 
@@ -15,11 +16,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-var (
-	// when there's no HTTP status response code then we send 0 to track
-	// this request in the "insightsclient_request_send_total" Prometheus metrics
-	noHttpStatusCode = 0
-)
+// when there's no HTTP status response code then we send 0 to track
+// this request in the "insightsclient_request_send_total" Prometheus metrics
+var noHttpStatusCode = 0
 
 func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, int, error) {
 	cv, err := c.GetClusterVersion()
@@ -121,7 +120,6 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 
 	klog.Infof("Retrieving report from %s", req.URL.String())
 	resp, err := c.client.Do(req)
-
 	if err != nil {
 		klog.Errorf("Unable to retrieve latest report for %s: %v", cv.Spec.ClusterID, err)
 		counterRequestRecvReport.WithLabelValues(c.metricsName, "0").Inc()
@@ -180,7 +178,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	return nil, fmt.Errorf("report response status code: %d", resp.StatusCode)
 }
 
-func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architecture string) ([]byte, error) {
+func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architectures map[string]struct{}) ([]byte, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -188,20 +186,23 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architecture s
 	if err != nil {
 		return nil, err
 	}
+
 	token, err := c.authorizer.Token()
 	if err != nil {
 		return nil, err
 	}
-	payload := fmt.Sprintf(scaArchPayload, architecture)
+
+	payload := buildPayloadString(architectures)
 	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer([]byte(payload)))
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	c.client.Transport = clientTransport(c.authorizer)
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
-	klog.Infof("Asking for SCA certificate for %s architecture", architecture)
+	klog.Infof("Asking for SCA certificate with \"%s\" payload", payload)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -218,6 +219,17 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architecture s
 	}()
 
 	return io.ReadAll(resp.Body)
+}
+
+// Helper function to create a payload string from the architectures map
+func buildPayloadString(architectures map[string]struct{}) string {
+	var archList []string
+	for arch := range architectures {
+		archList = append(archList, arch)
+	}
+
+	archStr := strings.Join(archList, `","`)
+	return fmt.Sprintf(scaArchPayload, archStr)
 }
 
 // RecvClusterTransfer performs a request to the OCM cluster transfer API. It is

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 	"time"
 
@@ -23,13 +22,28 @@ import (
 )
 
 const (
-	targetNamespaceName    = "openshift-config-managed" //nolint: gosec
-	secretName             = "etc-pki-entitlement"      //nolint: gosec
-	entitlementAttrName    = "entitlement.pem"
-	entitlementKeyAttrName = "entitlement-key.pem"
-	ControllerName         = "scaController"
-	AvailableReason        = "Updated"
+	targetNamespaceName        = "openshift-config-managed" //nolint: gosec
+	secretName                 = "etc-pki-entitlement"      //nolint: gosec
+	secretArchName             = "etc-pki-entitlement-%s"   //nolint: gosec
+	entitlementAttrName        = "entitlement.pem"
+	entitlementKeyAttrName     = "entitlement-key.pem"
+	ControllerName             = "scaController"
+	AvailableReason            = "Updated"
+	SCAProcessingFailureReason = "FailedToProcessSCACerts"
 )
+
+// Mapping of architecture format used by SCA API to the format used by kubernetes
+var archMapping = map[string]string{
+	"x86":     "386",
+	"x86_64":  "amd64",
+	"ppc":     "ppc",
+	"ppc64":   "ppc64",
+	"ppc64le": "ppc64le",
+	"s390":    "s390",
+	"s390x":   "s390x",
+	"ia64":    "ia64",
+	"aarch64": "arm64",
+}
 
 // Controller holds all the required resources to be able to communicate with OCM API
 type Controller struct {
@@ -39,17 +53,31 @@ type Controller struct {
 	client       *insightsclient.Client
 }
 
-// Response structure is used to unmarshall the OCM SCA response. It holds the SCA certificate
+// Response structure is used to unmarshall the OCM SCA response.
 type Response struct {
-	ID    string `json:"id"`
-	OrgID string `json:"organization_id"`
-	Key   string `json:"key"`
-	Cert  string `json:"cert"`
+	Items []CertData `json:"items"`
+	Kind  string     `json:"kind"`
+	Total int        `json:"total"`
+}
+
+// CertData holds the SCA certificate
+type CertData struct {
+	ID       string       `json:"id"`
+	OrgID    string       `json:"organization_id"`
+	Key      string       `json:"key"`
+	Cert     string       `json:"cert"`
+	Metadata CertMetadata `json:"metadata"`
+}
+
+// ResonseMetadata structure is used to unmarshall the OCM SCA response metadata.
+type CertMetadata struct {
+	Arch string `json:"arch"`
 }
 
 // New creates new instance
 func New(coreClient corev1client.CoreV1Interface, configurator configobserver.Interface,
-	insightsClient *insightsclient.Client) *Controller {
+	insightsClient *insightsclient.Client,
+) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New(ControllerName),
 		coreClient:       coreClient,
@@ -98,12 +126,18 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().SCA.Endpoint,
 		c.configurator.Config().SCA.Interval)
 
-	data, err := c.requestSCAWithExpBackoff(ctx, endpoint)
+	architectures, err := c.gatherArchitectures(ctx)
+	if err != nil {
+		klog.Errorf("Gathering nodes architectures failed: %s", err.Error())
+		return
+	}
+
+	responses, err := c.requestSCAWithExpBackoff(ctx, endpoint, architectures)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
 		errMsg := fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err)
 		if ok {
-			c.StatusController.UpdateStatus(controllerstatus.Summary{
+			c.UpdateStatus(controllerstatus.Summary{
 				Operation: controllerstatus.Operation{
 					Name:           controllerstatus.PullingSCACerts.Name,
 					HTTPStatusCode: httpErr.StatusCode,
@@ -115,7 +149,7 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 			return
 		}
 		klog.Warning(errMsg)
-		c.StatusController.UpdateStatus(controllerstatus.Summary{
+		c.UpdateStatus(controllerstatus.Summary{
 			Operation:          controllerstatus.PullingSCACerts,
 			Healthy:            true,
 			Reason:             "NonHTTPError",
@@ -125,58 +159,79 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 		return
 	}
 
-	var ocmRes Response
-	err = json.Unmarshal(data, &ocmRes)
+	err = c.processResponses(ctx, *responses)
 	if err != nil {
-		klog.Errorf("Unable to decode response: %v", err)
-		return
-	}
-	// check & update the secret here
-	err = c.checkSecret(ctx, &ocmRes)
-	if err != nil {
-		klog.Errorf("Error when checking the %s secret: %v", secretName, err)
+		c.UpdateStatus(controllerstatus.Summary{
+			Operation:          controllerstatus.PullingSCACerts,
+			Message:            "Failed to process SCA certs: " + err.Error(),
+			Healthy:            false,
+			LastTransitionTime: time.Now(),
+			Reason:             SCAProcessingFailureReason,
+		})
 		return
 	}
 
-	klog.Infof("%s secret successfully updated", secretName)
-	c.StatusController.UpdateStatus(controllerstatus.Summary{
+	c.UpdateStatus(controllerstatus.Summary{
 		Operation:          controllerstatus.PullingSCACerts,
-		Message:            fmt.Sprintf("SCA certs successfully updated in the %s secret", secretName),
+		Message:            "SCA certs successfully updated",
 		Healthy:            true,
 		LastTransitionTime: time.Now(),
 		Reason:             AvailableReason,
 	})
 }
 
-// checkSecret checks "etc-pki-entitlement" secret in the "openshift-config-managed" namespace.
+func (c *Controller) processResponses(ctx context.Context, responses Response) error {
+	if responses.Total == 1 {
+		// If there is only one architecture then we will use the secret name "etc-pki-entitlement"
+		// without the arch suffix to keep the backward compatibility
+		return c.checkSecret(ctx, &responses.Items[0], secretName)
+	}
+
+	for _, response := range responses.Items {
+		secretArchName := fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch])
+
+		err := c.checkSecret(ctx, &response, secretArchName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// checkSecret checks "etc-pki-entitlement" or "etc-pki-entitlement-arch"
+// secret in the "openshift-config-managed" namespace.
 // If the secret doesn't exist then it will create a new one.
 // If the secret already exist then it will update the data.
-func (c *Controller) checkSecret(ctx context.Context, ocmData *Response) error {
-	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(ctx, secretName, metav1.GetOptions{})
+func (c *Controller) checkSecret(ctx context.Context, ocmData *CertData, secretArchName string) error {
+	scaSec, err := c.coreClient.Secrets(targetNamespaceName).Get(ctx, secretArchName, metav1.GetOptions{})
 
 	// if the secret doesn't exist then create one
 	if errors.IsNotFound(err) {
-		_, err = c.createSecret(ctx, ocmData)
+		_, err = c.createSecret(ctx, ocmData, secretArchName)
 		if err != nil {
+			klog.Errorf("Error when creating the %s secret: %v", secretArchName, err)
 			return err
 		}
 		return nil
 	}
 	if err != nil {
+		klog.Errorf("Error getting the %s secret: %v", secretArchName, err)
 		return err
 	}
 
 	_, err = c.updateSecret(ctx, scaSec, ocmData)
 	if err != nil {
+		klog.Errorf("Error when updating the %s secret: %v", secretName, err)
 		return err
 	}
 	return nil
 }
 
-func (c *Controller) createSecret(ctx context.Context, ocmData *Response) (*v1.Secret, error) {
+func (c *Controller) createSecret(ctx context.Context, ocmData *CertData, secretArchName string) (*v1.Secret, error) {
 	newSCA := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
+			Name:      secretArchName,
 			Namespace: targetNamespaceName,
 		},
 		Data: map[string][]byte{
@@ -185,46 +240,38 @@ func (c *Controller) createSecret(ctx context.Context, ocmData *Response) (*v1.S
 		},
 		Type: v1.SecretTypeOpaque,
 	}
+
 	cm, err := c.coreClient.Secrets(targetNamespaceName).Create(ctx, newSCA, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
+
+	klog.Infof("%s secret successfully created", newSCA.Name)
+
 	return cm, nil
 }
 
 // updateSecret updates provided secret with given data
-func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *Response) (*v1.Secret, error) {
+func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *CertData) (*v1.Secret, error) {
 	s.Data = map[string][]byte{
 		entitlementAttrName:    []byte(ocmData.Cert),
 		entitlementKeyAttrName: []byte(ocmData.Key),
 	}
+
 	s, err := c.coreClient.Secrets(s.Namespace).Update(ctx, s, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
 	}
+
+	klog.Infof("%s secret successfully updated", s.Name)
+
 	return s, nil
-}
-
-// getArch check the value of GOARCH and return a valid representation for
-// OCM certificates API
-func getArch() string {
-	validArchs := map[string]string{
-		"amd64": "x86_64",
-		"i386":  "x86",
-		"386":   "x86",
-		"arm64": "aarch64",
-	}
-
-	if translation, ok := validArchs[runtime.GOARCH]; ok {
-		return translation
-	}
-	return runtime.GOARCH
 }
 
 // requestSCAWithExpBackoff queries OCM API with exponential backoff.
 // Returns HttpError (see insightsclient.go) in case of any HTTP error response from OCM API.
 // The exponential backoff is applied only for HTTP errors >= 500.
-func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string) ([]byte, error) {
+func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string, architectures map[string]struct{}) (*Response, error) {
 	bo := wait.Backoff{
 		Duration: c.configurator.Config().SCA.Interval / 32, // 15 min by default
 		Factor:   2,
@@ -233,10 +280,12 @@ func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint stri
 		Cap:      c.configurator.Config().SCA.Interval,
 	}
 
+	klog.Infof("Nodes architectures: %s", architectures)
+
+	var err error
 	var data []byte
-	err := wait.ExponentialBackoff(bo, func() (bool, error) {
-		var err error
-		data, err = c.client.RecvSCACerts(ctx, endpoint, getArch())
+	err = wait.ExponentialBackoff(bo, func() (bool, error) {
+		data, err = c.client.RecvSCACerts(ctx, endpoint, architectures)
 		if err != nil {
 			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
 			if !insightsclient.IsHttpError(err) {
@@ -253,10 +302,19 @@ func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint stri
 			}
 			return true, httpErr
 		}
+
 		return true, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+
+	var response Response
+	err = json.Unmarshal(data, &response)
+	if err != nil {
+		klog.Errorf("Unable to decode response: %v", err)
+		return nil, err
+	}
+
+	return &response, nil
 }

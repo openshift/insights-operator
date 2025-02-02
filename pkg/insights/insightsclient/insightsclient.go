@@ -33,7 +33,7 @@ import (
 const (
 	responseBodyLogLen = 1024
 	insightsReqId      = "x-rh-insights-request-id"
-	scaArchPayload     = `{"type": "sca","arch": "%s"}`
+	scaArchPayload     = `{"arch": ["%s"]}`
 )
 
 type Client struct {
@@ -247,12 +247,10 @@ func (c *Client) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, 
 	_ = pw.CloseWithError(mw.Close())
 }
 
-var (
-	counterRequestRecvReport = metrics.NewCounterVec(&metrics.CounterOpts{
-		Name: "insightsclient_request_recvreport_total",
-		Help: "Tracks the number of insights reports received/downloaded",
-	}, []string{"client", "status_code"})
-)
+var counterRequestRecvReport = metrics.NewCounterVec(&metrics.CounterOpts{
+	Name: "insightsclient_request_recvreport_total",
+	Help: "Tracks the number of insights reports received/downloaded",
+}, []string{"client", "status_code"})
 
 func init() {
 	insights.MustRegisterMetrics(counterRequestRecvReport)
