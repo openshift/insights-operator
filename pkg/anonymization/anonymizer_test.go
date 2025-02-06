@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	clienttesting "k8s.io/client-go/testing"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -234,8 +233,7 @@ func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
 
 	// Mock the client to react/check Apply calls
 	kube := kubefake.Clientset{}
-	client := kube.CoreV1().Secrets(secretNamespace)
-	client.(*corefake.FakeSecrets).Fake.AddReactor("create", "secrets",
+	kube.Fake.AddReactor("create", "secrets",
 		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			if createAction, ok := action.(clienttesting.CreateAction); ok {
 				assert.Equal(t, secretNamespace, createAction.GetNamespace())
@@ -250,7 +248,7 @@ func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
 			t.Errorf("Incorrect action, expected patch got %s", action)
 			return false, nil, nil
 		})
-	anonymizer.secretsClient = client
+	anonymizer.secretsClient = kube.CoreV1().Secrets(secretNamespace)
 
 	// Fill translation table
 	for i := 0; i < 10; i++ {
