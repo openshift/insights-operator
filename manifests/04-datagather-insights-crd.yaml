@@ -216,7 +216,7 @@ spec:
                       lastGatherDuration:
                         description: lastGatherDuration represents the time spent gathering.
                         type: string
-                        pattern: ^([1-9][0-9]*(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$
+                        pattern: ^(([0-9]+(?:\.[0-9]+)?(ns|us|µs|μs|ms|s|m|h))+)$
                       name:
                         description: name is the name of the gatherer.
                         type: string
