@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/insights-operator/pkg/config"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -13,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
+	"k8s.io/klog/v2"
 )
 
 // JobController type responsible for
@@ -29,7 +32,14 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
-func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, image, archiveVolumeMountPath string) (*batchv1.Job, error) {
+//
+//nolint:funlen
+func (j *JobController) CreateGathererJob(
+	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting, storageSpec *insightsv1alpha1.StorageSpec,
+) (*batchv1.Job, error) {
+	volumeSource := j.createVolumeSource(ctx, storageSpec)
+	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storageSpec)
+
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dataGatherName,
@@ -54,10 +64,8 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 					},
 					Volumes: []corev1.Volume{
 						{
-							Name: "archives-path",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
+							Name:         "archives-path",
+							VolumeSource: volumeSource,
 						},
 						{
 							Name: serviceCABundle,
@@ -96,16 +104,7 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 								AllowPrivilegeEscalation: falseB,
 								Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "archives-path",
-									MountPath: archiveVolumeMountPath,
-								},
-								{
-									Name:      serviceCABundle,
-									MountPath: serviceCABundlePath,
-								},
-							},
+							VolumeMounts: volumeMounts,
 						},
 					},
 				},
@@ -158,5 +157,53 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 				return fmt.Errorf("job %s failed", job.Name)
 			}
 		}
+	}
+}
+
+func (j *JobController) createVolumeSource(ctx context.Context, storageSpec *insightsv1alpha1.StorageSpec) corev1.VolumeSource {
+	if storageSpec == nil {
+		klog.Info("Creating volume source with EmptyDir, no storageSpec provided")
+		return corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		}
+	} else if storageSpec.PersistentVolumeClaim.Name != "" {
+		// Validate if the PVC exists
+		persistentVolumeClaimName := string(storageSpec.PersistentVolumeClaim.Name)
+		pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
+		if err != nil {
+			klog.Error(err, "Failed to get PersistentVolumeClaim ", persistentVolumeClaimName)
+		} else if pvc != nil {
+			klog.Infof("Creating volume source with PersistentVollumeClaimName: %s", persistentVolumeClaimName)
+			return corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: persistentVolumeClaimName,
+				},
+			}
+		}
+
+		klog.Warning("Failed to create volume source with PersistentVolumeClaimName, falling back to EmptyDir")
+	}
+
+	klog.Info("Creating volume source with EmptyDir")
+	return corev1.VolumeSource{
+		EmptyDir: &corev1.EmptyDirVolumeSource{},
+	}
+}
+
+func (j *JobController) createVolumeMounts(storagePath string, storageSpec *insightsv1alpha1.StorageSpec) []corev1.VolumeMount {
+	mountPath := storagePath
+	if storageSpec != nil && storageSpec.MountPath != "" {
+		mountPath = storageSpec.MountPath
+	}
+
+	return []corev1.VolumeMount{
+		{
+			Name:      "archives-path",
+			MountPath: mountPath,
+		},
+		{
+			Name:      serviceCABundle,
+			MountPath: serviceCABundlePath,
+		},
 	}
 }
