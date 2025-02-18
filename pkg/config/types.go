@@ -30,7 +30,6 @@ type DataReportingSerialized struct {
 	DownloadEndpoint            string      `json:"downloadEndpoint,omitempty"`
 	DownloadEndpointTechPreview string      `json:"downloadEndpointTechPreview,omitempty"`
 	StoragePath                 string      `json:"storagePath,omitempty"`
-	PersistentVolumeClaimName   string      `json:"persistentVolumeClaimName,omitempty"`
 	ConditionalGathererEndpoint string      `json:"conditionalGathererEndpoint,omitempty"`
 	ProcessingStatusEndpoint    string      `json:"processingStatusEndpoint,omitempty"`
 	Obfuscation                 Obfuscation `json:"obfuscation,omitempty"`
@@ -78,7 +77,6 @@ type DataReporting struct {
 	DownloadEndpoint            string
 	DownloadEndpointTechPreview string
 	StoragePath                 string
-	PersistentVolumeClaimName   string
 	ConditionalGathererEndpoint string
 	ReportPullingDelay          time.Duration
 	ProcessingStatusEndpoint    string

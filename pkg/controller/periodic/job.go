@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/config"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -34,9 +35,10 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 //
 //nolint:funlen
 func (j *JobController) CreateGathererJob(
-	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting,
+	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting, storageSpec *insightsv1alpha1.StorageSpec,
 ) (*batchv1.Job, error) {
-	volumeSource := j.createVolumeSource(ctx, dataReporting.PersistentVolumeClaimName)
+	volumeSource := j.createVolumeSource(ctx, storageSpec)
+	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storageSpec)
 
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -102,48 +104,7 @@ func (j *JobController) CreateGathererJob(
 								AllowPrivilegeEscalation: falseB,
 								Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "archives-path",
-									MountPath: dataReporting.StoragePath,
-								},
-								{
-									Name:      serviceCABundle,
-									MountPath: serviceCABundlePath,
-								},
-							},
-						},
-						{
-							Name:    "cleanup-job",
-							Image:   "registry.redhat.io/ubi8/ubi-minimal:latest",
-							Command: []string{"sh", "-c"},
-							Args: []string{`
-								echo "Starting archives cleanup"
-
-								ARCHIVES_COUNT=$(ls -p "$ARCHIVES_PATH" | grep -v / | wc -l)
-								if [ $ARCHIVES_COUNT -lt 5 ]; then
-									echo "No cleanup needed"
-									exit 0
-								fi
-
-								FILE_TO_DELETE=$(ls -pt "$ARCHIVES_PATH" | grep -v / | tail -n 1)
-								echo "Deleting $FILE_TO_DELETE"
-								rm -f "$ARCHIVES_PATH/$FILE_TO_DELETE"
-
-								echo "Archives cleanup finished"
-							`},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "ARCHIVES_PATH",
-									Value: dataReporting.StoragePath,
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "archives-path",
-									MountPath: dataReporting.StoragePath,
-								},
-							},
+							VolumeMounts: volumeMounts,
 						},
 					},
 				},
@@ -199,20 +160,50 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 	}
 }
 
-func (j *JobController) createVolumeSource(ctx context.Context, persistentVolumeClaimName string) corev1.VolumeSource {
-	pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
-	if err == nil && pvc != nil {
-		klog.Infof("Creating volume source with PersistentVolumeClaimName: %s", persistentVolumeClaimName)
+func (j *JobController) createVolumeSource(ctx context.Context, storageSpec *insightsv1alpha1.StorageSpec) corev1.VolumeSource {
+	if storageSpec == nil {
+		klog.Info("Creating volume source with EmptyDir, no storageSpec provided")
 		return corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: persistentVolumeClaimName,
-			},
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}
+	} else if storageSpec.PersistentVolumeClaim.Name != "" {
+		// Validate if the PVC exists
+		persistentVolumeClaimName := string(storageSpec.PersistentVolumeClaim.Name)
+		pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
+		if err != nil {
+			klog.Error(err, "Failed to get PersistentVolumeClaim ", persistentVolumeClaimName)
+		} else if pvc != nil {
+			klog.Infof("Creating volume source with PersistentVollumeClaimName: %s", persistentVolumeClaimName)
+			return corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: persistentVolumeClaimName,
+				},
+			}
+		}
+
+		klog.Warning("Failed to create volume source with PersistentVolumeClaimName, falling back to EmptyDir")
 	}
 
-	klog.Infof("Unable to get PersistentVolumeClaim: %v", err)
 	klog.Info("Creating volume source with EmptyDir")
 	return corev1.VolumeSource{
 		EmptyDir: &corev1.EmptyDirVolumeSource{},
+	}
+}
+
+func (j *JobController) createVolumeMounts(storagePath string, storageSpec *insightsv1alpha1.StorageSpec) []corev1.VolumeMount {
+	mountPath := storagePath
+	if storageSpec != nil && storageSpec.MountPath != "" {
+		mountPath = storageSpec.MountPath
+	}
+
+	return []corev1.VolumeMount{
+		{
+			Name:      "archives-path",
+			MountPath: mountPath,
+		},
+		{
+			Name:      serviceCABundle,
+			MountPath: serviceCABundlePath,
+		},
 	}
 }
