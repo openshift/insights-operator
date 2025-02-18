@@ -327,10 +327,12 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 					klog.Errorf("Failed to read %s DataGather resource", dgName)
 					return
 				}
+
 				if dataGather.Status.State != "" {
 					klog.Infof("DataGather %s resource state is %s. Not triggering any data gathering", dgName, dataGather.Status.State)
 					return
 				}
+
 				if c.image == "" {
 					image, err := c.getInsightsImage(ctx)
 					if err != nil {
@@ -338,6 +340,12 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 						return
 					}
 					c.image = image
+				}
+
+				if dataGather.Spec.StorageSpec == nil {
+					klog.Warningf("StorageSpec is not provided for the %s DataGather resource. Using the default storage", dgName)
+					// Use config from the InsightsDataGather CRD, if not provided ephemeral storage will be used
+					dataGather.Spec.StorageSpec = createStorageSpec(c.apiConfigurator.GatherConfig().StorageSpec)
 				}
 
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
@@ -369,9 +377,8 @@ func (c *Controller) GatherJob() {
 		c.image = image
 	}
 
-	disabledGatherers, dp := c.createDataGatherAttributeValues()
 	// create a new datagather.insights.openshift.io custom resource
-	dataGatherCR, err := c.createNewDataGatherCR(ctx, disabledGatherers, dp)
+	dataGatherCR, err := c.createNewDataGatherCR(ctx)
 	if err != nil {
 		klog.Errorf("Failed to create a new DataGather resource: %v", err)
 		return
@@ -386,7 +393,7 @@ func (c *Controller) GatherJob() {
 // it returns with the providing the info in the log message.
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting)
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting, dataGather.Spec.StorageSpec)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -718,27 +725,32 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 // createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
 // with generate name prefix "periodic-gathering-". Returns the newly created
 // resource or an error if the creation failed.
-func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherers []string,
-	dataPolicy insightsv1alpha1.DataPolicy,
-) (*insightsv1alpha1.DataGather, error) {
+func (c *Controller) createNewDataGatherCR(ctx context.Context) (*insightsv1alpha1.DataGather, error) {
+	// Get values from InsightsDataGather CRD that contains config for the data gathering job
+	disabledGatherers, dataPolicy, storageSpec := c.createDataGatherAttributeValues()
+
 	dataGatherCR := insightsv1alpha1.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: periodicGatheringPrefix,
 		},
 		Spec: insightsv1alpha1.DataGatherSpec{
-			DataPolicy: dataPolicy,
+			DataPolicy:  dataPolicy,
+			StorageSpec: storageSpec,
 		},
 	}
+
 	for _, g := range disabledGatherers {
 		dataGatherCR.Spec.Gatherers = append(dataGatherCR.Spec.Gatherers, insightsv1alpha1.GathererConfig{
 			Name:  g,
 			State: insightsv1alpha1.Disabled,
 		})
 	}
+
 	dataGather, err := c.dataGatherClient.DataGathers().Create(ctx, &dataGatherCR, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
+
 	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
 	return dataGather, nil
 }
@@ -778,13 +790,14 @@ func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insight
 	if err != nil {
 		return nil, err
 	}
+
 	return dg, nil
 }
 
 // createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
 // and checks custom period gatherers and returns list of disabled gatherers based on this two values
 // and also data policy set in the "insightsdatagather.config.openshift.io"
-func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alpha1.DataPolicy) {
+func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alpha1.DataPolicy, *insightsv1alpha1.StorageSpec) {
 	gatherConfig := c.apiConfigurator.GatherConfig()
 
 	var dp insightsv1alpha1.DataPolicy
@@ -807,7 +820,22 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 			}
 		}
 	}
-	return disabledGatherers, dp
+
+	return disabledGatherers, dp, createStorageSpec(gatherConfig.StorageSpec)
+}
+
+// createStorageSpec creates the "insightsv1alpha1.StorageSpec" from the provided "configv1alpha1.StorageSpec"
+func createStorageSpec(storageSpec *configv1alpha1.StorageSpec) *insightsv1alpha1.StorageSpec {
+	if storageSpec == nil {
+		return nil
+	}
+
+	return &insightsv1alpha1.StorageSpec{
+		PersistentVolumeClaim: insightsv1alpha1.PersistentVolumeClaimReference{
+			Name: storageSpec.PersistentVolumeClaim.Name,
+		},
+		MountPath: storageSpec.MountPath,
+	}
 }
 
 // wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
