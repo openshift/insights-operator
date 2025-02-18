@@ -143,10 +143,6 @@ func (c *ConfigAggregator) mergeDataReporting(defaultCfg, newCfg *config.Insight
 		defaultCfg.DataReporting.StoragePath = newCfg.DataReporting.StoragePath
 	}
 
-	if newCfg.DataReporting.PersistentVolumeClaimName != "" {
-		defaultCfg.DataReporting.PersistentVolumeClaimName = newCfg.DataReporting.PersistentVolumeClaimName
-	}
-
 	if len(newCfg.DataReporting.Obfuscation) > 0 {
 		defaultCfg.DataReporting.Obfuscation = append(defaultCfg.DataReporting.Obfuscation, newCfg.DataReporting.Obfuscation...)
 	}

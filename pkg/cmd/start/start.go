@@ -195,6 +195,7 @@ func runGatherAndUpload(
 		if err := operator.GatherAndUpload(clientConfig, protoConfig); err != nil {
 			klog.Exit(err)
 		}
+
 		cancel()
 		os.Exit(0)
 	}
