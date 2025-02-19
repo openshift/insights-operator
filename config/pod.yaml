@@ -15,8 +15,7 @@ pull_report:
 processingStatusEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/request/%s/status
 reportEndpointTechPreview: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/request/%s/report
 ocm:
-  scaEndpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates
+  scaEndpoint: https://api.openshift.com/api/accounts_mgmt/v1/entitlement_certificates
   scaInterval: "8h"
   clusterTransferEndpoint: https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/
   clusterTransferInterval: "12h"
-

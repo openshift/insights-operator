@@ -117,7 +117,13 @@ rules:
       - get
       - list
       - watch
-
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -137,7 +143,6 @@ subjects:
   - kind: ServiceAccount
     namespace: openshift-insights
     name: operator
----
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -516,7 +521,7 @@ metadata:
     capability.openshift.io/name: Insights
 rules:
   - apiGroups:
-      - ''
+      - ""
     resources:
       - secrets
     verbs:
@@ -559,7 +564,7 @@ metadata:
     capability.openshift.io/name: Insights
 rules:
   - apiGroups:
-      - ''
+      - ""
     resources:
       - secrets
     verbs:
@@ -606,26 +611,26 @@ metadata:
     release.openshift.io/feature-set: TechPreviewNoUpgrade
     capability.openshift.io/name: Insights
 rules:
-- apiGroups:
-  - authentication.k8s.io
-  resources:
-  - tokenreviews
-  verbs:
-  - create
-- apiGroups:
-  - authorization.k8s.io
-  resources:
-  - subjectaccessreviews
-  verbs:
-  - create
-- apiGroups:
-  - security.openshift.io
-  resourceNames:
-  - insights-runtime-extractor-scc
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - use
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+  - apiGroups:
+      - security.openshift.io
+    resourceNames:
+      - insights-runtime-extractor-scc
+    resources:
+      - securitycontextconstraints
+    verbs:
+      - use
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -664,11 +669,12 @@ allowHostDirVolumePlugin: true
 allowHostPID: true
 allowPrivilegedContainer: true
 allowedCapabilities:
-- CAP_SYS_ADMIN
+  - CAP_SYS_ADMIN
 runAsUser:
   type: RunAsAny
 seLinuxContext:
   type: RunAsAny
 seccompProfiles:
-- runtime/default
+  - runtime/default
 ---
+
