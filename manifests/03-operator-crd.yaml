@@ -158,7 +158,7 @@ spec:
                           lastGatherDuration:
                             description: lastGatherDuration represents the time spent gathering.
                             type: string
-                            pattern: ^([1-9][0-9]*(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$
+                            pattern: ^(([0-9]+(?:\.[0-9]+)?(ns|us|µs|μs|ms|s|m|h))+)$
                           name:
                             description: name is the name of the gatherer.
                             type: string
@@ -168,7 +168,7 @@ spec:
                     lastGatherDuration:
                       description: lastGatherDuration is the total time taken to process all gatherers during the last gather event.
                       type: string
-                      pattern: ^0|([1-9][0-9]*(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$
+                      pattern: ^(0|([0-9]+(?:\.[0-9]+)?(ns|us|µs|μs|ms|s|m|h))+)$
                     lastGatherTime:
                       description: lastGatherTime is the last time when Insights data gathering finished. An empty value means that no data has been gathered yet.
                       type: string
