@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 
 	v1 "github.com/openshift/api/config/v1"
 	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
@@ -38,13 +39,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
+const (
+	defaultStoragePath               = "/var/lib/insights-operator"
 	serviceCABundle                  = "service-ca-bundle"
 	serviceCABundlePath              = "/var/run/configmaps/service-ca-bundle"
 	insightsNamespace                = "openshift-insights"
-	falseB                           = new(bool)
-	trueB                            = true
-	deletePropagationBackground      = metav1.DeletePropagationBackground
 	dataUplodedConditionNotAvailable = "DataUploadedConditionNotAvailable"
 	gatheringDisabledReason          = "GatheringDisabled"
 )
@@ -693,7 +692,7 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 				// TODO the time duration should be configurable
 				if time.Since(job.CreationTimestamp.Time) > 24*time.Hour {
 					err = c.kubeClient.BatchV1().Jobs(insightsNamespace).Delete(ctx, job.Name, metav1.DeleteOptions{
-						PropagationPolicy: &deletePropagationBackground,
+						PropagationPolicy: ptr.To(metav1.DeletePropagationBackground),
 					})
 					if err != nil {
 						klog.Errorf("Failed to delete job %s: %v", job.Name, err)
@@ -830,11 +829,20 @@ func createStorageSpec(storageSpec *configv1alpha1.StorageSpec) *insightsv1alpha
 		return nil
 	}
 
+	mountPath := defaultStoragePath
+	if storageSpec.Type == configv1alpha1.StorageTypePersistentVolumeClaim {
+		if path := storageSpec.PersistentVolume.PersistentVolumeClaim.MountPath; path != "" {
+			mountPath = path
+		}
+	}
+
 	return &insightsv1alpha1.StorageSpec{
-		PersistentVolumeClaim: insightsv1alpha1.PersistentVolumeClaimReference{
-			Name: storageSpec.PersistentVolumeClaim.Name,
+		PersistentVolume: insightsv1alpha1.PersistentVolumeConfig{
+			PersistentVolumeClaim: insightsv1alpha1.PersistentVolumeClaimReference{
+				Name:      storageSpec.PersistentVolume.PersistentVolumeClaim.Name,
+				MountPath: mountPath,
+			},
 		},
-		MountPath: storageSpec.MountPath,
 	}
 }
 
