@@ -61,7 +61,7 @@ func gatherWorkloadRuntimeInfos(
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
-			hostPort := net.JoinHostPort(podInfo.podIP, "8000")
+			hostPort := net.JoinHostPort(podInfo.podIP, "8443")
 			extractorURL := fmt.Sprintf("https://%s/gather_runtime_info", hostPort)
 			httpCli, err := createHTTPClient()
 			if err != nil {
