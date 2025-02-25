@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 )
 
 // JobController type responsible for
@@ -32,13 +33,11 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
-//
-//nolint:funlen
 func (j *JobController) CreateGathererJob(
 	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting, storageSpec *insightsv1alpha1.StorageSpec,
 ) (*batchv1.Job, error) {
 	volumeSource := j.createVolumeSource(ctx, storageSpec)
-	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storageSpec)
+	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storageSpec, volumeSource)
 
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -57,7 +56,7 @@ func (j *JobController) CreateGathererJob(
 					RestartPolicy:      corev1.RestartPolicyNever,
 					ServiceAccountName: "operator",
 					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: &trueB,
+						RunAsNonRoot: ptr.To(true),
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
@@ -74,7 +73,7 @@ func (j *JobController) CreateGathererJob(
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: serviceCABundle,
 									},
-									Optional: &trueB,
+									Optional: ptr.To(true),
 								},
 							},
 						},
@@ -83,7 +82,7 @@ func (j *JobController) CreateGathererJob(
 						{
 							Name:  "insights-gathering",
 							Image: image,
-							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml"},
+							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml", "--storagePath", volumeMounts[0].MountPath},
 							Env: []corev1.EnvVar{
 								{
 									Name:  "DATAGATHER_NAME",
@@ -101,7 +100,7 @@ func (j *JobController) CreateGathererJob(
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: falseB,
+								AllowPrivilegeEscalation: ptr.To(false),
 								Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 							},
 							VolumeMounts: volumeMounts,
@@ -166,22 +165,22 @@ func (j *JobController) createVolumeSource(ctx context.Context, storageSpec *ins
 		return corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}
-	} else if storageSpec.PersistentVolumeClaim.Name != "" {
+	}
+
+	if storageSpec.Type == insightsv1alpha1.StorageTypePersistentVolumeClaim {
 		// Validate if the PVC exists
-		persistentVolumeClaimName := string(storageSpec.PersistentVolumeClaim.Name)
+		persistentVolumeClaimName := string(storageSpec.PersistentVolume.PersistentVolumeClaim.Name)
 		pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
 		if err != nil {
-			klog.Error(err, "Failed to get PersistentVolumeClaim ", persistentVolumeClaimName)
+			klog.Error(err, " Failed to get PersistentVolumeClaim with name ", persistentVolumeClaimName)
 		} else if pvc != nil {
-			klog.Infof("Creating volume source with PersistentVollumeClaimName: %s", persistentVolumeClaimName)
+			klog.Infof("Creating volume source with PersistentVolumeClaimName: %s", persistentVolumeClaimName)
 			return corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: persistentVolumeClaimName,
 				},
 			}
 		}
-
-		klog.Warning("Failed to create volume source with PersistentVolumeClaimName, falling back to EmptyDir")
 	}
 
 	klog.Info("Creating volume source with EmptyDir")
@@ -190,20 +189,27 @@ func (j *JobController) createVolumeSource(ctx context.Context, storageSpec *ins
 	}
 }
 
-func (j *JobController) createVolumeMounts(storagePath string, storageSpec *insightsv1alpha1.StorageSpec) []corev1.VolumeMount {
-	mountPath := storagePath
-	if storageSpec != nil && storageSpec.MountPath != "" {
-		mountPath = storageSpec.MountPath
-	}
-
-	return []corev1.VolumeMount{
+func (j *JobController) createVolumeMounts(storagePath string, storageSpec *insightsv1alpha1.StorageSpec, volumeSource corev1.VolumeSource) []corev1.VolumeMount {
+	volumeMount := []corev1.VolumeMount{
 		{
 			Name:      "archives-path",
-			MountPath: mountPath,
+			MountPath: storagePath,
 		},
 		{
 			Name:      serviceCABundle,
 			MountPath: serviceCABundlePath,
 		},
 	}
+
+	// If volumeSource.EmptyDir is used it means that PVC was not found and we should not change the mountPath
+	if storageSpec == nil || storageSpec.Type != insightsv1alpha1.StorageTypePersistentVolumeClaim || volumeSource.EmptyDir != nil {
+		return volumeMount
+	}
+
+	// If the PVC has a mount mountPath, use it
+	if mountPath := storageSpec.PersistentVolume.PersistentVolumeClaim.MountPath; mountPath != "" {
+		volumeMount[0].MountPath = mountPath
+	}
+
+	return volumeMount
 }

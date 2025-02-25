@@ -104,6 +104,7 @@ func NewGatherAndUpload() *cobra.Command {
 		Short: "Runs the data gathering as job, uploads the data, waits for Insights analysis report and ends",
 		Run:   runGatherAndUpload(operator, cfg),
 	}
+	cmd.PersistentFlags().String("storagePath", "", "Path to store the gathered data")
 	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
 	return cmd
 }
@@ -249,8 +250,8 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 }
 
 // Starts a single gather, main responsibility is loading in the necessary configs.
-func runGatherAndUpload(operator *controller.GatherJob,
-	cfg *controllercmd.ControllerCommandConfig,
+func runGatherAndUpload(
+	operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig,
 ) func(cmd *cobra.Command, _ []string) {
 	return func(cmd *cobra.Command, _ []string) {
 		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
@@ -267,6 +268,10 @@ func runGatherAndUpload(operator *controller.GatherJob,
 			klog.Exit(err)
 		}
 		operator.Controller = cont
+
+		if storagePath := cmd.Flags().Lookup("storagePath").Value.String(); storagePath != "" {
+			operator.StoragePath = storagePath
+		}
 
 		var clientConfig *rest.Config
 		if kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String(); len(kubeConfigPath) > 0 {
