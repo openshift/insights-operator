@@ -39,7 +39,7 @@ spec:
         - name: kube-rbac-proxy
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
           args:
-            - '--secure-listen-address=$(IP):8000'
+            - '--secure-listen-address=:8443'
             - '--upstream=http://127.0.0.1:8000'
             - '--config-file=/etc/kube-rbac-proxy/config.yaml'
             - '--tls-cert-file=/etc/tls/private/tls.crt'
@@ -57,15 +57,9 @@ spec:
               drop:
               - ALL
             runAsNonRoot: true
-          env:
-            - name: IP
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: status.podIP
           ports:
             - name: https
-              containerPort: 8000
+              containerPort: 8443
               protocol: TCP
           resources:
             requests:
