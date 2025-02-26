@@ -18,7 +18,19 @@ import (
 	"time"
 )
 
-const maxGathererNameLength = 256
+const (
+	maxGathererNameLength = 256
+
+	// Exit codes
+	exitError = 1
+	exitOk    = 0
+
+	// Error messages
+	errCreatingFile = "Error creating file %s: %v\n"
+	errWritingFile  = "Error writing to file %s: %v\n"
+	errWalkingDir   = "Error walking directory: %v\n"
+	errValidating   = "Error validating gatherer name: %v\n"
+)
 
 var (
 	inPath                   string
@@ -40,6 +52,10 @@ type DocBlock struct {
 }
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	flag.StringVar(&inPath, "in", "gatherers", "Package where to find Gather methods")
 	flag.StringVar(&outPath, "out", "gathered-data.md", "File to which MD doc will be generated")
 
@@ -47,20 +63,23 @@ func main() {
 	var err error
 	mdf, err = os.Create(outPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(errCreatingFile, outPath, err)
+		return exitError
 	}
 	defer mdf.Close()
 
 	md := map[string]*DocBlock{}
 	err = walkDir(cleanRoot, md)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(errWalkingDir, err)
+		return exitError
 	}
 
 	// second pass will gather Sample...
 	err = walkDir(cleanRoot, md)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(errWalkingDir, err)
+		return exitError
 	}
 
 	keys := make([]string, 0, len(md))
@@ -82,7 +101,8 @@ func main() {
 			"`/var/lib/insights-operator`.\n\n" +
 			"***\n\n")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf(errWritingFile, outPath, err)
+		return exitError
 	}
 
 	for _, k := range keys {
@@ -90,11 +110,13 @@ func main() {
 			"## %s\n\n"+
 				"%s\n\n", k, md[k].Doc)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf(errWritingFile, outPath, err)
+			return exitError
 		}
 
 		if err := validateGathererName(k, md[k].Doc); err != nil {
-			log.Fatal(err)
+			log.Printf(errValidating, err)
+			return exitError
 		}
 
 		if len(md[k].Examples) > 0 {
@@ -107,19 +129,22 @@ func main() {
 				"Output raw size: %d\n\n"+
 					"### Examples\n\n", size)
 			if err != nil {
-				log.Fatal(err)
+				log.Printf(errWritingFile, outPath, err)
+				return exitError
 			}
 			for n, e := range md[k].Examples {
 				_, err := fmt.Fprintf(mdf,
 					"#### %s\n"+
 						"```%s```\n\n", n, e)
 				if err != nil {
-					log.Fatal(err)
+					log.Printf(errWritingFile, outPath, err)
+					return exitError
 				}
 			}
 		}
 	}
-	fmt.Println("Done")
+	log.Println("Done")
+	return exitOk
 }
 
 // Validate gathererName format.
@@ -130,7 +155,7 @@ func main() {
 func validateGathererName(key, gatherer string) error {
 	gathererNameMatch := reGathererName.FindStringSubmatch(gatherer)
 	if len(gathererNameMatch) == 0 {
-		if !slices.Contains(gathererNamesExceptions, key) {
+		if !slices.Contains(gathererNameExceptions, key) {
 			return fmt.Errorf("gatherer name not found in doc string: %s", key)
 		}
 		return nil
