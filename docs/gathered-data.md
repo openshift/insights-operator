@@ -1016,7 +1016,7 @@ None
 - `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
 
 ### Config ID
-`clusterconfig/lokistacks
+`clusterconfig/lokistacks`
 
 ### Released version
 - 4.19.0

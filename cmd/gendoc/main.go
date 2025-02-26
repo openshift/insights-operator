@@ -12,20 +12,26 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 )
 
+const maxGathererNameLength = 256
+
 var (
-	inPath          string
-	outPath         string
-	mdf             *os.File
-	randSource      = rand.NewSource(time.Now().UnixNano())
-	reGather        = regexp.MustCompile(`^((Build)?Gather)(.*)`)
-	reExample       = regexp.MustCompile(`^(Example)(.*)`)
-	reSampleArchive = regexp.MustCompile(`docs/(insights-archive-sample/.*)`)
-	cleanRoot       = "./"
+	inPath                   string
+	outPath                  string
+	mdf                      *os.File
+	randSource               = rand.NewSource(time.Now().UnixNano())
+	reGather                 = regexp.MustCompile(`^((Build)?Gather)(.*)`)
+	reExample                = regexp.MustCompile(`^(Example)(.*)`)
+	reSampleArchive          = regexp.MustCompile(`docs/(insights-archive-sample/.*)`)
+	reGathererName           = regexp.MustCompile("(?m)^###\\s*Config ID\\s*\\n`([^`]*)`")
+	reGathererNameValidation = regexp.MustCompile("^[a-z]+[_a-z]*[a-z]([/a-z][_a-z]*)?[a-z]$")
+	gathererNameExceptions   = []string{"ContainersLogs"}
+	cleanRoot                = "./"
 )
 
 type DocBlock struct {
@@ -41,25 +47,27 @@ func main() {
 	var err error
 	mdf, err = os.Create(outPath)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
 	defer mdf.Close()
 
 	md := map[string]*DocBlock{}
 	err = walkDir(cleanRoot, md)
 	if err != nil {
-		fmt.Print(err)
+		log.Fatal(err)
 	}
+
 	// second pass will gather Sample...
 	err = walkDir(cleanRoot, md)
 	if err != nil {
-		fmt.Print(err)
+		log.Fatal(err)
 	}
+
 	keys := make([]string, 0, len(md))
 	for k := range md {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 	_, err = mdf.WriteString(
 		"# Insights Operator Gathered Data\n\n" +
@@ -74,14 +82,19 @@ func main() {
 			"`/var/lib/insights-operator`.\n\n" +
 			"***\n\n")
 	if err != nil {
-		fmt.Print(err)
+		log.Fatal(err)
 	}
+
 	for _, k := range keys {
 		_, err := fmt.Fprintf(mdf,
 			"## %s\n\n"+
 				"%s\n\n", k, md[k].Doc)
 		if err != nil {
-			fmt.Print(err)
+			log.Fatal(err)
+		}
+
+		if err := validateGathererName(k, md[k].Doc); err != nil {
+			log.Fatal(err)
 		}
 
 		if len(md[k].Examples) > 0 {
@@ -94,19 +107,41 @@ func main() {
 				"Output raw size: %d\n\n"+
 					"### Examples\n\n", size)
 			if err != nil {
-				fmt.Print(err)
+				log.Fatal(err)
 			}
 			for n, e := range md[k].Examples {
 				_, err := fmt.Fprintf(mdf,
 					"#### %s\n"+
 						"```%s```\n\n", n, e)
 				if err != nil {
-					fmt.Print(err)
+					log.Fatal(err)
 				}
 			}
 		}
 	}
 	fmt.Println("Done")
+}
+
+// Validate gathererName format.
+// The format for the gathererName should be: {gatherer}/{function} where the function is optional.
+// Gatherer consists of a lowercase string that may include underscores (_).
+// Function consists of a lowercase string that may include underscores (_) and is separated from the gatherer by a forward slash (/).
+// The gathererName should not exceed 256 characters.
+func validateGathererName(key, gatherer string) error {
+	gathererNameMatch := reGathererName.FindStringSubmatch(gatherer)
+	if len(gathererNameMatch) == 0 {
+		if !slices.Contains(gathererNamesExceptions, key) {
+			return fmt.Errorf("gatherer name not found in doc string: %s", key)
+		}
+		return nil
+	}
+
+	name := gathererNameMatch[1]
+	if !reGathererNameValidation.MatchString(name) || len(name) > maxGathererNameLength {
+		return fmt.Errorf("invalid gatherer name: %s", name)
+	}
+
+	return nil
 }
 
 // nolint: gocyclo
@@ -159,7 +194,7 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 					// Example methods will have Example prefix, and might have additional case suffix:
 					// ExampleMostRecentMetrics_case1, we will remove Example prefix
 					exampleMethodWithSuff := reExample.ReplaceAllString(fn.Name.Name, "$2")
-					var gatherMethod = ""
+					gatherMethod := ""
 					for m := range md {
 						if strings.HasPrefix(exampleMethodWithSuff, m) {
 							gatherMethod = m

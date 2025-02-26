@@ -35,7 +35,7 @@ const lokiStackResourceLimit = 20
 // - `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
 //
 // ### Config ID
-// `clusterconfig/lokistacks
+// `clusterconfig/lokistacks`
 //
 // ### Released version
 // - 4.19.0
@@ -68,8 +68,8 @@ func gatherLokiStack(ctx context.Context, dynamicClient dynamic.Interface) ([]re
 
 	var records []record.Record
 	var errs []error
-	var otherNamespaceError = false
-	var tooManyResourcesError = false
+	otherNamespaceError := false
+	tooManyResourcesError := false
 
 	for index := range loggingResourceList.Items {
 		item := loggingResourceList.Items[index]
