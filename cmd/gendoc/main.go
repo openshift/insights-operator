@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -40,10 +39,12 @@ var (
 	reGather                 = regexp.MustCompile(`^((Build)?Gather)(.*)`)
 	reExample                = regexp.MustCompile(`^(Example)(.*)`)
 	reSampleArchive          = regexp.MustCompile(`docs/(insights-archive-sample/.*)`)
-	reGathererName           = regexp.MustCompile("(?m)^###\\s*Config ID\\s*\\n`([^`]*)`")
 	reGathererNameValidation = regexp.MustCompile("^[a-z]+[_a-z]*[a-z]([/a-z][_a-z]*)?[a-z]$")
-	gathererNameExceptions   = []string{"ContainersLogs"}
-	cleanRoot                = "./"
+	// Regex to get the content between the Config ID and Released version
+	reConfigIDContent = regexp.MustCompile(`(?s)### Config ID\s*(.*?)### Released version`)
+	// Regex to get the content between backticks that contain the gatherer names
+	reBacktickContent = regexp.MustCompile("`([^`]*)`")
+	cleanRoot         = "./"
 )
 
 type DocBlock struct {
@@ -114,7 +115,7 @@ func run() int {
 			return exitError
 		}
 
-		if err := validateGathererName(k, md[k].Doc); err != nil {
+		if err := validateGathererName(md[k].Doc); err != nil {
 			log.Printf(errValidating, err)
 			return exitError
 		}
@@ -152,18 +153,14 @@ func run() int {
 // Gatherer consists of a lowercase string that may include underscores (_).
 // Function consists of a lowercase string that may include underscores (_) and is separated from the gatherer by a forward slash (/).
 // The gathererName should not exceed 256 characters.
-func validateGathererName(key, gatherer string) error {
-	gathererNameMatch := reGathererName.FindStringSubmatch(gatherer)
-	if len(gathererNameMatch) == 0 {
-		if !slices.Contains(gathererNameExceptions, key) {
-			return fmt.Errorf("gatherer name not found in doc string: %s", key)
-		}
-		return nil
-	}
+func validateGathererName(gatherer string) error {
+	configIDContent := reConfigIDContent.FindStringSubmatch(gatherer)
+	gatherNames := reBacktickContent.FindAllStringSubmatch(configIDContent[1], -1)
 
-	name := gathererNameMatch[1]
-	if !reGathererNameValidation.MatchString(name) || len(name) > maxGathererNameLength {
-		return fmt.Errorf("invalid gatherer name: %s", name)
+	for _, gathererName := range gatherNames {
+		if !reGathererNameValidation.MatchString(gathererName[1]) || len(gathererName[1]) > maxGathererNameLength {
+			return fmt.Errorf("invalid gatherer name: %s", gathererName[1])
+		}
 	}
 
 	return nil

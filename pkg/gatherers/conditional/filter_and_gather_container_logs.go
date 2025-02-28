@@ -46,6 +46,13 @@ var sinceSeconds = int64(6 * 60 * 60)
 //
 // The configuration used for the data gathering is always stored in the Insights archive in the `insights-operator/remote-configuration.json` file.
 //
+// ### Config ID
+// `conditional/rapid_container_logs`
+// `conditional/remote_configuration`
+// `conditional/conditional_gatherer_rules`
+//
+// ### Released version
+//
 // The gatherer finds the Pods (and containers) that match the requested data and filters all the container logs
 // to match the specific messages up to a maximum of 6 hours old.
 func (g *Gatherer) GatherContainersLogs(rawLogRequests []RawLogRequest) (gatherers.GatheringClosure, error) { // nolint: dupl
@@ -55,7 +62,6 @@ func (g *Gatherer) GatherContainersLogs(rawLogRequests []RawLogRequest) (gathere
 			kubeConfigCopy.Burst = 60
 			kubeConfigCopy.QPS = 30
 			kubeClient, err := kubernetes.NewForConfig(kubeConfigCopy)
-
 			if err != nil {
 				return nil, []error{err}
 			}
@@ -124,7 +130,8 @@ func filterContainerLogs(ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	logRequest LogRequest,
 	wg *sync.WaitGroup,
-	recCh chan<- *recordWithError) {
+	recCh chan<- *recordWithError,
+) {
 	defer wg.Done()
 
 	podToContainers, errs := createPodToContainersAndMessagesMapping(ctx, coreClient, logRequest)
@@ -181,7 +188,8 @@ func filterContainerLogs(ctx context.Context,
 // based on the values it gets the corresponding container log and iterates over the log lines
 // and tries to match the required container log messages.
 func getAndFilterContainerLogs(ctx context.Context, coreClient corev1client.CoreV1Interface,
-	containerLogRequest ContainerLogRequest) (*record.Record, error) {
+	containerLogRequest ContainerLogRequest,
+) (*record.Record, error) {
 	req := coreClient.Pods(containerLogRequest.Namespace).GetLogs(containerLogRequest.PodName, &corev1.PodLogOptions{
 		Container:    containerLogRequest.ContainerName,
 		SinceSeconds: &sinceSeconds,
@@ -275,7 +283,8 @@ type containersAndMessages struct {
 // required for the log filtering
 func createPodToContainersAndMessagesMapping(ctx context.Context,
 	coreCli corev1client.CoreV1Interface,
-	logRequest LogRequest) (map[string]containersAndMessages, []error) {
+	logRequest LogRequest,
+) (map[string]containersAndMessages, []error) {
 	podContainers := make(map[string]containersAndMessages)
 	podList, err := coreCli.Pods(logRequest.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
