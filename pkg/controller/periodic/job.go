@@ -34,10 +34,10 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
 func (j *JobController) CreateGathererJob(
-	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting, storageSpec *insightsv1alpha1.StorageSpec,
+	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting, storage *insightsv1alpha1.Storage,
 ) (*batchv1.Job, error) {
-	volumeSource := j.createVolumeSource(ctx, storageSpec)
-	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storageSpec, volumeSource)
+	volumeSource := j.createVolumeSource(ctx, storage)
+	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storage)
 
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -159,17 +159,17 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 	}
 }
 
-func (j *JobController) createVolumeSource(ctx context.Context, storageSpec *insightsv1alpha1.StorageSpec) corev1.VolumeSource {
-	if storageSpec == nil {
+func (j *JobController) createVolumeSource(ctx context.Context, storage *insightsv1alpha1.Storage) corev1.VolumeSource {
+	if storage == nil {
 		klog.Info("Creating volume source with EmptyDir, no storageSpec provided")
 		return corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}
 	}
 
-	if storageSpec.Type == insightsv1alpha1.StorageTypePersistentVolumeClaim {
+	if storage.Type == insightsv1alpha1.StorageTypePersistentVolume {
 		// Validate if the PVC exists
-		persistentVolumeClaimName := string(storageSpec.PersistentVolume.PersistentVolumeClaim.Name)
+		persistentVolumeClaimName := string(storage.PersistentVolume.Claim.Name)
 		pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
 		if err != nil {
 			klog.Error(err, " Failed to get PersistentVolumeClaim with name ", persistentVolumeClaimName)
@@ -189,7 +189,7 @@ func (j *JobController) createVolumeSource(ctx context.Context, storageSpec *ins
 	}
 }
 
-func (j *JobController) createVolumeMounts(storagePath string, storageSpec *insightsv1alpha1.StorageSpec, volumeSource corev1.VolumeSource) []corev1.VolumeMount {
+func (j *JobController) createVolumeMounts(storagePath string, storage *insightsv1alpha1.Storage) []corev1.VolumeMount {
 	volumeMount := []corev1.VolumeMount{
 		{
 			Name:      "archives-path",
@@ -201,13 +201,12 @@ func (j *JobController) createVolumeMounts(storagePath string, storageSpec *insi
 		},
 	}
 
-	// If volumeSource.EmptyDir is used it means that PVC was not found and we should not change the mountPath
-	if storageSpec == nil || storageSpec.Type != insightsv1alpha1.StorageTypePersistentVolumeClaim || volumeSource.EmptyDir != nil {
+	if storage == nil || storage.Type != insightsv1alpha1.StorageTypePersistentVolume {
 		return volumeMount
 	}
 
-	// If the PVC has a mount mountPath, use it
-	if mountPath := storageSpec.PersistentVolume.PersistentVolumeClaim.MountPath; mountPath != "" {
+	// If the PVC has a mountPath, use it
+	if mountPath := storage.PersistentVolume.MountPath; mountPath != "" {
 		volumeMount[0].MountPath = mountPath
 	}
 
