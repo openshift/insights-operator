@@ -101,9 +101,8 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 	return completed, nil
 }
 
-// TODO: PruneByCount?
 // Prune the archives when there are more than count archives
-func (d *DiskRecorder) PruneCount(countTreshold int) error {
+func (d *DiskRecorder) PruneByCount(countTreshold int) error {
 	files, err := os.ReadDir(d.basePath)
 	if err != nil {
 		return err
@@ -146,7 +145,6 @@ func (d *DiskRecorder) PruneCount(countTreshold int) error {
 	return nil
 }
 
-// TODO: PruneByTime?
 // Prune the archives older than given time
 func (d *DiskRecorder) Prune(olderThan time.Time) error {
 	files, err := os.ReadDir(d.basePath)
