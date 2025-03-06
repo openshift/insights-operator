@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
 	"github.com/openshift/insights-operator/pkg/config"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,7 @@ func TestCreateGathererJob(t *testing.T) {
 		dataGatherName string
 		imageName      string
 		dataReporting  config.DataReporting
+		storage        *insightsv1alpha1.Storage
 	}{
 		{
 			name:           "Basic gathering job creation without PVC storage",
@@ -41,14 +43,22 @@ func TestCreateGathererJob(t *testing.T) {
 			dataReporting: config.DataReporting{
 				StoragePath: storagePath,
 			},
+			storage: nil,
 		},
 		{
 			name:           "Basic gathering with PVC storage",
 			dataGatherName: "custom-gather-test-pvc",
 			imageName:      "test.io/test/insights-image",
 			dataReporting: config.DataReporting{
-				StoragePath:               storagePath,
-				PersistentVolumeClaimName: insightsPVCName,
+				StoragePath: storagePath,
+			},
+			storage: &insightsv1alpha1.Storage{
+				Type: insightsv1alpha1.StorageTypePersistentVolume,
+				PersistentVolume: &insightsv1alpha1.PersistentVolumeConfig{
+					Claim: insightsv1alpha1.PersistentVolumeClaimReference{
+						Name: insightsPVCName,
+					},
+				},
 			},
 		},
 	}
@@ -57,13 +67,12 @@ func TestCreateGathererJob(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			jc := NewJobController(kube)
 
-			createdJob, err := jc.CreateGathererJob(context.Background(), tt.dataGatherName, tt.imageName, &tt.dataReporting)
+			createdJob, err := jc.CreateGathererJob(context.Background(), tt.dataGatherName, tt.imageName, &tt.dataReporting, tt.storage)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.dataGatherName, createdJob.Name)
-			assert.Len(t, createdJob.Spec.Template.Spec.Containers, 2)
 			assert.Equal(t, tt.imageName, createdJob.Spec.Template.Spec.Containers[0].Image)
 
-			if tt.dataReporting.PersistentVolumeClaimName == "" {
+			if tt.storage == nil {
 				// EmptyDir is used when no PVC is specified
 				assert.NotNil(t, createdJob.Spec.Template.Spec.Volumes[0].EmptyDir)
 				assert.Nil(t, createdJob.Spec.Template.Spec.Volumes[0].PersistentVolumeClaim)

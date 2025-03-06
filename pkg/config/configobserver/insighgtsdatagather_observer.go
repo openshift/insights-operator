@@ -2,13 +2,13 @@ package configobserver
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/openshift/api/config/v1alpha1"
 	configCliv1alpha1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1alpha1"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
-	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +31,8 @@ type insightsDataGatherController struct {
 
 func NewInsightsDataGatherObserver(kubeConfig *rest.Config,
 	eventRecorder events.Recorder,
-	configInformer configinformers.SharedInformerFactory) (InsightsDataGatherObserver, error) {
+	configInformer configinformers.SharedInformerFactory,
+) (InsightsDataGatherObserver, error) {
 	inf := configInformer.Config().V1alpha1().InsightsDataGathers().Informer()
 	configV1Alpha1Cli, err := configCliv1alpha1.NewForConfig(kubeConfig)
 	if err != nil {
@@ -76,9 +77,10 @@ func (i *insightsDataGatherController) GatherDisabled() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	if utils.StringInSlice("all", i.gatherConfig.DisabledGatherers) ||
-		utils.StringInSlice("ALL", i.gatherConfig.DisabledGatherers) {
+	if slices.Contains(i.gatherConfig.DisabledGatherers, v1alpha1.DisabledGatherer("all")) ||
+		slices.Contains(i.gatherConfig.DisabledGatherers, v1alpha1.DisabledGatherer("ALL")) {
 		return true
 	}
+
 	return false
 }

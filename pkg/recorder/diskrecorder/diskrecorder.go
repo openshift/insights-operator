@@ -101,9 +101,8 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 	return completed, nil
 }
 
-// TODO: PruneByCount?
 // Prune the archives when there are more than count archives
-func (d *DiskRecorder) PruneCount(countTreshold int) error {
+func (d *DiskRecorder) PruneByCount(countTreshold int) error {
 	files, err := os.ReadDir(d.basePath)
 	if err != nil {
 		return err
@@ -137,7 +136,7 @@ func (d *DiskRecorder) PruneCount(countTreshold int) error {
 		return nil
 	}
 
-	// This will only remove one file at a time, is that ok?
+	// Removes the oldest file
 	if err := os.Remove(filepath.Join(d.basePath, lastArchive.Name())); err != nil {
 		return fmt.Errorf("failed to delete expired file: %v", err)
 	}
@@ -146,7 +145,6 @@ func (d *DiskRecorder) PruneCount(countTreshold int) error {
 	return nil
 }
 
-// TODO: PruneByTime?
 // Prune the archives older than given time
 func (d *DiskRecorder) Prune(olderThan time.Time) error {
 	files, err := os.ReadDir(d.basePath)

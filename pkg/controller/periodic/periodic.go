@@ -341,10 +341,10 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 					c.image = image
 				}
 
-				if dataGather.Spec.StorageSpec == nil {
+				if dataGather.Spec.Storage == nil {
 					klog.Warningf("StorageSpec is not provided for the %s DataGather resource. Using the default storage", dgName)
 					// Use config from the InsightsDataGather CRD, if not provided ephemeral storage will be used
-					dataGather.Spec.StorageSpec = createStorageSpec(c.apiConfigurator.GatherConfig().StorageSpec)
+					dataGather.Spec.Storage = createStorage(c.apiConfigurator.GatherConfig().StorageSpec)
 				}
 
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
@@ -392,7 +392,7 @@ func (c *Controller) GatherJob() {
 // it returns with the providing the info in the log message.
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting, dataGather.Spec.StorageSpec)
+	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting, dataGather.Spec.Storage)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -733,14 +733,14 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context) (*insightsv1alph
 			GenerateName: periodicGatheringPrefix,
 		},
 		Spec: insightsv1alpha1.DataGatherSpec{
-			DataPolicy:  dataPolicy,
-			StorageSpec: storageSpec,
+			DataPolicy: dataPolicy,
+			Storage:    storageSpec,
 		},
 	}
 
 	for _, g := range disabledGatherers {
 		dataGatherCR.Spec.Gatherers = append(dataGatherCR.Spec.Gatherers, insightsv1alpha1.GathererConfig{
-			Name:  g,
+			Name:  string(g),
 			State: insightsv1alpha1.Disabled,
 		})
 	}
@@ -796,7 +796,7 @@ func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insight
 // createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
 // and checks custom period gatherers and returns list of disabled gatherers based on this two values
 // and also data policy set in the "insightsdatagather.config.openshift.io"
-func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alpha1.DataPolicy, *insightsv1alpha1.StorageSpec) {
+func (c *Controller) createDataGatherAttributeValues() ([]configv1alpha1.DisabledGatherer, insightsv1alpha1.DataPolicy, *insightsv1alpha1.Storage) {
 	gatherConfig := c.apiConfigurator.GatherConfig()
 
 	var dp insightsv1alpha1.DataPolicy
@@ -813,34 +813,35 @@ func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alph
 	for _, gatherer := range c.gatherers {
 		if g, ok := gatherer.(gatherers.CustomPeriodGatherer); ok {
 			if !g.ShouldBeProcessedNow() {
-				disabledGatherers = append(disabledGatherers, g.GetName())
+				disabledGatherers = append(disabledGatherers, configv1alpha1.DisabledGatherer(g.GetName()))
 			} else {
 				g.UpdateLastProcessingTime()
 			}
 		}
 	}
 
-	return disabledGatherers, dp, createStorageSpec(gatherConfig.StorageSpec)
+	return disabledGatherers, dp, createStorage(gatherConfig.StorageSpec)
 }
 
-// createStorageSpec creates the "insightsv1alpha1.StorageSpec" from the provided "configv1alpha1.StorageSpec"
-func createStorageSpec(storageSpec *configv1alpha1.StorageSpec) *insightsv1alpha1.StorageSpec {
-	if storageSpec == nil {
+// createStorage creates the "insightsv1alpha1.storage" from the provided "configv1alpha1.storage"
+func createStorage(storage *configv1alpha1.Storage) *insightsv1alpha1.Storage {
+	if storage == nil {
 		return nil
 	}
 
 	mountPath := defaultStoragePath
-	if storageSpec.Type == configv1alpha1.StorageTypePersistentVolumeClaim {
-		if path := storageSpec.PersistentVolume.PersistentVolumeClaim.MountPath; path != "" {
+	if storage.Type == configv1alpha1.StorageTypePersistentVolume {
+		if path := storage.PersistentVolume.MountPath; path != "" {
 			mountPath = path
 		}
 	}
 
-	return &insightsv1alpha1.StorageSpec{
-		PersistentVolume: insightsv1alpha1.PersistentVolumeConfig{
-			PersistentVolumeClaim: insightsv1alpha1.PersistentVolumeClaimReference{
-				Name:      storageSpec.PersistentVolume.PersistentVolumeClaim.Name,
-				MountPath: mountPath,
+	return &insightsv1alpha1.Storage{
+		Type: insightsv1alpha1.StorageTypePersistentVolume,
+		PersistentVolume: &insightsv1alpha1.PersistentVolumeConfig{
+			MountPath: mountPath,
+			Claim: insightsv1alpha1.PersistentVolumeClaimReference{
+				Name: storage.PersistentVolume.Claim.Name,
 			},
 		},
 	}

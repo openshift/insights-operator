@@ -2,9 +2,9 @@ package config
 
 import (
 	"context"
+	"slices"
 
 	"github.com/openshift/api/config/v1alpha1"
-	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/controller/factory"
 )
 
@@ -50,8 +50,8 @@ func (mc *MockAPIConfigurator) GatherConfig() *v1alpha1.GatherConfig {
 
 func (mc *MockAPIConfigurator) GatherDisabled() bool {
 	if mc.config != nil {
-		if utils.StringInSlice("all", mc.config.DisabledGatherers) ||
-			utils.StringInSlice("ALL", mc.config.DisabledGatherers) {
+		if slices.Contains(mc.config.DisabledGatherers, v1alpha1.DisabledGatherer("all")) ||
+			slices.Contains(mc.config.DisabledGatherers, v1alpha1.DisabledGatherer("ALL")) {
 			return true
 		}
 	}
@@ -86,5 +86,4 @@ func (m *MockConfigMapConfigurator) ConfigChanged() (configCh <-chan struct{}, c
 }
 
 func (m *MockConfigMapConfigurator) Listen(context.Context) {
-
 }

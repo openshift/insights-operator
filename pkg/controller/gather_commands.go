@@ -33,9 +33,13 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint
-// for particular archive/Insights request ID
-var numberOfStatusQueryRetries = 3
+const (
+	// numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint for particular archive/Insights request ID
+	numberOfStatusQueryRetries = 3
+
+	// maxGatherJobArchives is the number of archives to keep on disk
+	maxGatherJobArchives = 5
+)
 
 // GatherJob is the type responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
@@ -277,7 +281,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		insightsRequestID)
 
 	// Clean up of old archives created by on-demand gathering
-	if err := recdriver.PruneCount(5); err != nil {
+	if err := recdriver.PruneByCount(maxGatherJobArchives); err != nil {
 		klog.Errorf("Failed to prune archives: %v", err)
 	}
 
