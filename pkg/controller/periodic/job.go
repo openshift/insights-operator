@@ -82,7 +82,9 @@ func (j *JobController) CreateGathererJob(
 						{
 							Name:  "insights-gathering",
 							Image: image,
-							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml", "--storagePath", volumeMounts[0].MountPath},
+							Args: []string{
+								"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml", "--storagePath", volumeMounts[0].MountPath,
+							},
 							Env: []corev1.EnvVar{
 								{
 									Name:  "DATAGATHER_NAME",
@@ -169,7 +171,7 @@ func (j *JobController) createVolumeSource(ctx context.Context, storage *insight
 
 	if storage.Type == insightsv1alpha1.StorageTypePersistentVolume {
 		// Validate if the PVC exists
-		persistentVolumeClaimName := string(storage.PersistentVolume.Claim.Name)
+		persistentVolumeClaimName := storage.PersistentVolume.Claim.Name
 		pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
 		if err != nil {
 			klog.Error(err, " Failed to get PersistentVolumeClaim with name ", persistentVolumeClaimName)
