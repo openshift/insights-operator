@@ -226,6 +226,86 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 	return mockController, &mockRecorder, nil
 }
 
+func TestCreateNewDataGatherCR(t *testing.T) {
+	cs := insightsFakeCli.NewSimpleClientset()
+	tests := []struct {
+		name       string
+		dataPolicy v1alpha1.DataPolicy
+		expected   *v1alpha1.DataGather
+	}{
+		{
+			name:       "Empty DataGather resource creation",
+			dataPolicy: "",
+			expected: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "periodic-gathering-",
+				},
+				Spec: v1alpha1.DataGatherSpec{
+					DataPolicy: v1alpha1.NoPolicy,
+				},
+			},
+		},
+		{
+			name:       "DataGather with NoPolicy DataPolicy",
+			dataPolicy: v1alpha1.NoPolicy,
+			expected: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "periodic-gathering-",
+				},
+				Spec: v1alpha1.DataGatherSpec{
+					DataPolicy: v1alpha1.NoPolicy,
+				},
+			},
+		},
+		{
+			name:       "DataGather with ObfuscateNetworking DataPolicy and some disabled gatherers",
+			dataPolicy: v1alpha1.ObfuscateNetworking,
+			expected: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "periodic-gathering-",
+				},
+				Spec: v1alpha1.DataGatherSpec{
+					DataPolicy: "ObfuscateNetworking",
+					Gatherers: []v1alpha1.GathererConfig{
+						{
+							Name:  "clusterconfig/foo",
+							State: v1alpha1.Disabled,
+						},
+						{
+							Name:  "clusterconfig/bar",
+							State: v1alpha1.Disabled,
+						},
+						{
+							Name:  "workloads",
+							State: v1alpha1.Disabled,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var disabledGatherers []configv1alpha1.DisabledGatherer
+			for _, dg := range tt.expected.Spec.Gatherers {
+				disabledGatherers = append(disabledGatherers, configv1alpha1.DisabledGatherer(dg.Name))
+			}
+
+			apiConfig := NewInsightsDataGatherObserverMock(
+				configv1alpha1.DataPolicy(tt.dataPolicy),
+				disabledGatherers,
+			)
+			mockController := NewWithTechPreview(nil, nil, apiConfig, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
+
+			dg, err := mockController.createNewDataGatherCR(context.Background())
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected.Spec, dg.Spec)
+			err = cs.InsightsV1alpha1().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 	tests := []struct {
 		name                     string

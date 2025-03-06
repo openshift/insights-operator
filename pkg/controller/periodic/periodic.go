@@ -392,7 +392,9 @@ func (c *Controller) GatherJob() {
 // it returns with the providing the info in the log message.
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting, dataGather.Spec.Storage)
+	gj, err := c.jobController.CreateGathererJob(
+		ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting, dataGather.Spec.Storage,
+	)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -796,17 +798,23 @@ func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insight
 // createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
 // and checks custom period gatherers and returns list of disabled gatherers based on this two values
 // and also data policy set in the "insightsdatagather.config.openshift.io"
-func (c *Controller) createDataGatherAttributeValues() ([]configv1alpha1.DisabledGatherer, insightsv1alpha1.DataPolicy, *insightsv1alpha1.Storage) {
+func (c *Controller) createDataGatherAttributeValues() (
+	[]configv1alpha1.DisabledGatherer, insightsv1alpha1.DataPolicy, *insightsv1alpha1.Storage,
+) {
 	gatherConfig := c.apiConfigurator.GatherConfig()
 
-	var dp insightsv1alpha1.DataPolicy
+	var dataPolicy insightsv1alpha1.DataPolicy
 	switch gatherConfig.DataPolicy {
 	case "":
-		dp = insightsv1alpha1.NoPolicy
+		dataPolicy = insightsv1alpha1.NoPolicy
+	// This is needed now, because InsightsDataGather and DataGather does not
+	// have the same values "", None, ObfuscateNetworking != "", ClearText, ObfuscateNetworking
+	case "ClearText":
+		dataPolicy = insightsv1alpha1.NoPolicy
 	case configv1alpha1.NoPolicy:
-		dp = insightsv1alpha1.NoPolicy
+		dataPolicy = insightsv1alpha1.NoPolicy
 	case configv1alpha1.ObfuscateNetworking:
-		dp = insightsv1alpha1.ObfuscateNetworking
+		dataPolicy = insightsv1alpha1.ObfuscateNetworking
 	}
 
 	disabledGatherers := gatherConfig.DisabledGatherers
@@ -820,7 +828,7 @@ func (c *Controller) createDataGatherAttributeValues() ([]configv1alpha1.Disable
 		}
 	}
 
-	return disabledGatherers, dp, createStorage(gatherConfig.StorageSpec)
+	return disabledGatherers, dataPolicy, createStorage(gatherConfig.StorageSpec)
 }
 
 // createStorage creates the "insightsv1alpha1.storage" from the provided "configv1alpha1.storage"

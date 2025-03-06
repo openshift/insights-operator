@@ -431,8 +431,12 @@ func (g *GatherJob) storagePathExists() error {
 func createRemoteConfigConditions(
 	remoteConfStatus *gatherers.RemoteConfigStatus,
 ) (remoteConfigAvailableCondition, remoteConfigValidCondition metav1.Condition) {
-	remoteConfigAvailableCondition = status.RemoteConfigurationNotAvailableCondition(metav1.ConditionUnknown, status.RemoteConfNotRequestedYet, "")
-	remoteConfigValidCondition = status.RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, status.RemoteConfNotValidatedYet, "")
+	remoteConfigAvailableCondition = status.RemoteConfigurationNotAvailableCondition(
+		metav1.ConditionUnknown, status.RemoteConfNotRequestedYet, "",
+	)
+	remoteConfigValidCondition = status.RemoteConfigurationInvalidCondition(
+		metav1.ConditionUnknown, status.RemoteConfNotValidatedYet, "",
+	)
 
 	if remoteConfStatus == nil {
 		return
