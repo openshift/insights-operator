@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
@@ -28,6 +29,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/openshift/insights-operator/pkg/recorder"
+	"github.com/openshift/library-go/pkg/controller/factory"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -224,6 +226,98 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
 	mockController := New(mockConfigMapConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, nil)
 	return mockController, &mockRecorder, nil
+}
+
+type insightsDataGatherObserverMock struct {
+	mockedDataPolicy configv1alpha1.DataPolicy
+	mockedGatherers  []configv1alpha1.DisabledGatherer
+}
+
+func NewinsightsDataGatherObserverMock(mockedDataPolicy configv1alpha1.DataPolicy, mockedGatherers []configv1alpha1.DisabledGatherer) *insightsDataGatherObserverMock {
+	return &insightsDataGatherObserverMock{
+		mockedDataPolicy: mockedDataPolicy,
+		mockedGatherers:  mockedGatherers,
+	}
+}
+
+func (i insightsDataGatherObserverMock) Name() string {
+	return "InsightsDataGatherObserverMock"
+}
+
+func (i insightsDataGatherObserverMock) Run(ctx context.Context, workers int) {
+	klog.Info("Running InsightsDataGatherObserverMock")
+}
+
+func (i insightsDataGatherObserverMock) Sync(ctx context.Context, controllerContext factory.SyncContext) error {
+	klog.Info("Syncing InsightsDataGatherObserverMock")
+	return nil
+}
+
+func (i insightsDataGatherObserverMock) GatherConfig() *configv1alpha1.GatherConfig {
+	return &configv1alpha1.GatherConfig{
+		DataPolicy:        i.mockedDataPolicy,
+		DisabledGatherers: i.mockedGatherers,
+		StorageSpec:       nil,
+	}
+}
+
+func (i insightsDataGatherObserverMock) GatherDisabled() bool {
+	return false
+}
+
+func TestCreateNewDataGatherCR(t *testing.T) {
+	cs := insightsFakeCli.NewSimpleClientset()
+	tests := []struct {
+		name       string
+		dataPolicy v1alpha1.DataPolicy
+		expected   *v1alpha1.DataGather
+	}{
+		{
+			name:       "DataGather with ObfuscateNetworking DataPolicy and some disabled gatherers",
+			dataPolicy: v1alpha1.ObfuscateNetworking,
+			expected: &v1alpha1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "periodic-gathering-",
+				},
+				Spec: v1alpha1.DataGatherSpec{
+					DataPolicy: "ObfuscateNetworking",
+					Gatherers: []v1alpha1.GathererConfig{
+						{
+							Name:  "clusterconfig/foo",
+							State: v1alpha1.Disabled,
+						},
+						{
+							Name:  "clusterconfig/bar",
+							State: v1alpha1.Disabled,
+						},
+						{
+							Name:  "workloads",
+							State: v1alpha1.Disabled,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var disabledGatherers []configv1alpha1.DisabledGatherer
+			for _, dg := range tt.expected.Spec.Gatherers {
+				disabledGatherers = append(disabledGatherers, configv1alpha1.DisabledGatherer(dg.Name))
+			}
+			apiConfig := NewinsightsDataGatherObserverMock(
+				configv1alpha1.DataPolicy(tt.dataPolicy),
+				disabledGatherers,
+			)
+			mockController := NewWithTechPreview(nil, nil, apiConfig, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
+
+			dg, err := mockController.createNewDataGatherCR(context.Background())
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected.Spec, dg.Spec)
+			err = cs.InsightsV1alpha1().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func TestUpdateNewDataGatherCRStatus(t *testing.T) {
