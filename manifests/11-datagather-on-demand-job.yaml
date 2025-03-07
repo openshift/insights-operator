@@ -1,0 +1,25 @@
+# Example of a DataGather resource that uses a PersistentVolume to store the data.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: on-demand-gather-pvc
+  namespace: openshift-insights
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: gp2-csi
+---
+apiVersion: insights.openshift.io/v1alpha1
+kind: DataGather
+metadata:
+  name: on-demand-gather-job
+spec:
+  storage:
+    type: PersistentVolume
+    mountPath: /data
+    persistentVolume:
+      claim:
+        name: on-demand-gather-pvc
