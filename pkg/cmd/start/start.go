@@ -104,6 +104,7 @@ func NewGatherAndUpload() *cobra.Command {
 		Short: "Runs the data gathering as job, uploads the data, waits for Insights analysis report and ends",
 		Run:   runGatherAndUpload(operator, cfg),
 	}
+	cmd.PersistentFlags().String("storagePath", "", "Path to store the gathered data")
 	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
 	return cmd
 }
@@ -249,21 +250,28 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 }
 
 // Starts a single gather, main responsibility is loading in the necessary configs.
-func runGatherAndUpload(operator *controller.GatherJob,
-	cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, _ []string) {
+func runGatherAndUpload(
+	operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig,
+) func(cmd *cobra.Command, _ []string) {
 	return func(cmd *cobra.Command, _ []string) {
 		if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
 			klog.Exit("error: --config is required")
 		}
+
 		unstructured, _, _, err := cfg.Config()
 		if err != nil {
 			klog.Exit(err)
 		}
+
 		cont, err := config.LoadConfig(operator.Controller, unstructured.Object, config.ToDisconnectedController)
 		if err != nil {
 			klog.Exit(err)
 		}
 		operator.Controller = cont
+
+		if storagePath := cmd.Flags().Lookup("storagePath").Value.String(); storagePath != "" {
+			operator.StoragePath = storagePath
+		}
 
 		var clientConfig *rest.Config
 		if kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String(); len(kubeConfigPath) > 0 {
@@ -271,10 +279,12 @@ func runGatherAndUpload(operator *controller.GatherJob,
 			if err != nil {
 				klog.Exit(err)
 			}
+
 			kubeConfig, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
 			if err != nil {
 				klog.Exit(err)
 			}
+
 			clientConfig, err = kubeConfig.ClientConfig()
 			if err != nil {
 				klog.Exit(err)
@@ -285,6 +295,7 @@ func runGatherAndUpload(operator *controller.GatherJob,
 				klog.Exit(err)
 			}
 		}
+
 		protoConfig := rest.CopyConfig(clientConfig)
 		protoConfig.AcceptContentTypes = pbAcceptContentTypes
 		protoConfig.ContentType = pbContentType
@@ -302,12 +313,14 @@ func runGatherAndUpload(operator *controller.GatherJob,
 		if envVersion, exists := os.LookupEnv("RELEASE_VERSION"); exists {
 			desiredVersion = envVersion
 		}
+
 		// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
 		featureGateAccessor := featuregates.NewFeatureGateAccess(
 			desiredVersion, missingVersion,
 			configInformers.Config().V1().ClusterVersions(), configInformers.Config().V1().FeatureGates(),
 			events.NewLoggingEventRecorder("insights-gather", clock.RealClock{}),
 		)
+
 		go featureGateAccessor.Run(ctx)
 		go configInformers.Start(ctx.Done())
 
@@ -331,6 +344,7 @@ func runGatherAndUpload(operator *controller.GatherJob,
 		if err != nil {
 			klog.Exit(err)
 		}
+
 		cancel()
 		os.Exit(0)
 	}
