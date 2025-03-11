@@ -18,41 +18,39 @@ func prepareGatherConfigs(protoKubeConfig, kubeConfig *rest.Config, impersonate 
 	if len(impersonate) > 0 {
 		gatherProtoKubeConfig.Impersonate.UserName = impersonate
 	}
+
 	gatherKubeConfig = rest.CopyConfig(kubeConfig)
 	if len(impersonate) > 0 {
 		gatherKubeConfig.Impersonate.UserName = impersonate
 	}
 
+	token := strings.TrimSpace(os.Getenv(insecurePrometheusTokenEnvVariable))
+
 	// the metrics client will connect to prometheus and scrape a small set of metrics
-	metricsGatherKubeConfig = rest.CopyConfig(kubeConfig)
-	metricsGatherKubeConfig.CAFile = metricCAFile
-	metricsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
-	metricsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
-	metricsGatherKubeConfig.APIPath = "/"
-	metricsGatherKubeConfig.Host = metricHost
-
+	metricsGatherKubeConfig = createGatherConfig(kubeConfig, metricHost, token)
 	// the alerts client will connect to alert manager and collect a set of silences
-	alertsGatherKubeConfig = rest.CopyConfig(kubeConfig)
-	alertsGatherKubeConfig.CAFile = metricCAFile
-	alertsGatherKubeConfig.NegotiatedSerializer = scheme.Codecs
-	alertsGatherKubeConfig.GroupVersion = &schema.GroupVersion{}
-	alertsGatherKubeConfig.APIPath = "/"
-	alertsGatherKubeConfig.Host = alertManagerHost
-
-	if token := strings.TrimSpace(os.Getenv(insecurePrometheusTokenEnvVariable)); len(token) > 0 {
-		klog.Infof("using insecure prometheus token")
-		metricsGatherKubeConfig.Insecure = true
-		metricsGatherKubeConfig.BearerToken = token
-		// by default CAFile is /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
-		metricsGatherKubeConfig.CAFile = ""
-		metricsGatherKubeConfig.CAData = []byte{}
-
-		alertsGatherKubeConfig.Insecure = true
-		alertsGatherKubeConfig.BearerToken = token
-		// by default CAFile is /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
-		alertsGatherKubeConfig.CAFile = ""
-		alertsGatherKubeConfig.CAData = []byte{}
-	}
+	alertsGatherKubeConfig = createGatherConfig(kubeConfig, alertManagerHost, token)
 
 	return gatherProtoKubeConfig, gatherKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig
+}
+
+func createGatherConfig(kubeConfig *rest.Config, configHost, token string) *rest.Config {
+	gatherConfig := rest.CopyConfig(kubeConfig)
+
+	gatherConfig.CAFile = metricCAFile
+	gatherConfig.NegotiatedSerializer = scheme.Codecs
+	gatherConfig.GroupVersion = &schema.GroupVersion{}
+	gatherConfig.APIPath = "/"
+	gatherConfig.Host = configHost
+
+	if len(token) > 0 {
+		klog.Infof("using insecure prometheus token")
+		gatherConfig.Insecure = true
+		gatherConfig.BearerToken = token
+		// by default CAFile is /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+		gatherConfig.CAFile = ""
+		gatherConfig.CAData = []byte{}
+	}
+
+	return gatherConfig
 }
