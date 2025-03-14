@@ -245,29 +245,37 @@ func startGatheringConcurrently(
 
 // getEnabledGatheringFunctions iterates over all gathering functions and
 // creates a new map without all the disabled functions
-func getEnabledGatheringFunctions(gathererName string,
+func getEnabledGatheringFunctions(
+	gathererName string,
 	allGatheringFunctions map[string]gatherers.GatheringClosure,
-	gathererConfigs []v1alpha1.GathererConfig) map[string]gatherers.GatheringClosure {
+	gathererConfigs []v1alpha1.GathererConfig,
+) map[string]gatherers.GatheringClosure {
 	enabledGatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
-	// disabling a complete gatherer - e.g workloads
-	if isGathererDisabled(gathererConfigs, gathererName) {
-		klog.Infof("%s gatherer is completely disabled", gathererName)
+	// If the whole gatherer is disabled, check if any function is explicitly enabled
+	if hasGathererState(gathererConfigs, gathererName, v1alpha1.Disabled) {
+		for fName, gatheringClosure := range allGatheringFunctions {
+			if hasGathererState(gathererConfigs, fmt.Sprintf("%s/%s", gathererName, fName), v1alpha1.Enabled) {
+				enabledGatheringFunctions[fName] = gatheringClosure
+			}
+		}
 		return enabledGatheringFunctions
 	}
 
-	for fName, gatherinClosure := range allGatheringFunctions {
-		fullGathererName := fmt.Sprintf("%s/%s", gathererName, fName)
-		if !isGathererDisabled(gathererConfigs, fullGathererName) {
-			enabledGatheringFunctions[fName] = gatherinClosure
+	// Otherwise, enable all functions except those explicitly disabled
+	for fName, gatheringClosure := range allGatheringFunctions {
+		if !hasGathererState(gathererConfigs, fmt.Sprintf("%s/%s", gathererName, fName), v1alpha1.Disabled) {
+			enabledGatheringFunctions[fName] = gatheringClosure
 		}
 	}
+
 	return enabledGatheringFunctions
 }
 
-func isGathererDisabled(gathererConfigs []v1alpha1.GathererConfig, gathererName string) bool {
+// Checks if the given gathererName has the specified state in gathererConfigs
+func hasGathererState(gathererConfigs []v1alpha1.GathererConfig, gathererName string, state v1alpha1.GathererState) bool {
 	for _, gf := range gathererConfigs {
-		if gf.Name == gathererName && gf.State == v1alpha1.Disabled {
+		if gf.Name == gathererName && gf.State == state {
 			return true
 		}
 	}

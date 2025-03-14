@@ -95,6 +95,29 @@ func TestGetEnabledGatheringFunctions(t *testing.T) {
 			expected: map[string]gatherers.GatheringClosure{},
 		},
 		{
+			testName:     "disable complete top-level gatherer and enabled one function",
+			gathererName: "clusterconfig",
+			all: map[string]gatherers.GatheringClosure{
+				"container_images": {},
+				"nodes":            {},
+				"authentication":   {},
+				"some_function":    {},
+			},
+			gathererConfigs: []v1alpha1.GathererConfig{
+				{
+					Name:  "clusterconfig",
+					State: v1alpha1.Disabled,
+				},
+				{
+					Name:  "clusterconfig/nodes",
+					State: v1alpha1.Enabled,
+				},
+			},
+			expected: map[string]gatherers.GatheringClosure{
+				"nodes": {},
+			},
+		},
+		{
 			testName:     "no functions disabled",
 			gathererName: "clusterconfig",
 			all: map[string]gatherers.GatheringClosure{
@@ -402,7 +425,8 @@ func TestCollectAndRecordGathererError(t *testing.T) {
 		{
 			Name:  "mock_gatherer/some_field",
 			State: v1alpha1.Disabled,
-		}, {
+		},
+		{
 			Name:  "mock_gatherer/name",
 			State: v1alpha1.Disabled,
 		},
@@ -460,7 +484,8 @@ func TestCollectAndRecordGathererPanic(t *testing.T) {
 		{
 			Name:  "mock_gatherer/some_field",
 			State: v1alpha1.Disabled,
-		}, {
+		},
+		{
 			Name:  "mock_gatherer/name",
 			State: v1alpha1.Disabled,
 		},
