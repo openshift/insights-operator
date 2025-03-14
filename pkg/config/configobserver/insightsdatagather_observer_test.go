@@ -25,14 +25,20 @@ func TestInsightsDataGatherSync(t *testing.T) {
 				},
 				Spec: v1alpha1.InsightsDataGatherSpec{
 					GatherConfig: v1alpha1.GatherConfig{
-						DataPolicy:        v1alpha1.ObfuscateNetworking,
-						DisabledGatherers: []string{"fooGather", "barGather"},
+						DataPolicy: v1alpha1.ObfuscateNetworking,
+						DisabledGatherers: []v1alpha1.DisabledGatherer{
+							"fooGather",
+							"barGather",
+						},
 					},
 				},
 			},
 			expectedGatherConfig: &v1alpha1.GatherConfig{
-				DataPolicy:        v1alpha1.ObfuscateNetworking,
-				DisabledGatherers: []string{"fooGather", "barGather"},
+				DataPolicy: v1alpha1.ObfuscateNetworking,
+				DisabledGatherers: []v1alpha1.DisabledGatherer{
+					"fooGather",
+					"barGather",
+				},
 			},
 			expectedDisable: false,
 		},
@@ -44,14 +50,18 @@ func TestInsightsDataGatherSync(t *testing.T) {
 				},
 				Spec: v1alpha1.InsightsDataGatherSpec{
 					GatherConfig: v1alpha1.GatherConfig{
-						DataPolicy:        v1alpha1.NoPolicy,
-						DisabledGatherers: []string{"ALL"},
+						DataPolicy: v1alpha1.NoPolicy,
+						DisabledGatherers: []v1alpha1.DisabledGatherer{
+							"ALL",
+						},
 					},
 				},
 			},
 			expectedGatherConfig: &v1alpha1.GatherConfig{
-				DataPolicy:        v1alpha1.NoPolicy,
-				DisabledGatherers: []string{"ALL"},
+				DataPolicy: v1alpha1.NoPolicy,
+				DisabledGatherers: []v1alpha1.DisabledGatherer{
+					"ALL",
+				},
 			},
 			expectedDisable: true,
 		},
