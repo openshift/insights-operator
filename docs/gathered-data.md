@@ -788,6 +788,13 @@ is used. In case of any issues, user should check the respective clusteroperator
 
 The configuration used for the data gathering is always stored in the Insights archive in the `insights-operator/remote-configuration.json` file.
 
+### Config ID
+`conditional/rapid_container_logs`
+`conditional/remote_configuration`
+`conditional/conditional_gatherer_rules`
+
+### Released version
+
 The gatherer finds the Pods (and containers) that match the requested data and filters all the container logs
 to match the specific messages up to a maximum of 6 hours old.
 
@@ -1016,7 +1023,7 @@ None
 - `namespace/{namespace}/loki.grafana.com/lokistacks/{name}.json`
 
 ### Config ID
-`clusterconfig/lokistacks
+`clusterconfig/lokistacks`
 
 ### Released version
 - 4.19.0
