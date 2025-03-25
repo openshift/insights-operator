@@ -393,7 +393,7 @@ func (c *Controller) GatherJob() {
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
 	// create a new periodic gathering job
 	gj, err := c.jobController.CreateGathererJob(
-		ctx, dataGather.Name, image, &c.configAggregator.Config().DataReporting, dataGather.Spec.Storage,
+		ctx, image, &c.configAggregator.Config().DataReporting, dataGather,
 	)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)

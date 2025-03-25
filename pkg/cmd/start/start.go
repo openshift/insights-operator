@@ -104,7 +104,6 @@ func NewGatherAndUpload() *cobra.Command {
 		Short: "Runs the data gathering as job, uploads the data, waits for Insights analysis report and ends",
 		Run:   runGatherAndUpload(operator, cfg),
 	}
-	cmd.PersistentFlags().String("storagePath", "", "Path to store the gathered data")
 	cmd.Flags().AddFlagSet(cfg.NewCommand().Flags())
 
 	return cmd
@@ -188,10 +187,6 @@ func runGatherAndUpload(
 ) func(cmd *cobra.Command, _ []string) {
 	return func(cmd *cobra.Command, _ []string) {
 		clientConfig, protoConfig := createClientConfig(cmd, operator, cfg)
-
-		if storagePath := cmd.Flags().Lookup("storagePath").Value.String(); storagePath != "" {
-			operator.StoragePath = storagePath
-		}
 
 		// Before the start of gathering we need to check if featureGates are enabled
 		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)

@@ -164,6 +164,13 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
+	// if the dataGather uses persistenVolume, check if the volumePath was defined
+	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha1.StorageTypePersistentVolume {
+		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
+			g.StoragePath = storagePath
+		}
+	}
+
 	// ensure the insight snapshot directory exists
 	err = g.storagePathExists()
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 
 func getMemoryRecords() record.MemoryRecords {
 	var records record.MemoryRecords
-	for i := range []int{1, 2, 3} {
+	for i := range 3 {
 		records = append(records, record.MemoryRecord{
 			Name: fmt.Sprintf("config/mock%d", i),
 			At:   time.Now(),
@@ -100,6 +100,56 @@ func Test_Diskrecorder_Prune(t *testing.T) {
 	assert.NoError(t, err)
 	err = dr.Prune(olderThan)
 	assert.NoError(t, err)
+
+	err = removePath(dr)
+	assert.NoError(t, err)
+}
+
+func Test_Diskrecorder_PruneByCount_WithNoRecords(t *testing.T) {
+	dr, err := newDiskRecorder()
+	assert.NoError(t, err)
+	err = dr.PruneByCount(3)
+	assert.NoError(t, err)
+
+	err = removePath(dr)
+	assert.NoError(t, err)
+}
+
+func Test_Diskrecorder_PruneByCount_PrunesRecords(t *testing.T) {
+	dr, err := newDiskRecorder()
+	assert.NoError(t, err)
+
+	// Create 3 archives
+	for range 3 {
+		records := getMemoryRecords()
+		_, err = dr.Save(records)
+		assert.NoError(t, err)
+		// This is required, to avoid archive name conflict
+		time.Sleep(time.Second)
+	}
+
+	err = dr.PruneByCount(2)
+	assert.NoError(t, err)
+
+	files, err := os.ReadDir(dr.basePath)
+	assert.NoError(t, err)
+
+	// Validate file count after pruning
+	fileCount := 0
+	for _, file := range files {
+		fileInfo, err := file.Info()
+		if err != nil {
+			continue
+		}
+
+		if isNotArchiveFile(fileInfo) {
+			continue
+		}
+
+		fileCount++
+	}
+
+	assert.Equal(t, 2, fileCount)
 
 	err = removePath(dr)
 	assert.NoError(t, err)

@@ -34,14 +34,14 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
 func (j *JobController) CreateGathererJob(
-	ctx context.Context, dataGatherName, image string, dataReporting *config.DataReporting, storage *insightsv1alpha1.Storage,
+	ctx context.Context, image string, dataReporting *config.DataReporting, dataGather *insightsv1alpha1.DataGather,
 ) (*batchv1.Job, error) {
-	volumeSource := j.createVolumeSource(ctx, storage)
-	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storage)
+	volumeSource := j.createVolumeSource(ctx, dataGather.Spec.Storage)
+	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, dataGather.Spec.Storage)
 
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      dataGatherName,
+			Name:      dataGather.Name,
 			Namespace: insightsNamespace,
 			Annotations: map[string]string{
 				"openshift.io/required-scc": "restricted-v2",
@@ -83,12 +83,12 @@ func (j *JobController) CreateGathererJob(
 							Name:  "insights-gathering",
 							Image: image,
 							Args: []string{
-								"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml", "--storagePath", volumeMounts[0].MountPath,
+								"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml",
 							},
 							Env: []corev1.EnvVar{
 								{
 									Name:  "DATAGATHER_NAME",
-									Value: dataGatherName,
+									Value: dataGather.Name,
 								},
 								{
 									Name:  "RELEASE_VERSION",
@@ -161,6 +161,9 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 	}
 }
 
+// createVolumeSource returns a VolumeSource based on insightsv1alpha1.Storage
+// If a PersistentVolumeClaim is specified in the storage configuration, it checks whether the PVC exists.
+// If the PVC is not found, or if no storage specification is provided, an EmptyDir is used instead.
 func (j *JobController) createVolumeSource(ctx context.Context, storage *insightsv1alpha1.Storage) corev1.VolumeSource {
 	if storage == nil {
 		klog.Info("Creating volume source with EmptyDir, no storageSpec provided")
