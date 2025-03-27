@@ -496,6 +496,12 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 						LastTransitionTime: time,
 						Reason:             "",
 					},
+					GatheringDisabled: {
+						Type:               GatheringDisabled,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
 				},
 			},
 		},
@@ -556,6 +562,12 @@ func Test_newConditions(t *testing.T) { // nolint: funlen
 					},
 					RemoteConfigurationValid: {
 						Type:               RemoteConfigurationValid,
+						Status:             configv1.ConditionUnknown,
+						LastTransitionTime: time,
+						Reason:             "",
+					},
+					GatheringDisabled: {
+						Type:               GatheringDisabled,
 						Status:             configv1.ConditionUnknown,
 						LastTransitionTime: time,
 						Reason:             "",
