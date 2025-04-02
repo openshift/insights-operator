@@ -10,6 +10,7 @@ import (
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/api/config/v1alpha1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/utils"
@@ -68,6 +69,11 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 			}
 
 			client := configfake.NewSimpleClientset(operators...)
+			mockAPIConfigurator := config.NewMockAPIConfigurator(
+				&v1alpha1.GatherConfig{
+					DisabledGatherers: []string{"all"},
+				},
+			)
 			ctrl := &Controller{
 				name:   "insights",
 				client: client.ConfigV1(),
@@ -76,7 +82,8 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 						Enabled: true,
 					},
 				}),
-				ctrlStatus: newControllerStatus(),
+				apiConfigurator: mockAPIConfigurator,
+				ctrlStatus:      newControllerStatus(),
 			}
 
 			err := ctrl.updateStatus(context.Background(), tt.initialRun)
@@ -101,7 +108,7 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 		Type:               configv1.OperatorProgressing,
 		Status:             configv1.ConditionFalse,
 		Reason:             AsExpectedReason,
-		Message:            monitoringMsg,
+		Message:            monitoringMessage,
 		LastTransitionTime: lastTransitionTime,
 	}
 	degradedCondition := configv1.ClusterOperatorStatusCondition{
@@ -115,7 +122,7 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 		Type:               configv1.OperatorUpgradeable,
 		Status:             configv1.ConditionTrue,
 		Reason:             upgradeableReason,
-		Message:            canBeUpgradedMsg,
+		Message:            canBeUpgradedMessage,
 		LastTransitionTime: lastTransitionTime,
 	}
 
@@ -155,7 +162,7 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 	disabledCondition := getConditionByType(updatedCO.Status.Conditions, OperatorDisabled)
 	assert.Equal(t, configv1.ConditionTrue, disabledCondition.Status)
 	assert.Equal(t, noTokenReason, disabledCondition.Reason)
-	assert.Equal(t, reportingDisabledMsg, disabledCondition.Message)
+	assert.Equal(t, reportingDisabledMessage, disabledCondition.Message)
 	assert.True(t, disabledCondition.LastTransitionTime.After(lastTransitionTime.Time))
 
 	// upgrade status again and nothing should change
@@ -174,7 +181,7 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 		Type:               configv1.OperatorProgressing,
 		Status:             configv1.ConditionFalse,
 		Reason:             AsExpectedReason,
-		Message:            monitoringMsg,
+		Message:            monitoringMessage,
 		LastTransitionTime: lastTransitionTime,
 	}
 	testCO := configv1.ClusterOperator{
@@ -237,7 +244,7 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	disabledCondition := getConditionByType(updatedCO.Status.Conditions, OperatorDisabled)
 	assert.Equal(t, configv1.ConditionTrue, disabledCondition.Status)
 	assert.Equal(t, noTokenReason, disabledCondition.Reason)
-	assert.Equal(t, reportingDisabledMsg, disabledCondition.Message)
+	assert.Equal(t, reportingDisabledMessage, disabledCondition.Message)
 	assert.True(t, disabledCondition.LastTransitionTime.After(lastTransitionTime.Time))
 
 	// upgrade status again and nothing should change
@@ -251,7 +258,8 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 }
 
 func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
-	ctype configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
+	ctype configv1.ClusterStatusConditionType,
+) *configv1.ClusterOperatorStatusCondition {
 	for _, c := range conditions {
 		if c.Type == ctype {
 			return &c
