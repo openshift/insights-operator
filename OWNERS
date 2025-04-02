@@ -2,9 +2,11 @@ approvers:
 - tremes
 - ncaak
 - opokornyy
+- BaiyangZhou
 reviewers:
 - tremes
 - ncaak
 - opokornyy
+- BaiyangZhou
 
 component: "Insights Operator"
