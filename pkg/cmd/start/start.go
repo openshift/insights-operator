@@ -162,6 +162,7 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 	}
 }
 
+// Starts a single gather, main responsibility is loading in the necessary configs.
 func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, _ []string) {
 	return func(cmd *cobra.Command, _ []string) {
 		clientConfig, protoConfig := createClientConfig(cmd, operator, cfg)
@@ -195,6 +196,7 @@ func runGatherAndUpload(
 		if err := operator.GatherAndUpload(clientConfig, protoConfig); err != nil {
 			klog.Exit(err)
 		}
+
 		cancel()
 		os.Exit(0)
 	}

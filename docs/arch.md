@@ -464,3 +464,52 @@ Such a client is used in [GatherMachineSet](pkg/gather/clusterconfig/clusterconf
 ## Configuring what to gather
 
 [Insights API](https://github.com/openshift/api/blob/master/config/v1alpha1/types_insights.go) and the corresponding `insightsdatagather.config.openshift.io` CRD allow you to specify a list of `disabledGatherers` to disable specific gatherers or disable data gathering altogether by setting the value to `all`.
+
+## Configure gathering jobs to store archives into PersistenVolume
+
+First the PersistentVolumeClaim must be created in the `openshift-insights` namespace. Here is the example of the manifest that could be used to do that.
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: on-demand-gather-pvc
+  namespace: openshift-insights
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: gp2-csi
+```
+
+To use this PersistentVolumeClaim for on-demand gathering job, you need to reference the name in the DataGather. To run one gathering job with the PVC, you can use the following manifest.
+
+```yaml
+apiVersion: insights.openshift.io/v1alpha1
+kind: DataGather
+metadata:
+  name: on-demand-gather-job
+spec:
+  storage:
+    type: PersistentVolume
+    mountPath: /data
+    persistentVolume:
+      claim:
+        name: on-demand-gather-pvc
+```
+
+It is also possible to run the periodic gathering with persistent storage. To do so the storage needs to be configured in InsightsDataGather. Here is the example spec that could be used to configure gathering job to use the PVC created above.
+
+```yaml
+spec:
+  gatherConfig:
+    storage:
+      persistentVolume:
+        claim:
+          name: on-demand-gather-pvc
+        mountPath: /data
+      type: PersistentVolume
+```
+

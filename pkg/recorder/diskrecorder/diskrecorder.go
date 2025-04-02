@@ -52,7 +52,7 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 		}
 	}()
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0640)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0o640)
 	if err != nil {
 		if os.IsExist(err) {
 			klog.Errorf("Tried to copy to %s which already exists", path)
@@ -76,7 +76,7 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 		if err := tw.WriteHeader(&tar.Header{
 			Name:     r.Name,
 			ModTime:  r.At,
-			Mode:     int64(os.FileMode(0640).Perm()),
+			Mode:     int64(os.FileMode(0o640).Perm()),
 			Size:     int64(len(r.Data)),
 			Typeflag: tar.TypeReg,
 		}); err != nil {
@@ -101,12 +101,57 @@ func (d *DiskRecorder) SaveAtPath(records record.MemoryRecords, path string) (re
 	return completed, nil
 }
 
+// Prune the archives when there are more than count archives
+func (d *DiskRecorder) PruneByCount(countTreshold int) error {
+	files, err := os.ReadDir(d.basePath)
+	if err != nil {
+		return err
+	}
+
+	archiveCount := 0
+	fileCreatedAt := time.Now()
+	var lastArchive os.DirEntry
+	for _, file := range files {
+		fileInfo, err := file.Info()
+		if err != nil {
+			return err
+		}
+
+		if isNotArchiveFile(fileInfo) {
+			klog.Infof("Skipping file %v", file.Name())
+			continue
+		}
+
+		// Find the oldest archive
+		if fileInfo.ModTime().Before(fileCreatedAt) {
+			fileCreatedAt = fileInfo.ModTime()
+			lastArchive = file
+		}
+
+		archiveCount++
+	}
+
+	if archiveCount <= countTreshold {
+		klog.Infof("No archives to prune, current count is %d", archiveCount)
+		return nil
+	}
+
+	// Removes the oldest file
+	if err := os.Remove(filepath.Join(d.basePath, lastArchive.Name())); err != nil {
+		return fmt.Errorf("failed to delete expired file: %v", err)
+	}
+
+	klog.Infof("Clean up deleted archive: %v", lastArchive.Name())
+	return nil
+}
+
 // Prune the archives older than given time
 func (d *DiskRecorder) Prune(olderThan time.Time) error {
 	files, err := os.ReadDir(d.basePath)
 	if err != nil {
 		return err
 	}
+
 	count := 0
 	var errors []string
 	for _, file := range files {
@@ -114,27 +159,35 @@ func (d *DiskRecorder) Prune(olderThan time.Time) error {
 		if err != nil {
 			continue
 		}
+
 		if isNotArchiveFile(fileInfo) {
 			continue
 		}
+
 		if fileInfo.ModTime().After(olderThan) {
 			continue
 		}
+
 		if err := os.Remove(filepath.Join(d.basePath, file.Name())); err != nil {
 			errors = append(errors, err.Error())
 			continue
 		}
+
 		count++
 	}
+
 	if len(errors) == 1 {
 		return fmt.Errorf("failed to delete expired file: %v", errors[0])
 	}
+
 	if len(errors) > 1 {
 		return fmt.Errorf("failed to delete %d expired files: %v", len(errors), errors[0])
 	}
+
 	if count > 0 {
 		klog.Infof("Deleted %d files older than %s", count, olderThan.UTC().Format(time.RFC3339))
 	}
+
 	return nil
 }
 
