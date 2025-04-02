@@ -39,7 +39,6 @@ const (
 	insightsAvailableMessage = "Insights works as expected"
 	reportingDisabledMsg     = "Health reporting is disabled"
 	monitoringMsg            = "Monitoring the cluster"
-	canBeUpgradedMsg         = "Insights operator can be upgraded"
 )
 
 type Reported struct {
@@ -73,7 +72,8 @@ func NewController(client configv1client.ConfigV1Interface,
 	configurator configobserver.Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string,
-	isTechPreview bool) *Controller {
+	isTechPreview bool,
+) *Controller {
 	c := &Controller{
 		name:            "insights",
 		statusCh:        make(chan struct{}, 1),
@@ -417,7 +417,8 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 func (c *Controller) updateControllerConditionByReason(cs *conditions,
 	condition configv1.ClusterStatusConditionType,
 	controllerName, reason string,
-	isInitializing bool) {
+	isInitializing bool,
+) {
 	controller := c.Source(controllerName)
 	if controller == nil {
 		return
@@ -466,7 +467,6 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 		klog.Infof("The operator has some internal errors: %s", es.message)
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, degradedReason, "An error has occurred")
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionFalse, es.reason, es.message)
-		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionFalse, degradedReason, es.message)
 	}
 
 	// when the operator is already healthy then it doesn't make sense to set those, but when it's degraded and then
@@ -475,14 +475,12 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 		klog.Infof("The operator is marked as disabled")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMsg)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, AsExpectedReason, insightsAvailableMessage)
-		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg)
 	}
 
 	if c.ctrlStatus.isHealthy() {
 		klog.Infof("The operator is healthy")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMsg)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, AsExpectedReason, insightsAvailableMessage)
-		cs.setCondition(configv1.OperatorUpgradeable, configv1.ConditionTrue, upgradeableReason, canBeUpgradedMsg)
 	}
 }
 

@@ -111,13 +111,6 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 		Message:            insightsAvailableMessage,
 		LastTransitionTime: lastTransitionTime,
 	}
-	upgradeableCondition := configv1.ClusterOperatorStatusCondition{
-		Type:               configv1.OperatorUpgradeable,
-		Status:             configv1.ConditionTrue,
-		Reason:             upgradeableReason,
-		Message:            canBeUpgradedMsg,
-		LastTransitionTime: lastTransitionTime,
-	}
 
 	testCO := configv1.ClusterOperator{
 		Status: configv1.ClusterOperatorStatus{
@@ -125,7 +118,6 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 				availableCondition,
 				progressingCondition,
 				degradedCondition,
-				upgradeableCondition,
 				{
 					Type:               OperatorDisabled,
 					Status:             configv1.ConditionFalse,
@@ -150,7 +142,8 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 	assert.Equal(t, availableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable))
 	assert.Equal(t, progressingCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorProgressing))
 	assert.Equal(t, degradedCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorDegraded))
-	assert.Equal(t, upgradeableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
+	// Upgradeable should not  be set
+	assert.Nil(t, getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
 
 	disabledCondition := getConditionByType(updatedCO.Status.Conditions, OperatorDisabled)
 	assert.Equal(t, configv1.ConditionTrue, disabledCondition.Status)
@@ -164,7 +157,8 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 	assert.Equal(t, availableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable))
 	assert.Equal(t, progressingCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorProgressing))
 	assert.Equal(t, degradedCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorDegraded))
-	assert.Equal(t, upgradeableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
+	// Upgradeable should not  be set
+	assert.Nil(t, getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
 	assert.Equal(t, disabledCondition, getConditionByType(updatedCO.Status.Conditions, OperatorDisabled))
 }
 
@@ -191,12 +185,6 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 					Type:               configv1.OperatorDegraded,
 					Status:             configv1.ConditionTrue,
 					Reason:             "UploadFailed",
-					LastTransitionTime: lastTransitionTime,
-				},
-				{
-					Type:               configv1.OperatorUpgradeable,
-					Status:             configv1.ConditionFalse,
-					Reason:             degradedReason,
 					LastTransitionTime: lastTransitionTime,
 				},
 				{
@@ -228,9 +216,8 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	assert.Equal(t, degradedCondition.Status, configv1.ConditionFalse)
 	assert.True(t, degradedCondition.LastTransitionTime.After(lastTransitionTime.Time))
 
-	upgradeableCondition := *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable)
-	assert.Equal(t, upgradeableCondition.Status, configv1.ConditionTrue)
-	assert.True(t, upgradeableCondition.LastTransitionTime.After(lastTransitionTime.Time))
+	// Upgradeable should not be set
+	assert.Nil(t, getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
 
 	assert.Equal(t, progressingCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorProgressing))
 
@@ -246,12 +233,12 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	assert.Equal(t, availableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorAvailable))
 	assert.Equal(t, progressingCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorProgressing))
 	assert.Equal(t, degradedCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorDegraded))
-	assert.Equal(t, upgradeableCondition, *getConditionByType(updatedCO.Status.Conditions, configv1.OperatorUpgradeable))
 	assert.Equal(t, disabledCondition, getConditionByType(updatedCO.Status.Conditions, OperatorDisabled))
 }
 
 func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
-	ctype configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
+	ctype configv1.ClusterStatusConditionType,
+) *configv1.ClusterOperatorStatusCondition {
 	for _, c := range conditions {
 		if c.Type == ctype {
 			return &c
