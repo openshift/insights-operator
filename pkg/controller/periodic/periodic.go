@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 
 	v1 "github.com/openshift/api/config/v1"
 	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
@@ -38,13 +39,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
+const (
+	defaultStoragePath               = "/var/lib/insights-operator"
 	serviceCABundle                  = "service-ca-bundle"
 	serviceCABundlePath              = "/var/run/configmaps/service-ca-bundle"
 	insightsNamespace                = "openshift-insights"
-	falseB                           = new(bool)
-	trueB                            = true
-	deletePropagationBackground      = metav1.DeletePropagationBackground
 	dataUplodedConditionNotAvailable = "DataUploadedConditionNotAvailable"
 	gatheringDisabledReason          = "GatheringDisabled"
 )
@@ -80,7 +79,6 @@ func NewWithTechPreview(
 	insightsOperatorCli operatorv1client.InsightsOperatorInterface,
 	openshiftConfCli configv1client.ConfigV1Interface,
 	dgInf DataGatherInformer,
-
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -328,10 +326,12 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 					klog.Errorf("Failed to read %s DataGather resource", dgName)
 					return
 				}
+
 				if dataGather.Status.State != "" {
 					klog.Infof("DataGather %s resource state is %s. Not triggering any data gathering", dgName, dataGather.Status.State)
 					return
 				}
+
 				if c.image == "" {
 					image, err := c.getInsightsImage(ctx)
 					if err != nil {
@@ -339,6 +339,12 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 						return
 					}
 					c.image = image
+				}
+
+				if dataGather.Spec.Storage == nil {
+					klog.Warningf("StorageSpec is not provided for the %s DataGather resource. Using the default storage", dgName)
+					// Use config from the InsightsDataGather CRD, if not provided ephemeral storage will be used
+					dataGather.Spec.Storage = createStorage(c.apiConfigurator.GatherConfig().StorageSpec)
 				}
 
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
@@ -370,9 +376,8 @@ func (c *Controller) GatherJob() {
 		c.image = image
 	}
 
-	disabledGatherers, dp := c.createDataGatherAttributeValues()
 	// create a new datagather.insights.openshift.io custom resource
-	dataGatherCR, err := c.createNewDataGatherCR(ctx, disabledGatherers, dp)
+	dataGatherCR, err := c.createNewDataGatherCR(ctx)
 	if err != nil {
 		klog.Errorf("Failed to create a new DataGather resource: %v", err)
 		return
@@ -387,7 +392,9 @@ func (c *Controller) GatherJob() {
 // it returns with the providing the info in the log message.
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
 	// create a new periodic gathering job
-	gj, err := c.jobController.CreateGathererJob(ctx, dataGather.Name, image, c.configAggregator.Config().DataReporting.StoragePath)
+	gj, err := c.jobController.CreateGathererJob(
+		ctx, image, &c.configAggregator.Config().DataReporting, dataGather,
+	)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
 		return
@@ -481,7 +488,8 @@ func (c *Controller) updateStatusBasedOnDataGatherCondition(ctx context.Context,
 // compareAndUpdateClusterOperatorCondition compares the provided dataGather condition to the specific
 // cluster operator status condition with the given type and then updates the clusteroperator condition
 func (c *Controller) compareAndUpdateClusterOperatorCondition(ctx context.Context,
-	conditionType v1.ClusterStatusConditionType, dataGatherCondition *metav1.Condition) error {
+	conditionType v1.ClusterStatusConditionType, dataGatherCondition *metav1.Condition,
+) error {
 	insightsCo, err := c.openshiftConfCli.ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -537,7 +545,8 @@ func (c *Controller) compareAndUpdateClusterOperatorCondition(ctx context.Contex
 // getClusterOperatorConditionIndexByType tries to find index of the cluster operator status condition with the corresponding type.
 // If the condition is found, the corresponding index and true are returned. If the condition is not found then it returns -1 and false.
 func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionType,
-	conditions []v1.ClusterOperatorStatusCondition) (int, bool) {
+	conditions []v1.ClusterOperatorStatusCondition,
+) (int, bool) {
 	idx := -1
 	found := false
 	for i := range conditions {
@@ -553,7 +562,8 @@ func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionTyp
 // updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
 // updates the provided DataGather resource with all important attributes.
 func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
-	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather) error {
+	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather,
+) error {
 	for _, recommendation := range report.Recommendations {
 		advisorLink, err := insights.CreateInsightsAdvisorLink(v1.ClusterID(report.ClusterID), recommendation.RuleFQDN, recommendation.ErrorKey)
 		if err != nil {
@@ -578,7 +588,8 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 // copyDataGatherStatusToOperatorStatus gets the "cluster" "insightsoperator.operator.openshift.io" resource
 // and updates its status with values from the provided "datagather.insights.openshift.io" resource.
 func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
-	dataGather *insightsv1alpha1.DataGather) (*operatorv1.InsightsOperator, error) {
+	dataGather *insightsv1alpha1.DataGather,
+) (*operatorv1.InsightsOperator, error) {
 	operator, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -597,7 +608,8 @@ func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
 // updateOperatorStatusCR gets the 'cluster' insightsoperators.operator.openshift.io resource and updates its status with the last
 // gathering details.
 func (c *Controller) updateOperatorStatusCR(ctx context.Context, allFunctionReports map[string]gather.GathererFunctionReport,
-	gatherTime metav1.Time) error {
+	gatherTime metav1.Time,
+) error {
 	insightsOperatorCR, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -682,7 +694,7 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 				// TODO the time duration should be configurable
 				if time.Since(job.CreationTimestamp.Time) > 24*time.Hour {
 					err = c.kubeClient.BatchV1().Jobs(insightsNamespace).Delete(ctx, job.Name, metav1.DeleteOptions{
-						PropagationPolicy: &deletePropagationBackground,
+						PropagationPolicy: ptr.To(metav1.DeletePropagationBackground),
 					})
 					if err != nil {
 						klog.Errorf("Failed to delete job %s: %v", job.Name, err)
@@ -714,26 +726,32 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 // createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
 // with generate name prefix "periodic-gathering-". Returns the newly created
 // resource or an error if the creation failed.
-func (c *Controller) createNewDataGatherCR(ctx context.Context, disabledGatherers []string,
-	dataPolicy insightsv1alpha1.DataPolicy) (*insightsv1alpha1.DataGather, error) {
+func (c *Controller) createNewDataGatherCR(ctx context.Context) (*insightsv1alpha1.DataGather, error) {
+	// Get values from InsightsDataGather CRD that contains config for the data gathering job
+	disabledGatherers, dataPolicy, storageSpec := c.createDataGatherAttributeValues()
+
 	dataGatherCR := insightsv1alpha1.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: periodicGatheringPrefix,
 		},
 		Spec: insightsv1alpha1.DataGatherSpec{
 			DataPolicy: dataPolicy,
+			Storage:    storageSpec,
 		},
 	}
+
 	for _, g := range disabledGatherers {
 		dataGatherCR.Spec.Gatherers = append(dataGatherCR.Spec.Gatherers, insightsv1alpha1.GathererConfig{
-			Name:  g,
+			Name:  string(g),
 			State: insightsv1alpha1.Disabled,
 		})
 	}
+
 	dataGather, err := c.dataGatherClient.DataGathers().Create(ctx, &dataGatherCR, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
+
 	klog.Infof("Created a new %s DataGather custom resource", dataGather.Name)
 	return dataGather, nil
 }
@@ -773,36 +791,68 @@ func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insight
 	if err != nil {
 		return nil, err
 	}
+
 	return dg, nil
 }
 
 // createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
 // and checks custom period gatherers and returns list of disabled gatherers based on this two values
 // and also data policy set in the "insightsdatagather.config.openshift.io"
-func (c *Controller) createDataGatherAttributeValues() ([]string, insightsv1alpha1.DataPolicy) {
+func (c *Controller) createDataGatherAttributeValues() (
+	[]configv1alpha1.DisabledGatherer, insightsv1alpha1.DataPolicy, *insightsv1alpha1.Storage,
+) {
 	gatherConfig := c.apiConfigurator.GatherConfig()
 
-	var dp insightsv1alpha1.DataPolicy
+	var dataPolicy insightsv1alpha1.DataPolicy
 	switch gatherConfig.DataPolicy {
 	case "":
-		dp = insightsv1alpha1.NoPolicy
+		dataPolicy = insightsv1alpha1.NoPolicy
+	// This is needed now, because InsightsDataGather and DataGather does not
+	// have the same values "", None, ObfuscateNetworking != "", ClearText, ObfuscateNetworking
+	case "ClearText":
+		dataPolicy = insightsv1alpha1.NoPolicy
 	case configv1alpha1.NoPolicy:
-		dp = insightsv1alpha1.NoPolicy
+		dataPolicy = insightsv1alpha1.NoPolicy
 	case configv1alpha1.ObfuscateNetworking:
-		dp = insightsv1alpha1.ObfuscateNetworking
+		dataPolicy = insightsv1alpha1.ObfuscateNetworking
 	}
 
 	disabledGatherers := gatherConfig.DisabledGatherers
 	for _, gatherer := range c.gatherers {
 		if g, ok := gatherer.(gatherers.CustomPeriodGatherer); ok {
 			if !g.ShouldBeProcessedNow() {
-				disabledGatherers = append(disabledGatherers, g.GetName())
+				disabledGatherers = append(disabledGatherers, configv1alpha1.DisabledGatherer(g.GetName()))
 			} else {
 				g.UpdateLastProcessingTime()
 			}
 		}
 	}
-	return disabledGatherers, dp
+
+	return disabledGatherers, dataPolicy, createStorage(gatherConfig.StorageSpec)
+}
+
+// createStorage creates the "insightsv1alpha1.storage" from the provided "configv1alpha1.storage"
+func createStorage(storage *configv1alpha1.Storage) *insightsv1alpha1.Storage {
+	if storage == nil {
+		return nil
+	}
+
+	mountPath := defaultStoragePath
+	if storage.Type == configv1alpha1.StorageTypePersistentVolume {
+		if path := storage.PersistentVolume.MountPath; path != "" {
+			mountPath = path
+		}
+	}
+
+	return &insightsv1alpha1.Storage{
+		Type: insightsv1alpha1.StorageTypePersistentVolume,
+		PersistentVolume: &insightsv1alpha1.PersistentVolumeConfig{
+			MountPath: mountPath,
+			Claim: insightsv1alpha1.PersistentVolumeClaimReference{
+				Name: storage.PersistentVolume.Claim.Name,
+			},
+		},
+	}
 }
 
 // wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"

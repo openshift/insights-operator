@@ -1,16 +1,5 @@
 package utils
 
-// StringInSlice simply checks if the string is present in slice
-func StringInSlice(str string, slice []string) bool {
-	for _, item := range slice {
-		if item == str {
-			return true
-		}
-	}
-
-	return false
-}
-
 // UniqueStrings returns a new string slice where each element exists maximum once,
 // the order of items is preserved (e.g. [9, 4, 9, 8, 1, 2, 2, 4, 3] becomes [9, 4, 8, 1, 2, 3])
 func UniqueStrings(list []string) []string {

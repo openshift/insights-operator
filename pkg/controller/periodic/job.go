@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/insights-operator/pkg/config"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -13,6 +15,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
+	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 )
 
 // JobController type responsible for
@@ -29,10 +33,15 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
-func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, image, archiveVolumeMountPath string) (*batchv1.Job, error) {
+func (j *JobController) CreateGathererJob(
+	ctx context.Context, image string, dataReporting *config.DataReporting, dataGather *insightsv1alpha1.DataGather,
+) (*batchv1.Job, error) {
+	volumeSource := j.createVolumeSource(ctx, dataGather.Spec.Storage)
+	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, dataGather.Spec.Storage)
+
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      dataGatherName,
+			Name:      dataGather.Name,
 			Namespace: insightsNamespace,
 			Annotations: map[string]string{
 				"openshift.io/required-scc": "restricted-v2",
@@ -47,17 +56,15 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 					RestartPolicy:      corev1.RestartPolicyNever,
 					ServiceAccountName: "operator",
 					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: &trueB,
+						RunAsNonRoot: ptr.To(true),
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
 					},
 					Volumes: []corev1.Volume{
 						{
-							Name: "archives-path",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
+							Name:         "archives-path",
+							VolumeSource: volumeSource,
 						},
 						{
 							Name: serviceCABundle,
@@ -66,7 +73,7 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 									LocalObjectReference: corev1.LocalObjectReference{
 										Name: serviceCABundle,
 									},
-									Optional: &trueB,
+									Optional: ptr.To(true),
 								},
 							},
 						},
@@ -75,11 +82,13 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 						{
 							Name:  "insights-gathering",
 							Image: image,
-							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml"},
+							Args: []string{
+								"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml",
+							},
 							Env: []corev1.EnvVar{
 								{
 									Name:  "DATAGATHER_NAME",
-									Value: dataGatherName,
+									Value: dataGather.Name,
 								},
 								{
 									Name:  "RELEASE_VERSION",
@@ -93,19 +102,10 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: falseB,
+								AllowPrivilegeEscalation: ptr.To(false),
 								Capabilities:             &corev1.Capabilities{Drop: []corev1.Capability{"ALL"}},
 							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "archives-path",
-									MountPath: archiveVolumeMountPath,
-								},
-								{
-									Name:      serviceCABundle,
-									MountPath: serviceCABundlePath,
-								},
-							},
+							VolumeMounts: volumeMounts,
 						},
 					},
 				},
@@ -159,4 +159,61 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 			}
 		}
 	}
+}
+
+// createVolumeSource returns a VolumeSource based on insightsv1alpha1.Storage
+// If a PersistentVolumeClaim is specified in the storage configuration, it checks whether the PVC exists.
+// If the PVC is not found, or if no storage specification is provided, an EmptyDir is used instead.
+func (j *JobController) createVolumeSource(ctx context.Context, storage *insightsv1alpha1.Storage) corev1.VolumeSource {
+	if storage == nil {
+		klog.Info("Creating volume source with EmptyDir, no storageSpec provided")
+		return corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		}
+	}
+
+	if storage.Type == insightsv1alpha1.StorageTypePersistentVolume {
+		// Validate if the PVC exists
+		persistentVolumeClaimName := storage.PersistentVolume.Claim.Name
+		pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
+		if err != nil {
+			klog.Error(err, " Failed to get PersistentVolumeClaim with name ", persistentVolumeClaimName)
+		} else if pvc != nil {
+			klog.Infof("Creating volume source with PersistentVolumeClaimName: %s", persistentVolumeClaimName)
+			return corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: persistentVolumeClaimName,
+				},
+			}
+		}
+	}
+
+	klog.Info("Creating volume source with EmptyDir")
+	return corev1.VolumeSource{
+		EmptyDir: &corev1.EmptyDirVolumeSource{},
+	}
+}
+
+func (j *JobController) createVolumeMounts(storagePath string, storage *insightsv1alpha1.Storage) []corev1.VolumeMount {
+	volumeMount := []corev1.VolumeMount{
+		{
+			Name:      "archives-path",
+			MountPath: storagePath,
+		},
+		{
+			Name:      serviceCABundle,
+			MountPath: serviceCABundlePath,
+		},
+	}
+
+	if storage == nil || storage.Type != insightsv1alpha1.StorageTypePersistentVolume {
+		return volumeMount
+	}
+
+	// If the PVC has a mountPath, use it
+	if mountPath := storage.PersistentVolume.MountPath; mountPath != "" {
+		volumeMount[0].MountPath = mountPath
+	}
+
+	return volumeMount
 }

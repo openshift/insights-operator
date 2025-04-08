@@ -33,9 +33,13 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 )
 
-// numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint
-// for particular archive/Insights request ID
-var numberOfStatusQueryRetries = 3
+const (
+	// numberOfStatusQueryRetries is the number of attempts to query the processing status endpoint for particular archive/Insights request ID
+	numberOfStatusQueryRetries = 3
+
+	// maxGatherJobArchives is the number of archives to keep on disk
+	maxGatherJobArchives = 5
+)
 
 // GatherJob is the type responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
@@ -130,11 +134,12 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 // 2. Get the corresponding "datagathers.insights.openshift.io" resource
 // 3. Create all the gatherers
 // 4. Run data gathering
-// 5. Recodrd the data into the Insights archive
+// 5. Record the data into the Insights archive
 // 6. Get the latest archive and upload it
 // 7. Updates the status of the corresponding "datagathers.insights.openshift.io" resource continuously
 func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) error { // nolint: funlen, gocyclo
 	klog.Info("Starting data gathering")
+
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
 		return err
@@ -158,6 +163,14 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		klog.Errorf("failed to get coresponding DataGather custom resource: %v", err)
 		return err
 	}
+
+	// if the dataGather uses persistenVolume, check if the volumePath was defined
+	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha1.StorageTypePersistentVolume {
+		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
+			g.StoragePath = storagePath
+		}
+	}
+
 	// ensure the insight snapshot directory exists
 	err = g.storagePathExists()
 	if err != nil {
@@ -167,6 +180,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	// configobserver synthesizes all config into the status reporter controller
 	configObserver := configobserver.New(g.Controller, kubeClient)
 	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
+
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
 		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, dataGatherCR.Spec.DataPolicy)
@@ -204,11 +218,13 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 			AlwaysStored: true,
 		})
 	}
+
 	remoteConfigAvailableCondition, remoteConfigValidCondition := createRemoteConfigConditions(remoteConfStatus)
 	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigAvailableCondition)
 	if err != nil {
 		klog.Error(err)
 	}
+
 	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigValidCondition)
 	if err != nil {
 		klog.Error(err)
@@ -266,9 +282,16 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Failed)
 		return err
 	}
+
 	updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Completed)
 	klog.Infof("Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
 		insightsRequestID)
+
+	// Clean up of old archives created by on-demand gathering
+	if err := recdriver.PruneByCount(maxGatherJobArchives); err != nil {
+		klog.Errorf("Failed to prune archives: %v", err)
+	}
+
 	return nil
 }
 
@@ -276,7 +299,8 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 // gatherer functions reports
 func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Interface, // nolint: gocritic
 	dataGatherCR *insightsv1alpha1.DataGather,
-	rec *recorder.Recorder) (map[string]gather.GathererFunctionReport, *gatherers.RemoteConfigStatus) {
+	rec *recorder.Recorder,
+) (map[string]gather.GathererFunctionReport, *gatherers.RemoteConfigStatus) {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	var remoteConfStatus gatherers.RemoteConfigStatus
 
@@ -311,7 +335,8 @@ func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Int
 // updateDataGatherStatus updates DataGather status conditions with provided condition definition as well as
 // the DataGather state
 func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,
-	dataGatherCR *insightsv1alpha1.DataGather, conditionToUpdate *metav1.Condition, state insightsv1alpha1.DataGatherState) {
+	dataGatherCR *insightsv1alpha1.DataGather, conditionToUpdate *metav1.Condition, state insightsv1alpha1.DataGatherState,
+) {
 	dataGatherUpdated, err := status.UpdateDataGatherState(ctx, insightsClient, dataGatherCR, state)
 	if err != nil {
 		klog.Errorf("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
@@ -326,15 +351,18 @@ func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1
 // recordAllData is a helper function recording the archive metadata as well as data.
 // Returns last known Insights archive and an error when recording failed.
 func recordAllData(functionReports []gather.GathererFunctionReport,
-	rec *recorder.Recorder, recdriver *diskrecorder.DiskRecorder, anonymizer *anonymization.Anonymizer) (*insightsclient.Source, error) {
+	rec *recorder.Recorder, recdriver *diskrecorder.DiskRecorder, anonymizer *anonymization.Anonymizer,
+) (*insightsclient.Source, error) {
 	err := gather.RecordArchiveMetadata(functionReports, rec, anonymizer)
 	if err != nil {
 		return nil, err
 	}
+
 	err = rec.Flush()
 	if err != nil {
 		return nil, err
 	}
+
 	return recdriver.LastArchive()
 }
 
@@ -349,7 +377,8 @@ type dataStatus struct {
 // "insightsRequestID" and tries to parse the response body in case of HTTP 200 response.
 func wasDataProcessed(ctx context.Context,
 	insightsCli processingStatusClient,
-	insightsRequestID string, conf *config.InsightsConfiguration) (bool, error) {
+	insightsRequestID string, conf *config.InsightsConfiguration,
+) (bool, error) {
 	delay := conf.DataReporting.ReportPullingDelay
 	retryCounter := 0
 	klog.Infof("Initial delay when checking processing status: %v", delay)
@@ -372,7 +401,6 @@ func wasDataProcessed(ctx context.Context,
 		}
 		return true, nil
 	})
-
 	if err != nil {
 		return false, err
 	}
@@ -399,7 +427,7 @@ func wasDataProcessed(ctx context.Context,
 // If not, non-nill error is returned.
 func (g *GatherJob) storagePathExists() error {
 	if _, err := os.Stat(g.StoragePath); err != nil && os.IsNotExist(err) {
-		if err = os.MkdirAll(g.StoragePath, 0777); err != nil {
+		if err = os.MkdirAll(g.StoragePath, 0o777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
@@ -408,11 +436,14 @@ func (g *GatherJob) storagePathExists() error {
 
 // createRemoteConfigConditions create RemoteConfiguration conditions based on the provided RemoteConfigStatus
 func createRemoteConfigConditions(
-	remoteConfStatus *gatherers.RemoteConfigStatus) (remoteConfigAvailableCondition, remoteConfigValidCondition metav1.Condition) {
-	remoteConfigAvailableCondition =
-		status.RemoteConfigurationNotAvailableCondition(metav1.ConditionUnknown, status.RemoteConfNotRequestedYet, "")
-	remoteConfigValidCondition =
-		status.RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, status.RemoteConfNotValidatedYet, "")
+	remoteConfStatus *gatherers.RemoteConfigStatus,
+) (remoteConfigAvailableCondition, remoteConfigValidCondition metav1.Condition) {
+	remoteConfigAvailableCondition = status.RemoteConfigurationNotAvailableCondition(
+		metav1.ConditionUnknown, status.RemoteConfNotRequestedYet, "",
+	)
+	remoteConfigValidCondition = status.RemoteConfigurationInvalidCondition(
+		metav1.ConditionUnknown, status.RemoteConfNotValidatedYet, "",
+	)
 
 	if remoteConfStatus == nil {
 		return

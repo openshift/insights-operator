@@ -228,46 +228,37 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 
 func TestCreateNewDataGatherCR(t *testing.T) {
 	cs := insightsFakeCli.NewSimpleClientset()
-	mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
 	tests := []struct {
-		name              string
-		disabledGatherers []string
-		dataPolicy        v1alpha1.DataPolicy
-		expected          *v1alpha1.DataGather
+		name       string
+		dataPolicy v1alpha1.DataPolicy
+		expected   *v1alpha1.DataGather
 	}{
 		{
-			name:              "Empty DataGather resource creation",
-			disabledGatherers: []string{},
-			dataPolicy:        "",
+			name:       "Empty DataGather resource creation",
+			dataPolicy: "",
 			expected: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "periodic-gathering-",
 				},
 				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: "",
+					DataPolicy: v1alpha1.NoPolicy,
 				},
 			},
 		},
 		{
-			name:              "DataGather with NoPolicy DataPolicy",
-			disabledGatherers: []string{},
-			dataPolicy:        v1alpha1.NoPolicy,
+			name:       "DataGather with NoPolicy DataPolicy",
+			dataPolicy: v1alpha1.NoPolicy,
 			expected: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "periodic-gathering-",
 				},
 				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: "ClearText",
+					DataPolicy: v1alpha1.NoPolicy,
 				},
 			},
 		},
 		{
-			name: "DataGather with ObfuscateNetworking DataPolicy and some disabled gatherers",
-			disabledGatherers: []string{
-				"clusterconfig/foo",
-				"clusterconfig/bar",
-				"workloads",
-			},
+			name:       "DataGather with ObfuscateNetworking DataPolicy and some disabled gatherers",
 			dataPolicy: v1alpha1.ObfuscateNetworking,
 			expected: &v1alpha1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
@@ -295,7 +286,18 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dg, err := mockController.createNewDataGatherCR(context.Background(), tt.disabledGatherers, tt.dataPolicy)
+			var disabledGatherers []configv1alpha1.DisabledGatherer
+			for _, dg := range tt.expected.Spec.Gatherers {
+				disabledGatherers = append(disabledGatherers, configv1alpha1.DisabledGatherer(dg.Name))
+			}
+
+			apiConfig := NewInsightsDataGatherObserverMock(
+				configv1alpha1.DataPolicy(tt.dataPolicy),
+				disabledGatherers,
+			)
+			mockController := NewWithTechPreview(nil, nil, apiConfig, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
+
+			dg, err := mockController.createNewDataGatherCR(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected.Spec, dg.Spec)
 			err = cs.InsightsV1alpha1().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
@@ -644,51 +646,67 @@ func TestCreateDataGatherAttributeValues(t *testing.T) {
 		gatherConfig              configv1alpha1.GatherConfig
 		gatheres                  []gatherers.Interface
 		expectedPolicy            v1alpha1.DataPolicy
-		expectedDisabledGatherers []string
+		expectedDisabledGatherers []configv1alpha1.DisabledGatherer
 	}{
 		{
 			name: "Two disabled gatherers and ObfuscateNetworking Policy",
 			gatherConfig: configv1alpha1.GatherConfig{
 				DataPolicy: configv1alpha1.ObfuscateNetworking,
-				DisabledGatherers: []string{
+				DisabledGatherers: []configv1alpha1.DisabledGatherer{
 					"mock_gatherer",
 					"foo_gatherer",
 				},
+				StorageSpec: nil,
 			},
 			gatheres: []gatherers.Interface{
 				&gather.MockGatherer{},
 				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true},
 			},
-			expectedPolicy:            v1alpha1.ObfuscateNetworking,
-			expectedDisabledGatherers: []string{"mock_gatherer", "foo_gatherer"},
+			expectedPolicy: v1alpha1.ObfuscateNetworking,
+			expectedDisabledGatherers: []configv1alpha1.DisabledGatherer{
+				"mock_gatherer",
+				"foo_gatherer",
+			},
 		},
 		{
 			name: "Custom period gatherer is excluded because it should not be processed",
 			gatherConfig: configv1alpha1.GatherConfig{
 				DataPolicy: configv1alpha1.NoPolicy,
-				DisabledGatherers: []string{
+				DisabledGatherers: []configv1alpha1.DisabledGatherer{
 					"clusterconfig/bar",
 				},
+				StorageSpec: nil,
 			},
 			gatheres: []gatherers.Interface{
 				&gather.MockGatherer{},
 				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: false},
 			},
-			expectedPolicy:            v1alpha1.NoPolicy,
-			expectedDisabledGatherers: []string{"clusterconfig/bar", "mock_custom_period_gatherer_no_period"},
+			expectedPolicy: v1alpha1.NoPolicy,
+			expectedDisabledGatherers: []configv1alpha1.DisabledGatherer{
+				"clusterconfig/bar",
+				"mock_custom_period_gatherer_no_period",
+			},
 		},
 		{
 			name: "Empty data policy is created as NoPolicy/ClearText",
 			gatherConfig: configv1alpha1.GatherConfig{
 				DataPolicy:        "",
-				DisabledGatherers: []string{},
+				DisabledGatherers: []configv1alpha1.DisabledGatherer{},
+				StorageSpec: &configv1alpha1.Storage{
+					Type: configv1alpha1.StorageTypePersistentVolume,
+					PersistentVolume: &configv1alpha1.PersistentVolumeConfig{
+						Claim: configv1alpha1.PersistentVolumeClaimReference{
+							Name: "test-claim",
+						},
+					},
+				},
 			},
 			gatheres: []gatherers.Interface{
 				&gather.MockGatherer{},
 				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true},
 			},
 			expectedPolicy:            v1alpha1.NoPolicy,
-			expectedDisabledGatherers: []string{},
+			expectedDisabledGatherers: []configv1alpha1.DisabledGatherer{},
 		},
 	}
 
@@ -696,9 +714,10 @@ func TestCreateDataGatherAttributeValues(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockAPIConfig := config.NewMockAPIConfigurator(&tt.gatherConfig)
 			mockController := NewWithTechPreview(nil, nil, mockAPIConfig, tt.gatheres, nil, nil, nil, nil, nil)
-			disabledGatherers, dp := mockController.createDataGatherAttributeValues()
+			disabledGatherers, dp, storage := mockController.createDataGatherAttributeValues()
 			assert.Equal(t, tt.expectedPolicy, dp)
-			assert.EqualValues(t, disabledGatherers, tt.expectedDisabledGatherers)
+			assert.EqualValues(t, tt.expectedDisabledGatherers, disabledGatherers)
+			assert.Equal(t, createStorage(tt.gatherConfig.StorageSpec), storage)
 		})
 	}
 }
@@ -1716,7 +1735,8 @@ func areConditionsSameExceptTransitionTime(a, b *configv1.ClusterOperatorStatusC
 }
 
 func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
-	ctype configv1.ClusterStatusConditionType) *configv1.ClusterOperatorStatusCondition {
+	ctype configv1.ClusterStatusConditionType,
+) *configv1.ClusterOperatorStatusCondition {
 	for _, c := range conditions {
 		if c.Type == ctype {
 			return &c
