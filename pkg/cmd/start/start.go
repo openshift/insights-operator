@@ -236,7 +236,6 @@ func checkFeatureGates(ctx context.Context, clientConfig *rest.Config, operator 
 	}
 
 	operator.InsightsConfigAPIEnabled = featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
-	operator.RuntimeExtractorEnabled = featureGates.Enabled(features.FeatureGateInsightsRuntimeExtractor)
 }
 
 func createClientConfig(
