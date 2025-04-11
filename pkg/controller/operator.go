@@ -133,7 +133,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 
 	insightsConfigAPIEnabled := featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
-	runtimeExtractorEnabled := featureGates.Enabled(features.FeatureGateInsightsRuntimeExtractor)
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
@@ -222,7 +221,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient, runtimeExtractorEnabled,
+		configAggregator, insightsClient,
 	)
 	if !insightsConfigAPIEnabled {
 		periodicGather = periodic.New(configAggregator, rec, gatherers, anonymizer,
