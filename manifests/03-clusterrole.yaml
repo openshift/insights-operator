@@ -609,7 +609,6 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/single-node-developer: "true"
-    release.openshift.io/feature-set: TechPreviewNoUpgrade
     capability.openshift.io/name: Insights
 rules:
   - apiGroups:
@@ -643,7 +642,6 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/single-node-developer: "true"
-    release.openshift.io/feature-set: TechPreviewNoUpgrade
     capability.openshift.io/name: Insights
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -664,7 +662,6 @@ metadata:
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
     include.release.openshift.io/single-node-developer: "true"
-    release.openshift.io/feature-set: TechPreviewNoUpgrade
     capability.openshift.io/name: Insights
 allowHostDirVolumePlugin: true
 allowHostPID: true

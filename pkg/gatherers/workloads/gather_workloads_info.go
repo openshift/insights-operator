@@ -74,6 +74,7 @@ type containerInfo struct {
 // ### Changes
 // - Image repository is now collected if it comes from outside the Red Hat domain
 // - [Tech Preview] runtime info for workloads are collected (since 4.18.0)
+// - [GA] runtime info for workloads are collected by default (since 4.19.0)
 func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []error) {
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherProtoKubeConfig)
 	if err != nil {
@@ -89,23 +90,19 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 		return nil, []error{err}
 	}
 
-	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient, g.runtimeExtractorEnabled)
+	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient)
 }
 
 func gatherWorkloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
-	runtimeExtractorEnabed bool,
 ) ([]record.Record, []error) {
 	var errs = []error{}
 
-	var workloadInfos workloadRuntimes
-	if runtimeExtractorEnabed {
-		var runtimeInfoErrs []error
-		workloadInfos, runtimeInfoErrs = gatherWorkloadRuntimeInfos(ctx, coreClient)
-		errs = append(errs, runtimeInfoErrs...)
-	}
+	workloadInfos, runtimeInfoErrs := gatherWorkloadRuntimeInfos(ctx, coreClient)
+	errs = append(errs, runtimeInfoErrs...)
+
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
 	start := time.Now()
