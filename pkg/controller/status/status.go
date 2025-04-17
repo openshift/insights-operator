@@ -9,6 +9,7 @@ const (
 	ErrorStatus                 = "error"
 	RemoteConfigAvailableStatus = "remoteConfigAvailable"
 	RemoteConfigValidStatus     = "remoteConfigIValid"
+	GatheringDisabledStatus     = "GatheringDisabled"
 )
 
 type controllerStatus struct {
