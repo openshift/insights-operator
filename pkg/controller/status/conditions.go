@@ -23,6 +23,8 @@ const (
 	RemoteConfigurationAvailable configv1.ClusterStatusConditionType = "RemoteConfigurationAvailable"
 	// RemoteConfigurationInvalid is a condition type providing info about remote configuration content validity
 	RemoteConfigurationValid configv1.ClusterStatusConditionType = "RemoteConfigurationValid"
+	// GatheringDisabled is a condition providing information about the disabling of gathering with the API.
+	GatheringDisabled configv1.ClusterStatusConditionType = "GatheringDisabled"
 )
 
 type conditionsMap map[configv1.ClusterStatusConditionType]configv1.ClusterOperatorStatusCondition
@@ -75,6 +77,12 @@ func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *condi
 			LastTransitionTime: time,
 			Reason:             "",
 		},
+		GatheringDisabled: {
+			Type:               GatheringDisabled,
+			Status:             configv1.ConditionUnknown,
+			LastTransitionTime: time,
+			Reason:             "",
+		},
 	}
 
 	for _, c := range cos.Conditions {
@@ -87,7 +95,8 @@ func newConditions(cos *configv1.ClusterOperatorStatus, time metav1.Time) *condi
 }
 
 func (c *conditions) setCondition(conditionType configv1.ClusterStatusConditionType,
-	status configv1.ConditionStatus, reason, message string) {
+	status configv1.ConditionStatus, reason, message string,
+) {
 	originalCondition, ok := c.entryMap[conditionType]
 	transitionTime := metav1.Now()
 	// if condition is defined and there is no new status then don't update transition time

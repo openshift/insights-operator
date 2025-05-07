@@ -32,13 +32,20 @@ const (
 	// as InsightsUploadDegraded
 	uploadFailuresCountThreshold = 5
 
-	AsExpectedReason         = "AsExpected"
-	degradedReason           = "Degraded"
-	noTokenReason            = "NoToken"
-	upgradeableReason        = "InsightsUpgradeable"
-	insightsAvailableMessage = "Insights works as expected"
-	reportingDisabledMsg     = "Health reporting is disabled"
-	monitoringMsg            = "Monitoring the cluster"
+	// Condition reasons
+	AsExpectedReason        = "AsExpected"
+	degradedReason          = "Degraded"
+	noTokenReason           = "NoToken"
+	disabledByConfiguration = "DisabledByConfiguration"
+	upgradeableReason       = "InsightsUpgradeable"
+
+	// Condition messages
+	insightsAvailableMessage       = "Insights works as expected"
+	reportingDisabledMessage       = "Health reporting is disabled"
+	monitoringMessage              = "Monitoring the cluster"
+	disabledByConfigurationMessage = "Gathering is disabled in insightsdatagather.config.openshift.io"
+	gatheringEnabledMessage        = "Gathering is enabled"
+	disabledWithTokenMessage       = "Gathering is disabled by removing the cloud.openshift.com field from the pull secret"
 )
 
 type Reported struct {
@@ -68,13 +75,14 @@ type Controller struct {
 }
 
 // NewController creates a statusMessage controller, responsible for monitoring the operators statusMessage and updating its cluster statusMessage accordingly.
-func NewController(client configv1client.ConfigV1Interface,
+func NewController(
+	client configv1client.ConfigV1Interface,
 	configurator configobserver.Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string,
 	isTechPreview bool,
 ) *Controller {
-	c := &Controller{
+	return &Controller{
 		name:            "insights",
 		statusCh:        make(chan struct{}, 1),
 		configurator:    configurator,
@@ -85,7 +93,6 @@ func NewController(client configv1client.ConfigV1Interface,
 		ctrlStatus:      newControllerStatus(),
 		isTechPreview:   isTechPreview,
 	}
-	return c
 }
 
 func (c *Controller) triggerStatusUpdate() {
@@ -347,6 +354,9 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 		}
 	}
 
+	// check if the gathering is disabled via the API
+	c.handleAPIDisabledConditions(cs)
+
 	// once we've initialized set Failing and Disabled as best we know
 	// handle when disabled
 	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil {
@@ -354,6 +364,7 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 	} else {
 		cs.setCondition(OperatorDisabled, configv1.ConditionFalse, AsExpectedReason, "")
 	}
+
 	// handle when has errors
 	if es := c.ctrlStatus.getStatus(ErrorStatus); es != nil && !c.ctrlStatus.isDisabled() {
 		cs.setCondition(configv1.OperatorDegraded, configv1.ConditionTrue, es.reason, es.message)
@@ -386,6 +397,24 @@ func (c *Controller) updateControllerConditions(cs *conditions, isInitializing b
 		return
 	}
 
+	// Remote configuration conditions are set only in non-techpreview clusters
+	c.handleRemoteConfigurationConditions(cs)
+}
+
+// Check if gathering is disabled via API
+func (c *Controller) handleAPIDisabledConditions(cs *conditions) {
+	if c.apiConfigurator != nil && c.apiConfigurator.GatherDisabled() {
+		cs.setCondition(GatheringDisabled, configv1.ConditionTrue, disabledByConfiguration, disabledByConfigurationMessage)
+	} else {
+		if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil && ds.message == reportingDisabledMessage {
+			cs.setCondition(GatheringDisabled, configv1.ConditionTrue, ds.reason, disabledWithTokenMessage)
+		} else {
+			cs.setCondition(GatheringDisabled, configv1.ConditionFalse, AsExpectedReason, gatheringEnabledMessage)
+		}
+	}
+}
+
+func (c *Controller) handleRemoteConfigurationConditions(cs *conditions) {
 	// we set the following Remote Configuration conditions only in non-techpreview clusters
 	// In tech preview clusters, it's not handy to use this status controller, because there are
 	// two status conditions related to the single source of status (condition gatherer in this case)
@@ -441,13 +470,13 @@ func (c *Controller) updateControllerConditionByReason(cs *conditions,
 func (c *Controller) checkDisabledGathering() {
 	// disabled state only when it's disabled by config. It means that gathering will not happen
 	if !c.configurator.Config().DataReporting.Enabled {
-		c.ctrlStatus.setStatus(DisabledStatus, noTokenReason, reportingDisabledMsg)
+		c.ctrlStatus.setStatus(DisabledStatus, noTokenReason, reportingDisabledMessage)
 	}
 
-	// check if the gathering is disabled in the `insightsdatagather.config.openshift.io` API
+	// check if the gathering is disabled via the API
 	if c.apiConfigurator != nil {
 		if c.apiConfigurator.GatherDisabled() {
-			c.ctrlStatus.setStatus(DisabledStatus, "DisabledInAPI", reportingDisabledMsg)
+			c.ctrlStatus.setStatus(DisabledStatus, disabledByConfiguration, reportingDisabledMessage)
 		}
 	}
 }
@@ -473,13 +502,13 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 	// marked as disabled then it's reasonable to set Available=True
 	if ds := c.ctrlStatus.getStatus(DisabledStatus); ds != nil && !c.ctrlStatus.isHealthy() {
 		klog.Infof("The operator is marked as disabled")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMsg)
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMessage)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, AsExpectedReason, insightsAvailableMessage)
 	}
 
 	if c.ctrlStatus.isHealthy() {
 		klog.Infof("The operator is healthy")
-		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMsg)
+		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMessage)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, AsExpectedReason, insightsAvailableMessage)
 	}
 }
