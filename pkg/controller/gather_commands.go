@@ -248,13 +248,17 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	// upload data
 	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive)
-	reason := fmt.Sprintf("HttpStatus%d", statusCode)
-	dataUploadedCon := status.DataUploadedCondition(metav1.ConditionTrue, reason, "")
+	dataUploadedCon := status.DataUploadedCondition(
+		metav1.ConditionTrue,
+		status.SucceededReason,
+		fmt.Sprintf("Succeeded with http status code: %d", statusCode),
+	)
+
 	if err != nil {
 		klog.Errorf("Failed to upload data archive: %v", err)
 		dataUploadedCon.Status = metav1.ConditionFalse
-		dataUploadedCon.Reason = reason
-		dataUploadedCon.Message = fmt.Sprintf("Failed to upload data: %v", err)
+		dataUploadedCon.Reason = status.FailedReason
+		dataUploadedCon.Message = fmt.Sprintf("Failed to upload data err: %v with http status code: %d", err, statusCode)
 		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataUploadedCon, insightsv1alpha1.Failed)
 		return err
 	}
