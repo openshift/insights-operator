@@ -316,8 +316,8 @@ func TestGetGatheringFunctions(t *testing.T) {
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: true,
 				ConfigValid:     true,
-				AvailableReason: AsExpectedReason,
-				ValidReason:     AsExpectedReason,
+				AvailableReason: SucceededReason,
+				ValidReason:     SucceededReason,
 				Err:             nil,
 				ConfigData:      []byte(testRemoteConfig),
 			},
@@ -344,7 +344,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: true,
 				ConfigValid:     false,
-				AvailableReason: AsExpectedReason,
+				AvailableReason: SucceededReason,
 				ValidReason:     InvalidReason,
 				ConfigData:      []byte(defaultRemoteConfiguration),
 				Err:             fmt.Errorf("invalid character 'n' looking for beginning of object key string"),
@@ -358,7 +358,7 @@ func TestGetGatheringFunctions(t *testing.T) {
 			remoteConfigStatus: gatherers.RemoteConfigStatus{
 				ConfigAvailable: true,
 				ConfigValid:     false,
-				AvailableReason: AsExpectedReason,
+				AvailableReason: SucceededReason,
 				ValidReason:     InvalidReason,
 				ConfigData:      []byte(defaultRemoteConfiguration),
 				Err:             fmt.Errorf("0.namespace: Does not match pattern '^openshift-[a-zA-Z0-9_.-]{1,128}$|^kube-[a-zA-Z0-9_.-]{1,128}$'"),

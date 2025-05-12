@@ -9,15 +9,21 @@ import (
 )
 
 const (
-	DataUploaded  = "DataUploaded"
-	DataRecorded  = "DataRecorded"
-	DataProcessed = "DataProcessed"
+	// DataUploaded Condition
+	DataUploaded             = "DataUploaded"
+	NoUploadYetReason        = "NoUploadYet"
+	NoDataGatheringYetReason = "NoDataGatheringYet"
 
-	SucceededReason           = "Succeeded"
-	FailedReason              = "Failed"
-	NoUploadYetReason         = "NoUploadYet"
-	NoDataGatheringYetReason  = "NoDataGatheringYet"
+	// DataRecorded Condition
+	DataRecorded          = "DataRecorded"
+	RecordingFailedReason = "RecordingFailed"
+
+	// DataProcessed Condition
+	DataProcessed             = "DataProcessed"
 	NothingToProcessYetReason = "NothingToProcessYet"
+	ProcessedReason           = "Processed"
+
+	// RemoteConfiguration Condition
 	RemoteConfNotValidatedYet = "NoValidationYet"
 	RemoteConfNotRequestedYet = "RemoteConfigNotRequestedYet"
 	UnknownReason             = "Unknown"
@@ -56,9 +62,9 @@ func DataProcessedCondition(status metav1.ConditionStatus, reason, message strin
 	}
 }
 
-// RemoteConfigurationNotAvailableCondition retunrs new "RemoteConfigurationNotAvailable" status condition with provided
+// RemoteConfigurationAvailableCondition returns new "RemoteConfigurationAvailable" status condition with provided
 // status, reason and message
-func RemoteConfigurationNotAvailableCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
+func RemoteConfigurationAvailableCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
 	return metav1.Condition{
 		Type:               string(RemoteConfigurationAvailable),
 		LastTransitionTime: metav1.Now(),
@@ -68,9 +74,9 @@ func RemoteConfigurationNotAvailableCondition(status metav1.ConditionStatus, rea
 	}
 }
 
-// RemoteConfigurationInvalidCondition retunrs new "RemoteConfigurationInvalid" status condition with provided
+// RemoteConfigurationValidCondition returns new "RemoteConfigurationValid" status condition with provided
 // status, reason and message
-func RemoteConfigurationInvalidCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
+func RemoteConfigurationValidCondition(status metav1.ConditionStatus, reason, message string) metav1.Condition {
 	return metav1.Condition{
 		Type:               string(RemoteConfigurationValid),
 		LastTransitionTime: metav1.Now(),
