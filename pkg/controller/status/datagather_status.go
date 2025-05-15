@@ -13,6 +13,8 @@ const (
 	DataRecorded  = "DataRecorded"
 	DataProcessed = "DataProcessed"
 
+	SucceededReason           = "Succeeded"
+	FailedReason              = "Failed"
 	NoUploadYetReason         = "NoUploadYet"
 	NoDataGatheringYetReason  = "NoDataGatheringYet"
 	NothingToProcessYetReason = "NothingToProcessYet"
@@ -83,7 +85,8 @@ func RemoteConfigurationInvalidCondition(status metav1.ConditionStatus, reason, 
 func UpdateDataGatherState(ctx context.Context,
 	insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,
 	dataGatherCR *insightsv1alpha1.DataGather,
-	newState insightsv1alpha1.DataGatherState) (*insightsv1alpha1.DataGather, error) {
+	newState insightsv1alpha1.DataGatherState,
+) (*insightsv1alpha1.DataGather, error) {
 	switch newState {
 	case insightsv1alpha1.Completed:
 		dataGatherCR.Status.FinishTime = metav1.Now()
@@ -128,7 +131,8 @@ func getConditionIndexByType(conType string, conditions []metav1.Condition) int 
 // condition
 func UpdateDataGatherConditions(ctx context.Context,
 	insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,
-	dataGather *insightsv1alpha1.DataGather, condition *metav1.Condition) (*insightsv1alpha1.DataGather, error) {
+	dataGather *insightsv1alpha1.DataGather, condition *metav1.Condition,
+) (*insightsv1alpha1.DataGather, error) {
 	newConditions := make([]metav1.Condition, len(dataGather.Status.Conditions))
 	_ = copy(newConditions, dataGather.Status.Conditions)
 	idx := getConditionIndexByType(condition.Type, newConditions)

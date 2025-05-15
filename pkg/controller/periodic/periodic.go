@@ -890,24 +890,32 @@ func wasDataProcessed(dataGather *insightsv1alpha1.DataGather) bool {
 	return dataProcessedCon.Status == metav1.ConditionTrue
 }
 
-// updateMetrics reads the HTTP status code from the reason of the "DataUploaded" condition
-// from the provided "datagather" resource and increments
+// updateMetrics reads the HTTP status code from the reason of the "DataUploaded" condition.Message
+// that is part of the provided "datagather" resource and increments
 // the "insightsclient_request_send_total" Prometheus metric accordingly.
 func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
-	dataUploadedCon := status.GetConditionByType(dataGather, status.DataUploaded)
+	dataUploadedCondition := status.GetConditionByType(dataGather, status.DataUploaded)
+
 	var statusCode int
-	if dataUploadedCon == nil {
-		statusCode = 0
-	} else {
-		statusCodeStr, _ := strings.CutPrefix(dataUploadedCon.Reason, "HttpStatus")
-		var err error
-		statusCode, err = strconv.Atoi(statusCodeStr)
+	var err error
+	if dataUploadedCondition != nil {
+		statusCode, err = parseStatusCode(dataUploadedCondition.Message)
 		if err != nil {
 			klog.Errorf("failed to update the Prometheus metrics: %v", err)
 			return
 		}
 	}
+
 	insights.IncrementCounterRequestSend(statusCode)
+}
+
+func parseStatusCode(message string) (int, error) {
+	fields := strings.Fields(message)
+	if len(fields) == 0 {
+		return 0, nil
+	}
+	// The status code is expected to be last string in the condition message
+	return strconv.Atoi(fields[len(fields)-1])
 }
 
 // setRemoteConfigConditionsWhenDisabled updates the RemoteConfig clusteroperator conditions
