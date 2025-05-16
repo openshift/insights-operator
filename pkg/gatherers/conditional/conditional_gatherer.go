@@ -120,7 +120,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 		return g.useBuiltInRemoteConfiguration(ctx)
 	}
 	g.remoteConfigStatus.ConfigAvailable = true
-	g.remoteConfigStatus.AvailableReason = AsExpectedReason
+	g.remoteConfigStatus.AvailableReason = SucceededReason
 
 	remoteConfig, err := parseRemoteConfiguration(remoteConfigData)
 	if err != nil {
@@ -146,7 +146,7 @@ func (g *Gatherer) GetGatheringFunctions(ctx context.Context) (map[string]gather
 	}
 
 	g.remoteConfigStatus.ConfigValid = true
-	g.remoteConfigStatus.ValidReason = AsExpectedReason
+	g.remoteConfigStatus.ValidReason = SucceededReason
 	g.remoteConfigStatus.ConfigData = remoteConfigData
 	return g.createAllGatheringFunctions(ctx, remoteConfig)
 }
@@ -169,7 +169,8 @@ func (g *Gatherer) useBuiltInRemoteConfiguration(ctx context.Context) (map[strin
 // createAllGatheringFunctions is a wrapper function to create all gathering functions - the original
 // conditional gathering functions and the new ("rapid") container logs function
 func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
-	remoteConfiguration RemoteConfiguration) (map[string]gatherers.GatheringClosure, error) {
+	remoteConfiguration RemoteConfiguration,
+) (map[string]gatherers.GatheringClosure, error) {
 	gatheringClosures := g.createConditionalGatheringFunctions(ctx, remoteConfiguration)
 	rapidContainerLogsClosure, err := g.GatherContainersLogs(remoteConfiguration.ContainerLogRequests)
 	if err != nil {
@@ -182,7 +183,8 @@ func (g *Gatherer) createAllGatheringFunctions(ctx context.Context,
 }
 
 func (g *Gatherer) createConditionalGatheringFunctions(ctx context.Context,
-	remoteConfiguration RemoteConfiguration) map[string]gatherers.GatheringClosure {
+	remoteConfiguration RemoteConfiguration,
+) map[string]gatherers.GatheringClosure {
 	g.updateCache(ctx)
 
 	gatheringFunctions := make(map[string]gatherers.GatheringClosure)
@@ -293,13 +295,13 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 		}
 		return true, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
 	return remoteConfigData, nil
 }
+
 func (g *Gatherer) getRemoteConfigEndpoint() (string, error) {
 	config := g.configurator.Config()
 	if config == nil {

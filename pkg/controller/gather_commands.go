@@ -230,18 +230,18 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	// record data
-	dataRecordedCon := status.DataRecordedCondition(metav1.ConditionTrue, "AsExpected", "")
+	dataRecordedCondition := status.DataRecordedCondition(metav1.ConditionTrue, status.SucceededReason, "")
 	lastArchive, err := recordAllData(gather.FunctionReportsMapToArray(allFunctionReports), rec, recdriver, anonymizer)
 	if err != nil {
 		klog.Errorf("Failed to record data archive: %v", err)
-		dataRecordedCon.Status = metav1.ConditionFalse
-		dataRecordedCon.Reason = "RecordingFailed"
-		dataRecordedCon.Message = fmt.Sprintf("Failed to record data: %v", err)
-		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCon, insightsv1alpha1.Failed)
+		dataRecordedCondition.Status = metav1.ConditionFalse
+		dataRecordedCondition.Reason = status.RecordingFailedReason
+		dataRecordedCondition.Message = fmt.Sprintf("Failed to record data: %v", err)
+		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCondition, insightsv1alpha1.Failed)
 		return err
 	}
 
-	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCon)
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCondition)
 	if err != nil {
 		klog.Error(err)
 	}
@@ -272,21 +272,21 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	// check if the archive/data was processed
 	processed, err := wasDataProcessed(ctx, insightsHTTPCli, insightsRequestID, configAggregator.Config())
-	dataProcessedCon := status.DataProcessedCondition(metav1.ConditionTrue, "Processed", "")
+	dataProcessedCondition := status.DataProcessedCondition(metav1.ConditionTrue, status.ProcessedReason, "")
 	if err != nil || !processed {
 		msg := fmt.Sprintf("Data was not processed in the console.redhat.com pipeline for the request %s", insightsRequestID)
 		if err != nil {
 			msg = fmt.Sprintf("%s: %v", msg, err)
 		}
 		klog.Info(msg)
-		dataProcessedCon.Status = metav1.ConditionFalse
-		dataProcessedCon.Reason = "Failure"
-		dataProcessedCon.Message = fmt.Sprintf("failed to process data in the given time: %v", err)
-		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Failed)
+		dataProcessedCondition.Status = metav1.ConditionFalse
+		dataProcessedCondition.Reason = status.FailedReason
+		dataProcessedCondition.Message = fmt.Sprintf("failed to process data in the given time: %v", err)
+		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCondition, insightsv1alpha1.Failed)
 		return err
 	}
 
-	updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCon, insightsv1alpha1.Completed)
+	updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCondition, insightsv1alpha1.Completed)
 	klog.Infof("Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
 		insightsRequestID)
 
@@ -441,10 +441,10 @@ func (g *GatherJob) storagePathExists() error {
 func createRemoteConfigConditions(
 	remoteConfStatus *gatherers.RemoteConfigStatus,
 ) (remoteConfigAvailableCondition, remoteConfigValidCondition metav1.Condition) {
-	remoteConfigAvailableCondition = status.RemoteConfigurationNotAvailableCondition(
+	remoteConfigAvailableCondition = status.RemoteConfigurationAvailableCondition(
 		metav1.ConditionUnknown, status.RemoteConfNotRequestedYet, "",
 	)
-	remoteConfigValidCondition = status.RemoteConfigurationInvalidCondition(
+	remoteConfigValidCondition = status.RemoteConfigurationValidCondition(
 		metav1.ConditionUnknown, status.RemoteConfNotValidatedYet, "",
 	)
 

@@ -34,6 +34,8 @@ const (
 
 	// Condition reasons
 	AsExpectedReason        = "AsExpected"
+	SucceededReason         = "Succeeded"
+	FailedReason            = "Failed"
 	degradedReason          = "Degraded"
 	noTokenReason           = "NoToken"
 	disabledByConfiguration = "DisabledByConfiguration"
@@ -428,7 +430,7 @@ func (c *Controller) handleRemoteConfigurationConditions(cs *conditions) {
 
 	if rs := c.ctrlStatus.getStatus(RemoteConfigAvailableStatus); rs != nil {
 		if rs.reason == "Invalid" {
-			cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionTrue, AsExpectedReason, "")
+			cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionTrue, SucceededReason, "")
 			// if the remote configuration is not available then we can't say it's valid or not
 			cs.setCondition(RemoteConfigurationValid, configv1.ConditionFalse, rs.reason, rs.message)
 		} else {
@@ -439,8 +441,8 @@ func (c *Controller) handleRemoteConfigurationConditions(cs *conditions) {
 		return
 	}
 
-	cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionTrue, AsExpectedReason, "")
-	cs.setCondition(RemoteConfigurationValid, configv1.ConditionTrue, AsExpectedReason, "")
+	cs.setCondition(RemoteConfigurationAvailable, configv1.ConditionTrue, SucceededReason, "")
+	cs.setCondition(RemoteConfigurationValid, configv1.ConditionTrue, SucceededReason, "")
 }
 
 func (c *Controller) updateControllerConditionByReason(cs *conditions,
