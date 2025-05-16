@@ -98,8 +98,10 @@ func Test_SCAController_ProcessResponses(t *testing.T) {
 	scaController := New(coreClient, nil, nil)
 
 	testCases := []struct {
-		name     string
-		response Response
+		name                string
+		response            Response
+		controlPlaneArch    string
+		expectedSecretCount int
 	}{
 		{
 			name: "single architecture",
@@ -108,6 +110,8 @@ func Test_SCAController_ProcessResponses(t *testing.T) {
 				Kind:  "EntitlementCertificatesList",
 				Total: 1,
 			},
+			controlPlaneArch:    "aarch64",
+			expectedSecretCount: 1,
 		},
 		{
 			name: "multiple architectures",
@@ -116,33 +120,66 @@ func Test_SCAController_ProcessResponses(t *testing.T) {
 				Kind:  "EntitlementCertificatesList",
 				Total: 2,
 			},
+			controlPlaneArch: "aarch64",
+			// one default secret and two arch specific
+			expectedSecretCount: 3,
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := scaController.processResponses(context.Background(), tt.response)
+			err := scaController.processResponses(context.Background(), tt.response, tt.controlPlaneArch)
 			assert.NoError(t, err, "failed to process the response")
 
-			for i, response := range tt.response.Items {
-				testSecretName := secretName
-				if tt.response.Total > 1 {
-					// Multiple architectures should create a secret with the arch suffix
-					testSecretName = fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch])
+			if tt.response.Total > 1 {
+				// Multiple architectures should create a secret with the arch suffix
+				for i, response := range tt.response.Items {
+					testSecretName := fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch])
+
+					testSecret, err := coreClient.Secrets(targetNamespaceName).Get(
+						context.Background(),
+						testSecretName,
+						metav1.GetOptions{},
+					)
+
+					assert.NoError(t, err, "can't get secret")
+					assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
+					assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
+					assert.Equal(t, tt.response.Items[i].Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
+					assert.Equal(t, tt.response.Items[i].Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
 				}
-
-				testSecret, err := coreClient.Secrets(targetNamespaceName).Get(
-					context.Background(),
-					testSecretName,
-					metav1.GetOptions{},
-				)
-
-				assert.NoError(t, err, "can't get secret")
-				assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
-				assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
-				assert.Equal(t, tt.response.Items[i].Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
-				assert.Equal(t, tt.response.Items[i].Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
 			}
+
+			// Default secret must exists in all cases
+			testSecret, err := coreClient.Secrets(targetNamespaceName).Get(
+				context.Background(),
+				secretName,
+				metav1.GetOptions{},
+			)
+
+			assert.NoError(t, err, "can't get secret")
+			assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
+			assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
+
+			// Check the content of default secret
+			defaultCertData := tt.response.getCertDataByName(tt.controlPlaneArch)
+			assert.Equal(t, defaultCertData.Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
+			assert.Equal(t, defaultCertData.Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
 		})
 	}
+}
+
+func Test_SCAController_ProcessResponse_ErrorWhenControlNodeMissing(t *testing.T) {
+	kube := kubefake.NewSimpleClientset()
+	coreClient := kube.CoreV1()
+	scaController := New(coreClient, nil, nil)
+
+	response := Response{
+		Items: testingSCACertData,
+		Kind:  "EntitlementCertificatesList",
+		Total: 2,
+	}
+
+	err := scaController.processResponses(context.Background(), response, "invalidControlPlaneArch")
+	assert.Error(t, err, "master node architecture not found, defautl secret is not created nor updated")
 }
