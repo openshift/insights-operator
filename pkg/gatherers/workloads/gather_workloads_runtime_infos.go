@@ -102,7 +102,7 @@ func getInsightsOperatorRuntimePodIPs(
 		return nil, err
 	}
 
-	var runtimePods []podWithNodeName
+	runtimePods := []podWithNodeName{}
 	for i := range pods.Items {
 		pod := &pods.Items[i]
 		running := pod.Status.Phase == corev1.PodRunning
@@ -113,6 +113,11 @@ func getInsightsOperatorRuntimePodIPs(
 			})
 		}
 	}
+
+	if len(runtimePods) == 0 {
+		return nil, fmt.Errorf("no running pods found for the insights-runtime-extractor statefulset")
+	}
+
 	return runtimePods, nil
 }
 
