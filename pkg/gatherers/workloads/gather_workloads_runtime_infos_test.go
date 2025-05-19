@@ -210,8 +210,8 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 		{
 			name:           "empty Pod list",
 			pods:           []*v1.Pod{},
-			expectedErr:    nil,
-			expectedResult: []podWithNodeName(nil),
+			expectedErr:    fmt.Errorf("no running pods found for the insights-runtime-extractor statefulset"),
+			expectedResult: nil,
 		},
 		{
 			name: "Pod doesn't have the required label",
@@ -223,8 +223,8 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 					},
 				},
 			},
-			expectedErr:    nil,
-			expectedResult: []podWithNodeName(nil),
+			expectedErr:    fmt.Errorf("no running pods found for the insights-runtime-extractor statefulset"),
+			expectedResult: nil,
 		},
 		{
 			name: "Pod has the required label, but it is not running",
@@ -239,8 +239,8 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 					},
 				},
 			},
-			expectedErr:    nil,
-			expectedResult: []podWithNodeName(nil),
+			expectedErr:    fmt.Errorf("no running pods found for the insights-runtime-extractor statefulset"),
+			expectedResult: nil,
 		},
 		{
 			name: "some Pods found",
@@ -325,7 +325,11 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 			err = os.Setenv("POD_NAMESPACE", "openshift-insights")
 			assert.NoError(t, err)
 			result, err := getInsightsOperatorRuntimePodIPs(context.Background(), cli.CoreV1())
-			assert.Equal(t, tt.expectedErr, err)
+			if tt.expectedErr == nil {
+				assert.Nil(t, err)
+			} else {
+				assert.Contains(t, err.Error(), tt.expectedErr.Error())
+			}
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
