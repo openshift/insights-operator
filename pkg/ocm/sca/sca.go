@@ -60,6 +60,16 @@ type Response struct {
 	Total int        `json:"total"`
 }
 
+func (r *Response) getCertDataByName(archName string) *CertData {
+	for _, archData := range r.Items {
+		if archData.Metadata.Arch == archName {
+			return &archData
+		}
+	}
+
+	return nil
+}
+
 // CertData holds the SCA certificate
 type CertData struct {
 	ID       string       `json:"id"`
@@ -105,7 +115,7 @@ func (c *Controller) Run(ctx context.Context) {
 			} else {
 				msg := "Pulling of the SCA certs from the OCM API is disabled"
 				klog.Warning(msg)
-				c.StatusController.UpdateStatus(controllerstatus.Summary{
+				c.UpdateStatus(controllerstatus.Summary{
 					Operation:          controllerstatus.PullingSCACerts,
 					Healthy:            true,
 					Message:            msg,
@@ -126,13 +136,13 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 	klog.Infof("Pulling SCA certificates from %s. Next check is in %s", c.configurator.Config().SCA.Endpoint,
 		c.configurator.Config().SCA.Interval)
 
-	architectures, err := c.gatherArchitectures(ctx)
+	clusterArchitectures, err := c.gatherArchitectures(ctx)
 	if err != nil {
 		klog.Errorf("Gathering nodes architectures failed: %s", err.Error())
 		return
 	}
 
-	responses, err := c.requestSCAWithExpBackoff(ctx, endpoint, architectures)
+	responses, err := c.requestSCAWithExpBackoff(ctx, endpoint, clusterArchitectures.NodeArchitectures)
 	if err != nil {
 		httpErr, ok := err.(insightsclient.HttpError)
 		errMsg := fmt.Sprintf("Failed to pull SCA certs from %s: %v", endpoint, err)
@@ -158,8 +168,7 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 		})
 		return
 	}
-
-	err = c.processResponses(ctx, *responses)
+	err = c.processResponses(ctx, *responses, clusterArchitectures.ControlPlaneArch)
 	if err != nil {
 		c.UpdateStatus(controllerstatus.Summary{
 			Operation:          controllerstatus.PullingSCACerts,
@@ -180,18 +189,26 @@ func (c *Controller) requestDataAndCheckSecret(ctx context.Context, endpoint str
 	})
 }
 
-func (c *Controller) processResponses(ctx context.Context, responses Response) error {
+func (c *Controller) processResponses(ctx context.Context, responses Response, controlPlaneArch string) error {
 	if responses.Total == 1 {
 		// If there is only one architecture then we will use the secret name "etc-pki-entitlement"
 		// without the arch suffix to keep the backward compatibility
 		return c.checkSecret(ctx, &responses.Items[0], secretName)
 	}
 
-	for _, response := range responses.Items {
-		secretArchName := fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch])
+	controlPlaneCertData := responses.getCertDataByName(controlPlaneArch)
+	if controlPlaneCertData != nil {
+		// Create or update the default "etc-pki-entitlement" secret with the control plane node data
+		if err := c.checkSecret(ctx, controlPlaneCertData, secretName); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("master node architecture not found, default secret is not created nor updated")
+	}
 
-		err := c.checkSecret(ctx, &response, secretArchName)
-		if err != nil {
+	// Create architecture specific secrets with sca certificates
+	for _, response := range responses.Items {
+		if err := c.checkSecret(ctx, &response, fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch])); err != nil {
 			return err
 		}
 	}
@@ -271,7 +288,9 @@ func (c *Controller) updateSecret(ctx context.Context, s *v1.Secret, ocmData *Ce
 // requestSCAWithExpBackoff queries OCM API with exponential backoff.
 // Returns HttpError (see insightsclient.go) in case of any HTTP error response from OCM API.
 // The exponential backoff is applied only for HTTP errors >= 500.
-func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint string, architectures map[string]struct{}) (*Response, error) {
+func (c *Controller) requestSCAWithExpBackoff(
+	ctx context.Context, endpoint string, nodeArchitectures map[string]struct{},
+) (*Response, error) {
 	bo := wait.Backoff{
 		Duration: c.configurator.Config().SCA.Interval / 32, // 15 min by default
 		Factor:   2,
@@ -280,12 +299,10 @@ func (c *Controller) requestSCAWithExpBackoff(ctx context.Context, endpoint stri
 		Cap:      c.configurator.Config().SCA.Interval,
 	}
 
-	klog.Infof("Nodes architectures: %s", architectures)
-
 	var err error
 	var data []byte
 	err = wait.ExponentialBackoff(bo, func() (bool, error) {
-		data, err = c.client.RecvSCACerts(ctx, endpoint, architectures)
+		data, err = c.client.RecvSCACerts(ctx, endpoint, nodeArchitectures)
 		if err != nil {
 			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
 			if !insightsclient.IsHttpError(err) {
