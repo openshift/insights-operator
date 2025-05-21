@@ -66,7 +66,7 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
 						DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
-						RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, "test", ""),
+						RemoteConfigurationValidCondition(metav1.ConditionUnknown, "test", ""),
 					},
 				},
 			},
@@ -74,7 +74,7 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 			expectedDataRecorded:             DataRecordedCondition(metav1.ConditionTrue, "Recorded", "test"),
 			expectedDataProcessed:            DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 			expectedDataUploaded:             DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
-			expectedRemoteConfigurationValid: RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, "test", ""),
+			expectedRemoteConfigurationValid: RemoteConfigurationValidCondition(metav1.ConditionUnknown, "test", ""),
 		},
 		{
 			name: "Updating non-existing condition appends the condition",
@@ -87,11 +87,11 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 					},
 				},
 			},
-			updatedCondition:                 RemoteConfigurationInvalidCondition(metav1.ConditionTrue, "Available", "test"),
+			updatedCondition:                 RemoteConfigurationValidCondition(metav1.ConditionTrue, "Available", "test"),
 			expectedDataRecorded:             DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
 			expectedDataProcessed:            DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 			expectedDataUploaded:             DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
-			expectedRemoteConfigurationValid: RemoteConfigurationInvalidCondition(metav1.ConditionTrue, "Available", "test"),
+			expectedRemoteConfigurationValid: RemoteConfigurationValidCondition(metav1.ConditionTrue, "Available", "test"),
 		},
 	}
 

@@ -7,9 +7,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-var (
+const (
 	InvalidReason      = "Invalid"
-	AsExpectedReason   = "AsExpected"
+	SucceededReason    = "Succeeded"
 	NotAvailableReason = "NotAvailable"
 )
 
