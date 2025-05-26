@@ -33,7 +33,7 @@ import (
 	"sync"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	networkv1 "github.com/openshift/api/network/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
@@ -89,7 +89,7 @@ type Anonymizer struct {
 	ipNetworkRegex   *regexp.Regexp
 	secretsClient    corev1client.SecretInterface
 	configurator     configobserver.Interface
-	dataPolicy       v1alpha1.DataPolicy
+	dataPolicy       v1alpha2.DataPolicyOption
 	configClient     configv1client.ConfigV1Interface
 	networkClient    networkv1client.NetworkV1Interface
 	gatherKubeClient kubernetes.Interface
@@ -108,14 +108,14 @@ func NewAnonymizerFromConfigClient(
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
 	configurator configobserver.Interface,
-	dataPolicy v1alpha1.DataPolicy,
+	dataPolicy []v1alpha2.DataPolicyOption,
 	sensitiveVals map[string]string,
 ) (*Anonymizer, error) {
 	anonBuilder := &AnonBuilder{}
 	anonBuilder.
 		WithConfigClient(configClient).
 		WithConfigurator(configurator).
-		WithDataPolicy(dataPolicy).
+		WithDataPolicy(dataPolicy...).
 		WithKubeClient(gatherKubeClient).
 		WithNetworkClient(networkClient).
 		WithRunningInCluster(true).
@@ -305,7 +305,7 @@ func NewAnonymizerFromConfig(
 	gatherProtoKubeConfig *rest.Config,
 	protoKubeConfig *rest.Config,
 	configurator configobserver.Interface,
-	dataPolicy v1alpha1.DataPolicy,
+	dataPolicy []v1alpha2.DataPolicyOption,
 ) (*Anonymizer, error) {
 	sensitiveVals := make(map[string]string)
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
@@ -483,13 +483,16 @@ func obfuscateNetworking(o config.Obfuscation) bool {
 // IsObfuscationEnabled returns true if obfuscation(hiding IP and domain names) is enabled and false otherwise
 func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
 	obfuscation := anonymizer.configurator.Config().DataReporting.Obfuscation
+	// TODO: is this true? Does the secret has a precedence?
 	// support secret still has precedence
 	if obfuscateNetworking(obfuscation) {
 		return true
 	}
+
 	if anonymizer.dataPolicy != "" {
-		return anonymizer.dataPolicy == v1alpha1.ObfuscateNetworking
+		return anonymizer.dataPolicy == v1alpha2.DataPolicyOptionObfuscateNetworking
 	}
+
 	return false
 }
 

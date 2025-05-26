@@ -1,14 +1,16 @@
 package status
 
 import (
+	"math"
 	"testing"
 	"time"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	v1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 )
 
 func Test_createGathererStatus(t *testing.T) { //nolint: funlen
@@ -150,33 +152,33 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 	tests := []struct {
 		name                   string
-		dataGather             v1alpha1.DataGather
+		dataGather             v1alpha2.DataGather
 		expectedOperatorstatus v1.InsightsOperatorStatus
 	}{
 		{
 			name: "basic copy test",
-			dataGather: v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionTrue, "EveyrthingOK", "no message"),
 					},
-					State:      v1alpha1.Completed,
-					StartTime:  metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
-					FinishTime: metav1.Date(2023, 7, 31, 5, 41, 04, 0, time.UTC),
-					Gatherers: []v1alpha1.GathererStatus{
+					StartTime:  ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
+					FinishTime: ptr.To(metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC)),
+					Gatherers: []v1alpha2.GathererStatus{
 						{
-							Name:       "test-gatherer-1",
-							Conditions: []metav1.Condition{},
-							LastGatherDuration: metav1.Duration{
-								Duration: 94 * time.Second,
-							},
+							Name:              "test-gatherer-1",
+							Conditions:        []metav1.Condition{},
+							LastGatherSeconds: 94,
 						},
+					},
+					InsightsReport: v1alpha2.InsightsReport{
+						DownloadedTime: ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
 					},
 				},
 			},
 			expectedOperatorstatus: v1.InsightsOperatorStatus{
 				GatherStatus: v1.GatherStatus{
-					LastGatherTime: metav1.Date(2023, 7, 31, 5, 41, 04, 0, time.UTC),
+					LastGatherTime: metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC),
 					LastGatherDuration: metav1.Duration{
 						Duration: 49 * time.Second,
 					},
@@ -185,10 +187,13 @@ func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 							Name:       "test-gatherer-1",
 							Conditions: []metav1.Condition{},
 							LastGatherDuration: metav1.Duration{
-								Duration: 94 * time.Second,
+								Duration: time.Duration(94) * time.Second,
 							},
 						},
 					},
+				},
+				InsightsReport: v1.InsightsReport{
+					DownloadedAt: metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
 				},
 			},
 		},
@@ -198,6 +203,48 @@ func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			operatorStatus := DataGatherStatusToOperatorStatus(&tt.dataGather)
 			assert.Equal(t, tt.expectedOperatorstatus, operatorStatus)
+		})
+	}
+}
+
+func TestDurationMillisToSeconds(t *testing.T) {
+	tests := []struct {
+		name             string
+		input            int64
+		expectedSeconds  int32
+		expectedErrorMsg string
+	}{
+		{
+			name:             "should convert the value without error",
+			input:            42000,
+			expectedSeconds:  42,
+			expectedErrorMsg: "",
+		},
+		{
+			name:             "should convert small value of ms to 0 seconds without error",
+			input:            42,
+			expectedSeconds:  0,
+			expectedErrorMsg: "",
+		},
+		{
+			name:             "overflow should return an error",
+			input:            math.MaxInt64,
+			expectedSeconds:  0,
+			expectedErrorMsg: "duration 9223372036854775807ms overflows int32",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			seconds, err := durationMillisToSeconds(tt.input)
+			assert.Equal(t, tt.expectedSeconds, seconds)
+
+			if tt.expectedErrorMsg != "" {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
