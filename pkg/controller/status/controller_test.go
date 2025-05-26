@@ -10,7 +10,7 @@ import (
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/config/v1alpha1"
+	"github.com/openshift/api/config/v1alpha2"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/utils"
@@ -70,8 +70,10 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 
 			client := configfake.NewSimpleClientset(operators...)
 			mockAPIConfigurator := config.NewMockAPIConfigurator(
-				&v1alpha1.GatherConfig{
-					DisabledGatherers: []v1alpha1.DisabledGatherer{"all"},
+				&v1alpha2.GatherConfig{
+					Gatherers: v1alpha2.Gatherers{
+						Mode: v1alpha2.GatheringModeNone,
+					},
 				},
 			)
 			ctrl := &Controller{
@@ -141,7 +143,12 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 				Enabled: false,
 			},
 		}),
-		apiConfigurator: config.NewMockAPIConfigurator(nil),
+		apiConfigurator: config.NewMockAPIConfigurator(&v1alpha2.GatherConfig{
+			Gatherers: v1alpha2.Gatherers{
+				// Gathering enabled in configuration
+				Mode: v1alpha2.GatheringModeAll,
+			},
+		}),
 	}
 	updatedCO := testController.merge(&testCO)
 	// check that all the conditions are not touched except the disabled one
@@ -210,7 +217,11 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 				Enabled: false,
 			},
 		}),
-		apiConfigurator: config.NewMockAPIConfigurator(nil),
+		apiConfigurator: config.NewMockAPIConfigurator(&v1alpha2.GatherConfig{
+			Gatherers: v1alpha2.Gatherers{
+				Mode: v1alpha2.GatheringModeAll,
+			},
+		}),
 	}
 	updatedCO := testController.merge(&testCO)
 	// check that all conditions changed except the Progressing since it's still False
