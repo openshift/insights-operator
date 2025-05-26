@@ -4,59 +4,21 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	insightsFakeCli "github.com/openshift/client-go/insights/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestUpdateDataGatherState(t *testing.T) {
-	tests := []struct {
-		name       string
-		dataGather *v1alpha1.DataGather
-		dgState    v1alpha1.DataGatherState
-	}{
-		{
-			name: "updating DataGather to completed state",
-			dataGather: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-datagather-1",
-				},
-			},
-			dgState: v1alpha1.Completed,
-		},
-		{
-			name: "updating DataGather to failed state",
-			dataGather: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-datagather-1",
-				},
-			},
-			dgState: v1alpha1.Failed,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cs := insightsFakeCli.NewSimpleClientset(tt.dataGather)
-			updatedDG, err := UpdateDataGatherState(context.Background(), cs.InsightsV1alpha1(),
-				tt.dataGather, tt.dgState)
-			assert.NoError(t, err)
-			assert.NotNil(t, updatedDG.Status.StartTime)
-			assert.NotNil(t, updatedDG.Status.FinishTime)
-		})
-	}
-}
-
 func TestProgressingDataGatherCondition(t *testing.T) {
 	tests := []struct {
 		name                         string
-		state                        v1alpha1.DataGatherState
+		gatheringReason              string
 		expectedProgressingCondition metav1.Condition
 	}{
 		{
-			name:  "Progressing condition running",
-			state: v1alpha1.Running,
+			name:            "Progressing condition running",
+			gatheringReason: GatheringReason,
 			expectedProgressingCondition: metav1.Condition{
 				Type:    Progressing,
 				Status:  metav1.ConditionTrue,
@@ -65,8 +27,8 @@ func TestProgressingDataGatherCondition(t *testing.T) {
 			},
 		},
 		{
-			name:  "Progressing condition completed",
-			state: v1alpha1.Completed,
+			name:            "Progressing condition completed",
+			gatheringReason: GatheringSucceededReason,
 			expectedProgressingCondition: metav1.Condition{
 				Type:    Progressing,
 				Status:  metav1.ConditionFalse,
@@ -78,7 +40,7 @@ func TestProgressingDataGatherCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			createdCondition := ProgressingCondition(tt.state)
+			createdCondition := ProgressingCondition(tt.gatheringReason)
 			assert.Equal(t, tt.expectedProgressingCondition.Status, createdCondition.Status)
 			assert.Equal(t, tt.expectedProgressingCondition.Reason, createdCondition.Reason)
 			assert.Equal(t, tt.expectedProgressingCondition.Message, createdCondition.Message)
@@ -89,14 +51,14 @@ func TestProgressingDataGatherCondition(t *testing.T) {
 func TestUpdateDataGatherConditions(t *testing.T) {
 	tests := []struct {
 		name               string
-		dataGather         *v1alpha1.DataGather
+		dataGather         *v1alpha2.DataGather
 		updatedCondition   []metav1.Condition
 		expectedConditions []metav1.Condition
 	}{
 		{
 			name: "All conditions unknown and DataRecorcded condition updated",
-			dataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
@@ -115,8 +77,8 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 		},
 		{
 			name: "Updating non-existing condition appends the condition",
-			dataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
@@ -134,8 +96,8 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 		},
 		{
 			name: "Updating multiple condition appends or updates the condition",
-			dataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
@@ -145,7 +107,7 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 			},
 			updatedCondition: []metav1.Condition{
 				RemoteConfigurationValidCondition(metav1.ConditionTrue, "Available", "test"),
-				ProgressingCondition(v1alpha1.Completed),
+				ProgressingCondition(GatheringSucceededReason),
 				DataProcessedCondition(metav1.ConditionUnknown, "testUpdated", ""),
 			},
 			expectedConditions: []metav1.Condition{
@@ -153,7 +115,7 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 				DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
 				DataProcessedCondition(metav1.ConditionUnknown, "testUpdated", ""),
 				RemoteConfigurationValidCondition(metav1.ConditionTrue, "Available", "test"),
-				ProgressingCondition(v1alpha1.Completed),
+				ProgressingCondition(GatheringSucceededReason),
 			},
 		},
 	}
@@ -163,7 +125,7 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 			cs := insightsFakeCli.NewSimpleClientset(tt.dataGather)
 			updatedDG, err := UpdateDataGatherConditions(
 				context.Background(),
-				cs.InsightsV1alpha1(),
+				cs.InsightsV1alpha2(),
 				tt.dataGather,
 				tt.updatedCondition...,
 			)

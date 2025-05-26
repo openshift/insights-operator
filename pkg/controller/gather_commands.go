@@ -15,9 +15,10 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
+	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
-	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
+
+	insightsv1alpha2client "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha2"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
@@ -83,7 +84,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
-		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, "")
+		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{})
 	if err != nil {
 		return err
 	}
@@ -144,7 +145,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	insightsV1alphaCli, err := insightsv1alpha1cli.NewForConfig(kubeConfig)
+	insightsV1alpha2Cli, err := insightsv1alpha2client.NewForConfig(kubeConfig)
 	if err != nil {
 		return err
 	}
@@ -157,14 +158,14 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	// See the insightsuploader Upload method
 	ctx, cancel := context.WithTimeout(context.Background(), g.Interval*4)
 	defer cancel()
-	dataGatherCR, err := insightsV1alphaCli.DataGathers().Get(ctx, os.Getenv("DATAGATHER_NAME"), metav1.GetOptions{})
+	dataGatherCR, err := insightsV1alpha2Cli.DataGathers().Get(ctx, os.Getenv("DATAGATHER_NAME"), metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("failed to get coresponding DataGather custom resource: %v", err)
 		return err
 	}
 
 	// if the dataGather uses persistenVolume, check if the volumePath was defined
-	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha1.StorageTypePersistentVolume {
+	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
 		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
 			g.StoragePath = storagePath
 		}
@@ -203,13 +204,18 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		configAggregator, insightsHTTPCli)
 	uploader := insightsuploader.New(nil, insightsHTTPCli, configAggregator, nil, nil, 0)
 
-	dataGatherCR, err = status.UpdateDataGatherState(ctx, insightsV1alphaCli, dataGatherCR, insightsv1alpha1.Running)
+	dataGatherCR, err = status.UpdateProgressingCondition(ctx, insightsV1alpha2Cli, dataGatherCR, status.GatheringReason)
 	if err != nil {
 		klog.Errorf("failed to update coresponding DataGather custom resource: %v", err)
 		return err
 	}
 
-	allFunctionReports, remoteConfStatus := gatherAndReporFunctions(ctx, createdGatherers, dataGatherCR, rec)
+	allFunctionReports, remoteConfStatus, err := gatherAndReportFunctions(ctx, createdGatherers, dataGatherCR, rec)
+	if err != nil {
+		klog.Errorf("failed to gatherAndReportFunctions: %v", err)
+		return err
+	}
+
 	if remoteConfStatus != nil {
 		rec.Record(record.Record{
 			Name:         "insights-operator/remote-configuration.json",
@@ -220,7 +226,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 
 	remoteConfigAvailableCondition, remoteConfigValidCondition := createRemoteConfigConditions(remoteConfStatus)
 	dataGatherCR, err = status.UpdateDataGatherConditions(
-		ctx, insightsV1alphaCli, dataGatherCR,
+		ctx, insightsV1alpha2Cli, dataGatherCR,
 		remoteConfigAvailableCondition,
 		remoteConfigValidCondition,
 	)
@@ -236,11 +242,11 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		dataRecordedCondition.Status = metav1.ConditionFalse
 		dataRecordedCondition.Reason = status.RecordingFailedReason
 		dataRecordedCondition.Message = fmt.Sprintf("Failed to record data: %v", err)
-		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCondition, insightsv1alpha1.Failed)
+		updateDataGatherStatus(ctx, insightsV1alpha2Cli, dataGatherCR, &dataRecordedCondition, status.GatheringFailedReason)
 		return err
 	}
 
-	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, dataRecordedCondition)
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alpha2Cli, dataGatherCR, dataRecordedCondition)
 	if err != nil {
 		klog.Error(err)
 	}
@@ -258,13 +264,13 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		dataUploadedCon.Status = metav1.ConditionFalse
 		dataUploadedCon.Reason = status.FailedReason
 		dataUploadedCon.Message = fmt.Sprintf("Failed to upload data err: %v with http status code: %d", err, statusCode)
-		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataUploadedCon, insightsv1alpha1.Failed)
+		updateDataGatherStatus(ctx, insightsV1alpha2Cli, dataGatherCR, &dataUploadedCon, status.GatheringFailedReason)
 		return err
 	}
 	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
 
 	dataGatherCR.Status.InsightsRequestID = insightsRequestID
-	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, dataUploadedCon)
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alpha2Cli, dataGatherCR, dataUploadedCon)
 	if err != nil {
 		klog.Error(err)
 	}
@@ -281,11 +287,11 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		dataProcessedCondition.Status = metav1.ConditionFalse
 		dataProcessedCondition.Reason = status.FailedReason
 		dataProcessedCondition.Message = fmt.Sprintf("failed to process data in the given time: %v", err)
-		updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCondition, insightsv1alpha1.Failed)
+		updateDataGatherStatus(ctx, insightsV1alpha2Cli, dataGatherCR, &dataProcessedCondition, status.GatheringFailedReason)
 		return err
 	}
 
-	updateDataGatherStatus(ctx, insightsV1alphaCli, dataGatherCR, &dataProcessedCondition, insightsv1alpha1.Completed)
+	updateDataGatherStatus(ctx, insightsV1alpha2Cli, dataGatherCR, &dataProcessedCondition, status.GatheringSucceededReason)
 	klog.Infof("Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
 		insightsRequestID)
 
@@ -297,17 +303,29 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	return nil
 }
 
-// gatherAndReporFunctions calls all the defined gatherers, calculates their status and returns map of resulting
+// gatherAndReportFunctions calls all the defined gatherers, calculates their status and returns map of resulting
 // gatherer functions reports
-func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Interface, // nolint: gocritic
-	dataGatherCR *insightsv1alpha1.DataGather,
+func gatherAndReportFunctions(
+	ctx context.Context,
+	gatherersToRun []gatherers.Interface, // nolint: gocritic
+	dataGatherCR *insightsv1alpha2.DataGather,
 	rec *recorder.Recorder,
-) (map[string]gather.GathererFunctionReport, *gatherers.RemoteConfigStatus) {
+) (
+	map[string]gather.GathererFunctionReport,
+	*gatherers.RemoteConfigStatus,
+	error,
+) {
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	var remoteConfStatus gatherers.RemoteConfigStatus
 
+	var gatheringConfig []insightsv1alpha2.GathererConfig
+	// Check if custom config should be used
+	if dataGatherCR.Spec.Gatherers != nil && dataGatherCR.Spec.Gatherers.Mode == insightsv1alpha2.GatheringModeCustom {
+		gatheringConfig = dataGatherCR.Spec.Gatherers.Custom.Configs
+	}
+
 	for _, gatherer := range gatherersToRun {
-		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, dataGatherCR.Spec.Gatherers) // nolint: govet
+		functionReports, err := gather.CollectAndRecordGatherer(ctx, gatherer, rec, gatheringConfig) // nolint: govet
 		if err != nil {
 			klog.Errorf("unable to process gatherer %v, error: %v", gatherer.GetName(), err)
 		}
@@ -328,25 +346,29 @@ func gatherAndReporFunctions(ctx context.Context, gatherersToRun []gatherers.Int
 			continue
 		}
 
-		gs := status.CreateDataGatherGathererStatus(&fr)
-		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, gs)
+		gs, err := status.CreateDataGatherGathererStatus(&fr)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		dataGatherCR.Status.Gatherers = append(dataGatherCR.Status.Gatherers, *gs)
 	}
-	return allFunctionReports, &remoteConfStatus
+	return allFunctionReports, &remoteConfStatus, nil
 }
 
 // updateDataGatherStatus updates DataGather status conditions with provided condition definition as well as
 // the DataGather state
-func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1cli.InsightsV1alpha1Interface,
-	dataGatherCR *insightsv1alpha1.DataGather, conditionToUpdate *metav1.Condition, state insightsv1alpha1.DataGatherState,
+func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
+	dataGatherCR *insightsv1alpha2.DataGather, conditionToUpdate *metav1.Condition, gatheringStatus string,
 ) {
-	dataGatherUpdated, err := status.UpdateDataGatherState(ctx, insightsClient, dataGatherCR, state)
+	dataGatherUpdated, err := status.UpdateProgressingCondition(ctx, insightsClient, dataGatherCR, gatheringStatus)
 	if err != nil {
 		klog.Errorf("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
 	}
 
 	_, err = status.UpdateDataGatherConditions(
 		ctx, insightsClient, dataGatherUpdated,
-		status.ProgressingCondition(state),
+		status.ProgressingCondition(gatheringStatus),
 		*conditionToUpdate,
 	)
 	if err != nil {
