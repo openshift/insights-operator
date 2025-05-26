@@ -8,14 +8,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/ptr"
 
 	configv1 "github.com/openshift/api/config/v1"
-	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
-	"github.com/openshift/api/insights/v1alpha1"
+	configv1alpha2 "github.com/openshift/api/config/v1alpha2"
+	"github.com/openshift/api/insights/v1alpha2"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	configFakeCli "github.com/openshift/client-go/config/clientset/versioned/fake"
 	insightsFakeCli "github.com/openshift/client-go/insights/clientset/versioned/fake"
@@ -229,55 +228,75 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 func TestCreateNewDataGatherCR(t *testing.T) {
 	cs := insightsFakeCli.NewSimpleClientset()
 	tests := []struct {
-		name       string
-		dataPolicy v1alpha1.DataPolicy
-		expected   *v1alpha1.DataGather
+		name           string
+		dataPolicy     []configv1alpha2.DataPolicyOption
+		configGatherer configv1alpha2.Gatherers
+		expected       *v1alpha2.DataGather
 	}{
 		{
-			name:       "Empty DataGather resource creation",
-			dataPolicy: "",
-			expected: &v1alpha1.DataGather{
+			name:       "DataGather with enabled gathering",
+			dataPolicy: []configv1alpha2.DataPolicyOption{},
+			configGatherer: configv1alpha2.Gatherers{
+				Mode: configv1alpha2.GatheringModeAll,
+			},
+			expected: &v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "periodic-gathering-",
 				},
-				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: v1alpha1.NoPolicy,
+				Spec: v1alpha2.DataGatherSpec{
+					Gatherers: &v1alpha2.Gatherers{
+						Mode: v1alpha2.GatheringModeAll,
+					},
 				},
 			},
 		},
 		{
-			name:       "DataGather with NoPolicy DataPolicy",
-			dataPolicy: v1alpha1.NoPolicy,
-			expected: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "periodic-gathering-",
-				},
-				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: v1alpha1.NoPolicy,
-				},
-			},
-		},
-		{
-			name:       "DataGather with ObfuscateNetworking DataPolicy and some disabled gatherers",
-			dataPolicy: v1alpha1.ObfuscateNetworking,
-			expected: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "periodic-gathering-",
-				},
-				Spec: v1alpha1.DataGatherSpec{
-					DataPolicy: "ObfuscateNetworking",
-					Gatherers: []v1alpha1.GathererConfig{
+			name:       "DataGather with ObfuscateNetworking DataPolicy and custom gathering configs",
+			dataPolicy: []configv1alpha2.DataPolicyOption{configv1alpha2.DataPolicyOptionObfuscateNetworking},
+			configGatherer: configv1alpha2.Gatherers{
+				Mode: configv1alpha2.GatheringModeCustom,
+				Custom: &configv1alpha2.Custom{
+					Configs: []configv1alpha2.GathererConfig{
 						{
 							Name:  "clusterconfig/foo",
-							State: v1alpha1.Disabled,
+							State: configv1alpha2.GathererStateDisabled,
 						},
 						{
 							Name:  "clusterconfig/bar",
-							State: v1alpha1.Disabled,
+							State: configv1alpha2.GathererStateDisabled,
 						},
 						{
 							Name:  "workloads",
-							State: v1alpha1.Disabled,
+							State: configv1alpha2.GathererStateDisabled,
+						},
+					},
+				},
+			},
+			expected: &v1alpha2.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "periodic-gathering-",
+				},
+				Spec: v1alpha2.DataGatherSpec{
+					DataPolicy: []v1alpha2.DataPolicyOption{
+						v1alpha2.DataPolicyOptionObfuscateNetworking,
+					},
+					Gatherers: &v1alpha2.Gatherers{
+						Mode: v1alpha2.GatheringModeCustom,
+						Custom: &v1alpha2.Custom{
+							Configs: []v1alpha2.GathererConfig{
+								{
+									Name:  "clusterconfig/foo",
+									State: v1alpha2.GathererStateDisabled,
+								},
+								{
+									Name:  "clusterconfig/bar",
+									State: v1alpha2.GathererStateDisabled,
+								},
+								{
+									Name:  "workloads",
+									State: v1alpha2.GathererStateDisabled,
+								},
+							},
 						},
 					},
 				},
@@ -286,21 +305,20 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var disabledGatherers []configv1alpha1.DisabledGatherer
-			for _, dg := range tt.expected.Spec.Gatherers {
-				disabledGatherers = append(disabledGatherers, configv1alpha1.DisabledGatherer(dg.Name))
-			}
-
 			apiConfig := NewInsightsDataGatherObserverMock(
-				configv1alpha1.DataPolicy(tt.dataPolicy),
-				disabledGatherers,
+				tt.dataPolicy,
+				tt.configGatherer,
 			)
-			mockController := NewWithTechPreview(nil, nil, apiConfig, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, apiConfig, nil, nil, cs.InsightsV1alpha2(), nil, nil, nil)
 
 			dg, err := mockController.createNewDataGatherCR(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected.Spec, dg.Spec)
-			err = cs.InsightsV1alpha1().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
+			assert.Equal(t, tt.expected.Spec.Gatherers, dg.Spec.Gatherers)
+			assert.Equal(t, tt.expected.Spec.DataPolicy, dg.Spec.DataPolicy)
+			assert.Equal(t, tt.expected.Spec.Storage, dg.Spec.Storage)
+
+			err = cs.InsightsV1alpha2().DataGathers().Delete(context.Background(), dg.Name, metav1.DeleteOptions{})
 			assert.NoError(t, err)
 		})
 	}
@@ -308,17 +326,18 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 
 func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 	tests := []struct {
-		name                     string
-		testedDataGather         *v1alpha1.DataGather
-		testJob                  *batchv1.Job
-		expectedDataRecordedCon  metav1.Condition
-		expectedDataUploadedCon  metav1.Condition
-		expectedDataProcessedCon metav1.Condition
-		expectedObjectReference  v1alpha1.ObjectReference
+		name                         string
+		testedDataGather             *v1alpha2.DataGather
+		testJob                      *batchv1.Job
+		expectedDataRecordedCon      metav1.Condition
+		expectedDataUploadedCon      metav1.Condition
+		expectedDataProcessedCon     metav1.Condition
+		expectedProgressingCondition metav1.Condition
+		expectedObjectReference      v1alpha2.ObjectReference
 	}{
 		{
 			name: "plain DataGather with no status",
-			testedDataGather: &v1alpha1.DataGather{
+			testedDataGather: &v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-data-gather",
 				},
@@ -347,7 +366,13 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 				Reason:  status.NothingToProcessYetReason,
 				Message: "",
 			},
-			expectedObjectReference: v1alpha1.ObjectReference{
+			expectedProgressingCondition: metav1.Condition{
+				Type:    status.Progressing,
+				Status:  metav1.ConditionFalse,
+				Reason:  status.DataGatheringPendingReason,
+				Message: status.DataGatheringPendingMessage,
+			},
+			expectedObjectReference: v1alpha2.ObjectReference{
 				Group:     "batch",
 				Resource:  "job",
 				Name:      "test-data-gather-job",
@@ -359,12 +384,11 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha1(), nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1alpha2(), nil, nil, nil)
 			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather, tt.testJob)
 			assert.NoError(t, err)
-			updatedDataGather, err := cs.InsightsV1alpha1().DataGathers().Get(context.Background(), tt.testedDataGather.Name, metav1.GetOptions{})
+			updatedDataGather, err := cs.InsightsV1alpha2().DataGathers().Get(context.Background(), tt.testedDataGather.Name, metav1.GetOptions{})
 			assert.NoError(t, err)
-			assert.Equal(t, v1alpha1.Pending, updatedDataGather.Status.State)
 			assert.Len(t, updatedDataGather.Status.RelatedObjects, 1)
 			assert.Equal(t, tt.expectedObjectReference, updatedDataGather.Status.RelatedObjects[0])
 
@@ -385,6 +409,12 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 			assert.Equal(t, tt.expectedDataProcessedCon.Status, dp.Status)
 			assert.Equal(t, tt.expectedDataProcessedCon.Reason, dp.Reason)
 			assert.Equal(t, tt.expectedDataProcessedCon.Message, dp.Message)
+
+			progressingCondition := status.GetConditionByType(updatedDataGather, status.Progressing)
+			assert.NotNil(t, progressingCondition)
+			assert.Equal(t, tt.expectedProgressingCondition.Status, progressingCondition.Status)
+			assert.Equal(t, tt.expectedProgressingCondition.Reason, progressingCondition.Reason)
+			assert.Equal(t, tt.expectedProgressingCondition.Message, progressingCondition.Message)
 		})
 	}
 }
@@ -392,19 +422,18 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 	tests := []struct {
 		name                   string
-		testedDataGather       *v1alpha1.DataGather
+		testedDataGather       *v1alpha2.DataGather
 		testedInsightsOperator operatorv1.InsightsOperator
 		expected               *operatorv1.InsightsOperator
 	}{
 		{
 			name: "Basic copy status test",
-			testedDataGather: &v1alpha1.DataGather{
+			testedDataGather: &v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-				Status: v1alpha1.DataGatherStatus{
-					State:      v1alpha1.Failed,
-					StartTime:  metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC),
-					FinishTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
-					Gatherers: []v1alpha1.GathererStatus{
+				Status: v1alpha2.DataGatherStatus{
+					StartTime:  ptr.To(metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC)),
+					FinishTime: ptr.To(metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC)),
+					Gatherers: []v1alpha2.GathererStatus{
 						{
 							Name: "clusterconfig/foo1",
 							Conditions: []metav1.Condition{
@@ -518,13 +547,12 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 		},
 		{
 			name: "InsightsReport attribute is updated when copying",
-			testedDataGather: &v1alpha1.DataGather{
+			testedDataGather: &v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-				Status: v1alpha1.DataGatherStatus{
-					State:      v1alpha1.Failed,
-					StartTime:  metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC),
-					FinishTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
-					Gatherers: []v1alpha1.GathererStatus{
+				Status: v1alpha2.DataGatherStatus{
+					StartTime:  ptr.To(metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC)),
+					FinishTime: ptr.To(metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC)),
+					Gatherers: []v1alpha2.GathererStatus{
 						{
 							Name: "clusterconfig/foo1",
 							Conditions: []metav1.Condition{
@@ -537,19 +565,17 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 							},
 						},
 					},
-					InsightsReport: v1alpha1.InsightsReport{
-						DownloadedAt: metav1.Date(2020, 5, 13, 2, 40, 0, 0, time.UTC),
-						HealthChecks: []v1alpha1.HealthCheck{
+					InsightsReport: v1alpha2.InsightsReport{
+						DownloadedTime: ptr.To(metav1.Date(2020, 5, 13, 2, 40, 0, 0, time.UTC)),
+						HealthChecks: []v1alpha2.HealthCheck{
 							{
 								Description: "healtheck ABC",
-								TotalRisk:   1,
-								State:       v1alpha1.HealthCheckEnabled,
+								TotalRisk:   v1alpha2.TotalRiskLow,
 								AdvisorURI:  "test-uri",
 							},
 							{
 								Description: "healtheck XYZ",
-								TotalRisk:   2,
-								State:       v1alpha1.HealthCheckEnabled,
+								TotalRisk:   v1alpha2.TotalRiskModerate,
 								AdvisorURI:  "test-uri-1",
 							},
 						},
@@ -632,7 +658,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
 			operatorFakeCS := fakeOperatorCli.NewSimpleClientset(&tt.testedInsightsOperator)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil,
-				dataGatherFakeCS.InsightsV1alpha1(), operatorFakeCS.OperatorV1().InsightsOperators(), nil, nil)
+				dataGatherFakeCS.InsightsV1alpha2(), operatorFakeCS.OperatorV1().InsightsOperators(), nil, nil)
 			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), tt.testedDataGather)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, updatedOperator)
@@ -643,70 +669,98 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 func TestCreateDataGatherAttributeValues(t *testing.T) {
 	tests := []struct {
 		name                      string
-		gatherConfig              configv1alpha1.GatherConfig
+		gatherConfig              configv1alpha2.GatherConfig
 		gatheres                  []gatherers.Interface
-		expectedPolicy            v1alpha1.DataPolicy
-		expectedDisabledGatherers []configv1alpha1.DisabledGatherer
+		expectedPolicy            []v1alpha2.DataPolicyOption
+		expectedDisabledGatherers v1alpha2.Gatherers
 	}{
 		{
 			name: "Two disabled gatherers and ObfuscateNetworking Policy",
-			gatherConfig: configv1alpha1.GatherConfig{
-				DataPolicy: configv1alpha1.ObfuscateNetworking,
-				DisabledGatherers: []configv1alpha1.DisabledGatherer{
-					"mock_gatherer",
-					"foo_gatherer",
+			gatherConfig: configv1alpha2.GatherConfig{
+				DataPolicy: []configv1alpha2.DataPolicyOption{
+					configv1alpha2.DataPolicyOptionObfuscateNetworking,
 				},
-				StorageSpec: nil,
+				Gatherers: configv1alpha2.Gatherers{
+					Mode: configv1alpha2.GatheringModeCustom,
+					Custom: &configv1alpha2.Custom{
+						Configs: []configv1alpha2.GathererConfig{
+							{
+								Name:  "mock_gatherer",
+								State: configv1alpha2.GathererStateDisabled,
+							},
+							{
+								Name:  "foo_gatherer",
+								State: configv1alpha2.GathererStateDisabled,
+							},
+						},
+					},
+				},
+				Storage: nil,
 			},
 			gatheres: []gatherers.Interface{
 				&gather.MockGatherer{},
 				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true},
 			},
-			expectedPolicy: v1alpha1.ObfuscateNetworking,
-			expectedDisabledGatherers: []configv1alpha1.DisabledGatherer{
-				"mock_gatherer",
-				"foo_gatherer",
+			expectedPolicy: []v1alpha2.DataPolicyOption{
+				v1alpha2.DataPolicyOptionObfuscateNetworking,
+			},
+			expectedDisabledGatherers: v1alpha2.Gatherers{
+				Mode: v1alpha2.GatheringModeCustom,
+				Custom: &v1alpha2.Custom{
+					Configs: []v1alpha2.GathererConfig{
+						{
+							Name:  "mock_gatherer",
+							State: v1alpha2.GathererStateDisabled,
+						},
+						{
+							Name:  "foo_gatherer",
+							State: v1alpha2.GathererStateDisabled,
+						},
+					},
+				},
 			},
 		},
 		{
 			name: "Custom period gatherer is excluded because it should not be processed",
-			gatherConfig: configv1alpha1.GatherConfig{
-				DataPolicy: configv1alpha1.NoPolicy,
-				DisabledGatherers: []configv1alpha1.DisabledGatherer{
-					"clusterconfig/bar",
+			gatherConfig: configv1alpha2.GatherConfig{
+				DataPolicy: nil,
+				Gatherers: configv1alpha2.Gatherers{
+					Mode: configv1alpha2.GatheringModeCustom,
+					Custom: &configv1alpha2.Custom{
+						Configs: []configv1alpha2.GathererConfig{
+							{
+								Name:  "clusterconfig/bar",
+								State: configv1alpha2.GathererStateDisabled,
+							},
+							{
+								Name:  "mock_custom_period_gatherer_no_period",
+								State: configv1alpha2.GathererStateDisabled,
+							},
+						},
+					},
 				},
-				StorageSpec: nil,
+				Storage: nil,
 			},
 			gatheres: []gatherers.Interface{
 				&gather.MockGatherer{},
 				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: false},
 			},
-			expectedPolicy: v1alpha1.NoPolicy,
-			expectedDisabledGatherers: []configv1alpha1.DisabledGatherer{
-				"clusterconfig/bar",
-				"mock_custom_period_gatherer_no_period",
-			},
-		},
-		{
-			name: "Empty data policy is created as NoPolicy/ClearText",
-			gatherConfig: configv1alpha1.GatherConfig{
-				DataPolicy:        "",
-				DisabledGatherers: []configv1alpha1.DisabledGatherer{},
-				StorageSpec: &configv1alpha1.Storage{
-					Type: configv1alpha1.StorageTypePersistentVolume,
-					PersistentVolume: &configv1alpha1.PersistentVolumeConfig{
-						Claim: configv1alpha1.PersistentVolumeClaimReference{
-							Name: "test-claim",
+			expectedPolicy: nil,
+			expectedDisabledGatherers: v1alpha2.Gatherers{
+				Mode: v1alpha2.GatheringModeCustom,
+				Custom: &v1alpha2.Custom{
+					Configs: []v1alpha2.GathererConfig{
+						{
+							Name:  "clusterconfig/bar",
+							State: v1alpha2.GathererStateDisabled,
+						},
+						{
+							Name:  "mock_custom_period_gatherer_no_period",
+							State: v1alpha2.GathererStateDisabled,
 						},
 					},
 				},
 			},
-			gatheres: []gatherers.Interface{
-				&gather.MockGatherer{},
-				&gather.MockCustomPeriodGathererNoPeriod{ShouldBeProcessed: true},
-			},
-			expectedPolicy:            v1alpha1.NoPolicy,
-			expectedDisabledGatherers: []configv1alpha1.DisabledGatherer{},
 		},
 	}
 
@@ -717,7 +771,7 @@ func TestCreateDataGatherAttributeValues(t *testing.T) {
 			disabledGatherers, dp, storage := mockController.createDataGatherAttributeValues()
 			assert.Equal(t, tt.expectedPolicy, dp)
 			assert.EqualValues(t, tt.expectedDisabledGatherers, disabledGatherers)
-			assert.Equal(t, createStorage(tt.gatherConfig.StorageSpec), storage)
+			assert.Equal(t, createStorage(tt.gatherConfig.Storage), storage)
 		})
 	}
 }
@@ -852,7 +906,7 @@ func TestPeriodicPrune(t *testing.T) {
 				},
 			},
 			dataGathers: []runtime.Object{
-				&v1alpha1.DataGather{
+				&v1alpha2.DataGather{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "to-be-removed-dg-1",
 						CreationTimestamp: metav1.Time{
@@ -860,7 +914,7 @@ func TestPeriodicPrune(t *testing.T) {
 						},
 					},
 				},
-				&v1alpha1.DataGather{
+				&v1alpha2.DataGather{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "to-be-removed-dg-2",
 						CreationTimestamp: metav1.Time{
@@ -868,7 +922,7 @@ func TestPeriodicPrune(t *testing.T) {
 						},
 					},
 				},
-				&v1alpha1.DataGather{
+				&v1alpha2.DataGather{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "to-keep-dg-1",
 						CreationTimestamp: metav1.Time{
@@ -886,7 +940,7 @@ func TestPeriodicPrune(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			kubeCs := kubefake.NewSimpleClientset(tt.jobs...)
 			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGathers...)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1alpha1(), nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1alpha2(), nil, nil, nil)
 			mockController.pruneInterval = 90 * time.Millisecond
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
@@ -898,7 +952,7 @@ func TestPeriodicPrune(t *testing.T) {
 			for _, j := range jobList.Items {
 				assert.Contains(t, tt.expectedJobs, j.Name)
 			}
-			dataGathersList, err := insightsCs.InsightsV1alpha1().DataGathers().List(context.Background(), metav1.ListOptions{})
+			dataGathersList, err := insightsCs.InsightsV1alpha2().DataGathers().List(context.Background(), metav1.ListOptions{})
 			assert.NoError(t, err)
 			assert.Len(t, dataGathersList.Items, 1)
 			for _, dg := range dataGathersList.Items {
@@ -911,18 +965,18 @@ func TestPeriodicPrune(t *testing.T) {
 func TestWasDataUploaded(t *testing.T) {
 	tests := []struct {
 		name             string
-		testedDataGather *v1alpha1.DataGather
+		testedDataGather *v1alpha2.DataGather
 		expectedSummary  controllerstatus.Summary
 	}{
 		{
 			name: "Data gather was successful",
-			testedDataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			testedDataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataUploaded,
 							Status: metav1.ConditionTrue,
-							Reason: "AsExpected",
+							Reason: "Succeeded",
 						},
 					},
 				},
@@ -935,8 +989,8 @@ func TestWasDataUploaded(t *testing.T) {
 		},
 		{
 			name: "Data gather not successful - upload failed",
-			testedDataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			testedDataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:    status.DataUploaded,
@@ -957,11 +1011,11 @@ func TestWasDataUploaded(t *testing.T) {
 		},
 		{
 			name: "Data gather missing DataUploaded condition",
-			testedDataGather: &v1alpha1.DataGather{
+			testedDataGather: &v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-dg",
 				},
-				Status: v1alpha1.DataGatherStatus{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:    status.DataRecorded,
@@ -997,13 +1051,13 @@ func TestWasDataUploaded(t *testing.T) {
 func TestWasDataProcessed(t *testing.T) {
 	tests := []struct {
 		name              string
-		dataGather        *v1alpha1.DataGather
+		dataGather        *v1alpha2.DataGather
 		expectedProcessed bool
 	}{
 		{
 			name: "Empty conditions - not processed",
-			dataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{},
 				},
 			},
@@ -1011,8 +1065,8 @@ func TestWasDataProcessed(t *testing.T) {
 		},
 		{
 			name: "DataProcessed status unknown - not processed",
-			dataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
 					},
@@ -1022,8 +1076,8 @@ func TestWasDataProcessed(t *testing.T) {
 		},
 		{
 			name: "DataProcessed status true - processed",
-			dataGather: &v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: &v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						status.DataProcessedCondition(metav1.ConditionTrue, "Processed", ""),
 					},
@@ -1043,13 +1097,13 @@ func TestWasDataProcessed(t *testing.T) {
 func TestUpdateInsightsReportInDataGather(t *testing.T) {
 	tests := []struct {
 		name                   string
-		dataGatherToUpdate     *v1alpha1.DataGather
+		dataGatherToUpdate     *v1alpha2.DataGather
 		analysisReport         *types.InsightsAnalysisReport
-		expectedInsightsReport *v1alpha1.InsightsReport
+		expectedInsightsReport *v1alpha2.InsightsReport
 	}{
 		{
 			name: "DataGather is updated with active recommendations",
-			dataGatherToUpdate: &v1alpha1.DataGather{
+			dataGatherToUpdate: &v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-data-gather",
 				},
@@ -1073,28 +1127,26 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 				},
 				RequestID: "test-request-id",
 			},
-			expectedInsightsReport: &v1alpha1.InsightsReport{
-				DownloadedAt: metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC),
-				URI:          "https://test.report.endpoint.tech.preview.uri/cluster/test-cluster-id/requestID/test-request-id",
-				HealthChecks: []v1alpha1.HealthCheck{
+			expectedInsightsReport: &v1alpha2.InsightsReport{
+				DownloadedTime: ptr.To(metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC)),
+				URI:            "https://test.report.endpoint.tech.preview.uri/cluster/test-cluster-id/requestID/test-request-id",
+				HealthChecks: []v1alpha2.HealthCheck{
 					{
 						Description: "lorem-ipsum",
-						TotalRisk:   1,
+						TotalRisk:   v1alpha2.TotalRiskLow,
 						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key1%7Ctest-error-key-1",
-						State:       v1alpha1.HealthCheckEnabled,
 					},
 					{
 						Description: "lorem-ipsum bla bla test",
-						TotalRisk:   4,
+						TotalRisk:   v1alpha2.TotalRiskCritical,
 						AdvisorURI:  "https://console.redhat.com/openshift/insights/advisor/clusters/test-cluster-id?first=test.fqdn.key2%7Ctest-error-key-2",
-						State:       v1alpha1.HealthCheckEnabled,
 					},
 				},
 			},
 		},
 		{
 			name: "No active recommendations",
-			dataGatherToUpdate: &v1alpha1.DataGather{
+			dataGatherToUpdate: &v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-data-gather",
 				},
@@ -1105,9 +1157,9 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 				Recommendations: []types.Recommendation{},
 				RequestID:       "test-request-id",
 			},
-			expectedInsightsReport: &v1alpha1.InsightsReport{
-				DownloadedAt: metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC),
-				URI:          "https://test.report.endpoint.tech.preview.uri/cluster/test-cluster-id/requestID/test-request-id",
+			expectedInsightsReport: &v1alpha2.InsightsReport{
+				DownloadedTime: ptr.To(metav1.Date(2022, 11, 24, 5, 40, 0, 0, time.UTC)),
+				URI:            "https://test.report.endpoint.tech.preview.uri/cluster/test-cluster-id/requestID/test-request-id",
 			},
 		},
 	}
@@ -1121,7 +1173,7 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 				},
 			}
 			mockCMConf := config.NewMockConfigMapConfigurator(conf)
-			mockController := NewWithTechPreview(nil, mockCMConf, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil, nil)
+			mockController := NewWithTechPreview(nil, mockCMConf, nil, nil, nil, insightsCs.InsightsV1alpha2(), nil, nil, nil)
 			err := mockController.updateInsightsReportInDataGather(context.Background(), tt.analysisReport, tt.dataGatherToUpdate)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedInsightsReport, &tt.dataGatherToUpdate.Status.InsightsReport)
@@ -1129,72 +1181,18 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 	}
 }
 
-func TestDataGatherState(t *testing.T) {
-	tests := []struct {
-		name           string
-		dataGatherName string
-		dataGather     *v1alpha1.DataGather
-		expectedState  v1alpha1.DataGatherState
-		err            error
-	}{
-		{
-			name:           "Existing DataGather state is read correctly",
-			dataGatherName: "test-dg",
-			dataGather: &v1alpha1.DataGather{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-dg",
-				},
-				Status: v1alpha1.DataGatherStatus{
-					State: v1alpha1.Pending,
-				},
-			},
-			expectedState: v1alpha1.Pending,
-			err:           nil,
-		},
-		{
-			name:           "Non-existing DataGather state returns an error",
-			dataGatherName: "non-existing",
-			dataGather:     nil,
-			expectedState:  v1alpha1.Pending,
-			err: errors.NewNotFound(schema.GroupResource{
-				Group:    "insights.openshift.io",
-				Resource: "datagathers",
-			}, "non-existing"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var insightsCs *insightsFakeCli.Clientset
-			if tt.err != nil {
-				insightsCs = insightsFakeCli.NewSimpleClientset()
-			} else {
-				insightsCs = insightsFakeCli.NewSimpleClientset(tt.dataGather)
-			}
-			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, insightsCs.InsightsV1alpha1(), nil, nil, nil)
-			dataGather, err := mockController.getDataGather(context.Background(), tt.dataGatherName)
-			if tt.err != nil {
-				assert.Equal(t, tt.err, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.dataGather.Status.State, dataGather.Status.State)
-			}
-		})
-	}
-}
-
 func TestUpdateClusterOperatorConditions(t *testing.T) {
 	tests := []struct {
 		name               string
-		dataGatherCR       v1alpha1.DataGather
+		dataGatherCR       v1alpha2.DataGather
 		insightsClusterOp  configv1.ClusterOperator
 		expectedConditions []configv1.ClusterOperatorStatusCondition
 		expectedErr        error
 	}{
 		{
 			name: "remote config conditions are unknown and should be updated",
-			dataGatherCR: v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGatherCR: v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataUploaded,
@@ -1262,11 +1260,11 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 		},
 		{
 			name: "remote config condition does not exist in the DataGather CR",
-			dataGatherCR: v1alpha1.DataGather{
+			dataGatherCR: v1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "periodic-test",
 				},
-				Status: v1alpha1.DataGatherStatus{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataRecorded,
@@ -1314,8 +1312,8 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 		},
 		{
 			name: "remote config condition does not exist in the ClusterOperator CR",
-			dataGatherCR: v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGatherCR: v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataUploaded,
@@ -1374,8 +1372,8 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 		},
 		{
 			name: "remote config condition in ClusterOperator CR has the same status as in DataGather CR",
-			dataGatherCR: v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGatherCR: v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataUploaded,
@@ -1444,8 +1442,8 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 		},
 		{
 			name: "remote config condition are True and should be updated to False status",
-			dataGatherCR: v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGatherCR: v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataUploaded,
@@ -1516,8 +1514,8 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 		},
 		{
 			name: "remote config condition status is the same, but the reason is different",
-			dataGatherCR: v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGatherCR: v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataUploaded,

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/openshift/api/features"
+	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	insightsv1alpha1client "github.com/openshift/client-go/insights/clientset/versioned"
@@ -136,7 +137,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
-		if err = os.MkdirAll(s.StoragePath, 0777); err != nil {
+		if err = os.MkdirAll(s.StoragePath, 0o777); err != nil {
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
@@ -190,7 +191,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if !insightsConfigAPIEnabled {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
-			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, "")
+			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{})
 		if err != nil {
 			// in case of an error anonymizer will be nil and anonymization will be just skipped
 			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
@@ -230,7 +231,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
-			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha1(),
+			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha2(),
 			operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)

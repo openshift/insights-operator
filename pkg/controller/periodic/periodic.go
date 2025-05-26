@@ -17,11 +17,11 @@ import (
 	"k8s.io/utils/ptr"
 
 	v1 "github.com/openshift/api/config/v1"
-	configv1alpha1 "github.com/openshift/api/config/v1alpha1"
-	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
+	configv1alpha2 "github.com/openshift/api/config/v1alpha2"
+	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	insightsv1alpha1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha1"
+	insightsv1alpha2cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha2"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
@@ -58,7 +58,7 @@ type Controller struct {
 	statuses            map[string]controllerstatus.StatusController
 	anonymizer          *anonymization.Anonymizer
 	insightsOperatorCLI operatorv1client.InsightsOperatorInterface
-	dataGatherClient    insightsv1alpha1cli.InsightsV1alpha1Interface
+	dataGatherClient    insightsv1alpha2cli.InsightsV1alpha2Interface
 	kubeClient          kubernetes.Interface
 	reportRetriever     *insightsreport.Controller
 	image               string
@@ -75,7 +75,7 @@ func NewWithTechPreview(
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	listGatherers []gatherers.Interface,
 	kubeClient kubernetes.Interface,
-	dataGatherClient insightsv1alpha1cli.InsightsV1alpha1Interface,
+	dataGatherClient insightsv1alpha2cli.InsightsV1alpha2Interface,
 	insightsOperatorCli operatorv1client.InsightsOperatorInterface,
 	openshiftConfCli configv1client.ConfigV1Interface,
 	dgInf DataGatherInformer,
@@ -327,8 +327,9 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 					return
 				}
 
-				if dataGather.Status.State != "" {
-					klog.Infof("DataGather %s resource state is %s. Not triggering any data gathering", dgName, dataGather.Status.State)
+				// Avoid running DataGathering for already run jobs
+				if len(dataGather.Status.Conditions) != 0 {
+					klog.Infof("DataGather %s resource not triggering any data gathering, gathering was already run", dgName)
 					return
 				}
 
@@ -344,7 +345,7 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 				if dataGather.Spec.Storage == nil {
 					klog.Warningf("StorageSpec is not provided for the %s DataGather resource. Using the default storage", dgName)
 					// Use config from the InsightsDataGather CRD, if not provided ephemeral storage will be used
-					dataGather.Spec.Storage = createStorage(c.apiConfigurator.GatherConfig().StorageSpec)
+					dataGather.Spec.Storage = createStorage(c.apiConfigurator.GatherConfig().Storage)
 				}
 
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
@@ -390,7 +391,7 @@ func (c *Controller) GatherJob() {
 // (in the external data pipeline) by reading the corresponding DataGather status conditions.
 // If the processing was successful, a new Insights analysis report is loaded; if not,
 // it returns with the providing the info in the log message.
-func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha1.DataGather, image string) {
+func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1alpha2.DataGather, image string) {
 	// create a new periodic gathering job
 	gj, err := c.jobController.CreateGathererJob(
 		ctx, image, &c.configAggregator.Config().DataReporting, dataGather,
@@ -466,7 +467,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 
 // updateStatusBasedOnDataGatherCondition update the Insights ClusterOperator conditions based on the provided
 // DataGather conditions.
-func (c *Controller) updateStatusBasedOnDataGatherCondition(ctx context.Context, dg *insightsv1alpha1.DataGather) error {
+func (c *Controller) updateStatusBasedOnDataGatherCondition(ctx context.Context, dg *insightsv1alpha2.DataGather) error {
 	remAvailableDGCon := status.GetConditionByType(dg, string(status.RemoteConfigurationAvailable))
 	if remAvailableDGCon == nil {
 		return fmt.Errorf("%s condition not found in status of %s dataGather", status.RemoteConfigurationAvailable, dg.Name)
@@ -562,7 +563,7 @@ func getClusterOperatorConditionIndexByType(conType v1.ClusterStatusConditionTyp
 // updateInsightsReportInDataGather reads the recommendations from the provided InsightsAnalysisReport and
 // updates the provided DataGather resource with all important attributes.
 func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
-	report *types.InsightsAnalysisReport, dg *insightsv1alpha1.DataGather,
+	report *types.InsightsAnalysisReport, dg *insightsv1alpha2.DataGather,
 ) error {
 	for _, recommendation := range report.Recommendations {
 		advisorLink, err := insights.CreateInsightsAdvisorLink(v1.ClusterID(report.ClusterID), recommendation.RuleFQDN, recommendation.ErrorKey)
@@ -570,15 +571,14 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 			klog.Errorf("Failed to create console.redhat.com link: %v", err)
 			continue
 		}
-		healthCheck := insightsv1alpha1.HealthCheck{
+		healthCheck := insightsv1alpha2.HealthCheck{
 			Description: recommendation.Description,
-			TotalRisk:   recommendation.TotalRisk,
-			State:       insightsv1alpha1.HealthCheckEnabled,
+			TotalRisk:   status.Int32ToTotalRisk(recommendation.TotalRisk),
 			AdvisorURI:  advisorLink,
 		}
 		dg.Status.InsightsReport.HealthChecks = append(dg.Status.InsightsReport.HealthChecks, healthCheck)
 	}
-	dg.Status.InsightsReport.DownloadedAt = report.DownloadedAt
+	dg.Status.InsightsReport.DownloadedTime = ptr.To(report.DownloadedAt)
 	uri := fmt.Sprintf(c.configAggregator.Config().DataReporting.DownloadEndpointTechPreview, report.ClusterID, report.RequestID)
 	dg.Status.InsightsReport.URI = uri
 	_, err := c.dataGatherClient.DataGathers().UpdateStatus(ctx, dg, metav1.UpdateOptions{})
@@ -588,7 +588,7 @@ func (c *Controller) updateInsightsReportInDataGather(ctx context.Context,
 // copyDataGatherStatusToOperatorStatus gets the "cluster" "insightsoperator.operator.openshift.io" resource
 // and updates its status with values from the provided "datagather.insights.openshift.io" resource.
 func (c *Controller) copyDataGatherStatusToOperatorStatus(ctx context.Context,
-	dataGather *insightsv1alpha1.DataGather,
+	dataGather *insightsv1alpha2.DataGather,
 ) (*operatorv1.InsightsOperator, error) {
 	operator, err := c.insightsOperatorCLI.Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
@@ -726,26 +726,22 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 // createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
 // with generate name prefix "periodic-gathering-". Returns the newly created
 // resource or an error if the creation failed.
-func (c *Controller) createNewDataGatherCR(ctx context.Context) (*insightsv1alpha1.DataGather, error) {
+func (c *Controller) createNewDataGatherCR(ctx context.Context) (*insightsv1alpha2.DataGather, error) {
 	// Get values from InsightsDataGather CRD that contains config for the data gathering job
-	disabledGatherers, dataPolicy, storageSpec := c.createDataGatherAttributeValues()
+	gatherersConfig, dataPolicy, storageSpec := c.createDataGatherAttributeValues()
 
-	dataGatherCR := insightsv1alpha1.DataGather{
+	dataGatherCR := insightsv1alpha2.DataGather{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: periodicGatheringPrefix,
 		},
-		Spec: insightsv1alpha1.DataGatherSpec{
+		Spec: insightsv1alpha2.DataGatherSpec{
 			DataPolicy: dataPolicy,
 			Storage:    storageSpec,
 		},
 	}
 
-	for _, g := range disabledGatherers {
-		dataGatherCR.Spec.Gatherers = append(dataGatherCR.Spec.Gatherers, insightsv1alpha1.GathererConfig{
-			Name:  string(g),
-			State: insightsv1alpha1.Disabled,
-		})
-	}
+	// Set gatherers configuration
+	dataGatherCR.Spec.Gatherers = &gatherersConfig
 
 	dataGather, err := c.dataGatherClient.DataGathers().Create(ctx, &dataGatherCR, metav1.CreateOptions{})
 	if err != nil {
@@ -758,18 +754,18 @@ func (c *Controller) createNewDataGatherCR(ctx context.Context) (*insightsv1alph
 
 // updateNewDataGatherCRStatus updates the newly created DataGather custom resource status to
 // set the initial unknown conditions and also the DataGather state to pending.
-func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insightsv1alpha1.DataGather, job *batchv1.Job) error {
+func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insightsv1alpha2.DataGather, job *batchv1.Job) error {
 	dg.Status.Conditions = []metav1.Condition{
 		status.DataUploadedCondition(metav1.ConditionUnknown, status.NoUploadYetReason, ""),
 		status.DataRecordedCondition(metav1.ConditionUnknown, status.NoDataGatheringYetReason, ""),
 		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
 		status.RemoteConfigurationAvailableCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
 		status.RemoteConfigurationValidCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
-		status.ProgressingCondition(insightsv1alpha1.Pending),
+		status.ProgressingCondition(status.DataGatheringPendingReason),
 	}
-	dg.Status.State = insightsv1alpha1.Pending
+
 	if job != nil {
-		dg.Status.RelatedObjects = []insightsv1alpha1.ObjectReference{
+		dg.Status.RelatedObjects = []insightsv1alpha2.ObjectReference{
 			{
 				Group:     batchv1.GroupName,
 				Resource:  "job",
@@ -787,7 +783,7 @@ func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insigh
 }
 
 // dataGatherState gets the DataGather resource with the provided name and returns its state.
-func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insightsv1alpha1.DataGather, error) {
+func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insightsv1alpha2.DataGather, error) {
 	dg, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -796,60 +792,67 @@ func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insight
 	return dg, nil
 }
 
-// createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration
-// and checks custom period gatherers and returns list of disabled gatherers based on this two values
-// and also data policy set in the "insightsdatagather.config.openshift.io"
+// createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration.
+// It determines which gatherers should be run, based on the configured gathering mode and custom settings.
+// It also extracts the applicable data policies and storage configuration.
 func (c *Controller) createDataGatherAttributeValues() (
-	[]configv1alpha1.DisabledGatherer, insightsv1alpha1.DataPolicy, *insightsv1alpha1.Storage,
+	insightsv1alpha2.Gatherers, []insightsv1alpha2.DataPolicyOption, *insightsv1alpha2.Storage,
 ) {
 	gatherConfig := c.apiConfigurator.GatherConfig()
 
-	var dataPolicy insightsv1alpha1.DataPolicy
-	switch gatherConfig.DataPolicy {
-	case "":
-		dataPolicy = insightsv1alpha1.NoPolicy
-	// This is needed now, because InsightsDataGather and DataGather does not
-	// have the same values "", None, ObfuscateNetworking != "", ClearText, ObfuscateNetworking
-	case "ClearText":
-		dataPolicy = insightsv1alpha1.NoPolicy
-	case configv1alpha1.NoPolicy:
-		dataPolicy = insightsv1alpha1.NoPolicy
-	case configv1alpha1.ObfuscateNetworking:
-		dataPolicy = insightsv1alpha1.ObfuscateNetworking
-	}
-
-	disabledGatherers := gatherConfig.DisabledGatherers
-	for _, gatherer := range c.gatherers {
-		if g, ok := gatherer.(gatherers.CustomPeriodGatherer); ok {
-			if !g.ShouldBeProcessedNow() {
-				disabledGatherers = append(disabledGatherers, configv1alpha1.DisabledGatherer(g.GetName()))
-			} else {
-				g.UpdateLastProcessingTime()
-			}
+	var dataPolicy []insightsv1alpha2.DataPolicyOption
+	for _, dataPolicyOption := range gatherConfig.DataPolicy {
+		switch dataPolicyOption {
+		case configv1alpha2.DataPolicyOptionObfuscateNetworking:
+			dataPolicy = append(dataPolicy, insightsv1alpha2.DataPolicyOptionObfuscateNetworking)
+		case configv1alpha2.DataPolicyOptionObfuscateWorkloadNames:
+			dataPolicy = append(dataPolicy, insightsv1alpha2.DataPolicyOptionObfuscateWorkloadNames)
 		}
 	}
 
-	return disabledGatherers, dataPolicy, createStorage(gatherConfig.StorageSpec)
+	gatheringMode := insightsv1alpha2.GatheringModeAll
+	// InsightsDataGather might have an empty Spec, which would result in an empty Gatherers Mode.
+	// In that case, default to GatheringModeAll.
+	if gatherConfig.Gatherers.Mode != "" {
+		gatheringMode = insightsv1alpha2.GatheringMode(gatherConfig.Gatherers.Mode)
+	}
+
+	gatherer := insightsv1alpha2.Gatherers{
+		Mode: gatheringMode,
+	}
+
+	if gatherConfig.Gatherers.Mode == configv1alpha2.GatheringModeCustom {
+		configs := make([]insightsv1alpha2.GathererConfig, len(gatherConfig.Gatherers.Custom.Configs))
+		for i, c := range gatherConfig.Gatherers.Custom.Configs {
+			configs[i] = insightsv1alpha2.GathererConfig{
+				Name:  c.Name,
+				State: insightsv1alpha2.GathererState(c.State),
+			}
+		}
+		gatherer.Custom = &insightsv1alpha2.Custom{Configs: configs}
+	}
+
+	return gatherer, dataPolicy, createStorage(gatherConfig.Storage)
 }
 
 // createStorage creates the "insightsv1alpha1.storage" from the provided "configv1alpha1.storage"
-func createStorage(storage *configv1alpha1.Storage) *insightsv1alpha1.Storage {
+func createStorage(storage *configv1alpha2.Storage) *insightsv1alpha2.Storage {
 	if storage == nil {
 		return nil
 	}
 
 	mountPath := defaultStoragePath
-	if storage.Type == configv1alpha1.StorageTypePersistentVolume {
+	if storage.Type == configv1alpha2.StorageTypePersistentVolume {
 		if path := storage.PersistentVolume.MountPath; path != "" {
 			mountPath = path
 		}
 	}
 
-	return &insightsv1alpha1.Storage{
-		Type: insightsv1alpha1.StorageTypePersistentVolume,
-		PersistentVolume: &insightsv1alpha1.PersistentVolumeConfig{
+	return &insightsv1alpha2.Storage{
+		Type: insightsv1alpha2.StorageTypePersistentVolume,
+		PersistentVolume: &insightsv1alpha2.PersistentVolumeConfig{
 			MountPath: mountPath,
-			Claim: insightsv1alpha1.PersistentVolumeClaimReference{
+			Claim: insightsv1alpha2.PersistentVolumeClaimReference{
 				Name: storage.PersistentVolume.Claim.Name,
 			},
 		},
@@ -858,7 +861,7 @@ func createStorage(storage *configv1alpha1.Storage) *insightsv1alpha1.Storage {
 
 // wasDataUploaded reads status conditions of the provided "dataGather" "datagather.insights.openshift.io"
 // custom resource and checks whether the data was successfully uploaded or not and updates status accordingly
-func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha1.DataGather) bool {
+func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha2.DataGather) bool {
 	dataUploadedCon := status.GetConditionByType(dataGather, status.DataUploaded)
 	statusSummary := controllerstatus.Summary{
 		Operation: controllerstatus.Uploading,
@@ -883,7 +886,7 @@ func (c *Controller) wasDataUploaded(dataGather *insightsv1alpha1.DataGather) bo
 
 // wasDataProcessed checks the corresponding "DataProcessed" condition and returns
 // true if the condition status is true, otherwise returns false
-func wasDataProcessed(dataGather *insightsv1alpha1.DataGather) bool {
+func wasDataProcessed(dataGather *insightsv1alpha2.DataGather) bool {
 	dataProcessedCon := status.GetConditionByType(dataGather, status.DataProcessed)
 	if dataProcessedCon == nil {
 		return false
@@ -894,7 +897,7 @@ func wasDataProcessed(dataGather *insightsv1alpha1.DataGather) bool {
 // updateMetrics reads the HTTP status code from the reason of the "DataUploaded" condition.Message
 // that is part of the provided "datagather" resource and increments
 // the "insightsclient_request_send_total" Prometheus metric accordingly.
-func updateMetrics(dataGather *insightsv1alpha1.DataGather) {
+func updateMetrics(dataGather *insightsv1alpha2.DataGather) {
 	dataUploadedCondition := status.GetConditionByType(dataGather, status.DataUploaded)
 
 	var statusCode int
