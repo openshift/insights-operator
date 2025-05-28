@@ -14,6 +14,10 @@ var testNodes = []v1.Node{
 	{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "node-x86_64",
+			Labels: map[string]string{
+				// Node marked as control plane
+				"node-role.kubernetes.io/control-plane": "",
+			},
 		},
 		Status: v1.NodeStatus{
 			NodeInfo: v1.NodeSystemInfo{
@@ -49,9 +53,12 @@ func Test_SCAController_GatherMultipleArchitectures(t *testing.T) {
 	}
 
 	scaController := New(coreClient, nil, nil)
-	gatheredArch, err := scaController.gatherArchitectures(context.Background())
+	clusterArchitectures, err := scaController.gatherArchitectures(context.Background())
 	assert.NoError(t, err, "failed to gather architectures")
 
-	assert.Len(t, gatheredArch, len(testNodes), "unexpected number of architectures")
-	assert.Equal(t, gatheredArch, expectedArchitectures, "unexpected architectures")
+	// check the correct control plane arch was found
+	assert.Equal(t, "x86_64", clusterArchitectures.ControlPlaneArch, "incorrect control plane architecture")
+
+	assert.Len(t, clusterArchitectures.NodeArchitectures, len(testNodes), "unexpected number of architectures")
+	assert.Equal(t, expectedArchitectures, clusterArchitectures.NodeArchitectures, "unexpected architectures")
 }
