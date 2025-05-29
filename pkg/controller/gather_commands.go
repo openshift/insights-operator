@@ -219,12 +219,11 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	remoteConfigAvailableCondition, remoteConfigValidCondition := createRemoteConfigConditions(remoteConfStatus)
-	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigAvailableCondition)
-	if err != nil {
-		klog.Error(err)
-	}
-
-	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &remoteConfigValidCondition)
+	dataGatherCR, err = status.UpdateDataGatherConditions(
+		ctx, insightsV1alphaCli, dataGatherCR,
+		remoteConfigAvailableCondition,
+		remoteConfigValidCondition,
+	)
 	if err != nil {
 		klog.Error(err)
 	}
@@ -241,7 +240,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &dataRecordedCondition)
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, dataRecordedCondition)
 	if err != nil {
 		klog.Error(err)
 	}
@@ -265,7 +264,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	klog.Infof("Insights archive successfully uploaded with InsightsRequestID: %s", insightsRequestID)
 
 	dataGatherCR.Status.InsightsRequestID = insightsRequestID
-	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, &dataUploadedCon)
+	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alphaCli, dataGatherCR, dataUploadedCon)
 	if err != nil {
 		klog.Error(err)
 	}
@@ -345,7 +344,11 @@ func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha1
 		klog.Errorf("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
 	}
 
-	_, err = status.UpdateDataGatherConditions(ctx, insightsClient, dataGatherUpdated, conditionToUpdate)
+	_, err = status.UpdateDataGatherConditions(
+		ctx, insightsClient, dataGatherUpdated,
+		status.ProgressingCondition(state),
+		*conditionToUpdate,
+	)
 	if err != nil {
 		klog.Errorf("Failed to update DataGather resource %s conditions: %v", dataGatherCR.Name, err)
 	}

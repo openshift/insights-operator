@@ -765,6 +765,7 @@ func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insigh
 		status.DataProcessedCondition(metav1.ConditionUnknown, status.NothingToProcessYetReason, ""),
 		status.RemoteConfigurationAvailableCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
 		status.RemoteConfigurationValidCondition(metav1.ConditionUnknown, status.UnknownReason, ""),
+		status.ProgressingCondition(insightsv1alpha1.Pending),
 	}
 	dg.Status.State = insightsv1alpha1.Pending
 	if job != nil {
