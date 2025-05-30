@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	v1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/insights-operator/pkg/gather"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -97,23 +98,32 @@ func createGathererConditions(gfr *gather.GathererFunctionReport) []metav1.Condi
 
 // DataGatherStatusToOperatorStatus copies "DataGatherStatus" from "datagather.openshift.io" and creates
 // "Status" for "insightsoperator.operator.openshift.io"
-func DataGatherStatusToOperatorStatus(dg *v1alpha1.DataGather) v1.InsightsOperatorStatus {
+func DataGatherStatusToOperatorStatus(dg *v1alpha2.DataGather) v1.InsightsOperatorStatus {
 	operatorStatus := v1.InsightsOperatorStatus{}
 	operatorStatus.GatherStatus = v1.GatherStatus{
-		LastGatherTime: dg.Status.FinishTime,
+		LastGatherTime: *dg.Status.FinishTime,
 		LastGatherDuration: metav1.Duration{
 			Duration: dg.Status.FinishTime.Sub(dg.Status.StartTime.Time),
 		},
 	}
-	operatorStatus.InsightsReport = v1.InsightsReport{
-		DownloadedAt: dg.Status.InsightsReport.DownloadedAt,
+
+	if dg.Status.InsightsReport.DownloadedTime != nil {
+		fmt.Printf("downloadTime is not nil %v", dg.Status.InsightsReport.DownloadedTime)
+		operatorStatus.InsightsReport = v1.InsightsReport{
+			DownloadedAt: *dg.Status.InsightsReport.DownloadedTime,
+		}
+	} else {
+		fmt.Println("downloadTime is nil")
 	}
 
 	for _, g := range dg.Status.Gatherers {
 		gs := v1.GathererStatus{
-			Name:               g.Name,
-			LastGatherDuration: g.LastGatherDuration,
-			Conditions:         g.Conditions,
+			Name: g.Name,
+			// TODO: test that it works as expected
+			LastGatherDuration: metav1.Duration{
+				Duration: time.Duration(g.LastGatherSeconds) * time.Second,
+			},
+			Conditions: g.Conditions,
 		}
 		operatorStatus.GatherStatus.Gatherers = append(operatorStatus.GatherStatus.Gatherers, gs)
 	}
@@ -121,11 +131,18 @@ func DataGatherStatusToOperatorStatus(dg *v1alpha1.DataGather) v1.InsightsOperat
 	for _, hc := range dg.Status.InsightsReport.HealthChecks {
 		operatorHch := v1.HealthCheck{
 			Description: hc.Description,
-			TotalRisk:   hc.TotalRisk,
+			TotalRisk:   totalRiskMapping[hc.TotalRisk],
 			State:       v1.HealthCheckEnabled,
 			AdvisorURI:  hc.AdvisorURI,
 		}
 		operatorStatus.InsightsReport.HealthChecks = append(operatorStatus.InsightsReport.HealthChecks, operatorHch)
 	}
 	return operatorStatus
+}
+
+var totalRiskMapping = map[v1alpha2.TotalRisk]int32{
+	v1alpha2.TotalRiskLow:       1,
+	v1alpha2.TotalRiskModerate:  2,
+	v1alpha2.TotalRiskImportant: 3,
+	v1alpha2.TotalRiskCritical:  4,
 }

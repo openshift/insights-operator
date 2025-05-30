@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	v1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 )
 
 func Test_createGathererStatus(t *testing.T) { //nolint: funlen
@@ -150,33 +151,35 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 	tests := []struct {
 		name                   string
-		dataGather             v1alpha1.DataGather
+		dataGather             v1alpha2.DataGather
 		expectedOperatorstatus v1.InsightsOperatorStatus
 	}{
 		{
 			name: "basic copy test",
-			dataGather: v1alpha1.DataGather{
-				Status: v1alpha1.DataGatherStatus{
+			dataGather: v1alpha2.DataGather{
+				Status: v1alpha2.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionTrue, "EveyrthingOK", "no message"),
 					},
-					State:      v1alpha1.Completed,
-					StartTime:  metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
-					FinishTime: metav1.Date(2023, 7, 31, 5, 41, 04, 0, time.UTC),
-					Gatherers: []v1alpha1.GathererStatus{
+					// TODO: moved to conditions now
+					// State:      v1alpha1.Completed,
+					StartTime:  ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
+					FinishTime: ptr.To(metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC)),
+					Gatherers: []v1alpha2.GathererStatus{
 						{
-							Name:       "test-gatherer-1",
-							Conditions: []metav1.Condition{},
-							LastGatherDuration: metav1.Duration{
-								Duration: 94 * time.Second,
-							},
+							Name:              "test-gatherer-1",
+							Conditions:        []metav1.Condition{},
+							LastGatherSeconds: 94,
 						},
+					},
+					InsightsReport: v1alpha2.InsightsReport{
+						DownloadedTime: ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
 					},
 				},
 			},
 			expectedOperatorstatus: v1.InsightsOperatorStatus{
 				GatherStatus: v1.GatherStatus{
-					LastGatherTime: metav1.Date(2023, 7, 31, 5, 41, 04, 0, time.UTC),
+					LastGatherTime: metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC),
 					LastGatherDuration: metav1.Duration{
 						Duration: 49 * time.Second,
 					},
@@ -185,10 +188,13 @@ func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 							Name:       "test-gatherer-1",
 							Conditions: []metav1.Condition{},
 							LastGatherDuration: metav1.Duration{
-								Duration: 94 * time.Second,
+								Duration: time.Duration(94) * time.Second,
 							},
 						},
 					},
+				},
+				InsightsReport: v1.InsightsReport{
+					DownloadedAt: metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
 				},
 			},
 		},
