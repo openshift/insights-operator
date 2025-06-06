@@ -2,10 +2,11 @@ package status
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	v1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/insights-operator/pkg/gather"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,17 +43,26 @@ func CreateOperatorGathererStatus(gfr *gather.GathererFunctionReport) v1.Gathere
 
 // CreateDataGatherGathererStatus creates GathererStatus attribute for the "datagather.insights.openshift.io"
 // custom resource type.
-func CreateDataGatherGathererStatus(gfr *gather.GathererFunctionReport) v1alpha1.GathererStatus {
-	gs := v1alpha1.GathererStatus{
-		Name: gfr.FuncName,
-		LastGatherDuration: metav1.Duration{
-			// v.Duration is in milliseconds and we need nanoseconds
-			Duration: time.Duration(gfr.Duration * 1000000),
-		},
+func CreateDataGatherGathererStatus(report *gather.GathererFunctionReport) (*v1alpha2.GathererStatus, error) {
+	seconds, err := durationMillisToSeconds(report.Duration)
+	if err != nil {
+		return nil, err
 	}
 
-	gs.Conditions = createGathererConditions(gfr)
-	return gs
+	return &v1alpha2.GathererStatus{
+		Name:              report.FuncName,
+		LastGatherSeconds: seconds,
+		Conditions:        createGathererConditions(report),
+	}, nil
+}
+
+// durationMillisToSeconds safely converts milliseconds to seconds as int32.
+func durationMillisToSeconds(ms int64) (int32, error) {
+	seconds := ms / 1000
+	if seconds > math.MaxInt32 || seconds < math.MinInt32 {
+		return 0, fmt.Errorf("duration %dms overflows int32", ms)
+	}
+	return int32(seconds), nil
 }
 
 // createGathererConditions creates GathererConditions based on gatherer result passed in as
@@ -97,23 +107,31 @@ func createGathererConditions(gfr *gather.GathererFunctionReport) []metav1.Condi
 
 // DataGatherStatusToOperatorStatus copies "DataGatherStatus" from "datagather.openshift.io" and creates
 // "Status" for "insightsoperator.operator.openshift.io"
-func DataGatherStatusToOperatorStatus(dg *v1alpha1.DataGather) v1.InsightsOperatorStatus {
+func DataGatherStatusToOperatorStatus(dg *v1alpha2.DataGather) v1.InsightsOperatorStatus {
 	operatorStatus := v1.InsightsOperatorStatus{}
 	operatorStatus.GatherStatus = v1.GatherStatus{
-		LastGatherTime: dg.Status.FinishTime,
+		LastGatherTime: *dg.Status.FinishTime,
 		LastGatherDuration: metav1.Duration{
 			Duration: dg.Status.FinishTime.Sub(dg.Status.StartTime.Time),
 		},
 	}
-	operatorStatus.InsightsReport = v1.InsightsReport{
-		DownloadedAt: dg.Status.InsightsReport.DownloadedAt,
+
+	if dg.Status.InsightsReport.DownloadedTime != nil {
+		fmt.Printf("downloadTime is not nil %v", dg.Status.InsightsReport.DownloadedTime)
+		operatorStatus.InsightsReport = v1.InsightsReport{
+			DownloadedAt: *dg.Status.InsightsReport.DownloadedTime,
+		}
+	} else {
+		fmt.Println("downloadTime is nil")
 	}
 
 	for _, g := range dg.Status.Gatherers {
 		gs := v1.GathererStatus{
-			Name:               g.Name,
-			LastGatherDuration: g.LastGatherDuration,
-			Conditions:         g.Conditions,
+			Name: g.Name,
+			LastGatherDuration: metav1.Duration{
+				Duration: time.Duration(g.LastGatherSeconds) * time.Second,
+			},
+			Conditions: g.Conditions,
 		}
 		operatorStatus.GatherStatus.Gatherers = append(operatorStatus.GatherStatus.Gatherers, gs)
 	}
@@ -121,11 +139,41 @@ func DataGatherStatusToOperatorStatus(dg *v1alpha1.DataGather) v1.InsightsOperat
 	for _, hc := range dg.Status.InsightsReport.HealthChecks {
 		operatorHch := v1.HealthCheck{
 			Description: hc.Description,
-			TotalRisk:   hc.TotalRisk,
+			TotalRisk:   totalRiskToInt32(hc.TotalRisk),
 			State:       v1.HealthCheckEnabled,
 			AdvisorURI:  hc.AdvisorURI,
 		}
 		operatorStatus.InsightsReport.HealthChecks = append(operatorStatus.InsightsReport.HealthChecks, operatorHch)
 	}
 	return operatorStatus
+}
+
+func totalRiskToInt32(totalRisk v1alpha2.TotalRisk) int32 {
+	switch totalRisk {
+	case v1alpha2.TotalRiskLow:
+		return 1
+	case v1alpha2.TotalRiskModerate:
+		return 2
+	case v1alpha2.TotalRiskImportant:
+		return 3
+	case v1alpha2.TotalRiskCritical:
+		return 4
+	default:
+		return 0
+	}
+}
+
+func Int32ToTotalRisk(totalRisk int32) v1alpha2.TotalRisk {
+	switch totalRisk {
+	case 1:
+		return v1alpha2.TotalRiskLow
+	case 2:
+		return v1alpha2.TotalRiskModerate
+	case 3:
+		return v1alpha2.TotalRiskImportant
+	case 4:
+		return v1alpha2.TotalRiskCritical
+	default:
+		return v1alpha2.TotalRiskLow
+	}
 }
