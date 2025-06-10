@@ -99,3 +99,59 @@ func TestCreateGathererJob(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateEnvVar(t *testing.T) {
+	tests := []struct {
+		name        string
+		expectedEnv []v1.EnvVar
+	}{
+		{
+			name: "without-proxy-configuration",
+			expectedEnv: []v1.EnvVar{
+				{
+					Name:  "RELEASE_VERSION",
+					Value: "test-version",
+				},
+				{
+					Name:  "DATAGATHER_NAME",
+					Value: "without-proxy-configuration",
+				},
+			},
+		},
+		{
+			name: "with-proxy-configuration",
+			expectedEnv: []v1.EnvVar{
+				{
+					Name:  "HTTP_PROXY",
+					Value: "http://test-proxy.com",
+				},
+				{
+					Name:  "HTTPS_PROXY",
+					Value: "https://test-proxy.com",
+				},
+				{
+					Name:  "NO_PROXY",
+					Value: "http://test-no-proxy.com",
+				},
+				{
+					Name:  "RELEASE_VERSION",
+					Value: "test-version",
+				},
+				{
+					Name:  "DATAGATHER_NAME",
+					Value: "with-proxy-configuration",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, env := range tt.expectedEnv {
+				t.Setenv(env.Name, env.Value)
+			}
+
+			assert.Equal(t, tt.expectedEnv, createEnvVar(tt.name))
+		})
+	}
+}
