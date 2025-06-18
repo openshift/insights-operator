@@ -19,7 +19,7 @@ dataReporting:
     obfuscation: [workload_names networking]
 sca:
     disabled: false,
-    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/certificates,
+    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/entitlement_certificates,
     interval: 8h0m0s
 alerting:
     disabled: false
@@ -42,7 +42,7 @@ The `support` secret provides following configuration attributes:
 - `reportPullingDelay` - the delay between data upload and download. Default value is `60s`
 - `reportPullingTimeout` - timeout for the Insights download request.
 - `reportMinRetryTime` - the time after which the request is retried. Default value is `30s`
-- `scaEndpoint` - the endpoing for downloading the Simple Content Access(SCA) entitlements. Default value is `https://api.openshift.com/api/accounts_mgmt/v1/certificates`. Overwritten by `sca/endpoint` from the configmap.
+- `scaEndpoint` - the endpoing for downloading the Simple Content Access(SCA) entitlements. Default value is `https://api.openshift.com/api/accounts_mgmt/v1/entitlement_certificates`. Overwritten by `sca/endpoint` from the configmap.
 - `scaInterval` - frequency of the SCA entitlements download. Overwritten by `sca/interval` from the configmap. Default value is `8h`.
 - `scaPullDisabled` - flag to disable the SCA entitlements download. Overwritten by `sca/disabled` from the configmap. Default value is `false`.
 - `clusterTransferEndpoint` - the endpoint for checking & download cluster transfer data (updated `pull-secret` data). Overwritten by `clusterTransfer/endpoint` from the configmap. Default values is `https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/`
