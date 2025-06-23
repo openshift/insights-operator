@@ -463,7 +463,16 @@ Such a client is used in [GatherMachineSet](pkg/gather/clusterconfig/clusterconf
 
 ## Configuring what to gather
 
-[Insights API](https://github.com/openshift/api/blob/master/config/v1alpha1/types_insights.go) and the corresponding `insightsdatagather.config.openshift.io` CRD allow you to specify a list of `disabledGatherers` to disable specific gatherers or disable data gathering altogether by setting the value to `all`.
+The [Insights API](https://github.com/openshift/api/blob/master/config/v1alpha2/types_insights.go) and the corresponding `insightsdatagather.config.openshift.io` CRD allow you to enable or disable all gatherers.
+
+- To **disable all data gathering**, set `insightsdatagather.spec.gatherConfig.gatherers.mode` to `None`.
+- By default, **all gatherers are enabled**. To explicitly enable all gatherers, set the mode to `All`.
+
+To disable specific gatherers:
+
+- Set `insightsdatagather.spec.gatherConfig.gatherers.mode` to `Custom`.
+- Specify the gatherers to run in `insightsdatagather.spec.gatherConfig.gatherers.custom`, including their configurations.
+
 
 ## Configure gathering jobs to store archives into PersistenVolume
 
@@ -487,7 +496,7 @@ spec:
 To use this PersistentVolumeClaim for on-demand gathering job, you need to reference the name in the DataGather. To run one gathering job with the PVC, you can use the following manifest.
 
 ```yaml
-apiVersion: insights.openshift.io/v1alpha1
+apiVersion: insights.openshift.io/v1alpha2
 kind: DataGather
 metadata:
   name: on-demand-gather-job
