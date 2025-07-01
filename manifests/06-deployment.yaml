@@ -65,11 +65,11 @@ spec:
       containers:
       - name: insights-operator
         securityContext:
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop: ["ALL"]
         image: quay.io/openshift/origin-insights-operator:latest
-        readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /tmp
