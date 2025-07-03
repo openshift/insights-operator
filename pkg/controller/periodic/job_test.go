@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	insightsv1alpha1 "github.com/openshift/api/insights/v1alpha1"
+	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	"github.com/openshift/insights-operator/pkg/config"
 
 	"github.com/stretchr/testify/assert"
@@ -31,17 +31,17 @@ func TestCreateGathererJob(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		dataGather    *insightsv1alpha1.DataGather
+		dataGather    *insightsv1alpha2.DataGather
 		imageName     string
 		dataReporting config.DataReporting
 	}{
 		{
 			name: "Basic gathering job creation without PVC storage",
-			dataGather: &insightsv1alpha1.DataGather{
+			dataGather: &insightsv1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "custom-gather-test-empty",
 				},
-				Spec: insightsv1alpha1.DataGatherSpec{
+				Spec: insightsv1alpha2.DataGatherSpec{
 					Storage: nil,
 				},
 			},
@@ -52,15 +52,15 @@ func TestCreateGathererJob(t *testing.T) {
 		},
 		{
 			name: "Basic gathering with PVC storage",
-			dataGather: &insightsv1alpha1.DataGather{
+			dataGather: &insightsv1alpha2.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "custom-gather-test-pvc",
 				},
-				Spec: insightsv1alpha1.DataGatherSpec{
-					Storage: &insightsv1alpha1.Storage{
-						Type: insightsv1alpha1.StorageTypePersistentVolume,
-						PersistentVolume: &insightsv1alpha1.PersistentVolumeConfig{
-							Claim: insightsv1alpha1.PersistentVolumeClaimReference{
+				Spec: insightsv1alpha2.DataGatherSpec{
+					Storage: &insightsv1alpha2.Storage{
+						Type: insightsv1alpha2.StorageTypePersistentVolume,
+						PersistentVolume: &insightsv1alpha2.PersistentVolumeConfig{
+							Claim: insightsv1alpha2.PersistentVolumeClaimReference{
 								Name: insightsPVCName,
 							},
 						},

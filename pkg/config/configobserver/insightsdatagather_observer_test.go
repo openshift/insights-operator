@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openshift/api/config/v1alpha1"
+	"github.com/openshift/api/config/v1alpha2"
 	fakeConfigCli "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,54 +13,84 @@ import (
 func TestInsightsDataGatherSync(t *testing.T) {
 	tests := []struct {
 		name                        string
-		insightsDatagatherToUpdated *v1alpha1.InsightsDataGather
-		expectedGatherConfig        *v1alpha1.GatherConfig
+		insightsDatagatherToUpdated *v1alpha2.InsightsDataGather
+		expectedGatherConfig        *v1alpha2.GatherConfig
 		expectedDisable             bool
 	}{
 		{
 			name: "Obfuscation configured and some disabled gatherers",
-			insightsDatagatherToUpdated: &v1alpha1.InsightsDataGather{
+			insightsDatagatherToUpdated: &v1alpha2.InsightsDataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster",
 				},
-				Spec: v1alpha1.InsightsDataGatherSpec{
-					GatherConfig: v1alpha1.GatherConfig{
-						DataPolicy: v1alpha1.ObfuscateNetworking,
-						DisabledGatherers: []v1alpha1.DisabledGatherer{
-							"fooGather",
-							"barGather",
+				Spec: v1alpha2.InsightsDataGatherSpec{
+					GatherConfig: v1alpha2.GatherConfig{
+						DataPolicy: []v1alpha2.DataPolicyOption{
+							v1alpha2.DataPolicyOptionObfuscateNetworking,
+						},
+						Gatherers: v1alpha2.Gatherers{
+							Mode: v1alpha2.GatheringModeCustom,
+							Custom: &v1alpha2.Custom{
+								Configs: []v1alpha2.GathererConfig{
+									{
+										Name:  "fooBar",
+										State: v1alpha2.GathererStateDisabled,
+									},
+									{
+										Name:  "barrGather",
+										State: v1alpha2.GathererStateDisabled,
+									},
+								},
+							},
 						},
 					},
 				},
 			},
-			expectedGatherConfig: &v1alpha1.GatherConfig{
-				DataPolicy: v1alpha1.ObfuscateNetworking,
-				DisabledGatherers: []v1alpha1.DisabledGatherer{
-					"fooGather",
-					"barGather",
+			expectedGatherConfig: &v1alpha2.GatherConfig{
+				DataPolicy: []v1alpha2.DataPolicyOption{
+					v1alpha2.DataPolicyOptionObfuscateNetworking,
+				},
+				Gatherers: v1alpha2.Gatherers{
+					Mode: v1alpha2.GatheringModeCustom,
+					Custom: &v1alpha2.Custom{
+						Configs: []v1alpha2.GathererConfig{
+							{
+								Name:  "fooBar",
+								State: v1alpha2.GathererStateDisabled,
+							},
+							{
+								Name:  "barrGather",
+								State: v1alpha2.GathererStateDisabled,
+							},
+						},
+					},
 				},
 			},
 			expectedDisable: false,
 		},
 		{
 			name: "Gathering disabled and no obfuscation",
-			insightsDatagatherToUpdated: &v1alpha1.InsightsDataGather{
+			insightsDatagatherToUpdated: &v1alpha2.InsightsDataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster",
 				},
-				Spec: v1alpha1.InsightsDataGatherSpec{
-					GatherConfig: v1alpha1.GatherConfig{
-						DataPolicy: v1alpha1.NoPolicy,
-						DisabledGatherers: []v1alpha1.DisabledGatherer{
-							"ALL",
+				Spec: v1alpha2.InsightsDataGatherSpec{
+					GatherConfig: v1alpha2.GatherConfig{
+						DataPolicy: []v1alpha2.DataPolicyOption{
+							v1alpha2.DataPolicyOptionObfuscateNetworking,
+						},
+						Gatherers: v1alpha2.Gatherers{
+							Mode: v1alpha2.GatheringModeNone,
 						},
 					},
 				},
 			},
-			expectedGatherConfig: &v1alpha1.GatherConfig{
-				DataPolicy: v1alpha1.NoPolicy,
-				DisabledGatherers: []v1alpha1.DisabledGatherer{
-					"ALL",
+			expectedGatherConfig: &v1alpha2.GatherConfig{
+				DataPolicy: []v1alpha2.DataPolicyOption{
+					v1alpha2.DataPolicyOptionObfuscateNetworking,
+				},
+				Gatherers: v1alpha2.Gatherers{
+					Mode: v1alpha2.GatheringModeNone,
 				},
 			},
 			expectedDisable: true,
@@ -69,7 +99,7 @@ func TestInsightsDataGatherSync(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			insightDefaultConfig := &v1alpha1.InsightsDataGather{
+			insightDefaultConfig := &v1alpha2.InsightsDataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cluster",
 				},
@@ -78,7 +108,7 @@ func TestInsightsDataGatherSync(t *testing.T) {
 			client := fakeConfigCli.NewSimpleClientset(insightDefaultConfig)
 			idgObserver := insightsDataGatherController{
 				gatherConfig: &insightDefaultConfig.Spec.GatherConfig,
-				cli:          client.ConfigV1alpha1(),
+				cli:          client.ConfigV1alpha2(),
 			}
 			err := idgObserver.sync(context.Background(), nil)
 			assert.NoError(t, err)
