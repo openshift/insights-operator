@@ -189,7 +189,7 @@ func getNodeWorkloadRuntimeInfos(
 		return workloadRuntimesResult{
 			Error: insightsclient.HttpError{
 				StatusCode: resp.StatusCode,
-				Err:        fmt.Errorf("%s", resp.Status),
+				Err:        fmt.Errorf("received unexpected status code %s from %s", resp.Status, url),
 			},
 		}
 	}
@@ -198,14 +198,14 @@ func getNodeWorkloadRuntimeInfos(
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return workloadRuntimesResult{
-			Error: err,
+			Error: fmt.Errorf("unable to read response from %s: %s", url, err),
 		}
 	}
 	var nodeOutput nodeRuntimeInfo
 	err = json.Unmarshal(body, &nodeOutput)
 	if err != nil {
 		return workloadRuntimesResult{
-			Error: err,
+			Error: fmt.Errorf("unable to read parse JSON content from %s: %s", url, err),
 		}
 	}
 
@@ -232,6 +232,5 @@ func getNodeWorkloadRuntimeInfos(
 	}
 	return workloadRuntimesResult{
 		WorkloadRuntimes: result,
-		Error:            err,
 	}
 }
