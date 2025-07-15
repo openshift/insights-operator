@@ -108,14 +108,14 @@ func NewAnonymizerFromConfigClient(
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
 	configurator configobserver.Interface,
-	dataPolicy []v1alpha2.DataPolicyOption,
+	dataPolicies []v1alpha2.DataPolicyOption,
 	sensitiveVals map[string]string,
 ) (*Anonymizer, error) {
 	anonBuilder := &AnonBuilder{}
 	anonBuilder.
 		WithConfigClient(configClient).
 		WithConfigurator(configurator).
-		WithDataPolicy(dataPolicy...).
+		WithDataPolicies(dataPolicies...).
 		WithKubeClient(gatherKubeClient).
 		WithNetworkClient(networkClient).
 		WithRunningInCluster(true).

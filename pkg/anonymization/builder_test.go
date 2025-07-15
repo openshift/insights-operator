@@ -59,7 +59,7 @@ func Test_AnonBuilder(t *testing.T) {
 		},
 		{
 			name:       "method 'WithDataPolicy' sets the policy on the anonymizer instance",
-			builder:    getBuilderInstance().WithDataPolicy(v1alpha2.DataPolicyOptionObfuscateNetworking),
+			builder:    getBuilderInstance().WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking),
 			dataPolicy: v1alpha2.DataPolicyOptionObfuscateNetworking,
 		},
 		{

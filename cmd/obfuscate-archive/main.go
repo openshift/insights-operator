@@ -65,7 +65,7 @@ func obfuscateArchive(path string) (string, error) {
 	anonBuilder := &anonymization.AnonBuilder{}
 	anonBuilder.
 		WithSensitiveValue(clusterBaseDomain, anonymization.ClusterBaseDomainPlaceholder).
-		WithDataPolicy(v1alpha2.DataPolicyOptionObfuscateNetworking).
+		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking).
 		WithNetworks(networks)
 	anonymizer, err := anonBuilder.Build()
 	if err != nil {

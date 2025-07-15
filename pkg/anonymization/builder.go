@@ -41,7 +41,7 @@ func (b *AnonBuilder) WithConfigurator(configurator configobserver.Interface) *A
 	return b
 }
 
-func (b *AnonBuilder) WithDataPolicy(dataPolicy ...v1alpha2.DataPolicyOption) *AnonBuilder {
+func (b *AnonBuilder) WithDataPolicies(dataPolicy ...v1alpha2.DataPolicyOption) *AnonBuilder {
 	b.anon.dataPolicy = ""
 
 	if slices.Contains(dataPolicy, v1alpha2.DataPolicyOptionObfuscateNetworking) {

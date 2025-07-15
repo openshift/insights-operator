@@ -71,7 +71,8 @@ func (i *insightsDataGatherController) GatherConfig() *v1alpha2.GatherConfig {
 	return i.gatherConfig
 }
 
-// GatherDisabled tells whether data gathering is disabled or not
+// GatherDisabled checks if data gathering is disabled. This is true when
+// the gathering mode is set to GatheringModeNone.
 func (i *insightsDataGatherController) GatherDisabled() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()

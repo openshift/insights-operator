@@ -133,7 +133,7 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		WithSensitiveValue(clusterBaseDomain, ClusterBaseDomainPlaceholder).
 		WithSensitiveValue(clusterConfigHost, ClusterHostPlaceholder).
 		WithConfigurator(mockConfigMapConfigurator).
-		WithDataPolicy(v1alpha2.DataPolicyOptionObfuscateNetworking).
+		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking).
 		WithNetworks(networks).
 		WithSecretsClient(kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
 	anonymizer, err := anonBuilder.Build()
