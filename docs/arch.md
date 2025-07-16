@@ -522,3 +522,41 @@ spec:
       type: PersistentVolume
 ```
 
+To obfuscate data for an on-demand gathering, specify the desired obfuscation rules in the `.spec.dataPolicy` field of the `DataGather` resource.
+
+The following options are available:
+* **`ObfuscateNetworking`**: Obfuscates all IP addresses and cluster domain names found in the gathered data.
+* **`WorkloadNames`**: Obfuscates specific workload names for the Deployment Validation Operator.
+
+```yaml
+apiVersion: insights.openshift.io/v1alpha2
+kind: DataGather
+metadata:
+  name: on-demand-gather-job
+spec:
+  dataPolicy:
+    - ObfuscateNetworking
+    - WorkloadNames
+  storage:
+    type: PersistentVolume
+    mountPath: /data
+    persistentVolume:
+      claim:
+        name: on-demand-gather-pvc
+```
+
+To configure obfuscation for periodic data gathering, set the `dataPolicy` field within the `.spec.gatherConfig` section of the `InsightsDataGather` resource. The `dataPolicy` options are the same as for the `DataGather` resource.
+
+```yaml
+spec:
+  gatherConfig:
+    dataPolicy:
+      - ObfuscateNetworking
+      - WorkloadNames
+    storage:
+      persistentVolume:
+        claim:
+          name: on-demand-gather-pvc
+        mountPath: /data
+      type: PersistentVolume
+```
