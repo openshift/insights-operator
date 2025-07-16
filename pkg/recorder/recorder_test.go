@@ -9,15 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
 )
 
-var (
-	mock1Name = "config/mock1"
-)
+const mock1Name = "config/mock1"
 
 // RawReport implements Marshable interface
 type RawReport struct{ Data string }
@@ -73,7 +71,7 @@ func newRecorder(maxArchiveSize int64, clusterBaseDomain string) (*Recorder, err
 	anonBuilder.
 		WithSensitiveValue(clusterBaseDomain, anonymization.ClusterBaseDomainPlaceholder).
 		WithConfigurator(mockConfigMapConfigurator).
-		WithDataPolicy(v1alpha1.ObfuscateNetworking)
+		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking)
 
 	anonymizer, err := anonBuilder.Build()
 	if err != nil {

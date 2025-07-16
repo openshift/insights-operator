@@ -2,9 +2,10 @@ package anonymization
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 
-	"github.com/openshift/api/insights/v1alpha1"
+	"github.com/openshift/api/insights/v1alpha2"
 	v1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
@@ -40,8 +41,13 @@ func (b *AnonBuilder) WithConfigurator(configurator configobserver.Interface) *A
 	return b
 }
 
-func (b *AnonBuilder) WithDataPolicy(dataPolicy v1alpha1.DataPolicy) *AnonBuilder {
-	b.anon.dataPolicy = dataPolicy
+func (b *AnonBuilder) WithDataPolicies(dataPolicy ...v1alpha2.DataPolicyOption) *AnonBuilder {
+	b.anon.dataPolicy = ""
+
+	if slices.Contains(dataPolicy, v1alpha2.DataPolicyOptionObfuscateNetworking) {
+		b.anon.dataPolicy = v1alpha2.DataPolicyOptionObfuscateNetworking
+	}
+
 	return b
 }
 
