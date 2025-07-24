@@ -366,6 +366,22 @@ rules:
     verbs:
       - get
       - list
+  - apiGroups:
+      - ingress.operator.openshift.io
+    resources:
+      - dnsrecords
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - network.operator.openshift.io
+    resources:
+      - operatorpkis
+    verbs:
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
