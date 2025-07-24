@@ -112,7 +112,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 				break
 			}
 
-			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
+			request := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
 			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
 			if err != nil {
