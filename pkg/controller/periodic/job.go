@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
+	"k8s.io/klog/v2"
 )
 
 // JobController type responsible for
@@ -30,6 +31,8 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
 func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, image, archiveVolumeMountPath string) (*batchv1.Job, error) {
+	envVariables := createEnvVar(dataGatherName)
+
 	gj := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dataGatherName,
@@ -76,16 +79,7 @@ func (j *JobController) CreateGathererJob(ctx context.Context, dataGatherName, i
 							Name:  "insights-gathering",
 							Image: image,
 							Args:  []string{"gather-and-upload", "-v=4", "--config=/etc/insights-operator/server.yaml"},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "DATAGATHER_NAME",
-									Value: dataGatherName,
-								},
-								{
-									Name:  "RELEASE_VERSION",
-									Value: os.Getenv("RELEASE_VERSION"),
-								},
-							},
+							Env:   envVariables,
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("10m"),
@@ -159,4 +153,35 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 			}
 		}
 	}
+}
+
+var envVarNames = []string{
+	"HTTP_PROXY",
+	"HTTPS_PROXY",
+	"NO_PROXY",
+	"RELEASE_VERSION",
+}
+
+// createEnvVar copies selected environment variables from the Insights
+// Operator pod to be used in the gathering pod.
+func createEnvVar(dataGatherName string) []corev1.EnvVar {
+	var envVars []corev1.EnvVar
+
+	for _, name := range envVarNames {
+		if value, ok := os.LookupEnv(name); ok {
+			envVars = append(envVars, corev1.EnvVar{
+				Name:  name,
+				Value: value,
+			})
+		} else {
+			klog.Warningf("Environment variable %q not found", name)
+		}
+	}
+
+	envVars = append(envVars, corev1.EnvVar{
+		Name:  "DATAGATHER_NAME",
+		Value: dataGatherName,
+	})
+
+	return envVars
 }
