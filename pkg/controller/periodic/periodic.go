@@ -146,29 +146,26 @@ func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	defer utilruntime.HandleCrash()
 	defer klog.Info("Shutting down")
 
-	// Runs a gather after startup
-	if initialDelay > 0 {
-		select {
-		case <-stopCh:
-			return
-		case <-time.After(initialDelay):
-			if c.techPreview {
-				c.GatherJob()
-			} else {
-				c.Gather()
-			}
-		}
-	} else {
+	// Waits for the DataGather resources and runs the on-demand data gathering
+	if c.techPreview {
+		go wait.Until(func() { c.onDemandGather(stopCh) }, time.Second, stopCh)
+	}
+
+	// Run an initial data gathering before starting the periodic loop
+	select {
+	case <-stopCh:
+		return
+	case <-time.After(initialDelay):
 		if c.techPreview {
 			c.GatherJob()
 		} else {
 			c.Gather()
 		}
 	}
+
+	// Waits for the interval and runs the periodic data gathering
 	go wait.Until(func() { c.periodicTrigger(stopCh) }, time.Second, stopCh)
-	if c.techPreview {
-		go wait.Until(func() { c.onDemandGather(stopCh) }, time.Second, stopCh)
-	}
+
 	<-stopCh
 }
 
