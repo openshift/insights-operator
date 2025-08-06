@@ -472,3 +472,154 @@ func TestNewAnonymizerFromConfigClient(t *testing.T) {
 		})
 	}
 }
+
+func TestAddParsedDomainToMap(t *testing.T) {
+	tests := []struct {
+		name          string
+		address       string
+		placeholder   string
+		expectedKey   string
+		expectedValue string
+		expectError   bool
+	}{
+		{
+			name:          "valid URL with hostname",
+			address:       "https://api.example.com:6443",
+			placeholder:   "<CLUSTER_HOST>",
+			expectedKey:   "api.example.com",
+			expectedValue: "<CLUSTER_HOST>",
+			expectError:   false,
+		},
+		{
+			name:          "hostname only",
+			address:       "api.example.com",
+			placeholder:   "<CLUSTER_HOST>",
+			expectedKey:   "api.example.com",
+			expectedValue: "<CLUSTER_HOST>",
+			expectError:   false,
+		},
+		{
+			name:          "IP address with scheme",
+			address:       "https://192.168.1.1:6443",
+			placeholder:   "<CLUSTER_HOST>",
+			expectedKey:   "192.168.1.1",
+			expectedValue: "<CLUSTER_HOST>",
+			expectError:   false,
+		},
+		{
+			name:          "invalid URL with special characters",
+			address:       "ht\ttp://invalid",
+			placeholder:   "<CLUSTER_HOST>",
+			expectedKey:   "",
+			expectedValue: "",
+			expectError:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			domainMap := make(map[string]string)
+			err := addParsedDomainToMap(tt.address, domainMap, tt.placeholder)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Len(t, domainMap, 1)
+			assert.Equal(t, tt.expectedValue, domainMap[tt.expectedKey])
+		})
+	}
+}
+
+func TestAddAPIDomainsForAnonymization(t *testing.T) {
+	tests := []struct {
+		name            string
+		clientHosts     []string
+		infrastructure  *configv1.Infrastructure
+		expectedDomains map[string]string
+		expectError     bool
+	}{
+		{
+			name:        "infrastructure with valid API server URL",
+			clientHosts: []string{"host1.example.com", "host2.example.com"},
+			infrastructure: &configv1.Infrastructure{
+				Status: configv1.InfrastructureStatus{
+					APIServerURL: "https://api.cluster.example.com:6443",
+				},
+			},
+			expectedDomains: map[string]string{
+				"api.cluster.example.com": ClusterHostPlaceholder,
+			},
+			expectError: false,
+		},
+		{
+			name:        "infrastructure with empty API server URL - uses client hosts",
+			clientHosts: []string{"host1.example.com", "host2.example.com"},
+			infrastructure: &configv1.Infrastructure{
+				Status: configv1.InfrastructureStatus{
+					APIServerURL: "",
+				},
+			},
+			expectedDomains: map[string]string{
+				"host1.example.com": ClusterHostPlaceholder,
+				"host2.example.com": ClusterHostPlaceholder,
+			},
+			expectError: false,
+		},
+		{
+			name:           "nil infrastructure - uses client hosts",
+			clientHosts:    []string{"host1.example.com", "host2.example.com"},
+			infrastructure: nil,
+			expectedDomains: map[string]string{
+				"host1.example.com": ClusterHostPlaceholder,
+				"host2.example.com": ClusterHostPlaceholder,
+			},
+			expectError: false,
+		},
+		{
+			name:            "empty client hosts with nil infrastructure",
+			clientHosts:     []string{},
+			infrastructure:  nil,
+			expectedDomains: map[string]string{},
+			expectError:     false,
+		},
+		{
+			name:           "mixed client hosts - URLs and hostnames",
+			clientHosts:    []string{"https://host1.example.com:6443", "host2.example.com", "192.168.1.1"},
+			infrastructure: nil,
+			expectedDomains: map[string]string{
+				"host1.example.com": ClusterHostPlaceholder,
+				"host2.example.com": ClusterHostPlaceholder,
+				"192.168.1.1":       ClusterHostPlaceholder,
+			},
+			expectError: false,
+		},
+		{
+			name:            "client hosts with invalid URL",
+			clientHosts:     []string{"ht\ttp://invalid"},
+			infrastructure:  nil,
+			expectedDomains: map[string]string{},
+			expectError:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			domainMap := make(map[string]string)
+			err := addAPIDomainsForAnonymization(tt.clientHosts, tt.infrastructure, domainMap)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, len(tt.expectedDomains), len(domainMap))
+			for expectedKey, expectedValue := range tt.expectedDomains {
+				assert.Equal(t, expectedValue, domainMap[expectedKey], "Domain %s should map to %s", expectedKey, expectedValue)
+			}
+		})
+	}
+}
