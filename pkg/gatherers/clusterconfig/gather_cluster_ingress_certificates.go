@@ -59,7 +59,9 @@ type CertificateInfoKey struct {
 // - 4.17
 //
 // ### Backported versions
-// TBD
+// - 4.14.36+
+// - 4.15.27+
+// - 4.16.6+
 //
 // ### Changes
 // None
