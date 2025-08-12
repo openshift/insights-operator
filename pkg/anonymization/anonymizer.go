@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -312,13 +313,11 @@ func NewAnonymizerFromConfig(
 	if err != nil {
 		return nil, err
 	}
-	sensitiveVals[extractDomain(protoKubeConfig.Host)] = ClusterHostPlaceholder
 
 	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
 	if err != nil {
 		return nil, err
 	}
-	sensitiveVals[extractDomain(gatherProtoKubeConfig.Host)] = ClusterHostPlaceholder
 
 	configClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
@@ -329,7 +328,20 @@ func NewAnonymizerFromConfig(
 	if err != nil {
 		return nil, err
 	}
-	sensitiveVals[extractDomain(gatherKubeConfig.Host)] = ClusterHostPlaceholder
+
+	infrastructure, err := configClient.Infrastructures().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	clientHosts := []string{
+		protoKubeConfig.Host,
+		gatherProtoKubeConfig.Host,
+		gatherKubeConfig.Host,
+	}
+	if err := addAPIDomainsForAnonymization(clientHosts, infrastructure, sensitiveVals); err != nil {
+		return nil, fmt.Errorf("failed to add API domains for anonymization: %w", err)
+	}
 
 	return NewAnonymizerFromConfigClient(ctx,
 		kubeClient, gatherKubeClient, configClient, networkClient,
@@ -547,15 +559,39 @@ func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 	return resultIP, false
 }
 
-// extractDomain truncates protocol, host and port of the URL argument
-// and returns the base domain
-func extractDomain(url string) string {
-	baseDomain := strings.Join(strings.Split(url, ".")[1:], ".") // removes protocol and host parts
-	domain := strings.Split(baseDomain, ":")[0]                  // removes port (if any)
-
-	if domain == "" { // in case the URL is malformed
-		return url
+// addAPIDomainsForAnonymization registers API server domains for anonymization.
+// Uses infrastructure.Status.APIServerURL if available, otherwise processes all clientHosts.
+func addAPIDomainsForAnonymization(clientHosts []string, infrastructure *configv1.Infrastructure, domainMap map[string]string) error {
+	if infrastructure != nil && infrastructure.Status.APIServerURL != "" {
+		// add the API server URL to the map
+		return addParsedDomainToMap(infrastructure.Status.APIServerURL, domainMap, ClusterHostPlaceholder)
 	}
 
-	return domain
+	for _, clientHost := range clientHosts {
+		// add the client host to the map
+		if err := addParsedDomainToMap(clientHost, domainMap, ClusterHostPlaceholder); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// addParsedDomainToMap extracts hostname from address and adds it to the anonymization map.
+// If URL parsing fails or no hostname found, uses the entire address as-is.
+func addParsedDomainToMap(address string, domainMap map[string]string, placeholder string) error {
+	parsedURL, err := url.Parse(address)
+	if err != nil {
+		return err
+	}
+
+	if parsedURL == nil || parsedURL.Hostname() == "" {
+		domainMap[address] = placeholder
+		return nil
+	}
+
+	// add domain to the map
+	domainMap[parsedURL.Hostname()] = placeholder
+
+	return nil
 }
