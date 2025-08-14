@@ -1,5 +1,48 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: f936f69980ce327c12d7cf78558c6b70a1509932-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 82e7c86ab5707ee3ccc6adbf78656a7a1e1daa12-->
+## 4.15
+
+### Data Enhancement
+- [#863](https://github.com/openshift/insights-operator/pull/863) gathering kubelet journal logs
+- [#868](https://github.com/openshift/insights-operator/pull/868) adds helm information gather
+- [#858](https://github.com/openshift/insights-operator/pull/858) adds cluster storageclasses gather
+- [#842](https://github.com/openshift/insights-operator/pull/842) remove username & password config options
+
+### Feature
+- [#857](https://github.com/openshift/insights-operator/pull/857) finalize the config update to the new config map
+- [#844](https://github.com/openshift/insights-operator/pull/844) extends obfuscation options in the configmap
+- [#827](https://github.com/openshift/insights-operator/pull/827) First minimal PoC version for moving the configuration to configmap
+- [#825](https://github.com/openshift/insights-operator/pull/825) gather APIServer.config.openshift.io resource
+
+### Bugfix
+- [#864](https://github.com/openshift/insights-operator/pull/864) read configmap during configmap observer init
+- [#861](https://github.com/openshift/insights-operator/pull/861) DVO gatherer - do the retry request as HEAD and not stream
+- [#833](https://github.com/openshift/insights-operator/pull/833) fix error message when the data processing was not suc…
+- [#832](https://github.com/openshift/insights-operator/pull/832) improve on-demand data gathering timing issues
+- [#824](https://github.com/openshift/insights-operator/pull/824) update Insights report config logging
+- [#822](https://github.com/openshift/insights-operator/pull/822) mark datagather job as failed if the data was not proc…
+- [#820](https://github.com/openshift/insights-operator/pull/820) Minor fixes for the techpreview
+
+### Others
+- [#878](https://github.com/openshift/insights-operator/pull/878) gather new insights-config CM & add warning for deprecated support se…
+- [#854](https://github.com/openshift/insights-operator/pull/854) update related objects in the DataGather CR in techpreview
+- [#874](https://github.com/openshift/insights-operator/pull/874) Update documentation with errata information
+- [#873](https://github.com/openshift/insights-operator/pull/873) increase number of query attempts to the processing status endpoint i…
+- [#872](https://github.com/openshift/insights-operator/pull/872) update nodeSelector key in the deployment manifests
+- [#876](https://github.com/openshift/insights-operator/pull/876) Fix typo in link to gathers.json
+- [#834](https://github.com/openshift/insights-operator/pull/834) explicit namespace at archiv…
+- [#851](https://github.com/openshift/insights-operator/pull/851) Revert the previous revert and fix
+- [#852](https://github.com/openshift/insights-operator/pull/852) Fix lint, pin its version and other minor fixes
+- [#847](https://github.com/openshift/insights-operator/pull/847) add retry logic to the DVO metrics gatherer
+- [#846](https://github.com/openshift/insights-operator/pull/846) fix the reverted configmap PR
+- [#838](https://github.com/openshift/insights-operator/pull/838) update dependencies
+- [#819](https://github.com/openshift/insights-operator/pull/819) update changelog
+
+### Misc
+- [#849](https://github.com/openshift/insights-operator/pull/849) Revert #846 "fix the reverted configmap PR"
+- [#845](https://github.com/openshift/insights-operator/pull/845) Revert #827 "First minimal PoC version for moving the configuration to configmap"
+- [#821](https://github.com/openshift/insights-operator/pull/821) Updating ose-insights-operator images to be consistent with ART
+
 ## 4.14
 
 ### Data Enhancement
@@ -27,6 +70,8 @@
 - [#780](https://github.com/openshift/insights-operator/pull/780) gather PDBs only from openshift namespaces
 
 ### Others
+- [#818](https://github.com/openshift/insights-operator/pull/818) DVO metrics gatherer - use UIDs only when DVO deployed in 'openshift-deployment-validation-operator' namespace
+- [#817](https://github.com/openshift/insights-operator/pull/817) Improve ConfigMaps gatherer docs
 - [#813](https://github.com/openshift/insights-operator/pull/813) add unit test for the InsightsDataGather Observer
 - [#776](https://github.com/openshift/insights-operator/pull/776) general code cleanup
 - [#768](https://github.com/openshift/insights-operator/pull/768) renaming gather files

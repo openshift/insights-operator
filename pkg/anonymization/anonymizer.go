@@ -57,6 +57,7 @@ const (
 	Ipv4NetworkRegex                     = Ipv4Regex + "/([0-9]{1,2})"
 	Ipv4AddressOrNetworkRegex            = Ipv4Regex + "(/([0-9]{1,2}))?"
 	ClusterBaseDomainPlaceholder         = "<CLUSTER_BASE_DOMAIN>"
+	ClusterHostPlaceholder               = "<CLUSTER_DOMAIN_HOST>"
 	UnableToCreateAnonymizerErrorMessage = "Unable to create anonymizer, " +
 		"some data won't be anonymized(ipv4 and cluster base domain). The error is %v"
 	clusterNetworksRecordName = "config/network.json"
@@ -82,52 +83,21 @@ type subnetInformation struct {
 // Config can be used to enable anonymization of cluster base domain
 // and obfuscation of IPv4 addresses
 type Anonymizer struct {
-	clusterBaseDomain string
-	networks          []subnetInformation
-	translationTable  map[string]string
-	ipNetworkRegex    *regexp.Regexp
-	secretsClient     corev1client.SecretInterface
-	configurator      configobserver.Interface
-	dataPolicy        v1alpha1.DataPolicy
-	configClient      configv1client.ConfigV1Interface
-	networkClient     networkv1client.NetworkV1Interface
-	gatherKubeClient  kubernetes.Interface
-	runningInCluster  bool
+	sensitiveValues  map[string]string
+	networks         []subnetInformation
+	translationTable map[string]string
+	ipNetworkRegex   *regexp.Regexp
+	secretsClient    corev1client.SecretInterface
+	configurator     configobserver.Interface
+	dataPolicy       v1alpha1.DataPolicy
+	configClient     configv1client.ConfigV1Interface
+	networkClient    networkv1client.NetworkV1Interface
+	gatherKubeClient kubernetes.Interface
+	runningInCluster bool
 }
 
 type ConfigProvider interface {
 	Config() *config.Controller
-}
-
-// NewAnonymizer creates a new instance of anonymizer with a provided config observer and sensitive data
-func NewAnonymizer(clusterBaseDomain string,
-	networks []string,
-	secretsClient corev1client.SecretInterface,
-	configurator configobserver.Interface,
-	dataPolicy v1alpha1.DataPolicy) (*Anonymizer, error) {
-	cidrs, err := k8snet.ParseCIDRs(networks)
-	if err != nil {
-		return nil, err
-	}
-
-	var networksInformation []subnetInformation
-	for _, network := range cidrs {
-		lastIP := network.IP
-		networksInformation = append(networksInformation, subnetInformation{
-			network: *network,
-			lastIP:  lastIP,
-		})
-	}
-
-	return &Anonymizer{
-		clusterBaseDomain: strings.TrimSpace(clusterBaseDomain),
-		networks:          networksInformation,
-		translationTable:  make(map[string]string),
-		ipNetworkRegex:    regexp.MustCompile(Ipv4AddressOrNetworkRegex),
-		secretsClient:     secretsClient,
-		configurator:      configurator,
-		dataPolicy:        dataPolicy,
-	}, nil
 }
 
 // NewAnonymizerFromConfigClient creates a new instance of anonymizer with a provided openshift config client
@@ -139,21 +109,29 @@ func NewAnonymizerFromConfigClient(
 	networkClient networkv1client.NetworkV1Interface,
 	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy,
+	sensitiveVals map[string]string,
 ) (*Anonymizer, error) {
+	anonBuilder := &AnonBuilder{}
+	anonBuilder.
+		WithConfigClient(configClient).
+		WithConfigurator(configurator).
+		WithDataPolicy(dataPolicy).
+		WithKubeClient(gatherKubeClient).
+		WithNetworkClient(networkClient).
+		WithRunningInCluster(true).
+		WithSecretsClient(kubeClient.CoreV1().Secrets(secretNamespace))
+
+	for value, placeholder := range sensitiveVals {
+		anonBuilder.WithSensitiveValue(value, placeholder)
+	}
+
 	baseDomain, err := utils.GetClusterBaseDomain(ctx, configClient)
 	if err != nil {
 		return nil, err
 	}
-	secretsClient := kubeClient.CoreV1().Secrets(secretNamespace)
-	a, err := NewAnonymizer(baseDomain, []string{}, secretsClient, configurator, dataPolicy)
-	if err != nil {
-		return nil, err
-	}
-	a.runningInCluster = true
-	a.gatherKubeClient = gatherKubeClient
-	a.configClient = configClient
-	a.networkClient = networkClient
-	return a, nil
+	anonBuilder.WithSensitiveValue(baseDomain, ClusterBaseDomainPlaceholder)
+
+	return anonBuilder.Build()
 }
 
 func (anonymizer *Anonymizer) readNetworkConfigs() error {
@@ -329,15 +307,18 @@ func NewAnonymizerFromConfig(
 	configurator configobserver.Interface,
 	dataPolicy v1alpha1.DataPolicy,
 ) (*Anonymizer, error) {
+	sensitiveVals := make(map[string]string)
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
 	if err != nil {
 		return nil, err
 	}
+	sensitiveVals[extractDomain(protoKubeConfig.Host)] = ClusterHostPlaceholder
 
 	gatherKubeClient, err := kubernetes.NewForConfig(gatherProtoKubeConfig)
 	if err != nil {
 		return nil, err
 	}
+	sensitiveVals[extractDomain(gatherProtoKubeConfig.Host)] = ClusterHostPlaceholder
 
 	configClient, err := configv1client.NewForConfig(gatherKubeConfig)
 	if err != nil {
@@ -348,8 +329,12 @@ func NewAnonymizerFromConfig(
 	if err != nil {
 		return nil, err
 	}
+	sensitiveVals[extractDomain(gatherKubeConfig.Host)] = ClusterHostPlaceholder
 
-	return NewAnonymizerFromConfigClient(ctx, kubeClient, gatherKubeClient, configClient, networkClient, configurator, dataPolicy)
+	return NewAnonymizerFromConfigClient(ctx,
+		kubeClient, gatherKubeClient, configClient, networkClient,
+		configurator, dataPolicy, sensitiveVals,
+	)
 }
 
 // AnonymizeMemoryRecord takes record.MemoryRecord, removes the sensitive data from it and returns the same object
@@ -362,16 +347,16 @@ func (anonymizer *Anonymizer) AnonymizeMemoryRecord(memoryRecord *record.MemoryR
 		}
 	})
 
-	if len(anonymizer.clusterBaseDomain) != 0 {
+	for value, placeholder := range anonymizer.sensitiveValues {
 		memoryRecord.Data = bytes.ReplaceAll(
 			memoryRecord.Data,
-			[]byte(anonymizer.clusterBaseDomain),
-			[]byte(ClusterBaseDomainPlaceholder),
+			[]byte(value),
+			[]byte(placeholder),
 		)
 		memoryRecord.Name = strings.ReplaceAll(
 			memoryRecord.Name,
-			anonymizer.clusterBaseDomain,
-			ClusterBaseDomainPlaceholder,
+			value,
+			placeholder,
 		)
 	}
 
@@ -560,4 +545,17 @@ func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 	}
 
 	return resultIP, false
+}
+
+// extractDomain truncates protocol, host and port of the URL argument
+// and returns the base domain
+func extractDomain(url string) string {
+	baseDomain := strings.Join(strings.Split(url, ".")[1:], ".") // removes protocol and host parts
+	domain := strings.Split(baseDomain, ":")[0]                  // removes port (if any)
+
+	if domain == "" { // in case the URL is malformed
+		return url
+	}
+
+	return domain
 }
