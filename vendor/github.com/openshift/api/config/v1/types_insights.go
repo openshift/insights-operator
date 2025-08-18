@@ -28,7 +28,7 @@ type InsightsDataGather struct {
 	Spec InsightsDataGatherSpec `json:"spec,omitempty,omitzero"`
 	// status holds observed values from the cluster. They may not be overridden.
 	// +optional
-	Status *InsightsDataGatherStatus `json:"status,omitempty,omitzero"`
+	Status InsightsDataGatherStatus `json:"status,omitempty,omitzero"`
 }
 
 // InsightsDataGatherSpec contains the configuration for the data gathering.
@@ -39,6 +39,7 @@ type InsightsDataGatherSpec struct {
 	GatherConfig GatherConfig `json:"gatherConfig,omitempty,omitzero"`
 }
 
+// +kubebuilder:validation:MinProperties=1
 type InsightsDataGatherStatus struct{}
 
 // gatherConfig provides data gathering configuration options.
@@ -49,7 +50,7 @@ type GatherConfig struct {
 	// When set to ObfuscateNetworking the IP addresses and the cluster domain name are obfuscated.
 	// When set to WorkloadNames, the gathered data about cluster resources will not contain the workload names for your deployments. Resources UIDs will be used instead.
 	// When omitted no obfuscation is applied.
-	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=2
 	// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, x == y))",message="dataPolicy items must be unique"
 	// +listType=atomic
@@ -61,7 +62,7 @@ type GatherConfig struct {
 	// storage is an optional field that allows user to define persistent storage for gathering jobs to store the Insights data archive.
 	// If omitted, the gathering job will use ephemeral storage.
 	// +optional
-	Storage *Storage `json:"storage,omitempty,omitzero"`
+	Storage Storage `json:"storage,omitempty,omitzero"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.mode) && self.mode == 'Custom' ?  has(self.custom) : !has(self.custom)",message="custom is required when mode is Custom, and forbidden otherwise"
@@ -77,7 +78,7 @@ type Gatherers struct {
 	// Custom configuration allows user to disable only a subset of gatherers.
 	// Gatherers that are not explicitly disabled in custom configuration will run.
 	// +optional
-	Custom *Custom `json:"custom,omitempty,omitzero"`
+	Custom Custom `json:"custom,omitempty,omitzero"`
 }
 
 // custom provides the custom configuration of gatherers
@@ -134,7 +135,7 @@ type Storage struct {
 	// persistentVolume is an optional field that specifies the PersistentVolume that will be used to store the Insights data archive.
 	// The PersistentVolume must be created in the openshift-insights namespace.
 	// +optional
-	PersistentVolume *PersistentVolumeConfig `json:"persistentVolume,omitempty,omitzero"`
+	PersistentVolume PersistentVolumeConfig `json:"persistentVolume,omitempty,omitzero"`
 }
 
 // storageType declares valid storage types
@@ -158,11 +159,11 @@ type PersistentVolumeConfig struct {
 	// When omitted, this means no opinion and the platform is left to choose a reasonable default, which is subject to change over time.
 	// The current default mount path is /var/lib/insights-operator
 	// The path may not exceed 1024 characters and must not contain a colon.
-	// +kubebuilder:validation:MinLength=0
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=1024
 	// +kubebuilder:validation:XValidation:rule="!self.contains(':')",message="mountPath must not contain a colon"
 	// +optional
-	MountPath *string `json:"mountPath,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
 }
 
 // persistentVolumeClaimReference is a reference to a PersistentVolumeClaim.
