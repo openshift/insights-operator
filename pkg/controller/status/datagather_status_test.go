@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	insightsFakeCli "github.com/openshift/client-go/insights/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,14 +51,14 @@ func TestProgressingDataGatherCondition(t *testing.T) {
 func TestUpdateDataGatherConditions(t *testing.T) {
 	tests := []struct {
 		name               string
-		dataGather         *v1alpha2.DataGather
+		dataGather         *insightsv1.DataGather
 		updatedCondition   []metav1.Condition
 		expectedConditions []metav1.Condition
 	}{
 		{
 			name: "All conditions unknown and DataRecorcded condition updated",
-			dataGather: &v1alpha2.DataGather{
-				Status: v1alpha2.DataGatherStatus{
+			dataGather: &insightsv1.DataGather{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
@@ -77,8 +77,8 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 		},
 		{
 			name: "Updating non-existing condition appends the condition",
-			dataGather: &v1alpha2.DataGather{
-				Status: v1alpha2.DataGatherStatus{
+			dataGather: &insightsv1.DataGather{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
@@ -96,8 +96,8 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 		},
 		{
 			name: "Updating multiple condition appends or updates the condition",
-			dataGather: &v1alpha2.DataGather{
-				Status: v1alpha2.DataGatherStatus{
+			dataGather: &insightsv1.DataGather{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
@@ -125,7 +125,7 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 			cs := insightsFakeCli.NewSimpleClientset(tt.dataGather)
 			updatedDG, err := UpdateDataGatherConditions(
 				context.Background(),
-				cs.InsightsV1alpha2(),
+				cs.InsightsV1(),
 				tt.dataGather,
 				tt.updatedCondition...,
 			)

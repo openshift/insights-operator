@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/openshift/api/features"
-	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
-	insightsv1alpha1client "github.com/openshift/client-go/insights/clientset/versioned"
+	insightsclientset "github.com/openshift/client-go/insights/clientset/versioned"
 	insightsInformers "github.com/openshift/client-go/insights/informers/externalversions"
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
@@ -81,7 +81,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightClient, err := insightsv1alpha1client.NewForConfig(controller.KubeConfig)
+	insightClient, err := insightsclientset.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if !insightsConfigEnabled {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
-			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{})
+			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, []insightsv1.DataPolicyOption{})
 		if err != nil {
 			// in case of an error anonymizer will be nil and anonymization will be just skipped
 			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
@@ -231,7 +231,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
 		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
-			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha2(),
+			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1(),
 			operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(), dgInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)

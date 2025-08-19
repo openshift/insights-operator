@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/status"
@@ -250,29 +250,29 @@ func TestGetCustomStoragePath(t *testing.T) {
 	tests := []struct {
 		name         string
 		mockConfig   configobserver.Interface
-		dataGatherCR *insightsv1alpha2.DataGather
+		dataGatherCR *insightsv1.DataGather
 		expectedPath string
 	}{
 		{
 			name:         "When both CR and ConfigMap have no storage path configured, should return empty string",
 			mockConfig:   &MockConfigAggregator{storagePath: ""},
-			dataGatherCR: &insightsv1alpha2.DataGather{},
+			dataGatherCR: &insightsv1.DataGather{},
 			expectedPath: "",
 		},
 		{
 			name:         "When only ConfigMap has storage path configured, should return ConfigMap path",
 			mockConfig:   &MockConfigAggregator{storagePath: "/configmap/path"},
-			dataGatherCR: &insightsv1alpha2.DataGather{},
+			dataGatherCR: &insightsv1.DataGather{},
 			expectedPath: "/configmap/path",
 		},
 		{
 			name:       "When only CR has storage path configured, should return CR path",
 			mockConfig: &MockConfigAggregator{storagePath: ""},
-			dataGatherCR: &insightsv1alpha2.DataGather{
-				Spec: insightsv1alpha2.DataGatherSpec{
-					Storage: &insightsv1alpha2.Storage{
-						Type:             insightsv1alpha2.StorageTypePersistentVolume,
-						PersistentVolume: &insightsv1alpha2.PersistentVolumeConfig{MountPath: "/cr/path"},
+			dataGatherCR: &insightsv1.DataGather{
+				Spec: insightsv1.DataGatherSpec{
+					Storage: insightsv1.Storage{
+						Type:             insightsv1.StorageTypePersistentVolume,
+						PersistentVolume: insightsv1.PersistentVolumeConfig{MountPath: "/cr/path"},
 					},
 				},
 			},
@@ -281,11 +281,11 @@ func TestGetCustomStoragePath(t *testing.T) {
 		{
 			name:       "When CR has correct storage type but empty mount path (misconfiguration), should fall back to ConfigMap path",
 			mockConfig: &MockConfigAggregator{storagePath: "/configmap/path"},
-			dataGatherCR: &insightsv1alpha2.DataGather{
-				Spec: insightsv1alpha2.DataGatherSpec{
-					Storage: &insightsv1alpha2.Storage{
-						Type:             insightsv1alpha2.StorageTypePersistentVolume,
-						PersistentVolume: &insightsv1alpha2.PersistentVolumeConfig{MountPath: ""},
+			dataGatherCR: &insightsv1.DataGather{
+				Spec: insightsv1.DataGatherSpec{
+					Storage: insightsv1.Storage{
+						Type:             insightsv1.StorageTypePersistentVolume,
+						PersistentVolume: insightsv1.PersistentVolumeConfig{MountPath: ""},
 					},
 				},
 			},
@@ -294,13 +294,13 @@ func TestGetCustomStoragePath(t *testing.T) {
 		{
 			name:       "When both CR and ConfigMap have storage path configured, CR path should take precedence",
 			mockConfig: &MockConfigAggregator{storagePath: "/configmap/path"},
-			dataGatherCR: &insightsv1alpha2.DataGather{
-				Spec: insightsv1alpha2.DataGatherSpec{
-					Storage: &insightsv1alpha2.Storage{
-						Type: insightsv1alpha2.StorageTypePersistentVolume,
-						PersistentVolume: &insightsv1alpha2.PersistentVolumeConfig{
+			dataGatherCR: &insightsv1.DataGather{
+				Spec: insightsv1.DataGatherSpec{
+					Storage: insightsv1.Storage{
+						Type: insightsv1.StorageTypePersistentVolume,
+						PersistentVolume: insightsv1.PersistentVolumeConfig{
 							MountPath: "/cr/path",
-							Claim:     insightsv1alpha2.PersistentVolumeClaimReference{Name: "test-pvc"},
+							Claim:     insightsv1.PersistentVolumeClaimReference{Name: "test-pvc"},
 						},
 					},
 				},
