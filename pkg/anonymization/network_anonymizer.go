@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	networkv1 "github.com/openshift/api/network/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
@@ -65,7 +65,7 @@ type NetworkAnonymizer struct {
 	ipNetworkRegex   *regexp.Regexp
 	secretsClient    corev1client.SecretInterface
 	configurator     configobserver.Interface
-	dataPolicy       v1alpha2.DataPolicyOption
+	dataPolicy       insightsv1.DataPolicyOption
 	configClient     configv1client.ConfigV1Interface
 	networkClient    networkv1client.NetworkV1Interface
 	gatherKubeClient kubernetes.Interface
@@ -78,7 +78,7 @@ func NewNetworkAnonymizerFromConfig(
 	gatherProtoKubeConfig *rest.Config,
 	protoKubeConfig *rest.Config,
 	configurator configobserver.Interface,
-	dataPolicy []v1alpha2.DataPolicyOption,
+	dataPolicy []insightsv1.DataPolicyOption,
 ) (*NetworkAnonymizer, error) {
 	sensitiveVals := make(map[string]string)
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
@@ -128,7 +128,7 @@ func NewNetworkAnonymizerFromConfigClient(
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
 	configurator configobserver.Interface,
-	dataPolicies []v1alpha2.DataPolicyOption,
+	dataPolicies []insightsv1.DataPolicyOption,
 	sensitiveVals map[string]string,
 ) (*NetworkAnonymizer, error) {
 	networkAnonymizerBuilder := &NetworkAnonymizerBuilder{}
@@ -310,7 +310,7 @@ func (na *NetworkAnonymizer) IsEnabled() bool {
 	}
 
 	if na.dataPolicy != "" {
-		return na.dataPolicy == v1alpha2.DataPolicyOptionObfuscateNetworking
+		return na.dataPolicy == insightsv1.DataPolicyOptionObfuscateNetworking
 	}
 
 	return false

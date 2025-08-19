@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/openshift/api/features"
-	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
-	insightsv1alpha2client "github.com/openshift/client-go/insights/clientset/versioned"
-	"github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha2"
+	insightsclientset "github.com/openshift/client-go/insights/clientset/versioned"
+	insightsv1client "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1"
 	insightsInformers "github.com/openshift/client-go/insights/informers/externalversions"
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
@@ -97,7 +97,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightClient, err := insightsv1alpha2client.NewForConfig(controller.KubeConfig)
+	insightClient, err := insightsclientset.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	var techPreviewInformers *TechPreviewInformers
 	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
 	if insightsConfigEnabled {
-		deleteAllRunningGatheringsPods(ctx, kubeClient, insightClient.InsightsV1alpha2())
+		deleteAllRunningGatheringsPods(ctx, kubeClient, insightClient.InsightsV1())
 
 		// Create InsightsDataGather observer for global configuration
 		configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, informerTimeout)
@@ -211,7 +211,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// if techPreview is enabled we switch to separate job and we don't need anything from this
 	if !insightsConfigEnabled {
 		networkAnonymizer, err := anonymization.NewNetworkAnonymizerFromConfig(ctx, gatherKubeConfig,
-			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{})
+			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, []insightsv1.DataPolicyOption{})
 		if err != nil {
 			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
 			return err
@@ -259,9 +259,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		periodicGather = periodic.NewWithTechPreview(
 			reportRetriever,
 			configAggregator,
-			insightsDataGatherObserver,
-			gatherers,
-			kubeClient, insightClient.InsightsV1alpha2(), operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(),
+			insightsDataGatherObserver, gatherers, kubeClient,
+			insightClient.InsightsV1(), operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(),
 			techPreviewInformers.DataGatherInformer, techPreviewInformers.JobInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)
@@ -355,7 +354,7 @@ func isRunning(kubeConfig *rest.Config) wait.ConditionWithContextFunc {
 func createTechPreviewInformers(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	insightClient *insightsv1alpha2client.Clientset,
+	insightClient *insightsclientset.Clientset,
 	eventRecorder events.Recorder,
 ) (*TechPreviewInformers, error) {
 	// Create Job informer for watching gathering job completions
@@ -395,7 +394,7 @@ func createTechPreviewInformers(
 // deleteAllRunningGatheringsPods deletes all the active jobs (and their Pods) with the "periodic-gathering-"
 // prefix in the openshift-insights namespace
 func deleteAllRunningGatheringsPods(
-	ctx context.Context, cli kubernetes.Interface, insightClient v1alpha2.InsightsV1alpha2Interface,
+	ctx context.Context, cli kubernetes.Interface, insightClient insightsv1client.InsightsV1Interface,
 ) {
 	jobList, err := cli.BatchV1().Jobs(insightsNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {

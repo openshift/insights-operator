@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightv1 "github.com/openshift/api/insights/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/record"
@@ -72,7 +72,7 @@ func newRecorder(maxArchiveSize int64, clusterBaseDomain string) (*Recorder, err
 
 	networkAnonymizationBuilder := &anonymization.NetworkAnonymizerBuilder{}
 	networkAnonymizer, err := networkAnonymizationBuilder.WithSensitiveValue(clusterBaseDomain, anonymization.ClusterBaseDomainPlaceholder).
-		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking).
+		WithDataPolicies(insightv1.DataPolicyOptionObfuscateNetworking).
 		WithConfigurator(mockConfigMapConfigurator).
 		Build()
 	if err != nil {

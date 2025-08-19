@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -80,7 +80,7 @@ func CollectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	gatherConfigs []v1alpha2.GathererConfig,
+	gatherConfigs []insightsv1.GathererConfig,
 ) ([]GathererFunctionReport, error) {
 	startTime := time.Now()
 	reports, totalNumberOfRecords, errs := collectAndRecordGatherer(ctx, gatherer, rec, gatherConfigs)
@@ -98,7 +98,7 @@ func collectAndRecordGatherer(
 	ctx context.Context,
 	gatherer gatherers.Interface,
 	rec recorder.Interface,
-	gatherConfigs []v1alpha2.GathererConfig,
+	gatherConfigs []insightsv1.GathererConfig,
 ) (reports []GathererFunctionReport, totalNumberOfRecords int, allErrors []error) {
 	resultsChan, err := startGatheringConcurrently(ctx, gatherer, gatherConfigs)
 	if err != nil {
@@ -214,7 +214,7 @@ func RecordArchiveMetadata(
 // startGatheringConcurrently starts gathering of enabled functions of the provided gatherer and returns a channel
 // with results which will be closed when processing is done
 func startGatheringConcurrently(
-	ctx context.Context, gatherer gatherers.Interface, gatherConfigs []v1alpha2.GathererConfig,
+	ctx context.Context, gatherer gatherers.Interface, gatherConfigs []insightsv1.GathererConfig,
 ) (chan GatheringFunctionResult, error) {
 	var tasks []Task
 	var gatheringFunctions map[string]gatherers.GatheringClosure
@@ -247,14 +247,14 @@ func startGatheringConcurrently(
 func getEnabledGatheringFunctions(
 	gathererName string,
 	allGatheringFunctions map[string]gatherers.GatheringClosure,
-	gathererConfigs []v1alpha2.GathererConfig,
+	gathererConfigs []insightsv1.GathererConfig,
 ) map[string]gatherers.GatheringClosure {
 	enabledGatheringFunctions := make(map[string]gatherers.GatheringClosure)
 
 	// If the whole gatherer is disabled, check if any function is explicitly enabled
-	if hasGathererState(gathererConfigs, gathererName, v1alpha2.GathererStateDisabled) {
+	if hasGathererState(gathererConfigs, gathererName, insightsv1.GathererStateDisabled) {
 		for fName, gatheringClosure := range allGatheringFunctions {
-			if hasGathererState(gathererConfigs, fmt.Sprintf("%s/%s", gathererName, fName), v1alpha2.GathererStateEnabled) {
+			if hasGathererState(gathererConfigs, fmt.Sprintf("%s/%s", gathererName, fName), insightsv1.GathererStateEnabled) {
 				enabledGatheringFunctions[fName] = gatheringClosure
 			}
 		}
@@ -263,7 +263,7 @@ func getEnabledGatheringFunctions(
 
 	// Otherwise, enable all functions except those explicitly disabled
 	for fName, gatheringClosure := range allGatheringFunctions {
-		if !hasGathererState(gathererConfigs, fmt.Sprintf("%s/%s", gathererName, fName), v1alpha2.GathererStateDisabled) {
+		if !hasGathererState(gathererConfigs, fmt.Sprintf("%s/%s", gathererName, fName), insightsv1.GathererStateDisabled) {
 			enabledGatheringFunctions[fName] = gatheringClosure
 		}
 	}
@@ -272,7 +272,7 @@ func getEnabledGatheringFunctions(
 }
 
 // Checks if the given gathererName has the specified state in gathererConfigs
-func hasGathererState(gathererConfigs []v1alpha2.GathererConfig, gathererName string, state v1alpha2.GathererState) bool {
+func hasGathererState(gathererConfigs []insightsv1.GathererConfig, gathererName string, state insightsv1.GathererState) bool {
 	for _, gf := range gathererConfigs {
 		if gf.Name == gathererName && gf.State == state {
 			return true

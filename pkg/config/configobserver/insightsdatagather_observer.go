@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openshift/api/config/v1alpha2"
-	configCliv1alpha2 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1alpha2"
+	configv1 "github.com/openshift/api/config/v1"
+	configCliv1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	configinformers "github.com/openshift/client-go/config/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -17,28 +17,28 @@ import (
 
 type InsightsDataGatherObserver interface {
 	factory.Controller
-	GatherConfig() *v1alpha2.GatherConfig
+	GatherConfig() *configv1.GatherConfig
 	GatherDisabled() bool
 }
 
 type insightsDataGatherController struct {
 	factory.Controller
 	lock         sync.Mutex
-	cli          configCliv1alpha2.ConfigV1alpha2Interface
-	gatherConfig *v1alpha2.GatherConfig
+	cli          configCliv1.ConfigV1Interface
+	gatherConfig *configv1.GatherConfig
 }
 
 func NewInsightsDataGatherObserver(kubeConfig *rest.Config,
 	eventRecorder events.Recorder,
 	configInformer configinformers.SharedInformerFactory,
 ) (InsightsDataGatherObserver, error) {
-	inf := configInformer.Config().V1alpha2().InsightsDataGathers().Informer()
-	configV1Alpha2Cli, err := configCliv1alpha2.NewForConfig(kubeConfig)
+	inf := configInformer.Config().V1().InsightsDataGathers().Informer()
+	configV1Cli, err := configCliv1.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, err
 	}
 	c := &insightsDataGatherController{
-		cli: configV1Alpha2Cli,
+		cli: configV1Cli,
 	}
 
 	insightDataGatherConf, err := c.cli.InsightsDataGathers().Get(context.Background(), "cluster", metav1.GetOptions{})
@@ -65,7 +65,7 @@ func (i *insightsDataGatherController) sync(ctx context.Context, _ factory.SyncC
 }
 
 // GatherConfig provides the complete gather config in a thread-safe way.
-func (i *insightsDataGatherController) GatherConfig() *v1alpha2.GatherConfig {
+func (i *insightsDataGatherController) GatherConfig() *configv1.GatherConfig {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.gatherConfig
@@ -77,5 +77,8 @@ func (i *insightsDataGatherController) GatherDisabled() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	return i.gatherConfig.Gatherers.Mode == v1alpha2.GatheringModeNone
+	if i.gatherConfig == nil {
+		return false
+	}
+	return i.gatherConfig.Gatherers.Mode == configv1.GatheringModeNone
 }
