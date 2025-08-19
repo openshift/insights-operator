@@ -3,7 +3,7 @@ package config
 import (
 	"context"
 
-	"github.com/openshift/api/config/v1alpha2"
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/controller/factory"
 )
 
@@ -32,26 +32,26 @@ func (mc *MockSecretConfigurator) ConfigChanged() (<-chan struct{}, func()) { //
 
 type MockAPIConfigurator struct {
 	factory.Controller
-	config *v1alpha2.GatherConfig
+	config *configv1.GatherConfig
 }
 
 // NewMockAPIConfigurator constructs a new NewMockAPIConfigurator with provided GatherConfig values
-func NewMockAPIConfigurator(gatherConfig *v1alpha2.GatherConfig) *MockAPIConfigurator {
+func NewMockAPIConfigurator(gatherConfig *configv1.GatherConfig) *MockAPIConfigurator {
 	mockAPIConf := &MockAPIConfigurator{
 		config: gatherConfig,
 	}
 	return mockAPIConf
 }
 
-func (mc *MockAPIConfigurator) GatherConfig() *v1alpha2.GatherConfig {
+func (mc *MockAPIConfigurator) GatherConfig() *configv1.GatherConfig {
 	return mc.config
 }
 
 func (mc *MockAPIConfigurator) GatherDisabled() bool {
-	return mc.config.Gatherers.Mode == v1alpha2.GatheringModeNone
+	return mc.config.Gatherers.Mode == configv1.GatheringModeNone
 }
 
-func (mc *MockAPIConfigurator) GatherDataPolicy() []v1alpha2.DataPolicyOption {
+func (mc *MockAPIConfigurator) GatherDataPolicy() []configv1.DataPolicyOption {
 	if mc.config != nil {
 		return mc.config.DataPolicy
 	}

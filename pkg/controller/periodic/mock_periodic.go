@@ -3,20 +3,20 @@ package periodic
 import (
 	"context"
 
-	configv1alpha2 "github.com/openshift/api/config/v1alpha2"
+	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"k8s.io/klog/v2"
 )
 
 type InsightsDataGatherObserverMock struct {
-	mockedDataPolicy []configv1alpha2.DataPolicyOption
-	mockedGatherers  configv1alpha2.Gatherers
+	mockedDataPolicy []configv1.DataPolicyOption
+	mockedGatherers  configv1.Gatherers
 }
 
 func NewInsightsDataGatherObserverMock(
-	mockedDataPolicy []configv1alpha2.DataPolicyOption,
-	mockedGatherers configv1alpha2.Gatherers,
+	mockedDataPolicy []configv1.DataPolicyOption,
+	mockedGatherers configv1.Gatherers,
 ) *InsightsDataGatherObserverMock {
 	return &InsightsDataGatherObserverMock{
 		mockedDataPolicy: mockedDataPolicy,
@@ -37,11 +37,11 @@ func (i InsightsDataGatherObserverMock) Sync(_ context.Context, _ factory.SyncCo
 	return nil
 }
 
-func (i InsightsDataGatherObserverMock) GatherConfig() *configv1alpha2.GatherConfig {
-	return &configv1alpha2.GatherConfig{
+func (i InsightsDataGatherObserverMock) GatherConfig() *configv1.GatherConfig {
+	return &configv1.GatherConfig{
 		DataPolicy: i.mockedDataPolicy,
 		Gatherers:  i.mockedGatherers,
-		Storage:    nil,
+		Storage:    configv1.Storage{},
 	}
 }
 

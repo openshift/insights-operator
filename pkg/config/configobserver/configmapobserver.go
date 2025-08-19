@@ -42,7 +42,8 @@ type ConfigMapObserver struct {
 
 func NewConfigMapObserver(ctx context.Context, kubeConfig *rest.Config,
 	eventRecorder events.Recorder,
-	kubeInformer v1helpers.KubeInformersForNamespaces) (ConfigMapInformer, error) {
+	kubeInformer v1helpers.KubeInformersForNamespaces,
+) (ConfigMapInformer, error) {
 	cmInformer := kubeInformer.InformersFor(insightsNamespaceName).Core().V1().ConfigMaps().Informer()
 	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {

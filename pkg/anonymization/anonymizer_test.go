@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 
 	networkv1 "github.com/openshift/api/network/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
@@ -133,7 +133,7 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 		WithSensitiveValue(clusterBaseDomain, ClusterBaseDomainPlaceholder).
 		WithSensitiveValue(clusterConfigHost, ClusterHostPlaceholder).
 		WithConfigurator(mockConfigMapConfigurator).
-		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking).
+		WithDataPolicies(insightsv1.DataPolicyOptionObfuscateNetworking).
 		WithNetworks(networks).
 		WithSecretsClient(kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
 	anonymizer, err := anonBuilder.Build()
@@ -449,7 +449,7 @@ func TestNewAnonymizerFromConfigClient(t *testing.T) {
 				configClient,
 				networkClient,
 				mockConfigMapConfigurator,
-				[]v1alpha2.DataPolicyOption{v1alpha2.DataPolicyOptionObfuscateNetworking},
+				[]insightsv1.DataPolicyOption{insightsv1.DataPolicyOptionObfuscateNetworking},
 				make(map[string]string),
 			)
 			assert.NoError(t, err)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	"github.com/openshift/insights-operator/pkg/config"
 
 	"github.com/stretchr/testify/assert"
@@ -31,19 +31,18 @@ func TestCreateGathererJob(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		dataGather    *insightsv1alpha2.DataGather
+		dataGather    *insightsv1.DataGather
 		imageName     string
 		dataReporting config.DataReporting
 	}{
 		{
 			name: "Basic gathering job creation without PVC storage",
-			dataGather: &insightsv1alpha2.DataGather{
+			dataGather: &insightsv1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "custom-gather-test-empty",
 				},
-				Spec: insightsv1alpha2.DataGatherSpec{
-					Storage: nil,
-				},
+				// TODO: not sure if this is gonna work
+				// Spec: &insightsv1.DataGatherSpec{},
 			},
 			imageName: "test.io/test/insights-image",
 			dataReporting: config.DataReporting{
@@ -52,15 +51,15 @@ func TestCreateGathererJob(t *testing.T) {
 		},
 		{
 			name: "Basic gathering with PVC storage",
-			dataGather: &insightsv1alpha2.DataGather{
+			dataGather: &insightsv1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "custom-gather-test-pvc",
 				},
-				Spec: insightsv1alpha2.DataGatherSpec{
-					Storage: &insightsv1alpha2.Storage{
-						Type: insightsv1alpha2.StorageTypePersistentVolume,
-						PersistentVolume: &insightsv1alpha2.PersistentVolumeConfig{
-							Claim: insightsv1alpha2.PersistentVolumeClaimReference{
+				Spec: insightsv1.DataGatherSpec{
+					Storage: insightsv1.Storage{
+						Type: insightsv1.StorageTypePersistentVolume,
+						PersistentVolume: insightsv1.PersistentVolumeConfig{
+							Claim: insightsv1.PersistentVolumeClaimReference{
 								Name: insightsPVCName,
 							},
 						},
@@ -78,13 +77,14 @@ func TestCreateGathererJob(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			jc := NewJobController(kube)
 
+			// panic here
 			createdJob, err := jc.CreateGathererJob(context.Background(), tt.imageName, &tt.dataReporting, tt.dataGather)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.dataGather.Name, createdJob.Name)
 			assert.Equal(t, tt.imageName, createdJob.Spec.Template.Spec.Containers[0].Image)
 
-			if tt.dataGather.Spec.Storage == nil {
-				// EmptyDir is used when no PVC is specified
+			if tt.dataGather.Spec.Storage == (insightsv1.Storage{}) {
+				// EmptyDir is used when no storage is specified
 				assert.NotNil(t, createdJob.Spec.Template.Spec.Volumes[0].EmptyDir)
 				assert.Nil(t, createdJob.Spec.Template.Spec.Volumes[0].PersistentVolumeClaim)
 			} else {
