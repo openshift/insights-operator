@@ -34,7 +34,7 @@ import (
 	"sync"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	networkv1 "github.com/openshift/api/network/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
@@ -90,7 +90,7 @@ type Anonymizer struct {
 	ipNetworkRegex   *regexp.Regexp
 	secretsClient    corev1client.SecretInterface
 	configurator     configobserver.Interface
-	dataPolicy       v1alpha2.DataPolicyOption
+	dataPolicy       insightsv1.DataPolicyOption
 	configClient     configv1client.ConfigV1Interface
 	networkClient    networkv1client.NetworkV1Interface
 	gatherKubeClient kubernetes.Interface
@@ -109,7 +109,7 @@ func NewAnonymizerFromConfigClient(
 	configClient configv1client.ConfigV1Interface,
 	networkClient networkv1client.NetworkV1Interface,
 	configurator configobserver.Interface,
-	dataPolicies []v1alpha2.DataPolicyOption,
+	dataPolicies []insightsv1.DataPolicyOption,
 	sensitiveVals map[string]string,
 ) (*Anonymizer, error) {
 	anonBuilder := &AnonBuilder{}
@@ -306,7 +306,7 @@ func NewAnonymizerFromConfig(
 	gatherProtoKubeConfig *rest.Config,
 	protoKubeConfig *rest.Config,
 	configurator configobserver.Interface,
-	dataPolicy []v1alpha2.DataPolicyOption,
+	dataPolicy []insightsv1.DataPolicyOption,
 ) (*Anonymizer, error) {
 	sensitiveVals := make(map[string]string)
 	kubeClient, err := kubernetes.NewForConfig(protoKubeConfig)
@@ -500,11 +500,7 @@ func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
 		return true
 	}
 
-	if anonymizer.dataPolicy != "" {
-		return anonymizer.dataPolicy == v1alpha2.DataPolicyOptionObfuscateNetworking
-	}
-
-	return false
+	return anonymizer.dataPolicy == insightsv1.DataPolicyOptionObfuscateNetworking
 }
 
 // getNextIP returns the next IP address in the current subnetwork and the flag indicating if there was an overflow

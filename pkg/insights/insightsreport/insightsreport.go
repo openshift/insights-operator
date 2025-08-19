@@ -109,14 +109,16 @@ func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.Ins
 	c.client.IncrementRecvReportMetric(resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("Failed to download the latest report: HTTP %d %s", resp.StatusCode, resp.Status)
+		errFmt := "failed to download the latest report: HTTP %d %s"
+
 		c.UpdateStatus(controllerstatus.Summary{
 			Healthy:   false,
 			Operation: controllerstatus.DownloadingReport,
-			Message:   msg,
+			Message:   fmt.Sprintf(errFmt, resp.StatusCode, resp.Status),
 			Reason:    "NotAvailable",
 		})
-		return nil, fmt.Errorf("%s", msg)
+
+		return nil, fmt.Errorf(errFmt, resp.StatusCode, resp.Status)
 	}
 	klog.Info("Report retrieved correctly")
 	analysisReport := &types.InsightsAnalysisReport{}

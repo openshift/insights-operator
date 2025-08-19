@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	fakeinsightsclient "github.com/openshift/client-go/insights/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/stretchr/testify/assert"
@@ -43,11 +43,11 @@ func Test_deleteAllRunningGatheringsPods(t *testing.T) {
 				},
 			},
 			existingDataGathers: []runtime.Object{
-				&insightsv1alpha2.DataGather{
+				&insightsv1.DataGather{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "periodic-gathering-1",
 					},
-					Status: insightsv1alpha2.DataGatherStatus{
+					Status: insightsv1.DataGatherStatus{
 						Conditions: []metav1.Condition{
 							status.ProgressingCondition(status.GatheringReason),
 						},
@@ -98,7 +98,7 @@ func Test_deleteAllRunningGatheringsPods(t *testing.T) {
 
 			// Call the function
 			ctx := context.Background()
-			deleteAllRunningGatheringsPods(ctx, kubeClient, insightsClient.InsightsV1alpha2())
+			deleteAllRunningGatheringsPods(ctx, kubeClient, insightsClient.InsightsV1())
 
 			// Fetch existing jobs after deleteAllRunningGatheringsPods function run
 			remainingJobs, err := kubeClient.BatchV1().Jobs(insightsNamespace).List(ctx, metav1.ListOptions{})
@@ -109,7 +109,7 @@ func Test_deleteAllRunningGatheringsPods(t *testing.T) {
 
 				// Verify DataGather CR Progressing condition was updated
 				if len(tt.existingDataGathers) > 0 {
-					updatedDG, err := insightsClient.InsightsV1alpha2().DataGathers().Get(ctx, tt.dataGatherName, metav1.GetOptions{})
+					updatedDG, err := insightsClient.InsightsV1().DataGathers().Get(ctx, tt.dataGatherName, metav1.GetOptions{})
 					assert.NoError(t, err)
 
 					// Check that Progressing condition was updated to False with GatheringFailed reason

@@ -3,7 +3,7 @@ package anonymization
 import (
 	"testing"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	v1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkfake "github.com/openshift/client-go/network/clientset/versioned/fake"
@@ -23,7 +23,7 @@ func Test_AnonBuilder(t *testing.T) {
 		sensitiveValues  map[string]string
 		configClient     v1.ConfigV1Interface
 		configurator     configobserver.Interface
-		dataPolicy       v1alpha2.DataPolicyOption
+		dataPolicy       insightsv1.DataPolicyOption
 		kubeClient       kubernetes.Interface
 		networkClient    networkv1client.NetworkV1Interface
 		networks         []string
@@ -59,8 +59,8 @@ func Test_AnonBuilder(t *testing.T) {
 		},
 		{
 			name:       "method 'WithDataPolicy' sets the policy on the anonymizer instance",
-			builder:    getBuilderInstance().WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking),
-			dataPolicy: v1alpha2.DataPolicyOptionObfuscateNetworking,
+			builder:    getBuilderInstance().WithDataPolicies(insightsv1.DataPolicyOptionObfuscateNetworking),
+			dataPolicy: insightsv1.DataPolicyOptionObfuscateNetworking,
 		},
 		{
 			name:       "method 'WithKubeClient' sets the client on the anonymizer instance",
