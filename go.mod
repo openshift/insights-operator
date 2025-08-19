@@ -8,7 +8,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/openshift/api v0.0.0-20250602203052-b29811a290c7
+	github.com/openshift/api v0.0.0-20250811150514-cc869c87a7f0
 	github.com/openshift/build-machinery-go v0.0.0-20250530140348-dc5b2804eeee
 	github.com/openshift/client-go v0.0.0-20250603093317-900624865677
 	github.com/openshift/installer v0.9.0-master.0.20191219195746-103098955ced
@@ -25,7 +25,7 @@ require (
 	k8s.io/api v0.33.2
 	k8s.io/apiextensions-apiserver v0.32.1
 	k8s.io/apimachinery v0.33.2
-	k8s.io/client-go v0.32.1
+	k8s.io/client-go v0.33.2
 	k8s.io/component-base v0.32.1
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
@@ -55,7 +55,7 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/btree v1.0.1 // indirect
+	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.22.0 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -100,7 +100,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/oauth2 v0.23.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
@@ -127,3 +127,5 @@ require (
 )
 
 replace github.com/openshift/api => /home/opokorny/poky/api
+
+replace github.com/openshift/client-go => /home/opokorny/poky/client-go
