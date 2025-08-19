@@ -31,7 +31,7 @@ type dataGatherController struct {
 
 // NewDataGatherInformer creates a new instance of the DataGatherInformer interface
 func NewDataGatherInformer(eventRecorder events.Recorder, insightsInf insightsInformers.SharedInformerFactory) (DataGatherInformer, error) {
-	inf := insightsInf.Insights().V1alpha2().DataGathers().Informer()
+	inf := insightsInf.Insights().V1().DataGathers().Informer()
 
 	dgCtrl := &dataGatherController{
 		ch: make(chan string),

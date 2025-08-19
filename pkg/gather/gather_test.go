@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -25,7 +25,7 @@ func TestGetEnabledGatheringFunctions(t *testing.T) {
 		testName        string
 		gathererName    string
 		all             map[string]gatherers.GatheringClosure
-		gathererConfigs []v1alpha2.GathererConfig
+		gathererConfigs []insightsv1.GathererConfig
 		expected        map[string]gatherers.GatheringClosure
 	}{
 		{
@@ -37,13 +37,13 @@ func TestGetEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			gathererConfigs: []v1alpha2.GathererConfig{
+			gathererConfigs: []insightsv1.GathererConfig{
 				{
 					Name:  "clusterconfig/container_images",
-					State: v1alpha2.GathererStateDisabled,
+					State: insightsv1.GathererStateDisabled,
 				}, {
 					Name:  "clusterconfig/nodes",
-					State: v1alpha2.GathererStateDisabled,
+					State: insightsv1.GathererStateDisabled,
 				},
 			},
 			expected: map[string]gatherers.GatheringClosure{
@@ -60,14 +60,14 @@ func TestGetEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			gathererConfigs: []v1alpha2.GathererConfig{
+			gathererConfigs: []insightsv1.GathererConfig{
 				{
 					Name:  "clusterconfig/foo",
-					State: v1alpha2.GathererStateDisabled,
+					State: insightsv1.GathererStateDisabled,
 				},
 				{
 					Name:  "clusterconfig/bar",
-					State: v1alpha2.GathererStateDisabled,
+					State: insightsv1.GathererStateDisabled,
 				},
 			},
 			expected: map[string]gatherers.GatheringClosure{
@@ -86,10 +86,10 @@ func TestGetEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			gathererConfigs: []v1alpha2.GathererConfig{
+			gathererConfigs: []insightsv1.GathererConfig{
 				{
 					Name:  "clusterconfig",
-					State: v1alpha2.GathererStateDisabled,
+					State: insightsv1.GathererStateDisabled,
 				},
 			},
 			expected: map[string]gatherers.GatheringClosure{},
@@ -103,14 +103,14 @@ func TestGetEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			gathererConfigs: []v1alpha2.GathererConfig{
+			gathererConfigs: []insightsv1.GathererConfig{
 				{
 					Name:  "clusterconfig",
-					State: v1alpha2.GathererStateDisabled,
+					State: insightsv1.GathererStateDisabled,
 				},
 				{
 					Name:  "clusterconfig/nodes",
-					State: v1alpha2.GathererStateEnabled,
+					State: insightsv1.GathererStateEnabled,
 				},
 			},
 			expected: map[string]gatherers.GatheringClosure{
@@ -126,7 +126,7 @@ func TestGetEnabledGatheringFunctions(t *testing.T) {
 				"authentication":   {},
 				"some_function":    {},
 			},
-			gathererConfigs: []v1alpha2.GathererConfig{},
+			gathererConfigs: []insightsv1.GathererConfig{},
 			expected: map[string]gatherers.GatheringClosure{
 				"container_images": {},
 				"nodes":            {},
@@ -208,22 +208,22 @@ func TestStartGatheringConcurrently(t *testing.T) {
 		},
 	})
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []v1alpha2.GathererConfig{
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []insightsv1.GathererConfig{
 		{
 			Name:  "mock_gatherer/3_records",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/errors",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/panic",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/name",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 	})
 	assert.NoError(t, err)
@@ -244,18 +244,18 @@ func TestStartGatheringConcurrently(t *testing.T) {
 		},
 	})
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []v1alpha2.GathererConfig{
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []insightsv1.GathererConfig{
 		{
 			Name:  "mock_gatherer/some_field",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/errors",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/panic",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 	},
 	)
@@ -299,35 +299,35 @@ func TestStartGatheringConcurrently(t *testing.T) {
 func TestStartGatheringConcurrentlyError(t *testing.T) {
 	gatherer := &MockGatherer{SomeField: "some_value"}
 
-	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, []v1alpha2.GathererConfig{
+	resultsChan, err := startGatheringConcurrently(context.Background(), gatherer, []insightsv1.GathererConfig{
 		{
 			Name:  "mock_gatherer/some_field",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/errors",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/panic",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/name",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/3_records",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 	})
 	assert.EqualError(t, err, "no gather functions are specified to run")
 	assert.Nil(t, resultsChan)
 
-	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []v1alpha2.GathererConfig{
+	resultsChan, err = startGatheringConcurrently(context.Background(), gatherer, []insightsv1.GathererConfig{
 		{
 			Name:  "mock_gatherer",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 	})
 	assert.EqualError(t, err, "no gather functions are specified to run")
@@ -421,22 +421,22 @@ func TestCollectAndRecordGatherer(t *testing.T) {
 func TestCollectAndRecordGathererError(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	gatherersConfig := []v1alpha2.GathererConfig{
+	gatherersConfig := []insightsv1.GathererConfig{
 		{
 			Name:  "mock_gatherer/some_field",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/name",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/panic",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/3_records",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 	}
 
@@ -480,22 +480,22 @@ func TestCollectAndRecordGathererError(t *testing.T) {
 func TestCollectAndRecordGathererPanic(t *testing.T) {
 	gatherer := &MockGatherer{}
 	mockRecorder := &recorder.MockRecorder{}
-	gatherersConfig := []v1alpha2.GathererConfig{
+	gatherersConfig := []insightsv1.GathererConfig{
 		{
 			Name:  "mock_gatherer/some_field",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/name",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/errors",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 		{
 			Name:  "mock_gatherer/3_records",
-			State: v1alpha2.GathererStateDisabled,
+			State: insightsv1.GathererStateDisabled,
 		},
 	}
 
