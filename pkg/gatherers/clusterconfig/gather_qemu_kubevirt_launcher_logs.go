@@ -41,7 +41,6 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record.Record, []error) {
-
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
@@ -63,7 +62,6 @@ func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record
 // formatKubeVirtRecords processes log records to extract JSON content from log strings.
 // It removes timestamp prefixes and retains only the JSON portion using regex pattern matching.
 func formatKubeVirtRecords(records []record.Record) ([]record.Record, error) {
-
 	for i := range records {
 		r := records[i]
 		log, err := r.Item.Marshal()

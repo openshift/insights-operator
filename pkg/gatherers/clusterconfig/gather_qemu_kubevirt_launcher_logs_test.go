@@ -25,8 +25,10 @@ func Test_formatKubeVirtRecords(t *testing.T) {
 			expectedResult: "",
 		},
 		{
-			name:           "record with nested JSON",
-			inputRecords:   []record.Record{{Item: marshal.Raw{Str: "2025-08-01T14:34:55.250444623Z {\"data\":{\"nested\":\"value\"},\"array\":[1,2,3]}"}}},
+			name: "record with nested JSON",
+			inputRecords: []record.Record{{Item: marshal.Raw{
+				Str: "2025-08-01T14:34:55.250444623Z {\"data\":{\"nested\":\"value\"},\"array\":[1,2,3]}"}},
+			},
 			expectedResult: "{\"data\":{\"nested\":\"value\"},\"array\":[1,2,3]}",
 		},
 	}
