@@ -6,8 +6,7 @@ metadata:
     api.openshift.io/merged-by-featuregates: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
     include.release.openshift.io/self-managed-high-availability: "true"
-    include.release.openshift.io/single-node-developer: "true"
-    release.openshift.io/feature-set: CustomNoUpgrade,DevPreviewNoUpgrade,TechPreviewNoUpgrade
+    release.openshift.io/feature-set: TechPreviewNoUpgrade
   name: insightsdatagathers.config.openshift.io
 spec:
   group: config.openshift.io
@@ -18,13 +17,13 @@ spec:
     singular: insightsdatagather
   scope: Cluster
   versions:
-    - name: v1alpha2
+    - name: v1
       schema:
         openAPIV3Schema:
           description: |-
             InsightsDataGather provides data gather configuration options for the the Insights Operator.
 
-            Compatibility level 4: No compatibility is provided, the API can change at any point for any reason. These capabilities should not be used by applications needing long term support.
+            Compatibility level 1: Stable within a major release for a minimum of 12 months or 3 minor releases (whichever is longer).
           properties:
             apiVersion:
               description: |-
@@ -45,6 +44,7 @@ spec:
               type: object
             spec:
               description: spec holds user settable values for configuration
+              minProperties: 1
               properties:
                 gatherConfig:
                   description:
@@ -67,6 +67,7 @@ spec:
                           - WorkloadNames
                         type: string
                       maxItems: 2
+                      minItems: 0
                       type: array
                       x-kubernetes-list-type: atomic
                       x-kubernetes-validations:
@@ -108,6 +109,7 @@ spec:
                                       Run the following command to get the names of last active gatherers:
                                       "oc get insightsoperators.operator.openshift.io cluster -o json | jq '.status.gatherStatus.gatherers[].name'"
                                     maxLength: 256
+                                    minLength: 1
                                     type: string
                                     x-kubernetes-validations:
                                       - message:
@@ -131,6 +133,7 @@ spec:
                                   - state
                                 type: object
                               maxItems: 100
+                              minItems: 1
                               type: array
                               x-kubernetes-list-map-keys:
                                 - name
@@ -179,6 +182,7 @@ spec:
                                     name is a string that follows the DNS1123 subdomain format.
                                     It must be at most 253 characters in length, and must consist only of lower case alphanumeric characters, '-' and '.', and must start and end with an alphanumeric character.
                                   maxLength: 253
+                                  minLength: 1
                                   type: string
                                   x-kubernetes-validations:
                                     - message:
@@ -197,6 +201,7 @@ spec:
                                 The current default mount path is /var/lib/insights-operator
                                 The path may not exceed 1024 characters and must not contain a colon.
                               maxLength: 1024
+                              minLength: 1
                               type: string
                               x-kubernetes-validations:
                                 - message: mountPath must not contain a colon
@@ -232,6 +237,7 @@ spec:
               description:
                 status holds observed values from the cluster. They may not
                 be overridden.
+              minProperties: 1
               type: object
           required:
             - spec
