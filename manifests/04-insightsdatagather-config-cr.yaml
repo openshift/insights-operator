@@ -1,4 +1,4 @@
-apiVersion: config.openshift.io/v1alpha2
+apiVersion: config.openshift.io/v1
 kind: InsightsDataGather
 metadata:
   name: cluster
@@ -10,4 +10,7 @@ metadata:
     release.openshift.io/feature-set: CustomNoUpgrade,DevPreviewNoUpgrade,TechPreviewNoUpgrade
     capability.openshift.io/name: Insights
     release.openshift.io/create-only: "true"
-spec: {}
+spec:
+  gatherConfig:
+    gatherers:
+      mode: All
