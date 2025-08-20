@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 // GatherQEMUKubeVirtLauncherLogs Collects logs from KubeVirt virt-launcher pods containing QEMU process information.
@@ -56,7 +57,14 @@ func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record
 			return fmt.Sprintf("aggregated/virt-launcher/logs/%s.json", podName)
 		})
 	if err != nil {
-		return nil, []error{err}
+		if _, expected := err.(*common.ContainersSkippedError); expected {
+			// Log the warning about our gathering limitation and continue
+			klog.Warningf("Some containers were skipped due to reaching the limit: %v", err)
+
+		} else {
+			// For other errors, return immediately
+			return nil, []error{err}
+		}
 	}
 
 	records, err = formatKubeVirtRecords(records)
@@ -64,7 +72,7 @@ func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record
 		return nil, []error{err}
 	}
 
-	return records, nil
+	return records, []error{}
 }
 
 // formatKubeVirtRecords processes log records to extract JSON content from log strings.
