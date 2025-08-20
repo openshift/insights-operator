@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // GatherQEMUKubeVirtLauncherLogs Collects logs from KubeVirt virt-launcher pods containing QEMU process information.
@@ -41,12 +40,21 @@ import (
 // ### Changes
 // None
 func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record.Record, []error) {
+	// Setting a fixed value for the maximum number of VMs pods
+	const maxVMs int = 100
+
 	gatherKubeClient, err := kubernetes.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	records, err := gatherQEMUKubeVirtLauncherLogs(ctx, gatherKubeClient.CoreV1())
+	records, err := common.CollectLogsFromContainers(
+		ctx, gatherKubeClient.CoreV1(),
+		getQEMUArgsContainerFilter(maxVMs),
+		getQEMUArgsMessageFilter(),
+		func(_ string, podName string, _ string) string {
+			return fmt.Sprintf("aggregated/virt-launcher/logs/%s.json", podName)
+		})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -75,17 +83,6 @@ func formatKubeVirtRecords(records []record.Record) ([]record.Record, error) {
 	return records, nil
 }
 
-// gatherQEMUKubeVirtLauncherLogs collects QEMU KubeVirt launcher logs from the given CoreV1Interface
-// This function is extracted for testability and accepts a client interface for mocking
-func gatherQEMUKubeVirtLauncherLogs(ctx context.Context, coreClient v1.CoreV1Interface) ([]record.Record, error) {
-	return common.CollectLogsFromContainers(
-		ctx, coreClient, getQEMUArgsContainerFilter(), getQEMUArgsMessageFilter(),
-		func(_ string, podName string, _ string) string {
-			return fmt.Sprintf("aggregated/virt-launcher/logs/%s.json", podName)
-		},
-	)
-}
-
 // getQEMUArgsMessageFilter creates a LogMessagesFilter for filtering QEMU KubeVirt launcher logs
 // The MessagesToSearch value "/usr/libexec/qemu-kvm" references the QEMU KVM executable path
 // that appears in the command line arguments when KubeVirt creates and manages virtual machines.
@@ -98,9 +95,10 @@ func getQEMUArgsMessageFilter() common.LogMessagesFilter {
 
 // getQEMUArgsContainerFilter creates a LogContainersFilter for selecting KubeVirt virt-launcher pods.
 // It targets all namespaces using the label selector "kubevirt.io=virt-launcher" to identify relevant containers.
-func getQEMUArgsContainerFilter() common.LogContainersFilter {
+func getQEMUArgsContainerFilter(maxContainers int) common.LogContainersFilter {
 	return common.LogContainersFilter{
-		Namespace:     metav1.NamespaceAll,
-		LabelSelector: "kubevirt.io=virt-launcher",
+		Namespace:              metav1.NamespaceAll,
+		LabelSelector:          "kubevirt.io=virt-launcher",
+		MaxNamespaceContainers: maxContainers,
 	}
 }
