@@ -60,7 +60,6 @@ func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record
 		if _, expected := err.(*common.ContainersSkippedError); expected {
 			// Log the warning about our gathering limitation and continue
 			klog.Warningf("Some containers were skipped due to reaching the limit: %v", err)
-
 		} else {
 			// For other errors, return immediately
 			return nil, []error{err}
