@@ -1793,10 +1793,10 @@ activity within virtual machines managed by KubeVirt.
 None
 
 ### Sample data
-- [docs/insights-archive-sample/aggregated/virt-launcher/logs/virt-launcher-centos-stream9-5hvrs.json](./insights-archive-sample/aggregated/virt-launcher/logs/virt-launcher-centos-stream9-5hvrs.json)
+- [docs/insights-archive-sample/namespaces/default/pods/virt-launcher-example/virt-launcher.json](./insights-archive-sample/namespaces/default/pods/virt-launcher-example/virt-launcher.json)
 
 ### Location in archive
-- `aggregated/virt-launcher/logs/{pod-name}.json`
+- `namespaces/{namespace-name}/pods/{pod-name}/virt-launcher.json`
 
 ### Config ID
 `clusterconfig/qemu_kubevirt_launcher_logs`
