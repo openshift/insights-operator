@@ -21,10 +21,10 @@ import (
 // None
 //
 // ### Sample data
-// - docs/insights-archive-sample/aggregated/virt-launcher/logs/virt-launcher-centos-stream9-5hvrs.json
+// - docs/insights-archive-sample/namespaces/default/pods/virt-launcher-example/virt-launcher.json
 //
 // ### Location in archive
-// - `aggregated/virt-launcher/logs/{pod-name}.json`
+// - `namespaces/{namespace-name}/pods/{pod-name}/virt-launcher.json`
 //
 // ### Config ID
 // `clusterconfig/qemu_kubevirt_launcher_logs`
@@ -53,8 +53,8 @@ func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record
 		ctx, gatherKubeClient.CoreV1(),
 		getQEMUArgsContainerFilter(maxVMs),
 		getQEMUArgsMessageFilter(),
-		func(_ string, podName string, _ string) string {
-			return fmt.Sprintf("aggregated/virt-launcher/logs/%s.json", podName)
+		func(namespaceName string, podName string, _ string) string {
+			return fmt.Sprintf("namespaces/%s/pods/%s/virt-launcher.json", namespaceName, podName)
 		})
 	if err != nil {
 		if _, expected := err.(*common.ContainersSkippedError); expected {
