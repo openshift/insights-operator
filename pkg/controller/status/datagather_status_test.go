@@ -50,12 +50,13 @@ func TestUpdateDataGatherState(t *testing.T) {
 
 func TestUpdateDataGatherConditions(t *testing.T) {
 	tests := []struct {
-		name                  string
-		dataGather            *v1alpha1.DataGather
-		updatedCondition      metav1.Condition
-		expectedDataRecorded  metav1.Condition
-		expectedDataProcessed metav1.Condition
-		expectedDataUploaded  metav1.Condition
+		name                             string
+		dataGather                       *v1alpha1.DataGather
+		updatedCondition                 metav1.Condition
+		expectedDataRecorded             metav1.Condition
+		expectedDataProcessed            metav1.Condition
+		expectedDataUploaded             metav1.Condition
+		expectedRemoteConfigurationValid metav1.Condition
 	}{
 		{
 			name: "All conditions unknown and DataRecorcded condition updated",
@@ -65,13 +66,32 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
 						DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
+						RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, "test", ""),
 					},
 				},
 			},
-			updatedCondition:      DataRecordedCondition(metav1.ConditionTrue, "Recorded", "test"),
-			expectedDataRecorded:  DataRecordedCondition(metav1.ConditionTrue, "Recorded", "test"),
-			expectedDataProcessed: DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
-			expectedDataUploaded:  DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
+			updatedCondition:                 DataRecordedCondition(metav1.ConditionTrue, "Recorded", "test"),
+			expectedDataRecorded:             DataRecordedCondition(metav1.ConditionTrue, "Recorded", "test"),
+			expectedDataProcessed:            DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
+			expectedDataUploaded:             DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
+			expectedRemoteConfigurationValid: RemoteConfigurationInvalidCondition(metav1.ConditionUnknown, "test", ""),
+		},
+		{
+			name: "Updating non-existing condition appends the condition",
+			dataGather: &v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
+						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
+						DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
+					},
+				},
+			},
+			updatedCondition:                 RemoteConfigurationInvalidCondition(metav1.ConditionTrue, "Available", "test"),
+			expectedDataRecorded:             DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
+			expectedDataProcessed:            DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
+			expectedDataUploaded:             DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
+			expectedRemoteConfigurationValid: RemoteConfigurationInvalidCondition(metav1.ConditionTrue, "Available", "test"),
 		},
 	}
 
@@ -94,6 +114,11 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 			assert.Equal(t, tt.expectedDataProcessed.Status, dataProcessed.Status)
 			assert.Equal(t, tt.expectedDataProcessed.Reason, dataProcessed.Reason)
 			assert.Equal(t, tt.expectedDataProcessed.Message, dataProcessed.Message)
+
+			remoteConfigurationValid := GetConditionByType(updatedDG, string(RemoteConfigurationValid))
+			assert.Equal(t, tt.expectedRemoteConfigurationValid.Status, remoteConfigurationValid.Status)
+			assert.Equal(t, tt.expectedRemoteConfigurationValid.Reason, remoteConfigurationValid.Reason)
+			assert.Equal(t, tt.expectedRemoteConfigurationValid.Message, remoteConfigurationValid.Message)
 		})
 	}
 }

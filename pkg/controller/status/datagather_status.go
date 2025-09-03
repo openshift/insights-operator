@@ -84,8 +84,10 @@ func GetConditionByType(dataGather *insightsv1alpha1.DataGather, conType string)
 	return c
 }
 
+// getConditionIndexByType tries to find an index of the condition with the provided type.
+// If no match is found, it returns -1.
 func getConditionIndexByType(conType string, conditions []metav1.Condition) int {
-	var idx int
+	idx := -1
 	for i := range conditions {
 		con := conditions[i]
 		if con.Type == conType {
@@ -103,7 +105,11 @@ func UpdateDataGatherConditions(ctx context.Context,
 	newConditions := make([]metav1.Condition, len(dataGather.Status.Conditions))
 	_ = copy(newConditions, dataGather.Status.Conditions)
 	idx := getConditionIndexByType(condition.Type, newConditions)
-	newConditions[idx] = *condition
+	if idx != -1 {
+		newConditions[idx] = *condition
+	} else {
+		newConditions = append(newConditions, *condition)
+	}
 	dataGather.Status.Conditions = newConditions
 	return insightsClient.DataGathers().UpdateStatus(ctx, dataGather, metav1.UpdateOptions{})
 }
