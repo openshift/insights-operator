@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	v1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	networkv1client "github.com/openshift/client-go/network/clientset/versioned/typed/network/v1"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
@@ -41,11 +41,11 @@ func (b *AnonBuilder) WithConfigurator(configurator configobserver.Interface) *A
 	return b
 }
 
-func (b *AnonBuilder) WithDataPolicies(dataPolicy ...v1alpha2.DataPolicyOption) *AnonBuilder {
+func (b *AnonBuilder) WithDataPolicies(dataPolicy ...insightsv1.DataPolicyOption) *AnonBuilder {
 	b.anon.dataPolicy = ""
 
-	if slices.Contains(dataPolicy, v1alpha2.DataPolicyOptionObfuscateNetworking) {
-		b.anon.dataPolicy = v1alpha2.DataPolicyOptionObfuscateNetworking
+	if slices.Contains(dataPolicy, insightsv1.DataPolicyOptionObfuscateNetworking) {
+		b.anon.dataPolicy = insightsv1.DataPolicyOptionObfuscateNetworking
 	}
 
 	return b
