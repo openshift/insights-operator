@@ -80,6 +80,13 @@ type subnetInformation struct {
 	lastIP  net.IP
 }
 
+type DataAnonymizer interface {
+	// AnonymizeData should be used to run anonymization
+	AnonymizeData() error
+	// IsEnabled should be used to check if a given anonymization is enabled
+	IsEnabled() bool
+}
+
 // Anonymizer is used to anonymize sensitive data.
 // Config can be used to enable anonymization of cluster base domain
 // and obfuscation of IPv4 addresses
@@ -95,6 +102,7 @@ type Anonymizer struct {
 	networkClient    networkv1client.NetworkV1Interface
 	gatherKubeClient kubernetes.Interface
 	runningInCluster bool
+	anonymizers      []DataAnonymizer
 }
 
 type ConfigProvider interface {
