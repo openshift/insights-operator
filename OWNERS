@@ -2,9 +2,11 @@ approvers:
 - ncaak
 - opokornyy
 - BaiyangZhou
+- katushiik11
 reviewers:
 - ncaak
 - opokornyy
 - BaiyangZhou
+- katushiik11
 
 component: "Insights Operator"
