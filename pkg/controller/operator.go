@@ -133,7 +133,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightsConfigAPIEnabled := featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
+	insightsConfigEnabled := featureGates.Enabled(features.FeatureGateInsightsConfig)
 
 	// ensure the insight snapshot directory exists
 	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
@@ -143,7 +143,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
 	var dgInformer periodic.DataGatherInformer
-	if insightsConfigAPIEnabled {
+	if insightsConfigEnabled {
 		deleteAllRunningGatheringsPods(ctx, kubeClient)
 		configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
 		insightsDataGatherObserver, err = configobserver.NewInsightsDataGatherObserver(gatherKubeConfig,
@@ -182,13 +182,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient.ConfigV1(), configAggregator,
-		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"), insightsConfigAPIEnabled)
+		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"), insightsConfigEnabled)
 
 	var anonymizer *anonymization.Anonymizer
 	var recdriver *diskrecorder.DiskRecorder
 	var rec *recorder.Recorder
 	// if techPreview is enabled we switch to separate job and we don't need anything from this
-	if !insightsConfigAPIEnabled {
+	if !insightsConfigEnabled {
 		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
 			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{})
@@ -224,7 +224,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configAggregator, insightsClient,
 	)
-	if !insightsConfigAPIEnabled {
+	if !insightsConfigEnabled {
 		periodicGather = periodic.New(configAggregator, rec, gatherers, anonymizer,
 			operatorClient.OperatorV1().InsightsOperators(), kubeClient)
 		statusReporter.AddSources(periodicGather.Sources()...)
@@ -249,7 +249,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 	go periodicGather.Run(ctx.Done(), initialDelay)
 
-	if !insightsConfigAPIEnabled {
+	if !insightsConfigEnabled {
 		// upload results to the provided client - if no client is configured reporting
 		// is permanently disabled, but if a client does exist the server may still disable reporting
 		uploader := insightsuploader.New(recdriver, insightsClient, configAggregator,
