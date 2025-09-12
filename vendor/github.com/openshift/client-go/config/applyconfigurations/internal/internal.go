@@ -1467,6 +1467,11 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: mode
       type:
         scalar: string
+    unions:
+    - discriminator: mode
+      fields:
+      - fieldName: custom
+        discriminatorValue: Custom
 - name: com.github.openshift.api.config.v1.GitHubIdentityProvider
   map:
     fields:
@@ -2076,10 +2081,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.openshift.api.config.v1.InsightsDataGatherSpec
       default: {}
-    - name: status
-      type:
-        namedType: com.github.openshift.api.config.v1.InsightsDataGatherStatus
-      default: {}
 - name: com.github.openshift.api.config.v1.InsightsDataGatherSpec
   map:
     fields:
@@ -2087,18 +2088,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.openshift.api.config.v1.GatherConfig
       default: {}
-- name: com.github.openshift.api.config.v1.InsightsDataGatherStatus
-  map:
-    elementType:
-      scalar: untyped
-      list:
-        elementType:
-          namedType: __untyped_atomic_
-        elementRelationship: atomic
-      map:
-        elementType:
-          namedType: __untyped_deduced_
-        elementRelationship: separable
 - name: com.github.openshift.api.config.v1.IntermediateTLSProfile
   map:
     elementType:
@@ -3626,6 +3615,11 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: type
       type:
         scalar: string
+    unions:
+    - discriminator: type
+      fields:
+      - fieldName: persistentVolume
+        discriminatorValue: PersistentVolume
 - name: com.github.openshift.api.config.v1.TLSSecurityProfile
   map:
     fields:

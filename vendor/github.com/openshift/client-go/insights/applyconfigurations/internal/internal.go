@@ -96,6 +96,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: insightsReport
       type:
         namedType: com.github.openshift.api.insights.v1.InsightsReport
+      default: {}
     - name: insightsRequestID
       type:
         scalar: string
