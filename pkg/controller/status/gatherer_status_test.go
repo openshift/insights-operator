@@ -162,8 +162,8 @@ func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 					Conditions: []metav1.Condition{
 						DataProcessedCondition(metav1.ConditionTrue, "EveyrthingOK", "no message"),
 					},
-					StartTime:  ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
-					FinishTime: ptr.To(metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC)),
+					StartTime:  metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
+					FinishTime: metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC),
 					Gatherers: []insightsv1.GathererStatus{
 						{
 							Name:              "test-gatherer-1",
@@ -171,8 +171,8 @@ func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 							LastGatherSeconds: ptr.To(int32(94)),
 						},
 					},
-					InsightsReport: &insightsv1.InsightsReport{
-						DownloadedTime: ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
+					InsightsReport: insightsv1.InsightsReport{
+						DownloadedTime: metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
 					},
 				},
 			},

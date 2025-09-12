@@ -73,8 +73,7 @@ verify-scripts:
 	hack/verify-payload-featuregates.sh
 
 .PHONY: verify
-# verify: verify-scripts lint verify-crd-schema verify-codegen-crds
-verify: lint
+verify: verify-scripts lint verify-crd-schema verify-codegen-crds
 
 .PHONY: verify-codegen-crds
 verify-codegen-crds:

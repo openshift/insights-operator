@@ -7,7 +7,6 @@ import (
 	insightsv1client "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
 )
 
 const (
@@ -132,8 +131,8 @@ func RemoteConfigurationValidCondition(status metav1.ConditionStatus, reason, me
 func UpdateProgressingCondition(ctx context.Context,
 	insightsClient insightsv1client.InsightsV1Interface,
 	dataGatherCR *insightsv1.DataGather,
-	gatheringState string,
 	dataGatherName string,
+	gatheringState string,
 ) (*insightsv1.DataGather, error) {
 	var err error
 	if dataGatherCR == nil {
@@ -146,12 +145,12 @@ func UpdateProgressingCondition(ctx context.Context,
 
 	switch gatheringState {
 	case GatheringSucceededReason, GatheringFailedReason:
-		if dataGatherCR.Status.FinishTime == nil {
-			dataGatherCR.Status.FinishTime = ptr.To(metav1.Now())
+		if dataGatherCR.Status.FinishTime == (metav1.Time{}) {
+			dataGatherCR.Status.FinishTime = metav1.Now()
 		}
 	case GatheringReason:
-		if dataGatherCR.Status.StartTime == nil {
-			dataGatherCR.Status.StartTime = ptr.To(metav1.Now())
+		if dataGatherCR.Status.StartTime == (metav1.Time{}) {
+			dataGatherCR.Status.StartTime = metav1.Now()
 		}
 	case DataGatheringPendingReason:
 		// no op
