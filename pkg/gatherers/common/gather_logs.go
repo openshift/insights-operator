@@ -36,6 +36,19 @@ type LogMessagesFilter struct {
 	Previous         bool
 }
 
+// ContainersSkippedError represents an error when containers are skipped due to limits
+type ContainersSkippedError struct {
+	Namespace              string
+	MaxNamespaceContainers int
+	SkippedContainers      int
+}
+
+// Error implements the error interface
+func (e *ContainersSkippedError) Error() string {
+	return fmt.Sprintf("skipping %d containers on namespace %s (max: %d)",
+		e.SkippedContainers, e.Namespace, e.MaxNamespaceContainers)
+}
+
 // CollectLogsFromContainers collects logs from containers
 //   - containerFilter allows you to specify
 //   - namespace in which to search for pods
@@ -112,7 +125,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 				break
 			}
 
-			request := coreClient.Pods(containersFilter.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
+			request := coreClient.Pods(pod.Namespace).GetLogs(pod.Name, podLogOptions(containerName, messagesFilter))
 
 			logs, err := filterLogs(ctx, request, messagesFilter.MessagesToSearch, messagesFilter.IsRegexSearch)
 			if err != nil {
@@ -133,8 +146,11 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	}
 
 	if skippedContainers > 0 {
-		return records, fmt.Errorf("skipping %d containers on namespace %s (max: %d)",
-			skippedContainers, containersFilter.Namespace, containersFilter.MaxNamespaceContainers)
+		return records, &ContainersSkippedError{
+			Namespace:              containersFilter.Namespace,
+			MaxNamespaceContainers: containersFilter.MaxNamespaceContainers,
+			SkippedContainers:      skippedContainers,
+		}
 	}
 
 	return records, nil
