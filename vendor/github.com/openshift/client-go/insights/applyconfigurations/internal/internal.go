@@ -50,6 +50,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: spec
       type:
         namedType: com.github.openshift.api.insights.v1.DataGatherSpec
+      default: {}
     - name: status
       type:
         namedType: com.github.openshift.api.insights.v1.DataGatherStatus
@@ -96,6 +97,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: insightsReport
       type:
         namedType: com.github.openshift.api.insights.v1.InsightsReport
+      default: {}
     - name: insightsRequestID
       type:
         scalar: string

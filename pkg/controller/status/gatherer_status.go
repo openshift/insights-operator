@@ -110,14 +110,14 @@ func createGathererConditions(gfr *gather.GathererFunctionReport) []metav1.Condi
 func DataGatherStatusToOperatorStatus(dg *insightsv1.DataGather) v1.InsightsOperatorStatus {
 	operatorStatus := v1.InsightsOperatorStatus{}
 	operatorStatus.GatherStatus = v1.GatherStatus{
-		LastGatherTime: *dg.Status.FinishTime,
+		LastGatherTime: dg.Status.FinishTime,
 		LastGatherDuration: metav1.Duration{
 			Duration: dg.Status.FinishTime.Sub(dg.Status.StartTime.Time),
 		},
 	}
 
 	operatorStatus.InsightsReport = v1.InsightsReport{
-		DownloadedAt: *dg.Status.InsightsReport.DownloadedTime,
+		DownloadedAt: dg.Status.InsightsReport.DownloadedTime,
 	}
 
 	for _, g := range dg.Status.Gatherers {

@@ -462,7 +462,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 }
 
 // handleJobErrors handles job completion errors and updates DataGather status condition to failed.
-func (c *Controller) handleJobErrors(ctx context.Context, dataGather *insightsv1alpha2.DataGather, job *batchv1.Job, err error) {
+func (c *Controller) handleJobErrors(ctx context.Context, dataGather *insightsv1.DataGather, job *batchv1.Job, err error) {
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
 		klog.Errorf("Failed to read job status: %v", err)

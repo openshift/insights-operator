@@ -431,7 +431,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 				Status: insightsv1.DataGatherStatus{
 					StartTime:  metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC),
-					FinishTime: ptr.To(metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC)),
+					FinishTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
 					Gatherers: []insightsv1.GathererStatus{
 						{
 							Name: "clusterconfig/foo1",
@@ -550,7 +550,7 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 				Status: insightsv1.DataGatherStatus{
 					StartTime:  metav1.Date(2020, 5, 13, 2, 30, 0, 0, time.UTC),
-					FinishTime: ptr.To(metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC)),
+					FinishTime: metav1.Date(2020, 5, 13, 2, 56, 54, 0, time.UTC),
 					Gatherers: []insightsv1.GathererStatus{
 						{
 							Name: "clusterconfig/foo1",
