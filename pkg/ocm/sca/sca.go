@@ -203,7 +203,7 @@ func (c *Controller) processResponses(ctx context.Context, responses Response, c
 			return err
 		}
 	} else {
-		return fmt.Errorf("master node architecture not found, default secret is not created nor updated")
+		return fmt.Errorf("certificates for node architecture not found, default secret is not created nor updated")
 	}
 
 	// Create architecture specific secrets with sca certificates
