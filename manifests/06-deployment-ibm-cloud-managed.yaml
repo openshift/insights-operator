@@ -3,10 +3,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
+    capability.openshift.io/name: Insights
     config.openshift.io/inject-proxy: insights-operator
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
-    capability.openshift.io/name: Insights
   name: insights-operator
   namespace: openshift-insights
 spec:
@@ -52,8 +52,11 @@ spec:
           capabilities:
             drop:
             - ALL
+          readOnlyRootFilesystem: true
         terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
+        - mountPath: /tmp
+          name: tmp
         - mountPath: /var/lib/insights-operator
           name: snapshots
         - mountPath: /var/run/configmaps/trusted-ca-bundle
@@ -85,6 +88,8 @@ spec:
         operator: Exists
         tolerationSeconds: 900
       volumes:
+      - emptyDir: {}
+        name: tmp
       - emptyDir: {}
         name: snapshots
       - configMap:
