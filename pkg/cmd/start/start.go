@@ -237,7 +237,7 @@ func checkFeatureGates(ctx context.Context, clientConfig *rest.Config, operator 
 		klog.Exit(err)
 	}
 
-	operator.InsightsConfigAPIEnabled = featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
+	operator.InsightsConfigEnabled = featureGates.Enabled(features.FeatureGateInsightsConfig)
 }
 
 func createClientConfig(
