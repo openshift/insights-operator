@@ -27,6 +27,7 @@ spec:
       annotations:
         openshift.io/required-scc: insights-runtime-extractor-scc
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+        kubectl.kubernetes.io/default-container: extractor
     spec:
       serviceAccountName: insights-runtime-extractor-sa
       hostPID: true
