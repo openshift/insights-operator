@@ -62,7 +62,7 @@ func obfuscateArchive(path string) (string, error) {
 		return "", err
 	}
 
-	anonBuilder := &anonymization.AnonBuilder{}
+	anonBuilder := &anonymization.NetworkAnonymizerBuilder{}
 	anonBuilder.
 		WithSensitiveValue(clusterBaseDomain, anonymization.ClusterBaseDomainPlaceholder).
 		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking).
@@ -93,7 +93,12 @@ func obfuscateArchive(path string) (string, error) {
 			r.Data = metadataBytes
 		}
 
-		anonymizedRecords = append(anonymizedRecords, *anonymizer.AnonymizeMemoryRecord(r))
+		anonymizedData, err := anonymizer.AnonymizeData(r)
+		if err != nil {
+			return "", err
+		}
+
+		anonymizedRecords = append(anonymizedRecords, *anonymizedData)
 	}
 
 	diskRecorder := diskrecorder.New("")
