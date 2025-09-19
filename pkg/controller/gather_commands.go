@@ -160,7 +160,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	defer cancel()
 	dataGatherCR, err := insightsV1alpha2Cli.DataGathers().Get(ctx, os.Getenv("DATAGATHER_NAME"), metav1.GetOptions{})
 	if err != nil {
-		klog.Errorf("failed to get coresponding DataGather custom resource: %v", err)
+		klog.Errorf("failed to get corresponding DataGather custom resource: %v", err)
 		return err
 	}
 
@@ -204,9 +204,9 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		configAggregator, insightsHTTPCli)
 	uploader := insightsuploader.New(nil, insightsHTTPCli, configAggregator, nil, nil, 0)
 
-	dataGatherCR, err = status.UpdateProgressingCondition(ctx, insightsV1alpha2Cli, dataGatherCR, status.GatheringReason)
+	dataGatherCR, err = status.UpdateProgressingCondition(ctx, insightsV1alpha2Cli, dataGatherCR, dataGatherCR.Name, status.GatheringReason)
 	if err != nil {
-		klog.Errorf("failed to update coresponding DataGather custom resource: %v", err)
+		klog.Errorf("failed to update corresponding DataGather custom resource: %v", err)
 		return err
 	}
 
@@ -361,7 +361,7 @@ func gatherAndReportFunctions(
 func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
 	dataGatherCR *insightsv1alpha2.DataGather, conditionToUpdate *metav1.Condition, gatheringStatus string,
 ) {
-	dataGatherUpdated, err := status.UpdateProgressingCondition(ctx, insightsClient, dataGatherCR, gatheringStatus)
+	dataGatherUpdated, err := status.UpdateProgressingCondition(ctx, insightsClient, dataGatherCR, dataGatherCR.Name, gatheringStatus)
 	if err != nil {
 		klog.Errorf("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
 	}
