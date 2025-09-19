@@ -67,13 +67,17 @@ func newRecorder(maxArchiveSize int64, clusterBaseDomain string) (*Recorder, err
 			},
 		},
 	})
-	anonBuilder := &anonymization.AnonBuilder{}
-	anonBuilder.
-		WithSensitiveValue(clusterBaseDomain, anonymization.ClusterBaseDomainPlaceholder).
-		WithConfigurator(mockConfigMapConfigurator).
-		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking)
 
-	anonymizer, err := anonBuilder.Build()
+	networkAnonymizationBuilder := &anonymization.NetworkAnonymizerBuilder{}
+	networkAnonymizer, err := networkAnonymizationBuilder.WithSensitiveValue(clusterBaseDomain, anonymization.ClusterBaseDomainPlaceholder).
+		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking).
+		WithConfigurator(mockConfigMapConfigurator).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+
+	anonymizer, err := anonymization.NewAnonymizer(networkAnonymizer)
 	if err != nil {
 		return nil, err
 	}
