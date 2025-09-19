@@ -440,7 +440,9 @@ It also collects the name and namespace of any Ingress Controllers using the cer
 - 4.17
 
 ### Backported versions
-TBD
+- 4.14.36+
+- 4.15.27+
+- 4.16.6+
 
 ### Changes
 None
@@ -1993,6 +1995,37 @@ None
 None
 
 
+## QEMUKubeVirtLauncherLogs
+
+Collects logs from KubeVirt virt-launcher pods containing QEMU process information.
+This gatherer specifically searches for log lines containing "/usr/libexec/qemu-kvm" to capture QEMU-related
+activity within virtual machines managed by KubeVirt.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/default/pods/virt-launcher-example/virt-launcher.json](./insights-archive-sample/namespaces/default/pods/virt-launcher-example/virt-launcher.json)
+
+### Location in archive
+- `namespaces/{namespace-name}/pods/{pod-name}/virt-launcher.json`
+
+### Config ID
+`clusterconfig/qemu_kubevirt_launcher_logs`
+
+### Released version
+- 4.20.0
+
+### Backported versions (TBD)
+- 4.19.z
+- 4.18.z
+- 4.17.z
+- 4.16.z
+
+### Changes
+None
+
+
 ## SAPConfig
 
 Collects selected security context constraints
@@ -2366,5 +2399,6 @@ None
 ### Changes
 - Image repository is now collected if it comes from outside the Red Hat domain
 - [Tech Preview] runtime info for workloads are collected (since 4.18.0)
+- [GA] runtime info for workloads are collected by default (since 4.19.0)
 
 
