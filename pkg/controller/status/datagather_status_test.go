@@ -73,6 +73,21 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 			expectedDataProcessed: DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
 			expectedDataUploaded:  DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
 		},
+		{
+			name: "Updating non-existing condition appends the condition",
+			dataGather: &v1alpha1.DataGather{
+				Status: v1alpha1.DataGatherStatus{
+					Conditions: []metav1.Condition{
+						DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
+						DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
+						DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
+					},
+				},
+			},
+			expectedDataRecorded:  DataRecordedCondition(metav1.ConditionUnknown, "test", ""),
+			expectedDataProcessed: DataProcessedCondition(metav1.ConditionUnknown, "test", ""),
+			expectedDataUploaded:  DataUploadedCondition(metav1.ConditionUnknown, "test", ""),
+		},
 	}
 
 	for _, tt := range tests {
