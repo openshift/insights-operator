@@ -132,27 +132,15 @@ func RemoteConfigurationValidCondition(status metav1.ConditionStatus, reason, me
 func UpdateProgressingCondition(ctx context.Context,
 	insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
 	dataGatherCR *insightsv1alpha2.DataGather,
-	dataGatherName string,
 	gatheringState string,
 ) (*insightsv1alpha2.DataGather, error) {
-	var err error
-	if dataGatherCR == nil {
-		dataGatherCR, err = insightsClient.DataGathers().Get(ctx, dataGatherName, metav1.GetOptions{})
-		if err != nil {
-			klog.Errorf("Failed to get DataGather resource %s: %v", dataGatherName, err)
-			return nil, err
-		}
-	}
-
 	switch gatheringState {
 	case GatheringSucceededReason:
 		dataGatherCR.Status.FinishTime = ptr.To(metav1.Now())
 	case GatheringFailedReason:
 		dataGatherCR.Status.FinishTime = ptr.To(metav1.Now())
 	case GatheringReason:
-		if dataGatherCR.Status.StartTime == nil {
-			dataGatherCR.Status.StartTime = ptr.To(metav1.Now())
-		}
+		dataGatherCR.Status.StartTime = ptr.To(metav1.Now())
 	case DataGatheringPendingReason:
 		// no op
 	}
@@ -162,10 +150,9 @@ func UpdateProgressingCondition(ctx context.Context,
 	)
 	if err != nil {
 		klog.Errorf("Failed to update DataGather resource %s conditions: %v", dataGatherCR.Name, err)
-		return nil, err
 	}
 
-	return updatedDataGather, nil
+	return insightsClient.DataGathers().UpdateStatus(ctx, updatedDataGather, metav1.UpdateOptions{})
 }
 
 // GetConditionByType tries to get the condition with the provided condition status

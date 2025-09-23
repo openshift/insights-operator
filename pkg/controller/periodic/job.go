@@ -2,7 +2,6 @@ package periodic
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -19,8 +18,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 )
-
-var ErrJobFailed = errors.New("job failed")
 
 // JobController type responsible for
 // creating a new gathering jobs
@@ -136,7 +133,7 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 			}
 
 			if event.Type == apiWatch.Deleted {
-				return fmt.Errorf("job '%s' deleted: %w", job.Name, ErrJobFailed)
+				return nil
 			}
 
 			if event.Type != apiWatch.Modified {
@@ -151,7 +148,7 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 				return nil
 			}
 			if job.Status.Failed > 0 {
-				return fmt.Errorf("checking status for job '%s': %w", job.Name, ErrJobFailed)
+				return fmt.Errorf("job %s failed", job.Name)
 			}
 		}
 	}
