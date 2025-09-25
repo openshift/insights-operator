@@ -408,7 +408,6 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 	err = c.jobController.WaitForJobCompletion(ctx, gj)
 	if err != nil {
 		c.handleJobErrors(ctx, dataGather, gj, err)
-		return
 	}
 
 	klog.Infof("Job completed %s", gj.Name)
