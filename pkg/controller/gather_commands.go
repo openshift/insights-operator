@@ -82,9 +82,15 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 	configObserver := configobserver.New(g.Controller, kubeClient)
 	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 
+	networkAnonymizer, err := anonymization.NewNetworkAnonymizerFromConfig(
+		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{},
+	)
+	if err != nil {
+		return err
+	}
+
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizerFromConfig(
-		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{})
+	anonymizer, err := anonymization.NewAnonymizer(networkAnonymizer)
 	if err != nil {
 		return err
 	}
@@ -181,9 +187,15 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	configObserver := configobserver.New(g.Controller, kubeClient)
 	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 
+	networkAnonymizer, err := anonymization.NewNetworkAnonymizerFromConfig(
+		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, dataGatherCR.Spec.DataPolicy,
+	)
+	if err != nil {
+		return err
+	}
+
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizerFromConfig(
-		ctx, gatherKubeConfig, gatherProtoKubeConfig, protoKubeConfig, configAggregator, dataGatherCR.Spec.DataPolicy)
+	anonymizer, err := anonymization.NewAnonymizer(networkAnonymizer)
 	if err != nil {
 		return err
 	}
