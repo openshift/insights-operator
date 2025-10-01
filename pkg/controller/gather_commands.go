@@ -164,10 +164,19 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
+	// configobserver synthesizes all config into the status reporter controller
+	configObserver := configobserver.New(g.Controller, kubeClient)
+	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
+
 	// if the dataGather uses persistenVolume, check if the volumePath was defined
 	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
 		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
 			g.StoragePath = storagePath
+		}
+	} else {
+		// The ConfigMap is not checked before performing operations on the StoragePath that could disrupt the routine
+		if cmsp := configAggregator.Config().DataReporting.StoragePath; cmsp != "" {
+			g.StoragePath = cmsp
 		}
 	}
 
@@ -176,10 +185,6 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		return err
 	}
-
-	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(g.Controller, kubeClient)
-	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
