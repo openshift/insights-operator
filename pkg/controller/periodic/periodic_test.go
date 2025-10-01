@@ -768,7 +768,7 @@ func TestCreateDataGatherAttributeValues(t *testing.T) {
 			disabledGatherers, dp, storage := mockController.createDataGatherAttributeValues()
 			assert.Equal(t, tt.expectedPolicy, dp)
 			assert.EqualValues(t, tt.expectedDisabledGatherers, disabledGatherers)
-			assert.Equal(t, createStorage(&tt.gatherConfig.Storage), storage)
+			assert.Equal(t, createStorage(tt.gatherConfig.Storage), storage)
 		})
 	}
 }

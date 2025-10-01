@@ -853,21 +853,25 @@ func (c *Controller) createDataGatherAttributeValues() (
 		gatherer.Custom = insightsv1.Custom{Configs: configs}
 	}
 
-	return gatherer, dataPolicy, createStorage(&gatherConfig.Storage)
+	return gatherer, dataPolicy, createStorage(gatherConfig.Storage)
 }
 
 // createStorage creates the "insightsv1alpha1.storage" from the provided "configv1alpha1.storage"
-func createStorage(storage *configv1.Storage) insightsv1.Storage {
-	// TODO: this is not pointer anymore and needs to be reworked
-	// if the storage.Type == "" that means the user did not set the value
-	// and we need to use the default one
+func createStorage(storage configv1.Storage) insightsv1.Storage {
+	// No storage was defined by a user
 	if storage.Type == "" {
+		// TODO: chekc if the EphemeralType should be returned
+		return insightsv1.Storage{}
+	}
+
+	// User explicitly defined Ephemeral type
+	if storage.Type == configv1.StorageTypeEphemeral {
 		return insightsv1.Storage{
-			// TODO: should we set the default here?
-			// Type: insightsv1.StorageTypeEphemeral,
+			Type: insightsv1.StorageTypeEphemeral,
 		}
 	}
 
+	// Handle persistent volume storage
 	mountPath := defaultStoragePath
 	if storage.Type == configv1.StorageTypePersistentVolume {
 		if path := storage.PersistentVolume.MountPath; path != "" {

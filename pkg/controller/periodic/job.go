@@ -208,7 +208,6 @@ func (j *JobController) createVolumeMounts(storagePath string, storage insightsv
 		},
 	}
 
-	// TODO: pointer is not used anymore
 	if storage == (insightsv1.Storage{}) || storage.Type != insightsv1.StorageTypePersistentVolume {
 		return volumeMount
 	}

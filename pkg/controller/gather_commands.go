@@ -326,7 +326,6 @@ func gatherAndReportFunctions(
 
 	var gatheringConfig []insightsv1.GathererConfig
 	// Check if custom config should be used
-	// TODO: not a pointer anymore
 	if !reflect.DeepEqual(dataGatherCR.Spec.Gatherers, (insightsv1.Gatherers{})) &&
 		dataGatherCR.Spec.Gatherers.Mode == insightsv1.GatheringModeCustom {
 		gatheringConfig = dataGatherCR.Spec.Gatherers.Custom.Configs

@@ -41,8 +41,6 @@ func TestCreateGathererJob(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "custom-gather-test-empty",
 				},
-				// TODO: not sure if this is gonna work
-				// Spec: &insightsv1.DataGatherSpec{},
 			},
 			imageName: "test.io/test/insights-image",
 			dataReporting: config.DataReporting{
