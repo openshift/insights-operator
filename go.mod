@@ -20,7 +20,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/time v0.7.0
 	k8s.io/api v0.32.3
 	k8s.io/apiextensions-apiserver v0.32.1
@@ -29,6 +29,7 @@ require (
 	k8s.io/component-base v0.32.1
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
+	sigs.k8s.io/node-feature-discovery/api/nfd v0.18.0
 	sigs.k8s.io/yaml v1.4.0
 )
 

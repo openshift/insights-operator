@@ -91,6 +91,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"tsdb_status":                       (*Gatherer).GatherPrometheusTSDBStatus,
 	"validating_webhook_configurations": (*Gatherer).GatherValidatingWebhookConfigurations,
 	"version":                           (*Gatherer).GatherClusterVersion,
+	"nodefeatures":                      (*Gatherer).GatherNodeFeatures,
 }
 
 func New(
