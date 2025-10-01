@@ -68,7 +68,6 @@ spec:
               memory: 100Mi
         - name: exporter
           image: quay.io/openshift/origin-insights-runtime-exporter:latest
-          imagePullPolicy: Always
           volumeMounts:
             - mountPath: /data
               name: data-volume
@@ -85,7 +84,6 @@ spec:
               memory: 200Mi
         - name: extractor
           image: quay.io/openshift/origin-insights-runtime-extractor:latest
-          imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
               value: unix:///crio.sock
