@@ -492,6 +492,10 @@ func createRemoteConfigConditions(
 	return
 }
 
+// getCustomStoragePath determines a custom storage path by checking configuration sources
+// in priority order:
+// * DataGather CR specification (PersistentVolume.MountPath)
+// * ConfigMap configuration (DataReporting.StoragePath)
 func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1alpha2.DataGather) string {
 	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
 		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
@@ -499,6 +503,7 @@ func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherC
 		}
 	}
 
+	// this could be returned directly with the same functionality but this way is more readable
 	if cmsp := configAggregator.Config().DataReporting.StoragePath; cmsp != "" {
 		return cmsp
 	}
