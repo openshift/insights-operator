@@ -241,10 +241,7 @@ func (m *MockConfigAggregator) Config() *config.InsightsConfiguration {
 }
 
 func (m *MockConfigAggregator) ConfigChanged() (_ <-chan struct{}, _ func()) {
-	ch := make(chan struct{})
-	return ch, func() {
-		close(ch)
-	}
+	return nil, nil
 }
 
 func (m *MockConfigAggregator) Listen(_ context.Context) {}
