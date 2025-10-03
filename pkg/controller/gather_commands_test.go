@@ -240,14 +240,14 @@ func (m *MockConfigAggregator) Config() *config.InsightsConfiguration {
 	}
 }
 
-func (m *MockConfigAggregator) ConfigChanged() (<-chan struct{}, func()) {
+func (m *MockConfigAggregator) ConfigChanged() (_ <-chan struct{}, _ func()) {
 	ch := make(chan struct{})
 	return ch, func() {
 		close(ch)
 	}
 }
 
-func (m *MockConfigAggregator) Listen(ctx context.Context) {}
+func (m *MockConfigAggregator) Listen(_ context.Context) {}
 
 func TestGetCustomStoragePath(t *testing.T) {
 	tests := []struct {
