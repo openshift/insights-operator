@@ -168,7 +168,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	configObserver := configobserver.New(g.Controller, kubeClient)
 	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 
-	// check to see if there is an additional configuration besides the default one
+	// additional configurations may exist besides the default one
 	if customPath := getCustomStoragePath(configAggregator, dataGatherCR); customPath != "" {
 		g.StoragePath = customPath
 	}
