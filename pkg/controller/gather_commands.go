@@ -168,16 +168,9 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	configObserver := configobserver.New(g.Controller, kubeClient)
 	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 
-	// if the dataGather uses persistenVolume, check if the volumePath was defined
-	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
-		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
-			g.StoragePath = storagePath
-		}
-	} else {
-		// The ConfigMap is not checked before performing operations on the StoragePath that could disrupt the routine
-		if cmsp := configAggregator.Config().DataReporting.StoragePath; cmsp != "" {
-			g.StoragePath = cmsp
-		}
+	// check to see if there is an additional configuration besides the default one
+	if customPath := getCustomStoragePath(configAggregator, dataGatherCR); customPath != "" {
+		g.StoragePath = customPath
 	}
 
 	// ensure the insight snapshot directory exists
@@ -497,6 +490,20 @@ func createRemoteConfigConditions(
 		}
 	}
 	return
+}
+
+func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1alpha2.DataGather) string {
+	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
+		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
+			return storagePath
+		}
+	}
+
+	if cmsp := configAggregator.Config().DataReporting.StoragePath; cmsp != "" {
+		return cmsp
+	}
+
+	return ""
 }
 
 // boolToConditionStatus is a helper function to conver bool type
