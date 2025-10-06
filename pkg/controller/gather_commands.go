@@ -164,11 +164,13 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	// if the dataGather uses persistenVolume, check if the volumePath was defined
-	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
-		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
-			g.StoragePath = storagePath
-		}
+	// configobserver synthesizes all config into the status reporter controller
+	configObserver := configobserver.New(g.Controller, kubeClient)
+	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
+
+	// additional configurations may exist besides the default one
+	if customPath := getCustomStoragePath(configAggregator, dataGatherCR); customPath != "" {
+		g.StoragePath = customPath
 	}
 
 	// ensure the insight snapshot directory exists
@@ -176,10 +178,6 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		return err
 	}
-
-	// configobserver synthesizes all config into the status reporter controller
-	configObserver := configobserver.New(g.Controller, kubeClient)
-	configAggregator := configobserver.NewStaticConfigAggregator(configObserver, kubeClient)
 
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
 	anonymizer, err := anonymization.NewAnonymizerFromConfig(
@@ -492,6 +490,25 @@ func createRemoteConfigConditions(
 		}
 	}
 	return
+}
+
+// getCustomStoragePath determines a custom storage path by checking configuration sources
+// in priority order:
+// * DataGather CR specification (PersistentVolume.MountPath)
+// * ConfigMap configuration (DataReporting.StoragePath)
+func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1alpha2.DataGather) string {
+	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
+		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
+			return storagePath
+		}
+	}
+
+	// this could be returned directly with the same functionality but this way is more readable
+	if cmsp := configAggregator.Config().DataReporting.StoragePath; cmsp != "" {
+		return cmsp
+	}
+
+	return ""
 }
 
 // boolToConditionStatus is a helper function to conver bool type
