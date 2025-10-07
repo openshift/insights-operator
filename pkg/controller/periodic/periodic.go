@@ -318,31 +318,9 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 				ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
 				defer cancel()
 
-				dataGather, err := c.getDataGather(ctx, dgName)
+				dataGather, err := c.prepareDataGatherCRWithImage(ctx, dgName)
 				if err != nil {
-					klog.Errorf("Failed to read %s DataGather resource", dgName)
 					return
-				}
-
-				// Avoid running DataGathering for already run jobs
-				if len(dataGather.Status.Conditions) != 0 {
-					klog.Infof("DataGather %s resource not triggering any data gathering, gathering was already run", dgName)
-					return
-				}
-
-				if c.image == "" {
-					image, err := c.getInsightsImage(ctx)
-					if err != nil {
-						klog.Errorf("Can't get operator image. Gathering will not run: %v", err)
-						return
-					}
-					c.image = image
-				}
-
-				if dataGather.Spec.Storage == nil {
-					klog.Warningf("StorageSpec is not provided for the %s DataGather resource. Using the default storage", dgName)
-					// Use config from the InsightsDataGather CRD, if not provided ephemeral storage will be used
-					dataGather.Spec.Storage = createStorage(c.apiConfigurator.GatherConfig().Storage)
 				}
 
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
@@ -350,6 +328,31 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 			}()
 		}
 	}
+}
+
+func (c *Controller) prepareDataGatherCRWithImage(ctx context.Context, dgName string) (*insightsv1alpha2.DataGather, error) {
+	dataGather, err := c.getDataGather(ctx, dgName)
+	if err != nil {
+		klog.Errorf("Failed to read %s DataGather resource", dgName)
+		return nil, err
+	}
+
+	// Avoid running DataGathering for already run jobs
+	if len(dataGather.Status.Conditions) != 0 {
+		klog.Infof("DataGather %s resource not triggering any data gathering, gathering was already run", dgName)
+		return nil, fmt.Errorf("gathering was already run")
+	}
+
+	if c.image == "" {
+		image, err := c.getInsightsImage(ctx)
+		if err != nil {
+			klog.Errorf("Can't get operator image. Gathering will not run: %v", err)
+			return nil, err
+		}
+		c.image = image
+	}
+
+	return dataGather, nil
 }
 
 func (c *Controller) GatherJob() {
