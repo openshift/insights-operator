@@ -129,7 +129,6 @@ func DataGatherStatusToOperatorStatus(dg *insightsv1.DataGather) v1.InsightsOper
 		gs := v1.GathererStatus{
 			Name: g.Name,
 			LastGatherDuration: metav1.Duration{
-				// TODO: check pointer before?
 				Duration: time.Duration(lastGatherSeconds) * time.Second,
 			},
 			Conditions: g.Conditions,

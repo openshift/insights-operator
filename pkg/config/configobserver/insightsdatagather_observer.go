@@ -77,5 +77,8 @@ func (i *insightsDataGatherController) GatherDisabled() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
+	if i.gatherConfig == nil {
+		return false
+	}
 	return i.gatherConfig.Gatherers.Mode == configv1.GatheringModeNone
 }

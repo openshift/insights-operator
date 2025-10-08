@@ -160,7 +160,7 @@ func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 			dataGather: insightsv1.DataGather{
 				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{
-						DataProcessedCondition(metav1.ConditionTrue, "EveyrthingOK", "no message"),
+						DataProcessedCondition(metav1.ConditionTrue, "EverythingOK", "no message"),
 					},
 					StartTime:  metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
 					FinishTime: metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC),

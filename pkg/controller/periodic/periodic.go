@@ -856,11 +856,10 @@ func (c *Controller) createDataGatherAttributeValues() (
 	return gatherer, dataPolicy, createStorage(gatherConfig.Storage)
 }
 
-// createStorage creates the "insightsv1alpha1.storage" from the provided "configv1alpha1.storage"
+// createStorage creates the "v1.storage" from the provided "configv1.storage"
 func createStorage(storage configv1.Storage) insightsv1.Storage {
 	// No storage was defined by a user
 	if storage.Type == "" {
-		// TODO: chekc if the EphemeralType should be returned
 		return insightsv1.Storage{}
 	}
 

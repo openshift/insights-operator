@@ -75,20 +75,19 @@ func TestCreateGathererJob(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			jc := NewJobController(kube)
 
-			// panic here
 			createdJob, err := jc.CreateGathererJob(context.Background(), tt.imageName, &tt.dataReporting, tt.dataGather)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.dataGather.Name, createdJob.Name)
 			assert.Equal(t, tt.imageName, createdJob.Spec.Template.Spec.Containers[0].Image)
 
-			if tt.dataGather.Spec.Storage == (insightsv1.Storage{}) {
+			if tt.dataGather.Spec.Storage.Type != insightsv1.StorageTypePersistentVolume {
 				// EmptyDir is used when no storage is specified
 				assert.NotNil(t, createdJob.Spec.Template.Spec.Volumes[0].EmptyDir)
 				assert.Nil(t, createdJob.Spec.Template.Spec.Volumes[0].PersistentVolumeClaim)
 			} else {
 				assert.NotNil(t, createdJob.Spec.Template.Spec.Volumes[0].PersistentVolumeClaim)
 				assert.Nil(t, createdJob.Spec.Template.Spec.Volumes[0].EmptyDir)
-				assert.Equal(t, "test-pvc", createdJob.Spec.Template.Spec.Volumes[0].PersistentVolumeClaim.ClaimName)
+				assert.Equal(t, insightsPVCName, createdJob.Spec.Template.Spec.Volumes[0].PersistentVolumeClaim.ClaimName)
 			}
 
 			// we mount to volumes

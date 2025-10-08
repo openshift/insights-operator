@@ -11,7 +11,7 @@ import (
 	insightsv1 "github.com/openshift/api/insights/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
-	insightsv1alpha1client "github.com/openshift/client-go/insights/clientset/versioned"
+	insightsclientset "github.com/openshift/client-go/insights/clientset/versioned"
 	insightsInformers "github.com/openshift/client-go/insights/informers/externalversions"
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
@@ -81,7 +81,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightClient, err := insightsv1alpha1client.NewForConfig(controller.KubeConfig)
+	insightClient, err := insightsclientset.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
 	}

@@ -500,11 +500,7 @@ func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
 		return true
 	}
 
-	if anonymizer.dataPolicy != "" {
-		return anonymizer.dataPolicy == insightsv1.DataPolicyOptionObfuscateNetworking
-	}
-
-	return false
+	return anonymizer.dataPolicy == insightsv1.DataPolicyOptionObfuscateNetworking
 }
 
 // getNextIP returns the next IP address in the current subnetwork and the flag indicating if there was an overflow

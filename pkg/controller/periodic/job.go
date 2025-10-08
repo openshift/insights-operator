@@ -163,11 +163,9 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 // If a PersistentVolumeClaim is specified in the storage configuration, it checks whether the PVC exists.
 // If the PVC is not found, or if no storage specification is provided, an EmptyDir is used instead.
 func (j *JobController) createVolumeSource(ctx context.Context, storage insightsv1.Storage) corev1.VolumeSource {
-	// This needs to be changes, because storage is not a pointer in v1 anymore
-	// a) We need to either check if storage == v1.Storage{}
-	// b) We can also check the storage.Type == "", which means that user did not specify storage
-	// c) We can maybe pass pointer to this function to simplify the checks a bit.
-	if storage == (insightsv1.Storage{}) || storage.Type == insightsv1.StorageTypeEphemeral {
+	// Empty storage.type means there was no storage defined by user and the
+	// gathering needs to be run with Ephemeral storage type
+	if storage.Type == "" || storage.Type == insightsv1.StorageTypeEphemeral {
 		klog.Info("Creating volume source with EmptyDir, no storageSpec provided")
 		return corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
@@ -208,11 +206,12 @@ func (j *JobController) createVolumeMounts(storagePath string, storage insightsv
 		},
 	}
 
-	if storage == (insightsv1.Storage{}) || storage.Type != insightsv1.StorageTypePersistentVolume {
+	// For non-PersistentVolume storage, use the default storagePath from config
+	if storage.Type != insightsv1.StorageTypePersistentVolume {
 		return volumeMount
 	}
 
-	// If the PVC has a mountPath, use it
+	// For PersistentVolume, check if a custom mountPath is specified
 	if mountPath := storage.PersistentVolume.MountPath; mountPath != "" {
 		volumeMount[0].MountPath = mountPath
 	}

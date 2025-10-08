@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"reflect"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -325,9 +324,9 @@ func gatherAndReportFunctions(
 	var remoteConfStatus gatherers.RemoteConfigStatus
 
 	var gatheringConfig []insightsv1.GathererConfig
+
 	// Check if custom config should be used
-	if !reflect.DeepEqual(dataGatherCR.Spec.Gatherers, (insightsv1.Gatherers{})) &&
-		dataGatherCR.Spec.Gatherers.Mode == insightsv1.GatheringModeCustom {
+	if dataGatherCR.Spec.Gatherers.Mode == insightsv1.GatheringModeCustom {
 		gatheringConfig = dataGatherCR.Spec.Gatherers.Custom.Configs
 	}
 
@@ -505,8 +504,8 @@ func createRemoteConfigConditions(
 // in priority order:
 // * DataGather CR specification (PersistentVolume.MountPath)
 // * ConfigMap configuration (DataReporting.StoragePath)
-func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1alpha2.DataGather) string {
-	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
+func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1.DataGather) string {
+	if dataGatherCR.Spec.Storage.Type == insightsv1.StorageTypePersistentVolume {
 		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
 			return storagePath
 		}

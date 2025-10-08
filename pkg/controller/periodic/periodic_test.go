@@ -1743,7 +1743,7 @@ func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
 func TestGetDataGatherCR(t *testing.T) {
 	tests := []struct {
 		name            string
-		dataGather      *v1alpha2.DataGather
+		dataGather      *insightsv1.DataGather
 		deployment      *appsv1.Deployment
 		controllerImage string
 		expectedImage   string
@@ -1752,11 +1752,11 @@ func TestGetDataGatherCR(t *testing.T) {
 	}{
 		{
 			name: "Successful retrieval with no conditions and image not set",
-			dataGather: &v1alpha2.DataGather{
+			dataGather: &insightsv1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-dg",
 				},
-				Status: v1alpha2.DataGatherStatus{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{},
 				},
 			},
@@ -1785,11 +1785,11 @@ func TestGetDataGatherCR(t *testing.T) {
 		},
 		{
 			name: "Successful retrieval with image already set",
-			dataGather: &v1alpha2.DataGather{
+			dataGather: &insightsv1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-dg-2",
 				},
-				Status: v1alpha2.DataGatherStatus{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{},
 				},
 			},
@@ -1818,11 +1818,11 @@ func TestGetDataGatherCR(t *testing.T) {
 		},
 		{
 			name: "DataGather with existing conditions - gathering already run",
-			dataGather: &v1alpha2.DataGather{
+			dataGather: &insightsv1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-dg-with-conditions",
 				},
-				Status: v1alpha2.DataGatherStatus{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{
 						{
 							Type:   status.DataUploaded,
@@ -1857,11 +1857,11 @@ func TestGetDataGatherCR(t *testing.T) {
 		},
 		{
 			name: "Failed to get deployment image",
-			dataGather: &v1alpha2.DataGather{
+			dataGather: &insightsv1.DataGather{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-dg-no-image",
 				},
-				Status: v1alpha2.DataGatherStatus{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{},
 				},
 			},
@@ -1883,7 +1883,7 @@ func TestGetDataGatherCR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			insightsClientset := insightsFakeCli.NewSimpleClientset(tt.dataGather)
 			kubeClientset := kubefake.NewSimpleClientset(tt.deployment)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeClientset, insightsClientset.InsightsV1alpha2(), nil, nil, nil)
+			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeClientset, insightsClientset.InsightsV1(), nil, nil, nil)
 			mockController.image = tt.controllerImage
 
 			result, err := mockController.prepareDataGatherCRWithImage(context.Background(), tt.dataGather.Name)
