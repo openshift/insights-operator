@@ -45,6 +45,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().Authentications().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("builds"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().Builds().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("clusterimagepolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().ClusterImagePolicies().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("clusteroperators"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().ClusterOperators().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("clusterversions"):
@@ -61,12 +63,16 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().ImageContentPolicies().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("imagedigestmirrorsets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().ImageDigestMirrorSets().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("imagepolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().ImagePolicies().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("imagetagmirrorsets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().ImageTagMirrorSets().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("infrastructures"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().Infrastructures().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("ingresses"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().Ingresses().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("insightsdatagathers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().InsightsDataGathers().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("networks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Config().V1().Networks().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("nodes"):
