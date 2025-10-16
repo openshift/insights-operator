@@ -229,6 +229,12 @@ rules:
       - list
       - watch
   - apiGroups:
+      - config.openshift.io
+    resources:
+      - clusteroperators/status
+    verbs:
+      - update
+  - apiGroups:
       - policy
     resources:
       - poddisruptionbudgets

@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,7 +17,6 @@ import (
 
 	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
-	configv1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 
 	insightsv1alpha2client "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha2"
 	"github.com/openshift/insights-operator/pkg/anonymization"
@@ -254,7 +252,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	// upload data
-	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive)
+	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive, configClient.ConfigV1())
 	dataUploadedCon := status.DataUploadedCondition(
 		metav1.ConditionTrue,
 		status.SucceededReason,
@@ -275,11 +273,6 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	dataGatherCR, err = status.UpdateDataGatherConditions(ctx, insightsV1alpha2Cli, dataGatherCR, dataUploadedCon)
 	if err != nil {
 		klog.Error(err)
-	}
-
-	// Update ClusterOperator lastReportTime after successful upload
-	if err := updateClusterOperatorLastReportTime(ctx, configClient.ConfigV1()); err != nil {
-		klog.Errorf("Failed to update ClusterOperator lastReportTime: %v", err)
 	}
 
 	// check if the archive/data was processed
@@ -511,27 +504,4 @@ func boolToConditionStatus(b bool) metav1.ConditionStatus {
 		conditionStatus = metav1.ConditionFalse
 	}
 	return conditionStatus
-}
-
-// updateClusterOperatorLastReportTime updates the ClusterOperator's lastReportTime extension field
-func updateClusterOperatorLastReportTime(ctx context.Context, client configv1.ConfigV1Interface) error {
-	insightsCo, err := client.ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	reported := status.Reported{
-		LastReportTime: metav1.Time{Time: time.Now().UTC()},
-	}
-
-	data, err := json.Marshal(reported)
-	if err != nil {
-		return fmt.Errorf("unable to marshal status extension: %v", err)
-	}
-	insightsCo.Status.Extension.Raw = data
-
-	_, err = client.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{})
-
-	klog.Infof("successfully updated LastReportTime to %s", reported.LastReportTime)
-	return err
 }
