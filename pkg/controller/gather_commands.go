@@ -400,89 +400,53 @@ type dataStatus struct {
 }
 
 // wasDataProcessed polls the "insights-results-aggregator" service processing status endpoint using provided
-// "insightsRequestID" and retries up to numberOfStatusQueryRetries times for network errors and HTTP errors independently,
-// or until the context expires. Returns true if the data was successfully processed, false otherwise.
+// "insightsRequestID" and tries to parse the response body in case of HTTP 200 response.
 func wasDataProcessed(ctx context.Context,
 	insightsCli processingStatusClient,
 	insightsRequestID string, conf *config.InsightsConfiguration,
 ) (bool, error) {
 	delay := conf.DataReporting.ReportPullingDelay
+	retryCounter := 0
 	klog.Infof("Initial delay when checking processing status: %v", delay)
 
-	// requestRetryCounter is used to retry an http request when the response != 200
-	requestRetryCounter := 0
-	// networkRetryCounter is used to retry when there is a network issue that caused failure
-	networkRetryCounter := 0
-	// statusRetryCounter is used to retry when the processing pipeline did not finished yet
-	statusRetryCounter := 0
-
-	dataProcessed := false
-
+	var resp *http.Response
 	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {
-		resp, err := insightsCli.GetWithPathParam(
-			ctx, conf.DataReporting.ProcessingStatusEndpoint, insightsRequestID, true,
-		)
-		// Handle network errors
+		resp, err = insightsCli.GetWithPathParam(ctx, // nolint: bodyclose
+			conf.DataReporting.ProcessingStatusEndpoint, insightsRequestID, true) // response body is closed later
 		if err != nil {
-			if networkRetryCounter >= numberOfStatusQueryRetries {
-				return false, fmt.Errorf("failed to check processing status after %d retries: %w", networkRetryCounter, err)
-			}
-			klog.Infof("Network error when checking processing status: %v, retry %d/%d in %s",
-				err, networkRetryCounter+1, numberOfStatusQueryRetries, delay)
-			networkRetryCounter++
-			return false, nil
+			return false, err
 		}
-
-		defer resp.Body.Close()
-
-		// Handle server errors
 		if resp.StatusCode != http.StatusOK {
-			if requestRetryCounter >= numberOfStatusQueryRetries {
-				return false, fmt.Errorf("HTTP status message: %s", http.StatusText(resp.StatusCode))
+			if retryCounter == numberOfStatusQueryRetries {
+				err := fmt.Errorf("HTTP status message: %s", http.StatusText(resp.StatusCode))
+				return false, err
 			}
-			klog.Infof("Received HTTP status code %d, retry %d/%d in %s",
-				resp.StatusCode, requestRetryCounter+1, numberOfStatusQueryRetries, delay)
-			requestRetryCounter++
+			klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, delay)
+			retryCounter++
 			return false, nil
 		}
-
-		// Process the successful response
-		if resp.Body == nil || resp.Body == http.NoBody {
-			return false, nil
-		}
-
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return false, err
-		}
-
-		var processingResp dataStatus
-		err = json.Unmarshal(data, &processingResp)
-		if err != nil {
-			return false, err
-		}
-
-		dataProcessed = (processingResp.Status == "processed")
-
-		// If data is not processed yet, retry 3 times before failing
-		if !dataProcessed {
-			if statusRetryCounter >= numberOfStatusQueryRetries {
-				klog.Infof("Data status is %q after %d retries, stopping poll", processingResp.Status, statusRetryCounter)
-				return false, fmt.Errorf("data processing status is %q after %d retries, stopping poll", processingResp.Status, statusRetryCounter)
-			}
-			klog.Infof("Data status is %q, retry %d/%d in %s",
-				processingResp.Status, statusRetryCounter+1, numberOfStatusQueryRetries, delay)
-			statusRetryCounter++
-			return false, nil
-		}
-
 		return true, nil
 	})
 	if err != nil {
 		return false, err
 	}
 
-	return dataProcessed, nil
+	if resp.Body == nil || resp.Body == http.NoBody {
+		return false, nil
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return false, err
+	}
+	var processingResp dataStatus
+	err = json.Unmarshal(data, &processingResp)
+	if err != nil {
+		return false, err
+	}
+
+	return processingResp.Status == "processed", nil
 }
 
 // storagePathExists checks if the configured storagePath exists or not.
