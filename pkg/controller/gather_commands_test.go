@@ -19,19 +19,13 @@ import (
 )
 
 type MockProcessingStatusClient struct {
-	err          error
-	response     *http.Response
-	responseBody string
+	err      error
+	response *http.Response
 }
 
 func (m *MockProcessingStatusClient) GetWithPathParam(_ context.Context, _, _ string, _ bool) (*http.Response, error) {
 	if m.err != nil {
 		return nil, m.err
-	}
-
-	// Create a fresh body reader for each call to handle deferred close in the retry loop
-	if m.responseBody != "" {
-		m.response.Body = io.NopCloser(strings.NewReader(m.responseBody))
 	}
 
 	return m.response, nil
@@ -42,8 +36,7 @@ func TestWasDataProcessed(t *testing.T) {
 		name              string
 		mockClient        MockProcessingStatusClient
 		expectedProcessed bool
-		expectError       bool
-		errorContains     string
+		expectedErr       error
 	}{
 		{
 			name: "no response with error",
@@ -52,8 +45,7 @@ func TestWasDataProcessed(t *testing.T) {
 				err:      fmt.Errorf("no response received"),
 			},
 			expectedProcessed: false,
-			expectError:       true,
-			errorContains:     "failed to check processing status after 3 retries",
+			expectedErr:       fmt.Errorf("no response received"),
 		},
 		{
 			name: "HTTP 404 response and no body",
@@ -65,46 +57,43 @@ func TestWasDataProcessed(t *testing.T) {
 				err: nil,
 			},
 			expectedProcessed: false,
-			expectError:       true,
-			errorContains:     "HTTP status message: Not Found",
+			expectedErr:       fmt.Errorf("HTTP status message: %s", http.StatusText(http.StatusNotFound)),
 		},
 		{
 			name: "HTTP 404 response and existing body",
 			mockClient: MockProcessingStatusClient{
 				response: &http.Response{
 					StatusCode: http.StatusNotFound,
+					Body:       io.NopCloser(strings.NewReader("test message")),
 				},
-				responseBody: "test message",
-				err:          nil,
+				err: nil,
 			},
 			expectedProcessed: false,
-			expectError:       true,
-			errorContains:     "HTTP status message: Not Found",
+			expectedErr:       fmt.Errorf("HTTP status message: %s", http.StatusText(http.StatusNotFound)),
 		},
 		{
 			name: "data not processed",
 			mockClient: MockProcessingStatusClient{
 				response: &http.Response{
 					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(strings.NewReader("{\"cluster\":\"test-uid\",\"status\":\"unknown\"}")),
 				},
-				responseBody: "{\"cluster\":\"test-uid\",\"status\":\"unknown\"}",
-				err:          nil,
+				err: nil,
 			},
 			expectedProcessed: false,
-			expectError:       true,
-			errorContains:     "data processing status is \"unknown\" after 3 retries, stopping poll",
+			expectedErr:       nil,
 		},
 		{
 			name: "data processed",
 			mockClient: MockProcessingStatusClient{
 				response: &http.Response{
 					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(strings.NewReader("{\"cluster\":\"test-uid\",\"status\":\"processed\"}")),
 				},
-				responseBody: "{\"cluster\":\"test-uid\",\"status\":\"processed\"}",
-				err:          nil,
+				err: nil,
 			},
 			expectedProcessed: true,
-			expectError:       false,
+			expectedErr:       nil,
 		},
 	}
 
@@ -116,12 +105,7 @@ func TestWasDataProcessed(t *testing.T) {
 				},
 			}
 			processed, err := wasDataProcessed(context.Background(), &tt.mockClient, "empty", mockConfig)
-			if tt.expectError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorContains)
-			} else {
-				assert.NoError(t, err)
-			}
+			assert.Equal(t, tt.expectedErr, err)
 			assert.Equal(t, tt.expectedProcessed, processed)
 		})
 	}
