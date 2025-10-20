@@ -3,11 +3,10 @@ package status
 import (
 	"context"
 
-	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
-	insightsv1alpha2client "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
+	insightsv1client "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
 )
 
 const (
@@ -130,11 +129,11 @@ func RemoteConfigurationValidCondition(status metav1.ConditionStatus, reason, me
 // UpdateProgressingCondition updates status' time attributes, state and conditions
 // of the provided DataGather resource
 func UpdateProgressingCondition(ctx context.Context,
-	insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
-	dataGatherCR *insightsv1alpha2.DataGather,
+	insightsClient insightsv1client.InsightsV1Interface,
+	dataGatherCR *insightsv1.DataGather,
 	dataGatherName string,
 	gatheringState string,
-) (*insightsv1alpha2.DataGather, error) {
+) (*insightsv1.DataGather, error) {
 	var err error
 	if dataGatherCR == nil {
 		dataGatherCR, err = insightsClient.DataGathers().Get(ctx, dataGatherName, metav1.GetOptions{})
@@ -146,12 +145,12 @@ func UpdateProgressingCondition(ctx context.Context,
 
 	switch gatheringState {
 	case GatheringSucceededReason, GatheringFailedReason:
-		if dataGatherCR.Status.FinishTime == nil {
-			dataGatherCR.Status.FinishTime = ptr.To(metav1.Now())
+		if dataGatherCR.Status.FinishTime == (metav1.Time{}) {
+			dataGatherCR.Status.FinishTime = metav1.Now()
 		}
 	case GatheringReason:
-		if dataGatherCR.Status.StartTime == nil {
-			dataGatherCR.Status.StartTime = ptr.To(metav1.Now())
+		if dataGatherCR.Status.StartTime == (metav1.Time{}) {
+			dataGatherCR.Status.StartTime = metav1.Now()
 		}
 	case DataGatheringPendingReason:
 		// no op
@@ -170,7 +169,7 @@ func UpdateProgressingCondition(ctx context.Context,
 
 // GetConditionByType tries to get the condition with the provided condition status
 // from the provided "datagather" resource. Returns nil when no condition is found.
-func GetConditionByType(dataGather *insightsv1alpha2.DataGather, conType string) *metav1.Condition {
+func GetConditionByType(dataGather *insightsv1.DataGather, conType string) *metav1.Condition {
 	var c *metav1.Condition
 	for i := range dataGather.Status.Conditions {
 		con := dataGather.Status.Conditions[i]
@@ -197,9 +196,9 @@ func getConditionIndexByType(conType string, conditions []metav1.Condition) int 
 // UpdateDataGatherConditions updates the conditions of the provided dataGather resource with provided
 // condition
 func UpdateDataGatherConditions(ctx context.Context,
-	insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
-	dataGather *insightsv1alpha2.DataGather, conditions ...metav1.Condition,
-) (*insightsv1alpha2.DataGather, error) {
+	insightsClient insightsv1client.InsightsV1Interface,
+	dataGather *insightsv1.DataGather, conditions ...metav1.Condition,
+) (*insightsv1.DataGather, error) {
 	newConditions := make([]metav1.Condition, len(dataGather.Status.Conditions))
 	_ = copy(newConditions, dataGather.Status.Conditions)
 
