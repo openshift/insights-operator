@@ -230,8 +230,10 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source, confi
 
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
 
-	// Update LastReportTime after successful upload
-	updateClusterOperatorLastReportTime(ctx, configClient)
+	err = updateClusterOperatorLastReportTime(ctx, configClient)
+	if err != nil {
+		klog.Errorf("Failed to update LastReportTime: %v", err)
+	}
 
 	return requestID, statusCode, nil
 }
@@ -272,10 +274,8 @@ func updateClusterOperatorLastReportTime(ctx context.Context, client configv1.Co
 	}
 	insightsCo.Status.Extension.Raw = data
 
-	_, err = client.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{})
-
-	if err != nil {
-		klog.Errorf("Failed to update LastReportTime: %v", err)
+	if _, err := client.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{}); err != nil {
+		return err
 	}
 
 	klog.Infof("Successfully updated LastReportTime to %s", reported.LastReportTime)
