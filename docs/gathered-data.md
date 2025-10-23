@@ -1811,14 +1811,14 @@ None
 ### Released version
 - 4.20.0
 
-### Backported versions (TBD)
-- 4.19.z
-- 4.18.z
-- 4.17.z
-- 4.16.z
+### Backported versions
+- 4.19.12+
+- 4.18.25+
+- 4.17.41+
+- 4.16.49+
 
 ### Changes
-None
+4.21 - bugfix: virt-launcher pods on 'Pending' status caused a gathering error
 
 
 ## SAPConfig
