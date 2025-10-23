@@ -230,9 +230,8 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source, confi
 
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
 
-	err = updateClusterOperatorLastReportTime(ctx, configClient)
-	if err != nil {
-		klog.Errorf("Failed to update LastReportTime: %v", err)
+	if err := updateClusterOperatorLastReportTime(ctx, configClient); err != nil {
+		klog.Errorf("Failed to update ClusterOperator lastReportTime: %v", err)
 	}
 
 	return requestID, statusCode, nil
