@@ -11,24 +11,24 @@ The `insights-config` configmap provides the following configuration structure:
 
 ```yaml
 dataReporting:
-    interval: 30m0s,
-    uploadEndpoint: https://console.redhat.com/api/ingress/v1/upload,
-    storagePath: /var/lib/insights-operator,
-    downloadEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports,
-    conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules,
+    interval: 30m0s
+    uploadEndpoint: https://console.redhat.com/api/ingress/v1/upload
+    storagePath: /var/lib/insights-operator
+    downloadEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports
+    conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules
     obfuscation: [workload_names networking]
 sca:
-    disabled: false,
-    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/entitlement_certificates,
+    disabled: false
+    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/entitlement_certificates
     interval: 8h0m0s
 alerting:
     disabled: false
 clusterTransfer:
-    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/,
+    endpoint: https://api.openshift.com/api/accounts_mgmt/v1/cluster_transfers/
     interval: 1h0m0s
 proxy:
-    httpProxy: http://example.com,
-    httpsProxy: https://example.com,
+    httpProxy: http://example.com
+    httpsProxy: https://example.com
     noProxy: test.org
 ```
 
