@@ -78,7 +78,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		at = time.Now()
 	}
 
-	recordName := rec.GetFilename()
+	recordName := ensureSafeFilenameLength(rec.GetFilename())
 	recordSize := int64(len(data))
 
 	memoryRecord := &record.MemoryRecord{
