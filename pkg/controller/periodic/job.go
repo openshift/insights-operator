@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	"github.com/openshift/insights-operator/pkg/config"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,10 +37,12 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
 // derived from the provided data gather name
 func (j *JobController) CreateGathererJob(
-	ctx context.Context, image string, dataReporting *config.DataReporting, dataGather *insightsv1alpha2.DataGather,
+	ctx context.Context, image string, dataReporting *config.DataReporting, dataGather *insightsv1.DataGather,
 ) (*batchv1.Job, error) {
-	volumeSource := j.createVolumeSource(ctx, dataGather.Spec.Storage)
-	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, dataGather.Spec.Storage)
+	storage := dataGather.Spec.Storage
+
+	volumeSource := j.createVolumeSource(ctx, storage)
+	volumeMounts := j.createVolumeMounts(dataReporting.StoragePath, storage)
 	envVariables := createEnvVar(dataGather.Name)
 
 	gj := &batchv1.Job{
@@ -119,7 +121,7 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 			Watch(ctx, metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", job.Name)})
 	}
 
-	retryWatcher, err := watch.NewRetryWatcher(job.ResourceVersion, &cache.ListWatch{WatchFunc: watcherFnc})
+	retryWatcher, err := watch.NewRetryWatcherWithContext(ctx, job.ResourceVersion, &cache.ListWatch{WatchFunc: watcherFnc})
 	if err != nil {
 		return err
 	}
@@ -160,15 +162,17 @@ func (j *JobController) WaitForJobCompletion(ctx context.Context, job *batchv1.J
 // createVolumeSource returns a VolumeSource based on insightsv1alpha1.Storage
 // If a PersistentVolumeClaim is specified in the storage configuration, it checks whether the PVC exists.
 // If the PVC is not found, or if no storage specification is provided, an EmptyDir is used instead.
-func (j *JobController) createVolumeSource(ctx context.Context, storage *insightsv1alpha2.Storage) corev1.VolumeSource {
-	if storage == nil || storage.Type == insightsv1alpha2.StorageTypeEphemeral {
+func (j *JobController) createVolumeSource(ctx context.Context, storage insightsv1.Storage) corev1.VolumeSource {
+	// Empty storage.type means there was no storage defined by user and the
+	// gathering needs to be run with Ephemeral storage type
+	if storage.Type == "" || storage.Type == insightsv1.StorageTypeEphemeral {
 		klog.Info("Creating volume source with EmptyDir, no storageSpec provided")
 		return corev1.VolumeSource{
 			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		}
 	}
 
-	if storage.Type == insightsv1alpha2.StorageTypePersistentVolume && storage.PersistentVolume != nil {
+	if storage.Type == insightsv1.StorageTypePersistentVolume && storage.PersistentVolume != (insightsv1.PersistentVolumeConfig{}) {
 		// Validate if the PVC exists
 		persistentVolumeClaimName := storage.PersistentVolume.Claim.Name
 		pvc, err := j.kubeClient.CoreV1().PersistentVolumeClaims(insightsNamespace).Get(ctx, persistentVolumeClaimName, metav1.GetOptions{})
@@ -190,7 +194,7 @@ func (j *JobController) createVolumeSource(ctx context.Context, storage *insight
 	}
 }
 
-func (j *JobController) createVolumeMounts(storagePath string, storage *insightsv1alpha2.Storage) []corev1.VolumeMount {
+func (j *JobController) createVolumeMounts(storagePath string, storage insightsv1.Storage) []corev1.VolumeMount {
 	volumeMount := []corev1.VolumeMount{
 		{
 			Name:      "archives-path",
@@ -202,11 +206,12 @@ func (j *JobController) createVolumeMounts(storagePath string, storage *insights
 		},
 	}
 
-	if storage == nil || storage.Type != insightsv1alpha2.StorageTypePersistentVolume {
+	// For non-PersistentVolume storage, use the default storagePath from config
+	if storage.Type != insightsv1.StorageTypePersistentVolume {
 		return volumeMount
 	}
 
-	// If the PVC has a mountPath, use it
+	// For PersistentVolume, check if a custom mountPath is specified
 	if mountPath := storage.PersistentVolume.MountPath; mountPath != "" {
 		volumeMount[0].MountPath = mountPath
 	}
