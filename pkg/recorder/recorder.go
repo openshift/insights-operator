@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -198,7 +199,7 @@ func ensureSafeFilenameLength(fullPath string) string {
 
 	// separate the extension to preserve it during truncation
 	extension := filepath.Ext(filename) // includes dot (e.g., ".json")
-	nameWithoutExt := filename[:len(filename)-len(extension)]
+	nameWithoutExt := strings.TrimSuffix(filename, extension)
 
 	// truncate name to fit: total_length = name_length + extension_length
 	trimmedFilename := nameWithoutExt[:maxFilenameLength-len(extension)]
