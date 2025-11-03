@@ -34,15 +34,15 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 		},
 	}
 	if i.DataReporting.Interval != "" {
-		ic.DataReporting.Interval = parseInterval(i.DataReporting.Interval, defaultGatherFrequency)
+		ic.DataReporting.Interval = parseInterval(i.DataReporting.Interval, defaultGatherFrequency, minimumGatherFrequency)
 	}
 
 	if i.SCA.Interval != "" {
-		ic.SCA.Interval = parseInterval(i.SCA.Interval, defaultSCAFfrequency)
+		ic.SCA.Interval = parseInterval(i.SCA.Interval, defaultSCAFfrequency, 0)
 	}
 
 	if i.ClusterTransfer.Interval != "" {
-		ic.ClusterTransfer.Interval = parseInterval(i.ClusterTransfer.Interval, defaultClusterTransferFrequency)
+		ic.ClusterTransfer.Interval = parseInterval(i.ClusterTransfer.Interval, defaultClusterTransferFrequency, 0)
 	}
 
 	if i.Alerting.Disabled != "" {
@@ -56,17 +56,27 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 	return ic
 }
 
-// parseInterval tries to parse the "interval" string as time duration and if there is an error
-// or negative time value then the provided default time duration is used
-func parseInterval(interval string, defaultValue time.Duration) time.Duration {
+// parseInterval parses the interval string as a time.Duration and validates it.
+// If parsing fails or the value is <= 0, it returns defaultValue.
+// If minIntervalValue > 0 and the parsed interval is less than the minimum, it returns minIntervalValue.
+// Pass 0 for minIntervalValue to skip minimum validation.
+func parseInterval(interval string, defaultValue, minIntervalValue time.Duration) time.Duration {
 	durationInt, err := time.ParseDuration(interval)
 	if err != nil {
 		klog.Errorf("Cannot parse interval time duration: %v. Using default value %s", err, defaultValue)
 		return defaultValue
 	}
+
 	if durationInt <= 0 {
-		durationInt = defaultValue
+		klog.Warningf("Interval %s is below or equal to zero. Using default value %s.", durationInt, defaultValue)
+		return defaultValue
 	}
+
+	if minIntervalValue > 0 && durationInt < minIntervalValue {
+		klog.Warningf("Interval %s is below minimum %s. Using minimum.", durationInt, minIntervalValue)
+		return minIntervalValue
+	}
+
 	return durationInt
 }
 
