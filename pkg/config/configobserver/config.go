@@ -16,8 +16,8 @@ type Config struct {
 	config.Controller
 }
 
-// MinDuration defines the minimal report interval
-const MinDuration = 10 * time.Second
+// minDuration defines the minimal report interval
+const minDuration = 10 * time.Minute
 
 // LoadConfigFromSecret loads the controller config with given secret data
 func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
@@ -35,17 +35,18 @@ func LoadConfigFromSecret(secret *v1.Secret) (config.Controller, error) {
 	if intervalString, ok := secret.Data["interval"]; ok {
 		var duration time.Duration
 		duration, err = time.ParseDuration(string(intervalString))
-		if err == nil && duration < MinDuration {
-			err = fmt.Errorf("too short")
-		}
-		if err == nil {
-			cfg.Interval = duration
-		} else {
-			err = fmt.Errorf(
-				"insights secret interval must be a duration (1h, 10m) greater than or equal to ten seconds: %v",
-				err)
+		if err != nil {
 			cfg.Report = false
+			return cfg.Controller, fmt.Errorf(
+				"insights secret interval must be a duration (1h, 10m) greater than or equal to ten minutes: %v",
+				err)
 		}
+
+		if duration < minDuration {
+			return cfg.Controller, fmt.Errorf("interval value too short, minimal value is 10 minutes")
+		}
+
+		cfg.Interval = duration
 	}
 
 	return cfg.Controller, err
