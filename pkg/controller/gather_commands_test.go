@@ -127,6 +127,184 @@ func TestWasDataProcessed(t *testing.T) {
 	}
 }
 
+func TestProcessSuccessfulResponse(t *testing.T) {
+	tests := []struct {
+		name                 string
+		respBody             io.ReadCloser
+		initialStatusCounter int
+		delay                time.Duration
+		expectedDone         bool
+		expectError          bool
+		expectedErrorMsg     string
+		expectedCounter      int
+	}{
+		{
+			name:            "nil response body",
+			respBody:        nil,
+			delay:           10 * time.Millisecond,
+			expectedDone:    false,
+			expectError:     false,
+			expectedCounter: 0,
+		},
+		{
+			name:            "http.NoBody",
+			respBody:        http.NoBody,
+			delay:           10 * time.Millisecond,
+			expectedDone:    false,
+			expectError:     false,
+			expectedCounter: 0,
+		},
+		{
+			name:             "invalid JSON",
+			respBody:         io.NopCloser(strings.NewReader("invalid json")),
+			delay:            10 * time.Millisecond,
+			expectedDone:     false,
+			expectError:      true,
+			expectedErrorMsg: "invalid character",
+			expectedCounter:  0,
+		},
+		{
+			name:                 "status not processed and counter below max - should call statusRetry",
+			respBody:             io.NopCloser(strings.NewReader(`{"cluster":"test-uid","status":"unknown"}`)),
+			initialStatusCounter: 0,
+			delay:                10 * time.Millisecond,
+			expectedDone:         false,
+			expectError:          false,
+			expectedCounter:      1,
+		},
+		{
+			name:                 "status not processed and counter at max - should return error from statusRetry",
+			respBody:             io.NopCloser(strings.NewReader(`{"cluster":"test-uid","status":"unknown"}`)),
+			initialStatusCounter: numberOfStatusQueryRetries,
+			delay:                10 * time.Millisecond,
+			expectedDone:         false,
+			expectError:          true,
+			expectedErrorMsg:     "data processing status is \"unknown\" after 3 retries",
+			expectedCounter:      numberOfStatusQueryRetries,
+		},
+		{
+			name:            "status processed",
+			respBody:        io.NopCloser(strings.NewReader(`{"cluster":"test-uid","status":"processed"}`)),
+			delay:           10 * time.Millisecond,
+			expectedDone:    true,
+			expectError:     false,
+			expectedCounter: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rc := retryCounter{
+				status: tt.initialStatusCounter,
+				max:    numberOfStatusQueryRetries,
+			}
+
+			done, err := processSuccessfulResponse(tt.respBody, &rc, tt.delay)
+
+			assert.Equal(t, tt.expectedDone, done)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErrorMsg)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedCounter, rc.status)
+		})
+	}
+}
+
+func TestRetryFunctions(t *testing.T) {
+	tests := []struct {
+		name                  string
+		retryType             string // "network", "request", or "status"
+		initialCounter        int
+		expectError           bool
+		expectedErrorContains string
+		expectedCounterAfter  int
+	}{
+		// Network retry tests
+		{
+			name:                 "network retry below max",
+			retryType:            "network",
+			initialCounter:       0,
+			expectError:          false,
+			expectedCounterAfter: 1,
+		},
+		{
+			name:                  "network retry at max",
+			retryType:             "network",
+			initialCounter:        numberOfStatusQueryRetries,
+			expectError:           true,
+			expectedErrorContains: "failed to check processing status after 3 retries",
+			expectedCounterAfter:  numberOfStatusQueryRetries,
+		},
+		// Request retry tests
+		{
+			name:                 "request retry below max",
+			retryType:            "request",
+			initialCounter:       0,
+			expectError:          false,
+			expectedCounterAfter: 1,
+		},
+		{
+			name:                  "request retry at max",
+			retryType:             "request",
+			initialCounter:        numberOfStatusQueryRetries,
+			expectError:           true,
+			expectedErrorContains: "HTTP status message: Not Found",
+			expectedCounterAfter:  numberOfStatusQueryRetries,
+		},
+		// Status retry tests
+		{
+			name:                 "status retry below max",
+			retryType:            "status",
+			initialCounter:       0,
+			expectError:          false,
+			expectedCounterAfter: 1,
+		},
+		{
+			name:                  "status retry at max",
+			retryType:             "status",
+			initialCounter:        numberOfStatusQueryRetries,
+			expectError:           true,
+			expectedErrorContains: "data processing status is \"unknown\" after 3 retries, stopping poll",
+			expectedCounterAfter:  numberOfStatusQueryRetries,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rc := retryCounter{max: numberOfStatusQueryRetries}
+			delay := 10 * time.Millisecond
+
+			var err error
+			switch tt.retryType {
+			case "network":
+				rc.network = tt.initialCounter
+				err = networkRetry(&rc, fmt.Errorf("network timeout"), delay)
+				assert.Equal(t, tt.expectedCounterAfter, rc.network)
+			case "request":
+				rc.request = tt.initialCounter
+				err = requestRetry(&rc, http.StatusNotFound, delay)
+				assert.Equal(t, tt.expectedCounterAfter, rc.request)
+			case "status":
+				rc.status = tt.initialCounter
+				done, statusErr := statusRetry(&rc, "unknown", delay)
+				err = statusErr
+				assert.False(t, done)
+				assert.Equal(t, tt.expectedCounterAfter, rc.status)
+			}
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErrorContains)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestCreateRemoteConfigConditions(t *testing.T) {
 	tests := []struct {
 		name                             string
