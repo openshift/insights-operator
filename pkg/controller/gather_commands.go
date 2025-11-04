@@ -436,7 +436,7 @@ func wasDataProcessed(ctx context.Context,
 			return false, requestRetry(retryCounter, resp.StatusCode, delay)
 		}
 
-		return processSuccessfulResp(resp.Body, retryCounter, delay)
+		return processSuccessfulResponse(resp.Body, retryCounter, delay)
 	})
 	if err != nil {
 		return false, err
@@ -467,9 +467,9 @@ func requestRetry(retryCounter *retryCounter, respStatusCode int, delay time.Dur
 	return nil
 }
 
-// processSuccessfulResp is used to process response body and if data is not processed, it retries 3 times
+// processSuccessfulResponse is used to process response body and if data is not processed, it retries 3 times
 // Returns true if the data was successfully processed, false otherwise
-func processSuccessfulResp(respBody io.ReadCloser, retryCounter *retryCounter, delay time.Duration) (bool, error) {
+func processSuccessfulResponse(respBody io.ReadCloser, retryCounter *retryCounter, delay time.Duration) (bool, error) {
 	if respBody == nil || respBody == http.NoBody {
 		return false, nil
 	}
