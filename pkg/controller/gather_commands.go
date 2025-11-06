@@ -400,11 +400,14 @@ type dataStatus struct {
 	Status    string `json:"status"`
 }
 
+// retryCounter is a helper struct to store number of attempts
+// for each failure type when processing data
 type retryCounter struct {
 	network int
 	request int
 	status  int
 
+	// maximum retry attempts allowed for each failure type before failing completely
 	max int
 }
 
@@ -500,7 +503,7 @@ func statusRetry(retryCounter *retryCounter, processingRespStatus string, delay 
 		return false, fmt.Errorf("data processing status is %q after %d retries, stopping poll", processingRespStatus, retryCounter.status)
 	}
 	klog.Infof("Data status is %q, retry %d/%d in %s",
-		processingRespStatus, retryCounter.status+1, numberOfStatusQueryRetries, delay)
+		processingRespStatus, retryCounter.status+1, retryCounter.max, delay)
 	retryCounter.status++
 	return false, nil
 }
