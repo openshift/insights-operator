@@ -509,6 +509,7 @@ func (c *Controller) updateControllerConditionsByStatus(cs *conditions, isInitia
 	}
 
 	if c.ctrlStatus.isHealthy() {
+		klog.Infof("This is a debugging msg.")
 		klog.Infof("The operator is healthy")
 		cs.setCondition(configv1.OperatorProgressing, configv1.ConditionFalse, AsExpectedReason, monitoringMessage)
 		cs.setCondition(configv1.OperatorAvailable, configv1.ConditionTrue, AsExpectedReason, insightsAvailableMessage)
