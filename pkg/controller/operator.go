@@ -17,10 +17,12 @@ import (
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	clientInformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/version"
@@ -44,6 +46,19 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
 )
+
+const (
+	insightsNamespace = "openshift-insights"
+	informerTimeout   = 10 * time.Minute
+)
+
+// TechPreviewInformers holds all informers needed for TechPreview functionality
+// when the InsightsConfig feature gate is enabled.
+type TechPreviewInformers struct {
+	JobInformer                periodic.JobWatcher
+	InsightsDataGatherObserver configobserver.InsightsDataGatherObserver
+	DataGatherInformer         periodic.DataGatherInformer
+}
 
 // Operator is the type responsible for controlling the start-up of the Insights Operator
 type Operator struct {
@@ -74,7 +89,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	if err != nil {
 		return err
 	}
-	configInformers := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
+	configInformers := configv1informers.NewSharedInformerFactory(configClient, informerTimeout)
 
 	operatorClient, err := operatorclient.NewForConfig(controller.KubeConfig)
 	if err != nil {
@@ -86,7 +101,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	operatorConfigInformers := operatorinformers.NewSharedInformerFactory(operatorClient, 10*time.Minute)
+	operatorConfigInformers := operatorinformers.NewSharedInformerFactory(operatorClient, informerTimeout)
 
 	opClient := &genericClient{
 		informers: operatorConfigInformers,
@@ -141,27 +156,22 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 			return fmt.Errorf("can't create --path: %v", err)
 		}
 	}
-	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
-	var dgInformer periodic.DataGatherInformer
+
+	var techPreviewInformers *TechPreviewInformers
 	if insightsConfigEnabled {
 		deleteAllRunningGatheringsPods(ctx, kubeClient)
-		configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, 10*time.Minute)
-		insightsDataGatherObserver, err = configobserver.NewInsightsDataGatherObserver(gatherKubeConfig,
-			controller.EventRecorder, configInformersForTechPreview)
-		if err != nil {
-			return err
-		}
 
-		insightsInformersfactory := insightsInformers.NewSharedInformerFactory(insightClient, 10*time.Minute)
-		dgInformer, err = periodic.NewDataGatherInformer(controller.EventRecorder, insightsInformersfactory)
+		techPreviewInformers, err = createTechPreviewInformers(
+			ctx,
+			kubeClient,
+			configClient,
+			insightClient,
+			gatherKubeConfig,
+			controller.EventRecorder,
+		)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create TechPreview informers: %w", err)
 		}
-
-		go insightsDataGatherObserver.Run(ctx, 1)
-		go configInformersForTechPreview.Start(ctx.Done())
-		go dgInformer.Run(ctx, 1)
-		go insightsInformersfactory.Start(ctx.Done())
 	}
 
 	kubeInf := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
@@ -182,7 +192,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
 	statusReporter := status.NewController(configClient.ConfigV1(), configAggregator,
-		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"), insightsConfigEnabled)
+		techPreviewInformers.InsightsDataGatherObserver, os.Getenv("POD_NAMESPACE"), insightsConfigEnabled)
 
 	var anonymizer *anonymization.Anonymizer
 	var recdriver *diskrecorder.DiskRecorder
@@ -230,9 +240,13 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		statusReporter.AddSources(periodicGather.Sources()...)
 	} else {
 		reportRetriever := insightsreport.NewWithTechPreview(insightsClient, configAggregator)
-		periodicGather = periodic.NewWithTechPreview(reportRetriever, configAggregator,
-			insightsDataGatherObserver, gatherers, kubeClient, insightClient.InsightsV1alpha2(),
-			operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(), dgInformer)
+		periodicGather = periodic.NewWithTechPreview(
+			reportRetriever,
+			configAggregator,
+			techPreviewInformers.InsightsDataGatherObserver,
+			gatherers,
+			kubeClient, insightClient.InsightsV1alpha2(), operatorClient.OperatorV1().InsightsOperators(), configClient.ConfigV1(),
+			techPreviewInformers.DataGatherInformer, techPreviewInformers.JobInformer)
 		statusReporter.AddSources(periodicGather.Sources()...)
 		statusReporter.AddSources(reportRetriever)
 		go periodicGather.PeriodicPrune(ctx)
@@ -253,7 +267,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		// upload results to the provided client - if no client is configured reporting
 		// is permanently disabled, but if a client does exist the server may still disable reporting
 		uploader := insightsuploader.New(recdriver, insightsClient, configAggregator,
-			insightsDataGatherObserver, statusReporter, initialDelay)
+			techPreviewInformers.InsightsDataGatherObserver, statusReporter, initialDelay)
 		statusReporter.AddSources(uploader)
 
 		// start uploading status, so that we
@@ -321,9 +335,63 @@ func isRunning(kubeConfig *rest.Config) wait.ConditionWithContextFunc {
 	}
 }
 
+// createTechPreviewInformers creates and starts all informers needed for TechPreview functionality.
+func createTechPreviewInformers(
+	ctx context.Context,
+	kubeClient kubernetes.Interface,
+	configClient *configv1client.Clientset,
+	insightClient *insightsv1alpha1client.Clientset,
+	gatherKubeConfig *rest.Config,
+	eventRecorder events.Recorder,
+) (*TechPreviewInformers, error) {
+	// Create Job informer for watching gathering job completions
+	sharedInformer := clientInformers.NewSharedInformerFactoryWithOptions(
+		kubeClient,
+		informerTimeout,
+		clientInformers.WithNamespace(insightsNamespace),
+		// Watch only jobs with a given label
+		clientInformers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+			opts.LabelSelector = "insights-gathering"
+		}))
+	jobInformer, err := periodic.NewJobCompletionWatcher(eventRecorder, sharedInformer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create job informer: %w", err)
+	}
+
+	// Create InsightsDataGather observer for global configuration
+	configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, informerTimeout)
+	insightsDataGatherObserver, err := configobserver.NewInsightsDataGatherObserver(gatherKubeConfig,
+		eventRecorder, configInformersForTechPreview)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create InsightsDataGather observer: %w", err)
+	}
+
+	// Create DataGather informer for watching DataGather CRs
+	insightsInformersfactory := insightsInformers.NewSharedInformerFactory(insightClient, informerTimeout)
+	dgInformer, err := periodic.NewDataGatherInformer(eventRecorder, insightsInformersfactory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create DataGather informer: %w", err)
+	}
+
+	// Start all informers
+	go jobInformer.Run(ctx, 1)
+	go sharedInformer.Start(ctx.Done())
+	go insightsDataGatherObserver.Run(ctx, 1)
+	go configInformersForTechPreview.Start(ctx.Done())
+	go dgInformer.Run(ctx, 1)
+	go insightsInformersfactory.Start(ctx.Done())
+
+	return &TechPreviewInformers{
+		JobInformer:                jobInformer,
+		InsightsDataGatherObserver: insightsDataGatherObserver,
+		DataGatherInformer:         dgInformer,
+	}, nil
+}
+
 // deleteAllRunningGatheringsPods deletes all the active jobs (and their Pods) with the "periodic-gathering-"
 // prefix in the openshift-insights namespace
 func deleteAllRunningGatheringsPods(ctx context.Context, cli kubernetes.Interface) {
+	// TODO: update the DataGather CR status to failed or stopped/killed whatever
 	jobList, err := cli.BatchV1().Jobs("openshift-insights").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("Failed to list jobs in the Insights namespace: %v ", err)
