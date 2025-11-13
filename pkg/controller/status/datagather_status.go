@@ -125,10 +125,8 @@ func RemoteConfigurationValidCondition(status metav1.ConditionStatus, reason, me
 	}
 }
 
-// TODO: rename, it does not update State anymore, but Progressing conditions,
-// so maybe even move it to the conditions package?
-// UpdateProgressingCondition updates status' time attributes, state and conditions
-// of the provided DataGather resource
+// UpdateProgressingCondition updates the "Progressing" condition of a DataGather resource based on the
+// current gathering state. It also manages the StartTime and FinishTime timestamps in the DataGather status.
 func UpdateProgressingCondition(ctx context.Context,
 	insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
 	dataGatherCR *insightsv1alpha2.DataGather,
