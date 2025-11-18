@@ -14,14 +14,14 @@ import (
 	k8snet "k8s.io/utils/net"
 )
 
-type AnonBuilder struct {
-	anon     Anonymizer
+type NetworkAnonymizerBuilder struct {
+	anon     NetworkAnonymizer
 	networks []string
 }
 
 // WithSensitiveValue adds terms that are obfuscated by the anonymizer in the records.
 // It works as a key-value map, where all instances of 'value' are replaced by 'placeholder'.
-func (b *AnonBuilder) WithSensitiveValue(value, placeholder string) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithSensitiveValue(value, placeholder string) *NetworkAnonymizerBuilder {
 	v := strings.TrimSpace(value)
 	if v == "" {
 		return b
@@ -31,17 +31,17 @@ func (b *AnonBuilder) WithSensitiveValue(value, placeholder string) *AnonBuilder
 	return b
 }
 
-func (b *AnonBuilder) WithConfigClient(configClient v1.ConfigV1Interface) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithConfigClient(configClient v1.ConfigV1Interface) *NetworkAnonymizerBuilder {
 	b.anon.configClient = configClient
 	return b
 }
 
-func (b *AnonBuilder) WithConfigurator(configurator configobserver.Interface) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithConfigurator(configurator configobserver.Interface) *NetworkAnonymizerBuilder {
 	b.anon.configurator = configurator
 	return b
 }
 
-func (b *AnonBuilder) WithDataPolicies(dataPolicy ...v1alpha2.DataPolicyOption) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithDataPolicies(dataPolicy ...v1alpha2.DataPolicyOption) *NetworkAnonymizerBuilder {
 	b.anon.dataPolicy = ""
 
 	if slices.Contains(dataPolicy, v1alpha2.DataPolicyOptionObfuscateNetworking) {
@@ -51,32 +51,32 @@ func (b *AnonBuilder) WithDataPolicies(dataPolicy ...v1alpha2.DataPolicyOption) 
 	return b
 }
 
-func (b *AnonBuilder) WithKubeClient(kubeClient kubernetes.Interface) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithKubeClient(kubeClient kubernetes.Interface) *NetworkAnonymizerBuilder {
 	b.anon.gatherKubeClient = kubeClient
 	return b
 }
 
-func (b *AnonBuilder) WithNetworkClient(networkClient networkv1client.NetworkV1Interface) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithNetworkClient(networkClient networkv1client.NetworkV1Interface) *NetworkAnonymizerBuilder {
 	b.anon.networkClient = networkClient
 	return b
 }
 
-func (b *AnonBuilder) WithNetworks(networks []string) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithNetworks(networks []string) *NetworkAnonymizerBuilder {
 	b.networks = networks
 	return b
 }
 
-func (b *AnonBuilder) WithRunningInCluster(runningInCluster bool) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithRunningInCluster(runningInCluster bool) *NetworkAnonymizerBuilder {
 	b.anon.runningInCluster = runningInCluster
 	return b
 }
 
-func (b *AnonBuilder) WithSecretsClient(client corev1client.SecretInterface) *AnonBuilder {
+func (b *NetworkAnonymizerBuilder) WithSecretsClient(client corev1client.SecretInterface) *NetworkAnonymizerBuilder {
 	b.anon.secretsClient = client
 	return b
 }
 
-func (b *AnonBuilder) Build() (*Anonymizer, error) {
+func (b *NetworkAnonymizerBuilder) Build() (*NetworkAnonymizer, error) {
 	cidrs, err := k8snet.ParseCIDRs(b.networks)
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (b *AnonBuilder) Build() (*Anonymizer, error) {
 	return &b.anon, nil
 }
 
-func (b *AnonBuilder) makeMapIfNil() {
+func (b *NetworkAnonymizerBuilder) makeMapIfNil() {
 	if b.anon.sensitiveValues == nil {
 		b.anon.sensitiveValues = make(map[string]string)
 	}

@@ -201,7 +201,7 @@ func RecordArchiveMetadata(
 		Item: record.JSONMarshaller{Object: ArchiveMetadata{
 			StatusReports:              functionReports,
 			Uptime:                     time.Since(programStartTime).Truncate(time.Millisecond).Seconds(),
-			IsGlobalObfuscationEnabled: anonymizer.IsObfuscationEnabled(),
+			IsGlobalObfuscationEnabled: anonymizer.IsAnonymizerTypeEnabled(anonymization.NetworkAnonymizerType),
 		}},
 	}
 	if errs := rec.Record(archiveMetadata); len(errs) > 0 {
