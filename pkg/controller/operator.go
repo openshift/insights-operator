@@ -12,6 +12,7 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
 	insightsv1alpha2client "github.com/openshift/client-go/insights/clientset/versioned"
+	"github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha2"
 	insightsInformers "github.com/openshift/client-go/insights/informers/externalversions"
 	operatorclient "github.com/openshift/client-go/operator/clientset/versioned"
 	operatorinformers "github.com/openshift/client-go/operator/informers/externalversions"
@@ -160,7 +161,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	var techPreviewInformers *TechPreviewInformers
 	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
 	if insightsConfigEnabled {
-		deleteAllRunningGatheringsPods(ctx, kubeClient)
+		deleteAllRunningGatheringsPods(ctx, kubeClient, insightClient.InsightsV1alpha2())
 
 		// Create InsightsDataGather observer for global configuration
 		configInformersForTechPreview := configv1informers.NewSharedInformerFactory(configClient, informerTimeout)
@@ -388,24 +389,38 @@ func createTechPreviewInformers(
 
 // deleteAllRunningGatheringsPods deletes all the active jobs (and their Pods) with the "periodic-gathering-"
 // prefix in the openshift-insights namespace
-func deleteAllRunningGatheringsPods(ctx context.Context, cli kubernetes.Interface) {
-	// TODO: update the DataGather CR status to failed or stopped/killed whatever
-	jobList, err := cli.BatchV1().Jobs("openshift-insights").List(ctx, metav1.ListOptions{})
+func deleteAllRunningGatheringsPods(
+	ctx context.Context, cli kubernetes.Interface, insightClient v1alpha2.InsightsV1alpha2Interface,
+) {
+	jobList, err := cli.BatchV1().Jobs(insightsNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		klog.Warningf("Failed to list jobs in the Insights namespace: %v ", err)
+		klog.Errorf("Failed to list jobs in the %s namespace: %v", insightsNamespace, err)
+		return
 	}
 
 	orphan := metav1.DeletePropagationBackground
 	for i := range jobList.Items {
 		j := jobList.Items[i]
 		if j.Status.Active > 0 && strings.HasPrefix(j.Name, "periodic-gathering-") {
-			err := cli.BatchV1().Jobs("openshift-insights").Delete(ctx, j.Name, metav1.DeleteOptions{
+			klog.Infof("Deleting active gathering job %s due to operator restart", j.Name)
+
+			err := cli.BatchV1().Jobs(insightsNamespace).Delete(ctx, j.Name, metav1.DeleteOptions{
 				PropagationPolicy: &orphan,
 			})
 			if err != nil {
-				klog.Warningf("Failed to delete job %s: %v", j.Name, err)
-			} else {
-				klog.Infof("Job %s was deleted due to container restart", j.Name)
+				klog.Errorf("Failed to delete job %s in namespace %s: %v", j.Name, insightsNamespace, err)
+				continue
+			}
+
+			if _, err := status.UpdateProgressingCondition(
+				ctx,
+				insightClient,
+				nil,
+				j.Name,
+				status.GatheringFailedReason,
+			); err != nil {
+				klog.Warningf("Failed to update DataGather CR status for job %s after deletion due to operator restart: %v",
+					j.Name, err)
 			}
 		}
 	}
