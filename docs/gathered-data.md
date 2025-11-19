@@ -1349,6 +1349,33 @@ and the UID range value from the `openshift.io/sa.scc.uid-range` annotation
 None
 
 
+## NodeFeatures
+
+Collects `nodefeatures.nfd.k8s-sigs.io` custom resources
+from the openshift-nfd namespace.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openshift-nfd/customresources/{name}.json](./insights-archive-sample/namespaces/openshift-nfd/customresources/{name}.json)
+
+### Location in archive
+- `namespaces/openshift-nfd/customresources/{name}.json`
+
+### Config ID
+`clusterconfig/node_features`
+
+### Released version
+- 4.21.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## NodeLogs
 
 Collects control plane node logs from journal unit with following substrings:
