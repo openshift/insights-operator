@@ -61,6 +61,9 @@ var (
 	jaegerResource = schema.GroupVersionResource{
 		Group: "jaegertracing.io", Version: "v1", Resource: "jaegers",
 	}
+	nodeFeatureResource = schema.GroupVersionResource{
+		Group: "nfd.k8s-sigs.io", Version: "v1alpha1", Resource: "nodefeatures",
+	}
 	costManagementMetricsConfigResource = schema.GroupVersionResource{
 		Group: "costmanagement-metrics-cfg.openshift.io", Version: "v1beta1", Resource: "costmanagementmetricsconfigs",
 	}
