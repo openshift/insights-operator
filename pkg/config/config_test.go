@@ -17,7 +17,7 @@ func TestToConfig(t *testing.T) {
 			name: "basic test",
 			serializedConfig: InsightsConfigurationSerialized{
 				DataReporting: DataReportingSerialized{
-					Interval:       "5m",
+					Interval:       "15m",
 					UploadEndpoint: "test.upload.endpoint/v1",
 					StoragePath:    "/tmp/test/path",
 					Obfuscation: Obfuscation{
@@ -39,7 +39,7 @@ func TestToConfig(t *testing.T) {
 			},
 			config: &InsightsConfiguration{
 				DataReporting: DataReporting{
-					Interval:       5 * time.Minute,
+					Interval:       15 * time.Minute,
 					UploadEndpoint: "test.upload.endpoint/v1",
 					StoragePath:    "/tmp/test/path",
 					Obfuscation: Obfuscation{
@@ -72,31 +72,42 @@ func TestParseInterval(t *testing.T) {
 		name             string
 		intervalString   string
 		defaultValue     time.Duration
+		minValue         time.Duration
 		expectedInterval time.Duration
 	}{
 		{
-			name:             "basic test with meaningful interval value",
+			name:             "basic test with meaningful interval value and minimum",
 			intervalString:   "1h",
 			defaultValue:     30 * time.Minute,
+			minValue:         10 * time.Minute,
 			expectedInterval: 1 * time.Hour,
 		},
 		{
 			name:             "interval cannot be parsed",
 			intervalString:   "not a duration",
 			defaultValue:     30 * time.Minute,
+			minValue:         0 * time.Minute,
 			expectedInterval: 30 * time.Minute,
 		},
 		{
 			name:             "interval is negative duration",
 			intervalString:   "-10m",
 			defaultValue:     30 * time.Minute,
+			minValue:         0 * time.Minute,
 			expectedInterval: 30 * time.Minute,
+		},
+		{
+			name:             "interval is less than minimum duration",
+			intervalString:   "20m",
+			defaultValue:     30 * time.Minute,
+			minValue:         60 * time.Minute,
+			expectedInterval: 60 * time.Minute,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			interval := parseInterval(tt.intervalString, tt.defaultValue)
+			interval := parseInterval(tt.intervalString, tt.defaultValue, tt.minValue)
 			assert.Equal(t, tt.expectedInterval, interval)
 		})
 	}
