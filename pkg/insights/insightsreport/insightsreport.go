@@ -116,7 +116,7 @@ func (c *Controller) PullReportTechpreview(insightsRequestID string) (*types.Ins
 			Message:   msg,
 			Reason:    "NotAvailable",
 		})
-		return nil, fmt.Errorf(msg)
+		return nil, fmt.Errorf("%s", msg)
 	}
 	klog.Info("Report retrieved correctly")
 	analysisReport := &types.InsightsAnalysisReport{}
