@@ -2,7 +2,6 @@ package periodic
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -66,6 +66,7 @@ type Controller struct {
 	pruneInterval       time.Duration
 	techPreview         bool
 	dgInf               DataGatherInformer
+	jobInf              JobWatcher
 	openshiftConfCli    configv1client.ConfigV1Interface
 }
 
@@ -79,6 +80,7 @@ func NewWithTechPreview(
 	insightsOperatorCli operatorv1client.InsightsOperatorInterface,
 	openshiftConfCli configv1client.ConfigV1Interface,
 	dgInf DataGatherInformer,
+	jobInf JobWatcher,
 ) *Controller {
 	statuses := make(map[string]controllerstatus.StatusController)
 
@@ -98,6 +100,7 @@ func NewWithTechPreview(
 		pruneInterval:       1 * time.Hour,
 		techPreview:         true,
 		dgInf:               dgInf,
+		jobInf:              jobInf,
 	}
 }
 
@@ -145,6 +148,10 @@ func (c *Controller) Sources() []controllerstatus.StatusController {
 func (c *Controller) Run(stopCh <-chan struct{}, initialDelay time.Duration) {
 	defer utilruntime.HandleCrash()
 	defer klog.Info("Shutting down")
+
+	if c.techPreview {
+		go wait.Until(func() { c.syncDataGatherCR(stopCh) }, time.Second, stopCh)
+	}
 
 	// Waits for the DataGather resources and runs the on-demand data gathering
 	if c.techPreview {
@@ -330,6 +337,52 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 	}
 }
 
+// syncDataGatherCR listens for finished jobs and ensures the corresponding DataGather status is updated.
+// If a job finishes but the DataGather CR is not in a finished state, it sets it to GatheringFailedReason.
+// This catches cases where the job exits unexpectedly (e.g., OOM kill) before updating the status itself.
+func (c *Controller) syncDataGatherCR(stopCh <-chan struct{}) {
+	for {
+		select {
+		case <-stopCh:
+			return
+		case jobName := <-c.jobInf.FinishedJob():
+			go func() {
+				klog.Infof("Job %s finished, checking DataGather CR status", jobName)
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+
+				dg, err := c.dataGatherClient.DataGathers().Get(ctx, jobName, metav1.GetOptions{})
+				if err != nil {
+					klog.Errorf("Failed to fetch DataGather %s: %v", jobName, err)
+					return
+				}
+
+				progressingCondition := status.GetConditionByType(dg, status.Progressing)
+				// DataGather CR has no Progressing condition, likely not started yet
+				if progressingCondition == nil {
+					return
+				}
+
+				finishedReasons := []string{status.GatheringFailedReason, status.GatheringSucceededReason}
+				// DataGather has already set progressing condition to finished
+				if progressingCondition.Status == metav1.ConditionFalse && slices.Contains(finishedReasons, progressingCondition.Reason) {
+					return
+				}
+
+				klog.Infof("Updating DataGather %s Progressing condition to %s due to job completion",
+					dg.Name, status.GatheringFailedReason)
+				_, err = status.UpdateProgressingCondition(ctx, c.dataGatherClient, dg, dg.Name, status.GatheringFailedReason)
+				if err != nil {
+					return
+				}
+
+				klog.Infof("Successfully updated DataGather %s Progressing condition to %s", dg.Name, status.GatheringFailedReason)
+			}()
+		}
+	}
+}
+
 func (c *Controller) prepareDataGatherCRWithImage(ctx context.Context, dgName string) (*insightsv1alpha2.DataGather, error) {
 	dataGather, err := c.getDataGather(ctx, dgName)
 	if err != nil {
@@ -410,7 +463,7 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 	klog.Infof("Created new gathering job %v", gj.Name)
 	err = c.jobController.WaitForJobCompletion(ctx, gj)
 	if err != nil {
-		c.handleJobErrors(ctx, dataGather, gj, err)
+		klog.Errorf("Gathering job failed: %v", err)
 	}
 
 	klog.Infof("Job completed %s", gj.Name)
@@ -460,28 +513,6 @@ func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insi
 		return
 	}
 	klog.Info("Operator status in \"insightsoperator.operator.openshift.io\" successfully updated")
-}
-
-// handleJobErrors handles job completion errors and updates DataGather status condition to failed.
-func (c *Controller) handleJobErrors(ctx context.Context, dataGather *insightsv1alpha2.DataGather, job *batchv1.Job, err error) {
-	switch {
-	case errors.Is(err, context.DeadlineExceeded):
-		klog.Errorf("Failed to read job status: %v", err)
-	case errors.Is(err, ErrJobFailed):
-		klog.Errorf("DataGather %s: %v", dataGather.Name, err)
-	default:
-		klog.Errorf("Job %s ended with error: %v", job.Name, err)
-	}
-
-	if _, updateErr := status.UpdateProgressingCondition(
-		ctx,
-		c.dataGatherClient,
-		nil,
-		dataGather.Name,
-		status.GatheringFailedReason,
-	); updateErr != nil {
-		klog.Errorf("failed to update corresponding DataGather custom resource: %v", updateErr)
-	}
 }
 
 // updateStatusBasedOnDataGatherCondition update the Insights ClusterOperator conditions based on the provided
