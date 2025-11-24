@@ -114,7 +114,7 @@ func Test_GetNextIP(t *testing.T) {
 	}
 }
 
-func getAnonymizer(t *testing.T) *Anonymizer {
+func getAnonymizer(t *testing.T) *NetworkAnonymizer {
 	clusterBaseDomain := "example.com"
 	clusterConfigHost := "apiserver.com" // in HyperShift, API Server does not share base domain
 	networks := []string{
@@ -128,18 +128,18 @@ func getAnonymizer(t *testing.T) *Anonymizer {
 			},
 		},
 	})
-	anonBuilder := &AnonBuilder{}
-	anonBuilder.
+	networkAnonymizeBuilder := &NetworkAnonymizerBuilder{}
+	networkAnonymizeBuilder.
 		WithSensitiveValue(clusterBaseDomain, ClusterBaseDomainPlaceholder).
 		WithSensitiveValue(clusterConfigHost, ClusterHostPlaceholder).
 		WithConfigurator(mockConfigMapConfigurator).
 		WithDataPolicies(v1alpha2.DataPolicyOptionObfuscateNetworking).
 		WithNetworks(networks).
 		WithSecretsClient(kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
-	anonymizer, err := anonBuilder.Build()
+	networkAnonymizer, err := networkAnonymizeBuilder.Build()
 	assert.NoError(t, err)
 
-	return anonymizer
+	return networkAnonymizer
 }
 
 func Test_Anonymizer(t *testing.T) {
@@ -169,19 +169,22 @@ func Test_Anonymizer(t *testing.T) {
 	}
 
 	for _, testCase := range nameTestCases {
-		obfuscatedName := anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		obfuscatedName, err := anonymizer.AnonymizeData(&record.MemoryRecord{
 			Name: testCase.before,
-		}).Name
+		})
 
-		assert.Equal(t, testCase.after, obfuscatedName)
+		assert.NoError(t, err)
+		assert.Equal(t, testCase.after, obfuscatedName.Name)
 	}
 
 	for _, testCase := range dataTestCases {
-		obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		obfuscatedData, err := anonymizer.AnonymizeData(&record.MemoryRecord{
 			Data: []byte(testCase.before),
-		}).Data)
+		})
+		tmp := string(obfuscatedData.Data)
 
-		assert.Equal(t, testCase.after, obfuscatedData)
+		assert.NoError(t, err)
+		assert.Equal(t, testCase.after, tmp)
 	}
 }
 
@@ -189,37 +192,42 @@ func Test_Anonymizer_TranslationTableTest(t *testing.T) {
 	anonymizer := getAnonymizer(t)
 
 	for i := 0; i < 254; i++ {
-		obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		obfuscatedData, err := anonymizer.AnonymizeData(&record.MemoryRecord{
 			Data: []byte(fmt.Sprintf("192.168.0.%v", 255-i)),
-		}).Data)
+		})
 
-		assert.Equal(t, fmt.Sprintf("192.168.0.%v", i+1), obfuscatedData)
+		assert.NoError(t, err)
+		assert.Equal(t, fmt.Sprintf("192.168.0.%v", i+1), string(obfuscatedData.Data))
 	}
 
 	// 192.168.0.0 is the network address, we don't want to change it
-	obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+	obfuscatedData, err := anonymizer.AnonymizeData(&record.MemoryRecord{
 		Data: []byte("192.168.0.0"),
-	}).Data)
+	})
 
-	assert.Equal(t, "192.168.0.0", obfuscatedData)
+	assert.NoError(t, err)
+	assert.Equal(t, "192.168.0.0", string(obfuscatedData.Data))
 
-	obfuscatedData = string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+	obfuscatedData, err = anonymizer.AnonymizeData(&record.MemoryRecord{
 		Data: []byte("192.168.1.255"),
-	}).Data)
+	})
 
-	assert.Equal(t, "192.168.0.255", obfuscatedData)
+	assert.NoError(t, err)
+	assert.Equal(t, "192.168.0.255", string(obfuscatedData.Data))
 
-	obfuscatedData = string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+	obfuscatedData, err = anonymizer.AnonymizeData(&record.MemoryRecord{
 		Data: []byte("192.168.1.55"),
-	}).Data)
+	})
 
-	assert.Equal(t, "192.168.1.0", obfuscatedData)
+	assert.NoError(t, err)
+	assert.Equal(t, "192.168.1.0", string(obfuscatedData.Data))
 
-	obfuscatedData = string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+	obfuscatedData, err = anonymizer.AnonymizeData(&record.MemoryRecord{
 		Data: []byte("192.168.1.56"),
-	}).Data)
+	})
 
-	assert.Equal(t, "192.168.1.1", obfuscatedData)
+	assert.NoError(t, err)
+	assert.Equal(t, "192.168.1.1", string(obfuscatedData.Data))
 
 	assert.Equal(t, 257, len(anonymizer.translationTable))
 	anonymizer.ResetTranslationTable()
@@ -253,11 +261,12 @@ func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
 
 	// Fill translation table
 	for i := 0; i < 10; i++ {
-		obfuscatedData := string(anonymizer.AnonymizeMemoryRecord(&record.MemoryRecord{
+		obfuscatedData, err := anonymizer.AnonymizeData(&record.MemoryRecord{
 			Data: []byte(fmt.Sprintf("192.168.0.%v", 255-i)),
-		}).Data)
+		})
 
-		assert.Equal(t, fmt.Sprintf("192.168.0.%v", i+1), obfuscatedData)
+		assert.NoError(t, err)
+		assert.Equal(t, fmt.Sprintf("192.168.0.%v", i+1), string(obfuscatedData.Data))
 	}
 	// Store translation table, then check
 	secret := anonymizer.StoreTranslationTable()
@@ -442,7 +451,7 @@ func TestNewAnonymizerFromConfigClient(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			anonymizer, err := NewAnonymizerFromConfigClient(
+			anonymizer, err := NewNetworkAnonymizerFromConfigClient(
 				context.Background(),
 				kubeClient,
 				kubeClient,

@@ -88,8 +88,12 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		At:          at,
 		Data:        data,
 	}
-	if r.anonymizer.IsObfuscationEnabled() {
-		memoryRecord = r.anonymizer.AnonymizeMemoryRecord(memoryRecord)
+
+	if r.anonymizer != nil {
+		memoryRecord, err = r.anonymizer.AnonymizeData(memoryRecord)
+		if err != nil {
+			return append(errs, err)
+		}
 	}
 
 	// we want to record the "priority" files (with AlwaysStore=true) everytime regardless the archive size limit
@@ -133,9 +137,8 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 
 // Flush and save the reports using recorder driver
 func (r *Recorder) Flush() error {
-	if r.anonymizer != nil {
-		defer r.anonymizer.StoreTranslationTable()
-	}
+	defer r.storeTranslationTables()
+
 	records := r.copy()
 	if len(records) == 0 {
 		return nil
@@ -151,6 +154,18 @@ func (r *Recorder) Flush() error {
 	}
 
 	return nil
+}
+
+func (r *Recorder) storeTranslationTables() {
+	if r.anonymizer == nil {
+		return
+	}
+
+	for _, anonymizer := range r.anonymizer.Anonymizers {
+		if netAnonymizer, ok := anonymizer.(*anonymization.NetworkAnonymizer); ok {
+			netAnonymizer.StoreTranslationTable()
+		}
+	}
 }
 
 // PeriodicallyPrune the reports using the recorder driver
