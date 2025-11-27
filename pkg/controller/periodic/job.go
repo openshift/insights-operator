@@ -50,6 +50,9 @@ func (j *JobController) CreateGathererJob(
 			Annotations: map[string]string{
 				"openshift.io/required-scc": "restricted-v2",
 			},
+			Labels: map[string]string{
+				"insights-gathering": "",
+			},
 		},
 		Spec: batchv1.JobSpec{
 			// backoff limit is 0 - we dont' want to restart the gathering immediately in case of failure
