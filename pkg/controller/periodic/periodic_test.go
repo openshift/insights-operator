@@ -1913,3 +1913,183 @@ func TestGetDataGatherCR(t *testing.T) {
 		})
 	}
 }
+
+func Test_CountActiveGatheringJobs(t *testing.T) {
+	tests := []struct {
+		name                    string
+		dataGatherList          []*insightsv1.DataGather
+		expectedGatheringCount  int
+		expectedPendingGatherer *insightsv1.DataGather
+	}{
+		{
+			name: "multiple active gatherings, no pending gatherer",
+			dataGatherList: []*insightsv1.DataGather{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "on-demand-1"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{
+							{
+								Type:   status.Progressing,
+								Status: metav1.ConditionTrue,
+								Reason: status.GatheringReason,
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "on-demand-2"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{
+							{
+								Type:   status.Progressing,
+								Status: metav1.ConditionTrue,
+								Reason: status.GatheringReason,
+							},
+						},
+					},
+				},
+			},
+			expectedGatheringCount:  2,
+			expectedPendingGatherer: nil,
+		},
+		{
+			name:                    "empty datagather list",
+			dataGatherList:          []*insightsv1.DataGather{},
+			expectedGatheringCount:  0,
+			expectedPendingGatherer: nil,
+		},
+		{
+			name: "one pending gatherer without progressing condition",
+			dataGatherList: []*insightsv1.DataGather{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "pending-gather"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{},
+					},
+				},
+			},
+			expectedGatheringCount: 0,
+			expectedPendingGatherer: &insightsv1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{Name: "pending-gather"},
+				Status: insightsv1.DataGatherStatus{
+					Conditions: []metav1.Condition{},
+				},
+			},
+		},
+		{
+			name: "multiple pending gatherers - only one is returned",
+			dataGatherList: []*insightsv1.DataGather{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "pending-1"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "pending-2"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{},
+					},
+				},
+			},
+			expectedGatheringCount: 0,
+			expectedPendingGatherer: &insightsv1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{Name: "pending-1"},
+				Status: insightsv1.DataGatherStatus{
+					Conditions: []metav1.Condition{},
+				},
+			},
+		},
+		{
+			name: "periodic gathering is excluded from count",
+			dataGatherList: []*insightsv1.DataGather{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "periodic-gathering-1"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{
+							{
+								Type:   status.Progressing,
+								Status: metav1.ConditionTrue,
+								Reason: status.GatheringReason,
+							},
+						},
+					},
+				},
+			},
+			expectedGatheringCount:  0,
+			expectedPendingGatherer: nil,
+		},
+		{
+			name: "mixed active, pending, and periodic gatherings",
+			dataGatherList: []*insightsv1.DataGather{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "periodic-gathering-abc"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{
+							{
+								Type:   status.Progressing,
+								Status: metav1.ConditionTrue,
+								Reason: status.GatheringReason,
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "on-demand-active"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{
+							{
+								Type:   status.Progressing,
+								Status: metav1.ConditionTrue,
+								Reason: status.GatheringReason,
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "on-demand-pending"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{},
+					},
+				},
+			},
+			expectedGatheringCount: 1,
+			expectedPendingGatherer: &insightsv1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{Name: "on-demand-pending"},
+				Status: insightsv1.DataGatherStatus{
+					Conditions: []metav1.Condition{},
+				},
+			},
+		},
+		{
+			name: "completed gathering is not counted",
+			dataGatherList: []*insightsv1.DataGather{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "completed-gather"},
+					Status: insightsv1.DataGatherStatus{
+						Conditions: []metav1.Condition{
+							{
+								Type:   status.Progressing,
+								Status: metav1.ConditionFalse,
+								Reason: status.GatheringSucceededReason,
+							},
+						},
+					},
+				},
+			},
+			expectedGatheringCount:  0,
+			expectedPendingGatherer: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualPendingGatherers, count := countActiveGatheringJobs(tt.dataGatherList)
+
+			assert.Equal(t, tt.expectedGatheringCount, count,
+				"expected gathering count: %d should match gathering count: %d", tt.expectedGatheringCount, count,
+			)
+			assert.Equal(t, tt.expectedPendingGatherer, actualPendingGatherers, "expectedPendingGatherer does not match the actual pending gatherer")
+		})
+	}
+}
