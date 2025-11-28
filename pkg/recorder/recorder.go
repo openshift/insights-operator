@@ -3,7 +3,9 @@ package recorder
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,6 +19,9 @@ import (
 
 // MaxArchiveSize defines maximum allowed tarball size
 const MaxArchiveSize = 24 * 1024 * 1024
+
+// maxFilenameLength defines the maximum allowed filename length
+const maxFilenameLength = 255
 
 // MetadataRecordName defines the metadata record name
 const MetadataRecordName = "insights-operator/gathers"
@@ -74,7 +79,7 @@ func (r *Recorder) Record(rec record.Record) (errs []error) {
 		at = time.Now()
 	}
 
-	recordName := rec.GetFilename()
+	recordName := ensureSafeFilenameLength(rec.GetFilename())
 	recordSize := int64(len(data))
 
 	memoryRecord := &record.MemoryRecord{
@@ -177,6 +182,30 @@ func (r *Recorder) PeriodicallyPrune(ctx context.Context, reported alreadyReport
 			})
 		}
 	}, time.Second, ctx.Done())
+}
+
+// ensureSafeFilenameLength enforces the 255-character filesystem limit on filenames.
+// If the base filename (without path) exceeds 255 characters, it truncates the name
+// portion while preserving both the directory path and file extension.
+//
+// The 255-character limit is a standard across most modern filesystems (ext4, NTFS,
+// HFS+, APFS) and applies only to the filename, not the full path.
+func ensureSafeFilenameLength(fullPath string) string {
+	filename := filepath.Base(fullPath)
+
+	if len(filename) <= maxFilenameLength {
+		return fullPath
+	}
+
+	// separate the extension to preserve it during truncation
+	extension := filepath.Ext(filename) // includes dot (e.g., ".json")
+	nameWithoutExt := strings.TrimSuffix(filename, extension)
+
+	// truncate name to fit: total_length = name_length + extension_length
+	trimmedFilename := nameWithoutExt[:maxFilenameLength-len(extension)]
+
+	// rebuild path: directory + truncated name + extension
+	return filepath.Join(filepath.Dir(fullPath), trimmedFilename+extension)
 }
 
 func (r *Recorder) copy() record.MemoryRecords {
