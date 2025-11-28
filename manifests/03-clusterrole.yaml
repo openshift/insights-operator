@@ -175,6 +175,12 @@ metadata:
     capability.openshift.io/name: Insights
 rules:
   - apiGroups:
+      - "nfd.k8s-sigs.io"
+    resources:
+      - nodefeatures
+    verbs:
+      - list
+  - apiGroups:
       - "monitoring.coreos.com"
     resources:
       - alertmanagers
