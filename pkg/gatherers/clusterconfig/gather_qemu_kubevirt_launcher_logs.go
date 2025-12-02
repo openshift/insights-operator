@@ -32,14 +32,14 @@ import (
 // ### Released version
 // - 4.20.0
 //
-// ### Backported versions (TBD)
-// - 4.19.z
-// - 4.18.z
-// - 4.17.z
-// - 4.16.z
+// ### Backported versions
+// - 4.19.12+
+// - 4.18.25+
+// - 4.17.41+
+// - 4.16.49+
 //
 // ### Changes
-// None
+// 4.21 - bugfix: virt-launcher pods on 'Pending' status caused a gathering error
 func (g *Gatherer) GatherQEMUKubeVirtLauncherLogs(ctx context.Context) ([]record.Record, []error) {
 	// Setting a fixed value for the maximum number of VMs pods
 	const maxVMs int = 100
@@ -102,10 +102,12 @@ func getQEMUArgsMessageFilter() common.LogMessagesFilter {
 
 // getQEMUArgsContainerFilter creates a LogContainersFilter for selecting KubeVirt virt-launcher pods.
 // It targets all namespaces using the label selector "kubevirt.io=virt-launcher" to identify relevant containers.
+// Adding the field selector "status.phase=Running" filters out pending pods with no compute container or logs.
 func getQEMUArgsContainerFilter(maxContainers int) common.LogContainersFilter {
 	return common.LogContainersFilter{
 		Namespace:              metav1.NamespaceAll,
 		LabelSelector:          "kubevirt.io=virt-launcher",
+		FieldSelector:          "status.phase=Running",
 		MaxNamespaceContainers: maxContainers,
 	}
 }
