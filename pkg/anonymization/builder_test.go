@@ -16,10 +16,10 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-func Test_AnonBuilder(t *testing.T) {
+func Test_NetworkAnonymizationBuilder(t *testing.T) {
 	type testCase struct {
 		name             string
-		builder          *AnonBuilder
+		builder          *NetworkAnonymizerBuilder
 		sensitiveValues  map[string]string
 		configClient     v1.ConfigV1Interface
 		configurator     configobserver.Interface
@@ -96,7 +96,7 @@ func Test_AnonBuilder(t *testing.T) {
 
 			// Assert
 			assert.NoError(t, err)
-			assert.IsType(t, Anonymizer{}, *test)
+			assert.IsType(t, NetworkAnonymizer{}, *test)
 			if tc.sensitiveValues != nil {
 				assert.EqualValues(t, tc.sensitiveValues, test.sensitiveValues)
 			}
@@ -114,6 +114,6 @@ func Test_AnonBuilder(t *testing.T) {
 	}
 }
 
-func getBuilderInstance() *AnonBuilder {
-	return &AnonBuilder{}
+func getBuilderInstance() *NetworkAnonymizerBuilder {
+	return &NetworkAnonymizerBuilder{}
 }

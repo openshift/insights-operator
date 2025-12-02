@@ -210,9 +210,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	var rec *recorder.Recorder
 	// if techPreview is enabled we switch to separate job and we don't need anything from this
 	if !insightsConfigEnabled {
-		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-		anonymizer, err = anonymization.NewAnonymizerFromConfig(ctx, gatherKubeConfig,
+		networkAnonymizer, err := anonymization.NewNetworkAnonymizerFromConfig(ctx, gatherKubeConfig,
 			gatherProtoKubeConfig, controller.ProtoKubeConfig, configAggregator, []insightsv1alpha2.DataPolicyOption{})
+		if err != nil {
+			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
+			return err
+		}
+		// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
+		anonymizer, err = anonymization.NewAnonymizer(networkAnonymizer)
 		if err != nil {
 			// in case of an error anonymizer will be nil and anonymization will be just skipped
 			klog.Errorf(anonymization.UnableToCreateAnonymizerErrorMessage, err)
