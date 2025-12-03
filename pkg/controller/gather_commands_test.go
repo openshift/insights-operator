@@ -448,6 +448,12 @@ func TestGetCustomStoragePath(t *testing.T) {
 		expectedPath string
 	}{
 		{
+			name:         "When dataGatherCR is nil, should return ConfigMap path",
+			mockConfig:   &MockConfigAggregator{storagePath: "/configmap/path"},
+			dataGatherCR: nil,
+			expectedPath: "/configmap/path",
+		},
+		{
 			name:         "When both CR and ConfigMap have no storage path configured, should return empty string",
 			mockConfig:   &MockConfigAggregator{storagePath: ""},
 			dataGatherCR: &insightsv1alpha2.DataGather{},
@@ -471,6 +477,41 @@ func TestGetCustomStoragePath(t *testing.T) {
 				},
 			},
 			expectedPath: "/cr/path",
+		},
+		{
+			name:       "When CR Storage is nil, should return ConfigMap path",
+			mockConfig: &MockConfigAggregator{storagePath: "/configmap/path"},
+			dataGatherCR: &insightsv1alpha2.DataGather{
+				Spec: insightsv1alpha2.DataGatherSpec{
+					Storage: nil,
+				},
+			},
+			expectedPath: "/configmap/path",
+		},
+		{
+			name:       "When Storage type is Ephemeral, should return ConfigMap path",
+			mockConfig: &MockConfigAggregator{storagePath: "/configmap/path"},
+			dataGatherCR: &insightsv1alpha2.DataGather{
+				Spec: insightsv1alpha2.DataGatherSpec{
+					Storage: &insightsv1alpha2.Storage{
+						Type: insightsv1alpha2.StorageTypeEphemeral,
+					},
+				},
+			},
+			expectedPath: "/configmap/path",
+		},
+		{
+			name:       "When Storage type is PersistentVolume but PersistentVolume is nil (edge case), should return ConfigMap path",
+			mockConfig: &MockConfigAggregator{storagePath: "/configmap/path"},
+			dataGatherCR: &insightsv1alpha2.DataGather{
+				Spec: insightsv1alpha2.DataGatherSpec{
+					Storage: &insightsv1alpha2.Storage{
+						Type:             insightsv1alpha2.StorageTypePersistentVolume,
+						PersistentVolume: nil, // This should not happen with validation, but defensive code handles it
+					},
+				},
+			},
+			expectedPath: "/configmap/path",
 		},
 		{
 			name:       "When CR has correct storage type but empty mount path (misconfiguration), should fall back to ConfigMap path",
