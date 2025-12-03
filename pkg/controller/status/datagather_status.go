@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"fmt"
 
 	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	insightsv1alpha2client "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1alpha2"
@@ -194,10 +195,16 @@ func getConditionIndexByType(conType string, conditions []metav1.Condition) int 
 
 // UpdateDataGatherConditions updates the conditions of the provided dataGather resource with provided
 // condition
-func UpdateDataGatherConditions(ctx context.Context,
+func UpdateDataGatherConditions(
+	ctx context.Context,
 	insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
-	dataGather *insightsv1alpha2.DataGather, conditions ...metav1.Condition,
+	dataGather *insightsv1alpha2.DataGather,
+	conditions ...metav1.Condition,
 ) (*insightsv1alpha2.DataGather, error) {
+	if dataGather == nil {
+		return nil, fmt.Errorf("cannot update DataGather status: resource is nil")
+	}
+
 	newConditions := make([]metav1.Condition, len(dataGather.Status.Conditions))
 	_ = copy(newConditions, dataGather.Status.Conditions)
 
