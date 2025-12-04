@@ -3,6 +3,8 @@ package recorder
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -234,4 +236,64 @@ func Test_EmptyItemRecord(t *testing.T) {
 	assert.Len(t, errs, 1)
 	err = errs[0]
 	assert.Equal(t, fmt.Errorf(`empty "%s" record data. Nothing will be recorded`, testRec.Name), err)
+}
+
+func Test_EnsureSafeFilenameLength(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		// Test cases where filename is within limits (no change expected)
+		{
+			name:     "short filename with extension",
+			input:    "config/test.json",
+			expected: "config/test.json",
+		},
+		{
+			name:     "filename exactly 255 chars",
+			input:    "config/" + strings.Repeat("t", 250) + ".json",
+			expected: "config/" + strings.Repeat("t", 250) + ".json",
+		},
+		{
+			name:     "no path, short filename",
+			input:    "test.json",
+			expected: "test.json",
+		},
+		{
+			name:     "deep path with short filename",
+			input:    "config/subdir/another/test.json",
+			expected: "config/subdir/another/test.json",
+		},
+		// Test cases where filename exceeds limits (trimming expected)
+		{
+			name:     "long filename with json extension",
+			input:    "config/" + strings.Repeat("t", 260) + ".json",
+			expected: "config/" + strings.Repeat("t", 250) + ".json",
+		},
+		{
+			name:     "long filename without path",
+			input:    strings.Repeat("t", 260) + ".txt",
+			expected: strings.Repeat("t", 251) + ".txt",
+		},
+		{
+			name:     "very long filename with long extension",
+			input:    "data/" + strings.Repeat("t", 300) + ".custom",
+			expected: "data/" + strings.Repeat("t", 248) + ".custom",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// When
+			result := ensureSafeFilenameLength(tt.input)
+
+			// Assert
+			assert.Equal(t, tt.expected, result)
+			// extra check of the maximum file name length (255 characters)
+			testFileName := filepath.Base(result)
+			assert.LessOrEqual(t, len(testFileName), 255,
+				"Base filename length should be <= 255, got %d", len(testFileName))
+		})
+	}
 }
