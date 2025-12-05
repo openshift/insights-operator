@@ -1812,6 +1812,7 @@ None
 
 ### Changes
 4.21 - bugfix: virt-launcher pods on 'Pending' status caused a gathering error
+4.21 - bugfix: pods with a status other than "Running" do not contain logs but were ignored
 
 
 ## SAPConfig
