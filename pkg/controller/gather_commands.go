@@ -303,8 +303,10 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	updateDataGatherStatus(ctx, insightsV1alpha2Cli, dataGatherCR, &dataProcessedCondition, status.GatheringSucceededReason)
-	klog.Infof("Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
-		insightsRequestID)
+	klog.Infof(
+		"Data was successfully processed. New Insights analysis for the request ID %s will be downloaded by the operator",
+		insightsRequestID,
+	)
 
 	// Clean up of old archives created by on-demand gathering
 	if err := recdriver.PruneByCount(maxGatherJobArchives); err != nil {
@@ -326,6 +328,10 @@ func gatherAndReportFunctions(
 	*gatherers.RemoteConfigStatus,
 	error,
 ) {
+	if dataGatherCR == nil {
+		return nil, nil, fmt.Errorf("failed to to gather: datagather resource is nil")
+	}
+
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
 	var remoteConfStatus gatherers.RemoteConfigStatus
 
@@ -369,16 +375,32 @@ func gatherAndReportFunctions(
 
 // updateDataGatherStatus updates DataGather status conditions with provided condition definition as well as
 // the DataGather state
-func updateDataGatherStatus(ctx context.Context, insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
-	dataGatherCR *insightsv1alpha2.DataGather, conditionToUpdate *metav1.Condition, gatheringStatus string,
+func updateDataGatherStatus(
+	ctx context.Context,
+	insightsClient insightsv1alpha2client.InsightsV1alpha2Interface,
+	dataGatherCR *insightsv1alpha2.DataGather,
+	conditionToUpdate *metav1.Condition,
+	gatheringStatus string,
 ) {
+	if dataGatherCR == nil {
+		klog.Errorf("cannot update DataGather status: resource is nil")
+		return
+	}
+
+	if conditionToUpdate == nil {
+		klog.Errorf("cannot update DataGather conditions: condition is nil")
+		return
+	}
+
 	dataGatherUpdated, err := status.UpdateProgressingCondition(ctx, insightsClient, dataGatherCR, dataGatherCR.Name, gatheringStatus)
 	if err != nil {
 		klog.Errorf("Failed to update DataGather resource %s state: %v", dataGatherCR.Name, err)
 	}
 
 	_, err = status.UpdateDataGatherConditions(
-		ctx, insightsClient, dataGatherUpdated,
+		ctx,
+		insightsClient,
+		dataGatherUpdated,
 		status.ProgressingCondition(gatheringStatus),
 		*conditionToUpdate,
 	)
@@ -568,18 +590,28 @@ func createRemoteConfigConditions(
 // * DataGather CR specification (PersistentVolume.MountPath)
 // * ConfigMap configuration (DataReporting.StoragePath)
 func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1alpha2.DataGather) string {
-	if dataGatherCR.Spec.Storage != nil && dataGatherCR.Spec.Storage.Type == insightsv1alpha2.StorageTypePersistentVolume {
+	defaultPath := ""
+
+	// Get the default path from ConfigMap configuration
+	if configStoragePath := configAggregator.Config().DataReporting.StoragePath; configStoragePath != "" {
+		defaultPath = configStoragePath
+	}
+
+	if dataGatherCR == nil {
+		return defaultPath
+	}
+
+	if dataGatherCR.Spec.Storage == nil || dataGatherCR.Spec.Storage.Type != insightsv1alpha2.StorageTypePersistentVolume {
+		return defaultPath
+	}
+
+	if dataGatherCR.Spec.Storage.PersistentVolume != nil {
 		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
 			return storagePath
 		}
 	}
 
-	// this could be returned directly with the same functionality but this way is more readable
-	if cmsp := configAggregator.Config().DataReporting.StoragePath; cmsp != "" {
-		return cmsp
-	}
-
-	return ""
+	return defaultPath
 }
 
 // boolToConditionStatus is a helper function to conver bool type
