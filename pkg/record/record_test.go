@@ -10,6 +10,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// mockMarshaller is a test helper for testing different extensions
+type mockMarshaller struct {
+	extension string
+	data      []byte
+	err       error
+}
+
+func (m *mockMarshaller) Marshal() ([]byte, error) {
+	return m.data, m.err
+}
+
+func (m *mockMarshaller) GetExtension() string {
+	return m.extension
+}
+
 func Test_Record_Marshal(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -177,19 +192,4 @@ func Test_MemoryRecords_Sorting(t *testing.T) {
 			}
 		})
 	}
-}
-
-// mockMarshaller is a test helper for testing different extensions
-type mockMarshaller struct {
-	extension string
-	data      []byte
-	err       error
-}
-
-func (m *mockMarshaller) Marshal() ([]byte, error) {
-	return m.data, m.err
-}
-
-func (m *mockMarshaller) GetExtension() string {
-	return m.extension
 }

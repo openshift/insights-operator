@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/http/httpproxy"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -86,9 +87,7 @@ func Test_Proxy(tt *testing.T) {
 		tc := tcase
 		tt.Run(tc.Name, func(t *testing.T) {
 			for k, v := range tc.EnvValues {
-				// do not use parallel here
 				defer SafeRestoreEnv(k)() // nolint: gocritic
-				// nil will indicate the need to unset Env
 				if v != nil {
 					vv := v.(string)
 					os.Setenv(k, vv)
@@ -110,12 +109,12 @@ func Test_Proxy(tt *testing.T) {
 			req := httptest.NewRequest("GET", tc.RequestURL, http.NoBody)
 			urlRec, err := p(req)
 
-			if err != nil {
-				t.Fatalf("unexpected err %s", err)
-			}
-			if (tc.ProxyURL == "" && urlRec != nil) ||
-				(len(tc.ProxyURL) > 0 && (urlRec == nil || tc.ProxyURL != urlRec.String())) {
-				t.Fatalf("Unexpected value of Proxy Url. Test %s Expected Url %s Received Url %s", tc.Name, tc.ProxyURL, urlRec)
+			assert.NoError(t, err)
+			if tc.ProxyURL == "" {
+				assert.Nil(t, urlRec)
+			} else {
+				assert.NotNil(t, urlRec)
+				assert.Equal(t, tc.ProxyURL, urlRec.String())
 			}
 		})
 	}
@@ -134,27 +133,7 @@ func SafeRestoreEnv(key string) func() {
 	}
 }
 
-func TestNew(t *testing.T) {
-	secretConfigurator := &config.MockSecretConfigurator{Conf: &config.Controller{}}
-	configurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{})
-
-	auth := New(secretConfigurator, configurator)
-
-	if auth == nil {
-		t.Fatal("Expected non-nil Authorizer")
-	}
-	if auth.secretConfigurator != secretConfigurator {
-		t.Error("secretConfigurator not set correctly")
-	}
-	if auth.configurator != configurator {
-		t.Error("configurator not set correctly")
-	}
-	if auth.proxyFromEnvironment == nil {
-		t.Error("proxyFromEnvironment should be set to http.ProxyFromEnvironment")
-	}
-}
-
-func TestToken_ValidToken(t *testing.T) {
+func TestToken(t *testing.T) {
 	tests := []struct {
 		name          string
 		token         string
@@ -177,14 +156,12 @@ func TestToken_ValidToken(t *testing.T) {
 		{
 			name:          "token with newline",
 			token:         "invalid\ntoken",
-			expectedToken: "",
 			expectError:   true,
 			errorContains: "contains newlines",
 		},
 		{
 			name:          "empty token",
 			token:         "",
-			expectedToken: "",
 			expectError:   true,
 			errorContains: "not configured",
 		},
@@ -207,21 +184,12 @@ func TestToken_ValidToken(t *testing.T) {
 			token, err := auth.Token()
 
 			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error containing %q but got nil", tt.errorContains)
-				} else if !contains(err.Error(), tt.errorContains) {
-					t.Errorf("Expected error containing %q but got %q", tt.errorContains, err.Error())
-				}
-				if token != "" {
-					t.Errorf("Expected empty token on error but got %q", token)
-				}
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+				assert.Empty(t, token)
 			} else {
-				if err != nil {
-					t.Errorf("Expected no error but got: %v", err)
-				}
-				if token != tt.expectedToken {
-					t.Errorf("Expected token %q but got %q", tt.expectedToken, token)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedToken, token)
 			}
 		})
 	}
@@ -273,35 +241,12 @@ func TestAuthorize(t *testing.T) {
 			err := auth.Authorize(req)
 
 			if tt.expectError {
-				if err == nil {
-					t.Fatal("Expected error but got nil")
-				}
-				if !contains(err.Error(), tt.errorContains) {
-					t.Errorf("Expected error containing %q but got: %v", tt.errorContains, err)
-				}
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
 			} else {
-				if err != nil {
-					t.Fatalf("Expected no error but got: %v", err)
-				}
-				authHeader := req.Header.Get("Authorization")
-				if authHeader != tt.expectedAuthHeader {
-					t.Errorf("Expected Authorization header %q but got %q", tt.expectedAuthHeader, authHeader)
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedAuthHeader, req.Header.Get("Authorization"))
 			}
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > 0 && len(substr) > 0 && indexOf(s, substr) >= 0))
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }

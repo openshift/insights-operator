@@ -139,15 +139,15 @@ func TestMergeWokloads(t *testing.T) {
 
 func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 	tests := []struct {
-		name              string
-		data              []byte
-		status            int
-		token             string
-		expectedErr       error
-		expectedData      workloadRuntimes
-		checkAuthHeader   bool
+		name               string
+		data               []byte
+		status             int
+		token              string
+		expectedErr        error
+		expectedData       workloadRuntimes
+		checkAuthHeader    bool
 		expectedAuthHeader string
-		verifyDetails     func(t *testing.T, result workloadRuntimes)
+		verifyDetails      func(t *testing.T, result workloadRuntimes)
 	}{
 		{
 			name:         "invalid JSON data",
@@ -182,8 +182,9 @@ func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 			},
 		},
 		{
-			name:        "empty containers are skipped",
-			data:        []byte(`{"test-namespace": {"test-pod-1": {"cri-o://foo-1": {"os": "rhel", "runtimes": [{"name": "runtime-A"}]}, "cri-o://empty": {}}}}`),
+			name: "empty containers are skipped",
+			data: []byte(`{"test-namespace": {"test-pod-1": {"cri-o://foo-1": ` +
+				`{"os": "rhel", "runtimes": [{"name": "runtime-A"}]}, "cri-o://empty": {}}}}`),
 			status:      http.StatusOK,
 			expectedErr: nil,
 			expectedData: workloadRuntimes{
