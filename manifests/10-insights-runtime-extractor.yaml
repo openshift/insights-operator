@@ -97,9 +97,11 @@ spec:
             exec:
               command:
                 - crictl
+                - --timeout
+                - 10s
                 - info
-              periodSeconds: 10
-              failureThreshold: 2
+              periodSeconds: 30
+              timeoutSeconds: 10
           resources: 
             requests:
               cpu: 10m
