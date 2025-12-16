@@ -302,7 +302,7 @@ func Test_eventHandler_UpdateFunc(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			watcher := &JobCompletionWatcher{
-				ch: make(chan string, 1),
+				finishedJobChannel: make(chan string, 1),
 			}
 
 			// Get the event handler
@@ -314,14 +314,68 @@ func Test_eventHandler_UpdateFunc(t *testing.T) {
 			// Check if we received the expected job name
 			if tt.shouldSendName {
 				select {
-				case jobName := <-watcher.ch:
+				case jobName := <-watcher.finishedJobChannel:
 					assert.Equal(t, tt.expectedName, jobName)
 				case <-time.After(100 * time.Millisecond):
 					t.Fatal("Expected job name on channel but got nothing")
 				}
 			} else {
 				select {
-				case jobName := <-watcher.ch:
+				case jobName := <-watcher.finishedJobChannel:
+					t.Fatalf("Did not expect job name on channel but got: %s", jobName)
+				case <-time.After(50 * time.Millisecond):
+					// Expected - no job name sent
+				}
+			}
+		})
+	}
+}
+
+func Test_eventHandler_DeleteFunc(t *testing.T) {
+	tests := []struct {
+		name           string
+		job            interface{}
+		shouldSendName bool
+		expectedName   string
+	}{
+		{
+			name: "Job deleted should send job name to channel",
+			job: &batchv1.Job{
+				ObjectMeta: metav1.ObjectMeta{Name: "deleted-job"},
+			},
+			shouldSendName: true,
+			expectedName:   "deleted-job",
+		},
+		{
+			name:           "Wrong type should not send job name to channel",
+			job:            &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "not-a-job"}},
+			shouldSendName: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			watcher := &JobCompletionWatcher{
+				deletedJobChannel: make(chan string, 1),
+			}
+
+			// Get the event handler
+			handler := watcher.eventHandler()
+
+			// Trigger delete event
+			handler.OnDelete(tt.job)
+
+			// Check if we received the expected job name
+			if tt.shouldSendName {
+				select {
+				case jobName := <-watcher.deletedJobChannel:
+					assert.Equal(t, tt.expectedName, jobName)
+				case <-time.After(100 * time.Millisecond):
+					t.Fatal("Expected job name on channel but got nothing")
+				}
+			} else {
+				select {
+				case jobName := <-watcher.deletedJobChannel:
 					t.Fatalf("Did not expect job name on channel but got: %s", jobName)
 				case <-time.After(50 * time.Millisecond):
 					// Expected - no job name sent

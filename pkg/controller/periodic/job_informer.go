@@ -15,11 +15,13 @@ import (
 type JobWatcher interface {
 	factory.Controller
 	FinishedJob() <-chan string
+	DeletedJob() <-chan string
 }
 
 type JobCompletionWatcher struct {
 	factory.Controller
-	ch chan string
+	finishedJobChannel chan string
+	deletedJobChannel  chan string
 }
 
 func NewJobCompletionWatcher(
@@ -29,7 +31,8 @@ func NewJobCompletionWatcher(
 	jobInformer := sharedInformers.Batch().V1().Jobs().Informer()
 
 	jic := &JobCompletionWatcher{
-		ch: make(chan string),
+		finishedJobChannel: make(chan string),
+		deletedJobChannel:  make(chan string),
 	}
 
 	_, err := jobInformer.AddEventHandler(
@@ -54,6 +57,19 @@ func (w *JobCompletionWatcher) sync(_ context.Context, _ factory.SyncContext) er
 
 func (w *JobCompletionWatcher) eventHandler() cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
+		DeleteFunc: func(obj interface{}) {
+			deletedJob, ok := obj.(*batchv1.Job)
+			if !ok {
+				klog.Errorf("Expected *batchv1.Job, got %T", obj)
+				return
+			}
+
+			select {
+			case w.deletedJobChannel <- deletedJob.Name:
+			default:
+				klog.Info("Deleted job channel full")
+			}
+		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldJob, ok := oldObj.(*batchv1.Job)
 			if !ok {
@@ -75,9 +91,9 @@ func (w *JobCompletionWatcher) eventHandler() cache.ResourceEventHandler {
 				klog.Infof("Job failed: %s", newJob.Name)
 
 				select {
-				case w.ch <- newJob.Name:
+				case w.finishedJobChannel <- newJob.Name:
 				default:
-					klog.Info("Job channel full")
+					klog.Info("Finished job channel full")
 				}
 			}
 		},
@@ -85,7 +101,11 @@ func (w *JobCompletionWatcher) eventHandler() cache.ResourceEventHandler {
 }
 
 func (w *JobCompletionWatcher) FinishedJob() <-chan string {
-	return w.ch
+	return w.finishedJobChannel
+}
+
+func (w *JobCompletionWatcher) DeletedJob() <-chan string {
+	return w.deletedJobChannel
 }
 
 func isJobComplete(job *batchv1.Job) bool {
