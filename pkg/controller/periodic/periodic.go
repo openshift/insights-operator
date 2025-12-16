@@ -344,6 +344,35 @@ func (c *Controller) syncDataGatherCR(stopCh <-chan struct{}) {
 		select {
 		case <-stopCh:
 			return
+		case jobName := <-c.jobInf.DeletedJob():
+			go func() {
+				klog.Infof("Job %s deleted, checking DataGather CR status", jobName)
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+
+				dg, err := c.dataGatherClient.DataGathers().Get(ctx, jobName, metav1.GetOptions{})
+				if err != nil {
+					klog.Errorf("Failed to fetch DataGather %s: %v", jobName, err)
+					return
+				}
+
+				progressingCondition := status.GetConditionByType(dg, status.Progressing)
+				// Check if already finished if condition exists
+				if progressingCondition != nil && isProgressingConditionFinished(progressingCondition) {
+					klog.Infof("progressing condition set: %s for datagather: %s", progressingCondition.Reason, dg.Name)
+					return
+				}
+
+				klog.Infof("Updating DataGather %s Progressing condition to %s due deletion of the job.",
+					dg.Name, status.GatheringFailedReason)
+				_, err = status.UpdateProgressingCondition(ctx, c.dataGatherClient, dg, dg.Name, status.GatheringFailedReason)
+				if err != nil {
+					return
+				}
+
+				klog.Infof("Successfully updated DataGather %s Progressing condition to %s", dg.Name, status.GatheringFailedReason)
+			}()
 		case jobName := <-c.jobInf.FinishedJob():
 			go func() {
 				klog.Infof("Job %s finished, checking DataGather CR status", jobName)
@@ -358,14 +387,9 @@ func (c *Controller) syncDataGatherCR(stopCh <-chan struct{}) {
 				}
 
 				progressingCondition := status.GetConditionByType(dg, status.Progressing)
-				// DataGather CR has no Progressing condition, likely not started yet
-				if progressingCondition == nil {
-					return
-				}
-
-				finishedReasons := []string{status.GatheringFailedReason, status.GatheringSucceededReason}
-				// DataGather has already set progressing condition to finished
-				if progressingCondition.Status == metav1.ConditionFalse && slices.Contains(finishedReasons, progressingCondition.Reason) {
+				// DataGather CR has no Progressing condition, likely not started yet or
+				// the status is already in a finished state
+				if progressingCondition == nil || isProgressingConditionFinished(progressingCondition) {
 					return
 				}
 
@@ -380,6 +404,12 @@ func (c *Controller) syncDataGatherCR(stopCh <-chan struct{}) {
 			}()
 		}
 	}
+}
+
+func isProgressingConditionFinished(progressingCondition *metav1.Condition) bool {
+	finishedReasons := []string{status.GatheringFailedReason, status.GatheringSucceededReason}
+	return progressingCondition.Status == metav1.ConditionFalse &&
+		slices.Contains(finishedReasons, progressingCondition.Reason)
 }
 
 func (c *Controller) prepareDataGatherCRWithImage(ctx context.Context, dgName string) (*insightsv1.DataGather, error) {
