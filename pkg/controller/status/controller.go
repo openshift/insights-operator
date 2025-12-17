@@ -16,6 +16,7 @@ import (
 	"github.com/blang/semver/v4"
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -72,6 +73,7 @@ type Controller struct {
 	start    time.Time
 
 	ctrlStatus    *controllerStatus
+	eventLogger   events.Recorder
 	isTechPreview bool
 
 	lock sync.Mutex
@@ -84,6 +86,7 @@ func NewController(
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string,
 	isTechPreview bool,
+	eventLogger events.Recorder,
 ) *Controller {
 	return &Controller{
 		name:            "insights",
@@ -95,6 +98,7 @@ func NewController(
 		sources:         make(map[string]controllerstatus.StatusController),
 		ctrlStatus:      newControllerStatus(),
 		isTechPreview:   isTechPreview,
+		eventLogger:     eventLogger,
 	}
 }
 
@@ -183,7 +187,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	c.updateControllerConditionsByStatus(cs, isInitializing)
 
 	if releaseVersion := os.Getenv("RELEASE_VERSION"); len(releaseVersion) > 0 {
-		setProgressing, err := shouldSetProgressingCondition(releaseVersion, clusterOperator.Status.Versions)
+		setProgressing, err := c.shouldSetProgressingCondition(releaseVersion, clusterOperator.Status.Versions)
 		if err != nil {
 			klog.Errorf("failed checking openshift release version: %s with err: %v", releaseVersion, err)
 		}
@@ -216,7 +220,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 // shouldSetProgressingCondition checks if the openshift version was changed and decides whether we should
 // switch the Progressing condition to true or not. We should do that only if the major or minor version
 // is changed and ignore the patch version.
-func shouldSetProgressingCondition(newVersion string, clusterOperatorVersions []configv1.OperandVersion) (bool, error) {
+func (c *Controller) shouldSetProgressingCondition(newVersion string, clusterOperatorVersions []configv1.OperandVersion) (bool, error) {
 	newVersionParsed, err := semver.Parse(newVersion)
 	if err != nil {
 		return false, err
@@ -235,6 +239,8 @@ func shouldSetProgressingCondition(newVersion string, clusterOperatorVersions []
 
 		// Change Progressing condition only on major or minor version update
 		if newVersionParsed.Major != covParsed.Major || newVersionParsed.Minor != covParsed.Minor {
+			klog.Infof("Operator version updated from %s to %s", cov.Version, newVersion)
+			c.eventLogger.Eventf("OperatorVersionUpdated", "Operator version updated from %s to %s", cov.Version, newVersion)
 			return true, nil
 		}
 	}
