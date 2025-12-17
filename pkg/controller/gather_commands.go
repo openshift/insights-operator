@@ -593,35 +593,6 @@ func createRemoteConfigConditions(
 	return
 }
 
-// getCustomStoragePath determines a custom storage path by checking configuration sources
-// in priority order:
-// * DataGather CR specification (PersistentVolume.MountPath)
-// * ConfigMap configuration (DataReporting.StoragePath)
-func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1.DataGather) string {
-	defaultPath := ""
-
-	// Get the default path from ConfigMap configuration
-	if configStoragePath := configAggregator.Config().DataReporting.StoragePath; configStoragePath != "" {
-		defaultPath = configStoragePath
-	}
-
-	if dataGatherCR == nil {
-		return defaultPath
-	}
-
-	if dataGatherCR.Spec.Storage == (insightsv1.Storage{}) || dataGatherCR.Spec.Storage.Type != insightsv1.StorageTypePersistentVolume {
-		return defaultPath
-	}
-
-	if dataGatherCR.Spec.Storage.PersistentVolume != (insightsv1.PersistentVolumeConfig{}) {
-		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
-			return storagePath
-		}
-	}
-
-	return defaultPath
-}
-
 // boolToConditionStatus is a helper function to conver bool type
 // tp the ConditionStatus type
 func boolToConditionStatus(b bool) metav1.ConditionStatus {
