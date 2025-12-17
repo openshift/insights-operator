@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"os"
 	"testing"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -176,6 +179,477 @@ func Test_getExternalImageRepo(t *testing.T) {
 
 			// Assert
 			assert.Equal(t, testCase.expected, test)
+		})
+	}
+}
+
+func Test_podCanBeIgnored(t *testing.T) {
+	tests := []struct {
+		name    string
+		pod     *corev1.Pod
+		ignored bool
+	}{
+		{
+			name: "running pod with all containers",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					InitContainers: []corev1.Container{{Name: "init"}},
+					Containers:     []corev1.Container{{Name: "app"}},
+				},
+				Status: corev1.PodStatus{
+					Phase:                 corev1.PodRunning,
+					InitContainerStatuses: []corev1.ContainerStatus{{Name: "init"}},
+					ContainerStatuses:     []corev1.ContainerStatus{{Name: "app"}},
+				},
+			},
+			ignored: false,
+		},
+		{
+			name: "terminal pod phases are ignored",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "app"}},
+				},
+				Status: corev1.PodStatus{
+					Phase:             corev1.PodSucceeded,
+					ContainerStatuses: []corev1.ContainerStatus{{Name: "app"}},
+				},
+			},
+			ignored: true,
+		},
+		{
+			name: "missing container status is ignored",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "app1"}, {Name: "app2"}},
+				},
+				Status: corev1.PodStatus{
+					Phase:             corev1.PodRunning,
+					ContainerStatuses: []corev1.ContainerStatus{{Name: "app1"}},
+				},
+			},
+			ignored: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := podCanBeIgnored(tt.pod)
+			assert.Equal(t, tt.ignored, result)
+		})
+	}
+}
+
+func Test_workloadContainerShapesEqual(t *testing.T) {
+	tests := []struct {
+		name  string
+		a     []workloadContainerShape
+		b     []workloadContainerShape
+		equal bool
+	}{
+		{
+			name: "identical single container shapes are equal",
+			a: []workloadContainerShape{
+				{ImageID: "sha256:abc", FirstCommand: "cmd1", FirstArg: "arg1"},
+			},
+			b: []workloadContainerShape{
+				{ImageID: "sha256:abc", FirstCommand: "cmd1", FirstArg: "arg1"},
+			},
+			equal: true,
+		},
+		{
+			name: "different image IDs are not equal",
+			a: []workloadContainerShape{
+				{ImageID: "sha256:abc", FirstCommand: "cmd1", FirstArg: "arg1"},
+			},
+			b: []workloadContainerShape{
+				{ImageID: "sha256:def", FirstCommand: "cmd1", FirstArg: "arg1"},
+			},
+			equal: false,
+		},
+		{
+			name: "different lengths are not equal",
+			a: []workloadContainerShape{
+				{ImageID: "sha256:abc"},
+			},
+			b: []workloadContainerShape{
+				{ImageID: "sha256:abc"},
+				{ImageID: "sha256:def"},
+			},
+			equal: false,
+		},
+		{
+			name: "multiple identical containers are equal",
+			a: []workloadContainerShape{
+				{ImageID: "sha256:abc", FirstCommand: "cmd1"},
+				{ImageID: "sha256:def", FirstArg: "arg1"},
+			},
+			b: []workloadContainerShape{
+				{ImageID: "sha256:abc", FirstCommand: "cmd1"},
+				{ImageID: "sha256:def", FirstArg: "arg1"},
+			},
+			equal: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := workloadContainerShapesEqual(tt.a, tt.b)
+			assert.Equal(t, tt.equal, result)
+		})
+	}
+}
+
+func Test_workloadHashString(t *testing.T) {
+	h := sha256.New()
+
+	hash1 := workloadHashString(h, "test1")
+	hash2 := workloadHashString(h, "test2")
+
+	assert.NotEqual(t, hash1, hash2)
+	assert.Len(t, hash1, 12)
+	assert.Len(t, hash2, 12)
+}
+
+func Test_workloadArgumentString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "simple command",
+			input:    "bash",
+			expected: "bash",
+		},
+		{
+			name:     "command with whitespace",
+			input:    " bash ",
+			expected: "bash",
+		},
+		{
+			name:     "multipart script extracts first part",
+			input:    "bash -c 'echo hello'",
+			expected: "bash",
+		},
+		{
+			name:     "flag without value is skipped",
+			input:    "-v",
+			expected: "",
+		},
+		{
+			name:     "flag with value extracts flag name",
+			input:    "--config=/path/to/config",
+			expected: "--config",
+		},
+		{
+			name:     "unix path extracts basename",
+			input:    "/usr/local/bin/node",
+			expected: "node",
+		},
+		{
+			name:     "windows path extracts basename",
+			input:    "c:\\windows\\system32\\cmd.exe",
+			expected: "cmd.exe",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := workloadArgumentString(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func Test_idForImageReference(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "valid sha256 reference with full digest",
+			input:    "registry.io/image@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+			expected: "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+		},
+		{
+			name:     "reference without digest returns empty",
+			input:    "registry.io/image:latest",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := idForImageReference(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func Test_matchingSpecIndex(t *testing.T) {
+	tests := []struct {
+		name          string
+		containerName string
+		spec          []corev1.Container
+		hint          int
+		expected      int
+	}{
+		{
+			name:          "hint matches",
+			containerName: "app",
+			spec: []corev1.Container{
+				{Name: "init"},
+				{Name: "app"},
+				{Name: "sidecar"},
+			},
+			hint:     1,
+			expected: 1,
+		},
+		{
+			name:          "hint doesn't match, find in list",
+			containerName: "sidecar",
+			spec: []corev1.Container{
+				{Name: "init"},
+				{Name: "app"},
+				{Name: "sidecar"},
+			},
+			hint:     0,
+			expected: 2,
+		},
+		{
+			name:          "not found returns -1",
+			containerName: "missing",
+			spec: []corev1.Container{
+				{Name: "app"},
+			},
+			hint:     0,
+			expected: -1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := matchingSpecIndex(tt.containerName, tt.spec, tt.hint)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func Test_workloadPodShapeIndex(t *testing.T) {
+	tests := []struct {
+		name     string
+		shapes   []workloadPodShape
+		shape    workloadPodShape
+		expected int
+	}{
+		{
+			name: "matching shape found",
+			shapes: []workloadPodShape{
+				{
+					Containers: []workloadContainerShape{
+						{ImageID: "sha256:abc"},
+					},
+				},
+				{
+					Containers: []workloadContainerShape{
+						{ImageID: "sha256:def"},
+					},
+				},
+			},
+			shape: workloadPodShape{
+				Containers: []workloadContainerShape{
+					{ImageID: "sha256:def"},
+				},
+			},
+			expected: 1,
+		},
+		{
+			name: "no matching shape returns -1",
+			shapes: []workloadPodShape{
+				{
+					Containers: []workloadContainerShape{
+						{ImageID: "sha256:abc"},
+					},
+				},
+			},
+			shape: workloadPodShape{
+				Containers: []workloadContainerShape{
+					{ImageID: "sha256:xyz"},
+				},
+			},
+			expected: -1,
+		},
+		{
+			name: "matching shape with init containers",
+			shapes: []workloadPodShape{
+				{
+					InitContainers: []workloadContainerShape{
+						{ImageID: "sha256:init"},
+					},
+					Containers: []workloadContainerShape{
+						{ImageID: "sha256:app"},
+					},
+				},
+			},
+			shape: workloadPodShape{
+				InitContainers: []workloadContainerShape{
+					{ImageID: "sha256:init"},
+				},
+				Containers: []workloadContainerShape{
+					{ImageID: "sha256:app"},
+				},
+			},
+			expected: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := workloadPodShapeIndex(tt.shapes, tt.shape)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func Test_workloadImageCache(t *testing.T) {
+	workloadImageResize(10)
+
+	image := workloadImage{
+		LayerIDs: []string{"layer1", "layer2"},
+	}
+	workloadImageAdd("sha256:test", image)
+
+	retrieved, ok := workloadImageGet("sha256:test")
+	assert.True(t, ok)
+	assert.Equal(t, image.LayerIDs, retrieved.LayerIDs)
+
+	_, ok = workloadImageGet("sha256:nonexistent")
+	assert.False(t, ok)
+}
+
+func Test_calculatePodShape(t *testing.T) {
+	h := sha256.New()
+	workloadInfo := workloadRuntimes{}
+
+	// Valid SHA256 digests (64 hex characters)
+	validDigest1 := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+	validDigest2 := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+	tests := []struct {
+		name     string
+		pod      *corev1.Pod
+		expectOk bool
+	}{
+		{
+			name: "valid pod with containers",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "default",
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyAlways,
+					Containers: []corev1.Container{
+						{
+							Name:    "app",
+							Image:   "registry.io/app@sha256:" + validDigest1,
+							Command: []string{"/bin/sh"},
+							Args:    []string{"-c", "start"},
+						},
+					},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:    "app",
+							ImageID: "docker-pullable://registry.io/app@sha256:" + validDigest1,
+						},
+					},
+				},
+			},
+			expectOk: true,
+		},
+		{
+			name: "pod with init and regular containers",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "default",
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyOnFailure,
+					InitContainers: []corev1.Container{
+						{
+							Name:  "init",
+							Image: "registry.io/init@sha256:" + validDigest2,
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:  "app",
+							Image: "registry.io/app@sha256:" + validDigest1,
+						},
+					},
+				},
+				Status: corev1.PodStatus{
+					InitContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:    "init",
+							ImageID: "docker-pullable://registry.io/init@sha256:" + validDigest2,
+						},
+					},
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:    "app",
+							ImageID: "docker-pullable://registry.io/app@sha256:" + validDigest1,
+						},
+					},
+				},
+			},
+			expectOk: true,
+		},
+		{
+			name: "pod with missing image ID",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "default",
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "app",
+							Image: "registry.io/app:latest",
+						},
+					},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:    "app",
+							ImageID: "",
+						},
+					},
+				},
+			},
+			expectOk: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			shape, ok := calculatePodShape(h, tt.pod, workloadInfo)
+			assert.Equal(t, tt.expectOk, ok)
+			if ok {
+				assert.NotNil(t, shape.Containers)
+				if tt.pod.Spec.RestartPolicy == corev1.RestartPolicyAlways {
+					assert.True(t, shape.RestartsAlways)
+				} else {
+					assert.False(t, shape.RestartsAlways)
+				}
+			}
 		})
 	}
 }

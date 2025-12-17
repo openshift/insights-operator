@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/http/httpproxy"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -86,9 +87,7 @@ func Test_Proxy(tt *testing.T) {
 		tc := tcase
 		tt.Run(tc.Name, func(t *testing.T) {
 			for k, v := range tc.EnvValues {
-				// do not use parallel here
 				defer SafeRestoreEnv(k)() // nolint: gocritic
-				// nil will indicate the need to unset Env
 				if v != nil {
 					vv := v.(string)
 					os.Setenv(k, vv)
@@ -110,12 +109,12 @@ func Test_Proxy(tt *testing.T) {
 			req := httptest.NewRequest("GET", tc.RequestURL, http.NoBody)
 			urlRec, err := p(req)
 
-			if err != nil {
-				t.Fatalf("unexpected err %s", err)
-			}
-			if (tc.ProxyURL == "" && urlRec != nil) ||
-				(len(tc.ProxyURL) > 0 && (urlRec == nil || tc.ProxyURL != urlRec.String())) {
-				t.Fatalf("Unexpected value of Proxy Url. Test %s Expected Url %s Received Url %s", tc.Name, tc.ProxyURL, urlRec)
+			assert.NoError(t, err)
+			if tc.ProxyURL == "" {
+				assert.Nil(t, urlRec)
+			} else {
+				assert.NotNil(t, urlRec)
+				assert.Equal(t, tc.ProxyURL, urlRec.String())
 			}
 		})
 	}
@@ -131,5 +130,123 @@ func SafeRestoreEnv(key string) func() {
 			fmt.Printf("restoring key %s", key)
 			os.Setenv(key, originalVal)
 		}
+	}
+}
+
+func TestToken(t *testing.T) {
+	tests := []struct {
+		name          string
+		token         string
+		expectedToken string
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:          "valid token",
+			token:         "valid-token-12345",
+			expectedToken: "valid-token-12345",
+			expectError:   false,
+		},
+		{
+			name:          "valid token with whitespace trimmed",
+			token:         "  valid-token-with-spaces  ",
+			expectedToken: "valid-token-with-spaces",
+			expectError:   false,
+		},
+		{
+			name:          "token with newline",
+			token:         "invalid\ntoken",
+			expectError:   true,
+			errorContains: "contains newlines",
+		},
+		{
+			name:          "empty token",
+			token:         "",
+			expectError:   true,
+			errorContains: "not configured",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secretConfigurator := &config.MockSecretConfigurator{
+				Conf: &config.Controller{
+					Token: tt.token,
+				},
+			}
+			configurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{})
+
+			auth := Authorizer{
+				secretConfigurator: secretConfigurator,
+				configurator:       configurator,
+			}
+
+			token, err := auth.Token()
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+				assert.Empty(t, token)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedToken, token)
+			}
+		})
+	}
+}
+
+func TestAuthorize(t *testing.T) {
+	tests := []struct {
+		name               string
+		token              string
+		expectError        bool
+		errorContains      string
+		expectedAuthHeader string
+	}{
+		{
+			name:               "success",
+			token:              "test-bearer-token",
+			expectError:        false,
+			expectedAuthHeader: "Bearer test-bearer-token",
+		},
+		{
+			name:          "token with newline",
+			token:         "invalid\ntoken",
+			expectError:   true,
+			errorContains: "contains newlines",
+		},
+		{
+			name:          "empty token",
+			token:         "",
+			expectError:   true,
+			errorContains: "not configured",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secretConfigurator := &config.MockSecretConfigurator{
+				Conf: &config.Controller{
+					Token: tt.token,
+				},
+			}
+			configurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{})
+
+			auth := Authorizer{
+				secretConfigurator: secretConfigurator,
+				configurator:       configurator,
+			}
+
+			req := httptest.NewRequest("GET", "http://example.com", http.NoBody)
+			err := auth.Authorize(req)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedAuthHeader, req.Header.Get("Authorization"))
+			}
+		})
 	}
 }

@@ -139,28 +139,32 @@ func TestMergeWokloads(t *testing.T) {
 
 func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 	tests := []struct {
-		name         string
-		data         []byte
-		status       int
-		expectedErr  error
-		expectedData workloadRuntimes
+		name               string
+		data               []byte
+		status             int
+		token              string
+		expectedErr        error
+		expectedData       workloadRuntimes
+		checkAuthHeader    bool
+		expectedAuthHeader string
+		verifyDetails      func(t *testing.T, result workloadRuntimes)
 	}{
 		{
-			name:         "data cannot be parsed",
+			name:         "invalid JSON data",
 			data:         []byte("this is not json"),
 			status:       http.StatusOK,
 			expectedErr:  fmt.Errorf("invalid character 'h' in literal true (expecting 'r')"),
 			expectedData: nil,
 		},
 		{
-			name:         "server returns non-200 HTTP response",
-			data:         []byte("this is not json"),
+			name:         "non-200 HTTP status",
+			data:         []byte("server error"),
 			status:       http.StatusInternalServerError,
 			expectedErr:  fmt.Errorf("%d %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)),
 			expectedData: nil,
 		},
 		{
-			name:        "server returns 200 HTTP response with data",
+			name:        "valid data with single container",
 			data:        []byte(`{"test-namespace": {"test-pod-1": {"cri-o://foo-1": {"os": "rhel", "runtimes": [{"name": "runtime-A"}]}}}}`),
 			status:      http.StatusOK,
 			expectedErr: nil,
@@ -172,30 +176,126 @@ func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 				}: workloadRuntimeInfoContainer{
 					Os: "rhel",
 					Runtimes: []RuntimeComponent{
-						{
-							Name: "runtime-A",
-						},
+						{Name: "runtime-A"},
 					},
 				},
+			},
+		},
+		{
+			name: "empty containers are skipped",
+			data: []byte(`{"test-namespace": {"test-pod-1": {"cri-o://foo-1": ` +
+				`{"os": "rhel", "runtimes": [{"name": "runtime-A"}]}, "cri-o://empty": {}}}}`),
+			status:      http.StatusOK,
+			expectedErr: nil,
+			expectedData: workloadRuntimes{
+				containerInfo{
+					namespace:   "test-namespace",
+					pod:         "test-pod-1",
+					containerID: "cri-o://foo-1",
+				}: workloadRuntimeInfoContainer{
+					Os: "rhel",
+					Runtimes: []RuntimeComponent{
+						{Name: "runtime-A"},
+					},
+				},
+			},
+		},
+		{
+			name:               "authorization header is set",
+			data:               []byte(`{"test-namespace": {"test-pod-1": {"cri-o://foo-1": {"os": "rhel"}}}}`),
+			status:             http.StatusOK,
+			token:              "test-token-12345",
+			checkAuthHeader:    true,
+			expectedAuthHeader: "Bearer test-token-12345",
+			expectedData:       nil,
+		},
+		{
+			name:   "complex nested data with multiple namespaces",
+			status: http.StatusOK,
+			data: []byte(`{
+				"namespace-1": {
+					"pod-1": {
+						"cri-o://container-1": {
+							"os": "rhel",
+							"kind": "vm",
+							"runtimes": [
+								{"name": "runtime-A", "version": "1.0"},
+								{"name": "runtime-B", "version": "2.0"}
+							]
+						},
+						"cri-o://container-2": {
+							"os": "ubuntu",
+							"runtimes": []
+						}
+					},
+					"pod-2": {
+						"cri-o://container-3": {}
+					}
+				},
+				"namespace-2": {
+					"pod-3": {
+						"cri-o://container-4": {
+							"os": "fedora"
+						}
+					}
+				}
+			}`),
+			verifyDetails: func(t *testing.T, result workloadRuntimes) {
+				assert.Equal(t, 3, len(result), "should have 3 containers (container-3 is empty and skipped)")
+
+				container1 := containerInfo{namespace: "namespace-1", pod: "pod-1", containerID: "cri-o://container-1"}
+				assert.Contains(t, result, container1)
+				assert.Equal(t, "rhel", result[container1].Os)
+				assert.Equal(t, "vm", result[container1].Kind)
+				assert.Equal(t, 2, len(result[container1].Runtimes))
+
+				container2 := containerInfo{namespace: "namespace-1", pod: "pod-1", containerID: "cri-o://container-2"}
+				assert.Contains(t, result, container2)
+				assert.Equal(t, "ubuntu", result[container2].Os)
+				assert.Equal(t, 0, len(result[container2].Runtimes))
+
+				container3 := containerInfo{namespace: "namespace-1", pod: "pod-2", containerID: "cri-o://container-3"}
+				assert.NotContains(t, result, container3, "empty container should be skipped")
+
+				container4 := containerInfo{namespace: "namespace-2", pod: "pod-3", containerID: "cri-o://container-4"}
+				assert.Contains(t, result, container4)
+				assert.Equal(t, "fedora", result[container4].Os)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			var receivedAuthHeader string
+			httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.checkAuthHeader {
+					receivedAuthHeader = r.Header.Get("Authorization")
+				}
 				w.WriteHeader(tt.status)
 				_, err := w.Write(tt.data)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 			}))
+			defer httpServer.Close()
+
 			ctx := context.Background()
-			result := getNodeWorkloadRuntimeInfos(ctx, httpServer.URL, "", http.DefaultClient)
-			assert.Equal(t, tt.expectedData, result.WorkloadRuntimes)
+			result := getNodeWorkloadRuntimeInfos(ctx, httpServer.URL, tt.token, http.DefaultClient)
+
 			if tt.expectedErr != nil {
 				assert.Contains(t, result.Error.Error(), tt.expectedErr.Error())
 				assert.Nil(t, result.WorkloadRuntimes)
+			} else {
+				assert.Nil(t, result.Error)
+				if tt.verifyDetails != nil {
+					tt.verifyDetails(t, result.WorkloadRuntimes)
+				} else if tt.expectedData != nil {
+					assert.Equal(t, tt.expectedData, result.WorkloadRuntimes)
+				}
+			}
+
+			if tt.checkAuthHeader {
+				assert.Equal(t, tt.expectedAuthHeader, receivedAuthHeader)
 			}
 		})
 	}
@@ -334,4 +434,17 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func TestGatherWorkloadRuntimeInfos_NoPods(t *testing.T) {
+	cli := kubefake.NewSimpleClientset()
+	err := os.Setenv("POD_NAMESPACE", "openshift-insights")
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+	result, errors := gatherWorkloadRuntimeInfos(ctx, cli.CoreV1())
+
+	assert.Nil(t, result)
+	assert.Len(t, errors, 1)
+	assert.Contains(t, errors[0].Error(), "no running pods found")
 }
