@@ -1,10 +1,10 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.21 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.22 AS builder
 WORKDIR /go/src/github.com/openshift/insights-operator
 COPY . .
 ENV GOEXPERIMENT=strictfipsruntime
 RUN make build
 
-FROM registry.ci.openshift.org/ocp/4.21:base-rhel9
+FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
 COPY --from=builder /go/src/github.com/openshift/insights-operator/bin/insights-operator /usr/bin/
 COPY config/pod.yaml /etc/insights-operator/server.yaml
 COPY manifests /manifests
