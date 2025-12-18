@@ -151,13 +151,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	insightsConfigEnabled := featureGates.Enabled(features.FeatureGateInsightsConfig)
 
-	// ensure the insight snapshot directory exists
-	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
-		if err = os.MkdirAll(s.StoragePath, 0o777); err != nil {
-			return fmt.Errorf("can't create --path: %v", err)
-		}
-	}
-
 	var techPreviewInformers *TechPreviewInformers
 	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
 	if insightsConfigEnabled {
@@ -199,6 +192,18 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	configAggregator := configobserver.NewConfigAggregator(secretConfigObserver, configMapObserver)
 	go configAggregator.Listen(ctx)
+
+	// additional configurations may exist besides the default one
+	if customPath := getCustomStoragePath(configAggregator, nil); customPath != "" {
+		s.StoragePath = customPath
+	}
+
+	// ensure the insight snapshot directory exists
+	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
+		if err = os.MkdirAll(s.StoragePath, 0o777); err != nil {
+			return fmt.Errorf("can't create --path: %v", err)
+		}
+	}
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
