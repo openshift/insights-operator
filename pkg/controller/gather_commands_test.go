@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -551,6 +552,69 @@ func TestGetCustomStoragePath(t *testing.T) {
 
 			// Assert
 			assert.Equal(t, tt.expectedPath, result)
+		})
+	}
+}
+
+// Test_storagePathExists tests the storagePathExists method
+func Test_storagePathExists(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupPath     func() string
+		cleanupPath   func(string)
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "storage path already exists",
+			setupPath: func() string {
+				// Create a temp directory that exists
+				tmpDir := t.TempDir()
+				return tmpDir
+			},
+			cleanupPath: func(string) {
+				// TempDir cleans up automatically
+			},
+			expectError: false,
+		},
+		{
+			name: "storage path does not exist and can be created",
+			setupPath: func() string {
+				tmpDir := t.TempDir()
+				return tmpDir + "/new-storage-path"
+			},
+			cleanupPath: func(string) {
+				// TempDir cleans up automatically
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := tt.setupPath()
+			defer tt.cleanupPath(path)
+
+			gatherJob := &GatherJob{
+				Controller: config.Controller{
+					StoragePath: path,
+				},
+			}
+
+			err := gatherJob.storagePathExists()
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+				// Verify the directory was created
+				info, statErr := os.Stat(path)
+				assert.NoError(t, statErr, "Directory should exist after storagePathExists")
+				assert.True(t, info.IsDir(), "Path should be a directory")
+			}
 		})
 	}
 }
