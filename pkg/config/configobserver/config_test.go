@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -155,10 +156,10 @@ func TestConfig_loadReport(t *testing.T) {
 
 func TestLoadConfigFromSecret(t *testing.T) {
 	tests := []struct {
-		name    string
-		secret  *v1.Secret
-		want    config.Controller
-		wantErr bool
+		name           string
+		secret         *v1.Secret
+		expectedConfig config.Controller
+		expectedErr    bool
 	}{
 		{
 			name: "Can load from secret",
@@ -170,7 +171,7 @@ func TestLoadConfigFromSecret(t *testing.T) {
 					"scaPullDisabled": []byte("false"),
 				},
 			},
-			want: config.Controller{
+			expectedConfig: config.Controller{
 				Report:             true,
 				Endpoint:           "http://endpoint",
 				ReportEndpoint:     "http://report",
@@ -182,19 +183,33 @@ func TestLoadConfigFromSecret(t *testing.T) {
 					SCADisabled: false,
 				},
 			},
-			wantErr: false,
+			expectedErr: false,
+		},
+		{
+			name: "Interval needs to be longer than 10m",
+			secret: &v1.Secret{
+				Data: map[string][]byte{
+					"endpoint":        []byte("http://endpoint"),
+					"noProxy":         []byte("no-proxy"),
+					"reportEndpoint":  []byte("http://report"),
+					"scaPullDisabled": []byte("false"),
+					"interval":        []byte("5m"),
+				},
+			},
+			expectedConfig: config.Controller{},
+			expectedErr:    true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := LoadConfigFromSecret(tt.secret)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadConfigFromSecret() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.expectedErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LoadConfigFromSecret() got = %v, want %v", got, tt.want)
-			}
+
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedConfig, got)
 		})
 	}
 }
