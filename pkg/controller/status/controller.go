@@ -15,6 +15,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -71,6 +72,7 @@ type Controller struct {
 	start    time.Time
 
 	ctrlStatus    *controllerStatus
+	eventLogger   events.Recorder
 	isTechPreview bool
 
 	lock sync.Mutex
@@ -83,6 +85,7 @@ func NewController(
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string,
 	isTechPreview bool,
+	eventLogger events.Recorder,
 ) *Controller {
 	return &Controller{
 		name:            "insights",
@@ -94,6 +97,7 @@ func NewController(
 		sources:         make(map[string]controllerstatus.StatusController),
 		ctrlStatus:      newControllerStatus(),
 		isTechPreview:   isTechPreview,
+		eventLogger:     eventLogger,
 	}
 }
 
@@ -185,9 +189,7 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	clusterOperator.Status.Conditions = cs.entries()
 
 	if release := os.Getenv("RELEASE_VERSION"); len(release) > 0 {
-		clusterOperator.Status.Versions = []configv1.OperandVersion{
-			{Name: "operator", Version: release},
-		}
+		c.updateClusterOperatorVersion(clusterOperator, release)
 	}
 
 	reported := Reported{LastReportTime: metav1.Time{Time: c.LastReportedTime()}}
@@ -197,6 +199,30 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 		clusterOperator.Status.Extension.Raw = data
 	}
 	return clusterOperator
+}
+
+func (c *Controller) updateClusterOperatorVersion(clusterOperator *configv1.ClusterOperator, release string) {
+	clusterOperatorVersion := ""
+	if len(clusterOperator.Status.Versions) > 0 {
+		clusterOperatorVersion = clusterOperator.Status.Versions[0].Version
+	}
+
+	// If the versions are matching we don't need to update anything
+	if release == clusterOperatorVersion {
+		return
+	}
+
+	if clusterOperatorVersion == "" {
+		klog.Infof("Initial operator version set to: %s", release)
+		c.eventLogger.Eventf("OperatorVersionSet", "Initial operator version set to: %s", release)
+	} else {
+		klog.Infof("Operator version updated from %s to %s", clusterOperatorVersion, release)
+		c.eventLogger.Eventf("OperatorVersionUpdated", "Operator version updated from %s to %s", clusterOperatorVersion, release)
+	}
+
+	clusterOperator.Status.Versions = []configv1.OperandVersion{
+		{Name: "operator", Version: release},
+	}
 }
 
 // calculate the current controller status based on its given sources
