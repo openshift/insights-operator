@@ -233,12 +233,13 @@ func TestClient_RecvSCACerts(t *testing.T) {
 
 func TestClient_RecvReport(t *testing.T) {
 	tests := []struct {
-		name          string
-		statusCode    int
-		responseBody  string
-		expectError   bool
-		errorContains string
-		verifyError   func(t *testing.T, err error)
+		name                 string
+		statusCode           int
+		responseBody         string
+		expectError          bool
+		errorContains        string
+		expectHttpError      bool
+		expectedHttpErrCode  int
 	}{
 		{
 			name:         "success",
@@ -254,16 +255,13 @@ func TestClient_RecvReport(t *testing.T) {
 			errorContains: "not enabled for remote support",
 		},
 		{
-			name:         "not found",
-			statusCode:   http.StatusNotFound,
-			responseBody: "Not found",
-			expectError:  true,
-			verifyError: func(t *testing.T, err error) {
-				assert.Contains(t, err.Error(), "not found")
-				var httpErr insightsclient.HttpError
-				assert.ErrorAs(t, err, &httpErr)
-				assert.Equal(t, http.StatusNotFound, httpErr.StatusCode)
-			},
+			name:                "not found",
+			statusCode:          http.StatusNotFound,
+			responseBody:        "Not found",
+			expectError:         true,
+			errorContains:       "not found",
+			expectHttpError:     true,
+			expectedHttpErrCode: http.StatusNotFound,
 		},
 		{
 			name:          "bad request",
@@ -293,10 +291,12 @@ func TestClient_RecvReport(t *testing.T) {
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, resp)
-				if tt.verifyError != nil {
-					tt.verifyError(t, err)
-				} else {
-					assert.Contains(t, err.Error(), tt.errorContains)
+				assert.Contains(t, err.Error(), tt.errorContains)
+
+				if tt.expectHttpError {
+					var httpErr insightsclient.HttpError
+					assert.ErrorAs(t, err, &httpErr)
+					assert.Equal(t, tt.expectedHttpErrCode, httpErr.StatusCode)
 				}
 			} else {
 				assert.NoError(t, err)

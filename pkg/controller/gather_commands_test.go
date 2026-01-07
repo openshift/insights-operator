@@ -556,44 +556,47 @@ func TestGetCustomStoragePath(t *testing.T) {
 	}
 }
 
+// setupStoragePath creates a temporary storage path for testing.
+// If shouldExist is true, returns an existing directory path.
+// If shouldExist is false, returns a path to a subdirectory that doesn't exist yet.
+func setupStoragePath(t *testing.T, shouldExist bool) string {
+	tmpDir := t.TempDir()
+	if shouldExist {
+		return tmpDir
+	}
+	return tmpDir + "/new-storage-path"
+}
+
+// cleanupStoragePath is a no-op cleanup function.
+// Actual cleanup is handled by t.TempDir() automatically.
+func cleanupStoragePath(_ string) {
+	// TempDir cleans up automatically
+}
+
 // Test_storagePathExists tests the storagePathExists method
 func Test_storagePathExists(t *testing.T) {
 	tests := []struct {
 		name          string
-		setupPath     func() string
-		cleanupPath   func(string)
+		pathExists    bool
 		expectError   bool
 		errorContains string
 	}{
 		{
-			name: "storage path already exists",
-			setupPath: func() string {
-				// Create a temp directory that exists
-				tmpDir := t.TempDir()
-				return tmpDir
-			},
-			cleanupPath: func(string) {
-				// TempDir cleans up automatically
-			},
+			name:        "storage path already exists",
+			pathExists:  true,
 			expectError: false,
 		},
 		{
-			name: "storage path does not exist and can be created",
-			setupPath: func() string {
-				tmpDir := t.TempDir()
-				return tmpDir + "/new-storage-path"
-			},
-			cleanupPath: func(string) {
-				// TempDir cleans up automatically
-			},
+			name:        "storage path does not exist and can be created",
+			pathExists:  false,
 			expectError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path := tt.setupPath()
-			defer tt.cleanupPath(path)
+			path := setupStoragePath(t, tt.pathExists)
+			defer cleanupStoragePath(path)
 
 			gatherJob := &GatherJob{
 				Controller: config.Controller{

@@ -18,9 +18,9 @@ func TestLimitedReader_Read(t *testing.T) {
 		expectedRead   string
 		expectedErr    error
 		expectedN      int64
+		expectedBytes  int
 		secondRead     bool
 		secondReadErr  error
-		verifyDetails  func(t *testing.T, lr *LimitedReader, n int, err error)
 	}{
 		{
 			name:         "within limit",
@@ -59,15 +59,13 @@ func TestLimitedReader_Read(t *testing.T) {
 			expectedErr: ErrTooLong,
 		},
 		{
-			name:       "buffer larger than limit",
-			input:      "Hello, World! This is a long string.",
-			limit:      5,
-			bufferSize: 20,
-			verifyDetails: func(t *testing.T, lr *LimitedReader, n int, err error) {
-				assert.NoError(t, err)
-				assert.Equal(t, 5, n, "should only read up to limit")
-				assert.Equal(t, int64(0), lr.N)
-			},
+			name:          "buffer larger than limit",
+			input:         "Hello, World! This is a long string.",
+			limit:         5,
+			bufferSize:    20,
+			expectedErr:   nil,
+			expectedN:     0,
+			expectedBytes: 5,
 		},
 		{
 			name:        "empty reader",
@@ -85,23 +83,24 @@ func TestLimitedReader_Read(t *testing.T) {
 			buf := make([]byte, tt.bufferSize)
 			n, err := lr.Read(buf)
 
-			if tt.verifyDetails != nil {
-				tt.verifyDetails(t, lr, n, err)
+			if tt.expectedErr != nil {
+				assert.Equal(t, tt.expectedErr, err)
 			} else {
-				if tt.expectedErr != nil {
-					assert.Equal(t, tt.expectedErr, err)
-				} else {
-					assert.NoError(t, err)
+				assert.NoError(t, err)
+				if tt.expectedRead != "" {
 					assert.Equal(t, tt.expectedRead, string(buf[:n]))
-					assert.Equal(t, tt.expectedN, lr.N)
 				}
+				assert.Equal(t, tt.expectedN, lr.N)
+				if tt.expectedBytes > 0 {
+					assert.Equal(t, tt.expectedBytes, n, "should only read up to limit")
+				}
+			}
 
-				if tt.secondRead {
-					buf2 := make([]byte, 10)
-					n2, err2 := lr.Read(buf2)
-					assert.Equal(t, tt.secondReadErr, err2)
-					assert.Equal(t, 0, n2)
-				}
+			if tt.secondRead {
+				buf2 := make([]byte, 10)
+				n2, err2 := lr.Read(buf2)
+				assert.Equal(t, tt.secondReadErr, err2)
+				assert.Equal(t, 0, n2)
 			}
 		})
 	}
