@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	v1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/insights-operator/pkg/gather"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,15 +43,15 @@ func CreateOperatorGathererStatus(gfr *gather.GathererFunctionReport) v1.Gathere
 
 // CreateDataGatherGathererStatus creates GathererStatus attribute for the "datagather.insights.openshift.io"
 // custom resource type.
-func CreateDataGatherGathererStatus(report *gather.GathererFunctionReport) (*v1alpha2.GathererStatus, error) {
+func CreateDataGatherGathererStatus(report *gather.GathererFunctionReport) (*insightsv1.GathererStatus, error) {
 	seconds, err := durationMillisToSeconds(report.Duration)
 	if err != nil {
 		return nil, err
 	}
 
-	return &v1alpha2.GathererStatus{
+	return &insightsv1.GathererStatus{
 		Name:              report.FuncName,
-		LastGatherSeconds: seconds,
+		LastGatherSeconds: &seconds,
 		Conditions:        createGathererConditions(report),
 	}, nil
 }
@@ -107,29 +107,29 @@ func createGathererConditions(gfr *gather.GathererFunctionReport) []metav1.Condi
 
 // DataGatherStatusToOperatorStatus copies "DataGatherStatus" from "datagather.openshift.io" and creates
 // "Status" for "insightsoperator.operator.openshift.io"
-func DataGatherStatusToOperatorStatus(dg *v1alpha2.DataGather) v1.InsightsOperatorStatus {
+func DataGatherStatusToOperatorStatus(dg *insightsv1.DataGather) v1.InsightsOperatorStatus {
 	operatorStatus := v1.InsightsOperatorStatus{}
 	operatorStatus.GatherStatus = v1.GatherStatus{
-		LastGatherTime: *dg.Status.FinishTime,
+		LastGatherTime: dg.Status.FinishTime,
 		LastGatherDuration: metav1.Duration{
 			Duration: dg.Status.FinishTime.Sub(dg.Status.StartTime.Time),
 		},
 	}
 
-	if dg.Status.InsightsReport.DownloadedTime != nil {
-		fmt.Printf("downloadTime is not nil %v", dg.Status.InsightsReport.DownloadedTime)
-		operatorStatus.InsightsReport = v1.InsightsReport{
-			DownloadedAt: *dg.Status.InsightsReport.DownloadedTime,
-		}
-	} else {
-		fmt.Println("downloadTime is nil")
+	operatorStatus.InsightsReport = v1.InsightsReport{
+		DownloadedAt: dg.Status.InsightsReport.DownloadedTime,
 	}
 
 	for _, g := range dg.Status.Gatherers {
+		lastGatherSeconds := int32(0)
+		if g.LastGatherSeconds != nil {
+			lastGatherSeconds = *g.LastGatherSeconds
+		}
+
 		gs := v1.GathererStatus{
 			Name: g.Name,
 			LastGatherDuration: metav1.Duration{
-				Duration: time.Duration(g.LastGatherSeconds) * time.Second,
+				Duration: time.Duration(lastGatherSeconds) * time.Second,
 			},
 			Conditions: g.Conditions,
 		}
@@ -148,32 +148,32 @@ func DataGatherStatusToOperatorStatus(dg *v1alpha2.DataGather) v1.InsightsOperat
 	return operatorStatus
 }
 
-func totalRiskToInt32(totalRisk v1alpha2.TotalRisk) int32 {
+func totalRiskToInt32(totalRisk insightsv1.TotalRisk) int32 {
 	switch totalRisk {
-	case v1alpha2.TotalRiskLow:
+	case insightsv1.TotalRiskLow:
 		return 1
-	case v1alpha2.TotalRiskModerate:
+	case insightsv1.TotalRiskModerate:
 		return 2
-	case v1alpha2.TotalRiskImportant:
+	case insightsv1.TotalRiskImportant:
 		return 3
-	case v1alpha2.TotalRiskCritical:
+	case insightsv1.TotalRiskCritical:
 		return 4
 	default:
 		return 0
 	}
 }
 
-func Int32ToTotalRisk(totalRisk int32) v1alpha2.TotalRisk {
+func Int32ToTotalRisk(totalRisk int32) insightsv1.TotalRisk {
 	switch totalRisk {
 	case 1:
-		return v1alpha2.TotalRiskLow
+		return insightsv1.TotalRiskLow
 	case 2:
-		return v1alpha2.TotalRiskModerate
+		return insightsv1.TotalRiskModerate
 	case 3:
-		return v1alpha2.TotalRiskImportant
+		return insightsv1.TotalRiskImportant
 	case 4:
-		return v1alpha2.TotalRiskCritical
+		return insightsv1.TotalRiskCritical
 	default:
-		return v1alpha2.TotalRiskLow
+		return insightsv1.TotalRiskLow
 	}
 }

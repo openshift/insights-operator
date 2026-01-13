@@ -36,7 +36,6 @@ func Test_readInsightsReport(t *testing.T) {
 		{
 			name: "basic test with all rules enabled",
 			testController: &Controller{
-
 				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
 				client:       &client,
 			},
@@ -403,7 +402,7 @@ func TestPullReportTechpreview(t *testing.T) {
 				Healthy: false,
 			},
 			mockClientErr: nil,
-			expectedErr:   fmt.Errorf("Failed to download the latest report: HTTP 404 Not Found"),
+			expectedErr:   fmt.Errorf("failed to download the latest report: HTTP 404 Not Found"),
 		},
 	}
 

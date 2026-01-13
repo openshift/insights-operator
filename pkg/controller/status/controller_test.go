@@ -10,7 +10,6 @@ import (
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/api/config/v1alpha2"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/utils"
@@ -70,9 +69,9 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 
 			client := configfake.NewSimpleClientset(operators...)
 			mockAPIConfigurator := config.NewMockAPIConfigurator(
-				&v1alpha2.GatherConfig{
-					Gatherers: v1alpha2.Gatherers{
-						Mode: v1alpha2.GatheringModeNone,
+				&configv1.GatherConfig{
+					Gatherers: configv1.Gatherers{
+						Mode: configv1.GatheringModeNone,
 					},
 				},
 			)
@@ -143,10 +142,10 @@ func Test_updatingConditionsInDisabledState(t *testing.T) {
 				Enabled: false,
 			},
 		}),
-		apiConfigurator: config.NewMockAPIConfigurator(&v1alpha2.GatherConfig{
-			Gatherers: v1alpha2.Gatherers{
+		apiConfigurator: config.NewMockAPIConfigurator(&configv1.GatherConfig{
+			Gatherers: configv1.Gatherers{
 				// Gathering enabled in configuration
-				Mode: v1alpha2.GatheringModeAll,
+				Mode: configv1.GatheringModeAll,
 			},
 		}),
 	}
@@ -217,9 +216,9 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 				Enabled: false,
 			},
 		}),
-		apiConfigurator: config.NewMockAPIConfigurator(&v1alpha2.GatherConfig{
-			Gatherers: v1alpha2.Gatherers{
-				Mode: v1alpha2.GatheringModeAll,
+		apiConfigurator: config.NewMockAPIConfigurator(&configv1.GatherConfig{
+			Gatherers: configv1.Gatherers{
+				Mode: configv1.GatheringModeAll,
 			},
 		}),
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/api/insights/v1alpha2"
+	insightsv1 "github.com/openshift/api/insights/v1"
 	v1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/stretchr/testify/assert"
@@ -152,27 +152,27 @@ func Test_createGathererStatus(t *testing.T) { //nolint: funlen
 func TestDataGatherStatusToOperatorStatus(t *testing.T) {
 	tests := []struct {
 		name                   string
-		dataGather             v1alpha2.DataGather
+		dataGather             insightsv1.DataGather
 		expectedOperatorstatus v1.InsightsOperatorStatus
 	}{
 		{
 			name: "basic copy test",
-			dataGather: v1alpha2.DataGather{
-				Status: v1alpha2.DataGatherStatus{
+			dataGather: insightsv1.DataGather{
+				Status: insightsv1.DataGatherStatus{
 					Conditions: []metav1.Condition{
-						DataProcessedCondition(metav1.ConditionTrue, "EveyrthingOK", "no message"),
+						DataProcessedCondition(metav1.ConditionTrue, "EverythingOK", "no message"),
 					},
-					StartTime:  ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
-					FinishTime: ptr.To(metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC)),
-					Gatherers: []v1alpha2.GathererStatus{
+					StartTime:  metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
+					FinishTime: metav1.Date(2023, 7, 31, 5, 41, 0o4, 0, time.UTC),
+					Gatherers: []insightsv1.GathererStatus{
 						{
 							Name:              "test-gatherer-1",
 							Conditions:        []metav1.Condition{},
-							LastGatherSeconds: 94,
+							LastGatherSeconds: ptr.To(int32(94)),
 						},
 					},
-					InsightsReport: v1alpha2.InsightsReport{
-						DownloadedTime: ptr.To(metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC)),
+					InsightsReport: insightsv1.InsightsReport{
+						DownloadedTime: metav1.Date(2023, 7, 31, 5, 40, 15, 0, time.UTC),
 					},
 				},
 			},
