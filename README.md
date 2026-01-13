@@ -1,3 +1,5 @@
+TEST
+
 # Insights Operator
 
 This cluster operator gathers anonymized system configuration and reports it to Red Hat Insights. It is a part of the
