@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"fmt"
+	"os"
+
 	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 )
@@ -32,4 +35,15 @@ func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherC
 	}
 
 	return defaultPath
+}
+
+// pathIsAvailable
+func pathIsAvailable(path string) (bool, error) {
+	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
+		if err := os.MkdirAll(path, 0o777); err != nil {
+			return false, fmt.Errorf("can't create --path: %v", err)
+		}
+	}
+
+	return true, nil
 }
