@@ -37,7 +37,11 @@ func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherC
 	return defaultPath
 }
 
-// pathIsAvailable
+// pathIsAvailable checks if the given path exists and is accessible.
+// If the path does not exist, it attempts to create it (including all parent directories).
+//
+// Returns true if the path exists or was successfully created (is available)
+// and false with an error if the path cannot be created.
 func pathIsAvailable(path string) (bool, error) {
 	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
 		if err := os.MkdirAll(path, 0o777); err != nil {
