@@ -36,7 +36,7 @@ func CreateOperatorGathererStatus(gfr *gather.GathererFunctionReport) v1.Gathere
 			Duration: time.Duration(gfr.Duration * 1000000),
 		},
 	}
-
+    fmt.Print("This is a testing info.")
 	gs.Conditions = createGathererConditions(gfr)
 	return gs
 }

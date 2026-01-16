@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// This is a test info
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name           string
