@@ -200,7 +200,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		if isValid {
 			s.StoragePath = customPath
 		} else {
-			klog.Infof("The introduced storagePath value is not available : %v", err.Error())
+			klog.Errorf("can't create --path: %v", err)
+			klog.Infof("The introduced storagePath '%s' is not available. The default folder will be '%s'", customPath, s.StoragePath)
 		}
 	}
 
