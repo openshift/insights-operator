@@ -567,12 +567,6 @@ func setupStoragePath(t *testing.T, shouldExist bool) string {
 	return tmpDir + "/new-storage-path"
 }
 
-// cleanupStoragePath is a no-op cleanup function.
-// Actual cleanup is handled by t.TempDir() automatically.
-func cleanupStoragePath(_ string) {
-	// TempDir cleans up automatically
-}
-
 // Test_storagePathExists tests the storagePathExists method
 func Test_storagePathExists(t *testing.T) {
 	tests := []struct {
@@ -596,7 +590,6 @@ func Test_storagePathExists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			path := setupStoragePath(t, tt.pathExists)
-			defer cleanupStoragePath(path)
 
 			gatherJob := &GatherJob{
 				Controller: config.Controller{
