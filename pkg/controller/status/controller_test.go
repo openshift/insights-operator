@@ -252,6 +252,75 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	assert.Equal(t, disabledCondition, getConditionByType(updatedCO.Status.Conditions, OperatorDisabled))
 }
 
+func Test_shouldSetProgressingCondition(t *testing.T) {
+	tests := []struct {
+		name                    string
+		newVersion              string
+		clusterOperatorVersions []configv1.OperandVersion
+		expectedShouldUpdate    bool
+		expectError             bool
+	}{
+		{
+			name:                    "Invalid new version returns error",
+			newVersion:              "invalid-version",
+			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedShouldUpdate:    false,
+			expectError:             true,
+		},
+		{
+			name:                    "Empty clusterOperatorVersions returns false",
+			newVersion:              "4.21.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions: []configv1.OperandVersion{},
+			expectedShouldUpdate:    false,
+			expectError:             false,
+		},
+		{
+			name:                    "Major version change triggers update",
+			newVersion:              "5.21.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedShouldUpdate:    true,
+			expectError:             false,
+		},
+		{
+			name:                    "Minor version change triggers update",
+			newVersion:              "4.22.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedShouldUpdate:    true,
+			expectError:             false,
+		},
+		{
+			name:                    "Patch version change does not trigger update",
+			newVersion:              "4.21.1-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedShouldUpdate:    false,
+			expectError:             false,
+		},
+		{
+			name:                    "Invalid existing version returns error",
+			newVersion:              "4.21.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "invalid"}},
+			expectedShouldUpdate:    false,
+			expectError:             true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			shouldUpdate, err := shouldSetProgressingCondition(tt.newVersion, tt.clusterOperatorVersions)
+
+			if tt.expectError {
+				assert.Error(t, err, "Expected an error but got nil")
+			} else {
+				assert.NoError(t, err, "Expected no error but got: %v", err)
+			}
+
+			assert.Equal(t, tt.expectedShouldUpdate, shouldUpdate,
+				"shouldUpdateVersion(%q, %v) = %v, want %v",
+				tt.newVersion, tt.clusterOperatorVersions, shouldUpdate, tt.expectedShouldUpdate)
+		})
+	}
+}
+
 func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
 	ctype configv1.ClusterStatusConditionType,
 ) *configv1.ClusterOperatorStatusCondition {
