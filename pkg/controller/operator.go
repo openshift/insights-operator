@@ -200,14 +200,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		if isValid {
 			s.StoragePath = customPath
 		} else {
-			klog.Errorf("The introduced storagePath '%s' is not available: %v", customPath, err)
-			klog.Infof("The default folder will be '%s'", s.StoragePath)
+			klog.Errorf("the introduced storagePath '%s' is not available: %v", customPath, err)
+			klog.Infof("the default folder will be '%s'", s.StoragePath)
 		}
 	}
 
 	// ensure the insight snapshot directory exists
 	if _, err := pathIsAvailable(s.StoragePath); err != nil {
-		return fmt.Errorf("The snapshot folder is not available: %v", err)
+		return fmt.Errorf("the snapshot folder is not available: %v", err)
 	}
 
 	// the status controller initializes the cluster operator object and retrieves
