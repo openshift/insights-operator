@@ -3,10 +3,10 @@ package configobserver
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -31,7 +31,7 @@ const (
 
 // nolint: lll, funlen
 func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
-	var cases = []struct {
+	cases := []struct {
 		name      string
 		config    map[string]*corev1.Secret
 		expConfig *config.Controller
@@ -47,7 +47,7 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 					"interval": []byte("1s"),
 				}},
 			},
-			expErr: fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to ten seconds: too short"),
+			expErr: fmt.Errorf("interval value too short, minimal value is 10 minutes"),
 		},
 		{
 			name: "interval incorrect format",
@@ -56,7 +56,7 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 					"interval": []byte("every second"),
 				}},
 			},
-			expErr: fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to ten seconds: time: invalid duration \"every second\""),
+			expErr: fmt.Errorf("insights secret interval must be a duration (1h, 10m) greater than or equal to ten minutes: time: invalid duration \"every second\""),
 		},
 		{
 			name: "reportPullingDelay incorrect format",
@@ -89,11 +89,11 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 			name: "correct interval",
 			config: map[string]*corev1.Secret{
 				supportKey: {Data: map[string][]byte{
-					"interval": []byte("1m"),
+					"interval": []byte("15m"),
 				}},
 			},
 			expConfig: &config.Controller{
-				Interval: 1 * time.Minute,
+				Interval: 15 * time.Minute,
 			},
 			expErr: nil,
 		},
@@ -154,24 +154,19 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 				defaultConfig: ctrl,
 			}
 			c.mergeConfig()
+
 			err := c.updateToken(context.Background())
 			if err == nil {
 				err = c.updateConfig(context.Background())
 			}
-			expErrS := ""
+
 			if tt.expErr != nil {
-				expErrS = tt.expErr.Error()
+				assert.Error(t, err)
+				assert.Equal(t, tt.expErr, err)
+				return
 			}
-			errS := ""
-			if err != nil {
-				errS = err.Error()
-			}
-			if expErrS != errS {
-				t.Fatalf("The test expected error doesn't match actual error.\nExpected: %s Actual: %s", tt.expErr, err)
-			}
-			if tt.expConfig != nil && !reflect.DeepEqual(tt.expConfig, c.config) {
-				t.Fatalf("The test expected config doesn't match actual config.\nExpected: %v Actual: %v", tt.expConfig, c.config)
-			}
+
+			assert.Equal(t, tt.expConfig, c.config)
 		})
 	}
 }

@@ -7,6 +7,8 @@ import (
 const (
 	// defines default frequency of the data gathering
 	defaultGatherFrequency = 2 * time.Hour
+	// defines minimum frequency of the data gathering
+	minimumGatherFrequency = 10 * time.Minute
 	// defines default frequency of the SCA download
 	defaultSCAFfrequency = 8 * time.Hour
 	// defines default frequency of the Cluster Transfer download
