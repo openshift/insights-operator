@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"golang.org/x/exp/slices"
+	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -310,6 +311,8 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	}
 }
 
+const gatheringLimit = 3
+
 // onDemandGather listens to newly created DataGather resources and checks
 // the state of each resource. If the state is not an empty string, it means that
 // the corresponding job is already running or has been started and new data gathering
@@ -319,6 +322,29 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 		select {
 		case <-stopCh:
 			return
+		case <-c.dgInf.DataGatherStatusChanged():
+			go func() {
+				klog.Info("DataGatherStatusChaged triggered")
+				dataGatherList, err := c.dgInf.Lister().List(labels.Everything())
+				if err != nil {
+					klog.Errorf("Failed listing datagathers: %v", err)
+					return
+				}
+
+				dgNotStarted, runningJobsCounter := countActiveGatheringJobs(dataGatherList)
+				if runningJobsCounter >= gatheringLimit {
+					klog.Infof("GatheringLimit reached: %d/%d", runningJobsCounter, gatheringLimit)
+					return
+				}
+
+				if dgNotStarted != nil {
+					ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
+					defer cancel()
+
+					klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgNotStarted.Name)
+					c.runJobAndCheckResults(ctx, dgNotStarted, c.image)
+				}
+			}()
 		case dgName := <-c.dgInf.DataGatherCreated():
 			go func() {
 				ctx, cancel := context.WithTimeout(context.Background(), c.configAggregator.Config().DataReporting.Interval*4)
@@ -329,11 +355,59 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 					return
 				}
 
+				dgLister := c.dgInf.Lister()
+				dataGatherList, err := dgLister.List(labels.Everything())
+				if err != nil {
+					klog.Error("Failed to list datagathers")
+				}
+
+				_, runningJobsCounter := countActiveGatheringJobs(dataGatherList)
+				klog.Infof("Created Gathering: counter: %d", runningJobsCounter)
+				if runningJobsCounter >= gatheringLimit {
+					klog.Infof("GatheringLimit reached: %d/%d", runningJobsCounter, gatheringLimit)
+					return
+				}
+
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
 				c.runJobAndCheckResults(ctx, dataGather, c.image)
 			}()
 		}
 	}
+}
+
+// countActiveGatheringJobs analyzes a list of DataGather resources to determine which on-demand gathering jobs are currently active
+// and identifies pending DataGather resources that have not yet started.
+// It excludes periodic gathering DataGathers (those with "periodic-gathering-" prefix) from the analysis.
+func countActiveGatheringJobs(dataGatherList []*insightsv1.DataGather) (pendingDataGather *insightsv1.DataGather, count int) {
+	var dgNotStarted *insightsv1.DataGather
+
+	runningCounter := 0
+	for _, dataGather := range dataGatherList {
+		if strings.HasPrefix(dataGather.GetName(), periodicGatheringPrefix) {
+			continue
+		}
+
+		progressingConditions := status.GetConditionByType(dataGather, status.Progressing)
+		// Gathering was not started
+		if progressingConditions == nil && dgNotStarted == nil {
+			dgNotStarted = dataGather
+			continue
+		}
+
+		// No datagather selected for starting
+		if dgNotStarted == nil &&
+			progressingConditions != nil && progressingConditions.Reason == status.DataGatheringPendingReason {
+			dgNotStarted = dataGather
+		}
+
+		// Gathering is running
+		if progressingConditions != nil &&
+			progressingConditions.Status == metav1.ConditionTrue && progressingConditions.Reason == status.GatheringReason {
+			runningCounter++
+		}
+	}
+
+	return dgNotStarted, runningCounter
 }
 
 // syncDataGatherCR listens for finished jobs and ensures the corresponding DataGather status is updated.
