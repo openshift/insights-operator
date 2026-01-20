@@ -76,7 +76,7 @@ func CollectLogsFromContainers( //nolint:gocyclo
 	buildLogFileName func(namespace string, podName string, containerName string) string,
 ) ([]record.Record, error) {
 	if buildLogFileName == nil {
-		buildLogFileName = func(namespace string, podName string, containerName string) string {
+		buildLogFileName = func(namespace string, podName string, _ string) string {
 			return fmt.Sprintf("config/pod/%s/logs/%s/errors.log", namespace, podName)
 		}
 	}

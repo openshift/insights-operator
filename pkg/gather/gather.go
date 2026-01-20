@@ -4,9 +4,6 @@ package gather
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"k8s.io/client-go/rest"
@@ -193,32 +190,17 @@ func recordGatheringFunctionResult(
 	}, allErrors
 }
 
-func readMemoryUsage() (int, error) {
-	b, err := os.ReadFile("/sys/fs/cgroup/memory/memory.usage_in_bytes")
-	if err != nil {
-		return 0, err
-	}
-	memUsage := strings.ReplaceAll(string(b), "\n", "")
-	return strconv.Atoi(memUsage)
-}
-
 // RecordArchiveMetadata records info about archive and gatherers' reports
 func RecordArchiveMetadata(
 	functionReports []GathererFunctionReport,
 	rec recorder.Interface,
 	anonymizer *anonymization.Anonymizer,
 ) error {
-	memUsage, err := readMemoryUsage()
-	if err != nil {
-		klog.Warningf("can't read cgroups memory usage data: %v", err)
-	}
-
 	archiveMetadata := record.Record{
 		Name:         recorder.MetadataRecordName,
 		AlwaysStored: true,
 		Item: record.JSONMarshaller{Object: ArchiveMetadata{
 			StatusReports:              functionReports,
-			MemoryBytesUsage:           uint64(memUsage),
 			Uptime:                     time.Since(programStartTime).Truncate(time.Millisecond).Seconds(),
 			IsGlobalObfuscationEnabled: anonymizer.IsObfuscationEnabled(),
 		}},

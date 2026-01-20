@@ -113,7 +113,7 @@ func main() {
 func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 	expPath := ""
 	fset := token.NewFileSet() // positions are relative to fset
-	return filepath.Walk(cleanRoot, func(path string, info os.FileInfo, e1 error) error {
+	return filepath.Walk(cleanRoot, func(path string, info os.FileInfo, _ error) error {
 		if !info.IsDir() {
 			return nil
 		}
@@ -154,7 +154,7 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 					if !ok2 && fn.Name.IsExported() && startsWithGatherOrBuildGather && len(fn.Name.Name) > len("Gather") {
 						doc := fn.Doc.Text()
 						md[gatherMethodWithSuff] = parseDoc(fn.Name.Name, doc)
-						fmt.Printf(fn.Name.Name + "\n")
+						fmt.Printf("%s", fn.Name.Name+"\n")
 					}
 					// Example methods will have Example prefix, and might have additional case suffix:
 					// ExampleMostRecentMetrics_case1, we will remove Example prefix
@@ -185,7 +185,7 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 							}
 							md[exampleMethodWithSuff].Examples[exampleMethodWithSuff] = output
 						}
-						fmt.Printf(fn.Name.Name + "\n")
+						fmt.Printf("%s", fn.Name.Name+"\n")
 					}
 				}
 				return true
@@ -256,7 +256,7 @@ func getModuleNameFromGoMod(goModPath string) (string, error) {
 //
 // The import path is based on the path of source files in the package and the module name in the nearest go.mod file.
 // Exits the program with an error return code in case of an error.
-func mustGetPackageName(astRoot string, f *ast.Package) string {
+func mustGetPackageName(astRoot string, f *ast.Package) string { //nolint: staticcheck
 	firstKey := ""
 	for key := range f.Files {
 		firstKey = key

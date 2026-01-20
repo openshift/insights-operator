@@ -192,7 +192,7 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				if tt.httpStatus == http.StatusOK {
 					data, err := loadDataFromFile(tt.clusterTransferDataFilePath)
 					if err != nil {

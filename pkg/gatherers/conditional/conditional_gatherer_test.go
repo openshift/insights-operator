@@ -201,7 +201,7 @@ func newFakeClientWithAlerts(alerts ...string) *fake.RESTClient {
 
 	fakeClient := &fake.RESTClient{
 		NegotiatedSerializer: scheme.Codecs.WithoutConversion(),
-		Client: fake.CreateHTTPClient(func(request *http.Request) (*http.Response, error) {
+		Client: fake.CreateHTTPClient(func(_ *http.Request) (*http.Response, error) {
 			resp := &http.Response{
 				StatusCode: http.StatusOK,
 				Body:       io.NopCloser(strings.NewReader(response + "\n")),

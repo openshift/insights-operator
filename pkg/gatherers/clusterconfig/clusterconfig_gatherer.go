@@ -115,8 +115,6 @@ func (g *Gatherer) GetGatheringFunctions(context.Context) (map[string]gatherers.
 	result := make(map[string]gatherers.GatheringClosure)
 
 	for funcName, function := range gatheringFunctions {
-		function := function
-
 		result[funcName] = gatherers.GatheringClosure{
 			Run: func(ctx context.Context) ([]record.Record, []error) {
 				return function(g, ctx)
