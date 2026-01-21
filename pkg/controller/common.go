@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	insightsv1 "github.com/openshift/api/insights/v1"
+	insightsv1alpha2 "github.com/openshift/api/insights/v1alpha2"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 )
 
@@ -12,7 +12,7 @@ import (
 // in priority order:
 // * DataGather CR specification (PersistentVolume.MountPath)
 // * ConfigMap configuration (DataReporting.StoragePath)
-func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1.DataGather) string {
+func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherCR *insightsv1alpha2.DataGather) string {
 	defaultPath := ""
 
 	// Get the default path from ConfigMap configuration
@@ -24,11 +24,11 @@ func getCustomStoragePath(configAggregator configobserver.Interface, dataGatherC
 		return defaultPath
 	}
 
-	if dataGatherCR.Spec.Storage == (insightsv1.Storage{}) || dataGatherCR.Spec.Storage.Type != insightsv1.StorageTypePersistentVolume {
+	if dataGatherCR.Spec.Storage == nil || dataGatherCR.Spec.Storage.Type != insightsv1alpha2.StorageTypePersistentVolume {
 		return defaultPath
 	}
 
-	if dataGatherCR.Spec.Storage.PersistentVolume != (insightsv1.PersistentVolumeConfig{}) {
+	if dataGatherCR.Spec.Storage.PersistentVolume != nil {
 		if storagePath := dataGatherCR.Spec.Storage.PersistentVolume.MountPath; storagePath != "" {
 			return storagePath
 		}
