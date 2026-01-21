@@ -8,11 +8,13 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -306,7 +308,28 @@ func Test_shouldSetProgressingCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shouldUpdate, err := shouldSetProgressingCondition(tt.newVersion, tt.clusterOperatorVersions)
+			client := configfake.NewSimpleClientset()
+			mockAPIConfigurator := config.NewMockAPIConfigurator(
+				&configv1.GatherConfig{
+					Gatherers: configv1.Gatherers{
+						Mode: configv1.GatheringModeNone,
+					},
+				},
+			)
+			ctrl := &Controller{
+				name:   "insights",
+				client: client.ConfigV1(),
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+					DataReporting: config.DataReporting{
+						Enabled: true,
+					},
+				}),
+				apiConfigurator: mockAPIConfigurator,
+				eventLogger:     events.NewInMemoryRecorder("test", clock.RealClock{}),
+				ctrlStatus:      newControllerStatus(),
+			}
+
+			shouldUpdate, err := ctrl.shouldSetProgressingCondition(tt.newVersion, tt.clusterOperatorVersions)
 
 			if tt.expectError {
 				assert.Error(t, err, "Expected an error but got nil")
