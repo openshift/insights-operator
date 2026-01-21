@@ -606,5 +606,8 @@ func relatedObjects(namespace string) []configv1.ObjectReference {
 		{Resource: "services", Namespace: namespace, Name: "metrics"},
 		{Resource: "configmaps", Namespace: namespace, Name: "service-ca-bundle"},
 		{Group: "operator.openshift.io", Resource: "insightsoperators", Name: "cluster"},
+		{Group: "rbac.authorization.k8s.io", Resource: "clusterroles", Name: "insights-operator"},
+		{Group: "rbac.authorization.k8s.io", Resource: "clusterroles", Name: "insights-operator-gather"},
+		{Group: "rbac.authorization.k8s.io", Resource: "clusterroles", Name: "insights-runtime-extractor-role"},
 	}
 }
