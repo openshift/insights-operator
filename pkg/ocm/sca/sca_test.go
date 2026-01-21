@@ -183,3 +183,113 @@ func Test_SCAController_ProcessResponse_ErrorWhenControlNodeMissing(t *testing.T
 	err := scaController.processResponses(context.Background(), response, "invalidControlPlaneArch")
 	assert.Error(t, err, "master node architecture not found, defautl secret is not created nor updated")
 }
+
+func Test_Response_getCertDataByName(t *testing.T) {
+	tests := []struct {
+		name         string
+		response     Response
+		archName     string
+		expectedCert *CertData
+	}{
+		{
+			name: "find existing architecture",
+			response: Response{
+				Items: []CertData{
+					{
+						ID:    "cert-1",
+						OrgID: "org-1",
+						Key:   "key-1",
+						Cert:  "cert-1",
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+					{
+						ID:    "cert-2",
+						OrgID: "org-2",
+						Key:   "key-2",
+						Cert:  "cert-2",
+						Metadata: CertMetadata{
+							Arch: "aarch64",
+						},
+					},
+				},
+			},
+			archName: "aarch64",
+			expectedCert: &CertData{
+				ID:    "cert-2",
+				OrgID: "org-2",
+				Key:   "key-2",
+				Cert:  "cert-2",
+				Metadata: CertMetadata{
+					Arch: "aarch64",
+				},
+			},
+		},
+		{
+			name: "architecture not found",
+			response: Response{
+				Items: []CertData{
+					{
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+				},
+			},
+			archName:     "ppc64le",
+			expectedCert: nil,
+		},
+		{
+			name: "empty response items",
+			response: Response{
+				Items: []CertData{},
+			},
+			archName:     "x86_64",
+			expectedCert: nil,
+		},
+		{
+			name: "find first matching architecture",
+			response: Response{
+				Items: []CertData{
+					{
+						ID:    "cert-1",
+						OrgID: "org-1",
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+					{
+						ID:    "cert-2",
+						OrgID: "org-2",
+						Metadata: CertMetadata{
+							Arch: "aarch64",
+						},
+					},
+					{
+						ID:    "cert-3",
+						OrgID: "org-3",
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+				},
+			},
+			archName: "x86_64",
+			expectedCert: &CertData{
+				ID:    "cert-1",
+				OrgID: "org-1",
+				Metadata: CertMetadata{
+					Arch: "x86_64",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.response.getCertDataByName(tt.archName)
+			assert.Equal(t, tt.expectedCert, result)
+		})
+	}
+}
