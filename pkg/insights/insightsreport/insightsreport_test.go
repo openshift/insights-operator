@@ -458,3 +458,203 @@ func (c *mockInsightsClient) RecvReport(_ context.Context, _ string) (*http.Resp
 func (c *mockInsightsClient) GetWithPathParam(ctx context.Context, endpoint, requestID string, includeClusterID bool) (*http.Response, error) {
 	return &c.response, c.err
 }
+
+func Test_readInsightsReportTechPreview(t *testing.T) {
+	tests := []struct {
+		name                          string
+		testController                *Controller
+		report                        types.InsightsAnalysisReport
+		expectedActiveRecommendations []types.InsightsRecommendation
+		expectedHealthStatus          healthStatusCounts
+	}{
+		{
+			name: "TechPreview report with all risk levels",
+			testController: &Controller{
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
+			},
+			report: types.InsightsAnalysisReport{
+				ClusterID: "test-cluster-id",
+				RequestID: "test-request-id",
+				Recommendations: []types.Recommendation{
+					{
+						RuleFQDN:    "ccx.dev.test.rule1",
+						ErrorKey:    "TEST_ERROR_KEY_1",
+						Description: "Test low risk recommendation",
+						TotalRisk:   1,
+					},
+					{
+						RuleFQDN:    "ccx.dev.test.rule2",
+						ErrorKey:    "TEST_ERROR_KEY_2",
+						Description: "Test moderate risk recommendation",
+						TotalRisk:   2,
+					},
+					{
+						RuleFQDN:    "ccx.dev.test.rule3",
+						ErrorKey:    "TEST_ERROR_KEY_3",
+						Description: "Test important risk recommendation",
+						TotalRisk:   3,
+					},
+					{
+						RuleFQDN:    "ccx.dev.test.rule4",
+						ErrorKey:    "TEST_ERROR_KEY_4",
+						Description: "Test critical risk recommendation",
+						TotalRisk:   4,
+					},
+				},
+			},
+			expectedActiveRecommendations: []types.InsightsRecommendation{
+				{
+					RuleID:      "ccx.dev.test.rule1",
+					ErrorKey:    "TEST_ERROR_KEY_1",
+					Description: "Test low risk recommendation",
+					TotalRisk:   1,
+				},
+				{
+					RuleID:      "ccx.dev.test.rule2",
+					ErrorKey:    "TEST_ERROR_KEY_2",
+					Description: "Test moderate risk recommendation",
+					TotalRisk:   2,
+				},
+				{
+					RuleID:      "ccx.dev.test.rule3",
+					ErrorKey:    "TEST_ERROR_KEY_3",
+					Description: "Test important risk recommendation",
+					TotalRisk:   3,
+				},
+				{
+					RuleID:      "ccx.dev.test.rule4",
+					ErrorKey:    "TEST_ERROR_KEY_4",
+					Description: "Test critical risk recommendation",
+					TotalRisk:   4,
+				},
+			},
+			expectedHealthStatus: healthStatusCounts{
+				critical:  1,
+				important: 1,
+				low:       1,
+				moderate:  1,
+				total:     4,
+			},
+		},
+		{
+			name: "TechPreview report with no recommendations",
+			testController: &Controller{
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
+			},
+			report: types.InsightsAnalysisReport{
+				ClusterID:       "test-cluster-id",
+				RequestID:       "test-request-id",
+				Recommendations: []types.Recommendation{},
+			},
+			expectedActiveRecommendations: []types.InsightsRecommendation{},
+			expectedHealthStatus: healthStatusCounts{
+				critical:  0,
+				important: 0,
+				low:       0,
+				moderate:  0,
+				total:     0,
+			},
+		},
+		{
+			name: "TechPreview report with alerting disabled",
+			testController: &Controller{
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+					Alerting: config.Alerting{
+						Disabled: true,
+					},
+				}),
+			},
+			report: types.InsightsAnalysisReport{
+				ClusterID: "test-cluster-id",
+				RequestID: "test-request-id",
+				Recommendations: []types.Recommendation{
+					{
+						RuleFQDN:    "ccx.dev.test.rule1",
+						ErrorKey:    "TEST_ERROR_KEY_1",
+						Description: "Test recommendation",
+						TotalRisk:   2,
+					},
+					{
+						RuleFQDN:    "ccx.dev.test.rule2",
+						ErrorKey:    "TEST_ERROR_KEY_2",
+						Description: "Test recommendation 2",
+						TotalRisk:   3,
+					},
+				},
+			},
+			expectedActiveRecommendations: []types.InsightsRecommendation{},
+			expectedHealthStatus: healthStatusCounts{
+				critical:  0,
+				important: 1,
+				low:       0,
+				moderate:  1,
+				total:     2,
+			},
+		},
+		{
+			name: "TechPreview report with multiple recommendations of same risk",
+			testController: &Controller{
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{}),
+			},
+			report: types.InsightsAnalysisReport{
+				ClusterID: "test-cluster-id",
+				RequestID: "test-request-id",
+				Recommendations: []types.Recommendation{
+					{
+						RuleFQDN:    "ccx.dev.test.rule1",
+						ErrorKey:    "TEST_ERROR_KEY_1",
+						Description: "Test low risk recommendation 1",
+						TotalRisk:   1,
+					},
+					{
+						RuleFQDN:    "ccx.dev.test.rule2",
+						ErrorKey:    "TEST_ERROR_KEY_2",
+						Description: "Test low risk recommendation 2",
+						TotalRisk:   1,
+					},
+					{
+						RuleFQDN:    "ccx.dev.test.rule3",
+						ErrorKey:    "TEST_ERROR_KEY_3",
+						Description: "Test low risk recommendation 3",
+						TotalRisk:   1,
+					},
+				},
+			},
+			expectedActiveRecommendations: []types.InsightsRecommendation{
+				{
+					RuleID:      "ccx.dev.test.rule1",
+					ErrorKey:    "TEST_ERROR_KEY_1",
+					Description: "Test low risk recommendation 1",
+					TotalRisk:   1,
+				},
+				{
+					RuleID:      "ccx.dev.test.rule2",
+					ErrorKey:    "TEST_ERROR_KEY_2",
+					Description: "Test low risk recommendation 2",
+					TotalRisk:   1,
+				},
+				{
+					RuleID:      "ccx.dev.test.rule3",
+					ErrorKey:    "TEST_ERROR_KEY_3",
+					Description: "Test low risk recommendation 3",
+					TotalRisk:   1,
+				},
+			},
+			expectedHealthStatus: healthStatusCounts{
+				critical:  0,
+				important: 0,
+				low:       3,
+				moderate:  0,
+				total:     3,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			activeRecommendations, healthStatus := tt.testController.readInsightsReportTechPreview(tt.report)
+			assert.Equal(t, tt.expectedActiveRecommendations, activeRecommendations)
+			assert.Equal(t, tt.expectedHealthStatus, healthStatus)
+		})
+	}
+}
