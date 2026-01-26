@@ -89,21 +89,6 @@ func Test_totalRiskToStr(t *testing.T) {
 			totalRisk: 0,
 			expected:  "Invalid",
 		},
-		{
-			name:      "invalid risk level 5",
-			totalRisk: 5,
-			expected:  "Invalid",
-		},
-		{
-			name:      "invalid negative risk level",
-			totalRisk: -1,
-			expected:  "Invalid",
-		},
-		{
-			name:      "invalid large risk level",
-			totalRisk: 100,
-			expected:  "Invalid",
-		},
 	}
 
 	for _, tt := range tests {

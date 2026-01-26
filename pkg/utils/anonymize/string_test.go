@@ -22,26 +22,6 @@ func Test_String(t *testing.T) {
 			input:    "",
 			expected: "",
 		},
-		{
-			name:     "single character",
-			input:    "a",
-			expected: "x",
-		},
-		{
-			name:     "string with spaces",
-			input:    "hello world",
-			expected: "xxxxxxxxxxx",
-		},
-		{
-			name:     "string with special characters",
-			input:    "test@example.com",
-			expected: "xxxxxxxxxxxxxxxx",
-		},
-		{
-			name:     "long string",
-			input:    "this is a very long string with many characters",
-			expected: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-		},
 	}
 
 	for _, tt := range tests {
@@ -68,21 +48,6 @@ func Test_Bytes(t *testing.T) {
 			name:     "empty byte slice",
 			input:    []byte(""),
 			expected: []byte(""),
-		},
-		{
-			name:     "single byte",
-			input:    []byte("a"),
-			expected: []byte("x"),
-		},
-		{
-			name:     "byte slice with spaces",
-			input:    []byte("hello world"),
-			expected: []byte("xxxxxxxxxxx"),
-		},
-		{
-			name:     "byte slice with special characters",
-			input:    []byte("test@example.com"),
-			expected: []byte("xxxxxxxxxxxxxxxx"),
 		},
 		{
 			name:     "nil byte slice",

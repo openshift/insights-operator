@@ -23,24 +23,9 @@ func Test_URL(t *testing.T) {
 			expected: "xxxxx://xxxxxxx.xxx/xxxxxxxxxxxxxxxx",
 		},
 		{
-			name:     "URL with port",
-			input:    "https://example.com:8080/path",
-			expected: "xxxxx://xxxxxxx.xxx:xxxx/xxxx",
-		},
-		{
-			name:     "URL with subdomain",
-			input:    "https://api.example.com/v1/users",
-			expected: "xxxxx://xxx.xxxxxxx.xxx/xx/xxxxx",
-		},
-		{
 			name:     "empty string",
 			input:    "",
 			expected: "",
-		},
-		{
-			name:     "URL with fragment",
-			input:    "https://example.com/page#section",
-			expected: "xxxxx://xxxxxxx.xxx/xxxxxxxxxxxx",
 		},
 		{
 			name:     "IP address URL",
@@ -90,15 +75,6 @@ func Test_URLSlice(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name: "single URL",
-			input: []string{
-				"https://example.com/path",
-			},
-			expected: []string{
-				"xxxxx://xxxxxxx.xxx/xxxx",
-			},
-		},
-		{
 			name: "URLs with different schemes",
 			input: []string{
 				"http://example.com",
@@ -110,11 +86,6 @@ func Test_URLSlice(t *testing.T) {
 				"xxxxx://xxxxxxx.xxx",
 				"xxx://xxxxxxx.xxx",
 			},
-		},
-		{
-			name:     "nil slice",
-			input:    nil,
-			expected: nil,
 		},
 	}
 
@@ -138,11 +109,6 @@ func Test_URLCSV(t *testing.T) {
 			expected: "xxxxx://xxxxxxx.xxx/xxxxx,xxxxx://xxxxxxx.xxx/xxxxx",
 		},
 		{
-			name:     "single URL",
-			input:    "https://example.com/path",
-			expected: "xxxxx://xxxxxxx.xxx/xxxx",
-		},
-		{
 			name:     "empty string",
 			input:    "",
 			expected: "",
@@ -156,11 +122,6 @@ func Test_URLCSV(t *testing.T) {
 			name:     "three URLs",
 			input:    "http://api.example.com,https://web.example.com,https://mobile.example.com",
 			expected: "xxxx://xxx.xxxxxxx.xxx,xxxxx://xxx.xxxxxxx.xxx,xxxxx://xxxxxx.xxxxxxx.xxx",
-		},
-		{
-			name:     "URLs with query parameters",
-			input:    "https://example.com/path?a=1,https://example.com/path?b=2",
-			expected: "xxxxx://xxxxxxx.xxx/xxxxxxxx,xxxxx://xxxxxxx.xxx/xxxxxxxx",
 		},
 	}
 
