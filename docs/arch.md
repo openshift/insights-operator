@@ -474,7 +474,7 @@ To disable specific gatherers:
 - Specify the gatherers to run in `insightsdatagather.spec.gatherConfig.gatherers.custom`, including their configurations.
 
 
-## Configure gathering jobs to store archives into PersistenVolume
+## Configure gathering jobs to store archives into PersistentVolume
 
 First the PersistentVolumeClaim must be created in the `openshift-insights` namespace. Here is the example of the manifest that could be used to do that.
 
@@ -496,15 +496,17 @@ spec:
 To use this PersistentVolumeClaim for on-demand gathering job, you need to reference the name in the DataGather. To run one gathering job with the PVC, you can use the following manifest.
 
 ```yaml
-apiVersion: insights.openshift.io/v1alpha2
+apiVersion: insights.openshift.io/v1
 kind: DataGather
 metadata:
   name: on-demand-gather-job
 spec:
+  gatherers:
+    mode: All
   storage:
     type: PersistentVolume
-    mountPath: /data
     persistentVolume:
+      mountPath: /data
       claim:
         name: on-demand-gather-pvc
 ```
@@ -512,8 +514,14 @@ spec:
 It is also possible to run the periodic gathering with persistent storage. To do so the storage needs to be configured in InsightsDataGather. Here is the example spec that could be used to configure gathering job to use the PVC created above.
 
 ```yaml
+apiVersion: config.openshift.io/v1
+kind: InsightsDataGather
+metadata:
+  name: cluster
 spec:
   gatherConfig:
+    gatherers:
+      mode: All
     storage:
       persistentVolume:
         claim:
@@ -529,18 +537,20 @@ The following options are available:
 * **`WorkloadNames`**: Obfuscates specific workload names for the Deployment Validation Operator.
 
 ```yaml
-apiVersion: insights.openshift.io/v1alpha2
+apiVersion: insights.openshift.io/v1
 kind: DataGather
 metadata:
   name: on-demand-gather-job
 spec:
+  gatherers:
+    mode: All
   dataPolicy:
     - ObfuscateNetworking
     - WorkloadNames
   storage:
     type: PersistentVolume
-    mountPath: /data
     persistentVolume:
+      mountPath: /data
       claim:
         name: on-demand-gather-pvc
 ```
@@ -548,8 +558,14 @@ spec:
 To configure obfuscation for periodic data gathering, set the `dataPolicy` field within the `.spec.gatherConfig` section of the `InsightsDataGather` resource. The `dataPolicy` options are the same as for the `DataGather` resource.
 
 ```yaml
+apiVersion: config.openshift.io/v1
+kind: InsightsDataGather
+metadata:
+  name: cluster
 spec:
   gatherConfig:
+    gatherers:
+      mode: All
     dataPolicy:
       - ObfuscateNetworking
       - WorkloadNames
@@ -559,4 +575,67 @@ spec:
           name: on-demand-gather-pvc
         mountPath: /data
       type: PersistentVolume
+```
+
+## Disabling Data Gathering
+
+Data gathering can be disabled at different levels depending on your needs:
+
+### Disable All Periodic Gathering
+
+To completely disable all periodic data gathering, set the gatherer mode to `None` in the `InsightsDataGather` resource:
+
+```yaml
+apiVersion: config.openshift.io/v1
+kind: InsightsDataGather
+metadata:
+  name: cluster
+spec:
+  gatherConfig:
+    gatherers:
+      mode: None
+```
+
+When gathering is disabled:
+- The Insights Operator continues to run and remains `Available=True`
+- No data is collected or uploaded to console.redhat.com
+- The operator still performs other tasks like SCA certificate management and cluster transfer checks
+
+### Disable Specific Gatherers Only
+
+To disable only specific gatherers while keeping others enabled, use the `Custom` mode.
+
+For **periodic gathering** using `InsightsDataGather`:
+
+```yaml
+apiVersion: config.openshift.io/v1
+kind: InsightsDataGather
+metadata:
+  name: cluster
+spec:
+  gatherConfig:
+    gatherers:
+      mode: Custom
+      custom:
+        configs:
+          # Example: disable workloads gatherer but keep others enabled
+          - name: workloads
+            state: Disabled
+```
+
+For **on-demand gathering** using `DataGather`:
+
+```yaml
+apiVersion: insights.openshift.io/v1
+kind: DataGather
+metadata:
+  name: on-demand-gather-custom
+spec:
+  gatherers:
+    mode: Custom
+    custom:
+      configs:
+        # Example: disable workloads gatherer but keep others enabled
+        - name: workloads
+          state: Disabled
 ```
