@@ -154,6 +154,12 @@ func Test_ObfuscationUnmarshalYAML(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:          "array with multiple values - 1 invalid",
+			yamlInput:     "obfuscation:\n  - networking\n  - invalid_value",
+			expectError:   true,
+			errorContains: "invalid obfuscation value",
+		},
+		{
 			name:        "field omitted",
 			yamlInput:   "someOtherField: value",
 			expectedObf: nil,

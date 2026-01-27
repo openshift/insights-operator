@@ -97,6 +97,13 @@ func (o *Obfuscation) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &arr); err != nil {
 		return err
 	}
+
+	for _, val := range arr {
+		if val != Networking && val != WorkloadNames {
+			return fmt.Errorf("invalid obfuscation value: %q (valid values: %q, %q)", val, Networking, WorkloadNames)
+		}
+	}
+
 	*o = arr
 	return nil
 }
