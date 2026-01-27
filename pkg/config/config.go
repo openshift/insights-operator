@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -78,6 +79,43 @@ func parseInterval(interval string, defaultValue, minIntervalValue time.Duration
 	}
 
 	return durationInt
+}
+
+// UnmarshalJSON implements custom unmarshaling for Obfuscation
+// to handle edge cases like empty strings gracefully
+func (o *Obfuscation) UnmarshalJSON(data []byte) error {
+	// Unmarshal as string
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		// Empty string is treated as empty obfuscation
+		if s == "" {
+			*o = Obfuscation{}
+			return nil
+		}
+
+		val := ObfuscationValue(s)
+		if val != Networking && val != WorkloadNames {
+			return fmt.Errorf("invalid obfuscation value: %q (valid values: %q, %q)", s, Networking, WorkloadNames)
+		}
+
+		*o = Obfuscation{val}
+		return nil
+	}
+
+	// Unmarshal as array
+	var arr []ObfuscationValue
+	if err := json.Unmarshal(data, &arr); err != nil {
+		return err
+	}
+
+	for _, val := range arr {
+		if val != Networking && val != WorkloadNames {
+			return fmt.Errorf("invalid obfuscation value: %q (valid values: %q, %q)", val, Networking, WorkloadNames)
+		}
+	}
+
+	*o = arr
+	return nil
 }
 
 func (d *DataReporting) String() string {
