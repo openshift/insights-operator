@@ -46,7 +46,6 @@ const (
 // GatherJob is the type responsible for controlling a non-periodic Gather execution
 type GatherJob struct {
 	config.Controller
-	InsightsConfigEnabled bool
 }
 
 // processingStatusClient is an interface to call the "processingStatusEndpoint" in
