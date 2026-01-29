@@ -71,10 +71,23 @@ func parseInterval(interval string, defaultValue time.Duration) time.Duration {
 	return durationInt
 }
 
+// validateObfuscation validates that all obfuscation values are valid
+func validateObfuscation(vals []ObfuscationValue) error {
+	for _, val := range vals {
+		if val != Networking && val != WorkloadNames {
+			return fmt.Errorf("invalid obfuscation value: %q (valid values: %q, %q)",
+				val, Networking, WorkloadNames)
+		}
+	}
+	return nil
+}
+
 // UnmarshalJSON implements custom unmarshaling for Obfuscation
 // to handle edge cases like empty strings gracefully
 func (o *Obfuscation) UnmarshalJSON(data []byte) error {
-	// Unmarshal as string
+	var arr []ObfuscationValue
+
+	// Unmarshal as string first
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
 		// Empty string is treated as empty obfuscation
@@ -82,26 +95,17 @@ func (o *Obfuscation) UnmarshalJSON(data []byte) error {
 			*o = Obfuscation{}
 			return nil
 		}
-
-		val := ObfuscationValue(s)
-		if val != Networking && val != WorkloadNames {
-			return fmt.Errorf("invalid obfuscation value: %q (valid values: %q, %q)", s, Networking, WorkloadNames)
+		// Convert single string to array
+		arr = []ObfuscationValue{ObfuscationValue(s)}
+	} else {
+		// Unmarshal as array
+		if err := json.Unmarshal(data, &arr); err != nil {
+			return err
 		}
-
-		*o = Obfuscation{val}
-		return nil
 	}
 
-	// Unmarshal as array
-	var arr []ObfuscationValue
-	if err := json.Unmarshal(data, &arr); err != nil {
+	if err := validateObfuscation(arr); err != nil {
 		return err
-	}
-
-	for _, val := range arr {
-		if val != Networking && val != WorkloadNames {
-			return fmt.Errorf("invalid obfuscation value: %q (valid values: %q, %q)", val, Networking, WorkloadNames)
-		}
 	}
 
 	*o = arr

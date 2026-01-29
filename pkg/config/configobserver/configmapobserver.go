@@ -89,9 +89,15 @@ func (c *ConfigMapObserver) sync(ctx context.Context, _ factory.SyncContext) err
 		}
 		return nil
 	}
+
 	insightsConfig, err := readConfigAndDecode(cm)
 	if err != nil {
-		return err
+		klog.Warningf("Failed to read the configuration during sync: %v. Default configuration is used.", err)
+		if c.insightsConfig != nil {
+			c.insightsConfig = nil
+			c.notifyListeners()
+		}
+		return nil
 	}
 
 	// config hasn't change - do nothing
