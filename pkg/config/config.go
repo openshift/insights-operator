@@ -72,14 +72,17 @@ func parseInterval(interval string, defaultValue time.Duration) time.Duration {
 }
 
 // validateObfuscation validates that all obfuscation values are valid
-func validateObfuscation(vals []ObfuscationValue) error {
+func filterValidObfuscation(vals []ObfuscationValue) []ObfuscationValue {
+	var validVals []ObfuscationValue
 	for _, val := range vals {
-		if val != Networking && val != WorkloadNames {
-			return fmt.Errorf("invalid obfuscation value: %q (valid values: %q, %q)",
+		if val == Networking || val == WorkloadNames {
+			validVals = append(validVals, val)
+		} else {
+			klog.Warningf("Invalid obfuscation value: %q. Will be ignored. (valid values: %q, %q)",
 				val, Networking, WorkloadNames)
 		}
 	}
-	return nil
+	return validVals
 }
 
 // UnmarshalJSON implements custom unmarshaling for Obfuscation
@@ -104,11 +107,12 @@ func (o *Obfuscation) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	if err := validateObfuscation(arr); err != nil {
-		return err
+	if filteredArr := filterValidObfuscation(arr); filteredArr != nil {
+		*o = filteredArr
+	} else {
+		*o = Obfuscation{}
 	}
 
-	*o = arr
 	return nil
 }
 

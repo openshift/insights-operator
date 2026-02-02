@@ -105,11 +105,10 @@ func TestParseInterval(t *testing.T) {
 
 func Test_ObfuscationUnmarshalYAML(t *testing.T) {
 	tests := []struct {
-		name          string
-		yamlInput     string
-		expectedObf   Obfuscation
-		expectError   bool
-		errorContains string
+		name        string
+		yamlInput   string
+		expectedObf Obfuscation
+		expectError bool
 	}{
 		{
 			name:        "empty string treated as empty array",
@@ -136,10 +135,10 @@ func Test_ObfuscationUnmarshalYAML(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:          "invalid single value as string",
-			yamlInput:     "obfuscation: invalid_value",
-			expectError:   true,
-			errorContains: "invalid obfuscation value",
+			name:        "invalid single value as string - defaults to empty",
+			yamlInput:   "obfuscation: invalid_value",
+			expectedObf: Obfuscation{},
+			expectError: false,
 		},
 		{
 			name:        "array with single value",
@@ -154,10 +153,10 @@ func Test_ObfuscationUnmarshalYAML(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:          "array with multiple values - 1 invalid",
-			yamlInput:     "obfuscation:\n  - networking\n  - invalid_value",
-			expectError:   true,
-			errorContains: "invalid obfuscation value",
+			name:        "array with multiple values - 1 invalid",
+			yamlInput:   "obfuscation:\n  - networking\n  - invalid_value",
+			expectedObf: Obfuscation{Networking},
+			expectError: false,
 		},
 		{
 			name:        "field omitted",
@@ -179,7 +178,6 @@ func Test_ObfuscationUnmarshalYAML(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorContains)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedObf, result.Obfuscation)
