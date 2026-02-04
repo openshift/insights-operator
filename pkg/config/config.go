@@ -71,7 +71,8 @@ func parseInterval(interval string, defaultValue time.Duration) time.Duration {
 	return durationInt
 }
 
-// validateObfuscation validates that all obfuscation values are valid
+// filterValidObfuscation filters obfuscation values and returns only
+// valid ones, invalid values are logged and ignored
 func filterValidObfuscation(vals []ObfuscationValue) []ObfuscationValue {
 	var validVals []ObfuscationValue
 	for _, val := range vals {
