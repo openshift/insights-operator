@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func TestToConfig(t *testing.T) {
@@ -109,6 +110,89 @@ func TestParseInterval(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			interval := parseInterval(tt.intervalString, tt.defaultValue, tt.minValue)
 			assert.Equal(t, tt.expectedInterval, interval)
+		})
+	}
+}
+
+func Test_ObfuscationUnmarshalYAML(t *testing.T) {
+	tests := []struct {
+		name        string
+		yamlInput   string
+		expectedObf Obfuscation
+		expectError bool
+	}{
+		{
+			name:        "empty string treated as empty array",
+			yamlInput:   "obfuscation: ''",
+			expectedObf: Obfuscation{},
+			expectError: false,
+		},
+		{
+			name:        "empty array",
+			yamlInput:   "obfuscation: []",
+			expectedObf: Obfuscation{},
+			expectError: false,
+		},
+		{
+			name:        "single valid value as string - networking",
+			yamlInput:   "obfuscation: networking",
+			expectedObf: Obfuscation{Networking},
+			expectError: false,
+		},
+		{
+			name:        "single valid value as string - workload_names",
+			yamlInput:   "obfuscation: workload_names",
+			expectedObf: Obfuscation{WorkloadNames},
+			expectError: false,
+		},
+		{
+			name:        "invalid single value as string - defaults to empty",
+			yamlInput:   "obfuscation: invalid_value",
+			expectedObf: Obfuscation{},
+			expectError: false,
+		},
+		{
+			name:        "array with single value",
+			yamlInput:   "obfuscation:\n  - networking",
+			expectedObf: Obfuscation{Networking},
+			expectError: false,
+		},
+		{
+			name:        "array with multiple values",
+			yamlInput:   "obfuscation:\n  - networking\n  - workload_names",
+			expectedObf: Obfuscation{Networking, WorkloadNames},
+			expectError: false,
+		},
+		{
+			name:        "array with multiple values - 1 invalid",
+			yamlInput:   "obfuscation:\n  - networking\n  - invalid_value",
+			expectedObf: Obfuscation{Networking},
+			expectError: false,
+		},
+		{
+			name:        "field omitted",
+			yamlInput:   "someOtherField: value",
+			expectedObf: nil,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a struct that contains Obfuscation field to test unmarshaling
+			type testStruct struct {
+				Obfuscation Obfuscation `json:"obfuscation,omitempty"`
+			}
+
+			var result testStruct
+			err := yaml.Unmarshal([]byte(tt.yamlInput), &result)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedObf, result.Obfuscation)
+			}
 		})
 	}
 }

@@ -90,6 +90,7 @@ func (c *ConfigMapObserver) sync(ctx context.Context, _ factory.SyncContext) err
 		}
 		return nil
 	}
+
 	insightsConfig, err := readConfigAndDecode(cm)
 	if err != nil {
 		return err

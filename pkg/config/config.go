@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -78,6 +79,52 @@ func parseInterval(interval string, defaultValue, minIntervalValue time.Duration
 	}
 
 	return durationInt
+}
+
+// filterValidObfuscation filters obfuscation values and returns only
+// valid ones, invalid values are logged and ignored
+func filterValidObfuscation(vals []ObfuscationValue) []ObfuscationValue {
+	var validVals []ObfuscationValue
+	for _, val := range vals {
+		if val == Networking || val == WorkloadNames {
+			validVals = append(validVals, val)
+		} else {
+			klog.Warningf("Invalid obfuscation value: %q. Will be ignored. (valid values: %q, %q)",
+				val, Networking, WorkloadNames)
+		}
+	}
+	return validVals
+}
+
+// UnmarshalJSON implements custom unmarshaling for Obfuscation
+// to handle edge cases like empty strings gracefully
+func (o *Obfuscation) UnmarshalJSON(data []byte) error {
+	var arr []ObfuscationValue
+
+	// Unmarshal as string first
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		// Empty string is treated as empty obfuscation
+		if s == "" {
+			*o = Obfuscation{}
+			return nil
+		}
+		// Convert single string to array
+		arr = []ObfuscationValue{ObfuscationValue(s)}
+	} else {
+		// Unmarshal as array
+		if err := json.Unmarshal(data, &arr); err != nil {
+			return err
+		}
+	}
+
+	if filteredArr := filterValidObfuscation(arr); filteredArr != nil {
+		*o = filteredArr
+	} else {
+		*o = Obfuscation{}
+	}
+
+	return nil
 }
 
 func (d *DataReporting) String() string {
