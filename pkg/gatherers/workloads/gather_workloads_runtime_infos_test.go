@@ -2,7 +2,9 @@ package workloads
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -268,6 +270,9 @@ func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var receivedAuthHeader string
 			httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Verify it's a POST request with correct content type
+				assert.Equal(t, http.MethodPost, r.Method)
+				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 				if tt.checkAuthHeader {
 					receivedAuthHeader = r.Header.Get("Authorization")
 				}
@@ -280,7 +285,9 @@ func TestGetNodeWorkloadRuntimeInfos(t *testing.T) {
 			defer httpServer.Close()
 
 			ctx := context.Background()
-			result := getNodeWorkloadRuntimeInfos(ctx, httpServer.URL, tt.token, http.DefaultClient)
+			// Pass container IDs to the function
+			containerIDs := []string{"cri-o://test-container-1", "cri-o://test-container-2"}
+			result := getNodeWorkloadRuntimeInfos(ctx, httpServer.URL, tt.token, http.DefaultClient, containerIDs)
 
 			if tt.expectedErr != nil {
 				assert.Contains(t, result.Error.Error(), tt.expectedErr.Error())
@@ -442,9 +449,37 @@ func TestGatherWorkloadRuntimeInfos_NoPods(t *testing.T) {
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	result, errors := gatherWorkloadRuntimeInfos(ctx, cli.CoreV1())
+	// Pass empty containerIDsByNode
+	containersByNode := make(containerIDsByNode)
+	result, errors := gatherWorkloadRuntimeInfos(ctx, cli.CoreV1(), containersByNode)
 
 	assert.Nil(t, result)
 	assert.Len(t, errors, 1)
 	assert.Contains(t, errors[0].Error(), "no running pods found")
+}
+
+func TestGetNodeWorkloadRuntimeInfos_POSTRequestBody(t *testing.T) {
+	var receivedBody []byte
+	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify it's a POST request
+		assert.Equal(t, http.MethodPost, r.Method)
+		// Read and save the request body
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		receivedBody = body
+		// Return empty response
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer httpServer.Close()
+
+	ctx := context.Background()
+	containerIDs := []string{"cri-o://container-1", "cri-o://container-2", "cri-o://container-3"}
+	_ = getNodeWorkloadRuntimeInfos(ctx, httpServer.URL, "test-token", http.DefaultClient, containerIDs)
+
+	// Verify the request body contains the container IDs
+	var reqBody gatherRuntimeInfoRequest
+	err := json.Unmarshal(receivedBody, &reqBody)
+	assert.NoError(t, err)
+	assert.Equal(t, containerIDs, reqBody.ContainerIDs)
 }

@@ -531,7 +531,6 @@ func Test_workloadImageCache(t *testing.T) {
 
 func Test_calculatePodShape(t *testing.T) {
 	h := sha256.New()
-	workloadInfo := workloadRuntimes{}
 
 	// Valid SHA256 digests (64 hex characters)
 	validDigest1 := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
@@ -640,7 +639,7 @@ func Test_calculatePodShape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shape, ok := calculatePodShape(h, tt.pod, workloadInfo)
+			shape, ok := calculatePodShape(h, tt.pod)
 			assert.Equal(t, tt.expectOk, ok)
 			if ok {
 				assert.NotNil(t, shape.Containers)
@@ -650,6 +649,311 @@ func Test_calculatePodShape(t *testing.T) {
 					assert.False(t, shape.RestartsAlways)
 				}
 			}
+		})
+	}
+}
+
+func Test_containerIDsByNode_addPodContainers(t *testing.T) {
+	tests := []struct {
+		name     string
+		pod      *corev1.Pod
+		expected containerIDsByNode
+	}{
+		{
+			name: "pod in Running phase adds container IDs",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					NodeName: "node-1",
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodRunning,
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:        "app",
+							ContainerID: "cri-o://abc123",
+							State:       corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+						},
+					},
+				},
+			},
+			expected: containerIDsByNode{
+				"node-1": []string{"cri-o://abc123"},
+			},
+		},
+		{
+			name: "pod in non-Running phase is skipped",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					NodeName: "node-1",
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodPending,
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:        "app",
+							ContainerID: "cri-o://abc123",
+						},
+					},
+				},
+			},
+			expected: containerIDsByNode{},
+		},
+		{
+			name: "terminated containers are skipped",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					NodeName: "node-1",
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodRunning,
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:        "app",
+							ContainerID: "cri-o://abc123",
+							State:       corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+						},
+						{
+							Name:        "sidecar",
+							ContainerID: "cri-o://def456",
+							State:       corev1.ContainerState{Terminated: &corev1.ContainerStateTerminated{}},
+						},
+					},
+				},
+			},
+			expected: containerIDsByNode{
+				"node-1": []string{"cri-o://abc123"},
+			},
+		},
+		{
+			name: "running and waiting containers are included",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					NodeName: "node-1",
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodRunning,
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:        "app",
+							ContainerID: "cri-o://abc123",
+							State:       corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+						},
+						{
+							Name:        "init",
+							ContainerID: "cri-o://def456",
+							State:       corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{}},
+						},
+					},
+				},
+			},
+			expected: containerIDsByNode{
+				"node-1": []string{"cri-o://abc123", "cri-o://def456"},
+			},
+		},
+		{
+			name: "pod with missing container IDs handled gracefully",
+			pod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					NodeName: "node-1",
+				},
+				Status: corev1.PodStatus{
+					Phase: corev1.PodRunning,
+					ContainerStatuses: []corev1.ContainerStatus{
+						{
+							Name:        "app",
+							ContainerID: "",
+							State:       corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+						},
+					},
+				},
+			},
+			expected: containerIDsByNode{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := make(containerIDsByNode)
+			c.addPodContainers(tt.pod)
+			assert.Equal(t, tt.expected, c)
+		})
+	}
+}
+
+func Test_containerIDsByNode_multiplePods(t *testing.T) {
+	c := make(containerIDsByNode)
+
+	// Add pods on same node - should accumulate IDs
+	pod1 := &corev1.Pod{
+		Spec: corev1.PodSpec{NodeName: "node-1"},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{Name: "app1", ContainerID: "cri-o://abc123", State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+			},
+		},
+	}
+	pod2 := &corev1.Pod{
+		Spec: corev1.PodSpec{NodeName: "node-1"},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{Name: "app2", ContainerID: "cri-o://def456", State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+			},
+		},
+	}
+	// Pod on different node
+	pod3 := &corev1.Pod{
+		Spec: corev1.PodSpec{NodeName: "node-2"},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{Name: "app3", ContainerID: "cri-o://ghi789", State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}},
+			},
+		},
+	}
+
+	c.addPodContainers(pod1)
+	c.addPodContainers(pod2)
+	c.addPodContainers(pod3)
+
+	assert.Equal(t, 2, len(c))
+	assert.Equal(t, []string{"cri-o://abc123", "cri-o://def456"}, c["node-1"])
+	assert.Equal(t, []string{"cri-o://ghi789"}, c["node-2"])
+}
+
+func Test_mergeRuntimeInfoIntoShapes(t *testing.T) {
+	tests := []struct {
+		name         string
+		info         workloadPods
+		runtimeInfos workloadRuntimes
+		checkResult  func(t *testing.T, info *workloadPods)
+	}{
+		{
+			name: "merges runtime info into matching containers",
+			info: workloadPods{
+				Namespaces: map[string]workloadNamespacePods{
+					"ns-hash": {
+						Shapes: []workloadPodShape{
+							{
+								Containers: []workloadContainerShape{
+									{
+										ImageID: "sha256:abc",
+										runtimeKey: containerInfo{
+											namespace:   "test-ns",
+											pod:         "test-pod",
+											containerID: "cri-o://container-1",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			runtimeInfos: workloadRuntimes{
+				{namespace: "test-ns", pod: "test-pod", containerID: "cri-o://container-1"}: {
+					Os:   "rhel",
+					Kind: "java",
+				},
+			},
+			checkResult: func(t *testing.T, info *workloadPods) {
+				container := &info.Namespaces["ns-hash"].Shapes[0].Containers[0]
+				assert.NotNil(t, container.RuntimeInfo)
+				assert.Equal(t, "rhel", container.RuntimeInfo.Os)
+				assert.Equal(t, "java", container.RuntimeInfo.Kind)
+			},
+		},
+		{
+			name: "no runtime info for non-matching containers",
+			info: workloadPods{
+				Namespaces: map[string]workloadNamespacePods{
+					"ns-hash": {
+						Shapes: []workloadPodShape{
+							{
+								Containers: []workloadContainerShape{
+									{
+										ImageID: "sha256:abc",
+										runtimeKey: containerInfo{
+											namespace:   "test-ns",
+											pod:         "test-pod",
+											containerID: "cri-o://container-1",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			runtimeInfos: workloadRuntimes{
+				{namespace: "other-ns", pod: "other-pod", containerID: "cri-o://other"}: {
+					Os:   "rhel",
+					Kind: "java",
+				},
+			},
+			checkResult: func(t *testing.T, info *workloadPods) {
+				container := &info.Namespaces["ns-hash"].Shapes[0].Containers[0]
+				assert.Nil(t, container.RuntimeInfo)
+			},
+		},
+		{
+			name: "merges runtime info into init containers",
+			info: workloadPods{
+				Namespaces: map[string]workloadNamespacePods{
+					"ns-hash": {
+						Shapes: []workloadPodShape{
+							{
+								InitContainers: []workloadContainerShape{
+									{
+										ImageID: "sha256:init",
+										runtimeKey: containerInfo{
+											namespace:   "test-ns",
+											pod:         "test-pod",
+											containerID: "cri-o://init-container",
+										},
+									},
+								},
+								Containers: []workloadContainerShape{
+									{
+										ImageID: "sha256:app",
+										runtimeKey: containerInfo{
+											namespace:   "test-ns",
+											pod:         "test-pod",
+											containerID: "cri-o://app-container",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			runtimeInfos: workloadRuntimes{
+				{namespace: "test-ns", pod: "test-pod", containerID: "cri-o://init-container"}: {
+					Os: "ubuntu",
+				},
+				{namespace: "test-ns", pod: "test-pod", containerID: "cri-o://app-container"}: {
+					Os:   "rhel",
+					Kind: "nodejs",
+				},
+			},
+			checkResult: func(t *testing.T, info *workloadPods) {
+				initContainer := &info.Namespaces["ns-hash"].Shapes[0].InitContainers[0]
+				assert.Nil(t, initContainer.RuntimeInfo)
+
+				appContainer := &info.Namespaces["ns-hash"].Shapes[0].Containers[0]
+				assert.NotNil(t, appContainer.RuntimeInfo)
+				assert.Equal(t, "rhel", appContainer.RuntimeInfo.Os)
+				assert.Equal(t, "nodejs", appContainer.RuntimeInfo.Kind)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mergeRuntimeInfoIntoShapes(&tt.info, tt.runtimeInfos)
+			tt.checkResult(t, &tt.info)
 		})
 	}
 }

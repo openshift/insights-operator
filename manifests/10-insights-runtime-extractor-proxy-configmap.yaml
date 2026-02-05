@@ -20,4 +20,3 @@ data:
           resourceRequest: false
           user:
             name: system:serviceaccount:openshift-insights:operator
-          verb: get
