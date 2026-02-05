@@ -134,12 +134,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	insightsConfigAPIEnabled := featureGates.Enabled(features.FeatureGateInsightsConfigAPI)
 
-	// ensure the insight snapshot directory exists
-	if _, err = os.Stat(s.StoragePath); err != nil && os.IsNotExist(err) {
-		if err = os.MkdirAll(s.StoragePath, 0777); err != nil {
-			return fmt.Errorf("can't create --path: %v", err)
-		}
-	}
 	var insightsDataGatherObserver configobserver.InsightsDataGatherObserver
 	var dgInformer periodic.DataGatherInformer
 	if insightsConfigAPIEnabled {
@@ -177,6 +171,23 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	configAggregator := configobserver.NewConfigAggregator(secretConfigObserver, configMapObserver)
 	go configAggregator.Listen(ctx)
+
+	// additional configurations may exist besides the default one
+	if customPath := getCustomStoragePath(configAggregator, nil); customPath != "" {
+		isValid, err := pathIsAvailable(customPath)
+
+		if isValid {
+			s.StoragePath = customPath
+		} else {
+			klog.Errorf("the introduced storagePath '%s' is not available: %v", customPath, err)
+			klog.Infof("the default folder will be '%s'", s.StoragePath)
+		}
+	}
+
+	// ensure the insight snapshot directory exists
+	if _, err := pathIsAvailable(s.StoragePath); err != nil {
+		return fmt.Errorf("the snapshot folder is not available: %v", err)
+	}
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
