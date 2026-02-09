@@ -427,4 +427,3 @@ func Test_obfuscateArchive_MissingRecords(t *testing.T) {
 		assert.Contains(t, err.Error(), "record needed to fetch cluster base domain wasn't found")
 	})
 }
-
