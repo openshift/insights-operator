@@ -33,3 +33,4 @@ spec:
   selector:
     matchLabels:
       app: insights-operator
+  serviceDiscoveryRole: EndpointSlice
