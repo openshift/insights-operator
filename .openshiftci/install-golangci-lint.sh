@@ -10,5 +10,5 @@ export OUTPUT=bin/golangci-lint
 
 if [ ! -f "$OUTPUT" ]
 then
-    curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.55.1
+    curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.64.2
 fi
