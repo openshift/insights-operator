@@ -505,6 +505,14 @@ func (anonymizer *Anonymizer) IsObfuscationEnabled() bool {
 	return false
 }
 
+// safeShiftValue avoids risk on converting to uint value
+func safeShiftValue(originalIP net.IP, byteIndex int) uint {
+	if shift := (len(originalIP) - byteIndex - 1) * 8; shift > 0 {
+		return uint(shift)
+	}
+	return 0
+}
+
 // getNextIP returns the next IP address in the current subnetwork and the flag indicating if there was an overflow
 func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 	isIpv4 := originalIP.To4() != nil
@@ -522,7 +530,7 @@ func getNextIP(originalIP net.IP, mask net.IPMask) (net.IP, bool) {
 	intValue := big.NewInt(0)
 
 	for byteIndex, byteValue := range originalIP {
-		shiftTo := uint((len(originalIP) - byteIndex - 1) * 8)
+		shiftTo := safeShiftValue(originalIP, byteIndex)
 		intValue = intValue.Or(
 			intValue, big.NewInt(0).Lsh(big.NewInt(int64(byteValue)), shiftTo),
 		)

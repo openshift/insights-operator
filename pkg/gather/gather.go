@@ -192,13 +192,13 @@ func recordGatheringFunctionResult(
 	}, allErrors
 }
 
-func readMemoryUsage() (int, error) {
+func readMemoryUsage() (uint64, error) {
 	b, err := os.ReadFile("/sys/fs/cgroup/memory/memory.usage_in_bytes")
 	if err != nil {
 		return 0, err
 	}
 	memUsage := strings.ReplaceAll(string(b), "\n", "")
-	return strconv.Atoi(memUsage)
+	return strconv.ParseUint(memUsage, 10, 64)
 }
 
 // RecordArchiveMetadata records info about archive and gatherers' reports
@@ -210,6 +210,7 @@ func RecordArchiveMetadata(
 	memUsage, err := readMemoryUsage()
 	if err != nil {
 		klog.Warningf("can't read cgroups memory usage data: %v", err)
+		memUsage = 0
 	}
 
 	archiveMetadata := record.Record{
@@ -217,7 +218,7 @@ func RecordArchiveMetadata(
 		AlwaysStored: true,
 		Item: record.JSONMarshaller{Object: ArchiveMetadata{
 			StatusReports:              functionReports,
-			MemoryBytesUsage:           uint64(memUsage),
+			MemoryBytesUsage:           memUsage,
 			Uptime:                     time.Since(programStartTime).Truncate(time.Millisecond).Seconds(),
 			IsGlobalObfuscationEnabled: anonymizer.IsObfuscationEnabled(),
 		}},
