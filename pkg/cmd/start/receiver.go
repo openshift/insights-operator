@@ -19,7 +19,7 @@ func NewReceiver() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start-receiver",
 		Short: "Start a listener that accepts and logs uploaded content",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return http.ListenAndServe(listen, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) { // nolint: gosec
 				klog.Infof("Handling %s", req.URL.Path)
 				contentType := req.Header.Get("Content-Type")

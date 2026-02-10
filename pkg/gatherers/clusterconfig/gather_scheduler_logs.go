@@ -51,7 +51,7 @@ func gatherSchedulerLogs(ctx context.Context, coreClient corev1client.CoreV1Inte
 			LabelSelector: "app=openshift-kube-scheduler",
 		},
 		getSchedulerLogsMessagesFilter(),
-		func(namespace string, podName string, containerName string) string {
+		func(namespace string, podName string, _ string) string {
 			return fmt.Sprintf("config/pod/%s/logs/%s/messages.log", namespace, podName)
 		},
 	)

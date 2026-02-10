@@ -113,7 +113,7 @@ func main() {
 func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 	expPath := ""
 	fset := token.NewFileSet() // positions are relative to fset
-	return filepath.Walk(cleanRoot, func(path string, info os.FileInfo, e1 error) error {
+	return filepath.Walk(cleanRoot, func(path string, info os.FileInfo, _ error) error {
 		if !info.IsDir() {
 			return nil
 		}
