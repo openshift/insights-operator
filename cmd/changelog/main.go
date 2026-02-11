@@ -115,13 +115,13 @@ func main() {
 		}
 		gitLog = sinceHashReverseGitLog(latestHash)
 	}
-	pullRequestIds, pullRequestHashes := getPullRequestInfo(gitLog)
+	pullRequestIDs, pullRequestHashes := getPullRequestInfo(gitLog)
 	numberOfChanges := len(pullRequestHashes)
 	if numberOfChanges < 1 {
 		log.Fatal("No new changes detected.")
 	}
 	latestHash = pullRequestHashes[numberOfChanges-1]
-	changes := getChanges(pullRequestIds, pullRequestHashes)
+	changes := getChanges(pullRequestIDs, pullRequestHashes)
 	createCHANGELOG(updateToMarkdownReleaseBlock(releaseBlocks, changes))
 }
 
@@ -244,10 +244,10 @@ func createReleaseBlock(file *os.File, release, title string) {
 	}
 }
 
-func getChanges(pullRequestIds, pullRequestHashes []string) []*Change {
+func getChanges(pullRequestIDs, pullRequestHashes []string) []*Change {
 	var changes []*Change
 	log.Print("Reading changes from the GitHub API")
-	for i, id := range pullRequestIds {
+	for i, id := range pullRequestIDs {
 		// This regex checks that the ids passed as CLI arguments are valid.
 		// This code cannot be encapsulated or Snyk will flag it as a defect.
 		// This warning was originally raised in issue OCPBUGS-26937.
@@ -270,7 +270,7 @@ func getPullRequestFromGitHub(id string) *Change {
 	var bearer = "token " + gitHubToken
 	url, err := createGitHubURL(id)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 		return nil
 	}
 	req, err := http.NewRequestWithContext(
@@ -279,18 +279,18 @@ func getPullRequestFromGitHub(id string) *Change {
 		url,
 		http.NoBody)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	req.Header.Add("Authorization", bearer)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		defer log.Fatalf(err.Error())
+		defer log.Fatal(err.Error())
 		return nil
 	}
 	var jsonMap map[string]json.RawMessage
@@ -334,7 +334,7 @@ func releaseBranchesContain(hash string) []ReleaseVersion {
 	var releaseBranches []ReleaseVersion
 	out, err := exec.Command("git", "branch", "--contains", hash).CombinedOutput()
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	branches := string(out)
 	matches := releaseRegexp.FindAllStringSubmatch(branches, -1)
@@ -385,19 +385,19 @@ func sinceHashReverseGitLog(hash string) []string {
 }
 
 func getPullRequestInfo(gitLog []string) (ids, hashes []string) {
-	var pullRequestIds []string
+	var pullRequestIDs []string
 	var pullRequestHashes []string
 	for _, line := range gitLog {
 		split := strings.Split(line, "|")
 		if match := mergeRequestRegexp.FindStringSubmatch(split[0]); len(match) > 0 {
-			pullRequestIds = append(pullRequestIds, match[1])
+			pullRequestIDs = append(pullRequestIDs, match[1])
 			pullRequestHashes = append(pullRequestHashes, split[1])
 		} else if match := squashRegexp.FindStringSubmatch(split[0]); len(match) > 0 {
-			pullRequestIds = append(pullRequestIds, match[2])
+			pullRequestIDs = append(pullRequestIDs, match[2])
 			pullRequestHashes = append(pullRequestHashes, split[1])
 		}
 	}
-	return pullRequestIds, pullRequestHashes
+	return pullRequestIDs, pullRequestHashes
 }
 
 func stringToReleaseVersion(s string) ReleaseVersion {

@@ -22,7 +22,7 @@ type mockMostRecentMetricsClient struct {
 }
 
 func (c *mockMostRecentMetricsClient) RestClient(t *testing.T) *rest.RESTClient {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if c.data == nil {
 			w.WriteHeader(http.StatusNotFound)
 		} else {

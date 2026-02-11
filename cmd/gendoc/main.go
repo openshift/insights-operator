@@ -113,7 +113,7 @@ func main() {
 func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 	expPath := ""
 	fset := token.NewFileSet() // positions are relative to fset
-	return filepath.Walk(cleanRoot, func(path string, info os.FileInfo, e1 error) error {
+	return filepath.Walk(cleanRoot, func(path string, info os.FileInfo, _ error) error {
 		if !info.IsDir() {
 			return nil
 		}
@@ -256,7 +256,8 @@ func getModuleNameFromGoMod(goModPath string) (string, error) {
 //
 // The import path is based on the path of source files in the package and the module name in the nearest go.mod file.
 // Exits the program with an error return code in case of an error.
-func mustGetPackageName(astRoot string, f *ast.Package) string {
+// SA1019: ast.Package is used only for f.Files to get the first file path; migrating to go/types would require a larger refactor.
+func mustGetPackageName(astRoot string, f *ast.Package) string { //nolint:staticcheck // SA1019
 	firstKey := ""
 	for key := range f.Files {
 		firstKey = key
