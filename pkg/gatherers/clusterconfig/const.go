@@ -87,6 +87,11 @@ var (
 	osvGroupVersionResource = schema.GroupVersionResource{
 		Group: "core.openstack.org", Version: "v1beta1", Resource: "openstackversions",
 	}
+	subscriptionVersionResource = schema.GroupVersionResource{
+		Group:    "operators.coreos.com",
+		Version:  "v1alpha1",
+		Resource: "subscriptions",
+	}
 
 	nodeNetConfPoliciesV1GVR = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1", Resource: "nodenetworkconfigurationpolicies"}
 	nodeNetStatesV1Beta1GVR  = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1beta1", Resource: "nodenetworkstates"}
