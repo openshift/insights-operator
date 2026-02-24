@@ -35,7 +35,8 @@ BUILD_FLAGS ?= -tags strictfipsruntime
 
 # Tools
 CONTAINER_RUNTIME := $(shell command -v podman 2> /dev/null || echo docker)
-GOLANGCI_LINT := $(GOBIN)/golangci-lint
+GOLANGCI_LINT ?= $(GOBIN)/golangci-lint
+GOLANGCI_LINT_VERSION ?= v2.6.2
 
 export GO111MODULE=on
 export GOFLAGS=-mod=vendor
@@ -73,16 +74,14 @@ unit-verbose:
 ## Linting
 ## --------------------------------------
 
-.PHONY: precommit
+.PHONY: precommitI 
 precommit: ## Executes the pre-commit hook (check the stashed changes)
 	./.githooks/pre-commit
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT) ## Executes the linting tool (vet, sec, and others)
-	$(GOLANGCI_LINT) run
-
-$(GOLANGCI_LINT):
-	./.openshiftci/install-golangci-lint.sh
+lint:
+	test -s $(GOLANGCI_LINT) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
+	GOMEMLIMIT=2GiB $(GOLANGCI_LINT) run --timeout 10m
 
 ## --------------------------------------
 ## Build/Run
