@@ -332,7 +332,7 @@ func determineReleases(change *Change) (*Change, error) {
 
 func releaseBranchesContain(hash string) []ReleaseVersion {
 	var releaseBranches []ReleaseVersion
-	out, err := exec.Command("git", "branch", "--contains", hash).CombinedOutput()
+	out, err := exec.Command("git", "branch", "--contains", hash).CombinedOutput() //nolint:noctx
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -354,7 +354,7 @@ func findEarliestRelease(releases ReleaseVersions) ReleaseVersion {
 
 func timeFrameReverseGitLog(after, until time.Time) []string {
 	// nolint: gosec
-	out, err := exec.Command(
+	out, err := exec.Command( //nolint:noctx
 		"git",
 		"log",
 		"--topo-order",
@@ -370,7 +370,7 @@ func timeFrameReverseGitLog(after, until time.Time) []string {
 
 func sinceHashReverseGitLog(hash string) []string {
 	// nolint: gosec
-	out, err := exec.Command(
+	out, err := exec.Command( //nolint:noctx
 		"git",
 		"log",
 		"--topo-order",
