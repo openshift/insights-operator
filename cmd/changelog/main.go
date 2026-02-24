@@ -182,22 +182,23 @@ func updateToMarkdownReleaseBlock(releaseBlocks map[ReleaseVersion]MarkdownRelea
 	log.Print("Applying new changes")
 	for _, ch := range changes {
 		tmp := releaseBlocks[ch.release]
-		if ch.category == BUGFIX {
+		switch ch.category {
+		case BUGFIX:
 			tmp.bugfixes = ch.toMarkdown() + tmp.bugfixes
 			releaseBlocks[ch.release] = tmp
-		} else if ch.category == OTHER {
+		case OTHER:
 			tmp.others = ch.toMarkdown() + tmp.others
 			releaseBlocks[ch.release] = tmp
-		} else if ch.category == DATAENHANCEMENT {
+		case DATAENHANCEMENT:
 			tmp.dataEnhancements = ch.toMarkdown() + tmp.dataEnhancements
 			releaseBlocks[ch.release] = tmp
-		} else if ch.category == ENHANCEMENT {
+		case ENHANCEMENT:
 			tmp.dataEnhancements = ch.toMarkdown() + tmp.dataEnhancements
 			releaseBlocks[ch.release] = tmp
-		} else if ch.category == FEATURE {
+		case FEATURE:
 			tmp.features = ch.toMarkdown() + tmp.features
 			releaseBlocks[ch.release] = tmp
-		} else {
+		default:
 			tmp.misc = ch.toMarkdown() + tmp.misc
 			releaseBlocks[ch.release] = tmp
 		}
