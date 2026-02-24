@@ -55,14 +55,6 @@ linters:
         - style
     gocyclo:
       min-complexity: 15
-    govet:
-      settings:
-        printf:
-          funcs:
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
     lll:
       line-length: 140
     misspell:
@@ -105,10 +97,6 @@ formatters:
   enable:
     - gofmt
     - goimports
-  settings:
-    goimports:
-      local-prefixes:
-        - github.com/golangci/golangci-lint
   exclusions:
     generated: lax
     paths:
