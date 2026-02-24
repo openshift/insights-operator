@@ -71,6 +71,13 @@ linters:
       require-explanation: false
       require-specific: false
       allow-unused: false
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - []
+            - []
+            - - skip-package-name-checks: true
   exclusions:
     generated: lax
     presets:
