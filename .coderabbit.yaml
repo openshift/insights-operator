@@ -1,0 +1,4 @@
+# .coderabbit.yaml
+reviews:
+  collapse_walkthrough: true # Keeps the file table hidden by default
+  high_level_summary: true # Generates the high-level overview
