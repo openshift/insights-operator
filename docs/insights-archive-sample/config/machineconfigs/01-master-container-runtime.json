@@ -3,6 +3,7 @@
   "kind": "MachineConfig",
   "metadata": {
     "annotations": {
+      "insights.operator.openshift.io/cr-size": "2048",
       "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
     },
     "creationTimestamp": "2021-07-07T11:26:59Z",
