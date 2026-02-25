@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,10 +13,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
+	configv1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/openshift/insights-operator/pkg/authorizer"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Authorizer interface {
@@ -201,7 +205,7 @@ func (c *Controller) ArchiveUploaded() <-chan struct{} {
 
 // Upload is an alternative simple upload method used only in TechPreview clusters.
 // Returns Insights request ID and error=nil in case of successful data upload.
-func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (string, int, error) {
+func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source, configClient configv1.ConfigV1Interface) (string, int, error) {
 	defer s.Contents.Close()
 	start := time.Now()
 	s.ID = start.Format(time.RFC3339)
@@ -223,7 +227,13 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 	if err != nil {
 		return "", statusCode, err
 	}
+
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
+
+	if err := updateClusterOperatorLastReportTime(ctx, configClient); err != nil {
+		klog.Errorf("Failed to update ClusterOperator lastReportTime: %v", err)
+	}
+
 	return requestID, statusCode, nil
 }
 
@@ -243,5 +253,30 @@ func reportToLogs(source io.Reader) error {
 		}
 		klog.Infof("Dry-run: %s %7d %s", hdr.ModTime.Format(time.RFC3339), hdr.Size, hdr.Name)
 	}
+	return nil
+}
+
+// Update the ClusterOperator's lastReportTime extension field
+func updateClusterOperatorLastReportTime(ctx context.Context, client configv1.ConfigV1Interface) error {
+	insightsCo, err := client.ClusterOperators().Get(ctx, "insights", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	reported := status.Reported{
+		LastReportTime: metav1.Time{Time: time.Now().UTC()},
+	}
+
+	data, err := json.Marshal(reported)
+	if err != nil {
+		return fmt.Errorf("unable to marshal status extension: %v", err)
+	}
+	insightsCo.Status.Extension.Raw = data
+
+	if _, err := client.ClusterOperators().UpdateStatus(ctx, insightsCo, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	klog.Infof("Successfully updated LastReportTime to %s", reported.LastReportTime)
 	return nil
 }
