@@ -133,7 +133,6 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 		name                 string
 		respBody             io.ReadCloser
 		initialStatusCounter int
-		delay                time.Duration
 		expectedDone         bool
 		expectError          bool
 		expectedErrorMsg     string
@@ -142,7 +141,6 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 		{
 			name:            "nil response body",
 			respBody:        nil,
-			delay:           10 * time.Millisecond,
 			expectedDone:    false,
 			expectError:     false,
 			expectedCounter: 0,
@@ -150,7 +148,6 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 		{
 			name:            "http.NoBody",
 			respBody:        http.NoBody,
-			delay:           10 * time.Millisecond,
 			expectedDone:    false,
 			expectError:     false,
 			expectedCounter: 0,
@@ -158,7 +155,6 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 		{
 			name:             "invalid JSON",
 			respBody:         io.NopCloser(strings.NewReader("invalid json")),
-			delay:            10 * time.Millisecond,
 			expectedDone:     false,
 			expectError:      true,
 			expectedErrorMsg: "invalid character",
@@ -168,7 +164,6 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 			name:                 "status not processed and counter below max - should call statusRetry",
 			respBody:             io.NopCloser(strings.NewReader(`{"cluster":"test-uid","status":"unknown"}`)),
 			initialStatusCounter: 0,
-			delay:                10 * time.Millisecond,
 			expectedDone:         false,
 			expectError:          false,
 			expectedCounter:      1,
@@ -177,7 +172,6 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 			name:                 "status not processed and counter at max - should return error from statusRetry",
 			respBody:             io.NopCloser(strings.NewReader(`{"cluster":"test-uid","status":"unknown"}`)),
 			initialStatusCounter: numberOfStatusQueryRetries,
-			delay:                10 * time.Millisecond,
 			expectedDone:         false,
 			expectError:          true,
 			expectedErrorMsg:     "data processing status is \"unknown\" after 3 retries",
@@ -186,7 +180,6 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 		{
 			name:            "status processed",
 			respBody:        io.NopCloser(strings.NewReader(`{"cluster":"test-uid","status":"processed"}`)),
-			delay:           10 * time.Millisecond,
 			expectedDone:    true,
 			expectError:     false,
 			expectedCounter: 0,
@@ -200,7 +193,7 @@ func TestProcessSuccessfulResponse(t *testing.T) {
 				max:    numberOfStatusQueryRetries,
 			}
 
-			done, err := processSuccessfulResponse(tt.respBody, &rc, tt.delay)
+			done, err := processSuccessfulResponse(tt.respBody, &rc)
 
 			assert.Equal(t, tt.expectedDone, done)
 			if tt.expectError {
@@ -276,21 +269,20 @@ func TestRetryFunctions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rc := retryCounter{max: numberOfStatusQueryRetries}
-			delay := 10 * time.Millisecond
 
 			var err error
 			switch tt.retryType {
 			case "network":
 				rc.network = tt.initialCounter
-				err = networkRetry(&rc, fmt.Errorf("network timeout"), delay)
+				err = networkRetry(&rc, fmt.Errorf("network timeout"))
 				assert.Equal(t, tt.expectedCounterAfter, rc.network)
 			case "request":
 				rc.request = tt.initialCounter
-				err = requestRetry(&rc, http.StatusNotFound, delay)
+				err = requestRetry(&rc, http.StatusNotFound)
 				assert.Equal(t, tt.expectedCounterAfter, rc.request)
 			case "status":
 				rc.status = tt.initialCounter
-				done, statusErr := statusRetry(&rc, "unknown", delay)
+				done, statusErr := statusRetry(&rc, "unknown")
 				err = statusErr
 				assert.False(t, done)
 				assert.Equal(t, tt.expectedCounterAfter, rc.status)

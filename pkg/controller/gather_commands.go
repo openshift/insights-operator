@@ -460,28 +460,35 @@ func wasDataProcessed(ctx context.Context,
 	insightsCli processingStatusClient,
 	insightsRequestID string, conf *config.InsightsConfiguration,
 ) (bool, error) {
-	delay := conf.DataReporting.ReportPullingDelay
-	klog.Infof("Initial delay when checking processing status: %v", delay)
+	klog.Infof("Initial delay when checking processing status: %v", conf.DataReporting.ReportPullingDelay)
 
 	retryCounter := &retryCounter{max: numberOfStatusQueryRetries}
 
-	err := wait.PollUntilContextCancel(ctx, delay, false, func(ctx context.Context) (done bool, err error) {
+	backOff := wait.Backoff{
+		Duration: conf.DataReporting.ReportPullingDelay,
+		Factor:   2,
+		Jitter:   0.5, // Spread requests with random delay
+		Steps:    4,   // One request with three retries
+		Cap:      10 * time.Minute,
+	}
+
+	err := wait.ExponentialBackoffWithContext(ctx, backOff, func(ctx context.Context) (done bool, err error) {
 		resp, err := insightsCli.GetWithPathParam(
 			ctx, conf.DataReporting.ProcessingStatusEndpoint, insightsRequestID, true,
 		)
 		// Handle network errors
 		if err != nil {
-			return false, networkRetry(retryCounter, err, delay)
+			return false, networkRetry(retryCounter, err)
 		}
 
 		defer resp.Body.Close()
 
 		// Handle server errors
 		if resp.StatusCode != http.StatusOK {
-			return false, requestRetry(retryCounter, resp.StatusCode, delay)
+			return false, requestRetry(retryCounter, resp.StatusCode)
 		}
 
-		return processSuccessfulResponse(resp.Body, retryCounter, delay)
+		return processSuccessfulResponse(resp.Body, retryCounter)
 	})
 	if err != nil {
 		return false, err
@@ -491,30 +498,30 @@ func wasDataProcessed(ctx context.Context,
 }
 
 // networkRetry is used to retry when there is a network issue that caused failure
-func networkRetry(retryCounter *retryCounter, err error, delay time.Duration) error {
+func networkRetry(retryCounter *retryCounter, err error) error {
 	if retryCounter.network >= retryCounter.max {
 		return fmt.Errorf("failed to check processing status after %d retries: %w", retryCounter.network, err)
 	}
-	klog.Infof("Network error when checking processing status: %v, retry %d/%d in %s",
-		err, retryCounter.network+1, retryCounter.max, delay)
+	klog.Infof("Network error when checking processing status: %v, retry %d/%d",
+		err, retryCounter.network+1, retryCounter.max)
 	retryCounter.network++
 	return nil
 }
 
 // requestRetry is used to retry an http request when the response != 200
-func requestRetry(retryCounter *retryCounter, respStatusCode int, delay time.Duration) error {
+func requestRetry(retryCounter *retryCounter, respStatusCode int) error {
 	if retryCounter.request >= retryCounter.max {
 		return fmt.Errorf("HTTP status message: %s", http.StatusText(respStatusCode))
 	}
-	klog.Infof("Received HTTP status code %d, retry %d/%d in %s",
-		respStatusCode, retryCounter.request+1, retryCounter.max, delay)
+	klog.Infof("Received HTTP status code %d, retry %d/%d",
+		respStatusCode, retryCounter.request+1, retryCounter.max)
 	retryCounter.request++
 	return nil
 }
 
 // processSuccessfulResponse is used to process response body and if data is not processed, it retries 3 times
 // Returns true if the data was successfully processed, false otherwise
-func processSuccessfulResponse(respBody io.ReadCloser, retryCounter *retryCounter, delay time.Duration) (bool, error) {
+func processSuccessfulResponse(respBody io.ReadCloser, retryCounter *retryCounter) (bool, error) {
 	if respBody == nil || respBody == http.NoBody {
 		return false, nil
 	}
@@ -532,20 +539,20 @@ func processSuccessfulResponse(respBody io.ReadCloser, retryCounter *retryCounte
 
 	// If data is not processed yet, retry 3 times before failing
 	if processingResp.Status != "processed" {
-		return statusRetry(retryCounter, processingResp.Status, delay)
+		return statusRetry(retryCounter, processingResp.Status)
 	}
 
 	return true, nil
 }
 
 // statusRetry is used to retry when the processing pipeline is not finished yet
-func statusRetry(retryCounter *retryCounter, processingRespStatus string, delay time.Duration) (bool, error) {
+func statusRetry(retryCounter *retryCounter, processingRespStatus string) (bool, error) {
 	if retryCounter.status >= retryCounter.max {
 		klog.Infof("Data status is %q after %d retries, stopping poll", processingRespStatus, retryCounter.status)
 		return false, fmt.Errorf("data processing status is %q after %d retries, stopping poll", processingRespStatus, retryCounter.status)
 	}
-	klog.Infof("Data status is %q, retry %d/%d in %s",
-		processingRespStatus, retryCounter.status+1, retryCounter.max, delay)
+	klog.Infof("Data status is %q, retry %d/%d",
+		processingRespStatus, retryCounter.status+1, retryCounter.max)
 	retryCounter.status++
 	return false, nil
 }
