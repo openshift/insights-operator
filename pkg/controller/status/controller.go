@@ -85,7 +85,6 @@ func NewController(
 	configurator configobserver.Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string,
-	isTechPreview bool,
 	eventLogger events.Recorder,
 ) *Controller {
 	return &Controller{
@@ -97,7 +96,6 @@ func NewController(
 		namespace:       namespace,
 		sources:         make(map[string]controllerstatus.StatusController),
 		ctrlStatus:      newControllerStatus(),
-		isTechPreview:   isTechPreview,
 		eventLogger:     eventLogger,
 	}
 }
