@@ -4,7 +4,7 @@ COPY . .
 ENV GOEXPERIMENT=strictfipsruntime
 RUN make build
 
-FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
+FROM registry.ci.openshift.org/ocp/4.22:base-rhel9-minimal
 COPY --from=builder /go/src/github.com/openshift/insights-operator/bin/insights-operator /usr/bin/
 COPY config/pod.yaml /etc/insights-operator/server.yaml
 COPY manifests /manifests
