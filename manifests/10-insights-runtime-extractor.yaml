@@ -67,7 +67,7 @@ spec:
               cpu: 10m
               memory: 100Mi
         - name: exporter
-          image: quay.io/openshift/origin-insights-runtime-exporter:latest
+          image: quay.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
           volumeMounts:
             - mountPath: /data
@@ -84,7 +84,7 @@ spec:
               cpu: 10m
               memory: 200Mi
         - name: extractor
-          image: quay.io/openshift/origin-insights-runtime-extractor:latest
+          image: quay.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
