@@ -314,7 +314,12 @@ func TestCreateNewDataGatherCR(t *testing.T) {
 				tt.dataPolicy,
 				tt.configGatherer,
 			)
-			mockController := NewWithTechPreview(nil, nil, apiConfig, nil, nil, cs.InsightsV1(), nil, nil, nil, nil)
+			mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					Obfuscation: config.Obfuscation{},
+				},
+			})
+			mockController := NewWithTechPreview(nil, mockConfigMapConfigurator, apiConfig, nil, nil, cs.InsightsV1(), nil, nil, nil, nil)
 
 			dg, err := mockController.createNewDataGatherCR(context.Background())
 			assert.NoError(t, err)
@@ -771,11 +776,86 @@ func TestCreateDataGatherAttributeValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockAPIConfig := config.NewMockAPIConfigurator(&tt.gatherConfig)
-			mockController := NewWithTechPreview(nil, nil, mockAPIConfig, tt.gatheres, nil, nil, nil, nil, nil, nil)
+			mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					Obfuscation: config.Obfuscation{},
+				},
+			})
+			mockController := NewWithTechPreview(nil, mockConfigMapConfigurator, mockAPIConfig, tt.gatheres, nil, nil, nil, nil, nil, nil)
 			disabledGatherers, dp, storage := mockController.createDataGatherAttributeValues()
 			assert.Equal(t, tt.expectedPolicy, dp)
 			assert.EqualValues(t, tt.expectedDisabledGatherers, disabledGatherers)
 			assert.Equal(t, createStorage(tt.gatherConfig.Storage), storage)
+		})
+	}
+}
+
+func TestCreateDataGatherAttributeValues_ConfigMapObfuscationPrecedence(t *testing.T) {
+	tests := []struct {
+		name                 string
+		gatherConfig         configv1.GatherConfig
+		configMapObfuscation config.Obfuscation
+		expectedPolicy       []insightsv1.DataPolicyOption
+	}{
+		{
+			name: "ConfigMap obfuscation takes precedence over InsightsDataGather CR",
+			gatherConfig: configv1.GatherConfig{
+				DataPolicy: []configv1.DataPolicyOption{
+					configv1.DataPolicyOptionObfuscateWorkloadNames,
+				},
+				Gatherers: configv1.Gatherers{
+					Mode: configv1.GatheringModeAll,
+				},
+			},
+			configMapObfuscation: config.Obfuscation{config.Networking},
+			expectedPolicy: []insightsv1.DataPolicyOption{
+				insightsv1.DataPolicyOptionObfuscateNetworking,
+			},
+		},
+		{
+			name: "Empty ConfigMap obfuscation - fallback to InsightsDataGather CR",
+			gatherConfig: configv1.GatherConfig{
+				DataPolicy: []configv1.DataPolicyOption{
+					configv1.DataPolicyOptionObfuscateNetworking,
+					configv1.DataPolicyOptionObfuscateWorkloadNames,
+				},
+				Gatherers: configv1.Gatherers{
+					Mode: configv1.GatheringModeAll,
+				},
+			},
+			configMapObfuscation: config.Obfuscation{},
+			expectedPolicy: []insightsv1.DataPolicyOption{
+				insightsv1.DataPolicyOptionObfuscateNetworking,
+				insightsv1.DataPolicyOptionObfuscateWorkloadNames,
+			},
+		},
+		{
+			name: "ConfigMap with both obfuscation types overrides InsightsDataGather CR",
+			gatherConfig: configv1.GatherConfig{
+				DataPolicy: []configv1.DataPolicyOption{},
+				Gatherers: configv1.Gatherers{
+					Mode: configv1.GatheringModeAll,
+				},
+			},
+			configMapObfuscation: config.Obfuscation{config.Networking, config.WorkloadNames},
+			expectedPolicy: []insightsv1.DataPolicyOption{
+				insightsv1.DataPolicyOptionObfuscateNetworking,
+				insightsv1.DataPolicyOptionObfuscateWorkloadNames,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockAPIConfig := config.NewMockAPIConfigurator(&tt.gatherConfig)
+			mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					Obfuscation: tt.configMapObfuscation,
+				},
+			})
+			mockController := NewWithTechPreview(nil, mockConfigMapConfigurator, mockAPIConfig, nil, nil, nil, nil, nil, nil, nil)
+			_, dp, _ := mockController.createDataGatherAttributeValues()
+			assert.Equal(t, tt.expectedPolicy, dp)
 		})
 	}
 }
