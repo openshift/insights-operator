@@ -48,23 +48,23 @@ func anonymizeInstallConfig(installConfig *installertypes.InstallConfig) *instal
 	// we don't use it
 	installConfig.BaseDomain = anonymize.String(installConfig.BaseDomain)
 
-	if installConfig.Platform.AWS != nil {
-		installConfig.Platform.AWS.Region = anonymize.String(installConfig.Platform.AWS.Region)
+	if installConfig.AWS != nil {
+		installConfig.AWS.Region = anonymize.String(installConfig.AWS.Region)
 	}
-	if installConfig.Platform.Azure != nil {
-		installConfig.Platform.Azure.Region = anonymize.String(installConfig.Platform.Azure.Region)
+	if installConfig.Azure != nil {
+		installConfig.Azure.Region = anonymize.String(installConfig.Azure.Region)
 	}
-	if installConfig.Platform.GCP != nil {
-		installConfig.Platform.GCP.Region = anonymize.String(installConfig.Platform.GCP.Region)
-		installConfig.Platform.GCP.ProjectID = anonymize.String(installConfig.Platform.GCP.ProjectID)
+	if installConfig.GCP != nil {
+		installConfig.GCP.Region = anonymize.String(installConfig.GCP.Region)
+		installConfig.GCP.ProjectID = anonymize.String(installConfig.GCP.ProjectID)
 	}
-	if installConfig.Platform.VSphere != nil {
-		installConfig.Platform.VSphere.Datacenter = anonymize.String(installConfig.Platform.VSphere.Datacenter)
-		installConfig.Platform.VSphere.Username = anonymize.String(installConfig.Platform.VSphere.Username)
-		installConfig.Platform.VSphere.Password = anonymize.String(installConfig.Platform.VSphere.Password)
+	if installConfig.VSphere != nil {
+		installConfig.VSphere.Datacenter = anonymize.String(installConfig.VSphere.Datacenter)
+		installConfig.VSphere.Username = anonymize.String(installConfig.VSphere.Username)
+		installConfig.VSphere.Password = anonymize.String(installConfig.VSphere.Password)
 	}
-	if installConfig.Platform.OpenStack != nil {
-		installConfig.Platform.OpenStack.Cloud = anonymize.String(installConfig.Platform.OpenStack.Cloud)
+	if installConfig.OpenStack != nil {
+		installConfig.OpenStack.Cloud = anonymize.String(installConfig.OpenStack.Cloud)
 	}
 
 	return installConfig

@@ -108,7 +108,7 @@ func gatherSAPPods(ctx context.Context,
 
 			// Indicates if the pod belongs to a successful job.
 			successfulJob := false
-			for _, owner := range pods.Items[i].ObjectMeta.OwnerReferences {
+			for _, owner := range pods.Items[i].OwnerReferences {
 				if owner.Kind != "Job" {
 					continue
 				}

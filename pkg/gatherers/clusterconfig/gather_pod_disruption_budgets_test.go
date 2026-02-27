@@ -99,8 +99,8 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 			for i := range records {
 				pdba, ok := records[i].Item.(record.ResourceMarshaller).Resource.(*policyv1.PodDisruptionBudget)
 				assert.True(t, ok, "pdb item has invalid type")
-				name := pdba.ObjectMeta.Name
-				namespace := pdba.ObjectMeta.Namespace
+				name := pdba.Name
+				namespace := pdba.Namespace
 				assert.Equal(t, test.pdbsToNamespace[namespace], name)
 				assert.Equal(t, test.minAvailableToPdb[name], pdba.Spec.MinAvailable.IntValue())
 			}
