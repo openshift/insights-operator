@@ -87,6 +87,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"silenced_alerts":                   (*Gatherer).GatherSilencedAlerts,
 	"storage_classes":                   (*Gatherer).GatherStorageClasses,
 	"storage_cluster":                   (*Gatherer).GatherStorageCluster,
+	"subscriptions":                     (*Gatherer).GatherSubscription,
 	"support_secret":                    (*Gatherer).GatherSupportSecret,
 	"tsdb_status":                       (*Gatherer).GatherPrometheusTSDBStatus,
 	"validating_webhook_configurations": (*Gatherer).GatherValidatingWebhookConfigurations,
