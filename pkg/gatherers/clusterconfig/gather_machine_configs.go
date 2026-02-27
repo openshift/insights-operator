@@ -2,7 +2,9 @@ package clusterconfig
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,8 +81,19 @@ func gatherAllMachineConfigs(ctx context.Context, dynamicClient dynamic.Interfac
 	return mcList.Items, nil
 }
 
+// getCRSize calculates the JSON marshaled size of a MachineConfig in bytes
+func getCRSize(mc *unstructured.Unstructured) (int, error) {
+	data, err := json.Marshal(mc)
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal machineconfig: %w", err)
+	}
+
+	return len(data), nil
+}
+
 func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface,
-	inUseMachineConfigs sets.Set[string]) ([]record.Record, []error) {
+	inUseMachineConfigs sets.Set[string],
+) ([]record.Record, []error) {
 	const unusedCountFilename string = "aggregated/unused_machine_configs_count"
 	count := UnusedMachineConfigsCount{UnusedCount: 0}
 
@@ -98,8 +111,24 @@ func gatherMachineConfigs(ctx context.Context, dynamicClient dynamic.Interface,
 			count.UnusedCount++
 			continue
 		}
+
+		annotations := mc.GetAnnotations()
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+
+		mcSize, err := getCRSize(&mc)
+		if err != nil {
+			klog.Errorf("unable to get machine config %s size: %v", mc.GetName(), err)
+			errs = append(errs, err)
+		}
+
+		// Set custom annotation with original CRD size before removing spec fields
+		annotations["insights.operator.openshift.io/cr-size"] = strconv.Itoa(mcSize)
+		mc.SetAnnotations(annotations)
+
 		// remove the sensitive content by overwriting the values
-		err := unstructured.SetNestedField(mc.Object, nil, "spec", "config", "storage", "files")
+		err = unstructured.SetNestedField(mc.Object, nil, "spec", "config", "storage", "files")
 		if err != nil {
 			klog.Errorf("unable to set nested field: %v", err)
 			errs = append(errs, err)
