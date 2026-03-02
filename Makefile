@@ -79,7 +79,7 @@ precommit: ## Executes the pre-commit hook (check the stashed changes)
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) ## Executes the linting tool (vet, sec, and others)
-	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) run --timeout 1h
 
 $(GOLANGCI_LINT):
 	./.openshiftci/install-golangci-lint.sh

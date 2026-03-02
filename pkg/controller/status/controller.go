@@ -367,7 +367,7 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 					klog.Errorf("The initial operator extension status is invalid: %v", err)
 				}
 			}
-			c.SetLastReportedTime(reported.LastReportTime.Time.UTC())
+			c.SetLastReportedTime(reported.LastReportTime.UTC())
 			cs := newConditions(&existing.Status, metav1.Now())
 			if con := cs.findCondition(configv1.OperatorDegraded); con == nil ||
 				con != nil && con.Status == configv1.ConditionFalse {

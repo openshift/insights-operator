@@ -228,7 +228,7 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 }
 
 func provideSecretMock(kube kubernetes.Interface, secs map[string]*corev1.Secret) {
-	kube.CoreV1().(*corefake.FakeCoreV1).Fake.AddReactor("get", "secrets",
+	kube.CoreV1().(*corefake.FakeCoreV1).AddReactor("get", "secrets",
 		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			actionName := ""
 			if getAction, ok := action.(clienttesting.GetAction); ok {

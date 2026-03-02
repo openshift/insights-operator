@@ -278,9 +278,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 
 	// check we can read IO container status, and we are not in crash loop
-	initialCheckTimeout := s.Controller.Interval / 24
+	initialCheckTimeout := s.Interval / 24
 	initialCheckInterval := 20 * time.Second
-	baseInitialDelay := s.Controller.Interval / 12
+	baseInitialDelay := s.Interval / 12
 	err = wait.PollUntilContextTimeout(ctx, initialCheckInterval, wait.Jitter(initialCheckTimeout, 0.1), true, isRunning(gatherKubeConfig))
 	if err != nil {
 		initialDelay = wait.Jitter(baseInitialDelay, 0.5)
