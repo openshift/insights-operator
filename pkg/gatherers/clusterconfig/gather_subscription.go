@@ -17,10 +17,10 @@ import (
 // - https://github.com/operator-framework/api/blob/master/crds/operators.coreos.com_subscriptions.yaml
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/subscriptions/community-kubevirt-hyperconverged.json
+// - docs/insights-archive-sample/config/subscriptions/openshift-cnv/community-kubevirt-hyperconverged.json
 //
 // ### Location in archive
-// - `config/subscriptions/{name}.json`
+// - `config/subscriptions/{namespace}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/subscriptions`
@@ -59,7 +59,7 @@ func gatherSubscriptions(ctx context.Context, dynamicClient dynamic.Interface) (
 		delete(subscriptionList.Items[i].Object, "status")
 
 		records = append(records, record.Record{
-			Name: fmt.Sprintf("config/subscriptions/%s", rc.GetName()),
+			Name: fmt.Sprintf("config/subscriptions/%s/%s", rc.GetNamespace(), rc.GetName()),
 			Item: record.ResourceMarshaller{Resource: &subscriptionList.Items[i]},
 		})
 	}

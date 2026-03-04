@@ -86,7 +86,7 @@ spec:
 			name:               "single subscription with status field that should be removed",
 			subscriptionYAMLs:  []string{subscriptionWithStatusYAML},
 			totalRecords:       1,
-			expectedRecordName: "config/subscriptions/community-kubevirt-hyperconverged",
+			expectedRecordName: "config/subscriptions/kubevirt-hyperconverged/community-kubevirt-hyperconverged",
 			expectedError:      false,
 		},
 		{
