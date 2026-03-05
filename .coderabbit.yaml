@@ -1,3 +1,4 @@
+inheritance: true
 # .coderabbit.yaml
 reviews:
   collapse_walkthrough: true # Keeps the file table hidden by default
