@@ -2,6 +2,9 @@
   "apiVersion": "machineconfiguration.openshift.io/v1",
   "kind": "MachineConfig",
   "metadata": {
+    "annotations": {
+      "insights.operator.openshift.io/cr-size": "1024"
+    },
     "creationTimestamp": "2021-07-07T11:03:36Z",
     "generation": 1,
     "labels": {
