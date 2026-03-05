@@ -92,6 +92,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"validating_webhook_configurations": (*Gatherer).GatherValidatingWebhookConfigurations,
 	"version":                           (*Gatherer).GatherClusterVersion,
 	"node_features":                     (*Gatherer).GatherNodeFeatures,
+	"kubeletconfigs":                    (*Gatherer).GatherKubeletConfig,
 }
 
 func New(
