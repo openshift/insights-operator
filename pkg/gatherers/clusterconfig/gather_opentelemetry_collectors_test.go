@@ -39,7 +39,8 @@ exporters:
 		// assert
 		assert.NoError(t, test)
 
-		config, found, test := unstructured.NestedMap(item.Object, "spec", "config")
+		config, found, err := unstructured.NestedMap(item.Object, "spec", "config")
+		assert.NoError(t, err)
 		assert.True(t, found)
 		assert.Contains(t, config, "service")
 		assert.NotNil(t, config["service"])
@@ -93,7 +94,8 @@ exporters:
 
 		// assert
 		assert.NoError(t, test)
-		config, found, test := unstructured.NestedMap(item.Object, "spec", "config")
+		config, found, err := unstructured.NestedMap(item.Object, "spec", "config")
+		assert.NoError(t, err)
 		assert.True(t, found)
 		assert.Contains(t, config, "service")
 		// receivers/exporters are always dropped

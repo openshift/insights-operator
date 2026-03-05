@@ -88,7 +88,7 @@ func gatherOpenTelemetryCollectors(ctx context.Context, dynamicClient dynamic.In
 	}
 
 	const limit = 5
-	var records []record.Record = make([]record.Record, 0, limit)
+	var records = make([]record.Record, 0, limit)
 	var errs []error
 	for i := range collectorsList.Items {
 		item := &collectorsList.Items[i]
