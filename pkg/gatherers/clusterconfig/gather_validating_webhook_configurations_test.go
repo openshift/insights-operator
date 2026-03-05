@@ -37,7 +37,7 @@ func Test_gatherValidatingWebhookConfigurations(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.JSONEq(t, `{
-		"metadata": { "name": "webhook_config", "creationTimestamp": null },
+		"metadata": { "name": "webhook_config" },
 		"webhooks": [
 			{ "name": "webhook1", "clientConfig": {}, "sideEffects": null, "admissionReviewVersions": null },
 			{ "name": "webhook2", "clientConfig": {}, "sideEffects": null, "admissionReviewVersions": null }

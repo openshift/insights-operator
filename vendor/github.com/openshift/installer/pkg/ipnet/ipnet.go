@@ -14,6 +14,7 @@ var nullBytes = []byte(nullString)
 var emptyIPNet = net.IPNet{}
 
 // IPNet wraps net.IPNet to get CIDR serialization.
+// +kubebuilder:validation:Type=string
 type IPNet struct {
 	net.IPNet
 }
@@ -93,4 +94,23 @@ func MustParseCIDR(s string) *IPNet {
 		panic(err)
 	}
 	return cidr
+}
+
+// DeepCopyInto copies the receiver into out.  out must be non-nil.
+func (ipnet *IPNet) DeepCopyInto(out *IPNet) {
+	if ipnet == nil {
+		*out = IPNet{}
+	} else {
+		*out = *ipnet
+	}
+}
+
+// DeepCopy copies the receiver, creating a new IPNet.
+func (ipnet *IPNet) DeepCopy() *IPNet {
+	if ipnet == nil {
+		return nil
+	}
+	out := new(IPNet)
+	ipnet.DeepCopyInto(out)
+	return out
 }
