@@ -9,20 +9,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
 
-// GatherOpenTelemetryCollectors collects `opentelemetrycollectors.opentelemetry.io`
-// TODO
+// GatherOpenTelemetryCollectors collects up to 5 `opentelemetrycollectors.opentelemetry.io` custom resources
+// installed in the cluster.
+//
+// Only the "service" subsection of each resource's spec.config is retained; receivers,
+// exporters, and other pipeline configuration are omitted to avoid collecting sensitive data.
 //
 // ### API Reference
-// None
+// - https://github.com/open-telemetry/opentelemetry-operator/blob/main/apis/v1beta1/opentelemetrycollector_types.go
 //
 // ### Sample data
-// - TODO
+// - `docs/insights-archive-sample/config/opentelemetry/example-namespace/otel.json`
 //
 // ### Location in archive
-// - `config/opentelemetry.io/opentelemetrycollectors/{namespace}/{name}.json` ??
+// - `config/opentelemetry/{namespace}/{name}.json`
 //
 // ### Config ID
 // `clusterconfig/opentelemetry_collectors`
@@ -79,11 +83,11 @@ func parseCollectorSpecConfig(item *unstructured.Unstructured) error {
 func gatherOpenTelemetryCollectors(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {
 	collectorsList, err := dynamicClient.Resource(openTelemetryCollectorResource).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		// fast exit if no CRs were found
 		if errors.IsNotFound(err) {
+			// fast exit with no error if no CRs were found
 			return nil, nil
 		}
-
+		klog.V(2).Infof("unable to list %s resource due to: %s", openTelemetryCollectorResource, err)
 		return nil, []error{err}
 	}
 
