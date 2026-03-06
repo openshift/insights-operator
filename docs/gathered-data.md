@@ -1557,6 +1557,36 @@ None
 None
 
 
+## OpenTelemetryCollectors
+
+collects up to 5 `opentelemetrycollectors.opentelemetry.io` custom resources
+installed in the cluster.
+
+Only the "service" subsection of each resource's spec.config is retained; receivers,
+exporters, and other pipeline configuration are omitted to avoid collecting sensitive data.
+
+### API Reference
+- https://github.com/open-telemetry/opentelemetry-operator/blob/main/apis/v1beta1/opentelemetrycollector_types.go
+
+### Sample data
+- `[docs/insights-archive-sample/config/opentelemetry/example-namespace/otel.json`](./insights-archive-sample/config/opentelemetry/example-namespace/otel.json`)
+
+### Location in archive
+- `config/opentelemetry/{namespace}/{name}.json`
+
+### Config ID
+`clusterconfig/opentelemetry_collectors`
+
+### Released version
+- 4.22
+
+### Backported versions
+TBD
+
+### Changes
+None
+
+
 ## OpenshiftLogging
 
 Collects `clusterlogging.logging.openshift.io` resources.
