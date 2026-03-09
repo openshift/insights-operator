@@ -280,10 +280,10 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	configCh, closeFn := c.configAggregator.ConfigChanged()
 	defer closeFn()
 
-	config := c.configAggregator.Config()
-	interval := config.DataReporting.Interval
+	insightsConfig := c.configAggregator.Config()
+	interval := insightsConfig.DataReporting.Interval
 	klog.Infof("Gathering cluster info every %s", interval)
-	klog.Infof("Configuration is %v", config.String())
+	klog.Infof("Configuration is %v", insightsConfig.String())
 	t := time.NewTicker(interval)
 	for {
 		select {
@@ -292,15 +292,15 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			return
 		case <-configCh:
 			newConfig := c.configAggregator.Config()
-			if reflect.DeepEqual(config, newConfig) {
+			if reflect.DeepEqual(insightsConfig, newConfig) {
 				continue
 			}
 
-			config = newConfig
-			interval = config.DataReporting.Interval
+			insightsConfig = newConfig
+			interval = insightsConfig.DataReporting.Interval
 			t.Reset(interval)
 			klog.Infof("Gathering cluster info every %s", interval)
-			klog.Infof("Configuration is %v", config.String())
+			klog.Infof("Configuration is %v", insightsConfig.String())
 		case <-t.C:
 			if c.techPreview {
 				c.GatherJob()
