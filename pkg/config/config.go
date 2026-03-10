@@ -33,8 +33,13 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 			NoProxy:    i.Proxy.NoProxy,
 		},
 	}
+
 	if i.DataReporting.Interval != "" {
 		ic.DataReporting.Interval = parseInterval(i.DataReporting.Interval, defaultGatherFrequency)
+	}
+
+	if i.DataReporting.DisableRuntimeExtractor != "" {
+		ic.DataReporting.DisableRuntimeExtractor = strings.EqualFold(i.DataReporting.DisableRuntimeExtractor, "true")
 	}
 
 	if i.SCA.Interval != "" {
@@ -77,13 +82,16 @@ func (d *DataReporting) String() string {
 		storagePath: %s,
 		downloadEndpoint: %s, 
 		conditionalGathererEndpoint: %s,
-		obfuscation: %s`,
+		obfuscation: %s,
+		disableRuntimeExtractor: %t`,
 		d.Interval,
 		d.UploadEndpoint,
 		d.StoragePath,
 		d.DownloadEndpoint,
 		d.ConditionalGathererEndpoint,
-		d.Obfuscation)
+		d.Obfuscation,
+		d.DisableRuntimeExtractor,
+	)
 	return s
 }
 

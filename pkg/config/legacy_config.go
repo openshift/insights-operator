@@ -34,6 +34,7 @@ type Serialized struct {
 	DisableInsightsAlerts     bool   `json:"disableInsightsAlerts"`
 	ProcessingStatusEndpoint  string `json:"processingStatusEndpoint"`
 	ReportEndpointTechPreview string `json:"reportEndpointTechPreview"`
+	DisableRuntimeExtractor   bool   `json:"disableRuntimeExtractor"`
 }
 
 // Controller defines the standard config for this operator.
@@ -49,6 +50,7 @@ type Controller struct {
 	ReportMinRetryTime          time.Duration
 	ReportPullingTimeout        time.Duration
 	Impersonate                 string
+	DisableRuntimeExtractor     bool
 	// EnableGlobalObfuscation enables obfuscation of domain names and IP addresses
 	// To see the detailed info about how anonymization works, go to the docs of package anonymization.
 	EnableGlobalObfuscation bool
@@ -199,6 +201,7 @@ func ToController(s *Serialized, cfg *Controller) (*Controller, error) { // noli
 	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts
 	cfg.ProcessingStatusEndpoint = s.ProcessingStatusEndpoint
 	cfg.ReportEndpointTechPreview = s.ReportEndpointTechPreview
+	cfg.DisableRuntimeExtractor = s.DisableRuntimeExtractor
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
@@ -293,6 +296,7 @@ func ToDisconnectedController(s *Serialized, cfg *Controller) (*Controller, erro
 	cfg.EnableGlobalObfuscation = s.EnableGlobalObfuscation
 	cfg.ConditionalGathererEndpoint = s.ConditionalGathererEndpoint
 	cfg.DisableInsightsAlerts = s.DisableInsightsAlerts
+	cfg.DisableRuntimeExtractor = s.DisableRuntimeExtractor
 
 	if len(s.Interval) > 0 {
 		d, err := time.ParseDuration(s.Interval)
