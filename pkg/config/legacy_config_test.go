@@ -33,6 +33,7 @@ func TestLoadConfig(t *testing.T) {
 					ClusterTransferEndpoint: "default-ct-endpoint",
 					ClusterTransferInterval: 24 * time.Hour,
 				},
+				DisableRuntimeExtractor: false,
 			},
 			obj: map[string]interface{}{
 				"report":      true,
@@ -51,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 					"clusterTransferEndpoint": "real-ct-endpoint",
 					"clusterTransferInterval": "12h",
 				},
+				"disableRuntimeExtractor": true,
 			},
 			expectedOutput: Controller{
 				Report:               true,
@@ -67,6 +69,7 @@ func TestLoadConfig(t *testing.T) {
 					ClusterTransferEndpoint: "real-ct-endpoint",
 					ClusterTransferInterval: 12 * time.Hour,
 				},
+				DisableRuntimeExtractor: true,
 			},
 			err: nil,
 		},
