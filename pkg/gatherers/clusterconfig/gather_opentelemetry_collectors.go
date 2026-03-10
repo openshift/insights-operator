@@ -110,8 +110,7 @@ func gatherOpenTelemetryCollectors(ctx context.Context, dynamicClient dynamic.In
 		})
 
 		if len(records) >= limit {
-			errs = append(errs,
-				fmt.Errorf("limit %d for number of gathered OpenTelemetryCollectors resources exceeded", limit))
+			klog.Infof("the limit (%d) of gathered OpenTelemetryCollectors resources was reached", limit)
 			break
 		}
 	}
