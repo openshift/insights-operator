@@ -146,6 +146,10 @@ func (c *ConfigAggregator) mergeDataReporting(defaultCfg, newCfg *config.Insight
 	if len(newCfg.DataReporting.Obfuscation) > 0 {
 		defaultCfg.DataReporting.Obfuscation = append(defaultCfg.DataReporting.Obfuscation, newCfg.DataReporting.Obfuscation...)
 	}
+
+	if newCfg.DataReporting.DisableRuntimeExtractor != defaultCfg.DataReporting.DisableRuntimeExtractor {
+		defaultCfg.DataReporting.DisableRuntimeExtractor = newCfg.DataReporting.DisableRuntimeExtractor
+	}
 }
 
 func (c *ConfigAggregator) mergeAlerting(defaultCfg, newCfg *config.InsightsConfiguration) {
