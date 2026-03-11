@@ -23,6 +23,7 @@ import (
 	insightsv1cli "github.com/openshift/client-go/insights/clientset/versioned/typed/insights/v1"
 	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/insights-operator/pkg/anonymization"
+	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
@@ -279,10 +280,10 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 	configCh, closeFn := c.configAggregator.ConfigChanged()
 	defer closeFn()
 
-	config := c.configAggregator.Config()
-	interval := config.DataReporting.Interval
+	insightsConfig := c.configAggregator.Config()
+	interval := insightsConfig.DataReporting.Interval
 	klog.Infof("Gathering cluster info every %s", interval)
-	klog.Infof("Configuration is %v", config.String())
+	klog.Infof("Configuration is %v", insightsConfig.String())
 	t := time.NewTicker(interval)
 	for {
 		select {
@@ -291,15 +292,15 @@ func (c *Controller) periodicTrigger(stopCh <-chan struct{}) {
 			return
 		case <-configCh:
 			newConfig := c.configAggregator.Config()
-			if reflect.DeepEqual(config, newConfig) {
+			if reflect.DeepEqual(insightsConfig, newConfig) {
 				continue
 			}
 
-			config = newConfig
-			interval = config.DataReporting.Interval
+			insightsConfig = newConfig
+			interval = insightsConfig.DataReporting.Interval
 			t.Reset(interval)
 			klog.Infof("Gathering cluster info every %s", interval)
-			klog.Infof("Configuration is %v", config.String())
+			klog.Infof("Configuration is %v", insightsConfig.String())
 		case <-t.C:
 			if c.techPreview {
 				c.GatherJob()
@@ -474,7 +475,7 @@ func (c *Controller) GatherJob() {
 // If the processing was successful, a new Insights analysis report is loaded; if not,
 // it returns with the providing the info in the log message.
 func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1.DataGather, image string) {
-	// create a new periodic gathering job
+	// create a new gathering job
 	gj, err := c.jobController.CreateGathererJob(
 		ctx, image, &c.configAggregator.Config().DataReporting, dataGather,
 	)
@@ -806,8 +807,8 @@ func (c *Controller) PeriodicPrune(ctx context.Context) {
 }
 
 // createNewDataGatherCR creates a new "datagather.insights.openshift.io" custom resource
-// with generate name prefix "periodic-gathering-". Returns the newly created
-// resource or an error if the creation failed.
+// for periodic gathering only that has the name prefix "periodic-gathering-".
+// Returns the newly created resource or an error if the creation failed.
 func (c *Controller) createNewDataGatherCR(ctx context.Context) (*insightsv1.DataGather, error) {
 	// Get values from InsightsDataGather CRD that contains config for the data gathering job
 	gatherersConfig, dataPolicy, storageSpec := c.createDataGatherAttributeValues()
@@ -882,13 +883,29 @@ func (c *Controller) createDataGatherAttributeValues() (
 ) {
 	gatherConfig := c.apiConfigurator.GatherConfig()
 
+	// Read data policy from ConfigMap first
 	var dataPolicy []insightsv1.DataPolicyOption
-	for _, dataPolicyOption := range gatherConfig.DataPolicy {
-		switch dataPolicyOption {
-		case configv1.DataPolicyOptionObfuscateNetworking:
+	for _, obfuscationValue := range c.configAggregator.Config().DataReporting.Obfuscation {
+		switch obfuscationValue {
+		case config.Networking:
 			dataPolicy = append(dataPolicy, insightsv1.DataPolicyOptionObfuscateNetworking)
-		case configv1.DataPolicyOptionObfuscateWorkloadNames:
+		case config.WorkloadNames:
 			dataPolicy = append(dataPolicy, insightsv1.DataPolicyOptionObfuscateWorkloadNames)
+		}
+	}
+
+	// ConfigMap should take precedence for the obfuscation configuration so use the
+	// InsightsDataGather configuration only if there was none set in a ConfigMap
+	// If there is not configuration in both then no obfuscation should be applied
+	if len(dataPolicy) == 0 && gatherConfig != nil && len(gatherConfig.DataPolicy) > 0 {
+		klog.Infof("Using data policy from InsightsDataGather CR because ConfigMap has no obfuscation settings")
+		for _, dataPolicyOption := range gatherConfig.DataPolicy {
+			switch dataPolicyOption {
+			case configv1.DataPolicyOptionObfuscateNetworking:
+				dataPolicy = append(dataPolicy, insightsv1.DataPolicyOptionObfuscateNetworking)
+			case configv1.DataPolicyOptionObfuscateWorkloadNames:
+				dataPolicy = append(dataPolicy, insightsv1.DataPolicyOptionObfuscateWorkloadNames)
+			}
 		}
 	}
 
