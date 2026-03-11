@@ -62,7 +62,7 @@ var (
 		Group: "jaegertracing.io", Version: "v1", Resource: "jaegers",
 	}
 	openTelemetryCollectorResource = schema.GroupVersionResource{
-		Group: "opentelemetry.io", Version: "v1alpha1", Resource: "opentelemetrycollectors",
+		Group: "opentelemetry.io", Version: "v1beta1", Resource: "opentelemetrycollectors",
 	}
 	nodeFeatureResource = schema.GroupVersionResource{
 		Group: "nfd.k8s-sigs.io", Version: "v1alpha1", Resource: "nodefeatures",
