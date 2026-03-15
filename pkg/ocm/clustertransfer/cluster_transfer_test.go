@@ -227,7 +227,7 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 			assert.NoError(t, err)
 			openshiftConfCli := configv1client.NewSimpleClientset(clusterVersion)
 
-			cli := insightsclient.New(http.DefaultClient, 1024, "empty", mockAuthorizer, openshiftConfCli)
+			cli := insightsclient.New(http.DefaultClient, 1024, "empty", mockAuthorizer, openshiftConfCli, nil)
 			ctx := context.Background()
 
 			ctController := New(coreClient, mockConfig, cli)

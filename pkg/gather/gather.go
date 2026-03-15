@@ -60,12 +60,13 @@ func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
 	anonymizer *anonymization.Anonymizer, configObserver configobserver.Interface,
 	insightsClient *insightsclient.Client,
+	tlsProvider workloads.TLSConfigProvider,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,
 		anonymizer, configObserver,
 	)
-	workloadsGatherer := workloads.New(gatherKubeConfig, gatherProtoKubeConfig)
+	workloadsGatherer := workloads.New(gatherKubeConfig, gatherProtoKubeConfig, tlsProvider)
 	conditionalGatherer := conditional.New(
 		gatherProtoKubeConfig, metricsGatherKubeConfig, gatherKubeConfig, configObserver, insightsClient,
 	)

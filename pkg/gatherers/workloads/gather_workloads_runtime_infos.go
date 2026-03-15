@@ -29,6 +29,7 @@ type podWithNodeName struct {
 func gatherWorkloadRuntimeInfos(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
+	tlsProvider TLSConfigProvider,
 ) (workloadRuntimes, []error) {
 	start := time.Now()
 
@@ -63,7 +64,7 @@ func gatherWorkloadRuntimeInfos(
 			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
 			hostPort := net.JoinHostPort(podInfo.podIP, "8443")
 			extractorURL := fmt.Sprintf("https://%s/gather_runtime_info", hostPort)
-			httpCli, err := createHTTPClient()
+			httpCli, err := createHTTPClient(tlsProvider)
 			if err != nil {
 				klog.Errorf("Failed to initialize the HTTP client: %v", err)
 				return
@@ -135,7 +136,7 @@ type workloadRuntimesResult struct {
 	Error            error
 }
 
-func createHTTPClient() (*http.Client, error) {
+func createHTTPClient(tlsProvider TLSConfigProvider) (*http.Client, error) {
 	// Use the certificate authority from the service to verify the TLS connection to the insights-runtime-extractor
 	const rootCAFile = "/var/run/configmaps/service-ca-bundle/service-ca.crt"
 
@@ -144,14 +145,26 @@ func createHTTPClient() (*http.Client, error) {
 		return nil, err
 	}
 
+	// Get cluster-wide TLS configuration from the TLS provider
+	// This respects the TLS security profile set in the APIServer CR
+	var tlsConfig *tls.Config
+	if tlsProvider != nil {
+		tlsConfig = tlsProvider.GetTLSConfig()
+	} else {
+		// Fallback to safe default TLS 1.2 if no provider
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	// Merge service CA and ServerName with TLS config from provider
+	tlsConfig.InsecureSkipVerify = false
+	tlsConfig.RootCAs = caCertPool
+	tlsConfig.ServerName = "exporter.openshift-insights.svc.cluster.local"
+
 	authClient := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: false,
-				RootCAs:            caCertPool,
-				ServerName:         "exporter.openshift-insights.svc.cluster.local",
-				MinVersion:         tls.VersionTLS12,
-			},
+			TLSClientConfig: tlsConfig,
 		},
 	}
 	return authClient, nil

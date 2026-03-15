@@ -41,7 +41,7 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	go c.createAndWriteMIMEHeader(&source, mw, pw, bytesRead)
 	req.Body = pr
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = clientTransport(c.authorizer, c.tlsProvider)
 
 	klog.Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
@@ -116,7 +116,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	}
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = clientTransport(c.authorizer, c.tlsProvider)
 
 	klog.Infof("Retrieving report from %s", req.URL.String())
 	resp, err := c.client.Do(req)
@@ -199,7 +199,7 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architectures 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = clientTransport(c.authorizer, c.tlsProvider)
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
 	klog.Infof("Asking for SCA certificate with \"%s\" payload", payload)
@@ -256,7 +256,7 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	q.Add("search", searchQuery)
 	req.URL.RawQuery = q.Encode()
 	req.Header.Set("Content-Type", "application/json")
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = clientTransport(c.authorizer, c.tlsProvider)
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
 
@@ -299,7 +299,7 @@ func (c *Client) GetWithPathParam(ctx context.Context, endpoint, param string, i
 	}
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer)
+	c.client.Transport = clientTransport(c.authorizer, c.tlsProvider)
 
 	return c.client.Do(req)
 }

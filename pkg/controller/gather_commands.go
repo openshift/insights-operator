@@ -24,6 +24,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/config/tlsconfig"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/gatherers"
@@ -115,10 +116,13 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
+	// Create TLS provider with default configuration for one-time gather
+	tlsProvider := tlsconfig.NewTLSConfigProvider()
+
+	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient, tlsProvider)
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient,
+		configAggregator, insightsClient, tlsProvider,
 	)
 
 	allFunctionReports := make(map[string]gather.GathererFunctionReport)
@@ -215,11 +219,15 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		return err
 	}
-	insightsHTTPCli := insightsclient.New(nil, 0, "default", authorizer, configClient)
+
+	// Create TLS provider with default configuration for one-time gather
+	tlsProvider := tlsconfig.NewTLSConfigProvider()
+
+	insightsHTTPCli := insightsclient.New(nil, 0, "default", authorizer, configClient, tlsProvider)
 
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsHTTPCli)
+		configAggregator, insightsHTTPCli, tlsProvider)
 	uploader := insightsuploader.New(nil, insightsHTTPCli, configAggregator, nil, nil, 0)
 
 	dataGatherCR, err = status.UpdateProgressingCondition(ctx, insightsV1Cli, dataGatherCR, dataGatherCR.Name, status.GatheringReason)

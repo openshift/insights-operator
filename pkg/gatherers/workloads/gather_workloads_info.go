@@ -90,17 +90,18 @@ func (g *Gatherer) GatherWorkloadInfo(ctx context.Context) ([]record.Record, []e
 		return nil, []error{err}
 	}
 
-	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient)
+	return gatherWorkloadInfo(ctx, gatherKubeClient.CoreV1(), gatherOpenShiftClient, g.tlsProvider)
 }
 
 func gatherWorkloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageClient imageclient.ImageV1Interface,
+	tlsProvider TLSConfigProvider,
 ) ([]record.Record, []error) {
 	var errs = []error{}
 
-	workloadInfos, runtimeInfoErrs := gatherWorkloadRuntimeInfos(ctx, coreClient)
+	workloadInfos, runtimeInfoErrs := gatherWorkloadRuntimeInfos(ctx, coreClient, tlsProvider)
 	errs = append(errs, runtimeInfoErrs...)
 
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())

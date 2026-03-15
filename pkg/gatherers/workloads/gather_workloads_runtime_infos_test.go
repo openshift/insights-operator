@@ -442,7 +442,7 @@ func TestGatherWorkloadRuntimeInfos_NoPods(t *testing.T) {
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	result, errors := gatherWorkloadRuntimeInfos(ctx, cli.CoreV1())
+	result, errors := gatherWorkloadRuntimeInfos(ctx, cli.CoreV1(), nil)
 
 	assert.Nil(t, result)
 	assert.Len(t, errors, 1)
