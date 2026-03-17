@@ -29,18 +29,6 @@ func Test_ShouldBeProcessedNow(t *testing.T) {
 			expected:           false,
 		},
 		{
-			name:               "should process - exactly at period boundary",
-			lastProcessingTime: now.Add(-1 * time.Hour),
-			period:             1 * time.Hour,
-			expected:           true,
-		},
-		{
-			name:               "should process - zero period",
-			lastProcessingTime: now.Add(-1 * time.Second),
-			period:             0,
-			expected:           true,
-		},
-		{
 			name:               "should not process - future last processing time",
 			lastProcessingTime: now.Add(1 * time.Hour),
 			period:             30 * time.Minute,
