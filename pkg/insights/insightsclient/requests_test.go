@@ -155,10 +155,10 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 
 func TestClient_RecvSCACerts(t *testing.T) {
 	tests := []struct {
-		name         string
-		statusCode   int
-		responseBody string
-		expectError  bool
+		name          string
+		statusCode    int
+		responseBody  string
+		expectError   bool
 		errorContains string
 	}{
 		{
@@ -233,13 +233,13 @@ func TestClient_RecvSCACerts(t *testing.T) {
 
 func TestClient_RecvReport(t *testing.T) {
 	tests := []struct {
-		name                 string
-		statusCode           int
-		responseBody         string
-		expectError          bool
-		errorContains        string
-		expectHttpError      bool
-		expectedHttpErrCode  int
+		name                string
+		statusCode          int
+		responseBody        string
+		expectError         bool
+		errorContains       string
+		expectHttpError     bool
+		expectedHttpErrCode int
 	}{
 		{
 			name:         "success",
