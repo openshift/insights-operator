@@ -306,14 +306,14 @@ func Test_readArchive(t *testing.T) {
 	// Verify each record
 	expectedRecords := []string{"config/infrastructure.json", "config/ingress.json", "metadata.json"}
 	for _, name := range expectedRecords {
-		record, exists := records[name]
+		rec, exists := records[name]
 		assert.True(t, exists, "Record %s should exist", name)
-		assert.Equal(t, name, record.Name)
-		assert.NotEmpty(t, record.Data)
+		assert.Equal(t, name, rec.Name)
+		assert.NotEmpty(t, rec.Data)
 
 		// Verify content matches
 		expectedContent := archiveFiles[name]
-		assert.Equal(t, expectedContent, string(record.Data))
+		assert.Equal(t, expectedContent, string(rec.Data))
 	}
 }
 
