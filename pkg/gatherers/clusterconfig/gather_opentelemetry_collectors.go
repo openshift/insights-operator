@@ -47,9 +47,9 @@ func (g *Gatherer) GatherOpenTelemetryCollectors(ctx context.Context) ([]record.
 	return gatherOpenTelemetryCollectors(ctx, gatherDynamicClient)
 }
 
-// parseCollectorSpecConfig function parses the spec.config field data in YAML format
+// cleanCollectorSpecConfig function parses the spec.config field
 // and removes any possible private data getting only the "service" configuration
-func parseCollectorSpecConfig(item *unstructured.Unstructured) error {
+func cleanCollectorSpecConfig(item *unstructured.Unstructured) error {
 	specConfig, found, err := unstructured.NestedMap(item.Object, "spec", "config")
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func gatherOpenTelemetryCollectors(ctx context.Context, dynamicClient dynamic.In
 	for i := range collectorsList.Items {
 		item := &collectorsList.Items[i]
 
-		if err := parseCollectorSpecConfig(item); err != nil {
+		if err := cleanCollectorSpecConfig(item); err != nil {
 			errs = append(errs, err)
 			continue
 		}
