@@ -50,6 +50,31 @@ type containerInfo struct {
 	containerID string
 }
 
+// containerIDsByNode maps node name to list of container IDs running on that node.
+// This structure is used to track which container IDs need runtime info extraction,
+// accumulated as pods are processed.
+type containerIDsByNode map[string][]string
+
+// addPodContainers adds container IDs from a pod to the tracking structure.
+// Called during pod processing, before the pod object is discarded.
+// Only adds containers that are not terminated (running or waiting).
+func (c containerIDsByNode) addPodContainers(pod *corev1.Pod) {
+	if pod.Status.Phase != corev1.PodRunning {
+		return
+	}
+	nodeName := pod.Spec.NodeName
+	for i := range pod.Status.ContainerStatuses {
+		containerStatus := &pod.Status.ContainerStatuses[i]
+		// Skip terminated containers - they no longer have a running process to scan
+		if containerStatus.State.Terminated != nil {
+			continue
+		}
+		if containerStatus.ContainerID != "" {
+			c[nodeName] = append(c[nodeName], containerStatus.ContainerID)
+		}
+	}
+}
+
 // GatherWorkloadInfo Collects summarized info about the workloads on a cluster
 // in a generic fashion
 //
@@ -100,17 +125,22 @@ func gatherWorkloadInfo(
 ) ([]record.Record, []error) {
 	var errs = []error{}
 
-	workloadInfos, runtimeInfoErrs := gatherWorkloadRuntimeInfos(ctx, coreClient)
-	errs = append(errs, runtimeInfoErrs...)
-
 	imageCh, imagesDoneCh := gatherWorkloadImageInfo(ctx, imageClient.Images())
 
 	start := time.Now()
-	limitReached, info, err := workloadInfo(ctx, coreClient, imageCh, workloadInfos)
+	// Build shapes and collect container IDs (no runtime info yet)
+	limitReached, info, containersByNode, err := workloadInfo(ctx, coreClient, imageCh)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
 	}
+
+	// Gather runtime info for only the containers in collected shapes
+	workloadInfos, runtimeInfoErrs := gatherWorkloadRuntimeInfos(ctx, coreClient, containersByNode)
+	errs = append(errs, runtimeInfoErrs...)
+
+	// Merge runtime info into shapes
+	mergeRuntimeInfoIntoShapes(&info, workloadInfos)
 
 	workloadImageResize(info.PodCount)
 
@@ -136,10 +166,10 @@ func workloadInfo(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	imageCh chan string,
-	workloadInfos workloadRuntimes,
-) (bool, workloadPods, error) {
+) (bool, workloadPods, containerIDsByNode, error) {
 	defer close(imageCh)
 	limitReached := false
+	containersByNode := make(containerIDsByNode)
 
 	var info workloadPods
 	var namespace, namespaceHash, continueValue string
@@ -153,7 +183,7 @@ func workloadInfo(
 			Continue: continueValue,
 		})
 		if err != nil {
-			return false, workloadPods{}, err
+			return false, workloadPods{}, nil, err
 		}
 
 		for podIdx := range pods.Items {
@@ -192,7 +222,7 @@ func workloadInfo(
 				continue
 			}
 
-			podShape, ok := calculatePodShape(h, &pod, workloadInfos)
+			podShape, ok := calculatePodShape(h, &pod)
 			if !ok {
 				namespacePods.InvalidCount++
 				continue
@@ -203,6 +233,7 @@ func workloadInfo(
 				continue
 			}
 			namespacePods.Shapes = append(namespacePods.Shapes, podShape)
+			containersByNode.addPodContainers(&pod)
 
 			for _, container := range podShape.InitContainers {
 				imageCh <- container.ImageID
@@ -230,7 +261,7 @@ func workloadInfo(
 		info.PodCount += namespacePods.Count
 	}
 
-	return limitReached, info, nil
+	return limitReached, info, containersByNode, nil
 }
 
 func isPodTerminated(pod *corev1.Pod) bool {
@@ -244,17 +275,35 @@ func podCanBeIgnored(pod *corev1.Pod) bool {
 		len(pod.Status.ContainerStatuses) != len(pod.Spec.Containers)
 }
 
-func calculatePodShape(h hash.Hash, pod *corev1.Pod, workloadInfo workloadRuntimes) (workloadPodShape, bool) {
+// mergeRuntimeInfoIntoShapes updates the shapes in workloadPods with runtime info.
+// This is called after shapes are built and runtime info is gathered.
+func mergeRuntimeInfoIntoShapes(info *workloadPods, runtimeInfos workloadRuntimes) {
+	for nsHash, nsPods := range info.Namespaces {
+		for shapeIdx := range nsPods.Shapes {
+			shape := &nsPods.Shapes[shapeIdx]
+			// Merge runtime info only for regular containers
+			for containerIdx := range shape.Containers {
+				container := &shape.Containers[containerIdx]
+				if ri, ok := runtimeInfos[container.runtimeKey]; ok {
+					container.RuntimeInfo = &ri
+				}
+			}
+		}
+		info.Namespaces[nsHash] = nsPods
+	}
+}
+
+func calculatePodShape(h hash.Hash, pod *corev1.Pod) (workloadPodShape, bool) {
 	var podShape workloadPodShape
 	var ok bool
 	podShape.InitContainers, ok = calculateWorkloadContainerShapes(h, &pod.ObjectMeta, pod.Spec.InitContainers,
-		pod.Status.InitContainerStatuses, workloadInfo)
+		pod.Status.InitContainerStatuses)
 	if !ok {
 		return workloadPodShape{}, false
 	}
 
 	podShape.Containers, ok = calculateWorkloadContainerShapes(h, &pod.ObjectMeta, pod.Spec.Containers,
-		pod.Status.ContainerStatuses, workloadInfo)
+		pod.Status.ContainerStatuses)
 	if !ok {
 		return workloadPodShape{}, false
 	}
@@ -485,12 +534,12 @@ func idForImageReference(s string) string {
 // calculateWorkloadContainerShapes takes a spec and status slice and attempts
 // to calculate an array of container shapes. If the preconditions of the shape
 // can't be met (invalid status, no imageID) false is returned.
+// The runtimeKey field is populated for later runtime info merging.
 func calculateWorkloadContainerShapes(
 	h hash.Hash,
 	podMeta *metav1.ObjectMeta,
 	spec []corev1.Container,
 	status []corev1.ContainerStatus,
-	runtimesInfo workloadRuntimes,
 ) ([]workloadContainerShape, bool) {
 	shapes := make([]workloadContainerShape, 0, len(status))
 	for i := range status {
@@ -525,16 +574,12 @@ func calculateWorkloadContainerShapes(
 			ImageID:      imageID,
 			FirstCommand: firstCommand,
 			FirstArg:     firstArg,
-		}
-
-		conInfo := containerInfo{
-			namespace:   podMeta.Namespace,
-			pod:         podMeta.Name,
-			containerID: status[i].ContainerID,
-		}
-
-		if workloadRuntimeInfo, ok := runtimesInfo[conInfo]; ok {
-			containerShape.RuntimeInfo = &workloadRuntimeInfo
+			// Store the runtime key for later runtime info merging
+			runtimeKey: containerInfo{
+				namespace:   podMeta.Namespace,
+				pod:         podMeta.Name,
+				containerID: status[i].ContainerID,
+			},
 		}
 
 		shapes = append(shapes, containerShape)
