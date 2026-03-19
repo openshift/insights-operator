@@ -28,12 +28,14 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/config/tlsconfig"
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
@@ -92,6 +94,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	}
 	configInformers := configv1informers.NewSharedInformerFactory(configClient, informerTimeout)
 
+	// Create TLS config provider using library-go configobserver pattern
+	// This ensures all HTTP clients respect the cluster-wide TLS security policy
+	tlsProvider := tlsconfig.NewTLSConfigProvider()
+
 	operatorClient, err := operatorclient.NewForConfig(controller.KubeConfig)
 	if err != nil {
 		return err
@@ -134,6 +140,36 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	)
 	go featureGateAccessor.Run(ctx)
 	go configInformers.Start(ctx.Done())
+
+	// Observe TLS security profile from APIServer using library-go pattern
+	tlsListers := tlsconfig.NewTLSProfileListers(
+		configInformers.Config().V1().APIServers().Lister(),
+		nil, // ResourceSyncer not needed for TLS observation
+		[]cache.InformerSynced{
+			configInformers.Config().V1().APIServers().Informer().HasSynced,
+		},
+	)
+
+	// Wait for informers to sync before observing TLS profile
+	if !cache.WaitForCacheSync(ctx.Done(), tlsListers.PreRunHasSynced()...) {
+		return fmt.Errorf("failed to sync TLS informers")
+	}
+
+	// Perform initial TLS profile observation
+	observedConfig, errs := tlsconfig.ObserveTLSSecurityProfile(
+		tlsListers,
+		controller.EventRecorder,
+		map[string]interface{}{},
+	)
+	if len(errs) == 0 {
+		if err := tlsProvider.UpdateObservedConfig(observedConfig); err != nil {
+			klog.Warningf("Failed to update TLS config: %v (will use default Intermediate profile)", err)
+		}
+	} else {
+		for _, err := range errs {
+			klog.Warningf("Error observing TLS profile: %v (will use default Intermediate profile)", err)
+		}
+	}
 
 	select {
 	case <-featureGateAccessor.InitialFeatureGatesObserved():
@@ -251,14 +287,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "insights", authorizer, gatherConfigClient)
+	insightsClient := insightsclient.New(nil, 0, "insights", authorizer, gatherConfigClient, tlsProvider)
 
 	var periodicGather *periodic.Controller
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient,
+		configAggregator, insightsClient, tlsProvider,
 	)
 	if !insightsConfigEnabled {
 		periodicGather = periodic.New(configAggregator, rec, gatherers, anonymizer,
