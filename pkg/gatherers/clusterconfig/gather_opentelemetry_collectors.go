@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/yaml"
 )
 
 // GatherOpenTelemetryCollectors collects up to 5 `opentelemetrycollectors.opentelemetry.io` custom resources
@@ -48,10 +47,10 @@ func (g *Gatherer) GatherOpenTelemetryCollectors(ctx context.Context) ([]record.
 	return gatherOpenTelemetryCollectors(ctx, gatherDynamicClient)
 }
 
-// parseCollectorSpecConfig function parses the spec.config field data in YAML format
+// cleanCollectorSpecConfig function parses the spec.config field
 // and removes any possible private data getting only the "service" configuration
-func parseCollectorSpecConfig(item *unstructured.Unstructured) error {
-	specConfig, found, err := unstructured.NestedString(item.Object, "spec", "config")
+func cleanCollectorSpecConfig(item *unstructured.Unstructured) error {
+	specConfig, found, err := unstructured.NestedMap(item.Object, "spec", "config")
 	if err != nil {
 		return err
 	} else if !found {
@@ -59,21 +58,13 @@ func parseCollectorSpecConfig(item *unstructured.Unstructured) error {
 		return nil
 	}
 
-	// easier than parsing everything and then removing unwanted data
-	// it only parses the "service" field
-	var serviceField struct {
-		Data map[string]interface{} `json:"service"`
+	// instead of dynamically remove every key, set only the desired one
+	cleanConfig := make(map[string]interface{})
+	if _, exists := specConfig["service"]; exists {
+		cleanConfig["service"] = specConfig["service"]
 	}
 
-	if err := yaml.Unmarshal([]byte(specConfig), &serviceField); err != nil {
-		return err
-	}
-
-	// preparing the data to be added back, while keeping the parent fields
-	parsedField := make(map[string]interface{})
-	parsedField["service"] = serviceField.Data
-
-	if err := unstructured.SetNestedField(item.Object, parsedField, "spec", "config"); err != nil {
+	if err := unstructured.SetNestedField(item.Object, cleanConfig, "spec", "config"); err != nil {
 		return err
 	}
 
@@ -97,7 +88,7 @@ func gatherOpenTelemetryCollectors(ctx context.Context, dynamicClient dynamic.In
 	for i := range collectorsList.Items {
 		item := &collectorsList.Items[i]
 
-		if err := parseCollectorSpecConfig(item); err != nil {
+		if err := cleanCollectorSpecConfig(item); err != nil {
 			errs = append(errs, err)
 			continue
 		}
