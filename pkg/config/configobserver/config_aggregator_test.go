@@ -46,6 +46,7 @@ func TestMergeStatically(t *testing.T) {
 					Interval:                    2 * time.Hour,
 					ConditionalGathererEndpoint: "http://conditionalendpoint.here",
 					Obfuscation:                 config.Obfuscation{config.Networking},
+					DisableRuntimeExtractor:     false,
 				},
 				SCA: config.SCA{
 					Interval: 5 * time.Hour,
@@ -74,6 +75,7 @@ dataReporting:
   conditionalGathererEndpoint: https://overriden.conditional/endpoint
   processingStatusEndpoint: https://overriden.status/endpoint
   downloadEndpointTechPreview: https://overriden.downloadtechpreview/endpoint
+  disableRuntimeExtractor: true
   obfuscation:
   - workload_names
 alerting:
@@ -116,6 +118,7 @@ clusterTransfer:
 					ProcessingStatusEndpoint:    "https://overriden.status/endpoint",
 					DownloadEndpointTechPreview: "https://overriden.downloadtechpreview/endpoint",
 					Obfuscation:                 config.Obfuscation{config.Networking, config.WorkloadNames},
+					DisableRuntimeExtractor:     true,
 				},
 				Alerting: config.Alerting{
 					Disabled: true,
@@ -151,8 +154,9 @@ dataReporting:
 			},
 			expectedConfig: &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
-					Enabled:        false,
-					UploadEndpoint: "https://overriden.upload/endpoint",
+					Enabled:                 false,
+					UploadEndpoint:          "https://overriden.upload/endpoint",
+					DisableRuntimeExtractor: false,
 				},
 			},
 		},
@@ -197,6 +201,7 @@ dataReporting:
 					ProcessingStatusEndpoint:    "http://statusendpoint.here",
 					DownloadEndpointTechPreview: "http://downloadtpendpoint.here",
 					Obfuscation:                 config.Obfuscation{config.Networking},
+					DisableRuntimeExtractor:     false,
 				},
 				Alerting: config.Alerting{
 					Disabled: false,
@@ -270,6 +275,7 @@ func TestMergeUsingInformer(t *testing.T) {
 					Interval:                    2 * time.Hour,
 					ConditionalGathererEndpoint: "http://conditionalendpoint.here",
 					Obfuscation:                 config.Obfuscation{config.Networking},
+					DisableRuntimeExtractor:     false,
 				},
 				Alerting: config.Alerting{
 					Disabled: true,
@@ -303,6 +309,7 @@ dataReporting:
   conditionalGathererEndpoint: https://overriden.conditional/endpoint
   processingStatusEndpoint: https://overriden.status/endpoint
   downloadEndpointTechPreview: https://overriden.downloadtechpreview/endpoint
+  disableRuntimeExtractor: true
   obfuscation:
   - workload_names
 alerting:
@@ -353,6 +360,7 @@ proxy:
 					Interval:                    1 * time.Hour,
 					ConditionalGathererEndpoint: "https://overriden.conditional/endpoint",
 					Obfuscation:                 config.Obfuscation{config.Networking, config.WorkloadNames},
+					DisableRuntimeExtractor:     true,
 				},
 				Alerting: config.Alerting{
 					Disabled: true,
@@ -393,8 +401,9 @@ dataReporting:
 			},
 			expectedConfig: &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
-					Enabled:        false,
-					UploadEndpoint: "https://overriden.upload/endpoint",
+					Enabled:                 false,
+					UploadEndpoint:          "https://overriden.upload/endpoint",
+					DisableRuntimeExtractor: false,
 				},
 			},
 		},
@@ -424,11 +433,12 @@ dataReporting:
 			},
 			expectedConfig: &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
-					Enabled:          true,
-					UploadEndpoint:   "http://testing.here",
-					DownloadEndpoint: "http://reportendpoint.here",
-					Interval:         2 * time.Hour,
-					Obfuscation:      config.Obfuscation{config.Networking},
+					Enabled:                 true,
+					UploadEndpoint:          "http://testing.here",
+					DownloadEndpoint:        "http://reportendpoint.here",
+					Interval:                2 * time.Hour,
+					Obfuscation:             config.Obfuscation{config.Networking},
+					DisableRuntimeExtractor: false,
 				},
 				Alerting: config.Alerting{
 					Disabled: false, // this was not provide in the empty config map and zero value (false) is used
