@@ -30,7 +30,8 @@ import (
 type AnonymizerType string
 
 const (
-	NetworkAnonymizerType AnonymizerType = "networking"
+	NetworkAnonymizerType       AnonymizerType = "networking"
+	WorkloadNamesAnonymizerType AnonymizerType = "WorkloadNames"
 )
 
 type DataAnonymizer interface {
@@ -40,6 +41,9 @@ type DataAnonymizer interface {
 	IsEnabled() bool
 	// GetType returns the type of the anonymizer implementation.
 	GetType() AnonymizerType
+	// Skip is a temporary workaround to skip Workloads anonymizer until it is properly
+	// implemented https://redhat.atlassian.net/browse/CCXDEV-15394
+	Skip() bool
 }
 
 // Anonymizer is used to anonymize sensitive data.
@@ -63,7 +67,7 @@ func (anonymizer *Anonymizer) AnonymizeData(memoryRecord *record.MemoryRecord) (
 	anonymizedResult := memoryRecord
 
 	for _, specificAnonymizer := range anonymizer.Anonymizers {
-		if specificAnonymizer.IsEnabled() {
+		if specificAnonymizer.IsEnabled() && !specificAnonymizer.Skip() {
 			anonymizedResult, err = specificAnonymizer.AnonymizeData(memoryRecord)
 			if err != nil {
 				return nil, err
