@@ -388,6 +388,13 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - opentelemetry.io
+    resources:
+      - opentelemetrycollectors
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -703,4 +710,3 @@ seLinuxContext:
 seccompProfiles:
   - runtime/default
 ---
-
