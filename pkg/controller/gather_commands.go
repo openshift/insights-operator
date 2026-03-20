@@ -270,7 +270,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	}
 
 	// upload data
-	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive)
+	insightsRequestID, statusCode, err := uploader.Upload(ctx, lastArchive, configClient.ConfigV1())
 	dataUploadedCon := status.DataUploadedCondition(
 		metav1.ConditionTrue,
 		status.SucceededReason,
