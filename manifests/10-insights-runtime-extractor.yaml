@@ -40,7 +40,7 @@ spec:
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
           args:
             - '--secure-listen-address=:8443'
-            - '--upstream=http://127.0.0.1:8000'
+            - '--upstream=https://127.0.0.1:8000'
             - '--config-file=/etc/kube-rbac-proxy/config.yaml'
             - '--tls-cert-file=/etc/tls/private/tls.crt'
             - '--tls-private-key-file=/etc/tls/private/tls.key'
@@ -73,6 +73,24 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: data-volume
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
+              readOnly: true
+            - mountPath: /var/run/configmaps/service-ca-bundle
+              name: service-ca-bundle
+              readOnly: true
+          command:
+            - /exporter
+            - -bind
+            - 0.0.0.0
+            - -tls-cert
+            - /etc/tls/private/tls.crt
+            - -tls-key
+            - /etc/tls/private/tls.key
+            - -tls-ca
+            - /var/run/configmaps/service-ca-bundle/service-ca.crt
+            - -tls-server-name
+            - exporter.openshift-insights.svc.cluster.local
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false
@@ -138,3 +156,6 @@ spec:
         - name: insights-runtime-extractor-tls
           secret:
             secretName: insights-runtime-extractor-tls
+        - name: service-ca-bundle
+          configMap:
+            name: service-ca-bundle
