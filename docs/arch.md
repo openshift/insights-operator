@@ -536,6 +536,32 @@ The following options are available:
 * **`ObfuscateNetworking`**: Obfuscates all IP addresses and cluster domain names found in the gathered data.
 * **`WorkloadNames`**: Obfuscates specific workload names for the Deployment Validation Operator.
 
+### Obfuscation Configuration Precedence
+
+The obfuscation configuration is determined by merging settings from multiple sources:
+
+#### Periodic Gathering
+For periodic gathering, obfuscation settings are determined using the following logic:
+1. **ConfigMap (`insights-config`)** - The `dataReporting.obfuscation` field is always applied if configured
+2. **InsightsDataGather CR** - The `spec.gatherConfig.dataPolicy` field adds additional obfuscation if it is more permissive than the ConfigMap
+3. The final configuration is the **union** of both sources
+
+**Example**: If the ConfigMap specifies `obfuscation: [networking]` and the InsightsDataGather CR specifies `dataPolicy: [WorkloadNames]`, periodic gathering will obfuscate both networking data **and** workload names.
+
+#### On-Demand Gathering
+For on-demand gathering using individual `DataGather` resources:
+1. **ConfigMap (`insights-config`)** - The `dataReporting.obfuscation` field is **always respected**
+2. If the `DataGather` resource specifies `spec.dataPolicy`, it **overrides only the InsightsDataGather CR** settings, not the ConfigMap
+3. If the `DataGather` resource does **not** specify `spec.dataPolicy`, it inherits the same merged configuration as periodic gathering (ConfigMap + InsightsDataGather CR)
+4. The final configuration is the **union** of ConfigMap settings plus DataGather-specific or InsightsDataGather settings
+
+**Example**:
+- ConfigMap has `obfuscation: [networking]`, InsightsDataGather has `dataPolicy: [WorkloadNames]`
+- A DataGather with no `dataPolicy` specified will obfuscate both networking and workload names (ConfigMap + InsightsDataGather)
+- A DataGather with `dataPolicy: [WorkloadNames]` will obfuscate both networking and workload names (ConfigMap is always respected + DataGather overrides InsightsDataGather)
+- A DataGather with `dataPolicy: []` (empty) will obfuscate networking only (ConfigMap is always respected, empty DataGather overrides InsightsDataGather)
+
+
 ```yaml
 apiVersion: insights.openshift.io/v1
 kind: DataGather
