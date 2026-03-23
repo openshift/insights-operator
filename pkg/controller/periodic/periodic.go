@@ -420,6 +420,36 @@ func (c *Controller) prepareDataGatherCRWithImage(ctx context.Context, dgName st
 		return nil, err
 	}
 
+	defaultDataPolicy := dataGather.Spec.DataPolicy
+
+	// Get InsightsDataGather configuration
+	gatherConfig := c.apiConfigurator.GatherConfig()
+	// Get ConfigMap obfuscation value
+	dataPolicy := c.getConfigMapObfuscation()
+
+	// Merge obfuscation settings from multiple sources with correct precedence:
+	// 1. Start with ConfigMap obfuscation settings (base configuration)
+	// 2. Merge with DataGather.Spec.DataPolicy if present (resource-specific override)
+	// 3. Fall back to InsightsDataGather configuration if DataGather has no policy set
+	// All unique values from each source are combined to ensure comprehensive obfuscation.
+	if len(dataGather.Spec.DataPolicy) > 0 {
+		for _, dataPolicyOption := range dataGather.Spec.DataPolicy {
+			if !slices.Contains(dataPolicy, dataPolicyOption) {
+				dataPolicy = append(dataPolicy, dataPolicyOption)
+			}
+		}
+		// If DataGather has no policy, check InsightsDataGather for cluster-wide defaults
+	} else if gatherConfig != nil && len(gatherConfig.DataPolicy) > 0 {
+		for _, dataPolicyOption := range gatherConfig.DataPolicy {
+			if !slices.Contains(dataPolicy, insightsv1.DataPolicyOption(dataPolicyOption)) {
+				dataPolicy = append(dataPolicy, insightsv1.DataPolicyOption(dataPolicyOption))
+			}
+		}
+	}
+
+	// Assign merged dataPolicy configuration
+	dataGather.Spec.DataPolicy = dataPolicy
+
 	// Avoid running DataGathering for already run jobs
 	if len(dataGather.Status.Conditions) != 0 {
 		klog.Infof("DataGather %s resource not triggering any data gathering, gathering was already run", dgName)
@@ -433,6 +463,14 @@ func (c *Controller) prepareDataGatherCRWithImage(ctx context.Context, dgName st
 			return nil, err
 		}
 		c.image = image
+	}
+
+	if !slices.Equal(defaultDataPolicy, dataGather.Spec.DataPolicy) {
+		klog.Infof("Updating DataGather %s with merged DataPolicy from ConfigMap and InsightsDataGather", dgName)
+		dataGather, err = c.updateDataGather(ctx, dataGather)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return dataGather, nil
@@ -865,6 +903,15 @@ func (c *Controller) updateNewDataGatherCRStatus(ctx context.Context, dg *insigh
 	return nil
 }
 
+// updateDataGather updates the DataGather resource with the provided data and returns the updated resource.
+func (c *Controller) updateDataGather(ctx context.Context, dg *insightsv1.DataGather) (*insightsv1.DataGather, error) {
+	updatedDg, err := c.dataGatherClient.DataGathers().Update(ctx, dg, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return updatedDg, nil
+}
+
 // dataGatherState gets the DataGather resource with the provided name and returns its state.
 func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insightsv1.DataGather, error) {
 	dg, err := c.dataGatherClient.DataGathers().Get(ctx, dgName, metav1.GetOptions{})
@@ -875,15 +922,10 @@ func (c *Controller) getDataGather(ctx context.Context, dgName string) (*insight
 	return dg, nil
 }
 
-// createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration.
-// It determines which gatherers should be run, based on the configured gathering mode and custom settings.
-// It also extracts the applicable data policies and storage configuration.
-func (c *Controller) createDataGatherAttributeValues() (
-	insightsv1.Gatherers, []insightsv1.DataPolicyOption, insightsv1.Storage,
-) {
-	gatherConfig := c.apiConfigurator.GatherConfig()
-
-	// Read data policy from ConfigMap first
+// getConfigMapObfuscation reads the obfuscation configuration from the ConfigMap
+// (via the config aggregator) and converts it to DataPolicy options used in DataGather resources.
+// It returns a slice of DataPolicyOption values based on the configured obfuscation settings.
+func (c *Controller) getConfigMapObfuscation() []insightsv1.DataPolicyOption {
 	var dataPolicy []insightsv1.DataPolicyOption
 	for _, obfuscationValue := range c.configAggregator.Config().DataReporting.Obfuscation {
 		switch obfuscationValue {
@@ -893,18 +935,29 @@ func (c *Controller) createDataGatherAttributeValues() (
 			dataPolicy = append(dataPolicy, insightsv1.DataPolicyOptionObfuscateWorkloadNames)
 		}
 	}
+	return dataPolicy
+}
 
-	// ConfigMap should take precedence for the obfuscation configuration so use the
-	// InsightsDataGather configuration only if there was none set in a ConfigMap
-	// If there is not configuration in both then no obfuscation should be applied
-	if len(dataPolicy) == 0 && gatherConfig != nil && len(gatherConfig.DataPolicy) > 0 {
-		klog.Infof("Using data policy from InsightsDataGather CR because ConfigMap has no obfuscation settings")
+// createDataGatherAttributeValues reads the current "insightsdatagather.config.openshift.io" configuration.
+// It determines which gatherers should be run, based on the configured gathering mode and custom settings.
+// It also extracts the applicable data policies and storage configuration.
+func (c *Controller) createDataGatherAttributeValues() (
+	insightsv1.Gatherers, []insightsv1.DataPolicyOption, insightsv1.Storage,
+) {
+	// Get InsightsDataGather configuration
+	gatherConfig := c.apiConfigurator.GatherConfig()
+
+	// Get ConfigMap obfuscation value
+	dataPolicy := c.getConfigMapObfuscation()
+
+	// Merge obfuscation settings from multiple sources with correct precedence:
+	// 1. Start with ConfigMap obfuscation settings (base configuration)
+	// 2. Merge with InsightsDataGather if present (resource-specific override)
+	// All unique values from each source are combined to ensure comprehensive obfuscation.
+	if gatherConfig != nil && len(gatherConfig.DataPolicy) > 0 {
 		for _, dataPolicyOption := range gatherConfig.DataPolicy {
-			switch dataPolicyOption {
-			case configv1.DataPolicyOptionObfuscateNetworking:
-				dataPolicy = append(dataPolicy, insightsv1.DataPolicyOptionObfuscateNetworking)
-			case configv1.DataPolicyOptionObfuscateWorkloadNames:
-				dataPolicy = append(dataPolicy, insightsv1.DataPolicyOptionObfuscateWorkloadNames)
+			if !slices.Contains(dataPolicy, insightsv1.DataPolicyOption(dataPolicyOption)) {
+				dataPolicy = append(dataPolicy, insightsv1.DataPolicyOption(dataPolicyOption))
 			}
 		}
 	}
