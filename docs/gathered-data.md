@@ -2113,6 +2113,32 @@ None
 CephCluster](#CephCluster) gatherer. It is practically impossible to tell the two resources apart. Use with caution.
 
 
+## Subscription
+
+Collects `Subscription` from all namespaces.
+
+### API Reference
+- https://github.com/operator-framework/api/blob/master/crds/operators.coreos.com_subscriptions.yaml
+
+### Sample data
+- [docs/insights-archive-sample/config/subscriptions/openshift-cnv/community-kubevirt-hyperconverged.json](./insights-archive-sample/config/subscriptions/openshift-cnv/community-kubevirt-hyperconverged.json)
+
+### Location in archive
+- `config/subscriptions/{namespace}/{name}.json`
+
+### Config ID
+`clusterconfig/subscriptions`
+
+### Released version
+- 4.22
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## SupportSecret
 
 Collects anonymized support secret if there is any
