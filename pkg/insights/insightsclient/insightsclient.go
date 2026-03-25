@@ -2,7 +2,6 @@ package insightsclient
 
 import (
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -124,7 +123,7 @@ func getTrustedCABundle() (*x509.CertPool, error) {
 }
 
 // clientTransport creates new http.Transport with either system or configured Proxy
-func clientTransport(authorizer Authorizer) http.RoundTripper {
+func clientTransport(authorizer Authorizer, kubeClient configv1client.Interface) http.RoundTripper {
 	clientTransport := &http.Transport{
 		Proxy: authorizer.NewSystemOrConfiguredProxy(),
 		DialContext: (&net.Dialer{
@@ -135,15 +134,23 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 		DisableKeepAlives:   true,
 	}
 
+	// Fetch TLS config from API Server
+	tlsConfig, err := GetTLSConfigFromAPIServer(kubeClient)
+	if err != nil {
+		klog.Errorf("getTLSConfigFromAPIServer: %v", err)
+	}
+
 	// get the cluster proxy trusted CA bundle in case the proxy need it
 	rootCAs, err := getTrustedCABundle()
 	if err != nil {
 		klog.Errorf("Failed to get proxy trusted CA: %v", err)
 	}
+
 	if rootCAs != nil {
-		clientTransport.TLSClientConfig = &tls.Config{}
-		clientTransport.TLSClientConfig.RootCAs = rootCAs
+		tlsConfig.RootCAs = rootCAs
 	}
+
+	clientTransport.TLSClientConfig = tlsConfig
 
 	return transport.DebugWrappers(clientTransport)
 }

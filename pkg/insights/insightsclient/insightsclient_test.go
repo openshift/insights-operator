@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/version"
 )
 

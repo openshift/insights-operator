@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -438,11 +439,12 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 
 func TestGatherWorkloadRuntimeInfos_NoPods(t *testing.T) {
 	cli := kubefake.NewSimpleClientset()
+	configCli := configfake.NewSimpleClientset()
 	err := os.Setenv("POD_NAMESPACE", "openshift-insights")
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	result, errors := gatherWorkloadRuntimeInfos(ctx, cli.CoreV1())
+	result, errors := gatherWorkloadRuntimeInfos(ctx, cli.CoreV1(), configCli)
 
 	assert.Nil(t, result)
 	assert.Len(t, errors, 1)

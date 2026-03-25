@@ -76,6 +76,7 @@ rules:
       - clusteroperators
       - clusteroperators/status
       - insightsdatagathers
+      - apiservers
     verbs:
       - create
       - get
