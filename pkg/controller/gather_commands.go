@@ -116,8 +116,8 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		return err
 	}
 
-	// Create TLS provider with default configuration for one-time gather
-	tlsProvider := tlsconfig.NewTLSConfigProvider()
+	// Create TLS provider (approach #3: direct API call)
+	tlsProvider := tlsconfig.NewTLSConfigProvider(gatherConfigClient.ConfigV1())
 
 	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient, tlsProvider)
 	createdGatherers := gather.CreateAllGatherers(
@@ -220,8 +220,8 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
-	// Create TLS provider with default configuration for one-time gather
-	tlsProvider := tlsconfig.NewTLSConfigProvider()
+	// Create TLS provider (approach #3: direct API call)
+	tlsProvider := tlsconfig.NewTLSConfigProvider(configClient.ConfigV1())
 
 	insightsHTTPCli := insightsclient.New(nil, 0, "default", authorizer, configClient, tlsProvider)
 
