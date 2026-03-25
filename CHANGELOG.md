@@ -1,5 +1,133 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 26c559240f437a632ab7f3c34d02b8ffc7e3f26e-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: 456de92aaf0a9f62efab834becc1882f864d2518-->
+## 4.21
+
+### Data Enhancement
+- [#1141](https://github.com/openshift/insights-operator/pull/1141) set extractor as default container
+
+### Feature
+- [#1187](https://github.com/openshift/insights-operator/pull/1187) add permissions to list nodefeatures
+- [#1173](https://github.com/openshift/insights-operator/pull/1173)  nodefeature gathering
+- [#1157](https://github.com/openshift/insights-operator/pull/1157) Decouple CRD storage specs
+
+### Bugfix
+- [#1192](https://github.com/openshift/insights-operator/pull/1192) add missing nil checks for DataGather CR
+- [#1178](https://github.com/openshift/insights-operator/pull/1178) update DataGather status after job failure
+- [#1168](https://github.com/openshift/insights-operator/pull/1168) [bugfix] The archive's records may include files whose names are out of bounds
+- [#1167](https://github.com/openshift/insights-operator/pull/1167) Add filtering to add other possible pod status to QEMU gatherer
+- [#1164](https://github.com/openshift/insights-operator/pull/1164) QEMU logs are not gathered if there are pending status virt-launcher pods
+- [#1161](https://github.com/openshift/insights-operator/pull/1161) retry mechanism for network error
+- [#1154](https://github.com/openshift/insights-operator/pull/1154) The Gather Job did not check the current configuration before running
+- [#1151](https://github.com/openshift/insights-operator/pull/1151) operator is not set as degraded when failed
+- [#1131](https://github.com/openshift/insights-operator/pull/1131) update DataGather condition when gathering job fails
+- [#1137](https://github.com/openshift/insights-operator/pull/1137) Use correct feature gate for InsightsDataGather
+- [#1134](https://github.com/openshift/insights-operator/pull/1134) Update error message for missing SCA certificates
+- [#1123](https://github.com/openshift/insights-operator/pull/1123) add missing permissions for replicasets and events
+
+### Others
+- [#1149](https://github.com/openshift/insights-operator/pull/1149) Refactor network anonymization
+- [#1180](https://github.com/openshift/insights-operator/pull/1180) add AGENTS.md
+- [#1169](https://github.com/openshift/insights-operator/pull/1169) Refactor wasDataProcessed function
+- [#1176](https://github.com/openshift/insights-operator/pull/1176) update go version to 1.24.0
+- [#1166](https://github.com/openshift/insights-operator/pull/1166) remove trailing commas from ConfigMap example
+- [#1162](https://github.com/openshift/insights-operator/pull/1162) add CLAUDE.md
+- [#1156](https://github.com/openshift/insights-operator/pull/1156) remove CRD manifests
+- [#1133](https://github.com/openshift/insights-operator/pull/1133) add katarina to OWNERS
+- [#1127](https://github.com/openshift/insights-operator/pull/1127) remove me from the OWNERS list
+
+### Misc
+- [#1136](https://github.com/openshift/insights-operator/pull/1136) Updating ose-insights-operator-container image to be consistent with ART for 4.21
+- [#1140](https://github.com/openshift/insights-operator/pull/1140) Run missing make update
+- [#1128](https://github.com/openshift/insights-operator/pull/1128) Rerun missed `make update` after read-only filesystem security context added"
+
+## 4.20
+
+### Data Enhancement
+- [#1110](https://github.com/openshift/insights-operator/pull/1110) virt launcher logs gatherer
+
+### Feature
+- [#1093](https://github.com/openshift/insights-operator/pull/1093) update code to use v1alpha2 api version
+- [#1090](https://github.com/openshift/insights-operator/pull/1090) add Progressing condition
+- [#1084](https://github.com/openshift/insights-operator/pull/1084) update DataGather condition reasons
+- [#1082](https://github.com/openshift/insights-operator/pull/1082) ensure the etc-entitlement-pki secret exists
+- [#1083](https://github.com/openshift/insights-operator/pull/1083) move HTTP status code from condition.Reason to condition.Message
+- [#1078](https://github.com/openshift/insights-operator/pull/1078) add disabledWithApi condition
+
+### Bugfix
+- [#1122](https://github.com/openshift/insights-operator/pull/1122) Rerun missed `make update` after read-only filesystem security context added
+- [#1111](https://github.com/openshift/insights-operator/pull/1111) incorrect anonymization of domains
+- [#1106](https://github.com/openshift/insights-operator/pull/1106) add permissions to gather clusterrole
+- [#1109](https://github.com/openshift/insights-operator/pull/1109) Allow on-demand gathering during initial periodic run
+- [#1099](https://github.com/openshift/insights-operator/pull/1099) update the manifest crds to be applied during DevPreview and Custom featuresets
+- [#1102](https://github.com/openshift/insights-operator/pull/1102) bump golang-ci version
+- [#1094](https://github.com/openshift/insights-operator/pull/1094) copy proxy envs from IO pod to gathering pods
+- [#1085](https://github.com/openshift/insights-operator/pull/1085) Enhance insights-runtime-extractor errors
+- [#1086](https://github.com/openshift/insights-operator/pull/1086) Report an error when the insights-runtime-extractor is …
+
+### Others
+- [#1097](https://github.com/openshift/insights-operator/pull/1097) update on-demand gathering docs
+- [#1096](https://github.com/openshift/insights-operator/pull/1096) update new SCA endpoint in docs
+- [#1092](https://github.com/openshift/insights-operator/pull/1092) update github.com/openshift/api and openshift/client-go to latest version
+
+### Misc
+- [#1104](https://github.com/openshift/insights-operator/pull/1104) Add missing readonlyRootFilesystem
+- [#1101](https://github.com/openshift/insights-operator/pull/1101) Add readonlyRootFilesystem
+- [#1095](https://github.com/openshift/insights-operator/pull/1095) Updating ose-insights-operator-container image to be consistent with ART for 4.20
+
+## 4.19
+
+### Data Enhancement
+- [#1022](https://github.com/openshift/insights-operator/pull/1022) LokiStack gatherer
+- [#1020](https://github.com/openshift/insights-operator/pull/1020) Add conditional gatherer validation test cases
+
+### Feature
+- [#1081](https://github.com/openshift/insights-operator/pull/1081) Move the Insights runtime extractor feature to GA
+- [#1079](https://github.com/openshift/insights-operator/pull/1079) remove the upgradeable condition
+- [#1070](https://github.com/openshift/insights-operator/pull/1070) Introduce a new config option for storing archives to persistent volume
+- [#1066](https://github.com/openshift/insights-operator/pull/1066) Enable Insight Operator entitlements for multi arch clusters
+
+### Bugfix
+- [#1077](https://github.com/openshift/insights-operator/pull/1077) allow running enabled functions from disabled gatherer
+- [#1073](https://github.com/openshift/insights-operator/pull/1073) Fix bad IPv6 address
+- [#1072](https://github.com/openshift/insights-operator/pull/1072) update the duration validation pattern according to the OpenShift API
+- [#1067](https://github.com/openshift/insights-operator/pull/1067) Add a liveness probe to the extractor container
+- [#1055](https://github.com/openshift/insights-operator/pull/1055) Ignore previous status when disabling alerts
+- [#1050](https://github.com/openshift/insights-operator/pull/1050) use joinHostPort to fix IPv6
+- [#1046](https://github.com/openshift/insights-operator/pull/1046) avoid possible Go panic when searching existing conditions
+- [#1032](https://github.com/openshift/insights-operator/pull/1032) insightsoperator.operator.openshift.io resource is cre…
+
+### Others
+- [#1080](https://github.com/openshift/insights-operator/pull/1080) add BaiyangZhou to OWNERS file
+- [#1076](https://github.com/openshift/insights-operator/pull/1076) refactor gather commands
+- [#1075](https://github.com/openshift/insights-operator/pull/1075) add gatherer name validation to gendocs
+- [#1071](https://github.com/openshift/insights-operator/pull/1071) Upgrade Golang to 1.23
+- [#1053](https://github.com/openshift/insights-operator/pull/1053) bump up OpenShift versions
+- [#1052](https://github.com/openshift/insights-operator/pull/1052) minor test update
+- [#1045](https://github.com/openshift/insights-operator/pull/1045) golanci-lint version update & corresponding fixes
+- [#1043](https://github.com/openshift/insights-operator/pull/1043) Avoid to send the same error repeated N times
+- [#1039](https://github.com/openshift/insights-operator/pull/1039) sort the JSON schema validation errors
+- [#1033](https://github.com/openshift/insights-operator/pull/1033) set required-scc for dataGahtering jobs & pods
+
+### Misc
+- [#1065](https://github.com/openshift/insights-operator/pull/1065) Add Ondrej user to OWNERS file
+- [#1044](https://github.com/openshift/insights-operator/pull/1044) Updating ose-insights-operator-container image to be consistent with ART for 4.19
+
+## 4.18
+
+### Data Enhancement
+- [#949](https://github.com/openshift/insights-operator/pull/949) Gather Workload Runtime Info From Containers
+- [#1025](https://github.com/openshift/insights-operator/pull/1025) Remove hardcoded log gatherers
+
+### Bugfix
+- [#1031](https://github.com/openshift/insights-operator/pull/1031) insights runtime extractor daemonset
+- [#1028](https://github.com/openshift/insights-operator/pull/1028) Fix links to the OpenStack related CRs in the gathered-data doc
+
+### Others
+- [#1027](https://github.com/openshift/insights-operator/pull/1027) container logs gathering - use the default config in case of validati…
+
+### Misc
+- [#1029](https://github.com/openshift/insights-operator/pull/1029) Revert "Gather Workload Runtime Info From Containers"
+
 ## 4.17
 
 ### Data Enhancement
