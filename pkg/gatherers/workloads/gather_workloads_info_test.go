@@ -35,7 +35,7 @@ func Test_gatherWorkloadInfo(t *testing.T) {
 	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
 	config.ContentType = "application/vnd.kubernetes.protobuf"
 
-	g := New(nil, config)
+	g := New(nil, config, nil)
 	ctx := context.TODO()
 	start := time.Now()
 	records, errs := g.GatherWorkloadInfo(ctx)

@@ -11,7 +11,7 @@ import (
 )
 
 func Test_Gatherer_Basic(t *testing.T) {
-	gatherer := workloads.New(nil, nil)
+	gatherer := workloads.New(nil, nil, nil)
 
 	assert.Equal(t, "workloads", gatherer.GetName())
 	assert.Implements(t, (*gatherers.Interface)(nil), gatherer)
@@ -27,7 +27,7 @@ func Test_Gatherer_Basic(t *testing.T) {
 }
 
 func Test_Gatherer_ShouldBeProcessedNow(t *testing.T) {
-	gatherer := workloads.New(nil, nil)
+	gatherer := workloads.New(nil, nil, nil)
 
 	assert.True(t, gatherer.ShouldBeProcessedNow())
 

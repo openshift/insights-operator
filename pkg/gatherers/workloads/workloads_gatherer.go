@@ -2,6 +2,7 @@ package workloads
 
 import (
 	"context"
+	"crypto/tls"
 	"time"
 
 	"k8s.io/client-go/rest"
@@ -13,16 +14,23 @@ import (
 
 var workloadsGathererPeriod = time.Hour * 12
 
+// TLSConfigProvider provides TLS configuration for HTTP clients
+type TLSConfigProvider interface {
+	GetTLSConfig() *tls.Config
+}
+
 type Gatherer struct {
 	gatherKubeConfig      *rest.Config
 	gatherProtoKubeConfig *rest.Config
+	tlsProvider           TLSConfigProvider
 	lastProcessingTime    time.Time
 }
 
-func New(gatherKubeConfig, gatherProtoKubeConfig *rest.Config) *Gatherer {
+func New(gatherKubeConfig, gatherProtoKubeConfig *rest.Config, tlsProvider TLSConfigProvider) *Gatherer {
 	return &Gatherer{
 		gatherKubeConfig:      gatherKubeConfig,
 		gatherProtoKubeConfig: gatherProtoKubeConfig,
+		tlsProvider:           tlsProvider,
 		lastProcessingTime:    time.Unix(0, 0),
 	}
 }

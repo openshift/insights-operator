@@ -141,7 +141,7 @@ func TestClient_RecvGatheringRules(t *testing.T) {
 	defer httpServer.Close()
 
 	configClient := createFakeConfigClient("342804d0-b57d-46d4-a84e-4a665a6ffe5e")
-	insightsClient := insightsclient.New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient)
+	insightsClient := insightsclient.New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient, nil)
 
 	endpoint := fmt.Sprintf("%s/%%s", httpServer.URL)
 	httpResp, err := insightsClient.GetWithPathParam(context.Background(), endpoint, "test-version", false)
@@ -186,7 +186,7 @@ func TestClient_RecvSCACerts(t *testing.T) {
 			defer httpServer.Close()
 
 			configClient := createFakeConfigClient("342804d0-b57d-46d4-a84e-4a665a6ffe5e")
-			insightsClient := insightsclient.New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient)
+			insightsClient := insightsclient.New(http.DefaultClient, 0, "", &MockAuthorizer{}, configClient, nil)
 
 			architectures := map[string]struct{}{
 				"x86_64":  {},
@@ -283,7 +283,7 @@ func TestClient_RecvReport(t *testing.T) {
 			defer httpServer.Close()
 
 			configClient := createFakeConfigClient("test-cluster-id")
-			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{}, configClient)
+			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{}, configClient, nil)
 
 			endpoint := fmt.Sprintf("%s/%%s", httpServer.URL)
 			resp, err := insightsClient.RecvReport(context.Background(), endpoint)
@@ -355,7 +355,7 @@ func TestClient_RecvClusterTransfer(t *testing.T) {
 			defer httpServer.Close()
 
 			configClient := createFakeConfigClient("test-cluster-456")
-			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{token: "test-token"}, configClient)
+			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{token: "test-token"}, configClient, nil)
 
 			data, err := insightsClient.RecvClusterTransfer(httpServer.URL)
 
@@ -409,7 +409,7 @@ func TestClient_GetWithPathParam(t *testing.T) {
 			defer httpServer.Close()
 
 			configClient := createFakeConfigClient("test-cluster-id")
-			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{}, configClient)
+			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{}, configClient, nil)
 
 			var endpoint string
 			if tt.includeClusterID {
@@ -494,7 +494,7 @@ func TestClient_SendAndGetID(t *testing.T) {
 			defer httpServer.Close()
 
 			configClient := createFakeConfigClient("test-cluster-id")
-			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{}, configClient)
+			insightsClient := insightsclient.New(http.DefaultClient, 0, "test", &MockAuthorizer{}, configClient, nil)
 
 			source := insightsclient.Source{
 				ID:       "test-source",

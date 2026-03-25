@@ -34,6 +34,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/authorizer/clusterauthorizer"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
+	"github.com/openshift/insights-operator/pkg/config/tlsconfig"
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
@@ -91,6 +92,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 	configInformers := configv1informers.NewSharedInformerFactory(configClient, informerTimeout)
+
+	// Create TLS config provider (approach #3: direct API call)
+	// This ensures all HTTP clients respect the cluster-wide TLS security policy
+	tlsProvider := tlsconfig.NewTLSConfigProvider(configClient.ConfigV1())
 
 	operatorClient, err := operatorclient.NewForConfig(controller.KubeConfig)
 	if err != nil {
@@ -251,14 +256,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "insights", authorizer, gatherConfigClient)
+	insightsClient := insightsclient.New(nil, 0, "insights", authorizer, gatherConfigClient, tlsProvider)
 
 	var periodicGather *periodic.Controller
 	// the gatherers are periodically called to collect the data from the cluster
 	// and provide the results for the recorder
 	gatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
-		configAggregator, insightsClient,
+		configAggregator, insightsClient, tlsProvider,
 	)
 	if !insightsConfigEnabled {
 		periodicGather = periodic.New(configAggregator, rec, gatherers, anonymizer,

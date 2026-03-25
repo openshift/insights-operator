@@ -38,7 +38,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := New(tt.client, tt.maxBytes, "test", nil, nil)
+			result := New(tt.client, tt.maxBytes, "test", nil, nil, nil)
 			if tt.expectClient {
 				assert.NotNil(t, result.client)
 			}

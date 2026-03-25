@@ -42,12 +42,18 @@ type Client struct {
 	metricsName  string
 	authorizer   Authorizer
 	configClient configv1client.Interface
+	tlsProvider  TLSConfigProvider
 }
 
 type Authorizer interface {
 	Authorize(req *http.Request) error
 	NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error)
 	Token() (string, error)
+}
+
+// TLSConfigProvider provides TLS configuration for HTTP clients
+type TLSConfigProvider interface {
+	GetTLSConfig() *tls.Config
 }
 
 type Source struct {
@@ -89,9 +95,12 @@ func IsHttpError(err error) bool {
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
 // New creates a Client
-func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, configClient configv1client.Interface) *Client {
+func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, configClient configv1client.Interface, tlsProvider TLSConfigProvider) *Client {
 	if client == nil {
-		client = &http.Client{}
+		// Create HTTP client with cluster-wide TLS configuration
+		client = &http.Client{
+			Transport: clientTransport(authorizer, tlsProvider),
+		}
 	}
 	if maxBytes == 0 {
 		maxBytes = 10 * 1024 * 1024
@@ -102,6 +111,7 @@ func New(client *http.Client, maxBytes int64, metricsName string, authorizer Aut
 		metricsName:  metricsName,
 		authorizer:   authorizer,
 		configClient: configClient,
+		tlsProvider:  tlsProvider,
 	}
 }
 
@@ -124,9 +134,15 @@ func getTrustedCABundle() (*x509.CertPool, error) {
 }
 
 // clientTransport creates new http.Transport with either system or configured Proxy
-func clientTransport(authorizer Authorizer) http.RoundTripper {
+// and applies the cluster-wide TLS security profile from the TLS provider
+func clientTransport(authorizer Authorizer, tlsProvider TLSConfigProvider) http.RoundTripper {
+	var proxyFunc func(*http.Request) (*url.URL, error)
+	if authorizer != nil {
+		proxyFunc = authorizer.NewSystemOrConfiguredProxy()
+	}
+
 	clientTransport := &http.Transport{
-		Proxy: authorizer.NewSystemOrConfiguredProxy(),
+		Proxy: proxyFunc,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -135,15 +151,29 @@ func clientTransport(authorizer Authorizer) http.RoundTripper {
 		DisableKeepAlives:   true,
 	}
 
+	// Get cluster-wide TLS configuration from the TLS provider
+	// This respects the TLS security profile set in the APIServer CR
+	var tlsConfig *tls.Config
+	if tlsProvider != nil {
+		tlsConfig = tlsProvider.GetTLSConfig()
+	} else {
+		// Fallback to safe default TLS 1.2 if no provider
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
 	// get the cluster proxy trusted CA bundle in case the proxy need it
 	rootCAs, err := getTrustedCABundle()
 	if err != nil {
 		klog.Errorf("Failed to get proxy trusted CA: %v", err)
 	}
 	if rootCAs != nil {
-		clientTransport.TLSClientConfig = &tls.Config{}
-		clientTransport.TLSClientConfig.RootCAs = rootCAs
+		// Merge proxy RootCAs with TLS config from provider
+		tlsConfig.RootCAs = rootCAs
 	}
+
+	clientTransport.TLSClientConfig = tlsConfig
 
 	return transport.DebugWrappers(clientTransport)
 }
