@@ -223,7 +223,6 @@ rules:
     resources:
       - nodes/log
       - nodes/metrics
-      - nodes/proxy
       - nodes/stats
     verbs:
       - get
