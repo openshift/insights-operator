@@ -798,7 +798,7 @@ func TestCreateDataGatherAttributeValues_ConfigMapObfuscationPrecedence(t *testi
 		expectedPolicy       []insightsv1.DataPolicyOption
 	}{
 		{
-			name: "ConfigMap obfuscation takes precedence over InsightsDataGather CR",
+			name: "Both ConfigMap InsightsDataGather CR configuration is used",
 			gatherConfig: configv1.GatherConfig{
 				DataPolicy: []configv1.DataPolicyOption{
 					configv1.DataPolicyOptionObfuscateWorkloadNames,
@@ -810,6 +810,7 @@ func TestCreateDataGatherAttributeValues_ConfigMapObfuscationPrecedence(t *testi
 			configMapObfuscation: config.Obfuscation{config.Networking},
 			expectedPolicy: []insightsv1.DataPolicyOption{
 				insightsv1.DataPolicyOptionObfuscateNetworking,
+				insightsv1.DataPolicyOptionObfuscateWorkloadNames,
 			},
 		},
 		{
@@ -830,7 +831,7 @@ func TestCreateDataGatherAttributeValues_ConfigMapObfuscationPrecedence(t *testi
 			},
 		},
 		{
-			name: "ConfigMap with both obfuscation types overrides InsightsDataGather CR",
+			name: "ConfigMap with both obfuscation options and empty InsightsDataGather",
 			gatherConfig: configv1.GatherConfig{
 				DataPolicy: []configv1.DataPolicyOption{},
 				Gatherers: configv1.Gatherers{
@@ -1970,7 +1971,24 @@ func TestGetDataGatherCR(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			insightsClientset := insightsFakeCli.NewSimpleClientset(tt.dataGather)
 			kubeClientset := kubefake.NewSimpleClientset(tt.deployment)
-			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeClientset, insightsClientset.InsightsV1(), nil, nil, nil, nil)
+			apiConfig := NewInsightsDataGatherObserverMock(
+				[]configv1.DataPolicyOption{},
+				configv1.Gatherers{},
+			)
+			mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+				DataReporting: config.DataReporting{
+					Obfuscation: config.Obfuscation{},
+				},
+			})
+			mockController := NewWithTechPreview(
+				nil,
+				mockConfigMapConfigurator,
+				apiConfig,
+				nil,
+				kubeClientset,
+				insightsClientset.InsightsV1(),
+				nil, nil, nil, nil,
+			)
 			mockController.image = tt.controllerImage
 
 			result, err := mockController.prepareDataGatherCRWithImage(context.Background(), tt.dataGather.Name)
