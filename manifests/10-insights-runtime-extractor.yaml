@@ -12,6 +12,7 @@ metadata:
   labels:
     app.kubernetes.io/name: insights-runtime-extractor
 spec:
+  subdomain: insights-runtime-extractor
   selector:
     matchLabels:
       app.kubernetes.io/name: insights-runtime-extractor
@@ -40,7 +41,7 @@ spec:
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
           args:
             - '--secure-listen-address=:8443'
-            - '--upstream=https://127.0.0.1:8000'
+            - '--upstream=https://$(POD_NAME).insights-runtime-extractor.$(NAMESPACE).svc:8000'
             - '--config-file=/etc/kube-rbac-proxy/config.yaml'
             - '--tls-cert-file=/etc/tls/private/tls.crt'
             - '--tls-private-key-file=/etc/tls/private/tls.key'
@@ -67,6 +68,15 @@ spec:
             requests:
               cpu: 10m
               memory: 100Mi
+          env:
+            - name: POD_NAME
+              valueFrom:
+               fieldRef:
+                fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
         - name: exporter
           image: quay.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
