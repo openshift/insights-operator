@@ -30,6 +30,7 @@ spec:
         kubectl.kubernetes.io/default-container: extractor
     spec:
       serviceAccountName: insights-runtime-extractor-sa
+      subdomain: exporter
       hostPID: true
       # Deploy the insights-runtime-extractor only on Linux worker nodes
       nodeSelector:
@@ -40,7 +41,7 @@ spec:
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
           args:
             - '--secure-listen-address=:8443'
-            - '--upstream=https://127.0.0.1:8000'
+            - '--upstream=https://$(POD_NAME).exporter.openshift-insights.svc:8000'
             - '--upstream-insecure-skip-verify'
             - '--config-file=/etc/kube-rbac-proxy/config.yaml'
             - '--tls-cert-file=/etc/tls/private/tls.crt'
@@ -68,6 +69,12 @@ spec:
             requests:
               cpu: 10m
               memory: 100Mi
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
         - name: exporter
           image: quay.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
