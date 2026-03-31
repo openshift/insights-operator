@@ -42,7 +42,6 @@ spec:
           args:
             - '--secure-listen-address=:8443'
             - '--upstream=https://$(POD_NAME).exporter.openshift-insights.svc:8000'
-            - '--upstream-insecure-skip-verify'
             - '--config-file=/etc/kube-rbac-proxy/config.yaml'
             - '--tls-cert-file=/etc/tls/private/tls.crt'
             - '--tls-private-key-file=/etc/tls/private/tls.key'
