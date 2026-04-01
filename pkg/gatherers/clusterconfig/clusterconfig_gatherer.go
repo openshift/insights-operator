@@ -48,6 +48,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"ingress_certificates":             (*Gatherer).GatherClusterIngressCertificates,
 	"install_plans":                    (*Gatherer).GatherInstallPlans,
 	"jaegers":                          (*Gatherer).GatherJaegerCR,
+	"kubeletconfigs":                   (*Gatherer).GatherKubeletConfig,
 	"lokistack":                        (*Gatherer).GatherLokiStack,
 	"machine_autoscalers":              (*Gatherer).GatherMachineAutoscalers,
 	"machine_config_pools":             (*Gatherer).GatherMachineConfigPool,
@@ -60,6 +61,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"mutating_webhook_configurations":  (*Gatherer).GatherMutatingWebhookConfigurations,
 	"networks":                         (*Gatherer).GatherClusterNetwork,
 	"node_logs":                        (*Gatherer).GatherNodeLogs,
+	"node_features":                    (*Gatherer).GatherNodeFeatures,
 	"nodes":                            (*Gatherer).GatherNodes,
 	"nodenetworkconfigurationpolicies": (*Gatherer).GatherNodeNetworkConfigurationPolicy,
 	"nodenetworkstates":                (*Gatherer).GatherNodeNetworkState,
@@ -91,7 +93,6 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"tsdb_status":                       (*Gatherer).GatherPrometheusTSDBStatus,
 	"validating_webhook_configurations": (*Gatherer).GatherValidatingWebhookConfigurations,
 	"version":                           (*Gatherer).GatherClusterVersion,
-	"node_features":                     (*Gatherer).GatherNodeFeatures,
 }
 
 func New(

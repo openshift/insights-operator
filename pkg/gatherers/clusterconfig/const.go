@@ -40,6 +40,9 @@ var (
 	machineConfigGroupVersionResource = schema.GroupVersionResource{
 		Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "machineconfigs",
 	}
+	kubeletGroupVersionResource = schema.GroupVersionResource{
+		Group: "machineconfiguration.openshift.io", Version: "v1", Resource: "kubeletconfigs",
+	}
 	machineHeatlhCheckGVR = schema.GroupVersionResource{
 		Group: "machine.openshift.io", Version: "v1beta1", Resource: "machinehealthchecks",
 	}
