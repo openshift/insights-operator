@@ -45,6 +45,7 @@ spec:
             - '--config-file=/etc/kube-rbac-proxy/config.yaml'
             - '--tls-cert-file=/etc/tls/private/tls.crt'
             - '--tls-private-key-file=/etc/tls/private/tls.key'
+            - '--upstream-ca-file=/var/run/configmaps/service-ca-bundle/service-ca.crt'
           terminationMessagePolicy: FallbackToLogsOnError
           volumeMounts:
             - mountPath: /etc/tls/private
@@ -52,6 +53,9 @@ spec:
               readOnly: true
             - mountPath: /etc/kube-rbac-proxy
               name: kube-rbac-proxy-cm
+            - mountPath: /var/run/configmaps/service-ca-bundle
+              name: service-ca-bundle
+              readOnly: true
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false
