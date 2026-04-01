@@ -30,6 +30,7 @@ spec:
         kubectl.kubernetes.io/default-container: extractor
     spec:
       serviceAccountName: insights-runtime-extractor-sa
+      subdomain: exporter
       hostPID: true
       # Deploy the insights-runtime-extractor only on Linux worker nodes
       nodeSelector:
@@ -40,16 +41,21 @@ spec:
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
           args:
             - '--secure-listen-address=:8443'
-            - '--upstream=http://127.0.0.1:8000'
+            - '--upstream=https://$(POD_NAME).exporter.openshift-insights.svc.cluster.local:8000'
             - '--config-file=/etc/kube-rbac-proxy/config.yaml'
             - '--tls-cert-file=/etc/tls/private/tls.crt'
             - '--tls-private-key-file=/etc/tls/private/tls.key'
+            - '--upstream-ca-file=/var/run/configmaps/service-ca-bundle/service-ca.crt'
           terminationMessagePolicy: FallbackToLogsOnError
           volumeMounts:
             - mountPath: /etc/tls/private
               name: insights-runtime-extractor-tls
+              readOnly: true
             - mountPath: /etc/kube-rbac-proxy
               name: kube-rbac-proxy-cm
+            - mountPath: /var/run/configmaps/service-ca-bundle
+              name: service-ca-bundle
+              readOnly: true
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false
@@ -66,12 +72,36 @@ spec:
             requests:
               cpu: 10m
               memory: 100Mi
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
         - name: exporter
-          image: quay.io/openshift/origin-insights-runtime-exporter:latest
+          image: quay.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
           volumeMounts:
             - mountPath: /data
               name: data-volume
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
+              readOnly: true
+            - mountPath: /var/run/configmaps/service-ca-bundle
+              name: service-ca-bundle
+              readOnly: true
+          command:
+            - /exporter
+            - -bind
+            - 0.0.0.0
+            - -tls-cert
+            - /etc/tls/private/tls.crt
+            - -tls-key
+            - /etc/tls/private/tls.key
+            - -tls-ca
+            - /var/run/configmaps/service-ca-bundle/service-ca.crt
+            - -tls-server-name
+            - exporter.openshift-insights.svc.cluster.local
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false
@@ -84,7 +114,7 @@ spec:
               cpu: 10m
               memory: 200Mi
         - name: extractor
-          image: quay.io/openshift/origin-insights-runtime-extractor:latest
+          image: quay.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
@@ -115,6 +145,15 @@ spec:
               name: crio-socket
             - mountPath: /data
               name: data-volume
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
+              readOnly: true
+          command:
+            - /extractor_server
+            - --tls-cert
+            - /etc/tls/private/tls.crt
+            - --tls-key
+            - /etc/tls/private/tls.key
       volumes:
         - name: crio-socket
           hostPath:
@@ -128,3 +167,6 @@ spec:
         - name: insights-runtime-extractor-tls
           secret:
             secretName: insights-runtime-extractor-tls
+        - name: service-ca-bundle
+          configMap:
+            name: service-ca-bundle
