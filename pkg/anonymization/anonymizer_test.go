@@ -242,7 +242,7 @@ func Test_Anonymizer_StoreTranslationTable(t *testing.T) {
 
 	// Mock the client to react/check Apply calls
 	kube := kubefake.Clientset{}
-	kube.Fake.AddReactor("create", "secrets",
+	kube.AddReactor("create", "secrets",
 		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			if createAction, ok := action.(clienttesting.CreateAction); ok {
 				assert.Equal(t, secretNamespace, createAction.GetNamespace())

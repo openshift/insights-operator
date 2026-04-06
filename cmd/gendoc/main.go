@@ -368,8 +368,7 @@ func execExampleMethod(methodFullPackage, methodPackage, methodName string) (str
 		fmt.Print(err)
 	}
 
-	// nolint: gosec
-	cmd := exec.Command("go", "run", fmt.Sprintf("%s%s", cleanRoot, f))
+	cmd := exec.Command("go", "run", fmt.Sprintf("%s%s", cleanRoot, f)) //nolint:noctx,gosec
 	output, err := cmd.CombinedOutput()
 
 	return string(output), err
