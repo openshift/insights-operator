@@ -873,7 +873,7 @@ func TestPeriodicPrune(t *testing.T) {
 						Name:      "to-be-removed-job-1",
 						Namespace: insightsNamespace,
 						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-25 * time.Hour),
+							Time: metav1.Now().Add(-25 * time.Hour),
 						},
 					},
 				},
@@ -882,7 +882,7 @@ func TestPeriodicPrune(t *testing.T) {
 						Name:      "to-be-removed-job-2",
 						Namespace: insightsNamespace,
 						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-1441 * time.Minute),
+							Time: metav1.Now().Add(-1441 * time.Minute),
 						},
 					},
 				},
@@ -891,7 +891,7 @@ func TestPeriodicPrune(t *testing.T) {
 						Name:      "to-keep-job-1",
 						Namespace: insightsNamespace,
 						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-23 * time.Hour),
+							Time: metav1.Now().Add(-23 * time.Hour),
 						},
 					},
 				},
@@ -900,7 +900,7 @@ func TestPeriodicPrune(t *testing.T) {
 						Name:      "to-keep-job-2",
 						Namespace: insightsNamespace,
 						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-2 * time.Hour),
+							Time: metav1.Now().Add(-2 * time.Hour),
 						},
 					},
 				},
@@ -910,7 +910,7 @@ func TestPeriodicPrune(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "to-be-removed-dg-1",
 						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-25 * time.Hour),
+							Time: metav1.Now().Add(-25 * time.Hour),
 						},
 					},
 				},
@@ -918,7 +918,7 @@ func TestPeriodicPrune(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "to-be-removed-dg-2",
 						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-1441 * time.Minute),
+							Time: metav1.Now().Add(-1441 * time.Minute),
 						},
 					},
 				},
@@ -926,7 +926,7 @@ func TestPeriodicPrune(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "to-keep-dg-1",
 						CreationTimestamp: metav1.Time{
-							Time: metav1.Now().Time.Add(-1339 * time.Minute),
+							Time: metav1.Now().Add(-1339 * time.Minute),
 						},
 					},
 				},
