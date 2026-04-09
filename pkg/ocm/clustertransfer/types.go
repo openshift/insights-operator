@@ -30,7 +30,7 @@ type clusterTransfer struct {
 	Recipient      string    `json:"recipient,omitempty"`
 	ExpirationDate time.Time `json:"expiration_date,omitempty"`
 	Status         string    `json:"status,omitempty"`
-	Secret         string    `json:"secret,omitempty"`
+	Secret         string    `json:"secret,omitempty"` // nolint:gosec
 	CreatedAt      time.Time `json:"created_at,omitempty"`
 	UpdatedAt      time.Time `json:"updated_at,omitempty"`
 }

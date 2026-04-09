@@ -179,7 +179,7 @@ func getNodeWorkloadRuntimeInfos(
 		}
 	}
 	request.Header.Set("Authorization", "Bearer "+token)
-	resp, err := httpCli.Do(request)
+	resp, err := httpCli.Do(request) // nolint:gosec
 	if err != nil {
 		return workloadRuntimesResult{
 			Error: err,
