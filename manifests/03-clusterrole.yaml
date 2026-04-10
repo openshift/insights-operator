@@ -300,6 +300,7 @@ rules:
       - machineconfiguration.openshift.io
     resources:
       - machineconfigs
+      - kubeletconfigs
     verbs:
       - get
       - list
