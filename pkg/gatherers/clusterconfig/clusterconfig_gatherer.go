@@ -61,7 +61,6 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"mutating_webhook_configurations":  (*Gatherer).GatherMutatingWebhookConfigurations,
 	"networks":                         (*Gatherer).GatherClusterNetwork,
 	"node_logs":                        (*Gatherer).GatherNodeLogs,
-	"node_features":                    (*Gatherer).GatherNodeFeatures,
 	"nodes":                            (*Gatherer).GatherNodes,
 	"nodenetworkconfigurationpolicies": (*Gatherer).GatherNodeNetworkConfigurationPolicy,
 	"nodenetworkstates":                (*Gatherer).GatherNodeNetworkState,
