@@ -48,6 +48,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"ingress_certificates":             (*Gatherer).GatherClusterIngressCertificates,
 	"install_plans":                    (*Gatherer).GatherInstallPlans,
 	"jaegers":                          (*Gatherer).GatherJaegerCR,
+	"kubeletconfigs":                   (*Gatherer).GatherKubeletConfig,
 	"lokistack":                        (*Gatherer).GatherLokiStack,
 	"machine_autoscalers":              (*Gatherer).GatherMachineAutoscalers,
 	"machine_config_pools":             (*Gatherer).GatherMachineConfigPool,
