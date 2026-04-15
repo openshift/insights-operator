@@ -71,8 +71,8 @@ func TestShouldRetry_RetryOnNon200HTTP_Valid(t *testing.T) {
 	}
 
 	// Test 3: Non-HTTP error should retry
-	nonHttpErr := fmt.Errorf("network error")
-	result = shouldRetry(nonHttpErr, RetryOnNon200HTTP)
+	nonHTTPErr := fmt.Errorf("network error")
+	result = shouldRetry(nonHTTPErr, RetryOnNon200HTTP)
 	if !result {
 		t.Errorf("Expected shouldRetry to return true for non-HTTP error, got false")
 	}
@@ -106,8 +106,8 @@ func TestShouldRetry_RetryOnAll_Valid(t *testing.T) {
 	}
 
 	// Test 2: Non-HTTP error
-	nonHttpErr := fmt.Errorf("some random error")
-	result = shouldRetry(nonHttpErr, RetryOnAll)
+	nonHTTPErr := fmt.Errorf("some random error")
+	result = shouldRetry(nonHTTPErr, RetryOnAll)
 	if !result {
 		t.Errorf("Expected shouldRetry to return true for non-HTTP error, got false")
 	}
