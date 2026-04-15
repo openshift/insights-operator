@@ -31,6 +31,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/gatherers/common"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/retry"
 	"github.com/openshift/insights-operator/pkg/utils"
 )
 
@@ -271,30 +272,28 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 		Cap:      3 * time.Minute,
 	}
 	endpointWithVersion := fmt.Sprintf(endpoint, ocpVersion)
-	var remoteConfigData []byte
-	err = wait.ExponentialBackoffWithContext(ctx, backOff, func(ctx context.Context) (done bool, err error) {
+
+	remoteConfigData, err := retry.RetryWithExpBackOff(backOff, retry.RetryOnNon200HTTP, func() ([]byte, error) {
 		resp, err := g.insightsCli.GetWithPathParam(ctx, endpoint, ocpVersion, false)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
+		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			klog.Infof("Received HTTP status code %d, trying again in %s", resp.StatusCode, backOff.Step())
-			if backOff.Steps > 1 {
-				return false, nil
-			}
-			return true, insightsclient.HttpError{
-				Err:        fmt.Errorf("received HTTP %s from %s. Using the default built-in configuration", resp.Status, endpointWithVersion),
+			return nil, insightsclient.HttpError{
+				Err:        fmt.Errorf("received HTTP %s from %s", resp.Status, endpointWithVersion),
 				StatusCode: resp.StatusCode,
 			}
 		}
-		remoteConfigData, err = io.ReadAll(resp.Body)
-		defer resp.Body.Close()
+
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return false, nil
+			return nil, err
 		}
-		return true, nil
+		return data, nil
 	})
+
 	if err != nil {
 		return nil, err
 	}

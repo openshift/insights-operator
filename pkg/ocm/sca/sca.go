@@ -19,6 +19,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/ocm"
+	"github.com/openshift/insights-operator/pkg/retry"
 )
 
 const (
@@ -299,29 +300,10 @@ func (c *Controller) requestSCAWithExpBackoff(
 		Cap:      c.configurator.Config().SCA.Interval,
 	}
 
-	var err error
-	var data []byte
-	err = wait.ExponentialBackoff(bo, func() (bool, error) {
-		data, err = c.client.RecvSCACerts(ctx, endpoint, nodeArchitectures)
-		if err != nil {
-			// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
-			if !insightsclient.IsHttpError(err) {
-				return true, err
-			}
-			httpErr := err.(insightsclient.HttpError)
-			// try again only in case of 500 or higher
-			if httpErr.StatusCode >= http.StatusInternalServerError {
-				// check the number of steps to prevent "timeout waiting for condition" error - we want to propagate the HTTP error
-				if bo.Steps > 1 {
-					klog.Errorf("%v. Trying again in %s", httpErr, bo.Step())
-					return false, nil
-				}
-			}
-			return true, httpErr
-		}
-
-		return true, nil
+	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn500HTTP, func() ([]byte, error) {
+		return c.client.RecvSCACerts(ctx, endpoint, nodeArchitectures)
 	})
+
 	if err != nil {
 		return nil, err
 	}

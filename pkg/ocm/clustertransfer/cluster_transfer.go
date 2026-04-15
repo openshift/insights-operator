@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
 	"github.com/openshift/insights-operator/pkg/ocm"
+	"github.com/openshift/insights-operator/pkg/retry"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -221,27 +222,10 @@ func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint strin
 		Cap:      c.configurator.Config().ClusterTransfer.Interval,
 	}
 
-	var data []byte
-	err := wait.ExponentialBackoff(bo, func() (bool, error) {
-		var err error
-		data, err = c.client.RecvClusterTransfer(endpoint)
-		if err == nil {
-			return true, nil
-		}
-		// don't try again in case it's not an HTTP error - it could mean we're in disconnected env
-		if !insightsclient.IsHttpError(err) {
-			return true, err
-		}
-		httpErr := err.(insightsclient.HttpError)
-		if httpErr.StatusCode >= http.StatusInternalServerError {
-			// check the number of steps to prevent "timeout waiting for condition" error - we want to propagate the HTTP error below
-			if bo.Steps > 1 {
-				klog.Errorf("Got HTTP %v. Trying again in %s", httpErr.StatusCode, bo.Step())
-				return false, nil
-			}
-		}
-		return true, httpErr
+	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn500HTTP, func() ([]byte, error) {
+		return c.client.RecvClusterTransfer(endpoint)
 	})
+
 	if err != nil {
 		return nil, err
 	}

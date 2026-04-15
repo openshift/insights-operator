@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controllerstatus"
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/retry"
 )
 
 type Authorizer interface {
@@ -29,6 +30,12 @@ type Summarizer interface {
 type StatusReporter interface {
 	LastReportedTime() time.Time
 	SetLastReportedTime(time.Time)
+}
+
+// uploadResult wraps the response from SendAndGetID for use with retry logic
+type uploadResult struct {
+	requestID  string
+	statusCode int
 }
 
 type Controller struct {
@@ -206,25 +213,18 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 	start := time.Now()
 	s.ID = start.Format(time.RFC3339)
 	s.Type = "application/vnd.redhat.openshift.periodic"
-	var requestID string
-	var statusCode int
-	err := wait.ExponentialBackoff(c.backoff, func() (done bool, err error) {
-		requestID, statusCode, err = c.client.SendAndGetID(ctx, c.configurator.Config().DataReporting.UploadEndpoint, *s)
-		if err != nil {
-			// do no return the error if it's not the last attempt
-			if c.backoff.Steps > 1 {
-				klog.Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
-				klog.Errorf("%v. Trying again in %s", err, c.backoff.Step())
-				return false, nil
-			}
-		}
-		return true, err
+
+	result, err := retry.RetryWithExpBackOff(c.backoff, retry.RetryOnAll, func() (uploadResult, error) {
+		requestID, statusCode, err := c.client.SendAndGetID(ctx, c.configurator.Config().DataReporting.UploadEndpoint, *s)
+		return uploadResult{requestID: requestID, statusCode: statusCode}, err
 	})
+
 	if err != nil {
-		return "", statusCode, err
+		klog.Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
+		return "", result.statusCode, err
 	}
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
-	return requestID, statusCode, nil
+	return result.requestID, result.statusCode, nil
 }
 
 func reportToLogs(source io.Reader) error {
