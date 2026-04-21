@@ -137,12 +137,12 @@ func Test_ShouldRetry(t *testing.T) {
 
 func Test_RetryWithExpBackOff(t *testing.T) {
 	type testCase struct {
-		name          string
-		backoff       wait.Backoff
-		strategy      RetryStrategy
-		operation     func() ([]byte, error)
-		expectedData  []byte
-		expectedError string
+		name           string
+		backoff        wait.Backoff
+		strategy       RetryStrategy
+		operation      func() (Result, error)
+		expectedResult Result
+		expectedError  string
 	}
 
 	testCases := []testCase{
@@ -154,11 +154,11 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOnAll,
-			operation: func() ([]byte, error) {
-				return []byte("success"), nil
+			operation: func() (Result, error) {
+				return Result{Data: []byte("success")}, nil
 			},
-			expectedData:  []byte("success"),
-			expectedError: "",
+			expectedResult: Result{Data: []byte("success")},
+			expectedError:  "",
 		},
 		{
 			name: "successful after 2 retries",
@@ -168,18 +168,18 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOnAll,
-			operation: func() func() ([]byte, error) {
+			operation: func() func() (Result, error) {
 				attempts := 0
-				return func() ([]byte, error) {
+				return func() (Result, error) {
 					attempts++
 					if attempts < 3 {
-						return nil, fmt.Errorf("attempt %d failed", attempts)
+						return Result{}, fmt.Errorf("attempt %d failed", attempts)
 					}
-					return []byte("success after retries"), nil
+					return Result{Data: []byte("success after retries")}, nil
 				}
 			}(),
-			expectedData:  []byte("success after retries"),
-			expectedError: "",
+			expectedResult: Result{Data: []byte("success after retries")},
+			expectedError:  "",
 		},
 		{
 			name: "exhausted retries returns last error",
@@ -189,11 +189,11 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOnAll,
-			operation: func() ([]byte, error) {
-				return nil, fmt.Errorf("persistent failure")
+			operation: func() (Result, error) {
+				return Result{}, fmt.Errorf("persistent failure")
 			},
-			expectedData:  nil,
-			expectedError: "persistent failure",
+			expectedResult: Result{},
+			expectedError:  "persistent failure",
 		},
 		{
 			name: "single-step backoff returns original error",
@@ -203,11 +203,11 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOnAll,
-			operation: func() ([]byte, error) {
-				return nil, fmt.Errorf("immediate failure")
+			operation: func() (Result, error) {
+				return Result{}, fmt.Errorf("immediate failure")
 			},
-			expectedData:  nil,
-			expectedError: "immediate failure",
+			expectedResult: Result{},
+			expectedError:  "immediate failure",
 		},
 		{
 			name: "RetryOn50xHTTP does not retry on HTTP 404",
@@ -217,14 +217,14 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOn50xHTTP,
-			operation: func() ([]byte, error) {
-				return nil, insightsclient.HttpError{
+			operation: func() (Result, error) {
+				return Result{}, insightsclient.HttpError{
 					StatusCode: http.StatusNotFound,
 					Err:        fmt.Errorf("not found"),
 				}
 			},
-			expectedData:  nil,
-			expectedError: "not found",
+			expectedResult: Result{},
+			expectedError:  "not found",
 		},
 		{
 			name: "RetryOn50xHTTP retries until exhausted on HTTP 500",
@@ -234,14 +234,14 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOn50xHTTP,
-			operation: func() ([]byte, error) {
-				return nil, insightsclient.HttpError{
+			operation: func() (Result, error) {
+				return Result{}, insightsclient.HttpError{
 					StatusCode: http.StatusInternalServerError,
 					Err:        fmt.Errorf("server error"),
 				}
 			},
-			expectedData:  nil,
-			expectedError: "server error",
+			expectedResult: Result{},
+			expectedError:  "server error",
 		},
 		{
 			name: "RetryOnNon200HTTP succeeds after HTTP 500 then 200",
@@ -251,21 +251,21 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOnNon200HTTP,
-			operation: func() func() ([]byte, error) {
+			operation: func() func() (Result, error) {
 				attempts := 0
-				return func() ([]byte, error) {
+				return func() (Result, error) {
 					attempts++
 					if attempts < 2 {
-						return nil, insightsclient.HttpError{
+						return Result{}, insightsclient.HttpError{
 							StatusCode: http.StatusInternalServerError,
 							Err:        fmt.Errorf("temporary server error"),
 						}
 					}
-					return []byte("recovered"), nil
+					return Result{Data: []byte("recovered")}, nil
 				}
 			}(),
-			expectedData:  []byte("recovered"),
-			expectedError: "",
+			expectedResult: Result{Data: []byte("recovered")},
+			expectedError:  "",
 		},
 		{
 			name: "RetryOnNon200HTTP does not retry on HTTP 200",
@@ -275,14 +275,14 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOnNon200HTTP,
-			operation: func() ([]byte, error) {
-				return nil, insightsclient.HttpError{
+			operation: func() (Result, error) {
+				return Result{}, insightsclient.HttpError{
 					StatusCode: http.StatusOK,
 					Err:        fmt.Errorf("error despite 200"),
 				}
 			},
-			expectedData:  nil,
-			expectedError: "error despite 200",
+			expectedResult: Result{},
+			expectedError:  "error despite 200",
 		},
 		{
 			name: "counts steps correctly - fails after exact retry count",
@@ -292,21 +292,21 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 				Factor:   2,
 			},
 			strategy: RetryOnAll,
-			operation: func() func() ([]byte, error) {
+			operation: func() func() (Result, error) {
 				attempts := 0
-				return func() ([]byte, error) {
+				return func() (Result, error) {
 					attempts++
-					return nil, fmt.Errorf("fail attempt %d", attempts)
+					return Result{}, fmt.Errorf("fail attempt %d", attempts)
 				}
 			}(),
-			expectedData:  nil,
-			expectedError: "fail attempt 2",
+			expectedResult: Result{},
+			expectedError:  "fail attempt 2",
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			data, err := RetryWithExpBackOff(tt.backoff, tt.strategy, tt.operation)
+			result, err := RetryWithExpBackOff(tt.backoff, tt.strategy, tt.operation)
 
 			// Check error
 			if tt.expectedError != "" {
@@ -322,11 +322,11 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 			}
 
 			// Check data
-			if tt.expectedData != nil {
-				if data == nil {
-					t.Errorf("expected data %q, got nil", string(tt.expectedData))
-				} else if !bytes.Equal(data, tt.expectedData) {
-					t.Errorf("expected data %q, got %q", string(tt.expectedData), string(data))
+			if tt.expectedResult.Data != nil {
+				if result.Data == nil {
+					t.Errorf("expected data %q, got nil", string(tt.expectedResult.Data))
+				} else if !bytes.Equal(result.Data, tt.expectedResult.Data) {
+					t.Errorf("expected data %q, got %q", string(tt.expectedResult.Data), string(result.Data))
 				}
 			}
 		})

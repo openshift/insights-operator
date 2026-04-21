@@ -32,12 +32,6 @@ type StatusReporter interface {
 	SetLastReportedTime(time.Time)
 }
 
-// uploadResult wraps the response from SendAndGetID for use with retry logic
-type uploadResult struct {
-	requestID  string
-	statusCode int
-}
-
 type Controller struct {
 	controllerstatus.StatusController
 
@@ -214,17 +208,17 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 	s.ID = start.Format(time.RFC3339)
 	s.Type = "application/vnd.redhat.openshift.periodic"
 
-	result, err := retry.RetryWithExpBackOff(c.backoff, retry.RetryOnAll, func() (uploadResult, error) {
+	result, err := retry.RetryWithExpBackOff(c.backoff, retry.RetryOnAll, func() (retry.Result, error) {
 		requestID, statusCode, err := c.client.SendAndGetID(ctx, c.configurator.Config().DataReporting.UploadEndpoint, *s)
-		return uploadResult{requestID: requestID, statusCode: statusCode}, err
+		return retry.Result{RequestID: requestID, StatusCode: statusCode}, err
 	})
 
 	if err != nil {
 		klog.Infof("Unable to upload report after %s: %v", time.Since(start).Truncate(time.Second/100), err)
-		return "", result.statusCode, err
+		return "", result.StatusCode, err
 	}
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
-	return result.requestID, result.statusCode, nil
+	return result.RequestID, result.StatusCode, nil
 }
 
 func reportToLogs(source io.Reader) error {

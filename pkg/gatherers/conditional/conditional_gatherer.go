@@ -273,15 +273,15 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 	}
 	endpointWithVersion := fmt.Sprintf(endpoint, ocpVersion)
 
-	remoteConfigData, err := retry.RetryWithExpBackOff(backOff, retry.RetryOnNon200HTTP, func() ([]byte, error) {
+	result, err := retry.RetryWithExpBackOff(backOff, retry.RetryOnNon200HTTP, func() (retry.Result, error) {
 		resp, err := g.insightsCli.GetWithPathParam(ctx, endpoint, ocpVersion, false)
 		if err != nil {
-			return nil, err
+			return retry.Result{}, err
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, insightsclient.HttpError{
+			return retry.Result{}, insightsclient.HttpError{
 				Err:        fmt.Errorf("received HTTP %s from %s", resp.Status, endpointWithVersion),
 				StatusCode: resp.StatusCode,
 			}
@@ -289,16 +289,16 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, err
+			return retry.Result{}, err
 		}
-		return data, nil
+		return retry.Result{Data: data}, nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return remoteConfigData, nil
+	return result.Data, nil
 }
 
 func (g *Gatherer) getRemoteConfigEndpoint() (string, error) {

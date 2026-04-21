@@ -222,14 +222,15 @@ func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint strin
 		Cap:      c.configurator.Config().ClusterTransfer.Interval,
 	}
 
-	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn50xHTTP, func() ([]byte, error) {
-		return c.client.RecvClusterTransfer(endpoint)
+	result, err := retry.RetryWithExpBackOff(bo, retry.RetryOn50xHTTP, func() (retry.Result, error) {
+		data, err := c.client.RecvClusterTransfer(endpoint)
+		return retry.Result{Data: data}, err
 	})
 
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return result.Data, nil
 }
 
 func (c *Controller) updateStatus(healthy bool, msg, reason string, httpErr *insightsclient.HttpError) {

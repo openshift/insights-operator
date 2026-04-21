@@ -2,7 +2,7 @@
 //
 // Usage example:
 //
-//	response, err := retry.RetryWithExpBackOff(
+//	result, err := retry.RetryWithExpBackOff(
 //		wait.Backoff{
 //			Duration: interval/32,
 //			Factor: 2,
@@ -10,8 +10,9 @@
 //			Cap: interval,
 //		},
 //		retry.RetryOn50xHTTP,
-//		func() (*Response, error) {
-//			return client.RecvSCACerts(ctx, endpoint, nodeArchs)
+//		func() (retry.Result, error) {
+//			data, err := client.RecvSCACerts(ctx, endpoint, nodeArchs)
+//			return retry.Result{Data: data}, err
 //		},
 //	)
 package retry
@@ -39,6 +40,13 @@ const (
 	// Used by: insightsuploader.go
 	RetryOnAll
 )
+
+// Result holds the response data from retry operations
+type Result struct {
+	Data       []byte // Response data
+	StatusCode int    // HTTP status code
+	RequestID  string // Request ID
+}
 
 // shouldRetry determines if an error should be retried based on the strategy.
 // Returns true if retry should be attempted (when steps remain).
@@ -71,16 +79,16 @@ func shouldRetry(err error, strategy RetryStrategy) bool {
 	}
 }
 
-func RetryWithExpBackOff[T any](bo wait.Backoff, strategy RetryStrategy, operation func() (T, error)) (T, error) {
+func RetryWithExpBackOff(bo wait.Backoff, strategy RetryStrategy, operation func() (Result, error)) (Result, error) {
 	var lastErr error
-	var data T
+	var result Result
 
 	attempt := 0
 	maxAttempts := bo.Steps
 
 	err := wait.ExponentialBackoff(bo, func() (bool, error) {
 		attempt++
-		data, lastErr = operation()
+		result, lastErr = operation()
 		if lastErr != nil {
 			// Use strategy to determine if we should retry
 			if shouldRetry(lastErr, strategy) {
@@ -96,8 +104,8 @@ func RetryWithExpBackOff[T any](bo wait.Backoff, strategy RetryStrategy, operati
 
 	// If we exhausted retries, return the last operation error instead of the timeout error
 	if wait.Interrupted(err) && lastErr != nil {
-		return data, lastErr
+		return result, lastErr
 	}
 
-	return data, err
+	return result, err
 }

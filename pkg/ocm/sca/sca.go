@@ -300,8 +300,9 @@ func (c *Controller) requestSCAWithExpBackoff(
 		Cap:      c.configurator.Config().SCA.Interval,
 	}
 
-	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn50xHTTP, func() ([]byte, error) {
-		return c.client.RecvSCACerts(ctx, endpoint, nodeArchitectures)
+	result, err := retry.RetryWithExpBackOff(bo, retry.RetryOn50xHTTP, func() (retry.Result, error) {
+		data, err := c.client.RecvSCACerts(ctx, endpoint, nodeArchitectures)
+		return retry.Result{Data: data}, err
 	})
 
 	if err != nil {
@@ -309,7 +310,7 @@ func (c *Controller) requestSCAWithExpBackoff(
 	}
 
 	var response Response
-	err = json.Unmarshal(data, &response)
+	err = json.Unmarshal(result.Data, &response)
 	if err != nil {
 		klog.Errorf("Unable to decode response: %v", err)
 		return nil, err
