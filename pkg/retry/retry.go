@@ -1,6 +1,6 @@
 // Package retry provides shared retry logic with exponential backoff for HTTP operations.
 //
-// Usage example (once implemented):
+// Usage example:
 //
 //	response, err := retry.RetryWithExpBackOff(
 //		wait.Backoff{
@@ -9,7 +9,7 @@
 //			Steps: ocm.FailureCountThreshold,
 //			Cap: interval,
 //		},
-//		retry.RetryOn500HTTP,
+//		retry.RetryOn50xHTTP,
 //		func() (*Response, error) {
 //			return client.RecvSCACerts(ctx, endpoint, nodeArchs)
 //		},
@@ -27,9 +27,9 @@ import (
 type RetryStrategy int64
 
 const (
-	// RetryOn500HTTP retries only on HTTP 500+ errors, skips retry for non-HTTP errors (disconnected env)
+	// RetryOn50xHTTP retries only on HTTP 500+ errors, skips retry for non-HTTP errors (disconnected env)
 	// Used by: sca.go, clustertransfer.go
-	RetryOn500HTTP RetryStrategy = iota
+	RetryOn50xHTTP RetryStrategy = iota
 
 	// RetryOnNon200HTTP retries on any non-200 HTTP status code
 	// Used by: conditional_gatherer.go
@@ -44,7 +44,7 @@ const (
 // Returns true if retry should be attempted (when steps remain).
 func shouldRetry(err error, strategy RetryStrategy) bool {
 	switch strategy {
-	case RetryOn500HTTP:
+	case RetryOn50xHTTP:
 		// Only retry HTTP 500+ errors, skip non-HTTP errors (disconnected env)
 		if !insightsclient.IsHttpError(err) {
 			return false
@@ -66,29 +66,38 @@ func shouldRetry(err error, strategy RetryStrategy) bool {
 
 	default:
 		// Unknown strategy, don't retry
-		klog.Infof("Unknown strategy %d", strategy)
+		klog.Infof("Unknown strategy %d for retry mechanism", strategy)
 		return false
 	}
 }
 
 func RetryWithExpBackOff[T any](bo wait.Backoff, strategy RetryStrategy, operation func() (T, error)) (T, error) {
-	var err error
+	var lastErr error
 	var data T
 
-	err = wait.ExponentialBackoff(bo, func() (bool, error) {
-		data, err = operation()
-		if err != nil {
+	attempt := 0
+	maxAttempts := bo.Steps
+
+	err := wait.ExponentialBackoff(bo, func() (bool, error) {
+		attempt++
+		data, lastErr = operation()
+		if lastErr != nil {
 			// Use strategy to determine if we should retry
-			if shouldRetry(err, strategy) && bo.Steps > 1 {
-				klog.Errorf("%v. Trying again in %s", err, bo.Step())
+			if shouldRetry(lastErr, strategy) {
+				klog.Errorf("%v. Retrying (attempt %d/%d)", lastErr, attempt, maxAttempts)
 				return false, nil
 			}
-			// Don't retry - either strategy says no, or no steps remaining
-			return true, err
+			// Don't retry based on strategy
+			return true, lastErr
 		}
 
 		return true, nil
 	})
+
+	// If we exhausted retries, return the last operation error instead of the timeout error
+	if wait.Interrupted(err) && lastErr != nil {
+		return data, lastErr
+	}
 
 	return data, err
 }

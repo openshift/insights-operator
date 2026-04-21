@@ -222,7 +222,7 @@ func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint strin
 		Cap:      c.configurator.Config().ClusterTransfer.Interval,
 	}
 
-	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn500HTTP, func() ([]byte, error) {
+	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn50xHTTP, func() ([]byte, error) {
 		return c.client.RecvClusterTransfer(endpoint)
 	})
 

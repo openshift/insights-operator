@@ -300,7 +300,7 @@ func (c *Controller) requestSCAWithExpBackoff(
 		Cap:      c.configurator.Config().SCA.Interval,
 	}
 
-	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn500HTTP, func() ([]byte, error) {
+	data, err := retry.RetryWithExpBackOff(bo, retry.RetryOn50xHTTP, func() ([]byte, error) {
 		return c.client.RecvSCACerts(ctx, endpoint, nodeArchitectures)
 	})
 
