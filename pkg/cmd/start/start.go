@@ -6,15 +6,19 @@ import (
 	"os"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/api/features"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
+	utiltls "github.com/openshift/controller-runtime-common/pkg/tls"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/serviceability"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -151,8 +155,57 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 			}
 		}()
 
+		// Start controller-runtime metrics server with TLS
+		kubeConfigPath := cmd.Flags().Lookup("kubeconfig").Value.String()
+
+		// Create client config for metrics server
+		clientConfig, err := createClientConfig(kubeConfigPath)
+		if err != nil {
+			klog.Exitf("Failed to create client config: %v", err)
+		}
+
+		scheme := runtime.NewScheme()
+		if err := configv1.AddToScheme(scheme); err != nil {
+			klog.Fatalf("unable to add configv1 to scheme: %v", err)
+		}
+
+		k8sclient := client.New(clientConfig, client.Options{Scheme: scheme})
+		if err != nil {
+			klog.Fatalf("Can't set client configs: %v", err)
+		}
+
+		// Fetch the TLS profile from the APIServer resource.
+		tlsSecurityProfileSpec, err := utiltls.FetchAPIServerTLSProfile(context.Background(), k8sClient)
+		if err != nil {
+			klog.Fatalf("unable to get TLS profile from API server: %v", err)
+		}
+
+		// Create the TLS configuration function for the server endpoints.
+		tlsConfig, unsupportedCiphers := utiltls.NewTLSConfigFromProfile(tlsSecurityProfileSpec)
+		if len(unsupportedCiphers) > 0 {
+			klog.Infof("TLS configuration contains unsupported ciphers that will be ignored: %v", unsupportedCiphers)
+		}
+
+		// TODO: create manager and cancel ctx2 on a tls config change
+
+		// // Start metrics server on :8443 with healthz endpoints and TLS watcher
+		// // The TLS watcher is set up inside StartMetricsServer and will trigger
+		// // a graceful shutdown by calling cancel() when TLS profile changes
+		// go func() {
+		// 	mgr, _, err := controller.StartMetricsServer(ctx2, clientConfig, ":8443", cancel)
+		// 	if err != nil {
+		// 		klog.Errorf("Failed to start metrics server: %v", err)
+		// 		return
+		// 	}
+
+		// 	// Start the manager (blocks until context is cancelled)
+		// 	if err := mgr.Start(ctx2); err != nil && err != context.Canceled {
+		// 		klog.Errorf("Metrics server stopped with error: %v", err)
+		// 	}
+		// }()
+
 		builder := controllercmd.NewController("openshift-insights-operator", operator.Run, clock.RealClock{}).
-			WithKubeConfigFile(cmd.Flags().Lookup("kubeconfig").Value.String(), nil).
+			WithKubeConfigFile(kubeConfigPath, nil).
 			WithLeaderElection(operatorConfig.LeaderElection, "", "openshift-insights-operator-lock").
 			WithServer(operatorConfig.ServingInfo, operatorConfig.Authentication, operatorConfig.Authorization).
 			WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
@@ -165,7 +218,7 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 // Starts a single gather, main responsibility is loading in the necessary configs.
 func runGather(operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig) func(cmd *cobra.Command, _ []string) {
 	return func(cmd *cobra.Command, _ []string) {
-		clientConfig, protoConfig := createClientConfig(cmd, operator, cfg)
+		clientConfig, protoConfig := createGatherClientConfig(cmd, operator, cfg)
 
 		// Before the start of gathering we need to check if featureGates are enabled
 		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
@@ -186,7 +239,7 @@ func runGatherAndUpload(
 	operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig,
 ) func(cmd *cobra.Command, _ []string) {
 	return func(cmd *cobra.Command, _ []string) {
-		clientConfig, protoConfig := createClientConfig(cmd, operator, cfg)
+		clientConfig, protoConfig := createGatherClientConfig(cmd, operator, cfg)
 
 		// Before the start of gathering we need to check if featureGates are enabled
 		ctx, cancel := context.WithTimeout(context.Background(), operator.Interval)
@@ -240,7 +293,26 @@ func checkFeatureGates(ctx context.Context, clientConfig *rest.Config, operator 
 	operator.InsightsConfigEnabled = featureGates.Enabled(features.FeatureGateInsightsConfig)
 }
 
-func createClientConfig(
+// createClientConfig builds a Kubernetes client config from kubeconfig path
+func createClientConfig(kubeConfigPath string) (*rest.Config, error) {
+	if len(kubeConfigPath) > 0 {
+		kubeConfigBytes, err := os.ReadFile(kubeConfigPath)
+		if err != nil {
+			return nil, err
+		}
+
+		kubeConfig, err := clientcmd.NewClientConfigFromBytes(kubeConfigBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		return kubeConfig.ClientConfig()
+	}
+
+	return rest.InClusterConfig()
+}
+
+func createGatherClientConfig(
 	cmd *cobra.Command, operator *controller.GatherJob, cfg *controllercmd.ControllerCommandConfig,
 ) (clientConfig, protoConfig *rest.Config) {
 	if configArg := cmd.Flags().Lookup("config").Value.String(); len(configArg) == 0 {
