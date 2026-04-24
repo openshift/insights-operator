@@ -18,41 +18,44 @@ The `kube-rbac-proxy` container in the `insights-runtime-extractor` DaemonSet (`
 
 4. **RBAC**: The operator's ClusterRole already has `get`, `list`, `watch` on `apiservers` in the `config.openshift.io` API group.
 
-## Proposed Solution
+## Implementation
 
-Follow the pattern established by [cluster-dns-operator PR #466](https://github.com/openshift/cluster-dns-operator/pull/466/):
+Follows the pattern established by [cluster-dns-operator PR #466](https://github.com/openshift/cluster-dns-operator/pull/466/).
 
-### 1. Extract kube-rbac-proxy TLS arg builder
+### 1. Exported TLS helpers (`pkg/insights/insightsclient/apiserver_config.go`)
 
-Create a function (e.g., in `pkg/insights/insightsclient/apiserver_config.go` or a new dedicated file) that converts the `apiservers.config.openshift.io/cluster` TLS profile into kube-rbac-proxy CLI arguments:
+Two existing helpers were exported for reuse:
 
-```go
-func KubeRBACProxyTLSArgs(configClient configclientset.Interface) ([]string, error)
-```
+- `GetTLSSecurityProfile(configClient)` — fetches `apiservers.config.openshift.io/cluster` and reads `Spec.TLSSecurityProfile`, falling back to `TLSProfileIntermediateType` if unset.
+- `GetTLSProfileSpec(profile)` — resolves a profile type (Old/Intermediate/Modern/Custom) to a concrete `TLSProfileSpec` using `configv1.TLSProfiles`.
 
-This function must:
-- Fetch `apiservers.config.openshift.io/cluster` and read `Spec.TLSSecurityProfile`.
-- Fall back to `TLSProfileIntermediateType` if unset.
-- Resolve the profile type (Old/Intermediate/Modern/Custom) to a concrete `TLSProfileSpec` using `configv1.TLSProfiles`.
-- Convert OpenSSL cipher names to IANA names using `crypto.OpenSSLToIANACipherSuites()` from `github.com/openshift/library-go/pkg/crypto`.
-- If all cipher names are unrecognized, fall back to the Intermediate profile.
-- Return args: `--tls-cipher-suites=<comma-separated IANA names>` and `--tls-min-version=<version>`.
+These are also used by the existing `GetTLSConfigFromAPIServer` for the operator's own outbound HTTP connections.
 
-### 2. Operator manages the DaemonSet dynamically
+### 2. kube-rbac-proxy TLS arg builder (`pkg/controller/runtime_extractor.go`)
 
-The operator must take ownership of the `insights-runtime-extractor` DaemonSet lifecycle instead of relying solely on the static manifest:
+`buildKubeRBACProxyArgs(profile)` converts a `TLSSecurityProfile` into kube-rbac-proxy CLI arguments:
 
-- **Embed the base manifest** in the operator binary (using `//go:embed`) as a template.
-- **On startup and on TLS config changes**, the operator must:
-  1. Read the base DaemonSet manifest.
-  2. Fetch the current TLS profile from the API server.
-  3. Build the kube-rbac-proxy args with the resolved cipher suites and min TLS version.
-  4. Patch/replace the kube-rbac-proxy container args in the DaemonSet spec.
-  5. Apply the DaemonSet (create or update).
+- Resolves the profile to a `TLSProfileSpec` via `insightsclient.GetTLSProfileSpec`.
+- For TLS 1.3 (Modern profile): only emits `--tls-min-version` since TLS 1.3 cipher suites are fixed by the protocol and not configurable by kube-rbac-proxy.
+- For other profiles: converts OpenSSL cipher names to IANA names using `crypto.OpenSSLToIANACipherSuites()`. If all cipher names are unrecognized, falls back to the Intermediate profile.
+- Returns args: `--tls-cipher-suites=<comma-separated IANA names>` and `--tls-min-version=<version>`.
 
-### 3. Watch for TLS configuration changes
+### 3. DaemonSet reconciliation (`pkg/controller/runtime_extractor.go`)
 
-The operator must watch `apiservers.config.openshift.io/cluster` for changes and reconcile the DaemonSet when the TLS profile is updated. This ensures the kube-rbac-proxy picks up new cipher suites or TLS version without requiring a cluster upgrade or manual intervention.
+The operator manages the `insights-runtime-extractor` DaemonSet lifecycle instead of relying solely on the static manifest:
+
+- **Embeds the base manifest** (`manifests/10-insights-runtime-extractor.yaml`) in the operator binary using `//go:embed` (copied to `pkg/controller/manifests/`).
+- `reconcileRuntimeExtractorDaemonSet` performs create-or-update reconciliation:
+  1. Parses the embedded DaemonSet manifest.
+  2. Fetches the current TLS profile via `insightsclient.GetTLSSecurityProfile`.
+  3. Builds kube-rbac-proxy args via `buildKubeRBACProxyArgs`.
+  4. Patches the kube-rbac-proxy container args (strips existing `--tls-cipher-suites` / `--tls-min-version` and appends new ones).
+  5. Creates the DaemonSet if not found, or updates it if the spec has changed (skips update if unchanged).
+
+### 4. Watch for TLS configuration changes (`pkg/controller/operator.go`)
+
+- On startup, performs an initial DaemonSet reconciliation.
+- Registers a `tlsReconcileHandler` on the `configInformers.Config().V1().APIServers()` informer, which triggers reconciliation on add/update events for `apiservers.config.openshift.io/cluster`.
 
 ## Cipher Suite Mapping
 
@@ -77,9 +80,12 @@ The mapping between OpenShift TLS profiles and kube-rbac-proxy arguments uses `g
 
 | File | Role |
 |------|------|
-| `manifests/10-insights-runtime-extractor.yaml` | Base DaemonSet manifest (to be embedded and used as template) |
-| `pkg/insights/insightsclient/apiserver_config.go` | Existing TLS profile fetching and conversion (to be extended) |
-| `pkg/controller/operator.go` | Main operator controller (DaemonSet reconciliation to be added here) |
+| `manifests/10-insights-runtime-extractor.yaml` | Base DaemonSet manifest (source of truth, copied into `pkg/controller/manifests/` for embedding) |
+| `pkg/controller/manifests/10-insights-runtime-extractor.yaml` | Embedded copy of the base manifest used at runtime |
+| `pkg/controller/runtime_extractor.go` | DaemonSet reconciliation, TLS arg builder, manifest parsing, informer event handler |
+| `pkg/controller/runtime_extractor_test.go` | Unit tests for arg builder, patching, reconciliation |
+| `pkg/insights/insightsclient/apiserver_config.go` | Exported `GetTLSSecurityProfile` and `GetTLSProfileSpec` helpers |
+| `pkg/controller/operator.go` | Initial reconciliation call and APIServer informer watch registration |
 | `manifests/03-clusterrole.yaml` | RBAC (already has apiserver read permissions) |
 
 ## Reference

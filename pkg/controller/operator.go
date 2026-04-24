@@ -320,6 +320,14 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	promRulesController := insights.NewPrometheusRulesController(configAggregator, controller.KubeConfig)
 	go promRulesController.Start(ctx)
 
+	// reconcile the insights-runtime-extractor DaemonSet with TLS configuration
+	// from apiservers.config.openshift.io/cluster
+	if err := reconcileRuntimeExtractorDaemonSet(ctx, kubeClient, configClient); err != nil {
+		klog.Errorf("Failed initial runtime extractor DaemonSet reconciliation: %v", err)
+	}
+	apiserverInformer := configInformers.Config().V1().APIServers().Informer()
+	apiserverInformer.AddEventHandler(newTLSReconcileHandler(ctx, kubeClient, configClient)) //nolint:errcheck
+
 	// support logLevelController
 	logLevelController := loglevel.NewClusterOperatorLoggingController(opClient, controller.EventRecorder)
 	operatorConfigInformers.Start(ctx.Done())

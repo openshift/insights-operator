@@ -11,9 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GetTLSConfigFromAPIServer fetches the TLS profile from the API Server configuration.
-// This is the default source for most components.
-func GetTLSConfigFromAPIServer(configClient configclientset.Interface) (*tls.Config, error) {
+// GetTLSSecurityProfile fetches the TLS security profile from apiservers.config.openshift.io/cluster.
+// Falls back to the Intermediate profile if none is configured.
+func GetTLSSecurityProfile(configClient configclientset.Interface) (*configv1.TLSSecurityProfile, error) {
 	apiserver, err := configClient.ConfigV1().APIServers().Get(context.Background(), "cluster", metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get APIServer config: %w", err)
@@ -25,12 +25,21 @@ func GetTLSConfigFromAPIServer(configClient configclientset.Interface) (*tls.Con
 			Type: configv1.TLSProfileIntermediateType,
 		}
 	}
+	return profile, nil
+}
 
+// GetTLSConfigFromAPIServer fetches the TLS profile from the API Server configuration.
+// This is the default source for most components.
+func GetTLSConfigFromAPIServer(configClient configclientset.Interface) (*tls.Config, error) {
+	profile, err := GetTLSSecurityProfile(configClient)
+	if err != nil {
+		return nil, err
+	}
 	return buildTLSConfigFromProfile(profile)
 }
 
 func buildTLSConfigFromProfile(profile *configv1.TLSSecurityProfile) (*tls.Config, error) {
-	profileSpec, err := getTLSProfileSpec(profile)
+	profileSpec, err := GetTLSProfileSpec(profile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to getTLSProfileSpec: %v", err)
 	}
@@ -69,7 +78,8 @@ func buildTLSConfigFromProfile(profile *configv1.TLSSecurityProfile) (*tls.Confi
 	return config, nil
 }
 
-func getTLSProfileSpec(profile *configv1.TLSSecurityProfile) (*configv1.TLSProfileSpec, error) {
+// GetTLSProfileSpec resolves a TLS security profile type to a concrete TLSProfileSpec.
+func GetTLSProfileSpec(profile *configv1.TLSSecurityProfile) (*configv1.TLSProfileSpec, error) {
 	switch profile.Type {
 	case configv1.TLSProfileOldType,
 		configv1.TLSProfileIntermediateType,

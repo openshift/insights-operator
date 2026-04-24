@@ -54,7 +54,7 @@ func Test_parseTLSVersion(t *testing.T) {
 	}
 }
 
-func Test_getTLSProfileSpec(t *testing.T) {
+func Test_GetTLSProfileSpec(t *testing.T) {
 	tests := []struct {
 		name        string
 		profile     *configv1.TLSSecurityProfile
@@ -99,7 +99,7 @@ func Test_getTLSProfileSpec(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := getTLSProfileSpec(tt.profile)
+			result, err := GetTLSProfileSpec(tt.profile)
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, result)
