@@ -273,7 +273,7 @@ func (g *Gatherer) getRemoteConfiguration(ctx context.Context) ([]byte, error) {
 	}
 	endpointWithVersion := fmt.Sprintf(endpoint, ocpVersion)
 
-	result, err := retry.RetryWithExpBackOff(backOff, retry.RetryOnNon200HTTP, func() (retry.Result, error) {
+	result, err := retry.RetryWithExpBackOff(ctx, backOff, retry.RetryOnNon200HTTP, func() (retry.Result, error) {
 		resp, err := g.insightsCli.GetWithPathParam(ctx, endpoint, ocpVersion, false)
 		if err != nil {
 			return retry.Result{}, err

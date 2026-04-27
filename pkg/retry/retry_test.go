@@ -2,6 +2,7 @@ package retry
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -123,11 +124,64 @@ func Test_ShouldRetry(t *testing.T) {
 			strategy:    RetryStrategy(999),
 			shouldRetry: false,
 		},
+
+		// Context cancellation tests
+		{
+			name:        "should NOT retry on context.Canceled error",
+			err:         context.Canceled,
+			strategy:    RetryOnAll,
+			shouldRetry: false,
+		},
+		{
+			name:        "should NOT retry on context.DeadlineExceeded error",
+			err:         context.DeadlineExceeded,
+			strategy:    RetryOnAll,
+			shouldRetry: false,
+		},
+
+		// Pointer HttpError tests (real-world scenario)
+		{
+			name: "RetryOn50xHTTP should retry on *HttpError (pointer) with HTTP 500",
+			err: &insightsclient.HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Err:        fmt.Errorf("internal server error"),
+			},
+			strategy:    RetryOn50xHTTP,
+			shouldRetry: true,
+		},
+		{
+			name: "RetryOn50xHTTP should NOT retry on *HttpError (pointer) with HTTP 404",
+			err: &insightsclient.HttpError{
+				StatusCode: http.StatusNotFound,
+				Err:        fmt.Errorf("not found"),
+			},
+			strategy:    RetryOn50xHTTP,
+			shouldRetry: false,
+		},
+		{
+			name: "RetryOnNon200HTTP should retry on *HttpError (pointer) with HTTP 500",
+			err: &insightsclient.HttpError{
+				StatusCode: http.StatusInternalServerError,
+				Err:        fmt.Errorf("internal server error"),
+			},
+			strategy:    RetryOnNon200HTTP,
+			shouldRetry: true,
+		},
+		{
+			name: "RetryOnNon200HTTP should NOT retry on *HttpError (pointer) with HTTP 200",
+			err: &insightsclient.HttpError{
+				StatusCode: http.StatusOK,
+				Err:        nil,
+			},
+			strategy:    RetryOnNon200HTTP,
+			shouldRetry: false,
+		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			result := shouldRetry(tt.err, tt.strategy)
+			ctx := context.Background()
+			result := shouldRetry(ctx, tt.err, tt.strategy)
 			if result != tt.shouldRetry {
 				t.Errorf("shouldRetry() = %v, want %v", result, tt.shouldRetry)
 			}
@@ -306,7 +360,8 @@ func Test_RetryWithExpBackOff(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := RetryWithExpBackOff(tt.backoff, tt.strategy, tt.operation)
+			ctx := context.Background()
+			result, err := RetryWithExpBackOff(ctx, tt.backoff, tt.strategy, tt.operation)
 
 			// Check error
 			if tt.expectedError != "" {

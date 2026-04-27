@@ -82,7 +82,7 @@ func (c *Controller) Run(ctx context.Context) {
 // in the response then check if a secret update is required, and if so, perform the update.
 func (c *Controller) requestDataAndUpdateSecret(ctx context.Context, endpoint string) {
 	klog.Infof("checking the availability of cluster transfer. Next check is in %s", c.configurator.Config().ClusterTransfer.Interval)
-	data, err := c.requestClusterTransferWithExponentialBackoff(endpoint)
+	data, err := c.requestClusterTransferWithExponentialBackoff(ctx, endpoint)
 	if err != nil {
 		msg := fmt.Sprintf("failed to pull cluster transfer: %v", err)
 		httpErr, ok := err.(insightsclient.HttpError)
@@ -213,7 +213,7 @@ func (c *Controller) updatePullSecret(ctx context.Context, newData []byte) error
 // from the OCM API with exponential backoff.
 // It returns HttpError (see insightsclient.go) in case of any HTTP error response from the OCM API.
 // The exponential backoff is applied only for HTTP errors >= 500.
-func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint string) ([]byte, error) {
+func (c *Controller) requestClusterTransferWithExponentialBackoff(ctx context.Context, endpoint string) ([]byte, error) {
 	bo := wait.Backoff{
 		Duration: c.configurator.Config().ClusterTransfer.Interval / 24, // 30 min as the first waiting
 		Factor:   2,
@@ -222,7 +222,7 @@ func (c *Controller) requestClusterTransferWithExponentialBackoff(endpoint strin
 		Cap:      c.configurator.Config().ClusterTransfer.Interval,
 	}
 
-	result, err := retry.RetryWithExpBackOff(bo, retry.RetryOn50xHTTP, func() (retry.Result, error) {
+	result, err := retry.RetryWithExpBackOff(ctx, bo, retry.RetryOn50xHTTP, func() (retry.Result, error) {
 		data, err := c.client.RecvClusterTransfer(endpoint)
 		return retry.Result{Data: data}, err
 	})

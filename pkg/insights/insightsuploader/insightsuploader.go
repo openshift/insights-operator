@@ -208,7 +208,7 @@ func (c *Controller) Upload(ctx context.Context, s *insightsclient.Source) (stri
 	s.ID = start.Format(time.RFC3339)
 	s.Type = "application/vnd.redhat.openshift.periodic"
 
-	result, err := retry.RetryWithExpBackOff(c.backoff, retry.RetryOnAll, func() (retry.Result, error) {
+	result, err := retry.RetryWithExpBackOff(ctx, c.backoff, retry.RetryOnAll, func() (retry.Result, error) {
 		requestID, statusCode, err := c.client.SendAndGetID(ctx, c.configurator.Config().DataReporting.UploadEndpoint, *s)
 		return retry.Result{RequestID: requestID, StatusCode: statusCode}, err
 	})

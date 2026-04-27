@@ -3,6 +3,7 @@
 // Usage example:
 //
 //	result, err := retry.RetryWithExpBackOff(
+//		ctx,
 //		wait.Backoff{
 //			Duration: interval/32,
 //			Factor: 2,
@@ -18,6 +19,8 @@
 package retry
 
 import (
+	"context"
+	"errors"
 	"net/http"
 
 	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
@@ -43,30 +46,54 @@ const (
 
 // Result holds the response data from retry operations
 type Result struct {
-	Data       []byte // Response data
-	StatusCode int    // HTTP status code
-	RequestID  string // Request ID
+	Data       []byte
+	StatusCode int
+	RequestID  string
 }
 
 // shouldRetry determines if an error should be retried based on the strategy.
 // Returns true if retry should be attempted (when steps remain).
-func shouldRetry(err error, strategy RetryStrategy) bool {
+// Returns false immediately if the context is canceled or deadline exceeded.
+func shouldRetry(ctx context.Context, err error, strategy RetryStrategy) bool {
+	// Don't retry if context is canceled or deadline exceeded
+	if ctx.Err() != nil {
+		return false
+	}
+
+	// Don't retry context cancellation or deadline errors
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+
+	// Extract status code from HttpError (handles both pointer and non-pointer)
+	var statusCode int
+	var isHTTPError bool
+
+	switch e := err.(type) {
+	case *insightsclient.HttpError:
+		// Pointer - real-world case from newHTTPErrorFromResponse
+		statusCode = e.StatusCode
+		isHTTPError = true
+	case insightsclient.HttpError:
+		// Non-pointer - test case
+		statusCode = e.StatusCode
+		isHTTPError = true
+	}
+
 	switch strategy {
 	case RetryOn50xHTTP:
 		// Only retry HTTP 500+ errors, skip non-HTTP errors (disconnected env)
-		if !insightsclient.IsHttpError(err) {
+		if !isHTTPError {
 			return false
 		}
-		httpErr := err.(insightsclient.HttpError)
-		return httpErr.StatusCode >= http.StatusInternalServerError
+		return statusCode >= http.StatusInternalServerError
 
 	case RetryOnNon200HTTP:
 		// Retry on any non-200 HTTP status, or non-HTTP errors
-		if !insightsclient.IsHttpError(err) {
+		if !isHTTPError {
 			return true // retry non-HTTP errors
 		}
-		httpErr := err.(insightsclient.HttpError)
-		return httpErr.StatusCode != http.StatusOK
+		return statusCode != http.StatusOK
 
 	case RetryOnAll:
 		// Retry on all errors
@@ -79,19 +106,19 @@ func shouldRetry(err error, strategy RetryStrategy) bool {
 	}
 }
 
-func RetryWithExpBackOff(bo wait.Backoff, strategy RetryStrategy, operation func() (Result, error)) (Result, error) {
+func RetryWithExpBackOff(ctx context.Context, bo wait.Backoff, strategy RetryStrategy, operation func() (Result, error)) (Result, error) {
 	var lastErr error
 	var result Result
 
 	attempt := 0
 	maxAttempts := bo.Steps
 
-	err := wait.ExponentialBackoff(bo, func() (bool, error) {
+	err := wait.ExponentialBackoffWithContext(ctx, bo, func(context.Context) (bool, error) {
 		attempt++
 		result, lastErr = operation()
 		if lastErr != nil {
 			// Use strategy to determine if we should retry
-			if shouldRetry(lastErr, strategy) {
+			if shouldRetry(ctx, lastErr, strategy) {
 				klog.Errorf("%v. Retrying (attempt %d/%d)", lastErr, attempt, maxAttempts)
 				return false, nil
 			}
