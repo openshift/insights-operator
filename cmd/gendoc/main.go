@@ -180,7 +180,7 @@ func walkDir(cleanRoot string, md map[string]*DocBlock) error {
 				return nil
 			}
 		}
-		d, err := parser.ParseDir(fset, path, nil, parser.ParseComments)
+		d, err := parser.ParseDir(fset, path, nil, parser.ParseComments) //nolint:staticcheck // SA1019: deprecated but functional
 		if err != nil {
 			fmt.Println(err)
 			return nil
