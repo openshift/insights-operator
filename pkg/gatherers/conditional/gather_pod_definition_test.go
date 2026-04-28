@@ -35,7 +35,7 @@ func TestGatherer_gatherPodDefinition(t *testing.T) {
 					AlertName: "KubePodNotReady",
 				},
 				coreClient: func(ctx context.Context) v1.CoreV1Interface {
-					coreClient := kubefake.NewSimpleClientset().CoreV1()
+					coreClient := kubefake.NewClientset().CoreV1()
 					_, err := coreClient.Pods("ns").Create(ctx, &corev1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-pod",

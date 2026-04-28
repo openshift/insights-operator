@@ -11,7 +11,7 @@ import (
 )
 
 func Test_gatherMutatingWebhookConfigurations(t *testing.T) {
-	client := kubefake.NewSimpleClientset().AdmissionregistrationV1()
+	client := kubefake.NewClientset().AdmissionregistrationV1()
 	_, err := client.MutatingWebhookConfigurations().Create(context.TODO(), &admissionregistrationv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook_config",

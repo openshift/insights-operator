@@ -67,7 +67,7 @@ func Test_WarningEvents_gatherOpenshiftMachineAPIEvents(t *testing.T) {
 		name: "openshift-machine-api warning events",
 		args: args{
 			ctx: context.TODO(),
-			coreClient: kubefake.NewSimpleClientset(&warningEvent1, &normalEvent1, &normalEvent2,
+			coreClient: kubefake.NewClientset(&warningEvent1, &normalEvent1, &normalEvent2,
 				&warningEvent2, &warningEvent3, &normalEvent3).CoreV1(),
 		},
 		wantErr: false,

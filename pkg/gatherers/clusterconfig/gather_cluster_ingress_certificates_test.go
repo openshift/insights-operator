@@ -31,9 +31,12 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 			name: "Custom Ingress controller with a cluster certificate is added to the collection",
 			ingressDef: []operatorv1.IngressController{{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-ingress-controller", Namespace: "openshift-ingress-operator"},
-				Spec: operatorv1.IngressControllerSpec{DefaultCertificate: &corev1.LocalObjectReference{
-					Name: "router-ca"},
-				}}},
+				Spec: operatorv1.IngressControllerSpec{
+					DefaultCertificate: &corev1.LocalObjectReference{
+						Name: "router-ca",
+					},
+				},
+			}},
 			secretDef: []corev1.Secret{{
 				ObjectMeta: metav1.ObjectMeta{Name: "router-ca", Namespace: "openshift-ingress-operator"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
@@ -58,9 +61,12 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 			name: "Custom Ingress Controller with custom certificate adds a new entry to the collection",
 			ingressDef: []operatorv1.IngressController{{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-custom-ingress", Namespace: "openshift-ingress-operator"},
-				Spec: operatorv1.IngressControllerSpec{DefaultCertificate: &corev1.LocalObjectReference{
-					Name: "test-custom-secret"},
-				}}},
+				Spec: operatorv1.IngressControllerSpec{
+					DefaultCertificate: &corev1.LocalObjectReference{
+						Name: "test-custom-secret",
+					},
+				},
+			}},
 			secretDef: []corev1.Secret{{
 				ObjectMeta: metav1.ObjectMeta{Name: "router-ca", Namespace: "openshift-ingress-operator"},
 				Data:       map[string][]byte{"tls.crt": mockBytes},
@@ -103,12 +109,12 @@ func Test_gatherClusterIngressCertificates(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given
-			operatorClient := operatorfake.NewSimpleClientset()
+			operatorClient := operatorfake.NewClientset()
 			for _, ic := range tc.ingressDef {
 				assert.NoError(t,
 					operatorClient.Tracker().Add(ic.DeepCopy()))
 			}
-			coreClient := corefake.NewSimpleClientset()
+			coreClient := corefake.NewClientset()
 			for _, sec := range tc.secretDef {
 				assert.NoError(t,
 					coreClient.Tracker().Add(&sec))
@@ -161,7 +167,7 @@ func Test_getCertificateInfoFromSecret(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given
-			client := corefake.NewSimpleClientset(tc.secret)
+			client := corefake.NewClientset(tc.secret)
 
 			// When
 			test, err := getCertificateInfoFromSecret(

@@ -102,7 +102,7 @@ func Test_ServiceAccounts_Gather(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			coreClient := kubefake.NewSimpleClientset()
+			coreClient := kubefake.NewClientset()
 			for _, namespace := range test.namespaces {
 				_, err := coreClient.CoreV1().Namespaces().Create(
 					context.Background(),

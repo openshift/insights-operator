@@ -328,7 +328,7 @@ func Test_GatherNamespacesWithOverlappingUIDs(t *testing.T) { //nolint: funlen
 		},
 	}
 
-	corev1I := kubefake.NewSimpleClientset().CoreV1()
+	corev1I := kubefake.NewClientset().CoreV1()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// create all the testing namespaces

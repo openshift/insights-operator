@@ -41,7 +41,7 @@ func Test_gatherClusterOAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configClient := configfake.NewSimpleClientset(tt.oAuthDefinition)
+			configClient := configfake.NewClientset(tt.oAuthDefinition)
 			records, errs := gatherClusterOAuth(context.TODO(), configClient.ConfigV1())
 			assert.Equal(t, tt.wantRecords, records)
 			assert.Len(t, errs, tt.wantErrCount)

@@ -83,7 +83,7 @@ func Test_GatherClusterProxy(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Given
-			configClient := configfake.NewSimpleClientset(tc.proxy)
+			configClient := configfake.NewClientset(tc.proxy)
 
 			// When
 			test, errs := gatherClusterProxy(context.Background(), configClient.ConfigV1())

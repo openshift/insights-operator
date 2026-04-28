@@ -123,10 +123,10 @@ func TestGatherNumberOfPodsAndNetnamespacesWithSDN(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kubeCli := kubefake.NewSimpleClientset()
+			kubeCli := kubefake.NewClientset()
 			err := addObjectsToClientSet(kubeCli, tt.pods)
 			assert.NoError(t, err)
-			networkCli := networkfake.NewSimpleClientset()
+			networkCli := networkfake.NewClientset()
 			err = addObjectsToClientSet(networkCli, tt.netNamespaces)
 			assert.NoError(t, err)
 			records, errs := gatherNumberOfPodsAndNetnamespacesWithSDN(context.Background(), networkCli.NetworkV1(), kubeCli)

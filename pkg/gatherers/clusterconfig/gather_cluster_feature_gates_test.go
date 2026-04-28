@@ -50,7 +50,7 @@ func Test_gatherClusterFeatureGates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Given
-			configClient := configfake.NewSimpleClientset(tc.feature)
+			configClient := configfake.NewClientset(tc.feature)
 
 			// When
 			got, gotErrs := gatherClusterFeatureGates(context.Background(), configClient.ConfigV1())

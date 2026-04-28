@@ -38,7 +38,7 @@ func Test_GatherClusterAPIServer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Given
-			clientset := fake.NewSimpleClientset()
+			clientset := fake.NewClientset()
 			configv1 := configfake.FakeConfigV1{Fake: &clientset.Fake}
 			configv1.APIServers().Create(context.Background(), tc.apiserver, metav1.CreateOptions{}) // nolint: errcheck
 

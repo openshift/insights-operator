@@ -55,7 +55,7 @@ func Test_InstallPlans_Gather(t *testing.T) {
 			t.Parallel()
 
 			var client *dynamicfake.FakeDynamicClient
-			coreClient := kubefake.NewSimpleClientset()
+			coreClient := kubefake.NewClientset()
 			for _, file := range test.testfiles {
 				func() {
 					f, err := os.Open(file)

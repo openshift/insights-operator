@@ -93,8 +93,8 @@ func Test_deleteAllRunningGatheringsPods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kubeClient := fake.NewSimpleClientset(tt.existingJobs...)
-			insightsClient := fakeinsightsclient.NewSimpleClientset(tt.existingDataGathers...)
+			kubeClient := fake.NewClientset(tt.existingJobs...)
+			insightsClient := fakeinsightsclient.NewClientset(tt.existingDataGathers...)
 
 			// Call the function
 			ctx := context.Background()

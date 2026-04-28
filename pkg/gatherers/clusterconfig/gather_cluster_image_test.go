@@ -12,7 +12,7 @@ import (
 )
 
 func Test_GatherClusterImage(t *testing.T) {
-	cfg := configfake.NewSimpleClientset()
+	cfg := configfake.NewClientset()
 	testImage := &v1.Image{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",

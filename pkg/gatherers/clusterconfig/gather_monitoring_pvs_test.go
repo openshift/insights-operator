@@ -77,7 +77,7 @@ func Test_GatherMonitoring_gather(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Given
-			coreclient := kubefake.NewSimpleClientset([]runtime.Object{testCase.pvc, testCase.pv}...)
+			coreclient := kubefake.NewClientset([]runtime.Object{testCase.pvc, testCase.pv}...)
 			gatherer := MonitoringPVGatherer{client: coreclient.CoreV1()}
 
 			// When

@@ -41,7 +41,7 @@ var testingSCACertData = []CertData{
 }
 
 func Test_SCAController_SecretIsCreated(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 
@@ -61,7 +61,7 @@ func Test_SCAController_SecretIsCreated(t *testing.T) {
 }
 
 func Test_SCAController_SecretIsUpdated(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 
 	existingSec := &v1.Secret{
@@ -93,7 +93,7 @@ func Test_SCAController_SecretIsUpdated(t *testing.T) {
 }
 
 func Test_SCAController_ProcessResponses(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 
@@ -170,7 +170,7 @@ func Test_SCAController_ProcessResponses(t *testing.T) {
 }
 
 func Test_SCAController_ProcessResponse_ErrorWhenControlNodeMissing(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 

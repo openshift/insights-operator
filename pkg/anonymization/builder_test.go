@@ -31,11 +31,11 @@ func Test_NetworkAnonymizationBuilder(t *testing.T) {
 		secretsClient    corev1client.SecretInterface
 	}
 
-	fakeCfgClient := configfake.NewSimpleClientset().ConfigV1()
+	fakeCfgClient := configfake.NewClientset().ConfigV1()
 	fakeConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{})
-	fakeKubeClient := kubefake.NewSimpleClientset()
-	fakeNetworkClient := networkfake.NewSimpleClientset().NetworkV1()
-	fakeSecretsClient := kubefake.NewSimpleClientset().CoreV1().Secrets("mock")
+	fakeKubeClient := kubefake.NewClientset()
+	fakeNetworkClient := networkfake.NewClientset().NetworkV1()
+	fakeSecretsClient := kubefake.NewClientset().CoreV1().Secrets("mock")
 
 	testCases := []testCase{
 		{

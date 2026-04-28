@@ -52,7 +52,7 @@ func Test_ImagePruner_Gather(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			client := imageregistryfake.NewSimpleClientset(test.inputObj)
+			client := imageregistryfake.NewClientset(test.inputObj)
 			ctx := context.Background()
 			records, errs := gatherClusterImagePruner(ctx, client.ImageregistryV1())
 			if len(errs) > 0 {

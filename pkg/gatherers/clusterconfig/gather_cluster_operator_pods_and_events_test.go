@@ -26,13 +26,13 @@ func Test_GatherClusterOperatorPodsAndEvents(t *testing.T) {
 			Name: "test-clusteroperator",
 		},
 	}
-	cfg := configfake.NewSimpleClientset()
+	cfg := configfake.NewClientset()
 	_, err := cfg.ConfigV1().ClusterOperators().Create(context.Background(), &testOperator, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatal("unable to create fake clusteroperator", err)
 	}
 
-	_, err = gatherClusterOperatorPodsAndEvents(context.Background(), cfg.ConfigV1(), kubefake.NewSimpleClientset().CoreV1(), 1*time.Minute)
+	_, err = gatherClusterOperatorPodsAndEvents(context.Background(), cfg.ConfigV1(), kubefake.NewClientset().CoreV1(), 1*time.Minute)
 	if err != nil {
 		t.Errorf("unexpected errors: %#v", err)
 		return
@@ -56,7 +56,7 @@ func Test_GatherPodContainersLogs(t *testing.T) {
 			name: "total container is zero and the podlist is empty",
 			args: args{
 				ctx:        context.TODO(),
-				client:     kubefake.NewSimpleClientset().CoreV1(),
+				client:     kubefake.NewClientset().CoreV1(),
 				pods:       []*v1.Pod{},
 				bufferSize: 0,
 			},
@@ -67,7 +67,7 @@ func Test_GatherPodContainersLogs(t *testing.T) {
 			name: "total container is two and the podlist is empty",
 			args: args{
 				ctx:        context.TODO(),
-				client:     kubefake.NewSimpleClientset().CoreV1(),
+				client:     kubefake.NewClientset().CoreV1(),
 				pods:       []*v1.Pod{},
 				bufferSize: int64(10 * 10 / 2 / 2),
 			},
@@ -109,7 +109,7 @@ func Test_GetContainerLogs(t *testing.T) {
 			name: "empty pod containers log",
 			args: args{
 				ctx:        context.TODO(),
-				client:     kubefake.NewSimpleClientset().CoreV1(),
+				client:     kubefake.NewClientset().CoreV1(),
 				pod:        &v1.Pod{},
 				isPrevious: false,
 				buf:        bytes.NewBuffer(make([]byte, 0, bufferSize)),
@@ -150,7 +150,7 @@ func Test_UnhealthyClusterOperator(t *testing.T) {
 			args: args{
 				ctx:        context.TODO(),
 				items:      []configv1.ClusterOperator{},
-				coreClient: kubefake.NewSimpleClientset().CoreV1(),
+				coreClient: kubefake.NewClientset().CoreV1(),
 			},
 			want:  []*v1.Pod{},
 			want1: nil,
@@ -221,7 +221,7 @@ func Test_GatherNamespaceEvents(t *testing.T) {
 			name: "empty namespace events",
 			args: args{
 				ctx:        context.TODO(),
-				coreClient: kubefake.NewSimpleClientset().CoreV1(),
+				coreClient: kubefake.NewClientset().CoreV1(),
 				namespace:  "insights-operator",
 			},
 			want:    []record.Record{},
@@ -264,7 +264,7 @@ func Test_FetchPodContainerLog(t *testing.T) {
 			name: "container without previous log",
 			args: args{
 				ctx:           context.TODO(),
-				coreClient:    kubefake.NewSimpleClientset().CoreV1(),
+				coreClient:    kubefake.NewClientset().CoreV1(),
 				pod:           &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "testPod"}},
 				buf:           bytes.NewBuffer(make([]byte, 0, bufferSize)),
 				containerName: "testContainer",
@@ -277,7 +277,7 @@ func Test_FetchPodContainerLog(t *testing.T) {
 			name: "container with previous log",
 			args: args{
 				ctx:           context.TODO(),
-				coreClient:    kubefake.NewSimpleClientset().CoreV1(),
+				coreClient:    kubefake.NewClientset().CoreV1(),
 				pod:           &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "testPod"}},
 				buf:           bytes.NewBuffer(make([]byte, 0, bufferSize)),
 				containerName: "testContainer",

@@ -76,7 +76,7 @@ func Test_PodDisruptionBudgets_Gather(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			coreClient := kubefake.NewSimpleClientset()
+			coreClient := kubefake.NewClientset()
 
 			for namespace, name := range test.pdbsToNamespace {
 				_, err := coreClient.PolicyV1().

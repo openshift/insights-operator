@@ -42,13 +42,14 @@ func createTestClusterOperator(cli *configfake.Clientset) (*configv1.ClusterOper
 					Name:     "bar",
 				},
 			},
-		}}
+		},
+	}
 
 	return cli.ConfigV1().ClusterOperators().Create(context.Background(), co, metav1.CreateOptions{})
 }
 
 func createTestRelatedObject(dynamicCli *dynamicfake.FakeDynamicClient) (*unstructured.Unstructured, error) {
-	var yamlDefinition = `
+	yamlDefinition := `
 apiVersion: operator.openshift.io/v1
 kind: TestController
 metadata:
@@ -69,8 +70,9 @@ func createFakeDynamicClient() *dynamicfake.FakeDynamicClient {
 		gvr: "TestControllersList",
 	})
 }
+
 func Test_Operators_GatherClusterOperators(t *testing.T) {
-	cfg := configfake.NewSimpleClientset()
+	cfg := configfake.NewClientset()
 	_, err := createTestClusterOperator(cfg)
 	assert.NoError(t, err, "unable to create fake clusteroperator")
 
@@ -115,7 +117,7 @@ func Test_Operators_ClusterOperatorsRecords(t *testing.T) {
 				ctx:             context.TODO(),
 				items:           []configv1.ClusterOperator{},
 				dynamicClient:   &dynamicfake.FakeDynamicClient{},
-				discoveryClient: kubefake.NewSimpleClientset().Discovery(),
+				discoveryClient: kubefake.NewClientset().Discovery(),
 			},
 			want: []record.Record{},
 		},
@@ -135,7 +137,7 @@ func Test_Operators_ClusterOperatorsRecords(t *testing.T) {
 
 func Test_Operators_collectClusterOperatorRelatedObjects(t *testing.T) {
 	// create test clusteroperator resource
-	co, err := createTestClusterOperator(configfake.NewSimpleClientset())
+	co, err := createTestClusterOperator(configfake.NewClientset())
 	assert.NoError(t, err, "unable to create fake clusteroperator")
 	dynamicFake := createFakeDynamicClient()
 	// create test related object to clusteroperator resource
@@ -197,7 +199,7 @@ func Test_Operators_GetOperatorResourcesVersions(t *testing.T) {
 	}{
 		{
 			name:    "empty operator resources versions",
-			args:    args{discoveryClient: kubefake.NewSimpleClientset().Discovery()},
+			args:    args{discoveryClient: kubefake.NewClientset().Discovery()},
 			want:    map[schema.GroupResource]string{},
 			wantErr: false,
 		},

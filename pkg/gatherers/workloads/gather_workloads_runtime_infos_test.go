@@ -421,7 +421,7 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cli := kubefake.NewSimpleClientset()
+			cli := kubefake.NewClientset()
 			err := utils.AddObjectsToClientSet[[]*v1.Pod](cli, tt.pods)
 			assert.NoError(t, err)
 			err = os.Setenv("POD_NAMESPACE", "openshift-insights")
@@ -438,8 +438,8 @@ func TestGetInsightsOperatorRuntimePodIPs(t *testing.T) {
 }
 
 func TestGatherWorkloadRuntimeInfos_NoPods(t *testing.T) {
-	cli := kubefake.NewSimpleClientset()
-	configCli := configfake.NewSimpleClientset()
+	cli := kubefake.NewClientset()
+	configCli := configfake.NewClientset()
 	err := os.Setenv("POD_NAMESPACE", "openshift-insights")
 	assert.NoError(t, err)
 

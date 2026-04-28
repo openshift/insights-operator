@@ -25,7 +25,7 @@ func Test_CollectVolumeSnapshotCRD(t *testing.T) {
 		"this.should.not.be.gathered.k8s.io",
 	}
 
-	crdClientset := apixv1clientfake.NewSimpleClientset()
+	crdClientset := apixv1clientfake.NewClientset()
 
 	for _, name := range crdNames {
 		_, _ = crdClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(), &v1.CustomResourceDefinition{

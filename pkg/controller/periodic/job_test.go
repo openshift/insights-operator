@@ -19,7 +19,7 @@ const (
 )
 
 func TestCreateGathererJob(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 
 	_, err := coreClient.PersistentVolumeClaims(insightsNamespace).Create(context.TODO(), &v1.PersistentVolumeClaim{

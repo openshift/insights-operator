@@ -24,7 +24,7 @@ import (
 )
 
 func Test_ClusterTransfer_PullSecretUpdate(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 	ctController := New(coreClient, nil, nil)
 
@@ -113,7 +113,8 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 				Healthy:   true,
 				Reason:    AvailableReason,
 				Count:     1,
-				Message:   "pull-secret successfully updated"},
+				Message:   "pull-secret successfully updated",
+			},
 			updatedPullSecretDataFilePath: "test-data/updated-pull-secret.json",
 		},
 		{
@@ -128,7 +129,8 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 				Healthy: false,
 				Reason:  "InternalServerError",
 				Count:   1,
-				Message: "failed to pull cluster transfer:"},
+				Message: "failed to pull cluster transfer:",
+			},
 			// pull-secret remains the same
 			updatedPullSecretDataFilePath: "test-data/test-pull-secret.json",
 		},
@@ -142,7 +144,8 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 				Healthy:   true,
 				Reason:    moreAcceptedClusterTransfers,
 				Count:     1,
-				Message:   "there are more accepted cluster transfers. The pull-secret will not be updated!"},
+				Message:   "there are more accepted cluster transfers. The pull-secret will not be updated!",
+			},
 			// no update expected so the same file
 			updatedPullSecretDataFilePath: "test-data/test-pull-secret.json",
 		},
@@ -156,7 +159,8 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 				Healthy:   false,
 				Reason:    dataCorrupted,
 				Count:     1,
-				Message:   ""},
+				Message:   "",
+			},
 			// no update expected so the same file
 			updatedPullSecretDataFilePath: "test-data/test-pull-secret.json",
 		},
@@ -170,7 +174,8 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 				Healthy:   true,
 				Reason:    noClusterTransfer,
 				Count:     1,
-				Message:   "no available cluster transfer"},
+				Message:   "no available cluster transfer",
+			},
 			// no update expected so the same file
 			updatedPullSecretDataFilePath: "test-data/test-pull-secret.json",
 		},
@@ -184,7 +189,8 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 				Healthy:   false,
 				Reason:    unexpectedData,
 				Count:     1,
-				Message:   "unable to deserialize the cluster transfer API response:"},
+				Message:   "unable to deserialize the cluster transfer API response:",
+			},
 			// no update expected so the same file
 			updatedPullSecretDataFilePath: "test-data/test-pull-secret.json",
 		},
@@ -212,7 +218,7 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 					Endpoint: httpServer.URL,
 				},
 			})
-			coreClientSet := kubefake.NewSimpleClientset()
+			coreClientSet := kubefake.NewClientset()
 			coreClient := coreClientSet.CoreV1()
 			mockAuthorizer := &MockAuthorizer{}
 			clusterVersion := &configv1.ClusterVersion{
@@ -225,7 +231,7 @@ func TestRequestDataAndUpdateSecret(t *testing.T) {
 			}
 			_, err := createPullSecretFromFile(coreClient, tt.pullSecretDataFilePath)
 			assert.NoError(t, err)
-			openshiftConfCli := configv1client.NewSimpleClientset(clusterVersion)
+			openshiftConfCli := configv1client.NewClientset(clusterVersion)
 
 			cli := insightsclient.New(http.DefaultClient, 1024, "empty", mockAuthorizer, openshiftConfCli)
 			ctx := context.Background()

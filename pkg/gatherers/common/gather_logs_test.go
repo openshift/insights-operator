@@ -43,7 +43,7 @@ func testGatherLogs(t *testing.T, regexSearch bool, stringToSearch string, shoul
 	const testPodName = "test"
 	const testLogFileName = "errors"
 
-	coreClient := kubefake.NewSimpleClientset().CoreV1()
+	coreClient := kubefake.NewClientset().CoreV1()
 	ctx := context.Background()
 
 	_, err := coreClient.Pods(testPodName).Create(
