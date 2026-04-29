@@ -142,12 +142,28 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	configAggregator := configobserver.NewConfigAggregator(secretConfigObserver, configMapObserver)
 	go configAggregator.Listen(ctx)
 
-	// Create channel for update notifications
-	// Maybe there should be also a cross check
-	// that it was not bumped during a pod restart
-	// or something?
-	// TODO
+	// updateCh is used to signal a version update to the runtimeextractor controller
 	updateCh := make(chan struct{}, 1)
+
+	// Create informer factory for runtime-extractor resources in openshift-insights namespace
+	runtimeExtractorInformerFactory := clientInformers.NewSharedInformerFactoryWithOptions(
+		kubeClient,
+		informerTimeout,
+		clientInformers.WithNamespace(insightsNamespace),
+	)
+
+	// Create resource informer to watch for external modifications to runtime-extractor resources
+	runtimeExtractorResourceInformer, err := runtimeextractor.NewResourceInformer(
+		controller.EventRecorder,
+		runtimeExtractorInformerFactory,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create runtime extractor resource informer: %w", err)
+	}
+
+	// Start the informer factory and resource informer controller
+	go runtimeExtractorInformerFactory.Start(ctx.Done())
+	go runtimeExtractorResourceInformer.Run(ctx, 1)
 
 	// Start runtimeExtractor controller
 	runtimeExtractorCtrl := runtimeextractor.NewRuntimeExtractorController(
@@ -155,6 +171,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		updateCh,
 		kubeClient,
 		controller.EventRecorder,
+		runtimeExtractorResourceInformer,
 	)
 	go runtimeExtractorCtrl.Run(ctx)
 

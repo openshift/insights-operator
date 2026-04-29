@@ -46,7 +46,7 @@ func Test_applyDaemonSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			coreClient := fake.NewSimpleClientset()
+			coreClient := fake.NewClientset()
 
 			if tt.mockError != nil {
 				coreClient.PrependReactor("create", "daemonsets", func(action k8stesting.Action) (bool, runtime.Object, error) {
@@ -55,7 +55,7 @@ func Test_applyDaemonSet(t *testing.T) {
 			}
 
 			recorder := events.NewInMemoryRecorder("test", clock.RealClock{})
-			rm := NewResourceManager(coreClient.AppsV1(), coreClient.CoreV1(), recorder)
+			rm := NewResourceManager(coreClient.AppsV1(), recorder)
 
 			ds, err := rm.applyDaemonSet(context.Background())
 
@@ -97,7 +97,7 @@ func Test_updateContainerImages(t *testing.T) {
 	}
 
 	recorder := events.NewInMemoryRecorder("test", clock.RealClock{})
-	rm := NewResourceManager(nil, nil, recorder)
+	rm := NewResourceManager(nil, recorder)
 
 	rm.updateContainerImages(ds)
 
@@ -145,9 +145,9 @@ func Test_deleteDaemonSet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var coreClient *fake.Clientset
 			if tt.existingDS != nil {
-				coreClient = fake.NewSimpleClientset(tt.existingDS)
+				coreClient = fake.NewClientset(tt.existingDS)
 			} else {
-				coreClient = fake.NewSimpleClientset()
+				coreClient = fake.NewClientset()
 			}
 
 			if tt.mockError != nil {
@@ -157,7 +157,7 @@ func Test_deleteDaemonSet(t *testing.T) {
 			}
 
 			recorder := events.NewInMemoryRecorder("test", clock.RealClock{})
-			rm := NewResourceManager(coreClient.AppsV1(), coreClient.CoreV1(), recorder)
+			rm := NewResourceManager(coreClient.AppsV1(), recorder)
 
 			err := rm.deleteDaemonSet(context.Background())
 
@@ -208,9 +208,9 @@ func Test_getDaemonSet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var coreClient *fake.Clientset
 			if tt.existingDS != nil {
-				coreClient = fake.NewSimpleClientset(tt.existingDS)
+				coreClient = fake.NewClientset(tt.existingDS)
 			} else {
-				coreClient = fake.NewSimpleClientset()
+				coreClient = fake.NewClientset()
 			}
 
 			if tt.mockError != nil {
@@ -220,7 +220,7 @@ func Test_getDaemonSet(t *testing.T) {
 			}
 
 			recorder := events.NewInMemoryRecorder("test", clock.RealClock{})
-			rm := NewResourceManager(coreClient.AppsV1(), coreClient.CoreV1(), recorder)
+			rm := NewResourceManager(coreClient.AppsV1(), recorder)
 
 			ds, err := rm.getDaemonSet(context.Background())
 
@@ -273,9 +273,9 @@ func Test_daemonSetExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var coreClient *fake.Clientset
 			if tt.existingDS != nil {
-				coreClient = fake.NewSimpleClientset(tt.existingDS)
+				coreClient = fake.NewClientset(tt.existingDS)
 			} else {
-				coreClient = fake.NewSimpleClientset()
+				coreClient = fake.NewClientset()
 			}
 
 			if tt.mockError != nil {
@@ -285,7 +285,7 @@ func Test_daemonSetExists(t *testing.T) {
 			}
 
 			recorder := events.NewInMemoryRecorder("test", clock.RealClock{})
-			rm := NewResourceManager(coreClient.AppsV1(), coreClient.CoreV1(), recorder)
+			rm := NewResourceManager(coreClient.AppsV1(), recorder)
 
 			got := rm.daemonSetExists(context.Background())
 

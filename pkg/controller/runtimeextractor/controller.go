@@ -2,7 +2,6 @@ package runtimeextractor
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller/runtimeextractor/resources"
@@ -34,9 +33,10 @@ type ResourceManager interface {
 // It watches for configuration changes and cluster version updates, creating, updating, or deleting
 // the runtime extractor DaemonSet and associated resources as needed.
 //
-// The controller responds to two primary events:
+// The controller responds to three primary events:
 //   - Configuration changes: Creates or deletes resources based on DisableRuntimeExtractor flag
 //   - Version updates: Updates DaemonSet container images to match the current cluster version
+//   - Resource modifications: Detects and corrects external changes to runtime-extractor resources
 type runtimeExtractorController struct {
 	// config provides access to Insights configuration and notifications about configuration changes
 	config ConfigNotifier
@@ -44,6 +44,8 @@ type runtimeExtractorController struct {
 	updateCh chan struct{}
 	// resourceManager handles creation, update, and deletion of runtime extractor Kubernetes resources
 	resourceManager ResourceManager
+	// resourceInformer watches for external modifications to runtime-extractor resources
+	resourceInformer ResourceInformer
 }
 
 // NewRuntimeExtractorController is a constructor for runtimeExtractorController
@@ -53,18 +55,18 @@ func NewRuntimeExtractorController(
 	updateCh chan struct{},
 	kubeClient *kubernetes.Clientset,
 	recorder events.Recorder,
+	resourceInformer ResourceInformer,
 ) *runtimeExtractorController {
 	rm := resources.NewResourceManager(
-		// TODO: maybe it could be done in a better way
 		kubeClient.AppsV1(),
-		kubeClient.CoreV1(),
 		recorder,
 	)
 
 	return &runtimeExtractorController{
-		config:          configNotifier,
-		updateCh:        updateCh,
-		resourceManager: rm,
+		config:           configNotifier,
+		updateCh:         updateCh,
+		resourceManager:  rm,
+		resourceInformer: resourceInformer,
 	}
 }
 
@@ -72,32 +74,35 @@ func NewRuntimeExtractorController(
 // It performs initial deployment based on configuration, then watches for:
 //   - Configuration changes (create/delete resources based on DisableRuntimeExtractor flag)
 //   - Cluster version updates (update DaemonSet images to match new cluster version)
+//   - Resource modifications (detect and correct external changes to runtime-extractor resources)
 //
-// The controller runs until the context is cancelled.
+// The controller runs until the context is canceled.
 func (re *runtimeExtractorController) Run(ctx context.Context) {
-	klog.Info("[RuntimeExtractorController]: Run")
+	klog.Info("Starting runtime extractor controller")
 
-	// !!! TODO: if the pod restarts and the env is changed it will not
-	// update daemonset images correctly
+	// Initial deploy of DaemonSet
 	re.handleConfigChange(ctx)
 
 	configChan, configClose := re.config.ConfigChanged()
 	defer configClose()
 
-	// Check ConfigMap if the DisableRuntimeExtractor is set
-	// Based on that Create/Delete the RuntimeExtractor deployment
-	// Also watch for Updates if the deployment needs some changes
+	// Get resource modification notifications from informer
+	resourceModifiedChan := re.resourceInformer.ResourceModified()
+
+	// Watch for configuration changes, version updates, and external resource modifications
 	for {
 		select {
 		case <-configChan:
-			klog.Info("[RuntimeExtractorController]: Configuration Changed")
-			// Check if disableRuntimeExtractor was changed
+			klog.Info("Runtime extractor configuration changed")
 			re.handleConfigChange(ctx)
 		case <-re.updateCh:
-			klog.Infof("[RuntimeExtractorController]: Version bumped")
+			klog.Info("Runtime extractor cluster version updated")
 			re.handleVersionUpdate(ctx)
+		case <-resourceModifiedChan:
+			klog.Info("Runtime extractor resources modified externally, reconciling")
+			re.handleResourceDrift(ctx)
 		case <-ctx.Done():
-			klog.Info("[RuntimeExtractorController]: Context Done")
+			klog.Info("Runtime extractor controller stopped")
 			return
 		}
 	}
@@ -105,38 +110,28 @@ func (re *runtimeExtractorController) Run(ctx context.Context) {
 
 // handleConfigChange responds to configuration changes by creating or deleting runtime extractor resources
 // based on the DisableRuntimeExtractor configuration flag.
-// TODO: do we need an mutex here?
 func (re *runtimeExtractorController) handleConfigChange(ctx context.Context) {
-	klog.Info("[RuntimeExtractorController]: handleConfigChange")
 	cfg := re.config.Config()
 
-	var err error
 	if cfg.DataReporting.DisableRuntimeExtractor {
-		klog.Info("RuntimeExtractor is disabled")
-		err = re.deleteDeployment(ctx)
+		klog.Info("Runtime extractor is disabled, deleting resources")
+		re.deleteDeployment(ctx)
 	} else {
-		klog.Info("RuntimeExtractor is enabled")
-		err = re.createDeployment(ctx)
-	}
-
-	if err != nil {
-		klog.Errorf("[RuntimeExtractorController]: Failed to handle config change: %v", err)
-		// TODO: Consider adding retry mechanism or status reporting
+		klog.Info("Runtime extractor is enabled, creating resources")
+		re.createDeployment(ctx)
 	}
 }
 
 // handleVersionUpdate responds to cluster version changes by updating the runtime extractor DaemonSet
 // to use container images matching the new cluster version. Skips update if runtime extractor is disabled.
-// TODO: do we need an mutex here?
 func (re *runtimeExtractorController) handleVersionUpdate(ctx context.Context) {
-	klog.Info("[RuntimeExtractorController]: Update Deployment")
 	cfg := re.config.Config()
 
 	if cfg.DataReporting.DisableRuntimeExtractor {
+		klog.Info("Runtime extractor is disabled, skipping version update")
 		return
 	}
-	// TODO: version
-	// TODO: handle error - retry or something?
+
 	re.updateDeployment(ctx)
 }
 
@@ -144,52 +139,58 @@ func (re *runtimeExtractorController) isCreated(ctx context.Context) bool {
 	return re.resourceManager.ResourcesExists(ctx)
 }
 
-func (re *runtimeExtractorController) createDeployment(ctx context.Context) error {
-	klog.Info("[RuntimeExtractorController]: Create Deployment")
-
-	// TODO: we need to make sure it uses the latest images so we should run apply
-	// if re.isCreated(ctx) {
-	// 	klog.Info("[RuntimeExtractorController]: Resources Already Exists")
-	// 	return nil
-	// }
+func (re *runtimeExtractorController) createDeployment(ctx context.Context) {
+	klog.Info("Creating runtime extractor resources")
 
 	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
-		klog.Errorf("Failed to ApplyRuntimeExtractorResources: %v", err)
-		return err
+		klog.Errorf("Failed to apply runtime extractor resources: %v", err)
 	}
-
-	return nil
 }
 
-func (re *runtimeExtractorController) deleteDeployment(ctx context.Context) error {
-	klog.Info("[RuntimeExtractorController]: Delete Deployment")
+func (re *runtimeExtractorController) deleteDeployment(ctx context.Context) {
+	klog.Info("Deleting runtime extractor resources")
 
 	if !re.isCreated(ctx) {
-		klog.Info("[RuntimeExtractorController]: Resources Not Exists")
-		return nil
+		klog.Info("Runtime extractor resources do not exist, nothing to delete")
+		return
 	}
 
 	if err := re.resourceManager.DeleteRuntimeExtractorResources(ctx); err != nil {
-		klog.Errorf("Failed to DeleteRuntimeExtractorResources: %v", err)
-		return err
+		klog.Errorf("Failed to delete runtime extractor resources: %v", err)
 	}
-
-	return nil
 }
 
-func (re *runtimeExtractorController) updateDeployment(ctx context.Context) error {
-	klog.Info("[RuntimeExtractorController]: Update Deployment")
+func (re *runtimeExtractorController) updateDeployment(ctx context.Context) {
+	klog.Info("Updating runtime extractor resources")
 
 	// Avoid creating it when the cluster version is updated
 	if !re.isCreated(ctx) {
-		klog.Errorf("[RuntimeExtractorController]: Resources Not Found")
-		return fmt.Errorf("can not update not created resources")
+		klog.Info("Runtime extractor resources not found, skipping update")
+		return
 	}
 
 	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
-		klog.Errorf("Failed to ApplyRuntimeExtractorResources: %v", err)
-		return err
+		klog.Errorf("Failed to apply runtime extractor resources: %v", err)
+	}
+}
+
+// handleResourceDrift responds to external modifications of runtime-extractor resources
+// by reapplying the desired state. This ensures that any manual changes or deletions
+// are automatically corrected to maintain the insights-operator's desired configuration.
+func (re *runtimeExtractorController) handleResourceDrift(ctx context.Context) {
+	cfg := re.config.Config()
+
+	// Only reconcile if runtime extractor should be enabled
+	if cfg.DataReporting.DisableRuntimeExtractor {
+		klog.Info("Runtime extractor is disabled, ensuring resources are absent")
+		re.deleteDeployment(ctx)
+		return
 	}
 
-	return nil
+	// Reapply resources to correct any drift
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
+		klog.Errorf("Failed to correct runtime extractor resource drift: %v", err)
+	} else {
+		klog.Info("Successfully reconciled runtime extractor resources")
+	}
 }
