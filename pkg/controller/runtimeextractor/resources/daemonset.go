@@ -10,6 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -20,10 +21,16 @@ const (
 
 	// Environment variables containinig container image references for runtime-extractor
 	// related services. These ENVs are populated by the CVO operator.
-	extractorImageEnv = "RELATED_IMAGE_INSIGHTS_RUNTIME_EXTRACTOR"
-	exporterImageEnv  = "RELATED_IMAGE_INSIGHTS_RUNTIME_EXPORTER"
+	extractorImageEnv     = "RELATED_IMAGE_INSIGHTS_RUNTIME_EXTRACTOR"
+	extractorDefaultImage = "quay.io/openshift/origin-insights-runtime-extractor:latest"
+
+	exporterImageEnv     = "RELATED_IMAGE_INSIGHTS_RUNTIME_EXPORTER"
+	exporterDefaultImage = "quay.io/openshift/origin-insights-runtime-exporter:latest"
+
 	proxyImageEnv     = "RELATED_IMAGE_KUBE_RBAC_PROXY"
-	envImageErrMsg    = "failed to get image version ENV: %s"
+	proxyDefaultImage = "quay.io/openshift/origin-kube-rbac-proxy:latest"
+
+	envImageErrMsg = "Failed to get image from environment variable %s, using default image %s"
 )
 
 //go:embed manifests/runtime-extractor-daemonset.yaml
@@ -38,12 +45,9 @@ func loadRuntimeExtractorDaemonSet() (*appsv1.DaemonSet, error) {
 	return ds, nil
 }
 
-// tODO: rename it because of conflic with resourceapply
 // applyDaemonSet creates or updates the runtime extractor DaemonSet
+// Retries on conflict errors using exponential backoff
 func (rm *ResourceManager) applyDaemonSet(ctx context.Context) (*appsv1.DaemonSet, error) {
-	klog.Info("[RuntimeExtractorController]: applyDaemonSet")
-
-	// TODO: what should be the default image used for each container in the yaml spec?
 	daemonSet, err := loadRuntimeExtractorDaemonSet()
 	if err != nil {
 		return nil, err
@@ -51,14 +55,26 @@ func (rm *ResourceManager) applyDaemonSet(ctx context.Context) (*appsv1.DaemonSe
 
 	rm.updateContainerImages(daemonSet)
 
-	// ApplyDaemonSet handles create/update logic with generation tracking
-	appliedDaemonSet, modified, err := resourceapply.ApplyDaemonSet(ctx, rm.daemonSetGetterClient, rm.recorder, daemonSet, -1)
+	// Retry with exponential backoff on conflict errors
+	var appliedDaemonSet *appsv1.DaemonSet
+	var modified bool
+
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var retryErr error
+		appliedDaemonSet, modified, retryErr = resourceapply.ApplyDaemonSet(ctx, rm.daemonSetGetterClient, rm.recorder, daemonSet, -1)
+		return retryErr
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply runtime extractor daemonset: %w", err)
 	}
 
 	if modified {
-		rm.recorder.Event("DaemonSet Updated", fmt.Sprintf("Runtime extractor DaemonSet %s/%s was created or updated", appliedDaemonSet.Namespace, appliedDaemonSet.Name))
+		rm.recorder.Event(
+			"DaemonSet Updated",
+			fmt.Sprintf(
+				"Runtime extractor DaemonSet %s/%s was created or updated",
+				appliedDaemonSet.Namespace, appliedDaemonSet.Name,
+			))
 		klog.Infof("Runtime extractor DaemonSet %s/%s was created or updated", appliedDaemonSet.Namespace, appliedDaemonSet.Name)
 	}
 
@@ -74,35 +90,38 @@ func (rm *ResourceManager) updateContainerImages(ds *appsv1.DaemonSet) {
 		switch container.Name {
 		case "extractor":
 			container.Image = extractorReleaseVersion
-			klog.Infof("Updated extractor image to %s", container.Image)
+			klog.Infof("Updated runtime extractor container image to %s", container.Image)
 		case "exporter":
 			container.Image = exporterReleaseVersion
-			klog.Infof("Updated exporter image to %s", container.Image)
+			klog.Infof("Updated runtime exporter container image to %s", container.Image)
 		case "kube-rbac-proxy":
 			// kube-rbac-proxy uses its own versioning, keep as-is
 			// Could be updated separately if needed
 			container.Image = proxyReleaseVersion
-			klog.Infof("Updated exporter image to %s", container.Image)
+			klog.Infof("Updated kube-rbac-proxy container image to %s", container.Image)
 		}
 	}
 }
 
 // loadImagesFromEnvs loads container image references from environment variables.
-// Empty strings are returned for any missing environment variables, with errors logged.
-func loadImagesFromEnvs() (string, string, string) {
-	extractorReleaseVersion := os.Getenv(extractorImageEnv)
+// Default values are returned for any missing environment variables, with errors logged.
+func loadImagesFromEnvs() (extractorReleaseVersion, exporterReleaseVersion, proxyReleaseVersion string) {
+	extractorReleaseVersion = os.Getenv(extractorImageEnv)
 	if len(extractorReleaseVersion) == 0 {
-		klog.Errorf(envImageErrMsg, extractorImageEnv)
+		klog.Errorf(envImageErrMsg, extractorImageEnv, extractorDefaultImage)
+		extractorReleaseVersion = extractorDefaultImage
 	}
 
-	exporterReleaseVersion := os.Getenv(exporterImageEnv)
+	exporterReleaseVersion = os.Getenv(exporterImageEnv)
 	if len(exporterReleaseVersion) == 0 {
-		klog.Errorf(envImageErrMsg, exporterImageEnv)
+		klog.Errorf(envImageErrMsg, exporterImageEnv, exporterDefaultImage)
+		exporterReleaseVersion = exporterDefaultImage
 	}
 
-	proxyReleaseVersion := os.Getenv(proxyImageEnv)
+	proxyReleaseVersion = os.Getenv(proxyImageEnv)
 	if len(proxyReleaseVersion) == 0 {
-		klog.Errorf(envImageErrMsg, proxyImageEnv)
+		klog.Errorf(envImageErrMsg, proxyImageEnv, proxyDefaultImage)
+		proxyReleaseVersion = proxyDefaultImage
 	}
 
 	return extractorReleaseVersion, exporterReleaseVersion, proxyReleaseVersion
@@ -134,7 +153,6 @@ func (rm *ResourceManager) daemonSetExists(ctx context.Context) bool {
 	_, err := rm.getDaemonSet(ctx)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			klog.Infof("[RuntimeExtractorController]: daemonset not found: %s, %v", daemonSetName, err)
 			return false
 		}
 		klog.Errorf("Failed to get runtime extractor DaemonSet %s/%s: %v", daemonSetNamespace, daemonSetName, err)

@@ -235,7 +235,13 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 //   - error: if version parsing fails
 //
 // Returns (false, false, nil) on initial run when clusterOperatorVersions is empty.
-func (c *Controller) checkVersionChanges(newVersion string, clusterOperatorVersions []configv1.OperandVersion) (bool, bool, error) {
+func (c *Controller) checkVersionChanges(
+	newVersion string,
+	clusterOperatorVersions []configv1.OperandVersion,
+) (
+	versionChanged, majorMinorVersionChanged bool,
+	err error,
+) {
 	newVersionParsed, err := semver.Parse(newVersion)
 	if err != nil {
 		return false, false, err
@@ -246,7 +252,7 @@ func (c *Controller) checkVersionChanges(newVersion string, clusterOperatorVersi
 		return false, false, nil
 	}
 
-	versionChanged, majorMinorVersionChanged := false, false
+	versionChanged, majorMinorVersionChanged = false, false
 
 	for _, cov := range clusterOperatorVersions {
 		covParsed, err := semver.Parse(cov.Version)
