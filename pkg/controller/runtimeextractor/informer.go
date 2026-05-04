@@ -17,14 +17,6 @@ const (
 	runtimeExtractorName      = "insights-runtime-extractor"
 )
 
-// ResourceInformer provides notifications when runtime-extractor resources are modified
-// externally (not by insights-operator). This enables drift detection and reconciliation.
-type ResourceInformer interface {
-	factory.Controller
-	// ResourceModified returns a channel that receives notifications when resources are modified
-	ResourceModified() <-chan struct{}
-}
-
 // resourceInformer watches DaemonSet resources for external modifications
 type resourceInformer struct {
 	factory.Controller
@@ -36,7 +28,7 @@ type resourceInformer struct {
 func NewResourceInformer(
 	eventRecorder events.Recorder,
 	kubeInformers informers.SharedInformerFactory,
-) (ResourceInformer, error) {
+) (*resourceInformer, error) {
 	ri := &resourceInformer{
 		modifiedCh: make(chan struct{}, 10), // Buffered to prevent blocking
 	}
