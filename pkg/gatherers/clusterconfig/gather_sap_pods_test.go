@@ -19,7 +19,7 @@ import (
 // nolint: funlen
 func Test_SAPPods(t *testing.T) {
 	// Initialize the fake dynamic client.
-	var datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
+	datahubYAML := `apiVersion: installers.datahub.sap.com/v1alpha1
 kind: DataHub
 metadata:
     name: example-datahub
@@ -40,7 +40,7 @@ metadata:
 	}
 
 	// Initialize the remaining K8s/OS fake clients.
-	coreClient := kubefake.NewSimpleClientset()
+	coreClient := kubefake.NewClientset()
 	jobsClient := &batchv1fake.FakeBatchV1{Fake: &coreClient.Fake}
 
 	_, _ = coreClient.CoreV1().Pods("example-namespace").Create(context.Background(), &corev1.Pod{

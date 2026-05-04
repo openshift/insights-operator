@@ -42,7 +42,7 @@ func Test_gatherClusterIngress(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configClient := configfake.NewSimpleClientset(tt.ingressDefinition)
+			configClient := configfake.NewClientset(tt.ingressDefinition)
 			records, errs := gatherClusterIngress(context.TODO(), configClient.ConfigV1())
 			assert.Equal(t, tt.wantRecords, records)
 			assert.Len(t, errs, tt.wantErrCount)

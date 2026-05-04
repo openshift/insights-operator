@@ -183,8 +183,8 @@ func Test_ImageRegistry_Gather(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			client := imageregistryfake.NewSimpleClientset(test.inputObj)
-			coreClient := kubefake.NewSimpleClientset()
+			client := imageregistryfake.NewClientset(test.inputObj)
+			coreClient := kubefake.NewClientset()
 			ctx := context.Background()
 			records, errs := gatherClusterImageRegistry(ctx, client.ImageregistryV1(), coreClient.CoreV1())
 			if len(errs) > 0 {

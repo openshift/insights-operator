@@ -96,8 +96,8 @@ func Test_getClusterVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configClient := configFake.NewSimpleClientset(tt.clusterVersionDefinition).ConfigV1()
-			coreClient := fake.NewSimpleClientset(tt.pods, tt.events).CoreV1()
+			configClient := configFake.NewClientset(tt.clusterVersionDefinition).ConfigV1()
+			coreClient := fake.NewClientset(tt.pods, tt.events).CoreV1()
 
 			records, errs := getClusterVersion(context.Background(), configClient, coreClient, tt.interval)
 			assert.Len(t, errs, tt.wantErrCounts)

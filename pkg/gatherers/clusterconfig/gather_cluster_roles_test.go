@@ -90,7 +90,7 @@ func TestGatherClusterRoles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cli := kubefake.NewSimpleClientset()
+			cli := kubefake.NewClientset()
 			for _, clusterRole := range tt.testClusterRoles {
 				err := cli.Tracker().Add(&clusterRole)
 				assert.NoError(t, err)

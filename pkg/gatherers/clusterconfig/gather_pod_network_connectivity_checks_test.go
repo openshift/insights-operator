@@ -32,7 +32,7 @@ func Test_PNCC(t *testing.T) {
 			},
 		},
 	}
-	fakeOCPInterface := ocpCliFake2.NewSimpleClientset()
+	fakeOCPInterface := ocpCliFake2.NewClientset()
 	// Check before creating the PNCC.
 	records, errs := gatherPNCC(context.Background(), fakeOCPInterface.ControlplaneV1alpha1())
 	assert.Len(t, errs, 0, "unexpected errors in the first run: %#v", errs)

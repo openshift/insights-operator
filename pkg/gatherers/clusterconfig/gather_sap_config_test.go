@@ -16,15 +16,15 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 )
 
-func Test_SAPConfig(t *testing.T) {
-	// Initialize the fake dynamic client.
-	var datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
+const datahubYAML = `apiVersion: installers.datahub.sap.com/v1alpha1
 kind: DataHub
 metadata:
     name: example-datahub
     namespace: example-namespace
 `
 
+func Test_SAPConfig(t *testing.T) {
+	// Initialize the fake dynamic client.
 	datahubsClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
 		datahubGroupVersionResource: "DataHubsList",
 	})
@@ -38,8 +38,8 @@ metadata:
 	}
 
 	// Initialize the remaining K8s/OS fake clients.
-	authClient := authfake.NewSimpleClientset()
-	securityClient := securityfake.NewSimpleClientset()
+	authClient := authfake.NewClientset()
+	securityClient := securityfake.NewClientset()
 
 	// Security Context Constraints.
 	_, _ = securityClient.SecurityV1().SecurityContextConstraints().Create(

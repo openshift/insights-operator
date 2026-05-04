@@ -43,7 +43,7 @@ func TestGatherer_gatherContainersLogs(t *testing.T) {
 		},
 	}
 
-	coreClient := kubefake.NewSimpleClientset().CoreV1()
+	coreClient := kubefake.NewClientset().CoreV1()
 	_, err := coreClient.Pods("openshift-monitoring").Create(ctx, testPod, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("unable to create fake pod: %v", err)

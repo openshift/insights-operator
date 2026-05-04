@@ -23,7 +23,7 @@ import (
 func Test_ConfigMap_Anonymizer(t *testing.T) {
 	klog.SetOutput(utils.NewTestLog(t).Writer())
 
-	var cases = []struct {
+	cases := []struct {
 		testName               string
 		configMapName          string
 		expectedAnonymizedJSON string
@@ -136,7 +136,7 @@ func readConfigMapsTestData() (*corev1.ConfigMapList, error) {
 func Test_ConfigMap_Gather(t *testing.T) {
 	cml, err := readConfigMapsTestData()
 	mustNotFail(t, err, "error creating test data %+v")
-	coreClient := kubefake.NewSimpleClientset()
+	coreClient := kubefake.NewClientset()
 
 	for _, cm := range cml.Items {
 		_, err := coreClient.CoreV1().ConfigMaps(cm.Namespace).Create(context.Background(), &cm, metav1.CreateOptions{}) //nolint: gosec
@@ -160,7 +160,7 @@ func Test_ConfigMap_Gather(t *testing.T) {
 }
 
 func Test_ConfigMap_YAML_Data(t *testing.T) {
-	var cases = []struct {
+	cases := []struct {
 		testName      string
 		testCM        corev1.ConfigMap
 		expNumOfRec   int
@@ -198,7 +198,7 @@ func Test_ConfigMap_YAML_Data(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.testName, func(t *testing.T) {
-			coreClient := kubefake.NewSimpleClientset()
+			coreClient := kubefake.NewClientset()
 			_, err := coreClient.CoreV1().ConfigMaps(tt.testCM.Namespace).Create(context.Background(), &tt.testCM, metav1.CreateOptions{})
 			if err != nil {
 				t.Fatalf("cannot create %s config map: %v", tt.testCM.Name, err)

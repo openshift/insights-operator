@@ -15,7 +15,7 @@ import (
 )
 
 func Test_gatherClusterConfigV1(t *testing.T) {
-	coreClient := kubefake.NewSimpleClientset()
+	coreClient := kubefake.NewClientset()
 
 	_, err := coreClient.CoreV1().ConfigMaps("kube-system").Create(context.Background(), &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{},

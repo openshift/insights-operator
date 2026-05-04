@@ -50,7 +50,7 @@ func Test_gatherClusterAuthentication(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Given
-			configClient := configfake.NewSimpleClientset(tc.authentication)
+			configClient := configfake.NewClientset(tc.authentication)
 
 			// When
 			got, gotErrs := gatherClusterAuthentication(context.Background(), configClient.ConfigV1())

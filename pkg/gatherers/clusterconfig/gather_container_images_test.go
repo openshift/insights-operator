@@ -32,7 +32,7 @@ func Test_ContainerImages_Gather(t *testing.T) { //nolint: funlen,gocyclo
 		},
 	}
 
-	coreClient := kubefake.NewSimpleClientset()
+	coreClient := kubefake.NewClientset()
 	for index, containerImage := range mockContainers {
 		_, err := coreClient.CoreV1().
 			Pods(fakeNamespace).

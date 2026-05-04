@@ -223,9 +223,9 @@ dataReporting:
 		t.Run(tt.name, func(t *testing.T) {
 			var cs *kubefake.Clientset
 			if tt.configCM != nil {
-				cs = kubefake.NewSimpleClientset(tt.configCM)
+				cs = kubefake.NewClientset(tt.configCM)
 			} else {
-				cs = kubefake.NewSimpleClientset()
+				cs = kubefake.NewClientset()
 			}
 			mockSecretConf := config.NewMockSecretConfigurator(&tt.legacyConfig)
 			staticAggregator := NewStaticConfigAggregator(mockSecretConf, cs)

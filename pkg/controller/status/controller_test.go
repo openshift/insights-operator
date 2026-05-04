@@ -69,7 +69,7 @@ func Test_Status_SaveInitialStart(t *testing.T) {
 				operators = append(operators, tt.clusterOperator)
 			}
 
-			client := configfake.NewSimpleClientset(operators...)
+			client := configfake.NewClientset(operators...)
 			mockAPIConfigurator := config.NewMockAPIConfigurator(
 				&configv1.GatherConfig{
 					Gatherers: configv1.Gatherers{
@@ -308,7 +308,7 @@ func Test_shouldSetProgressingCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := configfake.NewSimpleClientset()
+			client := configfake.NewClientset()
 			mockAPIConfigurator := config.NewMockAPIConfigurator(
 				&configv1.GatherConfig{
 					Gatherers: configv1.Gatherers{

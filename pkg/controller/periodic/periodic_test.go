@@ -225,13 +225,13 @@ func getMocksForPeriodicTest(listGatherers []gatherers.Interface, interval time.
 		return nil, nil, err
 	}
 
-	fakeInsightsOperatorCli := fakeOperatorCli.NewSimpleClientset().OperatorV1().InsightsOperators()
+	fakeInsightsOperatorCli := fakeOperatorCli.NewClientset().OperatorV1().InsightsOperators()
 	mockController := New(mockConfigMapConfigurator, &mockRecorder, listGatherers, mockAnonymizer, fakeInsightsOperatorCli, nil)
 	return mockController, &mockRecorder, nil
 }
 
 func TestCreateNewDataGatherCR(t *testing.T) {
-	cs := insightsFakeCli.NewSimpleClientset()
+	cs := insightsFakeCli.NewClientset()
 	tests := []struct {
 		name           string
 		dataPolicy     []configv1.DataPolicyOption
@@ -393,7 +393,7 @@ func TestUpdateNewDataGatherCRStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cs := insightsFakeCli.NewSimpleClientset(tt.testedDataGather)
+			cs := insightsFakeCli.NewClientset(tt.testedDataGather)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, cs.InsightsV1(), nil, nil, nil, nil)
 
 			err := mockController.updateNewDataGatherCRStatus(context.Background(), tt.testedDataGather, tt.testJob)
@@ -666,8 +666,8 @@ func TestCopyDataGatherStatusToOperatorStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dataGatherFakeCS := insightsFakeCli.NewSimpleClientset(&tt.testedDataGather)
-			operatorFakeCS := fakeOperatorCli.NewSimpleClientset(&tt.testedInsightsOperator)
+			dataGatherFakeCS := insightsFakeCli.NewClientset(&tt.testedDataGather)
+			operatorFakeCS := fakeOperatorCli.NewClientset(&tt.testedInsightsOperator)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil,
 				dataGatherFakeCS.InsightsV1(), operatorFakeCS.OperatorV1().InsightsOperators(), nil, nil, nil)
 			updatedOperator, err := mockController.copyDataGatherStatusToOperatorStatus(context.Background(), &tt.testedDataGather)
@@ -932,7 +932,7 @@ func TestGetInsightsImage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cs := kubefake.NewSimpleClientset(&tt.testDeployment)
+			cs := kubefake.NewClientset(&tt.testDeployment)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil, nil, nil, nil)
 			imgName, err := mockController.getInsightsImage(context.Background())
 			assert.Equal(t, tt.expectedError, err)
@@ -1022,8 +1022,8 @@ func TestPeriodicPrune(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kubeCs := kubefake.NewSimpleClientset(tt.jobs...)
-			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGathers...)
+			kubeCs := kubefake.NewClientset(tt.jobs...)
+			insightsCs := insightsFakeCli.NewClientset(tt.dataGathers...)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeCs, insightsCs.InsightsV1(), nil, nil, nil, nil)
 			mockController.pruneInterval = 90 * time.Millisecond
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -1250,7 +1250,7 @@ func TestUpdateInsightsReportInDataGather(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			insightsCs := insightsFakeCli.NewSimpleClientset(tt.dataGatherToUpdate)
+			insightsCs := insightsFakeCli.NewClientset(tt.dataGatherToUpdate)
 			conf := &config.InsightsConfiguration{
 				DataReporting: config.DataReporting{
 					DownloadEndpointTechPreview: "https://test.report.endpoint.tech.preview.uri/cluster/%s/requestID/%s",
@@ -1677,7 +1677,7 @@ func TestUpdateClusterOperatorConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			configCli := configFakeCli.NewSimpleClientset(&tt.insightsClusterOp)
+			configCli := configFakeCli.NewClientset(&tt.insightsClusterOp)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, configCli.ConfigV1(), nil, nil)
 			err := mockController.updateStatusBasedOnDataGatherCondition(ctx, &tt.dataGatherCR)
 			assert.Equal(t, tt.expectedErr, err)
@@ -1781,7 +1781,7 @@ func TestSetRemoteConfigConditionsWhenDisabled(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			configCli := configFakeCli.NewSimpleClientset(&tt.insightsClusterOp)
+			configCli := configFakeCli.NewClientset(&tt.insightsClusterOp)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, nil, nil, nil, configCli.ConfigV1(), nil, nil)
 			err := mockController.setRemoteConfigConditionsWhenDisabled(ctx)
 			assert.NoError(t, err)
@@ -1968,8 +1968,8 @@ func TestGetDataGatherCR(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			insightsClientset := insightsFakeCli.NewSimpleClientset(tt.dataGather)
-			kubeClientset := kubefake.NewSimpleClientset(tt.deployment)
+			insightsClientset := insightsFakeCli.NewClientset(tt.dataGather)
+			kubeClientset := kubefake.NewClientset(tt.deployment)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, kubeClientset, insightsClientset.InsightsV1(), nil, nil, nil, nil)
 			mockController.image = tt.controllerImage
 

@@ -25,22 +25,26 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 			proms: []*v1.Prometheus{
 				{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test-namespace"}},
 			},
-			expected: []record.Record{{
-				Name: "aggregated/custom_prometheuses_alertmanagers",
-				Item: record.JSONMarshaller{Object: monitoringCRNames{
-					Prometheuses: []string{"test"}, Alertmanagers: []string{},
-				}}},
+			expected: []record.Record{
+				{
+					Name: "aggregated/custom_prometheuses_alertmanagers",
+					Item: record.JSONMarshaller{Object: monitoringCRNames{
+						Prometheuses: []string{"test"}, Alertmanagers: []string{},
+					}},
+				},
 			},
 		}, {
 			name: "The function returns the name of the AlertManager instance in the correct field",
 			alertMgrs: []*v1.Alertmanager{
 				{ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test-namespace"}},
 			},
-			expected: []record.Record{{
-				Name: "aggregated/custom_prometheuses_alertmanagers",
-				Item: record.JSONMarshaller{Object: monitoringCRNames{
-					Alertmanagers: []string{"test"}, Prometheuses: []string{},
-				}}},
+			expected: []record.Record{
+				{
+					Name: "aggregated/custom_prometheuses_alertmanagers",
+					Item: record.JSONMarshaller{Object: monitoringCRNames{
+						Alertmanagers: []string{"test"}, Prometheuses: []string{},
+					}},
+				},
 			},
 		}, {
 			name: "The function returns the names of the mixed instances in the correct field",
@@ -50,11 +54,13 @@ func Test_GatherAggregatedInstances(t *testing.T) {
 			proms: []*v1.Prometheus{
 				{ObjectMeta: metav1.ObjectMeta{Name: "test-prometheus", Namespace: "test-namespace"}},
 			},
-			expected: []record.Record{{
-				Name: "aggregated/custom_prometheuses_alertmanagers",
-				Item: record.JSONMarshaller{Object: monitoringCRNames{
-					Alertmanagers: []string{"test-alertmanager"}, Prometheuses: []string{"test-prometheus"},
-				}}},
+			expected: []record.Record{
+				{
+					Name: "aggregated/custom_prometheuses_alertmanagers",
+					Item: record.JSONMarshaller{Object: monitoringCRNames{
+						Alertmanagers: []string{"test-alertmanager"}, Prometheuses: []string{"test-prometheus"},
+					}},
+				},
 			},
 		}, {
 			name:      "The function returns no records if no instances are found",

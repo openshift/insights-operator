@@ -46,7 +46,7 @@ func Test_gatherClusterNetwork(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Given
-			configClient := configfake.NewSimpleClientset(tc.network)
+			configClient := configfake.NewClientset(tc.network)
 
 			// When
 			test, errs := gatherClusterNetwork(context.Background(), configClient.ConfigV1())

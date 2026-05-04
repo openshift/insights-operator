@@ -8,6 +8,7 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apixv1clientfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // nolint: lll
@@ -25,13 +26,15 @@ func Test_CollectVolumeSnapshotCRD(t *testing.T) {
 		"this.should.not.be.gathered.k8s.io",
 	}
 
-	crdClientset := apixv1clientfake.NewSimpleClientset()
-
+	// Create CRD objects for the fake clientset
+	var crds []runtime.Object
 	for _, name := range crdNames {
-		_, _ = crdClientset.ApiextensionsV1().CustomResourceDefinitions().Create(context.Background(), &v1.CustomResourceDefinition{
+		crds = append(crds, &v1.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
-		}, metav1.CreateOptions{})
+		})
 	}
+
+	crdClientset := apixv1clientfake.NewClientset(crds...)
 
 	ctx := context.Background()
 	records, errs := gatherCRD(ctx, crdClientset.ApiextensionsV1())

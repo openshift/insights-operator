@@ -122,7 +122,7 @@ func TestUpdateDataGatherConditions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cs := insightsFakeCli.NewSimpleClientset(tt.dataGather)
+			cs := insightsFakeCli.NewClientset(tt.dataGather)
 			updatedDG, err := UpdateDataGatherConditions(
 				context.Background(),
 				cs.InsightsV1(),

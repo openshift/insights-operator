@@ -58,7 +58,8 @@ func Test_GatherClusterInfrastructure(t *testing.T) {
 							ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
 							Status: v1.InfrastructureStatus{
 								InfrastructureName: "xxxx",
-								PlatformStatus:     &v1.PlatformStatus{}},
+								PlatformStatus:     &v1.PlatformStatus{},
+							},
 						},
 					},
 				},
@@ -72,7 +73,7 @@ func Test_GatherClusterInfrastructure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Given
-			configClient := configfake.NewSimpleClientset(tc.infra)
+			configClient := configfake.NewClientset(tc.infra)
 
 			// When
 			test, errs := gatherClusterInfrastructure(context.Background(), configClient.ConfigV1())

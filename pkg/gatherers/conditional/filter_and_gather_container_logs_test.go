@@ -396,7 +396,7 @@ func TestCreatePodToContainersMap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cli := kubefake.NewSimpleClientset()
+			cli := kubefake.NewClientset()
 			for _, p := range tt.pods {
 				err := cli.Tracker().Add(p)
 				assert.NoError(t, err)
@@ -472,7 +472,7 @@ func TestGetAndFilterContainerLogs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cli := kubefake.NewSimpleClientset()
+			cli := kubefake.NewClientset()
 			ctx := context.Background()
 			_, err := cli.CoreV1().Pods("test-namespace").Create(ctx, tt.testingPod, metav1.CreateOptions{})
 			assert.NoError(t, err)
@@ -720,7 +720,7 @@ func TestGatherContainerLogs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cli := kubefake.NewSimpleClientset()
+			cli := kubefake.NewClientset()
 			ctx := context.Background()
 
 			for _, p := range tt.testingPods {

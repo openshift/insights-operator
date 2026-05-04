@@ -5,10 +5,9 @@ import (
 	"testing"
 
 	v1 "github.com/openshift/api/config/v1"
-	configfake "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1/fake"
+	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_GatherClusterAPIServer(t *testing.T) {
@@ -38,12 +37,10 @@ func Test_GatherClusterAPIServer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Given
-			clientset := fake.NewSimpleClientset()
-			configv1 := configfake.FakeConfigV1{Fake: &clientset.Fake}
-			configv1.APIServers().Create(context.Background(), tc.apiserver, metav1.CreateOptions{}) // nolint: errcheck
+			configClient := configfake.NewClientset(tc.apiserver)
 
 			// When
-			records, err := clusterAPIServer{}.gather(context.Background(), configv1.APIServers())
+			records, err := clusterAPIServer{}.gather(context.Background(), configClient.ConfigV1().APIServers())
 
 			// Assert
 			assert.Len(t, err, tc.errCount)

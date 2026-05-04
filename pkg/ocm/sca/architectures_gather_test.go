@@ -38,7 +38,7 @@ var testNodes = []v1.Node{
 }
 
 func Test_SCAController_GatherMultipleArchitectures(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 
 	// Create test nodes
@@ -125,7 +125,7 @@ func Test_getArch(t *testing.T) {
 }
 
 func Test_SCAController_GatherArchitectures_NoControlPlane(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 
 	// Create nodes without control plane label
@@ -153,7 +153,7 @@ func Test_SCAController_GatherArchitectures_NoControlPlane(t *testing.T) {
 }
 
 func Test_SCAController_GatherArchitectures_EmptyCluster(t *testing.T) {
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	coreClient := kube.CoreV1()
 	scaController := New(coreClient, nil, nil)
 

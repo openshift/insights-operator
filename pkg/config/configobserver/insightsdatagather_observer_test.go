@@ -105,7 +105,7 @@ func TestInsightsDataGatherSync(t *testing.T) {
 				},
 			}
 
-			client := fakeConfigCli.NewSimpleClientset(insightDefaultConfig)
+			client := fakeConfigCli.NewClientset(insightDefaultConfig)
 			idgObserver := insightsDataGatherController{
 				gatherConfig: &insightDefaultConfig.Spec.GatherConfig,
 				cli:          client.ConfigV1(),

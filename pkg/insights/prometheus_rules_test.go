@@ -90,5 +90,4 @@ func TestCheckAlertsDisabled(t *testing.T) {
 			}
 		})
 	}
-
 }

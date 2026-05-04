@@ -135,7 +135,7 @@ func getAnonymizer(t *testing.T) *NetworkAnonymizer {
 		WithConfigurator(mockConfigMapConfigurator).
 		WithDataPolicies(insightsv1.DataPolicyOptionObfuscateNetworking).
 		WithNetworks(networks).
-		WithSecretsClient(kubefake.NewSimpleClientset().CoreV1().Secrets(secretNamespace))
+		WithSecretsClient(kubefake.NewClientset().CoreV1().Secrets(secretNamespace))
 	networkAnonymizer, err := networkAnonymizeBuilder.Build()
 	assert.NoError(t, err)
 
@@ -419,10 +419,10 @@ func TestNewAnonymizerFromConfigClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kubeClient := kubefake.NewSimpleClientset()
+			kubeClient := kubefake.NewClientset()
 			coreClient := kubeClient.CoreV1()
-			networkClient := networkfake.NewSimpleClientset().NetworkV1()
-			configClient := configfake.NewSimpleClientset().ConfigV1()
+			networkClient := networkfake.NewClientset().NetworkV1()
+			configClient := configfake.NewClientset().ConfigV1()
 
 			mockConfigMapConfigurator := config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
 				DataReporting: config.DataReporting{

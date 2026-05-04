@@ -58,7 +58,7 @@ func TestGatherStorageClasses(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a fake client and store it in a variable
-			kubeClient := fake.NewSimpleClientset(&storagev1.StorageClassList{
+			kubeClient := fake.NewClientset(&storagev1.StorageClassList{
 				Items: tt.storageClasses,
 			})
 

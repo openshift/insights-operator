@@ -13,7 +13,7 @@ import (
 )
 
 func Test_gatherSupportSecret(t *testing.T) {
-	kubeClient := kubefake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
 	_, err := kubeClient.CoreV1().Secrets("openshift-config").Create(context.TODO(), &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "openshift-config",
