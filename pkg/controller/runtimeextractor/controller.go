@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller/runtimeextractor/resources"
+	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -29,6 +30,14 @@ type ResourceManager interface {
 	ResourcesExists(ctx context.Context) bool
 }
 
+// ResourceInformer provides notifications when runtime-extractor resources are modified
+// externally (not by insights-operator). This enables drift detection and reconciliation.
+type ResourceInformer interface {
+	factory.Controller
+	// ResourceModified returns a channel that receives notifications when resources are modified
+	ResourceModified() <-chan struct{}
+}
+
 // runtimeExtractorController manages the lifecycle of runtime extractor resources in the cluster.
 // It watches for configuration changes and cluster version updates, creating, updating, or deleting
 // the runtime extractor DaemonSet and associated resources as needed.
@@ -42,10 +51,10 @@ type runtimeExtractorController struct {
 	config ConfigNotifier
 	// updateCh receives notifications when the cluster version changes, triggering DaemonSet image updates
 	updateCh chan struct{}
-	// resourceManager handles creation, update, and deletion of runtime extractor Kubernetes resources
-	resourceManager ResourceManager
 	// resourceInformer watches for external modifications to runtime-extractor resources
 	resourceInformer ResourceInformer
+	// resourceManager handles creation, update, and deletion of runtime extractor Kubernetes resources
+	resourceManager ResourceManager
 }
 
 // NewRuntimeExtractorController is a constructor for runtimeExtractorController
