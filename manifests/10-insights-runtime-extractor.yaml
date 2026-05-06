@@ -69,6 +69,7 @@ spec:
         - name: exporter
           image: quay.io/openshift/origin-insights-runtime-exporter:latest
           imagePullPolicy: Always
+          terminationMessagePolicy: FallbackToLogsOnError
           volumeMounts:
             - mountPath: /data
               name: data-volume
@@ -79,13 +80,14 @@ spec:
             capabilities:
               drop:
                 - ALL
-          resources: 
+          resources:
             requests:
               cpu: 10m
               memory: 200Mi
         - name: extractor
           image: quay.io/openshift/origin-insights-runtime-extractor:latest
           imagePullPolicy: Always
+          terminationMessagePolicy: FallbackToLogsOnError
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
               value: unix:///crio.sock
@@ -98,7 +100,7 @@ spec:
                 - info
               periodSeconds: 30
               timeoutSeconds: 10
-          resources: 
+          resources:
             requests:
               cpu: 10m
               memory: 200Mi
