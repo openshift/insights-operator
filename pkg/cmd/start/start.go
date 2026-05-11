@@ -2,6 +2,7 @@ package start
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -10,12 +11,10 @@ import (
 	"github.com/openshift/api/features"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	configv1informers "github.com/openshift/client-go/config/informers/externalversions"
-	utiltls "github.com/openshift/controller-runtime-common/pkg/tls"
 	"github.com/openshift/library-go/pkg/controller/controllercmd"
 	"github.com/openshift/library-go/pkg/operator/configobserver/featuregates"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/serviceability"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -164,50 +163,29 @@ func runOperator(operator *controller.Operator, cfg *controllercmd.ControllerCom
 			klog.Exitf("Failed to create client config: %v", err)
 		}
 
+		// Create scheme for the client
 		scheme := runtime.NewScheme()
 		if err := configv1.AddToScheme(scheme); err != nil {
 			klog.Fatalf("unable to add configv1 to scheme: %v", err)
 		}
 
-		k8sclient := client.New(clientConfig, client.Options{Scheme: scheme})
+		mgr, err := NewManager(ctx2, clientConfig, scheme, operatorConfig.LeaderElection.Namespace, cancel)
 		if err != nil {
-			klog.Fatalf("Can't set client configs: %v", err)
+			klog.Fatalf("Failed to Start Server with TLS: %v", err)
 		}
 
-		// Fetch the TLS profile from the APIServer resource.
-		tlsSecurityProfileSpec, err := utiltls.FetchAPIServerTLSProfile(context.Background(), k8sClient)
-		if err != nil {
-			klog.Fatalf("unable to get TLS profile from API server: %v", err)
-		}
-
-		// Create the TLS configuration function for the server endpoints.
-		tlsConfig, unsupportedCiphers := utiltls.NewTLSConfigFromProfile(tlsSecurityProfileSpec)
-		if len(unsupportedCiphers) > 0 {
-			klog.Infof("TLS configuration contains unsupported ciphers that will be ignored: %v", unsupportedCiphers)
-		}
-
-		// TODO: create manager and cancel ctx2 on a tls config change
-
-		// // Start metrics server on :8443 with healthz endpoints and TLS watcher
-		// // The TLS watcher is set up inside StartMetricsServer and will trigger
-		// // a graceful shutdown by calling cancel() when TLS profile changes
-		// go func() {
-		// 	mgr, _, err := controller.StartMetricsServer(ctx2, clientConfig, ":8443", cancel)
-		// 	if err != nil {
-		// 		klog.Errorf("Failed to start metrics server: %v", err)
-		// 		return
-		// 	}
-
-		// 	// Start the manager (blocks until context is cancelled)
-		// 	if err := mgr.Start(ctx2); err != nil && err != context.Canceled {
-		// 		klog.Errorf("Metrics server stopped with error: %v", err)
-		// 	}
-		// }()
+		// Start the manager in a goroutine so it doesn't block the main operator
+		go func() {
+			klog.Info("starting metrics server manager")
+			if err := mgr.Start(ctx2); err != nil && !errors.Is(err, context.Canceled) {
+				klog.Errorf("metrics server manager stopped with error: %v", err)
+				cancel()
+			}
+		}()
 
 		builder := controllercmd.NewController("openshift-insights-operator", operator.Run, clock.RealClock{}).
 			WithKubeConfigFile(kubeConfigPath, nil).
 			WithLeaderElection(operatorConfig.LeaderElection, "", "openshift-insights-operator-lock").
-			WithServer(operatorConfig.ServingInfo, operatorConfig.Authentication, operatorConfig.Authorization).
 			WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
 		if err := builder.Run(ctx2, unstructured); err != nil {
 			klog.Error(err)
