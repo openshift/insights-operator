@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/component-base/metrics"
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -48,7 +48,7 @@ type InsightsReporter interface {
 
 var (
 	// insightsStatus contains a metric with the latest report information
-	insightsStatus = metrics.NewGaugeVec(&metrics.GaugeOpts{
+	insightsStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "health",
 		Subsystem: "statuses",
 		Name:      "insights",
@@ -480,12 +480,13 @@ func extractErrorKeyFromRuleData(r types.RuleWithContentResponse) (string, error
 	return errorKeyStr, nil
 }
 
-func init() {
-	insights.MustRegisterMetrics(insightsStatus)
-
+// GetInsightsStatusMetric returns the insights status gauge for registration
+func GetInsightsStatusMetric() prometheus.Collector {
+	// Initialize the gauge with default values
 	insightsStatus.WithLabelValues("low").Set(float64(-1))
 	insightsStatus.WithLabelValues("moderate").Set(float64(-1))
 	insightsStatus.WithLabelValues("important").Set(float64(-1))
 	insightsStatus.WithLabelValues("critical").Set(float64(-1))
 	insightsStatus.WithLabelValues("total").Set(float64(-1))
+	return insightsStatus
 }

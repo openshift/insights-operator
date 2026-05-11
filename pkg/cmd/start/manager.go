@@ -7,6 +7,9 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	utiltls "github.com/openshift/controller-runtime-common/pkg/tls"
+	"github.com/openshift/insights-operator/pkg/insights"
+	"github.com/openshift/insights-operator/pkg/insights/insightsclient"
+	"github.com/openshift/insights-operator/pkg/insights/insightsreport"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -15,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
@@ -43,6 +47,17 @@ func NewManager(
 ) (manager.Manager, error) {
 	// Set logger for controller-runtime
 	controllerruntime.SetLogger(klog.NewKlogr())
+
+	// Register insights-operator metrics with controller-runtime's registry
+	if err := insights.RegisterInsightsMetrics(metrics.Registry); err != nil {
+		return nil, fmt.Errorf("failed to register insights metrics: %v", err)
+	}
+	if err := metrics.Registry.Register(insightsclient.GetRecvReportMetric()); err != nil {
+		return nil, fmt.Errorf("failed to register recv report metric: %v", err)
+	}
+	if err := metrics.Registry.Register(insightsreport.GetInsightsStatusMetric()); err != nil {
+		return nil, fmt.Errorf("failed to register insights status metric: %v", err)
+	}
 
 	k8sClient, err := client.New(clientConfig, client.Options{Scheme: scheme})
 	if err != nil {
@@ -127,7 +142,7 @@ func createManager(
 			SecureServing: true,
 			// CertDir points to the service-ca certificate mounted by the deployment
 			CertDir: serviceCACertSecretPath,
-			// FilterProvider handles client authentication
+			// FilterProvider handles client authentication and authorization
 			FilterProvider: filters.WithAuthenticationAndAuthorization,
 			// TLSOpts handles server TLS configuration (from cluster APIServer TLS profile)
 			TLSOpts: []func(*tls.Config){

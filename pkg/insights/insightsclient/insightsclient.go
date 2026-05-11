@@ -16,15 +16,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/transport"
-	"k8s.io/component-base/metrics"
-
 	"k8s.io/klog/v2"
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
-	"github.com/openshift/insights-operator/pkg/insights"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 )
@@ -254,11 +252,12 @@ func (c *Client) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, 
 	_ = pw.CloseWithError(mw.Close())
 }
 
-var counterRequestRecvReport = metrics.NewCounterVec(&metrics.CounterOpts{
+var counterRequestRecvReport = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "insightsclient_request_recvreport_total",
 	Help: "Tracks the number of insights reports received/downloaded",
 }, []string{"client", "status_code"})
 
-func init() {
-	insights.MustRegisterMetrics(counterRequestRecvReport)
+// GetRecvReportMetric returns the recv report counter for registration
+func GetRecvReportMetric() prometheus.Collector {
+	return counterRequestRecvReport
 }

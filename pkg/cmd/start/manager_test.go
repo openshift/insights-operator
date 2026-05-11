@@ -41,7 +41,7 @@ func Test_NewManager(t *testing.T) {
 			scheme:     scheme,
 			namespace:  "test-namespace",
 			wantErr:    true,
-			errContain: "unable to get TLS profile from API server",
+			errContain: "failed to register insights metrics",
 		},
 	}
 
