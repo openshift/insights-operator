@@ -6,12 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blang/semver/v4"
 	v1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/insights/types"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/component-base/metrics"
-	"k8s.io/component-base/metrics/legacyregistry"
 	"k8s.io/klog/v2"
 )
 
@@ -19,26 +16,25 @@ var (
 	RecommendationCollector = &Collector{
 		metricName: "insights_recommendation_active",
 	}
-	counterRequestSend = metrics.NewCounterVec(&metrics.CounterOpts{
+	counterRequestSend = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "insightsclient_request_send_total",
 		Help: "Tracks the number of archives sent",
 	}, []string{"client", "status_code"})
 )
 
-// MustRegisterMetrics registers provided registrables in the Insights metrics registry.
-// This function should be called from init() functions only, because
-// it uses the MustRegister method, and therefore panics in case of an error.
-func MustRegisterMetrics(registrables ...metrics.Registerable) {
-	for _, r := range registrables {
-		err := legacyregistry.Register(r)
-		if err != nil {
-			klog.Errorf("Failed to register metric %s: %v", r.FQName(), err)
+// RegisterInsightsMetrics registers all insights-operator Prometheus metrics with the provided registry.
+// Should be called before starting the metrics server.
+func RegisterInsightsMetrics(registry prometheus.Registerer) error {
+	collectors := []prometheus.Collector{
+		RecommendationCollector,
+		counterRequestSend,
+	}
+	for _, c := range collectors {
+		if err := registry.Register(c); err != nil {
+			return fmt.Errorf("failed to register insights metric: %w", err)
 		}
 	}
-}
-
-func init() {
-	MustRegisterMetrics(RecommendationCollector, counterRequestSend)
+	return nil
 }
 
 func IncrementCounterRequestSend(status int) {
@@ -107,22 +103,6 @@ func CreateInsightsAdvisorLink(clusterID v1.ClusterID, ruleID, errorKey string) 
 	return consoleURL.String(), nil
 }
 
-func (c *Collector) ClearState() {
-	// NOOP: There is no state that would need to be cleared.
-	// This method is implemented exclusively to comply with the Collector
-	// interface from the legacyregistry module.
-}
-
-func (c *Collector) Create(_ *semver.Version) bool {
-	return true
-	// NOOP: No versioning is implemented for this collector.
-	// This method is implemented exclusively to comply with the Collector
-	// interface from the legacyregistry module.
-}
-
-func (c *Collector) FQName() string {
-	return c.metricName
-}
 
 func totalRiskToStr(totalRisk int32) string {
 	switch totalRisk {
