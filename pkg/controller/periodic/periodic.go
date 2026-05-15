@@ -43,6 +43,8 @@ const (
 	defaultStoragePath               = "/var/lib/insights-operator"
 	serviceCABundle                  = "service-ca-bundle"
 	serviceCABundlePath              = "/var/run/configmaps/service-ca-bundle"
+	trustedCABundle                  = "trusted-ca-bundle"
+	trustedCABundlePath              = "/var/run/configmaps/trusted-ca-bundle"
 	insightsNamespace                = "openshift-insights"
 	dataUplodedConditionNotAvailable = "DataUploadedConditionNotAvailable"
 	gatheringDisabledReason          = "GatheringDisabled"
