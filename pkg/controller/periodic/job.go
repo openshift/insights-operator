@@ -86,6 +86,17 @@ func (j *JobController) CreateGathererJob(
 								},
 							},
 						},
+						{
+							Name: trustedCABundle,
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: trustedCABundle,
+									},
+									Optional: ptr.To(true),
+								},
+							},
+						},
 					},
 					Containers: []corev1.Container{
 						{
@@ -206,6 +217,11 @@ func (j *JobController) createVolumeMounts(storagePath string, storage insightsv
 		{
 			Name:      serviceCABundle,
 			MountPath: serviceCABundlePath,
+		},
+		{
+			Name:      trustedCABundle,
+			MountPath: trustedCABundlePath,
+			ReadOnly:  true,
 		},
 	}
 
