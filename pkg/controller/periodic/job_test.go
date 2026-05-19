@@ -91,7 +91,7 @@ func TestCreateGathererJob(t *testing.T) {
 			}
 
 			// we mount to volumes
-			assert.Len(t, createdJob.Spec.Template.Spec.Containers[0].VolumeMounts, 2)
+			assert.Len(t, createdJob.Spec.Template.Spec.Containers[0].VolumeMounts, 3)
 			assert.Equal(t, tt.dataReporting.StoragePath, createdJob.Spec.Template.Spec.Containers[0].VolumeMounts[0].MountPath)
 		})
 	}
