@@ -36,6 +36,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"config_maps":                      (*Gatherer).GatherConfigMaps,
 	"container_images":                 (*Gatherer).GatherContainerImages,
 	"container_runtime_configs":        (*Gatherer).GatherContainerRuntimeConfig,
+	"control_plane_machine_sets":       (*Gatherer).GatherControlPlaneMachineSet,
 	"cost_management_metrics_configs":  (*Gatherer).GatherCostManagementMetricsConfigs,
 	"crds":                             (*Gatherer).GatherCRD,
 	"dvo_metrics":                      (*Gatherer).GatherDVOMetrics,
