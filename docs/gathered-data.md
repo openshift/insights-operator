@@ -801,6 +801,33 @@ The gatherer finds the Pods (and containers) that match the requested data and f
 to match the specific messages up to a maximum of 6 hours old.
 
 
+## ControlPlaneMachineSet
+
+Collects `ControlPlaneMachineSet` information.
+
+### API Reference
+- https://docs.redhat.com/en/documentation/openshift_container_platform/4.21/html/machine_apis/controlplanemachineset-machine-openshift-io-v1
+
+### Sample data
+- [docs/insights-archive-sample/config/controlplanemachinesets/openshift-machine-api/cluster.json](./insights-archive-sample/config/controlplanemachinesets/openshift-machine-api/cluster.json)
+
+### Location in archive
+- `config/controlplanemachinesets/{resource}`
+- `config/controlplanemachinesets/{namespace}/{resource}`
+
+### Config ID
+`clusterconfig/control_plane_machine_sets`
+
+### Released version
+- 4.23.0
+
+### Backported versions
+- 4.19
+
+### Changes
+None
+
+
 ## CostManagementMetricsConfigs
 
 Collects `CostManagementMetricsConfigs` definitions.
