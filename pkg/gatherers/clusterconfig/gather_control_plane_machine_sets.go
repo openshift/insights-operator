@@ -7,7 +7,9 @@ import (
 	"github.com/openshift/insights-operator/pkg/record"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 )
 
 // GatherControlPlaneMachineSet Collects `ControlPlaneMachineSet` information.
@@ -51,17 +53,32 @@ func gatherControlPlaneMachineSet(ctx context.Context, dynamicClient dynamic.Int
 		return nil, []error{err}
 	}
 
+	var errs []error
 	var records []record.Record
 	for _, ms := range controlPlaneMachineSets.Items {
 		recordName := fmt.Sprintf("config/controlplanemachinesets/%s", ms.GetName())
 		if ms.GetNamespace() != "" {
 			recordName = fmt.Sprintf("config/controlplanemachinesets/%s/%s", ms.GetNamespace(), ms.GetName())
 		}
+
+		// remove the sensitive content by overwriting the values
+		err = unstructured.SetNestedField(ms.Object, nil, "spec", "templates")
+		if err != nil {
+			klog.Errorf("unable to set nested field: %v", err)
+			errs = append(errs, err)
+		}
+
+		err = unstructured.SetNestedField(ms.Object, nil, "spec", "template")
+		if err != nil {
+			klog.Errorf("unable to set nested field: %v", err)
+			errs = append(errs, err)
+		}
+
 		records = append(records, record.Record{
 			Name: recordName,
 			Item: record.ResourceMarshaller{Resource: &ms},
 		})
 	}
 
-	return records, nil
+	return records, errs
 }

@@ -1,186 +1,70 @@
 {
-  "apiVersion": "machine.openshift.io/v1",
-  "kind": "ControlPlaneMachineSet",
-  "metadata": {
-    "creationTimestamp": "2026-05-25T07:17:02Z",
-    "finalizers": ["controlplanemachineset.machine.openshift.io"],
-    "generation": 1,
-    "labels": {
-      "machine.openshift.io/cluster-api-cluster": "ci-ln-ih1mx5b-76ef8-x2hzs"
+    "apiVersion": "machine.openshift.io/v1",
+    "kind": "ControlPlaneMachineSet",
+    "metadata": {
+        "creationTimestamp": "2026-05-27T10:18:50Z",
+        "finalizers": ["controlplanemachineset.machine.openshift.io"],
+        "generation": 1,
+        "labels": {
+            "machine.openshift.io/cluster-api-cluster": "ci-ln-vwyf9k2-76ef8-r5shb"
+        },
+        "name": "cluster",
+        "namespace": "openshift-machine-api",
+        "resourceVersion": "16052",
+        "uid": "00ceb81c-e5c8-49d0-b240-87e997bb3f8c"
     },
-    "name": "cluster",
-    "namespace": "openshift-machine-api",
-    "resourceVersion": "15315",
-    "uid": "fb397d63-c31e-469d-a87d-acaeb31f9ea0"
-  },
-  "spec": {
-    "replicas": 3,
-    "selector": {
-      "matchLabels": {
-        "machine.openshift.io/cluster-api-cluster": "ci-ln-ih1mx5b-76ef8-x2hzs",
-        "machine.openshift.io/cluster-api-machine-role": "master",
-        "machine.openshift.io/cluster-api-machine-type": "master"
-      }
+    "spec": {
+        "replicas": 3,
+        "selector": {
+            "matchLabels": {
+                "machine.openshift.io/cluster-api-cluster": "ci-ln-vwyf9k2-76ef8-r5shb",
+                "machine.openshift.io/cluster-api-machine-role": "master",
+                "machine.openshift.io/cluster-api-machine-type": "master"
+            }
+        },
+        "state": "Active",
+        "strategy": { "type": "RollingUpdate" },
+        "template": null,
+        "templates": null
     },
-    "state": "Active",
-    "strategy": { "type": "RollingUpdate" },
-    "template": {
-      "machineType": "machines_v1beta1_machine_openshift_io",
-      "machines_v1beta1_machine_openshift_io": {
-        "failureDomains": {
-          "aws": [
+    "status": {
+        "conditions": [
             {
-              "placement": { "availabilityZone": "us-west-1a" },
-              "subnet": {
-                "filters": [
-                  {
-                    "name": "tag:Name",
-                    "values": [
-                      "ci-ln-ih1mx5b-76ef8-x2hzs-subnet-private-us-west-1a"
-                    ]
-                  }
-                ],
-                "type": "Filters"
-              }
+                "lastTransitionTime": "2026-05-27T10:22:45Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AsExpected",
+                "status": "False",
+                "type": "Error"
             },
             {
-              "placement": { "availabilityZone": "us-west-1c" },
-              "subnet": {
-                "filters": [
-                  {
-                    "name": "tag:Name",
-                    "values": [
-                      "ci-ln-ih1mx5b-76ef8-x2hzs-subnet-private-us-west-1c"
-                    ]
-                  }
-                ],
-                "type": "Filters"
-              }
+                "lastTransitionTime": "2026-05-27T10:27:53Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AllReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "lastTransitionTime": "2026-05-27T10:27:53Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AsExpected",
+                "status": "False",
+                "type": "Degraded"
+            },
+            {
+                "lastTransitionTime": "2026-05-27T10:26:53Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AllReplicasUpdated",
+                "status": "False",
+                "type": "Progressing"
             }
-          ],
-          "platform": "AWS"
-        },
-        "metadata": {
-          "labels": {
-            "machine.openshift.io/cluster-api-cluster": "ci-ln-ih1mx5b-76ef8-x2hzs",
-            "machine.openshift.io/cluster-api-machine-role": "master",
-            "machine.openshift.io/cluster-api-machine-type": "master"
-          }
-        },
-        "spec": {
-          "lifecycleHooks": {},
-          "metadata": {},
-          "providerSpec": {
-            "value": {
-              "ami": { "id": "ami-068a9cb3ccfa0ef0f" },
-              "apiVersion": "machine.openshift.io/v1beta1",
-              "blockDevices": [
-                {
-                  "ebs": {
-                    "encrypted": true,
-                    "iops": 0,
-                    "kmsKey": { "arn": "" },
-                    "volumeSize": 120,
-                    "volumeType": "gp3"
-                  }
-                }
-              ],
-              "capacityReservationId": "",
-              "credentialsSecret": { "name": "aws-cloud-credentials" },
-              "deviceIndex": 0,
-              "iamInstanceProfile": {
-                "id": "ci-ln-ih1mx5b-76ef8-x2hzs-master-profile"
-              },
-              "instanceType": "m6a.xlarge",
-              "kind": "AWSMachineProviderConfig",
-              "loadBalancers": [
-                { "name": "ci-ln-ih1mx5b-76ef8-x2hzs-int", "type": "network" },
-                { "name": "ci-ln-ih1mx5b-76ef8-x2hzs-ext", "type": "network" }
-              ],
-              "metadata": {},
-              "metadataServiceOptions": {},
-              "placement": { "region": "us-west-1" },
-              "securityGroups": [
-                {
-                  "filters": [
-                    {
-                      "name": "tag:Name",
-                      "values": ["ci-ln-ih1mx5b-76ef8-x2hzs-node"]
-                    }
-                  ]
-                },
-                {
-                  "filters": [
-                    {
-                      "name": "tag:Name",
-                      "values": ["ci-ln-ih1mx5b-76ef8-x2hzs-lb"]
-                    }
-                  ]
-                },
-                {
-                  "filters": [
-                    {
-                      "name": "tag:Name",
-                      "values": ["ci-ln-ih1mx5b-76ef8-x2hzs-controlplane"]
-                    }
-                  ]
-                }
-              ],
-              "subnet": {},
-              "tags": [
-                {
-                  "name": "kubernetes.io/cluster/ci-ln-ih1mx5b-76ef8-x2hzs",
-                  "value": "owned"
-                },
-                { "name": "ci-nat-replace", "value": "true" },
-                { "name": "clusterName", "value": "ci-ln-ih1mx5b-76ef8" },
-                { "name": "expirationDate", "value": "2026-05-25T15:00+00:00" }
-              ],
-              "userDataSecret": { "name": "master-user-data" }
-            }
-          }
-        }
-      }
+        ],
+        "observedGeneration": 1,
+        "readyReplicas": 3,
+        "replicas": 3,
+        "updatedReplicas": 3
     }
-  },
-  "status": {
-    "conditions": [
-      {
-        "lastTransitionTime": "2026-05-25T07:20:05Z",
-        "message": "",
-        "observedGeneration": 1,
-        "reason": "AsExpected",
-        "status": "False",
-        "type": "Error"
-      },
-      {
-        "lastTransitionTime": "2026-05-25T07:25:09Z",
-        "message": "",
-        "observedGeneration": 1,
-        "reason": "AllReplicasAvailable",
-        "status": "True",
-        "type": "Available"
-      },
-      {
-        "lastTransitionTime": "2026-05-25T07:25:09Z",
-        "message": "",
-        "observedGeneration": 1,
-        "reason": "AsExpected",
-        "status": "False",
-        "type": "Degraded"
-      },
-      {
-        "lastTransitionTime": "2026-05-25T07:23:09Z",
-        "message": "",
-        "observedGeneration": 1,
-        "reason": "AllReplicasUpdated",
-        "status": "False",
-        "type": "Progressing"
-      }
-    ],
-    "observedGeneration": 1,
-    "readyReplicas": 3,
-    "replicas": 3,
-    "updatedReplicas": 3
-  }
 }
