@@ -8,12 +8,14 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/api/config/v1alpha2"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/utils"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -253,61 +255,97 @@ func Test_updatingConditionsFromDegradedToDisabled(t *testing.T) {
 	assert.Equal(t, disabledCondition, getConditionByType(updatedCO.Status.Conditions, OperatorDisabled))
 }
 
-func Test_shouldSetProgressingCondition(t *testing.T) {
+func Test_checkVersionChanges(t *testing.T) {
 	tests := []struct {
-		name                    string
-		newVersion              string
-		clusterOperatorVersions []configv1.OperandVersion
-		expectedShouldUpdate    bool
-		expectError             bool
+		name                      string
+		newVersion                string
+		clusterOperatorVersions   []configv1.OperandVersion
+		expectedVersionChanged    bool
+		expectedMajorMinorChanged bool
+		expectError               bool
 	}{
 		{
-			name:                    "Invalid new version returns error",
-			newVersion:              "invalid-version",
-			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
-			expectedShouldUpdate:    false,
-			expectError:             true,
+			name:                      "Invalid new version returns error",
+			newVersion:                "invalid-version",
+			clusterOperatorVersions:   []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedVersionChanged:    false,
+			expectedMajorMinorChanged: false,
+			expectError:               true,
 		},
 		{
-			name:                    "Empty clusterOperatorVersions returns false",
-			newVersion:              "4.21.0-0.nightly-2026-01-07-204315",
-			clusterOperatorVersions: []configv1.OperandVersion{},
-			expectedShouldUpdate:    false,
-			expectError:             false,
+			name:                      "Empty clusterOperatorVersions returns false",
+			newVersion:                "4.21.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions:   []configv1.OperandVersion{},
+			expectedVersionChanged:    false,
+			expectedMajorMinorChanged: false,
+			expectError:               false,
 		},
 		{
-			name:                    "Major version change triggers update",
-			newVersion:              "5.21.0-0.nightly-2026-01-07-204315",
-			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
-			expectedShouldUpdate:    true,
-			expectError:             false,
+			name:                      "Major version change triggers both flags",
+			newVersion:                "5.21.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions:   []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedVersionChanged:    true,
+			expectedMajorMinorChanged: true,
+			expectError:               false,
 		},
 		{
-			name:                    "Minor version change triggers update",
-			newVersion:              "4.22.0-0.nightly-2026-01-07-204315",
-			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
-			expectedShouldUpdate:    true,
-			expectError:             false,
+			name:                      "Minor version change triggers both flags",
+			newVersion:                "4.22.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions:   []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedVersionChanged:    true,
+			expectedMajorMinorChanged: true,
+			expectError:               false,
 		},
 		{
-			name:                    "Patch version change does not trigger update",
-			newVersion:              "4.21.1-0.nightly-2026-01-07-204315",
-			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
-			expectedShouldUpdate:    false,
-			expectError:             false,
+			name:                      "Patch version change triggers versionChanged only",
+			newVersion:                "4.21.1-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions:   []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedVersionChanged:    true,
+			expectedMajorMinorChanged: false,
+			expectError:               false,
 		},
 		{
-			name:                    "Invalid existing version returns error",
-			newVersion:              "4.21.0-0.nightly-2026-01-07-204315",
-			clusterOperatorVersions: []configv1.OperandVersion{{Name: "operator", Version: "invalid"}},
-			expectedShouldUpdate:    false,
-			expectError:             true,
+			name:                      "No version change returns false for both",
+			newVersion:                "4.21.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions:   []configv1.OperandVersion{{Name: "operator", Version: "4.21.0-0.nightly-2026-01-07-204315"}},
+			expectedVersionChanged:    false,
+			expectedMajorMinorChanged: false,
+			expectError:               false,
+		},
+		{
+			name:                      "Invalid existing version returns error",
+			newVersion:                "4.21.0-0.nightly-2026-01-07-204315",
+			clusterOperatorVersions:   []configv1.OperandVersion{{Name: "operator", Version: "invalid"}},
+			expectedVersionChanged:    false,
+			expectedMajorMinorChanged: false,
+			expectError:               true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shouldUpdate, err := shouldSetProgressingCondition(tt.newVersion, tt.clusterOperatorVersions)
+			client := configfake.NewClientset()
+			mockAPIConfigurator := config.NewMockAPIConfigurator(
+				&v1alpha2.GatherConfig{
+					Gatherers: v1alpha2.Gatherers{
+						Mode: v1alpha2.GatheringModeNone,
+					},
+				},
+			)
+			ctrl := &Controller{
+				name:   "insights",
+				client: client.ConfigV1(),
+				configurator: config.NewMockConfigMapConfigurator(&config.InsightsConfiguration{
+					DataReporting: config.DataReporting{
+						Enabled: true,
+					},
+				}),
+				apiConfigurator: mockAPIConfigurator,
+				eventLogger:     events.NewInMemoryRecorder("test", clock.RealClock{}),
+				ctrlStatus:      newControllerStatus(),
+			}
+
+			versionChanged, majorMinorChanged, err := ctrl.checkVersionChanges(tt.newVersion, tt.clusterOperatorVersions)
 
 			if tt.expectError {
 				assert.Error(t, err, "Expected an error but got nil")
@@ -315,9 +353,12 @@ func Test_shouldSetProgressingCondition(t *testing.T) {
 				assert.NoError(t, err, "Expected no error but got: %v", err)
 			}
 
-			assert.Equal(t, tt.expectedShouldUpdate, shouldUpdate,
-				"shouldUpdateVersion(%q, %v) = %v, want %v",
-				tt.newVersion, tt.clusterOperatorVersions, shouldUpdate, tt.expectedShouldUpdate)
+			assert.Equal(t, tt.expectedVersionChanged, versionChanged,
+				"checkVersionChanges(%q, %v) versionChanged = %v, want %v",
+				tt.newVersion, tt.clusterOperatorVersions, versionChanged, tt.expectedVersionChanged)
+			assert.Equal(t, tt.expectedMajorMinorChanged, majorMinorChanged,
+				"checkVersionChanges(%q, %v) majorMinorChanged = %v, want %v",
+				tt.newVersion, tt.clusterOperatorVersions, majorMinorChanged, tt.expectedMajorMinorChanged)
 		})
 	}
 }
