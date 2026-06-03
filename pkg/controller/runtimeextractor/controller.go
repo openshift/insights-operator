@@ -3,10 +3,13 @@ package runtimeextractor
 import (
 	"context"
 
+	configv1 "github.com/openshift/api/config/v1"
+	configclientset "github.com/openshift/client-go/config/clientset/versioned"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller/runtimeextractor/resources"
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
@@ -23,7 +26,7 @@ type ConfigNotifier interface {
 // ResourceManager manages the lifecycle of runtime extractor Kubernetes resources
 type ResourceManager interface {
 	// ApplyRuntimeExtractorResources creates or updates all runtime extractor resources
-	ApplyRuntimeExtractorResources(ctx context.Context) error
+	ApplyRuntimeExtractorResources(ctx context.Context, tlsProfile *configv1.TLSSecurityProfile) error
 	// DeleteRuntimeExtractorResources removes all runtime extractor resources
 	DeleteRuntimeExtractorResources(ctx context.Context) error
 	// ResourcesExists checks if runtime extractor resources are deployed
@@ -51,6 +54,10 @@ type runtimeExtractorController struct {
 	config ConfigNotifier
 	// updateCh receives notifications when the cluster version changes, triggering DaemonSet image updates
 	updateCh chan struct{}
+	// configClient provides access to the OpenShift config API for reading TLS profiles
+	configClient configclientset.Interface
+	// tlsProfileCh receives notifications when the cluster TLS security profile changes
+	tlsProfileCh <-chan struct{}
 	// resourceInformer watches for external modifications to runtime-extractor resources
 	resourceInformer ResourceInformer
 	// resourceManager handles creation, update, and deletion of runtime extractor Kubernetes resources
@@ -62,7 +69,9 @@ type runtimeExtractorController struct {
 func NewRuntimeExtractorController(
 	configNotifier ConfigNotifier,
 	updateCh chan struct{},
+	tlsProfileCh <-chan struct{},
 	kubeClient *kubernetes.Clientset,
+	configClient configclientset.Interface,
 	recorder events.Recorder,
 	resourceInformer ResourceInformer,
 ) *runtimeExtractorController {
@@ -74,6 +83,8 @@ func NewRuntimeExtractorController(
 	return &runtimeExtractorController{
 		config:           configNotifier,
 		updateCh:         updateCh,
+		configClient:     configClient,
+		tlsProfileCh:     tlsProfileCh,
 		resourceManager:  rm,
 		resourceInformer: resourceInformer,
 	}
@@ -107,6 +118,9 @@ func (re *runtimeExtractorController) Run(ctx context.Context) {
 		case <-re.updateCh:
 			klog.Info("Runtime extractor cluster version updated")
 			re.handleVersionUpdate(ctx)
+		case <-re.tlsProfileCh:
+			klog.Info("TLS security profile changed, updating runtime extractor")
+			re.handleTLSProfileChange(ctx)
 		case <-resourceModifiedChan:
 			klog.Info("Runtime extractor resources modified externally, reconciling")
 			re.handleResourceDrift(ctx)
@@ -148,10 +162,22 @@ func (re *runtimeExtractorController) isCreated(ctx context.Context) bool {
 	return re.resourceManager.ResourcesExists(ctx)
 }
 
+// fetchTLSProfile reads the TLS security profile from the cluster's APIServer configuration.
+// Returns nil if the profile cannot be read, which will default to Intermediate.
+func (re *runtimeExtractorController) fetchTLSProfile(ctx context.Context) *configv1.TLSSecurityProfile {
+	apiServer, err := re.configClient.ConfigV1().APIServers().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		klog.Warningf("Failed to get APIServer config, defaulting to Intermediate TLS profile: %v", err)
+		return nil
+	}
+	return apiServer.Spec.TLSSecurityProfile
+}
+
 func (re *runtimeExtractorController) createDeployment(ctx context.Context) {
 	klog.Info("Creating runtime extractor resources")
 
-	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
+	tlsProfile := re.fetchTLSProfile(ctx)
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx, tlsProfile); err != nil {
 		klog.Errorf("Failed to apply runtime extractor resources: %v", err)
 	}
 }
@@ -172,13 +198,13 @@ func (re *runtimeExtractorController) deleteDeployment(ctx context.Context) {
 func (re *runtimeExtractorController) updateDeployment(ctx context.Context) {
 	klog.Info("Updating runtime extractor resources")
 
-	// Avoid creating it when the cluster version is updated
 	if !re.isCreated(ctx) {
 		klog.Info("Runtime extractor resources not found, skipping update")
 		return
 	}
 
-	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
+	tlsProfile := re.fetchTLSProfile(ctx)
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx, tlsProfile); err != nil {
 		klog.Errorf("Failed to apply runtime extractor resources: %v", err)
 	}
 }
@@ -197,9 +223,31 @@ func (re *runtimeExtractorController) handleResourceDrift(ctx context.Context) {
 	}
 
 	// Reapply resources to correct any drift
-	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
+	tlsProfile := re.fetchTLSProfile(ctx)
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx, tlsProfile); err != nil {
 		klog.Errorf("Failed to correct runtime extractor resource drift: %v", err)
 	} else {
 		klog.Info("Successfully reconciled runtime extractor resources")
+	}
+}
+
+// handleTLSProfileChange responds to TLS security profile changes by updating
+// the runtime extractor DaemonSet with the new TLS configuration.
+func (re *runtimeExtractorController) handleTLSProfileChange(ctx context.Context) {
+	cfg := re.config.Config()
+
+	if cfg.DataReporting.DisableRuntimeExtractor {
+		klog.Info("Runtime extractor is disabled, skipping TLS profile update")
+		return
+	}
+
+	if !re.isCreated(ctx) {
+		klog.Info("Runtime extractor resources not found, skipping TLS profile update")
+		return
+	}
+
+	tlsProfile := re.fetchTLSProfile(ctx)
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx, tlsProfile); err != nil {
+		klog.Errorf("Failed to update runtime extractor with new TLS profile: %v", err)
 	}
 }

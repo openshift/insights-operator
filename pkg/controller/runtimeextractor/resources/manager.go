@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/operator/events"
 	appsclientv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
@@ -28,9 +29,9 @@ func NewResourceManager(
 // ApplyRuntimeExtractorResources creates or updates the runtime extractor DaemonSet
 // This should be called when the runtime extractor should be deployed or updated
 func (rm *ResourceManager) ApplyRuntimeExtractorResources(
-	ctx context.Context,
+	ctx context.Context, tlsProfile *configv1.TLSSecurityProfile,
 ) error {
-	if _, err := rm.applyDaemonSet(ctx); err != nil {
+	if _, err := rm.applyDaemonSet(ctx, tlsProfile); err != nil {
 		return fmt.Errorf("failed to apply daemonset: %v", err)
 	}
 

@@ -28,6 +28,7 @@ import (
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/anonymization"
@@ -144,6 +145,21 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// updateCh is used to signal a version update to the runtimeextractor controller
 	updateCh := make(chan struct{}, 1)
+	tlsProfileCh := make(chan struct{}, 1)
+
+	// Watch for TLS security profile changes on the APIServer resource
+	if _, err := configInformers.Config().V1().APIServers().Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			UpdateFunc: func(_, _ interface{}) {
+				select {
+				case tlsProfileCh <- struct{}{}:
+				default:
+				}
+			},
+		},
+	); err != nil {
+		return fmt.Errorf("failed to add APIServer event handler: %w", err)
+	}
 
 	// Create informer factory for runtime-extractor resources in openshift-insights namespace
 	runtimeExtractorInformerFactory := clientInformers.NewSharedInformerFactoryWithOptions(
@@ -169,7 +185,9 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	runtimeExtractorCtrl := runtimeextractor.NewRuntimeExtractorController(
 		configAggregator,
 		updateCh,
+		tlsProfileCh,
 		kubeClient,
+		configClient,
 		controller.EventRecorder,
 		runtimeExtractorResourceInformer,
 	)
