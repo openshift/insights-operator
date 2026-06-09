@@ -19,6 +19,14 @@ import (
 	"github.com/openshift/insights-operator/pkg/config"
 )
 
+const (
+	openshiftConfigNamespace = "openshift-config"
+	pullSecretName           = "pull-secret" //nolint: gosec
+	supportSecretName        = "support"     //nolint: gosec
+	kubeSystemNamespace      = "kube-system"
+	globalPullSecretName     = "global-pull-secret" //nolint: gosec
+)
+
 type ConfigReporter interface {
 	SetConfig(*config.Controller)
 }
@@ -134,7 +142,7 @@ func (c *Controller) fetchSecret(ctx context.Context, namespace, name string) (*
 // Updates the stored tokens from the secrets in the cluster. (if present)
 func (c *Controller) updateToken(ctx context.Context) error {
 	klog.V(2).Infof("Refreshing configuration from cluster pull secret")
-	secret, err := c.fetchSecret(ctx, "openshift-config", "pull-secret")
+	secret, err := c.fetchSecret(ctx, openshiftConfigNamespace, pullSecretName)
 	if err != nil {
 		return err
 	}
@@ -155,7 +163,7 @@ func (c *Controller) updateToken(ctx context.Context) error {
 	// Fall back to kube-system/global-pull-secret (used by HyperShift HCP clusters
 	// where the customer adds cloud.openshift.com via day-2 additional-pull-secret)
 	if len(nextConfig.Token) == 0 {
-		globalSecret, err := c.fetchSecret(ctx, "kube-system", "global-pull-secret")
+		globalSecret, err := c.fetchSecret(ctx, kubeSystemNamespace, globalPullSecretName)
 		if err != nil {
 			return err
 		}
@@ -179,7 +187,7 @@ func (c *Controller) updateToken(ctx context.Context) error {
 // Updates the stored configs from the secrets in the cluster. (if present)
 func (c *Controller) updateConfig(ctx context.Context) error {
 	klog.V(2).Infof("Refreshing configuration from cluster support secret")
-	secret, err := c.fetchSecret(ctx, "openshift-config", "support")
+	secret, err := c.fetchSecret(ctx, openshiftConfigNamespace, supportSecretName)
 	if err != nil {
 		return err
 	}
