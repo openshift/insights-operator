@@ -49,7 +49,7 @@ func Test_applyDaemonSet(t *testing.T) {
 			coreClient := fake.NewClientset()
 
 			if tt.mockError != nil {
-				coreClient.PrependReactor("create", "daemonsets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+				coreClient.PrependReactor("create", "daemonsets", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 					return true, nil, tt.mockError
 				})
 			}
@@ -151,7 +151,7 @@ func Test_deleteDaemonSet(t *testing.T) {
 			}
 
 			if tt.mockError != nil {
-				coreClient.PrependReactor("delete", "daemonsets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+				coreClient.PrependReactor("delete", "daemonsets", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 					return true, nil, tt.mockError
 				})
 			}
@@ -214,7 +214,7 @@ func Test_getDaemonSet(t *testing.T) {
 			}
 
 			if tt.mockError != nil {
-				coreClient.PrependReactor("get", "daemonsets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+				coreClient.PrependReactor("get", "daemonsets", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 					return true, nil, tt.mockError
 				})
 			}
@@ -279,7 +279,7 @@ func Test_daemonSetExists(t *testing.T) {
 			}
 
 			if tt.mockError != nil {
-				coreClient.PrependReactor("get", "daemonsets", func(action k8stesting.Action) (bool, runtime.Object, error) {
+				coreClient.PrependReactor("get", "daemonsets", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 					return true, nil, tt.mockError
 				})
 			}

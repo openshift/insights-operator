@@ -52,7 +52,7 @@ func Test_applyDaemonSet_RetryOnConflict(t *testing.T) {
 	updateAttempts := 0
 
 	// Add reactor to simulate conflict on first attempt, then succeed
-	fakeClient.PrependReactor("update", "daemonsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+	fakeClient.PrependReactor("update", "daemonsets", func(_ k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		updateAttempts++
 		if updateAttempts == 1 {
 			// First attempt: return conflict error

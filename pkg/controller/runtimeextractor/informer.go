@@ -25,6 +25,8 @@ type resourceInformer struct {
 
 // NewResourceInformer creates a new informer that watches runtime-extractor resources
 // and notifies when they are modified by external actors (not by insights-operator)
+//
+//nolint:revive
 func NewResourceInformer(
 	eventRecorder events.Recorder,
 	kubeInformers informers.SharedInformerFactory,

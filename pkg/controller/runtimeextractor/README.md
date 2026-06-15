@@ -153,7 +153,7 @@ informerFactory := clientInformers.NewSharedInformerFactoryWithOptions(
 )
 
 // Create resource informer
-resourceInformer, err := runtimeextractor.NewResourceInformer(
+ResourceInformer, err := runtimeextractor.NewResourceInformer(
     eventRecorder,
     informerFactory,
 )
@@ -164,12 +164,12 @@ controller := runtimeextractor.NewRuntimeExtractorController(
     updateCh,
     kubeClient,
     eventRecorder,
-    resourceInformer,
+    ResourceInformer,
 )
 
 // Start informers and controller
 go informerFactory.Start(ctx.Done())
-go resourceInformer.Run(ctx, 1)
+go ResourceInformer.Run(ctx, 1)
 go controller.Run(ctx)
 ```
 

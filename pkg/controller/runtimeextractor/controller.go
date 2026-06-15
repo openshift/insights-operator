@@ -51,14 +51,16 @@ type runtimeExtractorController struct {
 	config ConfigNotifier
 	// updateCh receives notifications when the cluster version changes, triggering DaemonSet image updates
 	updateCh chan struct{}
-	// resourceInformer watches for external modifications to runtime-extractor resources
-	resourceInformer ResourceInformer
+	// ResourceInformer watches for external modifications to runtime-extractor resources
+	ResourceInformer ResourceInformer
 	// resourceManager handles creation, update, and deletion of runtime extractor Kubernetes resources
 	resourceManager ResourceManager
 }
 
 // NewRuntimeExtractorController is a constructor for runtimeExtractorController
 // that is in charge of runtime-extractor deployment lifecycle
+//
+//nolint:revive
 func NewRuntimeExtractorController(
 	configNotifier ConfigNotifier,
 	updateCh chan struct{},
@@ -75,7 +77,7 @@ func NewRuntimeExtractorController(
 		config:           configNotifier,
 		updateCh:         updateCh,
 		resourceManager:  rm,
-		resourceInformer: resourceInformer,
+		ResourceInformer: resourceInformer,
 	}
 }
 
@@ -96,7 +98,7 @@ func (re *runtimeExtractorController) Run(ctx context.Context) {
 	defer configClose()
 
 	// Get resource modification notifications from informer
-	resourceModifiedChan := re.resourceInformer.ResourceModified()
+	resourceModifiedChan := re.ResourceInformer.ResourceModified()
 
 	// Watch for configuration changes, version updates, and external resource modifications
 	for {
