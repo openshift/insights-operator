@@ -13,8 +13,10 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"github.com/blang/semver/v4"
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -62,7 +64,12 @@ type Controller struct {
 	start    time.Time
 
 	ctrlStatus    *controllerStatus
+	eventLogger   events.Recorder
 	isTechPreview bool
+
+	// This channel is used to notify about update bump
+	// for the runtimeextractor
+	updateCh chan struct{}
 
 	lock sync.Mutex
 }
@@ -73,6 +80,8 @@ func NewController(client configv1client.ConfigV1Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	namespace string,
 	isTechPreview bool,
+	eventLogger events.Recorder,
+	updateCh chan struct{},
 ) *Controller {
 	c := &Controller{
 		name:            "insights",
@@ -84,6 +93,8 @@ func NewController(client configv1client.ConfigV1Interface,
 		sources:         make(map[string]controllerstatus.StatusController),
 		ctrlStatus:      newControllerStatus(),
 		isTechPreview:   isTechPreview,
+		eventLogger:     eventLogger,
+		updateCh:        updateCh,
 	}
 	return c
 }
@@ -172,6 +183,30 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 	c.updateControllerConditions(cs, isInitializing)
 	c.updateControllerConditionsByStatus(cs, isInitializing)
 
+	if releaseVersion := os.Getenv("RELEASE_VERSION"); len(releaseVersion) > 0 {
+		versionChanged, setProgressing, err := c.checkVersionChanges(releaseVersion, clusterOperator.Status.Versions)
+		if err != nil {
+			klog.Errorf("failed checking openshift release version: %s with err: %v", releaseVersion, err)
+		}
+
+		clusterOperator.Status.Versions = []configv1.OperandVersion{
+			{Name: "operator", Version: releaseVersion},
+		}
+
+		// Update runtime-extractor images on any version change
+		if versionChanged {
+			c.updateCh <- struct{}{}
+		}
+
+		if setProgressing {
+			cs.setCondition(
+				configv1.OperatorProgressing,
+				configv1.ConditionTrue,
+				"Openshift Upgrade",
+				"Cluster version is updated")
+		}
+	}
+
 	// all status conditions from conditions to cluster operator
 	clusterOperator.Status.Conditions = cs.entries()
 
@@ -188,6 +223,57 @@ func (c *Controller) merge(clusterOperator *configv1.ClusterOperator) *configv1.
 		clusterOperator.Status.Extension.Raw = data
 	}
 	return clusterOperator
+}
+
+// checkVersionChanges checks if the operator version has changed and determines what actions to take.
+// It compares the new version against the current cluster operator versions and returns:
+//   - versionChanged: true if any version component changed (major, minor, or patch) - triggers runtime extractor image update
+//   - majorMinorVersionChanged: true if major or minor version changed - triggers Progressing condition
+//   - error: if version parsing fails
+//
+// Returns (false, false, nil) on initial run when clusterOperatorVersions is empty.
+func (c *Controller) checkVersionChanges(
+	newVersion string,
+	clusterOperatorVersions []configv1.OperandVersion,
+) (
+	versionChanged, majorMinorVersionChanged bool,
+	err error,
+) {
+	newVersionParsed, err := semver.Parse(newVersion)
+	if err != nil {
+		return false, false, err
+	}
+
+	// Skip initial run, the condition is set there
+	if len(clusterOperatorVersions) == 0 {
+		return false, false, nil
+	}
+
+	versionChanged, majorMinorVersionChanged = false, false
+
+	for _, cov := range clusterOperatorVersions {
+		covParsed, err := semver.Parse(cov.Version)
+		if err != nil {
+			return false, false, err
+		}
+
+		// Change Progressing condition only on major or minor version update
+		if newVersionParsed.Major != covParsed.Major || newVersionParsed.Minor != covParsed.Minor {
+			majorMinorVersionChanged = true
+		}
+
+		// If version was updated then we need to load new images for runtime extractor deployment
+		if !newVersionParsed.Equals(covParsed) {
+			versionChanged = true
+		}
+	}
+
+	if versionChanged {
+		klog.Infof("Operator version updated to %s", newVersion)
+		c.eventLogger.Eventf("OperatorVersionUpdated", "Operator version updated to %s", newVersion)
+	}
+
+	return versionChanged, majorMinorVersionChanged, nil
 }
 
 // calculate the current controller status based on its given sources

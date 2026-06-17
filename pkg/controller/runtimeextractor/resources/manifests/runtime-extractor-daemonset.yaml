@@ -38,11 +38,11 @@ spec:
         - name: kube-rbac-proxy
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
           args:
-            - '--secure-listen-address=:8443'
-            - '--upstream=http://127.0.0.1:8000'
-            - '--config-file=/etc/kube-rbac-proxy/config.yaml'
-            - '--tls-cert-file=/etc/tls/private/tls.crt'
-            - '--tls-private-key-file=/etc/tls/private/tls.key'
+            - "--secure-listen-address=:8443"
+            - "--upstream=http://127.0.0.1:8000"
+            - "--config-file=/etc/kube-rbac-proxy/config.yaml"
+            - "--tls-cert-file=/etc/tls/private/tls.crt"
+            - "--tls-private-key-file=/etc/tls/private/tls.key"
           terminationMessagePolicy: FallbackToLogsOnError
           volumeMounts:
             - mountPath: /etc/tls/private
@@ -54,7 +54,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
+                - ALL
             runAsNonRoot: true
           ports:
             - name: https

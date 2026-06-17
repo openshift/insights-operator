@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	clientInformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/version"
@@ -31,6 +32,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
 	"github.com/openshift/insights-operator/pkg/controller/periodic"
+	"github.com/openshift/insights-operator/pkg/controller/runtimeextractor"
 	"github.com/openshift/insights-operator/pkg/controller/status"
 	"github.com/openshift/insights-operator/pkg/gather"
 	"github.com/openshift/insights-operator/pkg/insights"
@@ -42,6 +44,11 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/recorder/diskrecorder"
 	"github.com/openshift/library-go/pkg/operator/loglevel"
+)
+
+const (
+	insightsNamespace = "openshift-insights"
+	informerTimeout   = 10 * time.Minute
 )
 
 // Operator is the type responsible for controlling the start-up of the Insights Operator
@@ -109,6 +116,54 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		desiredVersion = envVersion
 	}
 
+	kubeInf := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
+	configMapObserver, err := configobserver.NewConfigMapObserver(ctx, gatherKubeConfig, controller.EventRecorder, kubeInf)
+	if err != nil {
+		return err
+	}
+	go kubeInf.Start(ctx.Done())
+	go configMapObserver.Run(ctx, 1)
+
+	// secretConfigObserver synthesizes all config into the status reporter controller
+	secretConfigObserver := configobserver.New(s.Controller, kubeClient)
+	go secretConfigObserver.Start(ctx)
+
+	configAggregator := configobserver.NewConfigAggregator(secretConfigObserver, configMapObserver)
+	go configAggregator.Listen(ctx)
+
+	// updateCh is used to signal a version update to the runtimeextractor controller
+	updateCh := make(chan struct{}, 1)
+
+	// Create informer factory for runtime-extractor resources in openshift-insights namespace
+	runtimeExtractorInformerFactory := clientInformers.NewSharedInformerFactoryWithOptions(
+		kubeClient,
+		informerTimeout,
+		clientInformers.WithNamespace(insightsNamespace),
+	)
+
+	// Create resource informer to watch for external modifications to runtime-extractor resources
+	runtimeExtractorResourceInformer, err := runtimeextractor.NewResourceInformer(
+		controller.EventRecorder,
+		runtimeExtractorInformerFactory,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create runtime extractor resource informer: %w", err)
+	}
+
+	// Start the informer factory and resource informer controller
+	go runtimeExtractorInformerFactory.Start(ctx.Done())
+	go runtimeExtractorResourceInformer.Run(ctx, 1)
+
+	// Start runtimeExtractor controller
+	runtimeExtractorCtrl := runtimeextractor.NewRuntimeExtractorController(
+		configAggregator,
+		updateCh,
+		kubeClient,
+		controller.EventRecorder,
+		runtimeExtractorResourceInformer,
+	)
+	go runtimeExtractorCtrl.Run(ctx)
+
 	// By default, this will exit(0) the process if the featuregates ever change to a different set of values.
 	featureGateAccessor := featuregates.NewFeatureGateAccess(
 		desiredVersion, missingVersion,
@@ -157,21 +212,6 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		go insightsInformersfactory.Start(ctx.Done())
 	}
 
-	kubeInf := v1helpers.NewKubeInformersForNamespaces(kubeClient, "openshift-insights")
-	configMapObserver, err := configobserver.NewConfigMapObserver(ctx, gatherKubeConfig, controller.EventRecorder, kubeInf)
-	if err != nil {
-		return err
-	}
-	go kubeInf.Start(ctx.Done())
-	go configMapObserver.Run(ctx, 1)
-
-	// secretConfigObserver synthesizes all config into the status reporter controller
-	secretConfigObserver := configobserver.New(s.Controller, kubeClient)
-	go secretConfigObserver.Start(ctx)
-
-	configAggregator := configobserver.NewConfigAggregator(secretConfigObserver, configMapObserver)
-	go configAggregator.Listen(ctx)
-
 	// additional configurations may exist besides the default one
 	if customPath := getCustomStoragePath(configAggregator, nil); customPath != "" {
 		isValid, err := pathIsAvailable(customPath)
@@ -191,8 +231,15 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 
 	// the status controller initializes the cluster operator object and retrieves
 	// the last sync time, if any was set
-	statusReporter := status.NewController(configClient.ConfigV1(), configAggregator,
-		insightsDataGatherObserver, os.Getenv("POD_NAMESPACE"), insightsConfigAPIEnabled)
+	statusReporter := status.NewController(
+		configClient.ConfigV1(),
+		configAggregator,
+		insightsDataGatherObserver,
+		os.Getenv("POD_NAMESPACE"),
+		insightsConfigAPIEnabled,
+		controller.EventRecorder,
+		updateCh,
+	)
 
 	var anonymizer *anonymization.Anonymizer
 	var recdriver *diskrecorder.DiskRecorder
