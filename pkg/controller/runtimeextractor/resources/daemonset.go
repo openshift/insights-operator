@@ -130,9 +130,9 @@ func kubeRBACProxyTLSArgs(profile *configv1.TLSSecurityProfile) []string {
 	}
 
 	if len(supportedCiphers) == 0 {
-		klog.Warning("All TLS ciphers unsupported, falling back to Intermediate profile")
-		profileSpec = *configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
-		cipherNames = crypto.OpenSSLToIANACipherSuites(profileSpec.Ciphers)
+		klog.Warning("All TLS ciphers unsupported, falling back to Intermediate cipher list")
+		intermediateCiphers := configv1.TLSProfiles[configv1.TLSProfileIntermediateType].Ciphers
+		cipherNames = crypto.OpenSSLToIANACipherSuites(intermediateCiphers)
 		supportedCiphers = make([]string, 0, len(cipherNames))
 		for _, name := range cipherNames {
 			if _, err := crypto.CipherSuite(name); err == nil {

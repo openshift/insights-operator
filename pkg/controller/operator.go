@@ -450,7 +450,7 @@ func createTechPreviewInformers(
 
 // fetchTLSProfile reads the TLS security profile from the cluster's APIServer configuration.
 // Returns nil if the profile cannot be read, which will default to Intermediate.
-func fetchTLSProfile(ctx context.Context, configClient *configv1client.Clientset) *configv1.TLSSecurityProfile {
+func fetchTLSProfile(ctx context.Context, configClient configv1client.Interface) *configv1.TLSSecurityProfile {
 	apiServer, err := configClient.ConfigV1().APIServers().Get(ctx, "cluster", metav1.GetOptions{})
 	if err != nil {
 		klog.Warningf("Failed to get APIServer config, defaulting to Intermediate TLS profile: %v", err)
