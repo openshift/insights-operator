@@ -111,6 +111,7 @@ type GatherContainersLogsParams struct {
 // GatherPodDefinitionParams defines parameters for pod_definition gatherer
 type GatherPodDefinitionParams struct {
 	AlertName string `json:"alert_name"`
+	PodPrefix string `json:"pod_prefix"`
 }
 
 // GatherCRDefinitionParams defines parameters for cr_definition gatherer
