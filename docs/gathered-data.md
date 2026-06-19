@@ -129,6 +129,33 @@ None
 None
 
 
+## CRDefinition
+
+collects custom resource definitions based on the GVR parameters provided
+from the namespaces that are firing one of the configured alerts.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/conditional/namespaces/openshift-storage/crd/ceph.rook.io/v1/cephclusters/ocs-storagecluster-cephcluster.json](./insights-archive-sample/conditional/namespaces/openshift-storage/crd/ceph.rook.io/v1/cephclusters/ocs-storagecluster-cephcluster.json)
+
+### Location in archive
+- `conditional/namespaces/{namespace}/crd/{group}/{version}/{resource}/{name}.json`
+
+### Config ID
+`conditional/cr_definition`
+
+### Released version
+- 4.23
+
+### Backported versions
+- TBD
+
+### Changes
+None
+
+
 ## CephCluster
 
 Collects statuses of the`cephclusters.ceph.rook.io` resources
@@ -1763,8 +1790,8 @@ None
 
 ## PodDefinition
 
-Collects pod definition from pods that are
-firing one of the configured alerts.
+Collects pod definitions from pods matching a specified prefix
+when the configured alert is firing.
 
 ### API Reference
 None
@@ -1785,7 +1812,7 @@ None
 None
 
 ### Changes
-None
+- Modified to accept an optional 'pod_prefix' parameter, which allows multiple pods to be gathered under the same alert's namespace by prefix.
 
 
 ## PodDisruptionBudgets
