@@ -41,13 +41,6 @@ status:
 `
 
 func TestGatherer_gatherCRDefinition(t *testing.T) {
-	type fields struct {
-		firingAlerts map[string][]AlertLabels
-	}
-	type args struct {
-		dynamicClient dynamic.Interface
-	}
-
 	testParams := GatherCRDefinitionParams{
 		AlertName: "CephClusterWarningState",
 		Group:     "ceph.rook.io",

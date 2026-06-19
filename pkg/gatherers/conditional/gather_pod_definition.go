@@ -94,7 +94,7 @@ func (g *Gatherer) gatherPodDefinition(
 			}
 
 			podDefinitions = filterPodsByPrefix(podList, params.PodPrefix)
-
+			//
 		} else {
 			// Previous logic to retrieve ONLY the pod definition from the firing alert
 			podName, err := getAlertPodName(alertLabels)
