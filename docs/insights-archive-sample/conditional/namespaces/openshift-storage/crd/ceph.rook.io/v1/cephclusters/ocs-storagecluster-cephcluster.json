@@ -1,1 +1,1017 @@
-{"apiVersion":"ceph.rook.io/v1","kind":"CephCluster","metadata":{"creationTimestamp":"2026-06-17T17:18:55Z","finalizers":["cephcluster.ceph.rook.io"],"generation":2,"labels":{"app":"ocs-storagecluster"},"managedFields":[{"apiVersion":"ceph.rook.io/v1","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:finalizers":{".":{},"v:\"cephcluster.ceph.rook.io\"":{}}}},"manager":"rook","operation":"Update","time":"2026-06-17T17:19:14Z"},{"apiVersion":"ceph.rook.io/v1","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:labels":{".":{},"f:app":{}},"f:ownerReferences":{".":{},"k:{\"uid\":\"978e82d4-bae0-433f-89c6-19f99e7ac250\"}":{}}},"f:spec":{".":{},"f:cephConfig":{".":{},"f:global":{".":{},"f:mon_max_pg_per_osd":{},"f:mon_target_pg_per_osd":{}}},"f:cephVersion":{".":{},"f:image":{}},"f:cleanupPolicy":{".":{},"f:sanitizeDisks":{}},"f:continueUpgradeAfterChecksEvenIfNotHealthy":{},"f:crashCollector":{},"f:csi":{".":{},"f:cephfs":{".":{},"f:kernelMountOptions":{}},"f:readAffinity":{".":{},"f:enabled":{}},"f:skipUserCreation":{}},"f:dashboard":{},"f:dataDirHostPath":{},"f:disruptionManagement":{".":{},"f:machineDisruptionBudgetNamespace":{},"f:managePodBudgets":{}},"f:external":{},"f:healthCheck":{".":{},"f:daemonHealth":{".":{},"f:mon":{},"f:osd":{},"f:status":{}}},"f:labels":{".":{},"f:exporter":{".":{},"f:rook.io/managedBy":{}},"f:mgr":{".":{},"f:odf-resource-profile":{}},"f:mon":{".":{},"f:odf-resource-profile":{}},"f:monitoring":{".":{},"f:rook.io/managedBy":{}},"f:osd":{".":{},"f:odf-resource-profile":{}}},"f:logCollector":{".":{},"f:enabled":{},"f:maxLogSize":{},"f:periodicity":{}},"f:mgr":{".":{},"f:count":{},"f:modules":{}},"f:mon":{".":{},"f:count":{},"f:volumeClaimTemplate":{".":{},"f:metadata":{},"f:spec":{".":{},"f:resources":{".":{},"f:requests":{".":{},"f:storage":{}}},"f:storageClassName":{}}}},"f:monitoring":{".":{},"f:enabled":{},"f:interval":{}},"f:network":{".":{},"f:connections":{".":{},"f:encryption":{},"f:requireMsgr2":{}},"f:multiClusterService":{}},"f:placement":{".":{},"f:all":{".":{},"f:nodeAffinity":{".":{},"f:requiredDuringSchedulingIgnoredDuringExecution":{}},"f:tolerations":{}},"f:arbiter":{".":{},"f:tolerations":{}},"f:mon":{".":{},"f:podAntiAffinity":{".":{},"f:requiredDuringSchedulingIgnoredDuringExecution":{}}}},"f:priorityClassNames":{".":{},"f:crashcollector":{},"f:exporter":{},"f:mgr":{},"f:mon":{},"f:osd":{}},"f:resources":{".":{},"f:crashcollector":{".":{},"f:limits":{".":{},"f:cpu":{},"f:memory":{}},"f:requests":{".":{},"f:cpu":{},"f:memory":{}}},"f:exporter":{".":{},"f:limits":{".":{},"f:cpu":{},"f:memory":{}},"f:requests":{".":{},"f:cpu":{},"f:memory":{}}},"f:mgr":{".":{},"f:limits":{".":{},"f:cpu":{},"f:memory":{}},"f:requests":{".":{},"f:cpu":{},"f:memory":{}}},"f:mon":{".":{},"f:limits":{".":{},"f:cpu":{},"f:memory":{}},"f:requests":{".":{},"f:cpu":{},"f:memory":{}}}},"f:security":{".":{},"f:keyRotation":{".":{},"f:enabled":{},"f:schedule":{}},"f:kms":{}},"f:storage":{".":{},"f:allowOsdCrushWeightUpdate":{},"f:flappingRestartIntervalHours":{},"f:migration":{},"f:storageClassDeviceSets":{},"f:store":{}}}},"manager":"ocs-operator","operation":"Update","time":"2026-06-17T17:22:38Z"},{"apiVersion":"ceph.rook.io/v1","fieldsType":"FieldsV1","fieldsV1":{"f:status":{".":{},"f:ceph":{".":{},"f:capacity":{".":{},"f:bytesAvailable":{},"f:bytesTotal":{},"f:bytesUsed":{},"f:lastUpdated":{}},"f:details":{".":{},"f:OSD_DOWN":{".":{},"f:message":{},"f:severity":{}},"f:OSD_HOST_DOWN":{".":{},"f:message":{},"f:severity":{}},"f:OSD_RACK_DOWN":{".":{},"f:message":{},"f:severity":{}},"f:PG_DEGRADED":{".":{},"f:message":{},"f:severity":{}}},"f:fsid":{},"f:health":{},"f:lastChanged":{},"f:lastChecked":{},"f:previousHealth":{},"f:versions":{".":{},"f:mds":{".":{},"f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":{}},"f:mgr":{".":{},"f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":{}},"f:mon":{".":{},"f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":{}},"f:osd":{".":{},"f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":{}},"f:overall":{".":{},"f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":{}}}},"f:conditions":{},"f:message":{},"f:observedGeneration":{},"f:phase":{},"f:state":{},"f:storage":{".":{},"f:deviceClasses":{},"f:osd":{".":{},"f:migrationStatus":{},"f:storeType":{".":{},"f:bluestore":{}}}},"f:version":{".":{},"f:image":{},"f:version":{}}}},"manager":"rook","operation":"Update","subresource":"status","time":"2026-06-17T17:54:12Z"}],"name":"ocs-storagecluster-cephcluster","namespace":"openshift-storage","ownerReferences":[{"apiVersion":"ocs.openshift.io/v1","blockOwnerDeletion":true,"controller":true,"kind":"StorageCluster","name":"ocs-storagecluster","uid":"978e82d4-bae0-433f-89c6-19f99e7ac250"}],"resourceVersion":"84739","uid":"dd0afca3-565b-45bc-8465-0a4641c9a888"},"spec":{"cephConfig":{"global":{"mon_max_pg_per_osd":"1000","mon_target_pg_per_osd":"200"}},"cephVersion":{"image":"registry.redhat.io/rhceph/rhceph-8-rhel9@sha256:cbf125159b223ee445cb29709fb8b88491cbce1c6a075a75f8e8ed32629c4ba8"},"cleanupPolicy":{"sanitizeDisks":{}},"continueUpgradeAfterChecksEvenIfNotHealthy":true,"crashCollector":{},"csi":{"cephfs":{"kernelMountOptions":"ms_mode=prefer-crc"},"readAffinity":{"enabled":true},"skipUserCreation":true},"dashboard":{},"dataDirHostPath":"/var/lib/rook","disruptionManagement":{"machineDisruptionBudgetNamespace":"openshift-machine-api","managePodBudgets":true},"external":{},"healthCheck":{"daemonHealth":{"mon":{},"osd":{},"status":{}}},"labels":{"exporter":{"rook.io/managedBy":"ocs-storagecluster"},"mgr":{"odf-resource-profile":"balanced"},"mon":{"odf-resource-profile":"balanced"},"monitoring":{"rook.io/managedBy":"ocs-storagecluster"},"osd":{"odf-resource-profile":"balanced"}},"logCollector":{"enabled":true,"maxLogSize":"500Mi","periodicity":"daily"},"mgr":{"count":2,"modules":[{"enabled":true,"name":"pg_autoscaler","settings":{}},{"enabled":true,"name":"balancer","settings":{}},{"name":"rook","settings":{}}]},"mon":{"count":3,"volumeClaimTemplate":{"metadata":{},"spec":{"resources":{"requests":{"storage":"50Gi"}},"storageClassName":"gp3-csi"}}},"monitoring":{"enabled":true,"interval":"30s"},"network":{"connections":{"encryption":{},"requireMsgr2":true},"multiClusterService":{}},"placement":{"all":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"cluster.ocs.openshift.io/openshift-storage","operator":"Exists"}]}]}},"tolerations":[{"effect":"NoSchedule","key":"node.ocs.openshift.io/storage","operator":"Equal","value":"true"}]},"arbiter":{"tolerations":[{"effect":"NoSchedule","key":"node-role.kubernetes.io/master","operator":"Exists"}]},"mon":{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-mon"]}]},"topologyKey":"topology.rook.io/rack"}]}}},"priorityClassNames":{"crashcollector":"system-node-critical","exporter":"system-node-critical","mgr":"system-node-critical","mon":"system-node-critical","osd":"system-node-critical"},"resources":{"crashcollector":{"limits":{"cpu":"100m","memory":"60Mi"},"requests":{"cpu":"100m","memory":"60Mi"}},"exporter":{"limits":{"cpu":"50m","memory":"128Mi"},"requests":{"cpu":"50m","memory":"50Mi"}},"mgr":{"limits":{"cpu":"2","memory":"3Gi"},"requests":{"cpu":"1","memory":"1536Mi"}},"mon":{"limits":{"cpu":"1","memory":"2Gi"},"requests":{"cpu":"1","memory":"2Gi"}}},"security":{"keyRotation":{"enabled":false,"schedule":"@weekly"},"kms":{}},"storage":{"allowOsdCrushWeightUpdate":true,"flappingRestartIntervalHours":24,"migration":{},"storageClassDeviceSets":[{"count":1,"name":"ocs-deviceset-gp3-csi-0","placement":{"topologySpreadConstraints":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd"]}]},"maxSkew":1,"topologyKey":"topology.rook.io/rack","whenUnsatisfiable":"DoNotSchedule"},{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd"]}]},"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway"}]},"portable":true,"preparePlacement":{"topologySpreadConstraints":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd","rook-ceph-osd-prepare"]}]},"maxSkew":1,"topologyKey":"topology.rook.io/rack","whenUnsatisfiable":"DoNotSchedule"},{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd","rook-ceph-osd-prepare"]}]},"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway"}]},"resources":{"limits":{"cpu":"2","memory":"5Gi"},"requests":{"cpu":"2","memory":"5Gi"}},"tuneFastDeviceClass":true,"volumeClaimTemplates":[{"metadata":{"annotations":{"crushDeviceClass":"ssd"}},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"2Ti"}},"storageClassName":"gp3-csi","volumeMode":"Block"}}]},{"count":1,"name":"ocs-deviceset-gp3-csi-1","placement":{"topologySpreadConstraints":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd"]}]},"maxSkew":1,"topologyKey":"topology.rook.io/rack","whenUnsatisfiable":"DoNotSchedule"},{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd"]}]},"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway"}]},"portable":true,"preparePlacement":{"topologySpreadConstraints":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd","rook-ceph-osd-prepare"]}]},"maxSkew":1,"topologyKey":"topology.rook.io/rack","whenUnsatisfiable":"DoNotSchedule"},{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd","rook-ceph-osd-prepare"]}]},"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway"}]},"resources":{"limits":{"cpu":"2","memory":"5Gi"},"requests":{"cpu":"2","memory":"5Gi"}},"tuneFastDeviceClass":true,"volumeClaimTemplates":[{"metadata":{"annotations":{"crushDeviceClass":"ssd"}},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"2Ti"}},"storageClassName":"gp3-csi","volumeMode":"Block"}}]},{"count":1,"name":"ocs-deviceset-gp3-csi-2","placement":{"topologySpreadConstraints":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd"]}]},"maxSkew":1,"topologyKey":"topology.rook.io/rack","whenUnsatisfiable":"DoNotSchedule"},{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd"]}]},"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway"}]},"portable":true,"preparePlacement":{"topologySpreadConstraints":[{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd","rook-ceph-osd-prepare"]}]},"maxSkew":1,"topologyKey":"topology.rook.io/rack","whenUnsatisfiable":"DoNotSchedule"},{"labelSelector":{"matchExpressions":[{"key":"app","operator":"In","values":["rook-ceph-osd","rook-ceph-osd-prepare"]}]},"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"ScheduleAnyway"}]},"resources":{"limits":{"cpu":"2","memory":"5Gi"},"requests":{"cpu":"2","memory":"5Gi"}},"tuneFastDeviceClass":true,"volumeClaimTemplates":[{"metadata":{"annotations":{"crushDeviceClass":"ssd"}},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"2Ti"}},"storageClassName":"gp3-csi","volumeMode":"Block"}}]}],"store":{}}},"status":{"ceph":{"capacity":{"bytesAvailable":6595984564224,"bytesTotal":6597069766656,"bytesUsed":1085202432,"lastUpdated":"2026-06-17T17:54:12Z"},"details":{"OSD_DOWN":{"message":"1 osds down","severity":"HEALTH_WARN"},"OSD_HOST_DOWN":{"message":"1 host (1 osds) down","severity":"HEALTH_WARN"},"OSD_RACK_DOWN":{"message":"1 rack (1 osds) down","severity":"HEALTH_WARN"},"PG_DEGRADED":{"message":"Degraded data redundancy: 243/729 objects degraded (33.333%), 159 pgs degraded, 368 pgs undersized","severity":"HEALTH_WARN"}},"fsid":"4d7e72ae-b4e4-4fbc-800b-658414240a9d","health":"HEALTH_WARN","lastChanged":"2026-06-17T17:32:51Z","lastChecked":"2026-06-17T17:54:12Z","previousHealth":"HEALTH_OK","versions":{"mds":{"ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":2},"mgr":{"ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":2},"mon":{"ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":3},"osd":{"ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":2},"overall":{"ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)":9}}},"conditions":[{"lastHeartbeatTime":"2026-06-17T17:54:12Z","lastTransitionTime":"2026-06-17T17:22:17Z","message":"Cluster created successfully","reason":"ClusterCreated","status":"True","type":"Ready"}],"message":"Cluster created successfully","observedGeneration":2,"phase":"Ready","state":"Created","storage":{"deviceClasses":[{"name":"ssd"}],"osd":{"migrationStatus":{},"storeType":{"bluestore":3}}},"version":{"image":"registry.redhat.io/rhceph/rhceph-8-rhel9@sha256:cbf125159b223ee445cb29709fb8b88491cbce1c6a075a75f8e8ed32629c4ba8","version":"19.2.1-366"}}}
+{
+    "apiVersion": "ceph.rook.io/v1",
+    "kind": "CephCluster",
+    "metadata": {
+        "creationTimestamp": "2026-06-17T17:18:55Z",
+        "finalizers": [
+            "cephcluster.ceph.rook.io"
+        ],
+        "generation": 2,
+        "labels": {
+            "app": "ocs-storagecluster"
+        },
+        "managedFields": [
+            {
+                "apiVersion": "ceph.rook.io/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:finalizers": {
+                            ".": {},
+                            "v:\"cephcluster.ceph.rook.io\"": {}
+                        }
+                    }
+                },
+                "manager": "rook",
+                "operation": "Update",
+                "time": "2026-06-17T17:19:14Z"
+            },
+            {
+                "apiVersion": "ceph.rook.io/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:labels": {
+                            ".": {},
+                            "f:app": {}
+                        },
+                        "f:ownerReferences": {
+                            ".": {},
+                            "k:{\"uid\":\"978e82d4-bae0-433f-89c6-19f99e7ac250\"}": {}
+                        }
+                    },
+                    "f:spec": {
+                        ".": {},
+                        "f:cephConfig": {
+                            ".": {},
+                            "f:global": {
+                                ".": {},
+                                "f:mon_max_pg_per_osd": {},
+                                "f:mon_target_pg_per_osd": {}
+                            }
+                        },
+                        "f:cephVersion": {
+                            ".": {},
+                            "f:image": {}
+                        },
+                        "f:cleanupPolicy": {
+                            ".": {},
+                            "f:sanitizeDisks": {}
+                        },
+                        "f:continueUpgradeAfterChecksEvenIfNotHealthy": {},
+                        "f:crashCollector": {},
+                        "f:csi": {
+                            ".": {},
+                            "f:cephfs": {
+                                ".": {},
+                                "f:kernelMountOptions": {}
+                            },
+                            "f:readAffinity": {
+                                ".": {},
+                                "f:enabled": {}
+                            },
+                            "f:skipUserCreation": {}
+                        },
+                        "f:dashboard": {},
+                        "f:dataDirHostPath": {},
+                        "f:disruptionManagement": {
+                            ".": {},
+                            "f:machineDisruptionBudgetNamespace": {},
+                            "f:managePodBudgets": {}
+                        },
+                        "f:external": {},
+                        "f:healthCheck": {
+                            ".": {},
+                            "f:daemonHealth": {
+                                ".": {},
+                                "f:mon": {},
+                                "f:osd": {},
+                                "f:status": {}
+                            }
+                        },
+                        "f:labels": {
+                            ".": {},
+                            "f:exporter": {
+                                ".": {},
+                                "f:rook.io/managedBy": {}
+                            },
+                            "f:mgr": {
+                                ".": {},
+                                "f:odf-resource-profile": {}
+                            },
+                            "f:mon": {
+                                ".": {},
+                                "f:odf-resource-profile": {}
+                            },
+                            "f:monitoring": {
+                                ".": {},
+                                "f:rook.io/managedBy": {}
+                            },
+                            "f:osd": {
+                                ".": {},
+                                "f:odf-resource-profile": {}
+                            }
+                        },
+                        "f:logCollector": {
+                            ".": {},
+                            "f:enabled": {},
+                            "f:maxLogSize": {},
+                            "f:periodicity": {}
+                        },
+                        "f:mgr": {
+                            ".": {},
+                            "f:count": {},
+                            "f:modules": {}
+                        },
+                        "f:mon": {
+                            ".": {},
+                            "f:count": {},
+                            "f:volumeClaimTemplate": {
+                                ".": {},
+                                "f:metadata": {},
+                                "f:spec": {
+                                    ".": {},
+                                    "f:resources": {
+                                        ".": {},
+                                        "f:requests": {
+                                            ".": {},
+                                            "f:storage": {}
+                                        }
+                                    },
+                                    "f:storageClassName": {}
+                                }
+                            }
+                        },
+                        "f:monitoring": {
+                            ".": {},
+                            "f:enabled": {},
+                            "f:interval": {}
+                        },
+                        "f:network": {
+                            ".": {},
+                            "f:connections": {
+                                ".": {},
+                                "f:encryption": {},
+                                "f:requireMsgr2": {}
+                            },
+                            "f:multiClusterService": {}
+                        },
+                        "f:placement": {
+                            ".": {},
+                            "f:all": {
+                                ".": {},
+                                "f:nodeAffinity": {
+                                    ".": {},
+                                    "f:requiredDuringSchedulingIgnoredDuringExecution": {}
+                                },
+                                "f:tolerations": {}
+                            },
+                            "f:arbiter": {
+                                ".": {},
+                                "f:tolerations": {}
+                            },
+                            "f:mon": {
+                                ".": {},
+                                "f:podAntiAffinity": {
+                                    ".": {},
+                                    "f:requiredDuringSchedulingIgnoredDuringExecution": {}
+                                }
+                            }
+                        },
+                        "f:priorityClassNames": {
+                            ".": {},
+                            "f:crashcollector": {},
+                            "f:exporter": {},
+                            "f:mgr": {},
+                            "f:mon": {},
+                            "f:osd": {}
+                        },
+                        "f:resources": {
+                            ".": {},
+                            "f:crashcollector": {
+                                ".": {},
+                                "f:limits": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                },
+                                "f:requests": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                }
+                            },
+                            "f:exporter": {
+                                ".": {},
+                                "f:limits": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                },
+                                "f:requests": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                }
+                            },
+                            "f:mgr": {
+                                ".": {},
+                                "f:limits": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                },
+                                "f:requests": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                }
+                            },
+                            "f:mon": {
+                                ".": {},
+                                "f:limits": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                },
+                                "f:requests": {
+                                    ".": {},
+                                    "f:cpu": {},
+                                    "f:memory": {}
+                                }
+                            }
+                        },
+                        "f:security": {
+                            ".": {},
+                            "f:keyRotation": {
+                                ".": {},
+                                "f:enabled": {},
+                                "f:schedule": {}
+                            },
+                            "f:kms": {}
+                        },
+                        "f:storage": {
+                            ".": {},
+                            "f:allowOsdCrushWeightUpdate": {},
+                            "f:flappingRestartIntervalHours": {},
+                            "f:migration": {},
+                            "f:storageClassDeviceSets": {},
+                            "f:store": {}
+                        }
+                    }
+                },
+                "manager": "ocs-operator",
+                "operation": "Update",
+                "time": "2026-06-17T17:22:38Z"
+            },
+            {
+                "apiVersion": "ceph.rook.io/v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:status": {
+                        ".": {},
+                        "f:ceph": {
+                            ".": {},
+                            "f:capacity": {
+                                ".": {},
+                                "f:bytesAvailable": {},
+                                "f:bytesTotal": {},
+                                "f:bytesUsed": {},
+                                "f:lastUpdated": {}
+                            },
+                            "f:details": {
+                                ".": {},
+                                "f:OSD_DOWN": {
+                                    ".": {},
+                                    "f:message": {},
+                                    "f:severity": {}
+                                },
+                                "f:OSD_HOST_DOWN": {
+                                    ".": {},
+                                    "f:message": {},
+                                    "f:severity": {}
+                                },
+                                "f:OSD_RACK_DOWN": {
+                                    ".": {},
+                                    "f:message": {},
+                                    "f:severity": {}
+                                },
+                                "f:PG_DEGRADED": {
+                                    ".": {},
+                                    "f:message": {},
+                                    "f:severity": {}
+                                }
+                            },
+                            "f:fsid": {},
+                            "f:health": {},
+                            "f:lastChanged": {},
+                            "f:lastChecked": {},
+                            "f:previousHealth": {},
+                            "f:versions": {
+                                ".": {},
+                                "f:mds": {
+                                    ".": {},
+                                    "f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": {}
+                                },
+                                "f:mgr": {
+                                    ".": {},
+                                    "f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": {}
+                                },
+                                "f:mon": {
+                                    ".": {},
+                                    "f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": {}
+                                },
+                                "f:osd": {
+                                    ".": {},
+                                    "f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": {}
+                                },
+                                "f:overall": {
+                                    ".": {},
+                                    "f:ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": {}
+                                }
+                            }
+                        },
+                        "f:conditions": {},
+                        "f:message": {},
+                        "f:observedGeneration": {},
+                        "f:phase": {},
+                        "f:state": {},
+                        "f:storage": {
+                            ".": {},
+                            "f:deviceClasses": {},
+                            "f:osd": {
+                                ".": {},
+                                "f:migrationStatus": {},
+                                "f:storeType": {
+                                    ".": {},
+                                    "f:bluestore": {}
+                                }
+                            }
+                        },
+                        "f:version": {
+                            ".": {},
+                            "f:image": {},
+                            "f:version": {}
+                        }
+                    }
+                },
+                "manager": "rook",
+                "operation": "Update",
+                "subresource": "status",
+                "time": "2026-06-17T17:54:12Z"
+            }
+        ],
+        "name": "ocs-storagecluster-cephcluster",
+        "namespace": "openshift-storage",
+        "ownerReferences": [
+            {
+                "apiVersion": "ocs.openshift.io/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "StorageCluster",
+                "name": "ocs-storagecluster",
+                "uid": "978e82d4-bae0-433f-89c6-19f99e7ac250"
+            }
+        ],
+        "resourceVersion": "84739",
+        "uid": "dd0afca3-565b-45bc-8465-0a4641c9a888"
+    },
+    "spec": {
+        "cephConfig": {
+            "global": {
+                "mon_max_pg_per_osd": "1000",
+                "mon_target_pg_per_osd": "200"
+            }
+        },
+        "cephVersion": {
+            "image": "registry.redhat.io/rhceph/rhceph-8-rhel9@sha256:cbf125159b223ee445cb29709fb8b88491cbce1c6a075a75f8e8ed32629c4ba8"
+        },
+        "cleanupPolicy": {
+            "sanitizeDisks": {}
+        },
+        "continueUpgradeAfterChecksEvenIfNotHealthy": true,
+        "crashCollector": {},
+        "csi": {
+            "cephfs": {
+                "kernelMountOptions": "ms_mode=prefer-crc"
+            },
+            "readAffinity": {
+                "enabled": true
+            },
+            "skipUserCreation": true
+        },
+        "dashboard": {},
+        "dataDirHostPath": "/var/lib/rook",
+        "disruptionManagement": {
+            "machineDisruptionBudgetNamespace": "openshift-machine-api",
+            "managePodBudgets": true
+        },
+        "external": {},
+        "healthCheck": {
+            "daemonHealth": {
+                "mon": {},
+                "osd": {},
+                "status": {}
+            }
+        },
+        "labels": {
+            "exporter": {
+                "rook.io/managedBy": "ocs-storagecluster"
+            },
+            "mgr": {
+                "odf-resource-profile": "balanced"
+            },
+            "mon": {
+                "odf-resource-profile": "balanced"
+            },
+            "monitoring": {
+                "rook.io/managedBy": "ocs-storagecluster"
+            },
+            "osd": {
+                "odf-resource-profile": "balanced"
+            }
+        },
+        "logCollector": {
+            "enabled": true,
+            "maxLogSize": "500Mi",
+            "periodicity": "daily"
+        },
+        "mgr": {
+            "count": 2,
+            "modules": [
+                {
+                    "enabled": true,
+                    "name": "pg_autoscaler",
+                    "settings": {}
+                },
+                {
+                    "enabled": true,
+                    "name": "balancer",
+                    "settings": {}
+                },
+                {
+                    "name": "rook",
+                    "settings": {}
+                }
+            ]
+        },
+        "mon": {
+            "count": 3,
+            "volumeClaimTemplate": {
+                "metadata": {},
+                "spec": {
+                    "resources": {
+                        "requests": {
+                            "storage": "50Gi"
+                        }
+                    },
+                    "storageClassName": "gp3-csi"
+                }
+            }
+        },
+        "monitoring": {
+            "enabled": true,
+            "interval": "30s"
+        },
+        "network": {
+            "connections": {
+                "encryption": {},
+                "requireMsgr2": true
+            },
+            "multiClusterService": {}
+        },
+        "placement": {
+            "all": {
+                "nodeAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": {
+                        "nodeSelectorTerms": [
+                            {
+                                "matchExpressions": [
+                                    {
+                                        "key": "cluster.ocs.openshift.io/openshift-storage",
+                                        "operator": "Exists"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "node.ocs.openshift.io/storage",
+                        "operator": "Equal",
+                        "value": "true"
+                    }
+                ]
+            },
+            "arbiter": {
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Exists"
+                    }
+                ]
+            },
+            "mon": {
+                "podAntiAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": [
+                        {
+                            "labelSelector": {
+                                "matchExpressions": [
+                                    {
+                                        "key": "app",
+                                        "operator": "In",
+                                        "values": [
+                                            "rook-ceph-mon"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "topologyKey": "topology.rook.io/rack"
+                        }
+                    ]
+                }
+            }
+        },
+        "priorityClassNames": {
+            "crashcollector": "system-node-critical",
+            "exporter": "system-node-critical",
+            "mgr": "system-node-critical",
+            "mon": "system-node-critical",
+            "osd": "system-node-critical"
+        },
+        "resources": {
+            "crashcollector": {
+                "limits": {
+                    "cpu": "100m",
+                    "memory": "60Mi"
+                },
+                "requests": {
+                    "cpu": "100m",
+                    "memory": "60Mi"
+                }
+            },
+            "exporter": {
+                "limits": {
+                    "cpu": "50m",
+                    "memory": "128Mi"
+                },
+                "requests": {
+                    "cpu": "50m",
+                    "memory": "50Mi"
+                }
+            },
+            "mgr": {
+                "limits": {
+                    "cpu": "2",
+                    "memory": "3Gi"
+                },
+                "requests": {
+                    "cpu": "1",
+                    "memory": "1536Mi"
+                }
+            },
+            "mon": {
+                "limits": {
+                    "cpu": "1",
+                    "memory": "2Gi"
+                },
+                "requests": {
+                    "cpu": "1",
+                    "memory": "2Gi"
+                }
+            }
+        },
+        "security": {
+            "keyRotation": {
+                "enabled": false,
+                "schedule": "@weekly"
+            },
+            "kms": {}
+        },
+        "storage": {
+            "allowOsdCrushWeightUpdate": true,
+            "flappingRestartIntervalHours": 24,
+            "migration": {},
+            "storageClassDeviceSets": [
+                {
+                    "count": 1,
+                    "name": "ocs-deviceset-gp3-csi-0",
+                    "placement": {
+                        "topologySpreadConstraints": [
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "topology.rook.io/rack",
+                                "whenUnsatisfiable": "DoNotSchedule"
+                            },
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "kubernetes.io/hostname",
+                                "whenUnsatisfiable": "ScheduleAnyway"
+                            }
+                        ]
+                    },
+                    "portable": true,
+                    "preparePlacement": {
+                        "topologySpreadConstraints": [
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd",
+                                                "rook-ceph-osd-prepare"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "topology.rook.io/rack",
+                                "whenUnsatisfiable": "DoNotSchedule"
+                            },
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd",
+                                                "rook-ceph-osd-prepare"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "kubernetes.io/hostname",
+                                "whenUnsatisfiable": "ScheduleAnyway"
+                            }
+                        ]
+                    },
+                    "resources": {
+                        "limits": {
+                            "cpu": "2",
+                            "memory": "5Gi"
+                        },
+                        "requests": {
+                            "cpu": "2",
+                            "memory": "5Gi"
+                        }
+                    },
+                    "tuneFastDeviceClass": true,
+                    "volumeClaimTemplates": [
+                        {
+                            "metadata": {
+                                "annotations": {
+                                    "crushDeviceClass": "ssd"
+                                }
+                            },
+                            "spec": {
+                                "accessModes": [
+                                    "ReadWriteOnce"
+                                ],
+                                "resources": {
+                                    "requests": {
+                                        "storage": "2Ti"
+                                    }
+                                },
+                                "storageClassName": "gp3-csi",
+                                "volumeMode": "Block"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "count": 1,
+                    "name": "ocs-deviceset-gp3-csi-1",
+                    "placement": {
+                        "topologySpreadConstraints": [
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "topology.rook.io/rack",
+                                "whenUnsatisfiable": "DoNotSchedule"
+                            },
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "kubernetes.io/hostname",
+                                "whenUnsatisfiable": "ScheduleAnyway"
+                            }
+                        ]
+                    },
+                    "portable": true,
+                    "preparePlacement": {
+                        "topologySpreadConstraints": [
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd",
+                                                "rook-ceph-osd-prepare"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "topology.rook.io/rack",
+                                "whenUnsatisfiable": "DoNotSchedule"
+                            },
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd",
+                                                "rook-ceph-osd-prepare"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "kubernetes.io/hostname",
+                                "whenUnsatisfiable": "ScheduleAnyway"
+                            }
+                        ]
+                    },
+                    "resources": {
+                        "limits": {
+                            "cpu": "2",
+                            "memory": "5Gi"
+                        },
+                        "requests": {
+                            "cpu": "2",
+                            "memory": "5Gi"
+                        }
+                    },
+                    "tuneFastDeviceClass": true,
+                    "volumeClaimTemplates": [
+                        {
+                            "metadata": {
+                                "annotations": {
+                                    "crushDeviceClass": "ssd"
+                                }
+                            },
+                            "spec": {
+                                "accessModes": [
+                                    "ReadWriteOnce"
+                                ],
+                                "resources": {
+                                    "requests": {
+                                        "storage": "2Ti"
+                                    }
+                                },
+                                "storageClassName": "gp3-csi",
+                                "volumeMode": "Block"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "count": 1,
+                    "name": "ocs-deviceset-gp3-csi-2",
+                    "placement": {
+                        "topologySpreadConstraints": [
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "topology.rook.io/rack",
+                                "whenUnsatisfiable": "DoNotSchedule"
+                            },
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "kubernetes.io/hostname",
+                                "whenUnsatisfiable": "ScheduleAnyway"
+                            }
+                        ]
+                    },
+                    "portable": true,
+                    "preparePlacement": {
+                        "topologySpreadConstraints": [
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd",
+                                                "rook-ceph-osd-prepare"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "topology.rook.io/rack",
+                                "whenUnsatisfiable": "DoNotSchedule"
+                            },
+                            {
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app",
+                                            "operator": "In",
+                                            "values": [
+                                                "rook-ceph-osd",
+                                                "rook-ceph-osd-prepare"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "maxSkew": 1,
+                                "topologyKey": "kubernetes.io/hostname",
+                                "whenUnsatisfiable": "ScheduleAnyway"
+                            }
+                        ]
+                    },
+                    "resources": {
+                        "limits": {
+                            "cpu": "2",
+                            "memory": "5Gi"
+                        },
+                        "requests": {
+                            "cpu": "2",
+                            "memory": "5Gi"
+                        }
+                    },
+                    "tuneFastDeviceClass": true,
+                    "volumeClaimTemplates": [
+                        {
+                            "metadata": {
+                                "annotations": {
+                                    "crushDeviceClass": "ssd"
+                                }
+                            },
+                            "spec": {
+                                "accessModes": [
+                                    "ReadWriteOnce"
+                                ],
+                                "resources": {
+                                    "requests": {
+                                        "storage": "2Ti"
+                                    }
+                                },
+                                "storageClassName": "gp3-csi",
+                                "volumeMode": "Block"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "store": {}
+        }
+    },
+    "status": {
+        "ceph": {
+            "capacity": {
+                "bytesAvailable": 6595984564224,
+                "bytesTotal": 6597069766656,
+                "bytesUsed": 1085202432,
+                "lastUpdated": "2026-06-17T17:54:12Z"
+            },
+            "details": {
+                "OSD_DOWN": {
+                    "message": "1 osds down",
+                    "severity": "HEALTH_WARN"
+                },
+                "OSD_HOST_DOWN": {
+                    "message": "1 host (1 osds) down",
+                    "severity": "HEALTH_WARN"
+                },
+                "OSD_RACK_DOWN": {
+                    "message": "1 rack (1 osds) down",
+                    "severity": "HEALTH_WARN"
+                },
+                "PG_DEGRADED": {
+                    "message": "Degraded data redundancy: 243/729 objects degraded (33.333%), 159 pgs degraded, 368 pgs undersized",
+                    "severity": "HEALTH_WARN"
+                }
+            },
+            "fsid": "4d7e72ae-b4e4-4fbc-800b-658414240a9d",
+            "health": "HEALTH_WARN",
+            "lastChanged": "2026-06-17T17:32:51Z",
+            "lastChecked": "2026-06-17T17:54:12Z",
+            "previousHealth": "HEALTH_OK",
+            "versions": {
+                "mds": {
+                    "ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": 2
+                },
+                "mgr": {
+                    "ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": 2
+                },
+                "mon": {
+                    "ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": 3
+                },
+                "osd": {
+                    "ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": 2
+                },
+                "overall": {
+                    "ceph version 19.2.1-366.el9cp (a2ea0adc37f47d89e8ded4aec4e11c2315773a25) squid (stable)": 9
+                }
+            }
+        },
+        "conditions": [
+            {
+                "lastHeartbeatTime": "2026-06-17T17:54:12Z",
+                "lastTransitionTime": "2026-06-17T17:22:17Z",
+                "message": "Cluster created successfully",
+                "reason": "ClusterCreated",
+                "status": "True",
+                "type": "Ready"
+            }
+        ],
+        "message": "Cluster created successfully",
+        "observedGeneration": 2,
+        "phase": "Ready",
+        "state": "Created",
+        "storage": {
+            "deviceClasses": [
+                {
+                    "name": "ssd"
+                }
+            ],
+            "osd": {
+                "migrationStatus": {},
+                "storeType": {
+                    "bluestore": 3
+                }
+            }
+        },
+        "version": {
+            "image": "registry.redhat.io/rhceph/rhceph-8-rhel9@sha256:cbf125159b223ee445cb29709fb8b88491cbce1c6a075a75f8e8ed32629c4ba8",
+            "version": "19.2.1-366"
+        }
+    }
+}
