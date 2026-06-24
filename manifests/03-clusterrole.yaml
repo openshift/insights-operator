@@ -693,7 +693,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: insights-runtime-extractor-role
-  namespace: openshift-insights
   annotations:
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
@@ -726,7 +725,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: insights-runtime-extractor
-  namespace: openshift-insights
   annotations:
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
@@ -746,7 +744,6 @@ apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
 metadata:
   name: insights-runtime-extractor-scc
-  namespace: openshift-insights
   annotations:
     include.release.openshift.io/hypershift: "true"
     include.release.openshift.io/ibm-cloud-managed: "true"
