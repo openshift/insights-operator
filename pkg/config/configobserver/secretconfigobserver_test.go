@@ -25,8 +25,9 @@ type kubeClientResponder struct {
 }
 
 const (
-	pullSecretKey = "(/v1, Resource=secrets) openshift-config.pull-secret" //nolint: gosec
-	supportKey    = "(/v1, Resource=secrets) openshift-config.support"
+	pullSecretKey       = "(/v1, Resource=secrets) openshift-config.pull-secret"   //nolint: gosec
+	supportKey          = "(/v1, Resource=secrets) openshift-config.support"       //nolint: gosec
+	globalPullSecretKey = "(/v1, Resource=secrets) kube-system.global-pull-secret" //nolint: gosec
 )
 
 // nolint: lll, funlen
@@ -96,6 +97,34 @@ func Test_ConfigObserver_ChangeSupportConfig(t *testing.T) {
 				Interval: 15 * time.Minute,
 			},
 			expErr: nil,
+		},
+		{
+			name: "token-from-global-pull-secret-fallback",
+			config: map[string]*corev1.Secret{
+				pullSecretKey: {Data: map[string][]byte{
+					".dockerconfigjson": []byte(`{"auths":{"arohcpocpprod.azurecr.io":{"auth":"acrtoken"}}}`),
+				}},
+				globalPullSecretKey: {Data: map[string][]byte{
+					".dockerconfigjson": []byte(`{"auths":{"cloud.openshift.com":{"auth":"globaltoken"}}}`),
+				}},
+			},
+			expConfig: &config.Controller{
+				Token: "globaltoken",
+			},
+		},
+		{
+			name: "primary-pull-secret-takes-precedence-over-global",
+			config: map[string]*corev1.Secret{
+				pullSecretKey: {Data: map[string][]byte{
+					".dockerconfigjson": []byte(`{"auths":{"cloud.openshift.com":{"auth":"primarytoken"}}}`),
+				}},
+				globalPullSecretKey: {Data: map[string][]byte{
+					".dockerconfigjson": []byte(`{"auths":{"cloud.openshift.com":{"auth":"fallbacktoken"}}}`),
+				}},
+			},
+			expConfig: &config.Controller{
+				Token: "primarytoken",
+			},
 		},
 		{
 			name: "set-all-config",
