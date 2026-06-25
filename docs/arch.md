@@ -17,6 +17,7 @@ dataReporting:
     downloadEndpoint: https://console.redhat.com/api/insights-results-aggregator/v2/cluster/%s/reports
     conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules
     obfuscation: [workload_names networking]
+    disableRuntimeExtractor: false
 sca:
     disabled: false
     endpoint: https://api.openshift.com/api/accounts_mgmt/v1/entitlement_certificates
@@ -49,6 +50,11 @@ The `support` secret provides following configuration attributes:
 - `clusterTransferInterval`  - frequency of checking available cluster transfers. Overwritten by `clusterTransfer/interval` from the configmap. Default value is `24h`.
 - `conditionalGathererEndpoint` - the endpoing providing conditional gathering rules definitions. Overwritten by `dataReporting/conditionalGathererEndpoint` from the configmap. Default value is `https://console.redhat.com/api/gathering/gathering_rules`.
 - `disableInsightsAlerts` - disables all the alerts registered by the Insights Operator. Overwritten by `alerting/disabled` from the configmap. Default value is `false`.
+
+The `insights-config` configmap provides the following additional configuration attributes not available in the `support` secret:
+
+- `disableRuntimeExtractor` - when set to `true` under `dataReporting/disableRuntimeExtractor`, disables the deployment and management of all insights-runtime-extractor resources. Default value is `false`.
+
 Content example of the `support` secret:
 
 ```shell script

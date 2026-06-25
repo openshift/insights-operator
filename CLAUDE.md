@@ -70,6 +70,7 @@ The operator uses `wait.Until` for periodic tasks:
 - **Disk Pruner**: Removes old archives (runs every second interval)
 - **SCA Controller**: Simple Content Access certificate management
 - **Cluster Transfer Controller**: Handles cluster transfer operations
+- **Runtime Extractor Controller**: Manages the insights-runtime-extractor DaemonSet lifecycle (can be disabled via `dataReporting/disableRuntimeExtractor` config)
 
 ### Service Accounts
 - `operator`: Main service account for the insights-operator deployment
