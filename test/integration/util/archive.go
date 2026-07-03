@@ -11,6 +11,7 @@ import (
 	"time"
 
 	insightsv1 "github.com/openshift/api/insights/v1"
+	insightsclientset "github.com/openshift/client-go/insights/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -174,6 +175,96 @@ func HasCondition(dg *insightsv1.DataGather, condType string, status metav1.Cond
 		}
 	}
 	return false
+}
+
+// HasConditionWithReason checks if a DataGather has a specific condition with given status and reason
+func HasConditionWithReason(dg *insightsv1.DataGather, condType string, status metav1.ConditionStatus, reason string) bool {
+	for _, cond := range dg.Status.Conditions {
+		if cond.Type == condType && cond.Status == status && cond.Reason == reason {
+			return true
+		}
+	}
+	return false
+}
+
+// GetCondition returns the condition with the given type, or nil if not found
+func GetCondition(dg *insightsv1.DataGather, condType string) *metav1.Condition {
+	for i := range dg.Status.Conditions {
+		if dg.Status.Conditions[i].Type == condType {
+			return &dg.Status.Conditions[i]
+		}
+	}
+	return nil
+}
+
+// WaitForDataGatherCompletion waits for DataGather to complete and returns the final state
+// Returns the final DataGather object or error if it failed or timed out
+// Checks both Progressing and DataRecorded conditions for completion
+func WaitForDataGatherCompletion(ctx context.Context, client insightsclientset.Interface, name string, timeout time.Duration) (*insightsv1.DataGather, error) {
+	var finalDG *insightsv1.DataGather
+
+	err := wait.PollUntilContextTimeout(ctx, 10*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+		dg, err := client.InsightsV1().DataGathers().Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return false, nil // Transient error, keep polling
+		}
+		finalDG = dg
+
+		// Check Progressing condition - gathering is complete when it's False
+		progressingCond := GetCondition(dg, "Progressing")
+		if progressingCond != nil && progressingCond.Status == metav1.ConditionFalse {
+			// Progressing=False means gathering finished (either succeeded or failed)
+			return true, nil
+		}
+
+		// Fallback: Check if DataRecorded condition is terminal
+		recordedCond := GetCondition(dg, "DataRecorded")
+		if recordedCond != nil && (recordedCond.Status == metav1.ConditionTrue || recordedCond.Status == metav1.ConditionFalse) {
+			return true, nil
+		}
+
+		return false, nil // Still in progress
+	})
+
+	if err != nil {
+		return finalDG, fmt.Errorf("timeout waiting for DataGather completion: %w", err)
+	}
+
+	return finalDG, nil
+}
+
+// ValidateDataGatherSuccess checks that gathering completed successfully
+// Returns error with details if gathering failed
+func ValidateDataGatherSuccess(dg *insightsv1.DataGather) error {
+	// Check Progressing condition
+	progressingCond := GetCondition(dg, "Progressing")
+	if progressingCond == nil {
+		return fmt.Errorf("Progressing condition not found")
+	}
+
+	if progressingCond.Status != metav1.ConditionFalse {
+		return fmt.Errorf("gathering still in progress: %s", progressingCond.Reason)
+	}
+
+	if progressingCond.Reason != "GatheringSucceeded" {
+		return fmt.Errorf("gathering failed: reason=%s, message=%s", progressingCond.Reason, progressingCond.Message)
+	}
+
+	// Check DataRecorded condition
+	recordedCond := GetCondition(dg, "DataRecorded")
+	if recordedCond == nil {
+		return fmt.Errorf("DataRecorded condition not found")
+	}
+
+	if recordedCond.Status != metav1.ConditionTrue {
+		return fmt.Errorf("data recording failed: status=%s, reason=%s, message=%s", recordedCond.Status, recordedCond.Reason, recordedCond.Message)
+	}
+
+	if recordedCond.Reason != "Succeeded" {
+		return fmt.Errorf("data recording completed with unexpected reason: %s (message: %s)", recordedCond.Reason, recordedCond.Message)
+	}
+
+	return nil
 }
 
 // waitForPodRunning waits for a pod to be in Running phase using Kubernetes wait utilities

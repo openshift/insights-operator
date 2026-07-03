@@ -66,13 +66,12 @@ var _ = g.Describe("[sig-insights] Gatherer Configuration", func() {
 		defer insightsClient.InsightsV1().DataGathers().Delete(ctx, created.Name, metav1.DeleteOptions{})
 
 		g.By("waiting for DataGather to complete")
-		o.Eventually(func() bool {
-			dg, err := insightsClient.InsightsV1().DataGathers().Get(ctx, created.Name, metav1.GetOptions{})
-			if err != nil {
-				return false
-			}
-			return util.HasCondition(dg, "DataRecorded", metav1.ConditionTrue)
-		}, 5*time.Minute, 10*time.Second).Should(o.BeTrue(), "DataGather should complete")
+		finalDG, err := util.WaitForDataGatherCompletion(ctx, insightsClient, created.Name, 5*time.Minute)
+		o.Expect(err).NotTo(o.HaveOccurred(), "DataGather should complete")
+
+		g.By("verifying gathering succeeded")
+		err = util.ValidateDataGatherSuccess(finalDG)
+		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("reading archive from PVC")
 		archive, err := util.ReadArchiveFromPVC(ctx, pvcName, "openshift-insights")
@@ -154,13 +153,12 @@ var _ = g.Describe("[sig-insights] Gatherer Configuration", func() {
 		defer insightsClient.InsightsV1().DataGathers().Delete(ctx, created.Name, metav1.DeleteOptions{})
 
 		g.By("waiting for DataGather to complete")
-		o.Eventually(func() bool {
-			dg, err := insightsClient.InsightsV1().DataGathers().Get(ctx, created.Name, metav1.GetOptions{})
-			if err != nil {
-				return false
-			}
-			return util.HasCondition(dg, "DataRecorded", metav1.ConditionTrue)
-		}, 5*time.Minute, 10*time.Second).Should(o.BeTrue(), "DataGather should complete")
+		finalDG, err := util.WaitForDataGatherCompletion(ctx, insightsClient, created.Name, 5*time.Minute)
+		o.Expect(err).NotTo(o.HaveOccurred(), "DataGather should complete")
+
+		g.By("verifying gathering succeeded")
+		err = util.ValidateDataGatherSuccess(finalDG)
+		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("reading archive from PVC")
 		archive, err := util.ReadArchiveFromPVC(ctx, pvcName, "openshift-insights")
@@ -233,13 +231,12 @@ var _ = g.Describe("[sig-insights] Gatherer Configuration", func() {
 		defer insightsClient.InsightsV1().DataGathers().Delete(ctx, created.Name, metav1.DeleteOptions{})
 
 		g.By("waiting for DataGather to complete")
-		o.Eventually(func() bool {
-			dg, err := insightsClient.InsightsV1().DataGathers().Get(ctx, created.Name, metav1.GetOptions{})
-			if err != nil {
-				return false
-			}
-			return util.HasCondition(dg, "DataRecorded", metav1.ConditionTrue)
-		}, 5*time.Minute, 10*time.Second).Should(o.BeTrue(), "DataGather should complete")
+		finalDG, err := util.WaitForDataGatherCompletion(ctx, insightsClient, created.Name, 5*time.Minute)
+		o.Expect(err).NotTo(o.HaveOccurred(), "DataGather should complete")
+
+		g.By("verifying gathering succeeded")
+		err = util.ValidateDataGatherSuccess(finalDG)
+		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("reading archive from PVC")
 		archive, err := util.ReadArchiveFromPVC(ctx, pvcName, "openshift-insights")

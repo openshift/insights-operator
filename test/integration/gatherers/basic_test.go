@@ -60,14 +60,13 @@ var _ = g.Describe("[sig-insights] Basic Data Gathering", func() {
 		o.Expect(err).NotTo(o.HaveOccurred())
 		defer insightsClient.InsightsV1().DataGathers().Delete(ctx, created.Name, metav1.DeleteOptions{})
 
-		g.By("waiting for DataGather to complete (DataRecorded condition)")
-		o.Eventually(func() bool {
-			dg, err := insightsClient.InsightsV1().DataGathers().Get(ctx, created.Name, metav1.GetOptions{})
-			if err != nil {
-				return false
-			}
-			return util.HasCondition(dg, "DataRecorded", metav1.ConditionTrue)
-		}, 5*time.Minute, 10*time.Second).Should(o.BeTrue(), "DataGather should complete gathering")
+		g.By("waiting for DataGather to complete")
+		finalDG, err := util.WaitForDataGatherCompletion(ctx, insightsClient, created.Name, 5*time.Minute)
+		o.Expect(err).NotTo(o.HaveOccurred(), "DataGather should complete")
+
+		g.By("verifying gathering succeeded (Progressing=False/GatheringSucceeded and DataRecorded=True/Succeeded)")
+		err = util.ValidateDataGatherSuccess(finalDG)
+		o.Expect(err).NotTo(o.HaveOccurred())
 
 		g.By("mounting PVC to test pod and reading archive")
 		archive, err := util.ReadArchiveFromPVC(ctx, pvcName, "openshift-insights")
