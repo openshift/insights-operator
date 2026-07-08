@@ -83,6 +83,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"pod_network_connectivity_checks":   (*Gatherer).GatherPodNetworkConnectivityChecks,
 	"proxies":                           (*Gatherer).GatherClusterProxy,
 	"qemu_kubevirt_launcher_logs":       (*Gatherer).GatherQEMUKubeVirtLauncherLogs,
+	"revisioned_objects":                (*Gatherer).GatherRevisionedObjectCounts,
 	"sap_config":                        (*Gatherer).GatherSAPConfig,
 	"sap_datahubs":                      (*Gatherer).GatherSAPDatahubs,
 	"sap_pods":                          (*Gatherer).GatherSAPPods,

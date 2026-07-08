@@ -30,7 +30,9 @@ var (
 	// logNodeMaxLines sets the maximum number of lines of the node log to be stored per node
 	logNodeMaxLines = 50
 
-	defaultNamespaces           = []string{"default", "kube-system", "kube-public", "openshift"}
+	defaultNamespaces = []string{"default", "kube-system", "kube-public", "openshift"}
+	// Namespaces to monitor for revisioned ConfigMap and Secret objects counts.
+	revisionedObjectNamespaces  = []string{"openshift-kube-apiserver"}
 	datahubGroupVersionResource = schema.GroupVersionResource{
 		Group: "installers.datahub.sap.com", Version: "v1alpha1", Resource: "datahubs",
 	}
