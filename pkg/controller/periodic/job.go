@@ -49,9 +49,6 @@ func (j *JobController) CreateGathererJob(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dataGather.Name,
 			Namespace: insightsNamespace,
-			Annotations: map[string]string{
-				"openshift.io/required-scc": "restricted-v2",
-			},
 			Labels: map[string]string{
 				"insights-gathering": "",
 			},
@@ -60,6 +57,11 @@ func (j *JobController) CreateGathererJob(
 			// backoff limit is 0 - we dont' want to restart the gathering immediately in case of failure
 			BackoffLimit: new(int32),
 			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"openshift.io/required-scc": "restricted-v2",
+					},
+				},
 				Spec: corev1.PodSpec{
 					PriorityClassName:  "system-cluster-critical",
 					RestartPolicy:      corev1.RestartPolicyNever,
