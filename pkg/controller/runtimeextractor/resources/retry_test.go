@@ -72,7 +72,7 @@ func Test_applyDaemonSet_RetryOnConflict(t *testing.T) {
 	)
 
 	// This should succeed after retry
-	_, err := rm.applyDaemonSet(ctx)
+	_, err := rm.applyDaemonSet(ctx, nil)
 	if err != nil {
 		t.Fatalf("Expected applyDaemonSet to succeed after retry, got error: %v", err)
 	}

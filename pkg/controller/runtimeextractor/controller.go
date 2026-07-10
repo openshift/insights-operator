@@ -3,6 +3,7 @@ package runtimeextractor
 import (
 	"context"
 
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/controller/runtimeextractor/resources"
 	"github.com/openshift/library-go/pkg/controller/factory"
@@ -23,7 +24,7 @@ type ConfigNotifier interface {
 // ResourceManager manages the lifecycle of runtime extractor Kubernetes resources
 type ResourceManager interface {
 	// ApplyRuntimeExtractorResources creates or updates all runtime extractor resources
-	ApplyRuntimeExtractorResources(ctx context.Context) error
+	ApplyRuntimeExtractorResources(ctx context.Context, tlsProfile *configv1.TLSSecurityProfile) error
 	// DeleteRuntimeExtractorResources removes all runtime extractor resources
 	DeleteRuntimeExtractorResources(ctx context.Context) error
 	// ResourcesExists checks if runtime extractor resources are deployed
@@ -51,6 +52,9 @@ type runtimeExtractorController struct {
 	config ConfigNotifier
 	// updateCh receives notifications when the cluster version changes, triggering DaemonSet image updates
 	updateCh chan struct{}
+	// tlsProfile is the cluster's TLS security profile, fetched once at startup.
+	// The operator is restarted by the SecurityProfileWatcher when the TLS profile changes.
+	tlsProfile *configv1.TLSSecurityProfile
 	// resourceInformer watches for external modifications to runtime-extractor resources
 	resourceInformer ResourceInformer
 	// resourceManager handles creation, update, and deletion of runtime extractor Kubernetes resources
@@ -62,6 +66,7 @@ type runtimeExtractorController struct {
 func NewRuntimeExtractorController(
 	configNotifier ConfigNotifier,
 	updateCh chan struct{},
+	tlsProfile *configv1.TLSSecurityProfile,
 	kubeClient *kubernetes.Clientset,
 	recorder events.Recorder,
 	resourceInformer ResourceInformer,
@@ -74,6 +79,7 @@ func NewRuntimeExtractorController(
 	return &runtimeExtractorController{
 		config:           configNotifier,
 		updateCh:         updateCh,
+		tlsProfile:       tlsProfile,
 		resourceManager:  rm,
 		resourceInformer: resourceInformer,
 	}
@@ -151,7 +157,7 @@ func (re *runtimeExtractorController) isCreated(ctx context.Context) bool {
 func (re *runtimeExtractorController) createDeployment(ctx context.Context) {
 	klog.Info("Creating runtime extractor resources")
 
-	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx, re.tlsProfile); err != nil {
 		klog.Errorf("Failed to apply runtime extractor resources: %v", err)
 	}
 }
@@ -172,13 +178,12 @@ func (re *runtimeExtractorController) deleteDeployment(ctx context.Context) {
 func (re *runtimeExtractorController) updateDeployment(ctx context.Context) {
 	klog.Info("Updating runtime extractor resources")
 
-	// Avoid creating it when the cluster version is updated
 	if !re.isCreated(ctx) {
 		klog.Info("Runtime extractor resources not found, skipping update")
 		return
 	}
 
-	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx, re.tlsProfile); err != nil {
 		klog.Errorf("Failed to apply runtime extractor resources: %v", err)
 	}
 }
@@ -197,7 +202,7 @@ func (re *runtimeExtractorController) handleResourceDrift(ctx context.Context) {
 	}
 
 	// Reapply resources to correct any drift
-	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx); err != nil {
+	if err := re.resourceManager.ApplyRuntimeExtractorResources(ctx, re.tlsProfile); err != nil {
 		klog.Errorf("Failed to correct runtime extractor resource drift: %v", err)
 	} else {
 		klog.Info("Successfully reconciled runtime extractor resources")

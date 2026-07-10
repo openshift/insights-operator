@@ -3,8 +3,10 @@ package resources
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -57,7 +59,7 @@ func Test_applyDaemonSet(t *testing.T) {
 			recorder := events.NewInMemoryRecorder("test", clock.RealClock{})
 			rm := NewResourceManager(coreClient.AppsV1(), recorder)
 
-			ds, err := rm.applyDaemonSet(context.Background())
+			ds, err := rm.applyDaemonSet(context.Background(), nil)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -371,4 +373,105 @@ func Test_loadImagesFromEnvs(t *testing.T) {
 			assert.Equal(t, tt.wantProxy, gotProxy)
 		})
 	}
+}
+
+func Test_kubeRBACProxyTLSArgs(t *testing.T) {
+	tests := []struct {
+		name               string
+		profile            *configv1.TLSSecurityProfile
+		wantMinVersion     string
+		wantCipherContains string
+		wantArgCount       int
+	}{
+		{
+			name:               "nil profile defaults to Intermediate",
+			profile:            nil,
+			wantMinVersion:     "VersionTLS12",
+			wantCipherContains: "TLS_ECDHE",
+			wantArgCount:       2,
+		},
+		{
+			name: "Intermediate profile",
+			profile: &configv1.TLSSecurityProfile{
+				Type: configv1.TLSProfileIntermediateType,
+			},
+			wantMinVersion:     "VersionTLS12",
+			wantCipherContains: "TLS_ECDHE",
+			wantArgCount:       2,
+		},
+		{
+			name: "Old profile",
+			profile: &configv1.TLSSecurityProfile{
+				Type: configv1.TLSProfileOldType,
+			},
+			wantMinVersion:     "VersionTLS10",
+			wantCipherContains: "TLS_",
+			wantArgCount:       2,
+		},
+		{
+			name: "Modern profile",
+			profile: &configv1.TLSSecurityProfile{
+				Type: configv1.TLSProfileModernType,
+			},
+			wantMinVersion:     "VersionTLS13",
+			wantCipherContains: "TLS_",
+			wantArgCount:       2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := kubeRBACProxyTLSArgs(tt.profile)
+
+			assert.Len(t, args, tt.wantArgCount)
+
+			// Check --tls-cipher-suites arg
+			assert.True(t, strings.HasPrefix(args[0], "--tls-cipher-suites="), "first arg should be --tls-cipher-suites")
+			assert.Contains(t, args[0], tt.wantCipherContains)
+
+			// Check --tls-min-version arg
+			assert.Equal(t, "--tls-min-version="+tt.wantMinVersion, args[1])
+		})
+	}
+}
+
+func Test_updateKubeRBACProxyTLSArgs(t *testing.T) {
+	ds := &appsv1.DaemonSet{
+		Spec: appsv1.DaemonSetSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "kube-rbac-proxy",
+							Args: []string{
+								"--secure-listen-address=:8443",
+								"--upstream=http://127.0.0.1:8000",
+							},
+						},
+						{
+							Name: "extractor",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	updateKubeRBACProxyTLSArgs(ds, nil) // nil defaults to Intermediate
+
+	proxyContainer := ds.Spec.Template.Spec.Containers[0]
+	assert.Equal(t, "kube-rbac-proxy", proxyContainer.Name)
+
+	// Should have original 2 args + 2 TLS args
+	assert.Len(t, proxyContainer.Args, 4)
+
+	// Original args preserved
+	assert.Equal(t, "--secure-listen-address=:8443", proxyContainer.Args[0])
+	assert.Equal(t, "--upstream=http://127.0.0.1:8000", proxyContainer.Args[1])
+
+	// TLS args appended
+	assert.True(t, strings.HasPrefix(proxyContainer.Args[2], "--tls-cipher-suites="))
+	assert.Equal(t, "--tls-min-version=VersionTLS12", proxyContainer.Args[3])
+
+	// Extractor container should be unchanged
+	assert.Empty(t, ds.Spec.Template.Spec.Containers[1].Args)
 }

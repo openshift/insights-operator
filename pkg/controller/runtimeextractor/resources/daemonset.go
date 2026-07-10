@@ -5,7 +5,11 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 
+	configv1 "github.com/openshift/api/config/v1"
+	utiltls "github.com/openshift/controller-runtime-common/pkg/tls"
+	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,8 +31,9 @@ const (
 	exporterImageEnv     = "RELATED_IMAGE_INSIGHTS_RUNTIME_EXPORTER"
 	exporterDefaultImage = "quay.io/openshift/origin-insights-runtime-exporter:latest"
 
-	proxyImageEnv     = "RELATED_IMAGE_KUBE_RBAC_PROXY"
-	proxyDefaultImage = "quay.io/openshift/origin-kube-rbac-proxy:latest"
+	proxyImageEnv              = "RELATED_IMAGE_KUBE_RBAC_PROXY"
+	proxyDefaultImage          = "quay.io/openshift/origin-kube-rbac-proxy:latest"
+	kubeRbacProxyContainerName = "kube-rbac-proxy"
 
 	envImageErrMsg = "Failed to get image from environment variable %s, using default image %s"
 )
@@ -47,13 +52,14 @@ func loadRuntimeExtractorDaemonSet() (*appsv1.DaemonSet, error) {
 
 // applyDaemonSet creates or updates the runtime extractor DaemonSet
 // Retries on conflict errors using exponential backoff
-func (rm *ResourceManager) applyDaemonSet(ctx context.Context) (*appsv1.DaemonSet, error) {
+func (rm *ResourceManager) applyDaemonSet(ctx context.Context, tlsProfile *configv1.TLSSecurityProfile) (*appsv1.DaemonSet, error) {
 	daemonSet, err := loadRuntimeExtractorDaemonSet()
 	if err != nil {
 		return nil, err
 	}
 
 	rm.updateContainerImages(daemonSet)
+	updateKubeRBACProxyTLSArgs(daemonSet, tlsProfile)
 
 	// Retry with exponential backoff on conflict errors
 	var appliedDaemonSet *appsv1.DaemonSet
@@ -94,11 +100,64 @@ func (rm *ResourceManager) updateContainerImages(ds *appsv1.DaemonSet) {
 		case "exporter":
 			container.Image = exporterReleaseVersion
 			klog.Infof("Updated runtime exporter container image to %s", container.Image)
-		case "kube-rbac-proxy":
+		case kubeRbacProxyContainerName:
 			// kube-rbac-proxy uses its own versioning, keep as-is
 			// Could be updated separately if needed
 			container.Image = proxyReleaseVersion
 			klog.Infof("Updated kube-rbac-proxy container image to %s", container.Image)
+		}
+	}
+}
+
+// kubeRBACProxyTLSArgs generates --tls-cipher-suites and --tls-min-version
+// arguments for kube-rbac-proxy based on the cluster's TLS security profile.
+func kubeRBACProxyTLSArgs(profile *configv1.TLSSecurityProfile) []string {
+	profileSpec, err := utiltls.GetTLSProfileSpec(profile)
+	if err != nil {
+		klog.Warningf("Failed to get TLS profile spec, using Intermediate: %v", err)
+		profileSpec = *configv1.TLSProfiles[configv1.TLSProfileIntermediateType]
+	}
+
+	cipherNames := crypto.OpenSSLToIANACipherSuites(profileSpec.Ciphers)
+
+	var supportedCiphers []string
+	for _, name := range cipherNames {
+		if _, err := crypto.CipherSuite(name); err != nil {
+			klog.Warningf("Dropping unsupported TLS cipher %q", name)
+			continue
+		}
+		supportedCiphers = append(supportedCiphers, name)
+	}
+
+	if len(supportedCiphers) == 0 {
+		klog.Warning("All TLS ciphers unsupported, falling back to Intermediate cipher list")
+		intermediateCiphers := configv1.TLSProfiles[configv1.TLSProfileIntermediateType].Ciphers
+		cipherNames = crypto.OpenSSLToIANACipherSuites(intermediateCiphers)
+		supportedCiphers = make([]string, 0, len(cipherNames))
+		for _, name := range cipherNames {
+			if _, err := crypto.CipherSuite(name); err == nil {
+				supportedCiphers = append(supportedCiphers, name)
+			}
+		}
+	}
+
+	return []string{
+		"--tls-cipher-suites=" + strings.Join(supportedCiphers, ","),
+		"--tls-min-version=" + string(profileSpec.MinTLSVersion),
+	}
+}
+
+// updateKubeRBACProxyTLSArgs appends TLS cipher and version args to the
+// kube-rbac-proxy container based on the cluster's TLS security profile.
+func updateKubeRBACProxyTLSArgs(ds *appsv1.DaemonSet, profile *configv1.TLSSecurityProfile) {
+	tlsArgs := kubeRBACProxyTLSArgs(profile)
+	for i := range ds.Spec.Template.Spec.Containers {
+		if ds.Spec.Template.Spec.Containers[i].Name == kubeRbacProxyContainerName {
+			ds.Spec.Template.Spec.Containers[i].Args = append(
+				ds.Spec.Template.Spec.Containers[i].Args,
+				tlsArgs...,
+			)
+			return
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/api/features"
 	insightsv1 "github.com/openshift/api/insights/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
@@ -145,6 +146,10 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	// updateCh is used to signal a version update to the runtimeextractor controller
 	updateCh := make(chan struct{}, 1)
 
+	// Fetch TLS profile once at startup. The operator is restarted by the SecurityProfileWatcher
+	// in manager.go when the TLS profile changes, so no watch is needed here.
+	tlsProfile := fetchTLSProfile(ctx, configClient)
+
 	// Create informer factory for runtime-extractor resources in openshift-insights namespace
 	runtimeExtractorInformerFactory := clientInformers.NewSharedInformerFactoryWithOptions(
 		kubeClient,
@@ -169,6 +174,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 	runtimeExtractorCtrl := runtimeextractor.NewRuntimeExtractorController(
 		configAggregator,
 		updateCh,
+		tlsProfile,
 		kubeClient,
 		controller.EventRecorder,
 		runtimeExtractorResourceInformer,
@@ -440,6 +446,17 @@ func createTechPreviewInformers(
 		JobInformer:        jobInformer,
 		DataGatherInformer: dgInformer,
 	}, nil
+}
+
+// fetchTLSProfile reads the TLS security profile from the cluster's APIServer configuration.
+// Returns nil if the profile cannot be read, which will default to Intermediate.
+func fetchTLSProfile(ctx context.Context, configClient configv1client.Interface) *configv1.TLSSecurityProfile {
+	apiServer, err := configClient.ConfigV1().APIServers().Get(ctx, "cluster", metav1.GetOptions{})
+	if err != nil {
+		klog.Warningf("Failed to get APIServer config, defaulting to Intermediate TLS profile: %v", err)
+		return nil
+	}
+	return apiServer.Spec.TLSSecurityProfile
 }
 
 // deleteAllRunningGatheringsPods deletes all the active jobs (and their Pods) with the "periodic-gathering-"
