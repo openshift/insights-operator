@@ -70,6 +70,38 @@ unit-verbose:
 	VERBOSE=-v make unit
 
 ## --------------------------------------
+## Integration Tests (Ginkgo)
+## --------------------------------------
+
+.PHONY: test-integration
+test-integration: ## Run integration tests against cluster (requires KUBECONFIG)
+	@if [ -z "$$KUBECONFIG" ]; then \
+		echo "Error: KUBECONFIG environment variable must be set"; \
+		exit 1; \
+	fi
+	go test -v ./test/integration/... -ginkgo.v -ginkgo.progress
+
+.PHONY: test-integration-list
+test-integration-list: ## List available integration tests
+	go test -v ./test/integration/... -ginkgo.dry-run
+
+.PHONY: test-integration-focus
+test-integration-focus: ## Run specific test (use FOCUS="test pattern")
+	@if [ -z "$$KUBECONFIG" ]; then \
+		echo "Error: KUBECONFIG environment variable must be set"; \
+		exit 1; \
+	fi
+	@if [ -z "$$FOCUS" ]; then \
+		echo "Error: FOCUS environment variable must be set"; \
+		exit 1; \
+	fi
+	go test -v ./test/integration/... -ginkgo.focus="$(FOCUS)" -ginkgo.v
+
+# Legacy aliases for backwards compatibility
+.PHONY: integration-test
+integration-test: test-integration
+
+## --------------------------------------
 ## Linting
 ## --------------------------------------
 
