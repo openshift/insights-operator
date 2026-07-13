@@ -1,5 +1,31 @@
 # Note: This CHANGELOG is only for the changes in insights operator.
-	Please see OpenShift release notes for official changes\n<!--Latest hash: 456de92aaf0a9f62efab834becc1882f864d2518-->
+	Please see OpenShift release notes for official changes\n<!--Latest hash: ad672d905ed6c2df22de2d2ccf6712e04abf10f9-->
+## 4.22
+
+### Data Enhancement
+- [#1247](https://github.com/openshift/insights-operator/pull/1247) kubeletconfig gatherer
+- [#1246](https://github.com/openshift/insights-operator/pull/1246) New Gatherer for OpenTelemetryCollector CRs
+- [#1235](https://github.com/openshift/insights-operator/pull/1235) subscription gathering
+- [#1229](https://github.com/openshift/insights-operator/pull/1229) install config update
+- [#1240](https://github.com/openshift/insights-operator/pull/1240) gather machineconfig size
+
+### Feature
+- [#1257](https://github.com/openshift/insights-operator/pull/1257) fetch TLS profiles from API server
+- [#1248](https://github.com/openshift/insights-operator/pull/1248) add config option to disable runtime extractor 
+
+### Bugfix
+- [#1252](https://github.com/openshift/insights-operator/pull/1252) add permission for opentelemetrycollectors
+- [#1253](https://github.com/openshift/insights-operator/pull/1253) Fix string accessor error
+- [#1223](https://github.com/openshift/insights-operator/pull/1223) obfuscation config precedence
+
+### Others
+- [#1256](https://github.com/openshift/insights-operator/pull/1256) generate gatherer docs
+
+### Misc
+- [#1249](https://github.com/openshift/insights-operator/pull/1249) Updating ose-insights-operator-container image to be consistent with ART for 4.22
+- [#1225](https://github.com/openshift/insights-operator/pull/1225) Migrate Prometheus targets discovering from Endpoints to EndpointSlices
+- [#1245](https://github.com/openshift/insights-operator/pull/1245) Add CodeRabbit inheritance for org-wide rules
+
 ## 4.21
 
 ### Data Enhancement
