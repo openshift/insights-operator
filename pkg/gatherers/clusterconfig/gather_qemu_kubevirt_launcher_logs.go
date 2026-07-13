@@ -13,9 +13,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// GatherQEMUKubeVirtLauncherLogs Collects logs from KubeVirt virt-launcher pods containing QEMU process information.
-// This gatherer specifically searches for log lines containing "/usr/libexec/qemu-kvm" to capture QEMU-related
-// activity within virtual machines managed by KubeVirt.
+// GatherQEMUKubeVirtLauncherLogs Collects QEMU process information from KubeVirt's virt-launcher pods.
+// QEMU-related parameters are located in the logs of the virt-launcher pods.
+// The data is filtered and parsed into a JSON file to simplify its processing.
+// Each pod only contains one iteration of the parameters, so only one data structure is output per pod.
 //
 // ### API Reference
 // None
