@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/klog/v2"
 
-	"github.com/openshift/insights-operator/pkg/config"
+	"github.com/openshift/insights-operator/pkg/anonymization"
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/types"
 	"github.com/openshift/insights-operator/pkg/utils"
@@ -68,15 +68,17 @@ func (g *Gatherer) GatherDVOMetrics(ctx context.Context) ([]record.Record, []err
 	if err != nil {
 		return nil, []error{err}
 	}
-	obfuscation := g.config().DataReporting.Obfuscation
-	return gatherDVOMetrics(ctx, gatherKubeClient.CoreV1(), g.gatherKubeConfig.RateLimiter, obfuscation)
+
+	obfuscateWokloadNames := g.anonymizer.IsAnonymizerTypeEnabled(anonymization.WorkloadNamesAnonymizerType)
+
+	return gatherDVOMetrics(ctx, gatherKubeClient.CoreV1(), g.gatherKubeConfig.RateLimiter, obfuscateWokloadNames)
 }
 
 func gatherDVOMetrics(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	rateLimiter flowcontrol.RateLimiter,
-	obfuscation config.Obfuscation,
+	obfuscation bool,
 ) ([]record.Record, []error) {
 	serviceList, err := coreClient.Services("").List(ctx, metav1.ListOptions{
 		LabelSelector: dvoServiceLabelSelector,
@@ -101,7 +103,7 @@ func gatherDVOMetrics(
 	for svcIdx := range serviceList.Items {
 		// Use pointer to make gocritic happy and avoid copying the whole Service struct.
 		service := &serviceList.Items[svcIdx]
-		useUIDs = service.Namespace == managedDVONamespaceName || obfuscateDVOMetrics(obfuscation)
+		useUIDs = service.Namespace == managedDVONamespaceName || obfuscation
 
 		for _, port := range service.Spec.Ports {
 			apiURL := url.URL{
@@ -217,14 +219,4 @@ func metricsServiceUp(ctx context.Context, client *rest.RESTClient, apiURL *url.
 		return fmt.Errorf("DVO metrics service was not available within the %s timeout: %v", timeout, err)
 	}
 	return nil
-}
-
-// obfuscateDVOMetrics tells whether DVO metrics should be "obfuscated" or not
-func obfuscateDVOMetrics(o config.Obfuscation) bool {
-	for _, ov := range o {
-		if ov == config.WorkloadNames {
-			return true
-		}
-	}
-	return false
 }

@@ -316,6 +316,10 @@ func (na *NetworkAnonymizer) IsEnabled() bool {
 	return false
 }
 
+func (na *NetworkAnonymizer) Skip() bool {
+	return false
+}
+
 func (na *NetworkAnonymizer) readNetworkConfigs() error {
 	if !na.runningInCluster {
 		return nil
