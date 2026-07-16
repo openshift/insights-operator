@@ -99,6 +99,35 @@ Collects instances outside of the `openshift-monitoring` of the following custom
 None
 
 
+## AlertmanagerConfig
+
+Collects the anonymized Alertmanager routing
+configuration from the alertmanager-main secret in the openshift-monitoring
+namespace. Only receivers, route, and inhibit_rules are extracted.
+Sensitive fields (webhook URLs, API keys, passwords, tokens) are anonymized.
+
+### API Reference
+None
+
+### Sample data
+- [docs/insights-archive-sample/config/secrets/openshift-monitoring/alertmanager-main/data.json](./insights-archive-sample/config/secrets/openshift-monitoring/alertmanager-main/data.json)
+
+### Location in archive
+- `config/secrets/openshift-monitoring/alertmanager-main/data.json`
+
+### Config ID
+`clusterconfig/alertmanager_config`
+
+### Released version
+- 5.0.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## CRD
 
 Collects the specified Custom Resource Definitions.
