@@ -100,6 +100,9 @@ type workloadContainerShape struct {
 	FirstArg string `json:"firstArg,omitempty"`
 	// Runtime info on the container, if any info were gathered
 	RuntimeInfo *workloadRuntimeInfoContainer `json:"runtimeInfo,omitempty"`
+	// runtimeKey is used to look up runtime info after shapes are built.
+	// Must not be serialized to JSON - it's only used internally.
+	runtimeKey containerInfo `json:"-"`
 }
 
 type workloadRuntimeInfoContainer struct {

@@ -1,6 +1,7 @@
 package workloads
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -27,10 +28,16 @@ type podWithNodeName struct {
 	nodeName string
 }
 
+// gatherRuntimeInfoRequest is the request body for the POST endpoint
+type gatherRuntimeInfoRequest struct {
+	ContainerIDs []string `json:"containerIds"`
+}
+
 func gatherWorkloadRuntimeInfos(
 	ctx context.Context,
 	coreClient corev1client.CoreV1Interface,
 	configClient configv1client.Interface,
+	containersByNode containerIDsByNode,
 ) (workloadRuntimes, []error) {
 	start := time.Now()
 
@@ -62,7 +69,14 @@ func gatherWorkloadRuntimeInfos(
 	for i := range runtimePodIPs {
 		go func(podInfo podWithNodeName) {
 			defer wg.Done()
-			klog.Infof("Gathering workload runtime info for node %s...\n", podInfo.nodeName)
+
+			containerIDs := containersByNode[podInfo.nodeName]
+			// Skip nodes with no containers to scan
+			if len(containerIDs) == 0 {
+				return
+			}
+
+			klog.Infof("Gathering workload runtime info for node %s (%d containers)...\n", podInfo.nodeName, len(containerIDs))
 			hostPort := net.JoinHostPort(podInfo.podIP, "8443")
 			extractorURL := fmt.Sprintf("https://%s/gather_runtime_info", hostPort)
 			httpCli, err := createHTTPClient(configClient)
@@ -75,7 +89,7 @@ func gatherWorkloadRuntimeInfos(
 				klog.Errorf("Failed to read the serviceaccount token: %v", err)
 				return
 			}
-			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, extractorURL, string(tokenData), httpCli)
+			nodeWorkloadCh <- getNodeWorkloadRuntimeInfos(ctx, extractorURL, string(tokenData), httpCli, containerIDs)
 		}(runtimePodIPs[i])
 	}
 
@@ -171,22 +185,36 @@ func readToken() ([]byte, error) {
 	return os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
 }
 
-// Get all WorkloadRuntimeInfos for a single Node (using the insights-runtime-extractor pod running on this node)
+// Get WorkloadRuntimeInfos for specified containers on a single node
+// (using the insights-runtime-extractor pod running on this node)
 func getNodeWorkloadRuntimeInfos(
 	ctx context.Context,
 	url string,
 	token string,
 	httpCli *http.Client,
+	containerIDs []string,
 ) workloadRuntimesResult {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	// Create the POST request with container IDs in the body
+	reqBody := gatherRuntimeInfoRequest{
+		ContainerIDs: containerIDs,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return workloadRuntimesResult{
+			Error: fmt.Errorf("failed to marshal request: %w", err),
+		}
+	}
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return workloadRuntimesResult{
 			Error: err,
 		}
 	}
+	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", "Bearer "+token)
 	resp, err := httpCli.Do(request) // nolint:gosec
 	if err != nil {
@@ -194,6 +222,7 @@ func getNodeWorkloadRuntimeInfos(
 			Error: err,
 		}
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return workloadRuntimesResult{
 			Error: insightsclient.HttpError{
@@ -202,7 +231,6 @@ func getNodeWorkloadRuntimeInfos(
 			},
 		}
 	}
-	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
