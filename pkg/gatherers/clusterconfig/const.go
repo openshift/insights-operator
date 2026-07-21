@@ -98,6 +98,11 @@ var (
 		Version:  "v1alpha1",
 		Resource: "subscriptions",
 	}
+	controlPlaneMachineSetVersionResource = schema.GroupVersionResource{
+		Group:    "machine.openshift.io",
+		Version:  "v1",
+		Resource: "controlplanemachinesets",
+	}
 
 	nodeNetConfPoliciesV1GVR = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1", Resource: "nodenetworkconfigurationpolicies"}
 	nodeNetStatesV1Beta1GVR  = schema.GroupVersionResource{Group: "nmstate.io", Version: "v1beta1", Resource: "nodenetworkstates"}
