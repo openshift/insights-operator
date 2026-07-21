@@ -37,10 +37,10 @@ var revisionSuffixRegex = regexp.MustCompile(`-\d+$`)
 // - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/secret.go
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/revisioned_objects.json
+// - docs/insights-archive-sample/config/versioned_object_revision_counts.json
 //
 // ### Location in archive
-// - `config/revisioned_objects.json`
+// - `config/versioned_object_revision_counts.json`
 //
 // ### Config ID
 // `clusterconfig/revisioned_objects`
