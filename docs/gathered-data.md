@@ -1961,6 +1961,44 @@ None
 4.21 - bugfix: pods with a status other than "Running" do not contain logs but were ignored
 
 
+## RevisionedObjectCounts
+
+collects revision counts for ConfigMap and Secret
+objects with revision-based naming in specific namespaces.
+
+It groups objects by base name (removing the -<number> suffix) and counts the
+number of revisions per base name. This helps identify objects with excessive
+historical revisions (>20 or >50) that may impact cluster performance and should
+be cleaned up via a pruner.
+
+Example output for openshift-kube-apiserver namespace:
+  - encryption-config: 590 revisions
+  - etcd-client: 608 revisions
+  - config: 609 revisions
+
+The namespaces to monitor are defined in revisionedObjectNamespaces
+and can be extended by modifying the const.go file.
+
+### API Reference
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/configmap.go
+- https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/secret.go
+
+### Sample data
+- [docs/insights-archive-sample/config/revisioned_objects.json](./insights-archive-sample/config/revisioned_objects.json)
+
+### Location in archive
+- `config/revisioned_objects.json`
+
+### Config ID
+`clusterconfig/revisioned_objects`
+
+### Released version
+- TBD
+
+### Changes
+None
+
+
 ## SAPConfig
 
 Collects selected security context constraints
