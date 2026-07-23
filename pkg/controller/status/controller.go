@@ -29,6 +29,8 @@ import (
 	"github.com/openshift/insights-operator/pkg/ocm/sca"
 )
 
+// WIP
+
 const (
 	// How many upload failures in a row we tolerate before starting reporting
 	// as InsightsUploadDegraded
