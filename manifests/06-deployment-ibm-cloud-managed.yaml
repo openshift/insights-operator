@@ -38,6 +38,12 @@ spec:
               fieldPath: metadata.namespace
         - name: RELEASE_VERSION
           value: 0.0.1-snapshot
+        - name: RELATED_IMAGE_INSIGHTS_RUNTIME_EXTRACTOR
+          value: quay.io/openshift/origin-insights-runtime-extractor:latest
+        - name: RELATED_IMAGE_INSIGHTS_RUNTIME_EXPORTER
+          value: quay.io/openshift/origin-insights-runtime-exporter:latest
+        - name: RELATED_IMAGE_KUBE_RBAC_PROXY
+          value: quay.io/openshift/origin-kube-rbac-proxy:latest
         image: quay.io/openshift/origin-insights-operator:latest
         name: insights-operator
         ports:
