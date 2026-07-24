@@ -35,6 +35,11 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       priorityClassName: openshift-user-critical
+      # Tolerate all taints so this DaemonSet schedules on every node, including
+      # nodes with custom taints (e.g. node-role.kubernetes.io/gpu), consistent
+      # with its purpose of running on every node in the cluster.
+      tolerations:
+        - operator: Exists
       containers:
         - name: kube-rbac-proxy
           image: quay.io/openshift/origin-kube-rbac-proxy:latest

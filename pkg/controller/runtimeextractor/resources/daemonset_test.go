@@ -30,6 +30,21 @@ func Test_loadRuntimeExtractorDaemonSet(t *testing.T) {
 	assert.Len(t, ds.Spec.Template.Spec.Containers, 3)
 }
 
+// Test_loadRuntimeExtractorDaemonSet_TolerateAllTaints ensures the DaemonSet tolerates
+// all node taints (including custom ones added by cluster admins), rather than relying
+// on the fixed set of well-known taints the DaemonSet controller tolerates by default.
+func Test_loadRuntimeExtractorDaemonSet_TolerateAllTaints(t *testing.T) {
+	ds, err := loadRuntimeExtractorDaemonSet()
+	assert.NoError(t, err)
+	assert.NotNil(t, ds)
+
+	tolerations := ds.Spec.Template.Spec.Tolerations
+	assert.Len(t, tolerations, 1, "expected a single wildcard toleration")
+	assert.Equal(t, corev1.TolerationOpExists, tolerations[0].Operator)
+	assert.Empty(t, tolerations[0].Key, "key must be empty to match all taints")
+	assert.Empty(t, tolerations[0].Effect, "effect must be empty to match all taint effects")
+}
+
 func Test_applyDaemonSet(t *testing.T) {
 	tests := []struct {
 		name      string
