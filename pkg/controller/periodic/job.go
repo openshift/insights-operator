@@ -58,6 +58,9 @@ func (j *JobController) CreateGathererJob(
 			BackoffLimit: new(int32),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"insights-gathering": "",
+					},
 					Annotations: map[string]string{
 						"openshift.io/required-scc": "restricted-v2",
 					},
