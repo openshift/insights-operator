@@ -1,0 +1,72 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: openshift-insights
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-insights-operator
+  namespace: openshift-insights
+spec:
+  podSelector:
+    matchLabels:
+      app: insights-operator
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - {}
+  # Allow any traffic to the metrics endpoint
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gathering-pod-egress
+  namespace: openshift-insights
+spec:
+  podSelector:
+    matchLabels:
+      insights-gathering: ""
+  egress:
+    - {}
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-runtime-extractor
+  namespace: openshift-insights
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: insights-runtime-extractor
+  policyTypes:
+    - Ingress
+    - Egress
+  # kube-rbac-proxy needs to reach the API server
+  egress:
+    - {}
+  # Allow insights-operator and gathering pods to reach the kube-rbac-proxy HTTPS endpoint
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: insights-operator
+        - podSelector:
+            matchLabels:
+              insights-gathering: ""
+      ports:
+        - protocol: TCP
+          port: 8443
