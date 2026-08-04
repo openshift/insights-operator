@@ -208,13 +208,51 @@
                     "type": "object",
                     "title": "GatherPodDefinitionParams",
                     "required": [
-                        "alert_name"
+                        "alert_name",
+                        "pod_prefix"
                     ],
                     "properties": {
                         "alert_name": {
                             "type": "string",
                             "title": "AlertName",
                             "pattern": "^[a-zA-Z0-9_]{1,128}$"
+                        },
+                        "pod_prefix": {
+                            "type": "string",
+                            "title": "PodPrefix",
+                            "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+                        }
+                    }
+                },
+                "^cr_definition$": {
+                    "type": "object",
+                    "title": "GatherCRDefinitionParams",
+                    "required": [
+                        "alert_name",
+                        "group",
+                        "version",
+                        "resource"
+                    ],
+                    "properties": {
+                        "alert_name": {
+                            "type": "string",
+                            "title": "AlertName",
+                            "pattern": "^[a-zA-Z0-9_]{1,128}$"
+                        },
+                        "group": {
+                            "type": "string",
+                            "title": "Group",
+                            "pattern": "^[a-zA-Z0-9._-]{1,253}$"
+                        },
+                        "version": {
+                            "type": "string",
+                            "title": "Version",
+                            "pattern": "^[a-zA-Z0-9]{1,16}$"
+                        },
+                        "resource": {
+                            "type": "string",
+                            "title": "Resource",
+                            "pattern": "^[a-z0-9]{1,64}$"
                         }
                     }
                 }

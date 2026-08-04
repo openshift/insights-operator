@@ -42,6 +42,10 @@ const (
 	// GatherPodDefinition is a function that collects the pod definitions
 	// See file gather_pod_definition.go
 	GatherPodDefinition GatheringFunctionName = "pod_definition"
+
+	// GatherCRDefinition is a function that collects a specific Custom Resource definition
+	// See file gather_cr_definition.go
+	GatherCRDefinition GatheringFunctionName = "cr_definition"
 )
 
 func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, error) {
@@ -64,6 +68,10 @@ func (name GatheringFunctionName) NewParams(jsonParams []byte) (interface{}, err
 		return params, err
 	case GatherPodDefinition:
 		var params GatherPodDefinitionParams
+		err := json.Unmarshal(jsonParams, &params)
+		return params, err
+	case GatherCRDefinition:
+		var params GatherCRDefinitionParams
 		err := json.Unmarshal(jsonParams, &params)
 		return params, err
 	}
@@ -103,6 +111,15 @@ type GatherContainersLogsParams struct {
 // GatherPodDefinitionParams defines parameters for pod_definition gatherer
 type GatherPodDefinitionParams struct {
 	AlertName string `json:"alert_name"`
+	PodPrefix string `json:"pod_prefix"`
+}
+
+// GatherCRDefinitionParams defines parameters for cr_definition gatherer
+type GatherCRDefinitionParams struct {
+	AlertName string `json:"alert_name"`
+	Group     string `json:"group"`
+	Version   string `json:"version"`
+	Resource  string `json:"resource"`
 }
 
 // registered builders:
@@ -115,4 +132,5 @@ var gatheringFunctionBuilders = map[GatheringFunctionName]GathererFunctionBuilde
 	GatherAPIRequestCounts:        (*Gatherer).BuildGatherAPIRequestCounts,
 	GatherContainersLogs:          (*Gatherer).BuildLegacyGatherContainersLogs,
 	GatherPodDefinition:           (*Gatherer).BuildGatherPodDefinition,
+	GatherCRDefinition:            (*Gatherer).BuildGatherCRDefinition,
 }
