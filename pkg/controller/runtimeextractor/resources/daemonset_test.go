@@ -30,6 +30,82 @@ func Test_loadRuntimeExtractorDaemonSet(t *testing.T) {
 	assert.Len(t, ds.Spec.Template.Spec.Containers, 3)
 }
 
+// Test_loadRuntimeExtractorDaemonSet_TolerateAllTaints ensures the DaemonSet tolerates
+// all node taints (including custom ones added by cluster admins), rather than relying
+// on the fixed set of well-known taints the DaemonSet controller tolerates by default.
+func Test_loadRuntimeExtractorDaemonSet_TolerateAllTaints(t *testing.T) {
+	ds, err := loadRuntimeExtractorDaemonSet()
+	if err != nil || ds == nil {
+		t.Fatalf("failed to load daemonset: %v", err)
+	}
+	if tolerations := ds.Spec.Template.Spec.Tolerations; len(tolerations) != 1 {
+		t.Fatalf("expected a single wildcard toleration, got %d", len(tolerations))
+	}
+
+	toleration := ds.Spec.Template.Spec.Tolerations[0]
+	tests := []struct {
+		name string
+		want string
+		got  string
+	}{
+		{"operator is Exists", string(corev1.TolerationOpExists), string(toleration.Operator)},
+		{"key is empty to match all taint keys", "", toleration.Key},
+		{"effect is empty to match all taint effects", "", string(toleration.Effect)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.got)
+		})
+	}
+}
+
+// Test_loadRuntimeExtractorDaemonSet_NodeAffinityExcludesControlPlaneOnlyNodes ensures
+// that, even though the DaemonSet now tolerates all taints, its nodeAffinity still keeps
+// it off dedicated control-plane nodes, while still allowing it on nodes that are both
+// control-plane and worker (e.g. compact or Single Node OpenShift).
+func Test_loadRuntimeExtractorDaemonSet_NodeAffinityExcludesControlPlaneOnlyNodes(t *testing.T) {
+	ds, err := loadRuntimeExtractorDaemonSet()
+	if err != nil || ds == nil {
+		t.Fatalf("failed to load daemonset: %v", err)
+	}
+
+	affinity := ds.Spec.Template.Spec.Affinity
+	if affinity == nil || affinity.NodeAffinity == nil || affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+		t.Fatal("expected a required node affinity to be set")
+	}
+	required := affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+	if len(required.NodeSelectorTerms) != 2 {
+		t.Fatalf("expected 2 node selector terms, got %d", len(required.NodeSelectorTerms))
+	}
+
+	tests := []struct {
+		name string
+		want corev1.NodeSelectorRequirement
+		term []corev1.NodeSelectorRequirement
+	}{
+		{
+			name: "excludes nodes labeled as master",
+			want: corev1.NodeSelectorRequirement{Key: "node-role.kubernetes.io/master", Operator: corev1.NodeSelectorOpDoesNotExist},
+			term: required.NodeSelectorTerms[0].MatchExpressions,
+		},
+		{
+			name: "excludes nodes labeled as control-plane",
+			want: corev1.NodeSelectorRequirement{Key: "node-role.kubernetes.io/control-plane", Operator: corev1.NodeSelectorOpDoesNotExist},
+			term: required.NodeSelectorTerms[0].MatchExpressions,
+		},
+		{
+			name: "still allows nodes explicitly labeled as worker",
+			want: corev1.NodeSelectorRequirement{Key: "node-role.kubernetes.io/worker", Operator: corev1.NodeSelectorOpExists},
+			term: required.NodeSelectorTerms[1].MatchExpressions,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Contains(t, tt.term, tt.want)
+		})
+	}
+}
+
 func Test_applyDaemonSet(t *testing.T) {
 	tests := []struct {
 		name      string
