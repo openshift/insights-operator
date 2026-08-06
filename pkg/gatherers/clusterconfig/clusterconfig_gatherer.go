@@ -59,6 +59,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"machine_sets":                     (*Gatherer).GatherMachineSet,
 	"machines":                         (*Gatherer).GatherMachine,
 	"metrics":                          (*Gatherer).GatherMostRecentMetrics,
+	"multiclusterhubs":                 (*Gatherer).GatherMultiClusterHub,
 	"monitoring_persistent_volumes":    (*Gatherer).GatherMonitoringPVs,
 	"multicluster_engine":              (*Gatherer).GatherMultiClusterEngine,
 	"mutating_webhook_configurations":  (*Gatherer).GatherMutatingWebhookConfigurations,
