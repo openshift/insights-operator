@@ -58,6 +58,32 @@ func TestToConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "CACert is converted from string to bytes",
+			serializedConfig: InsightsConfigurationSerialized{
+				DataReporting: DataReportingSerialized{
+					CACert: "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----",
+				},
+			},
+			config: &InsightsConfiguration{
+				DataReporting: DataReporting{
+					CACert: []byte("-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----"),
+				},
+			},
+		},
+		{
+			name: "empty CACert stays nil",
+			serializedConfig: InsightsConfigurationSerialized{
+				DataReporting: DataReportingSerialized{
+					UploadEndpoint: "test.endpoint",
+				},
+			},
+			config: &InsightsConfiguration{
+				DataReporting: DataReporting{
+					UploadEndpoint: "test.endpoint",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -59,7 +59,7 @@ type ArchiveMetadata struct {
 func CreateAllGatherers(
 	gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig *rest.Config,
 	anonymizer *anonymization.Anonymizer, configObserver configobserver.Interface,
-	insightsClient *insightsclient.Client,
+	insightsClient *insightsclient.InsightsClient,
 ) []gatherers.Interface {
 	clusterConfigGatherer := clusterconfig.New(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig,

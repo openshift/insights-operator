@@ -23,6 +23,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned"
+	"github.com/openshift/insights-operator/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 )
@@ -33,18 +34,25 @@ const (
 	scaArchPayload     = `{"arch": ["%s"]}`
 )
 
-type Client struct {
-	client       *http.Client
-	maxBytes     int64
-	metricsName  string
-	authorizer   Authorizer
-	configClient configv1client.Interface
+// Config provides access to Insights configuration
+type Config interface {
+	// Config returns the current Insights configuration
+	Config() *config.InsightsConfiguration
 }
 
 type Authorizer interface {
 	Authorize(req *http.Request) error
 	NewSystemOrConfiguredProxy() func(*http.Request) (*url.URL, error)
 	Token() (string, error)
+}
+
+type InsightsClient struct {
+	client       *http.Client
+	maxBytes     int64
+	metricsName  string
+	authorizer   Authorizer
+	configClient configv1client.Interface
+	config       Config
 }
 
 type Source struct {
@@ -85,43 +93,66 @@ func IsHttpError(err error) bool {
 
 var ErrWaitingForVersion = fmt.Errorf("waiting for the cluster version to be loaded")
 
-// New creates a Client
-func New(client *http.Client, maxBytes int64, metricsName string, authorizer Authorizer, configClient configv1client.Interface) *Client {
+// NewInsightsClient creates a Client
+func NewInsightsClient(
+	client *http.Client,
+	maxBytes int64,
+	metricsName string,
+	authorizer Authorizer,
+	configClient configv1client.Interface,
+	config Config,
+) *InsightsClient {
 	if client == nil {
 		client = &http.Client{}
 	}
 	if maxBytes == 0 {
 		maxBytes = 10 * 1024 * 1024
 	}
-	return &Client{
+	return &InsightsClient{
 		client:       client,
 		maxBytes:     maxBytes,
 		metricsName:  metricsName,
 		authorizer:   authorizer,
 		configClient: configClient,
+		config:       config,
 	}
 }
 
-func getTrustedCABundle() (*x509.CertPool, error) {
-	caBytes, err := os.ReadFile("/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt")
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	if len(caBytes) == 0 {
-		return nil, nil
-	}
+// getRootCAs builds an x509.CertPool from the custom CACert in the Insights configuration
+// and the cluster proxy trusted CA bundle mounted at /var/run/configmaps/trusted-ca-bundle/ca-bundle.crt.
+func getRootCAs(config Config) (*x509.CertPool, error) {
 	certs := x509.NewCertPool()
-	if ok := certs.AppendCertsFromPEM(caBytes); !ok {
-		return nil, errors.New("error loading cert pool from ca data")
+	hasAnyCert := false
+
+	if config != nil && len(config.Config().DataReporting.CACert) > 0 {
+		if ok := certs.AppendCertsFromPEM(config.Config().DataReporting.CACert); !ok {
+			return nil, errors.New("error loading configured CACert: invalid PEM data")
+		}
+		hasAnyCert = true
+	}
+
+	caBundleBytes, err := os.ReadFile("/var/run/configmaps/trusted-ca-bundle/ca-bundle.crt")
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		klog.Infof("ca-bundle does not exist")
+	}
+	if len(caBundleBytes) > 0 {
+		if ok := certs.AppendCertsFromPEM(caBundleBytes); !ok {
+			return nil, errors.New("error loading trusted CA bundle: invalid PEM data")
+		}
+		hasAnyCert = true
+	}
+
+	if !hasAnyCert {
+		return nil, nil
 	}
 	return certs, nil
 }
 
 // clientTransport creates new http.Transport with either system or configured Proxy
-func clientTransport(authorizer Authorizer, kubeClient configv1client.Interface) http.RoundTripper {
+func clientTransport(authorizer Authorizer, kubeClient configv1client.Interface, config Config) http.RoundTripper {
 	clientTransport := &http.Transport{
 		Proxy: authorizer.NewSystemOrConfiguredProxy(),
 		DialContext: (&net.Dialer{
@@ -138,8 +169,7 @@ func clientTransport(authorizer Authorizer, kubeClient configv1client.Interface)
 		klog.Errorf("getTLSConfigFromAPIServer: %v", err)
 	}
 
-	// get the cluster proxy trusted CA bundle in case the proxy need it
-	rootCAs, err := getTrustedCABundle()
+	rootCAs, err := getRootCAs(config)
 	if err != nil {
 		klog.Errorf("Failed to get proxy trusted CA: %v", err)
 	}
@@ -163,7 +193,7 @@ func userAgent(releaseVersionEnv string, v apimachineryversion.Info, cv *configv
 	return fmt.Sprintf("insights-operator/%s cluster/%s", gitVersion, cv.Spec.ClusterID)
 }
 
-func (c *Client) GetClusterVersion() (*configv1.ClusterVersion, error) {
+func (c *InsightsClient) GetClusterVersion() (*configv1.ClusterVersion, error) {
 	ctx := context.Background()
 
 	cv, err := c.configClient.ConfigV1().ClusterVersions().Get(ctx, "version", metav1.GetOptions{})
@@ -174,7 +204,7 @@ func (c *Client) GetClusterVersion() (*configv1.ClusterVersion, error) {
 	return cv, nil
 }
 
-func (c *Client) prepareRequest(ctx context.Context, method string, endpoint string, cv *configv1.ClusterVersion) (*http.Request, error) {
+func (c *InsightsClient) prepareRequest(ctx context.Context, method string, endpoint string, cv *configv1.ClusterVersion) (*http.Request, error) {
 	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -216,14 +246,14 @@ func ocmErrorMessage(r *http.Response) error {
 }
 
 // IncrementRecvReportMetric increments the "insightsclient_request_recvreport_total" metric for the given HTTP status code
-func (c *Client) IncrementRecvReportMetric(statusCode int) {
+func (c *InsightsClient) IncrementRecvReportMetric(statusCode int) {
 	counterRequestRecvReport.WithLabelValues(c.metricsName, strconv.Itoa(statusCode)).Inc()
 }
 
 // createAndWriteMIMEHeader creates and writes a new MIME header. There are two parts (basically two content-disposition headers).
 // First is to write the tar.gz file and second is to write `custom_metadata` field including gathering time info. Both parts are
 // written with the provided `multipart.Writer`.
-func (c *Client) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, pw *io.PipeWriter, ch chan<- int64) {
+func (c *InsightsClient) createAndWriteMIMEHeader(source *Source, mw *multipart.Writer, pw *io.PipeWriter, ch chan<- int64) {
 	h := make(textproto.MIMEHeader)
 	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name=%q; filename=%q`, "file", "payload.tar.gz"))
 	h.Set("Content-Type", source.Type)

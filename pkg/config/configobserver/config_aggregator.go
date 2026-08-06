@@ -2,6 +2,7 @@ package configobserver
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/openshift/insights-operator/pkg/config"
@@ -149,6 +150,10 @@ func (c *ConfigAggregator) mergeDataReporting(defaultCfg, newCfg *config.Insight
 
 	if newCfg.DataReporting.DisableRuntimeExtractor != defaultCfg.DataReporting.DisableRuntimeExtractor {
 		defaultCfg.DataReporting.DisableRuntimeExtractor = newCfg.DataReporting.DisableRuntimeExtractor
+	}
+
+	if !slices.Equal(newCfg.DataReporting.CACert, defaultCfg.DataReporting.CACert) {
+		defaultCfg.DataReporting.CACert = newCfg.DataReporting.CACert
 	}
 }
 

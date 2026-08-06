@@ -36,6 +36,7 @@ type DataReportingSerialized struct {
 	ProcessingStatusEndpoint    string      `json:"processingStatusEndpoint,omitempty"`
 	Obfuscation                 Obfuscation `json:"obfuscation,omitempty"`
 	DisableRuntimeExtractor     string      `json:"disableRuntimeExtractor,omitempty"`
+	CACert                      string      `json:"CACert,omitempty"`
 }
 
 type AlertingSerialized struct {
@@ -85,6 +86,7 @@ type DataReporting struct {
 	ProcessingStatusEndpoint    string
 	Obfuscation                 Obfuscation
 	DisableRuntimeExtractor     bool
+	CACert                      []byte
 }
 
 // Alerting is a helper type for configuring Insights alerting

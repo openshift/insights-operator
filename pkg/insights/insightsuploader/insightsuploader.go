@@ -35,7 +35,7 @@ type Controller struct {
 	controllerstatus.StatusController
 
 	summarizer      Summarizer
-	client          *insightsclient.Client
+	client          *insightsclient.InsightsClient
 	configurator    configobserver.Interface
 	apiConfigurator configobserver.InsightsDataGatherObserver
 	reporter        StatusReporter
@@ -45,12 +45,12 @@ type Controller struct {
 }
 
 func New(summarizer Summarizer,
-	client *insightsclient.Client,
+	client *insightsclient.InsightsClient,
 	configurator configobserver.Interface,
 	apiConfigurator configobserver.InsightsDataGatherObserver,
 	statusReporter StatusReporter,
-	initialDelay time.Duration) *Controller {
-
+	initialDelay time.Duration,
+) *Controller {
 	ctrl := &Controller{
 		StatusController: controllerstatus.New("insightsuploader"),
 		summarizer:       summarizer,
@@ -172,16 +172,20 @@ func (c *Controller) checkSummaryAndSend(reportingEnabled bool) {
 			return
 		}
 		if authorizer.IsAuthorizationError(err) {
-			c.StatusController.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
-				Reason: "NotAuthorized", Message: fmt.Sprintf("Reporting was not allowed: %v", err)})
+			c.StatusController.UpdateStatus(controllerstatus.Summary{
+				Operation: controllerstatus.Uploading,
+				Reason:    "NotAuthorized", Message: fmt.Sprintf("Reporting was not allowed: %v", err),
+			})
 			c.uploadDelay = wait.Jitter(interval/2, 2)
 
 			return
 		}
 
 		c.uploadDelay = wait.Jitter(interval/8, 1.2)
-		c.StatusController.UpdateStatus(controllerstatus.Summary{Operation: controllerstatus.Uploading,
-			Reason: "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err)})
+		c.StatusController.UpdateStatus(controllerstatus.Summary{
+			Operation: controllerstatus.Uploading,
+			Reason:    "UploadFailed", Message: fmt.Sprintf("Unable to report: %v", err),
+		})
 		return
 	}
 	klog.Infof("Uploaded report successfully in %s", time.Since(start))
