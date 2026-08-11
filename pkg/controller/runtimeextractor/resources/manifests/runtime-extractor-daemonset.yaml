@@ -93,8 +93,8 @@ spec:
                 - --timeout
                 - 10s
                 - info
-              periodSeconds: 30
-              timeoutSeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
           resources: 
             requests:
               cpu: 10m
