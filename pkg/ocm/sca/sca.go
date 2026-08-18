@@ -50,7 +50,7 @@ type Controller struct {
 	controllerstatus.StatusController
 	coreClient   corev1client.CoreV1Interface
 	configurator configobserver.Interface
-	client       *insightsclient.Client
+	client       *insightsclient.InsightsClient
 }
 
 // Response structure is used to unmarshall the OCM SCA response.
@@ -86,7 +86,7 @@ type CertMetadata struct {
 
 // New creates new instance
 func New(coreClient corev1client.CoreV1Interface, configurator configobserver.Interface,
-	insightsClient *insightsclient.Client,
+	insightsClient *insightsclient.InsightsClient,
 ) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New(ControllerName),
