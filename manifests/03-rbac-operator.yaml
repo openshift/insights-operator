@@ -1,0 +1,419 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: insights-operator
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+rules:
+  - apiGroups:
+      - "insights.openshift.io"
+    resources:
+      - datagathers
+      - datagathers/status
+    verbs:
+      - create
+      - get
+      - update
+      - patch
+      - list
+      - delete
+      - watch
+  - apiGroups:
+      - "operator.openshift.io"
+    resources:
+      - insightsoperators/status
+      - insightsoperators
+    verbs:
+      - list
+      - watch
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - "config.openshift.io"
+    resources:
+      - clusteroperators
+      - clusteroperators/status
+      - insightsdatagathers
+      - apiservers
+    verbs:
+      - create
+      - get
+      - update
+      - patch
+      - list
+      - watch
+  - apiGroups:
+      - "config.openshift.io"
+    resources:
+      - clusterversions
+      - featuregates
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - persistentvolumeclaims
+    verbs:
+      - get
+  - apiGroups:
+      - "monitoring.coreos.com"
+    resources:
+      - prometheusrules
+      - prometheuses/api
+    verbs:
+      - create
+      - get
+      - list
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - "apps"
+    resources:
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insights-operator-auth
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    namespace: openshift-insights
+    name: operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insights-operator
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: ClusterRole
+  name: insights-operator
+subjects:
+  - kind: ServiceAccount
+    namespace: openshift-insights
+    name: operator
+---
+# openshift-insights namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: insights-operator
+  namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    resourceNames:
+      - gather
+    verbs:
+      - impersonate
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - list
+      - delete
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator
+  namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: Role
+  name: insights-operator
+subjects:
+  - kind: ServiceAccount
+    name: operator
+    namespace: openshift-insights
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: insights-operator-obfuscation-secret
+  namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - get
+      - watch
+      - list
+      - delete
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator-obfuscation-secret
+  namespace: openshift-insights
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: Role
+  name: insights-operator-obfuscation-secret
+subjects:
+  - kind: ServiceAccount
+    name: operator
+    namespace: openshift-insights
+---
+# openshift-config namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: insights-operator
+  namespace: openshift-config
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames:
+      - pull-secret
+      - support
+    verbs:
+      - get
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator
+  namespace: openshift-config
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: Role
+  name: insights-operator
+subjects:
+  - kind: ServiceAccount
+    name: operator
+    namespace: openshift-insights
+---
+# openshift-config-managed namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: insights-operator-etc-pki-entitlement
+  namespace: openshift-config-managed
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - get
+      - watch
+      - list
+      - delete
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator-etc-pki-entitlement
+  namespace: openshift-config-managed
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: Role
+  name: insights-operator-etc-pki-entitlement
+subjects:
+  - kind: ServiceAccount
+    name: operator
+    namespace: openshift-insights
+---
+# kube-system namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator-auth
+  namespace: kube-system
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+  - kind: ServiceAccount
+    namespace: openshift-insights
+    name: operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: insights-operator-pull-secret
+  namespace: kube-system
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames:
+      - global-pull-secret
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator-pull-secret
+  namespace: kube-system
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: Role
+  name: insights-operator-pull-secret
+subjects:
+  - kind: ServiceAccount
+    name: operator
+    namespace: openshift-insights
+---
+# openshift-monitoring namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: insights-operator-alertmanager
+  namespace: openshift-monitoring
+  annotations:
+    include.release.openshift.io/self-managed-high-availability: "true"
+    include.release.openshift.io/hypershift: "true"
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    include.release.openshift.io/single-node-developer: "true"
+    capability.openshift.io/name: Insights
+roleRef:
+  kind: Role
+  name: monitoring-alertmanager-edit
+subjects:
+  - kind: ServiceAccount
+    namespace: openshift-insights
+    name: operator
