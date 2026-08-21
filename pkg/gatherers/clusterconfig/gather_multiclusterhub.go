@@ -1,4 +1,4 @@
-package clusterconfig
+package clusterconfig //nolint:dupl
 
 import (
 	"context"
