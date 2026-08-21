@@ -323,7 +323,16 @@ prompt: |
 
   ### For clusterconfig gatherer:
   Add an entry to `gatheringFunctions` map in `pkg/gatherers/clusterconfig/clusterconfig_gatherer.go`.
-  Insert in **alphabetical order** by key:
+  Insert in **alphabetical order** by key.
+
+  To find the correct insertion point:
+  1. Read the `gatheringFunctions` map in `clusterconfig_gatherer.go` to see all existing keys.
+  2. Check whether the existing keys are already in alphabetical order. If they are not, sort the entire map first before adding the new entry.
+  3. Determine lexicographic position: find the last existing key that sorts before the new key, and the first existing key that sorts after it.
+  4. Insert the new entry between them — after the predecessor and before the successor.
+
+  Example: if existing keys are `"cluster_dns"`, `"cluster_network"`, `"cluster_proxy"` and you are adding `"cluster_ingress"`, insert it after `"cluster_dns"` and before `"cluster_network"`.
+
   ```go
   "function_id": (*Gatherer).GatherXxx,
   ```
