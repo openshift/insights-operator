@@ -1372,6 +1372,34 @@ None
 - `ALERTS` removed in version 4.17+
 
 
+## MultiClusterEngine
+
+Collects `multiclusterengines.multicluster.openshift.io` resources.
+These resources are created when the Multicluster Engine for Kubernetes operator is installed.
+Usually only one MultiClusterEngine object exists in a cluster.
+
+### API Reference
+- https://github.com/stolostron/backplane-operator/blob/main/api/v1/multiclusterengine_types.go
+
+### Sample data
+- [docs/insights-archive-sample/cluster-scoped-resources/multicluster.openshift.io/multiclusterengines/engine.json](./insights-archive-sample/cluster-scoped-resources/multicluster.openshift.io/multiclusterengines/engine.json)
+
+### Location in archive
+- `cluster-scoped-resources/multicluster.openshift.io/multiclusterengines/{name}.json`
+
+### Config ID
+`clusterconfig/multicluster_engine`
+
+### Released version
+- 5.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## MutatingWebhookConfigurations
 
 Collects `MutatingWebhookConfiguration` resources.
@@ -1984,10 +2012,10 @@ and can be extended by modifying the const.go file.
 - https://github.com/kubernetes/client-go/blob/master/kubernetes/typed/core/v1/secret.go
 
 ### Sample data
-- [docs/insights-archive-sample/config/revisioned_objects.json](./insights-archive-sample/config/revisioned_objects.json)
+- [docs/insights-archive-sample/config/versioned_object_revision_counts.json](./insights-archive-sample/config/versioned_object_revision_counts.json)
 
 ### Location in archive
-- `config/revisioned_objects.json`
+- `config/versioned_object_revision_counts.json`
 
 ### Config ID
 `clusterconfig/revisioned_objects`
