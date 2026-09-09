@@ -42,6 +42,10 @@ func (i *InsightsConfigurationSerialized) ToConfig() *InsightsConfiguration {
 		ic.DataReporting.DisableRuntimeExtractor = strings.EqualFold(i.DataReporting.DisableRuntimeExtractor, "true")
 	}
 
+	if i.DataReporting.CACert != "" {
+		ic.DataReporting.CACert = []byte(i.DataReporting.CACert)
+	}
+
 	if i.SCA.Interval != "" {
 		ic.SCA.Interval = parseInterval(i.SCA.Interval, defaultSCAFfrequency)
 	}
