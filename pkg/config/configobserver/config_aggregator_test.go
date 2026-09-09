@@ -78,6 +78,7 @@ dataReporting:
   disableRuntimeExtractor: true
   obfuscation:
   - workload_names
+  CACert: "custom-ca-cert-data"
 alerting:
   disabled: true
 sca:
@@ -119,6 +120,7 @@ clusterTransfer:
 					DownloadEndpointTechPreview: "https://overriden.downloadtechpreview/endpoint",
 					Obfuscation:                 config.Obfuscation{config.Networking, config.WorkloadNames},
 					DisableRuntimeExtractor:     true,
+					CACert:                      []byte("custom-ca-cert-data"),
 				},
 				Alerting: config.Alerting{
 					Disabled: true,
@@ -312,6 +314,7 @@ dataReporting:
   disableRuntimeExtractor: true
   obfuscation:
   - workload_names
+  CACert: "custom-ca-cert-data"
 alerting:
   disabled: true
 sca:
@@ -361,6 +364,7 @@ proxy:
 					ConditionalGathererEndpoint: "https://overriden.conditional/endpoint",
 					Obfuscation:                 config.Obfuscation{config.Networking, config.WorkloadNames},
 					DisableRuntimeExtractor:     true,
+					CACert:                      []byte("custom-ca-cert-data"),
 				},
 				Alerting: config.Alerting{
 					Disabled: true,
