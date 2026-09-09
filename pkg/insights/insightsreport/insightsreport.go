@@ -59,7 +59,7 @@ var (
 )
 
 // New initializes and returns a Gatherer
-func New(client *insightsclient.Client, configurator configobserver.Interface, reporter InsightsReporter, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
+func New(client *insightsclient.InsightsClient, configurator configobserver.Interface, reporter InsightsReporter, insightsOperatorCLI operatorv1client.InsightsOperatorInterface) *Controller {
 	return &Controller{
 		StatusController:      controllerstatus.New("insightsreport"),
 		configurator:          configurator,
@@ -69,7 +69,7 @@ func New(client *insightsclient.Client, configurator configobserver.Interface, r
 	}
 }
 
-func NewWithTechPreview(client *insightsclient.Client, configurator configobserver.Interface) *Controller {
+func NewWithTechPreview(client *insightsclient.InsightsClient, configurator configobserver.Interface) *Controller {
 	return &Controller{
 		StatusController: controllerstatus.New("insightsreport"),
 		configurator:     configurator,
