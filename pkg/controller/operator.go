@@ -298,7 +298,7 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "insights", authorizer, gatherConfigClient)
+	insightsClient := insightsclient.NewInsightsClient(nil, 0, "insights", authorizer, gatherConfigClient, configAggregator)
 
 	var periodicGather *periodic.Controller
 	// the gatherers are periodically called to collect the data from the cluster
