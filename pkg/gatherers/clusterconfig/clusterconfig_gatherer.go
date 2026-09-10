@@ -42,6 +42,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"crds":                             (*Gatherer).GatherCRD,
 	"dvo_metrics":                      (*Gatherer).GatherDVOMetrics,
 	"feature_gates":                    (*Gatherer).GatherClusterFeatureGates,
+	"gpu_node_topology":                (*Gatherer).GatherGPUNodeTopology,
 	"image":                            (*Gatherer).GatherClusterImage,
 	"image_pruners":                    (*Gatherer).GatherClusterImagePruner,
 	"image_registries":                 (*Gatherer).GatherClusterImageRegistry,
