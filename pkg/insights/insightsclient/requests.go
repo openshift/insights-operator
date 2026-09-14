@@ -20,7 +20,7 @@ import (
 // this request in the "insightsclient_request_send_total" Prometheus metrics
 var noHttpStatusCode = 0
 
-func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, int, error) {
+func (c *InsightsClient) SendAndGetID(ctx context.Context, endpoint string, source Source) (string, int, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return "", noHttpStatusCode, ErrWaitingForVersion
@@ -41,7 +41,7 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 	go c.createAndWriteMIMEHeader(&source, mw, pw, bytesRead)
 	req.Body = pr
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer, c.configClient)
+	c.client.Transport = clientTransport(c.authorizer, c.configClient, c.config)
 
 	klog.Infof("Uploading %s to %s", source.Type, req.URL.String())
 	resp, err := c.client.Do(req)
@@ -91,13 +91,13 @@ func (c *Client) SendAndGetID(ctx context.Context, endpoint string, source Sourc
 }
 
 // Send uploads archives to Ingress service
-func (c *Client) Send(ctx context.Context, endpoint string, source Source) error {
+func (c *InsightsClient) Send(ctx context.Context, endpoint string, source Source) error {
 	_, _, err := c.SendAndGetID(ctx, endpoint, source)
 	return err
 }
 
 // RecvReport performs a request to Insights Results Smart Proxy endpoint
-func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
+func (c *InsightsClient) RecvReport(ctx context.Context, endpoint string) (*http.Response, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -116,7 +116,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	}
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer, c.configClient)
+	c.client.Transport = clientTransport(c.authorizer, c.configClient, c.config)
 
 	klog.Infof("Retrieving report from %s", req.URL.String())
 	resp, err := c.client.Do(req)
@@ -178,7 +178,7 @@ func (c *Client) RecvReport(ctx context.Context, endpoint string) (*http.Respons
 	return nil, fmt.Errorf("report response status code: %d", resp.StatusCode)
 }
 
-func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architectures map[string]struct{}) ([]byte, error) {
+func (c *InsightsClient) RecvSCACerts(_ context.Context, endpoint string, architectures map[string]struct{}) ([]byte, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -199,7 +199,7 @@ func (c *Client) RecvSCACerts(_ context.Context, endpoint string, architectures 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	c.client.Transport = clientTransport(c.authorizer, c.configClient)
+	c.client.Transport = clientTransport(c.authorizer, c.configClient, nil)
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
 	klog.Infof("Asking for SCA certificate with \"%s\" payload", payload)
@@ -235,7 +235,7 @@ func buildPayloadString(architectures map[string]struct{}) string {
 // RecvClusterTransfer performs a request to the OCM cluster transfer API. It is
 // an HTTP GET request with the `search` query parameter limiting the result only
 // for the one cluster and only for the `accepted` cluster transfers.
-func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
+func (c *InsightsClient) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -256,7 +256,7 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 	q.Add("search", searchQuery)
 	req.URL.RawQuery = q.Encode()
 	req.Header.Set("Content-Type", "application/json")
-	c.client.Transport = clientTransport(c.authorizer, c.configClient)
+	c.client.Transport = clientTransport(c.authorizer, c.configClient, nil)
 	authHeader := fmt.Sprintf("AccessToken %s:%s", cv.Spec.ClusterID, token)
 	req.Header.Set("Authorization", authHeader)
 
@@ -278,7 +278,7 @@ func (c *Client) RecvClusterTransfer(endpoint string) ([]byte, error) {
 
 // GetWithPathParam makes an HTTP GET request to the specified endpoint using the specified "params" as
 // a part of the endpoint path
-func (c *Client) GetWithPathParam(ctx context.Context, endpoint, param string, includeClusterID bool) (*http.Response, error) {
+func (c *InsightsClient) GetWithPathParam(ctx context.Context, endpoint, param string, includeClusterID bool) (*http.Response, error) {
 	cv, err := c.GetClusterVersion()
 	if apierrors.IsNotFound(err) {
 		return nil, ErrWaitingForVersion
@@ -299,7 +299,7 @@ func (c *Client) GetWithPathParam(ctx context.Context, endpoint, param string, i
 	}
 
 	// dynamically set the proxy environment
-	c.client.Transport = clientTransport(c.authorizer, c.configClient)
+	c.client.Transport = clientTransport(c.authorizer, c.configClient, c.config)
 
 	return c.client.Do(req)
 }
