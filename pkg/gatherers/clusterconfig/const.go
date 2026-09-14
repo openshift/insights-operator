@@ -111,6 +111,7 @@ var (
 	multiClusterEngineGVR    = schema.GroupVersionResource{
 		Group: "multicluster.openshift.io", Version: "v1", Resource: "multiclusterengines",
 	}
+	inferenceServiceGVR = schema.GroupVersionResource{Group: "serving.kserve.io", Version: "v1beta1", Resource: "inferenceservices"}
 )
 
 func init() { //nolint: gochecknoinits
