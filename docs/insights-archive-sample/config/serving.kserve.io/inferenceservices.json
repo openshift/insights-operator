@@ -1,0 +1,24 @@
+[
+  {
+    "namespace": "kserve-demo",
+    "name": "sklearn-iris",
+    "modelFormatName": "sklearn",
+    "modelFormatVersion": "1",
+    "runtime": "kserve-sklearnserver",
+    "protocolVersion": "v1"
+  },
+  {
+    "namespace": "kserve-demo",
+    "name": "torchserve-sample",
+    "modelFormatName": "pytorch",
+    "runtime": "kserve-torchserve",
+    "protocolVersion": "v2"
+  },
+  {
+    "namespace": "mlops",
+    "name": "onnx-model",
+    "modelFormatName": "onnx",
+    "modelFormatVersion": "1",
+    "protocolVersion": "v2"
+  }
+]
