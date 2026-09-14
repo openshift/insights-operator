@@ -1,0 +1,17 @@
+[
+  {
+    "nodeName": "gpu-worker-0",
+    "nvidiaGPUProduct": "Tesla-T4",
+    "nvidiaGPUCount": "4"
+  },
+  {
+    "nodeName": "gpu-worker-1",
+    "nvidiaGPUProduct": "A100-SXM4-80GB",
+    "nvidiaGPUCount": "8"
+  },
+  {
+    "nodeName": "gpu-worker-2",
+    "amdGPUProduct": "Instinct-MI250",
+    "amdGPUCount": "2"
+  }
+]
