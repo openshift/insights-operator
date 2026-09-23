@@ -108,7 +108,7 @@ func (g *GatherJob) Gather(ctx context.Context, kubeConfig, protoKubeConfig *res
 		return err
 	}
 
-	insightsClient := insightsclient.New(nil, 0, "default", authorizer, gatherConfigClient)
+	insightsClient := insightsclient.NewInsightsClient(nil, 0, "default", authorizer, gatherConfigClient, configAggregator)
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
 		configAggregator, insightsClient,
@@ -197,7 +197,7 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 	if err != nil {
 		return err
 	}
-	insightsHTTPCli := insightsclient.New(nil, 0, "default", authorizer, configClient)
+	insightsHTTPCli := insightsclient.NewInsightsClient(nil, 0, "default", authorizer, configClient, configAggregator)
 
 	createdGatherers := gather.CreateAllGatherers(
 		gatherKubeConfig, gatherProtoKubeConfig, metricsGatherKubeConfig, alertsGatherKubeConfig, anonymizer,
