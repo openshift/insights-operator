@@ -116,3 +116,20 @@ func Test_gatherMultiClusterEngine_CRDNotFound(t *testing.T) {
 	assert.Empty(t, errs, "CRD not found should not produce errors")
 	assert.Empty(t, records, "CRD not found should not produce records")
 }
+
+func Test_gatherMultiClusterEngine_Forbidden(t *testing.T) {
+	dynamicClient := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(
+		runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{
+			multiClusterEngineGVR: "MultiClusterEngineList",
+		},
+	)
+	dynamicClient.PrependReactor("list", "multiclusterengines", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, k8serrors.NewForbidden(multiClusterEngineGVR.GroupResource(), "", nil)
+	})
+
+	records, errs := gatherMultiClusterEngine(context.Background(), dynamicClient)
+
+	assert.Empty(t, errs, "forbidden list should not produce errors when ACM is absent")
+	assert.Empty(t, records, "forbidden list should not produce records when ACM is absent")
+}
