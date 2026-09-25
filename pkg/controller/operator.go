@@ -260,6 +260,8 @@ func (s *Operator) Run(ctx context.Context, controller *controllercmd.Controller
 		insightsConfigEnabled,
 		controller.EventRecorder,
 		updateCh,
+		kubeClient,
+		operatorClient.OperatorV1(),
 	)
 
 	var anonymizer *anonymization.Anonymizer

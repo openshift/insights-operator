@@ -16,10 +16,13 @@ import (
 	"github.com/blang/semver/v4"
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 
 	"github.com/openshift/insights-operator/pkg/config/configobserver"
@@ -50,6 +53,12 @@ const (
 	disabledByConfigurationMessage = "Gathering is disabled in insightsdatagather.config.openshift.io"
 	gatheringEnabledMessage        = "Gathering is enabled"
 	disabledWithTokenMessage       = "Gathering is disabled by removing the cloud.openshift.com field from the pull secret"
+
+	// insightsOperatorDeploymentName is the operator Deployment whose ready count is reported
+	// on InsightsOperator status.readyReplicas.
+	insightsOperatorDeploymentName = "insights-operator"
+	// insightsOperatorCRName is the singleton InsightsOperator resource.
+	insightsOperatorCRName = "cluster"
 )
 
 type Reported struct {
@@ -62,7 +71,9 @@ type Controller struct {
 	name      string
 	namespace string
 
-	client configv1client.ConfigV1Interface
+	client         configv1client.ConfigV1Interface
+	kubeClient     kubernetes.Interface
+	operatorClient operatorv1client.OperatorV1Interface
 
 	statusCh        chan struct{}
 	configurator    configobserver.Interface
@@ -92,6 +103,8 @@ func NewController(
 	isTechPreview bool,
 	eventLogger events.Recorder,
 	updateCh chan struct{},
+	kubeClient kubernetes.Interface,
+	operatorClient operatorv1client.OperatorV1Interface,
 ) *Controller {
 	return &Controller{
 		name:            "insights",
@@ -99,6 +112,8 @@ func NewController(
 		configurator:    configurator,
 		apiConfigurator: apiConfigurator,
 		client:          client,
+		kubeClient:      kubeClient,
+		operatorClient:  operatorClient,
 		namespace:       namespace,
 		sources:         make(map[string]controllerstatus.StatusController),
 		ctrlStatus:      newControllerStatus(),
@@ -357,6 +372,7 @@ func (c *Controller) Start(ctx context.Context) error {
 	if err := c.updateStatus(ctx, true); err != nil {
 		return err
 	}
+	c.syncReadyReplicas(ctx)
 	limiter := rate.NewLimiter(rate.Every(30*time.Second), 2)
 	go wait.Until(func() {
 		timer := time.NewTicker(2 * time.Minute)
@@ -378,6 +394,7 @@ func (c *Controller) Start(ctx context.Context) error {
 			if err := c.updateStatus(ctx, false); err != nil {
 				klog.Errorf("Unable to write cluster operator status: %v", err)
 			}
+			c.syncReadyReplicas(ctx)
 		}
 	}, time.Second, ctx.Done())
 	return nil
@@ -422,6 +439,47 @@ func (c *Controller) updateStatus(ctx context.Context, initial bool) error {
 	}
 	_, err = c.client.ClusterOperators().UpdateStatus(ctx, updatedClusterOperator, metav1.UpdateOptions{})
 	return err
+}
+
+// syncReadyReplicas copies the insights-operator Deployment ready count onto
+// InsightsOperator status.readyReplicas. A missing Deployment or CR is logged and skipped.
+// Clients left unset (unit tests of clusteroperator status) are ignored.
+func (c *Controller) syncReadyReplicas(ctx context.Context) {
+	if c.kubeClient == nil || c.operatorClient == nil || c.namespace == "" {
+		return
+	}
+
+	deploy, err := c.kubeClient.AppsV1().Deployments(c.namespace).Get(ctx, insightsOperatorDeploymentName, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			klog.Infof("Skipping InsightsOperator readyReplicas update, deployment %s/%s not found", c.namespace, insightsOperatorDeploymentName)
+			return
+		}
+		klog.Errorf("Unable to get insights-operator deployment: %v", err)
+		return
+	}
+
+	ready := deploy.Status.ReadyReplicas
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		current, getErr := c.operatorClient.InsightsOperators().Get(ctx, insightsOperatorCRName, metav1.GetOptions{})
+		if getErr != nil {
+			return getErr
+		}
+		if current.Status.ReadyReplicas == ready {
+			return nil
+		}
+		updated := current.DeepCopy()
+		updated.Status.ReadyReplicas = ready
+		_, updateErr := c.operatorClient.InsightsOperators().UpdateStatus(ctx, updated, metav1.UpdateOptions{})
+		return updateErr
+	})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			klog.Infof("Skipping InsightsOperator readyReplicas update, resource %s not found", insightsOperatorCRName)
+			return
+		}
+		klog.Errorf("Unable to update InsightsOperator readyReplicas: %v", err)
+	}
 }
 
 // update the cluster controller status conditions
