@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -120,6 +121,9 @@ func gatherConfigMaps(ctx context.Context, coreClient corev1client.CoreV1Interfa
 
 func gatherConfigMap(ctx context.Context, coreClient corev1client.CoreV1Interface, name, namespace string) ([]record.Record, []error) {
 	cm, err := coreClient.ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -142,6 +146,9 @@ func gatherConfigMap(ctx context.Context, coreClient corev1client.CoreV1Interfac
 
 func gatherInsightsConfigCM(ctx context.Context, coreClient corev1client.CoreV1Interface) ([]record.Record, []error) {
 	cm, err := coreClient.ConfigMaps("openshift-insights").Get(ctx, "insights-config", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, []error{err}
 	}

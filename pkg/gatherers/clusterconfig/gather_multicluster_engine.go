@@ -50,6 +50,10 @@ func gatherMultiClusterEngine(ctx context.Context, dynamicClient dynamic.Interfa
 	if errors.IsNotFound(err) {
 		return nil, nil
 	}
+	if errors.IsForbidden(err) {
+		klog.V(2).Infof("Unable to list %s resource due to: %s", multiClusterEngineGVR, err)
+		return nil, nil
+	}
 	if err != nil {
 		klog.V(2).Infof("Unable to list %s resource due to: %s", multiClusterEngineGVR, err)
 		return nil, []error{err}
