@@ -1400,6 +1400,34 @@ None
 None
 
 
+## MultiClusterHub
+
+Collects MultiClusterHub resources from the
+operator.open-cluster-management.io/v1 API group, which are created after the
+Red Hat Advanced Cluster Management for Kubernetes operator is installed.
+
+### API Reference
+- https://github.com/stolostron/multiclusterhub-operator/blob/main/api/v1/multiclusterhub_types.go
+
+### Sample data
+- [docs/insights-archive-sample/cluster-scoped-resources/operator.open-cluster-management.io/multiclusterhubs/multiclusterhub.json](./insights-archive-sample/cluster-scoped-resources/operator.open-cluster-management.io/multiclusterhubs/multiclusterhub.json)
+
+### Location in archive
+- `cluster-scoped-resources/operator.open-cluster-management.io/multiclusterhubs/{name}.json`
+
+### Config ID
+`clusterconfig/multiclusterhubs`
+
+### Released version
+- 5.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## MutatingWebhookConfigurations
 
 Collects `MutatingWebhookConfiguration` resources.
