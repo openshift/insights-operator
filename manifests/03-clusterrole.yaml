@@ -765,4 +765,10 @@ seLinuxContext:
   type: RunAsAny
 seccompProfiles:
   - runtime/default
+volumes:
+  - "*"
+supplementalGroups:
+  type: RunAsAny
+fsGroup:
+  type: RunAsAny
 ---
