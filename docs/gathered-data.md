@@ -663,6 +663,39 @@ Collects definition of the "admin" and "edit" cluster roles.
 None
 
 
+## ClusterServingRuntimes
+
+Collects cluster-scoped ClusterServingRuntime resources
+from the KServe operator. Only selected non-sensitive fields are collected: supported
+model formats, container name/image/args, multi-model flag, protocol versions and
+worker parallelism.
+
+The containers env field is never collected as it commonly holds tokens and API keys.
+Values of container args are anonymized when the flag name looks sensitive or the
+value looks like a URI, since args may carry tokens or object storage paths.
+
+### API Reference
+- https://kserve.github.io/website/docs/reference/crd-api#clusterservingruntime
+
+### Sample data
+- [docs/insights-archive-sample/config/serving.kserve.io/clusterservingruntimes.json](./insights-archive-sample/config/serving.kserve.io/clusterservingruntimes.json)
+
+### Location in archive
+- `config/serving.kserve.io/clusterservingruntimes.json`
+
+### Config ID
+`clusterconfig/cluster_serving_runtimes`
+
+### Released version
+- 5.1
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## ClusterVersion
 
 Collects the `ClusterVersion` (including the cluster ID) with the name
@@ -2230,6 +2263,39 @@ from kubernetes default and `openshift-*` namespaces.
 ### Backported versions
 - 4.5.34+
 - 4.6.20+
+
+### Changes
+None
+
+
+## ServingRuntimes
+
+Collects ServingRuntime resources from the KServe operator
+across all namespaces. Only selected non-sensitive fields are collected: supported
+model formats, container name/image/args, multi-model flag, protocol versions and
+worker parallelism.
+
+The containers env field is never collected as it commonly holds tokens and API keys.
+Values of container args are anonymized when the flag name looks sensitive or the
+value looks like a URI, since args may carry tokens or object storage paths.
+
+### API Reference
+- https://kserve.github.io/website/docs/reference/crd-api#servingruntime
+
+### Sample data
+- [docs/insights-archive-sample/config/serving.kserve.io/servingruntimes.json](./insights-archive-sample/config/serving.kserve.io/servingruntimes.json)
+
+### Location in archive
+- `config/serving.kserve.io/servingruntimes.json`
+
+### Config ID
+`clusterconfig/serving_runtimes`
+
+### Released version
+- 5.1
+
+### Backported versions
+None
 
 ### Changes
 None
