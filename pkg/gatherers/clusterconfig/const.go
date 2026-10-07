@@ -111,6 +111,9 @@ var (
 	multiClusterEngineGVR    = schema.GroupVersionResource{
 		Group: "multicluster.openshift.io", Version: "v1", Resource: "multiclusterengines",
 	}
+	multiClusterHubGVR = schema.GroupVersionResource{
+		Group: "operator.open-cluster-management.io", Version: "v1", Resource: "multiclusterhubs",
+	}
 )
 
 func init() { //nolint: gochecknoinits
