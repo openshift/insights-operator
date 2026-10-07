@@ -1,0 +1,49 @@
+[
+  {
+    "namespace": "kserve-demo",
+    "name": "vllm-cuda-runtime",
+    "supportedModelFormats": [{ "name": "vLLM" }],
+    "containers": [
+      {
+        "name": "kserve-container",
+        "image": "registry.redhat.io/rhaii/vllm-cuda-rhel9:latest",
+        "args": [
+          "--hf-token=xxxxxxxxxxxxxxx",
+          "--api-key=xxxxxxxxxxxxxx",
+          "--client-secret=xxxxxxxxxxxxxxxxxxxx",
+          "--admin-password=xxxxxxxxxxxxxxxxxxxxx",
+          "--auth-mode=xxxxxxxxxxxxxxxx",
+          "--model-url=xxxxxxxxxxxxxxxx",
+          "--metrics-host=xxxxxxxxxxxxxxxxxxx",
+          "--download-dir=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "--peer=xxxxxxxxxxxxxxxxxxxxxxxx",
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "--tokenizer-mode=xxxxxxxxxxxxxxxxxxxxx",
+          "/mnt/models-KEEPME",
+          "--port=8080KEEPME",
+          "--max-model-len=4096KEEPME",
+          "--dtype=float16KEEPME",
+          "--tensor-parallel-size=4KEEPME",
+          "--gpu-memory-utilization=0.95KEEPME",
+          "--served-model-name={{.Name}}KEEPME",
+          "--master-addr=$(POD_IP)KEEPME"
+        ]
+      }
+    ],
+    "multiModel": false,
+    "protocolVersions": ["v2"],
+    "workerSpec": { "tensorParallelSize": 1, "pipelineParallelSize": 2 }
+  },
+  {
+    "namespace": "kserve-demo",
+    "name": "kserve-mlserver",
+    "supportedModelFormats": [{ "name": "onnx", "version": "1" }],
+    "containers": [
+      {
+        "name": "kserve-container",
+        "image": "docker.io/seldonio/mlserver:1.5.0"
+      }
+    ],
+    "protocolVersions": ["v2"]
+  }
+]
