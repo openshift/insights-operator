@@ -114,6 +114,7 @@ var (
 	multiClusterHubGVR = schema.GroupVersionResource{
 		Group: "operator.open-cluster-management.io", Version: "v1", Resource: "multiclusterhubs",
 	}
+	maasModelRefGVR = schema.GroupVersionResource{Group: "maas.opendatahub.io", Version: "v1alpha1", Resource: "maasmodelrefs"}
 )
 
 func init() { //nolint: gochecknoinits
