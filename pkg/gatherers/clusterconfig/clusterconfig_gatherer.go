@@ -55,6 +55,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"machine_autoscalers":              (*Gatherer).GatherMachineAutoscalers,
 	"machine_config_pools":             (*Gatherer).GatherMachineConfigPool,
 	"machine_configs":                  (*Gatherer).GatherMachineConfigs,
+	"maas_model_refs":                  (*Gatherer).GatherMaasModelRefs,
 	"machine_healthchecks":             (*Gatherer).GatherMachineHealthCheck,
 	"machine_sets":                     (*Gatherer).GatherMachineSet,
 	"machines":                         (*Gatherer).GatherMachine,
