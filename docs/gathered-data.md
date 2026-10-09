@@ -1118,6 +1118,34 @@ None
 None
 
 
+## MaasModelRefs
+
+Collects MaasModelRef resources from the MaaS (Model as a Service) operator
+across all namespaces. For each resource, the namespace, resource name, and referenced model kind
+are collected.
+
+### API Reference
+- https://github.com/opendatahub-io/models-as-a-service/blob/main/maas-controller/api/maas/v1alpha1/maasmodelref_types.go
+
+### Sample data
+- [docs/insights-archive-sample/config/maasmodelrefs.json](./insights-archive-sample/config/maasmodelrefs.json)
+
+### Location in archive
+- `config/maasmodelrefs.json`
+
+### Config ID
+`clusterconfig/maas_model_refs`
+
+### Released version
+- 5.1
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## Machine
 
 Collects `Machine` information.
