@@ -981,6 +981,35 @@ None
 None
 
 
+## InferenceServices
+
+Collects InferenceService resources from the KServe operator
+across all namespaces. Only selected non-sensitive fields are collected:
+model format name and version, runtime, and protocol version.
+The storageUri field is explicitly excluded as it may contain S3 bucket names or internal paths.
+
+### API Reference
+- https://kserve.github.io/website/docs/reference/crd-api#inferenceservice
+
+### Sample data
+- [docs/insights-archive-sample/config/serving.kserve.io/inferenceservices.json](./insights-archive-sample/config/serving.kserve.io/inferenceservices.json)
+
+### Location in archive
+- `config/serving.kserve.io/inferenceservices.json`
+
+### Config ID
+`clusterconfig/inference_services`
+
+### Released version
+- 5.1
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## InstallPlans
 
 Collects top 100 `InstallPlans` from `openshift-*` namespaces. Because `InstallPlans` have
