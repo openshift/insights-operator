@@ -921,6 +921,33 @@ None
 None
 
 
+## ExternalModels
+
+Collects ExternalModel resources from the MaaS (Model as a Service) operator
+across all namespaces. Only the provider and target model are collected.
+
+### API Reference
+- https://github.com/opendatahub-io/models-as-a-service/blob/main/maas-controller/api/maas/v1alpha1/externalmodel_types.go
+
+### Sample data
+- [docs/insights-archive-sample/config/externalmodels.json](./insights-archive-sample/config/externalmodels.json)
+
+### Location in archive
+- `config/externalmodels.json`
+
+### Config ID
+`clusterconfig/external_models`
+
+### Released version
+- 5.1
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## HelmInfo
 
 Collects statistics about resources deployed via HelmChart, counting only the resources

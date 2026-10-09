@@ -1,0 +1,8 @@
+[
+  {
+    "namespace": "maas-demo",
+    "name": "openai-gpt-4o",
+    "provider": "openai",
+    "targetModel": "gpt-4o"
+  }
+]
