@@ -218,3 +218,25 @@ func Test_ConfigMap_YAML_Data(t *testing.T) {
 		})
 	}
 }
+
+func Test_gatherConfigMap_NotFound(t *testing.T) {
+	coreClient := kubefake.NewClientset()
+	records, errs := gatherConfigMap(context.Background(), coreClient.CoreV1(), "cluster-monitoring-config", "openshift-monitoring")
+	if len(errs) > 0 {
+		t.Fatalf("missing optional config map should not produce errors: %v", errs)
+	}
+	if len(records) != 0 {
+		t.Fatalf("missing optional config map should not produce records, got %d", len(records))
+	}
+}
+
+func Test_gatherInsightsConfigCM_NotFound(t *testing.T) {
+	coreClient := kubefake.NewClientset()
+	records, errs := gatherInsightsConfigCM(context.Background(), coreClient.CoreV1())
+	if len(errs) > 0 {
+		t.Fatalf("missing optional insights config should not produce errors: %v", errs)
+	}
+	if len(records) != 0 {
+		t.Fatalf("missing optional insights config should not produce records, got %d", len(records))
+	}
+}

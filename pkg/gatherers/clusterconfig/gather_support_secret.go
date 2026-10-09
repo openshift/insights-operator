@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift/insights-operator/pkg/record"
 	"github.com/openshift/insights-operator/pkg/utils/anonymize"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -43,6 +44,9 @@ func (g *Gatherer) GatherSupportSecret(ctx context.Context) ([]record.Record, []
 
 func gatherSupportSecret(ctx context.Context, cli v1.CoreV1Interface) ([]record.Record, []error) {
 	supportSecret, err := cli.Secrets("openshift-config").Get(ctx, "support", metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, []error{err}
 	}
