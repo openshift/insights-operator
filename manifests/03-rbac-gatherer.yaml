@@ -226,6 +226,12 @@ rules:
       - get
       - list
   - apiGroups:
+      - multicluster.openshift.io
+    resources:
+      - multiclusterengines
+    verbs:
+      - list
+  - apiGroups:
       - maas.opendatahub.io
     resources:
       - maasmodelrefs
