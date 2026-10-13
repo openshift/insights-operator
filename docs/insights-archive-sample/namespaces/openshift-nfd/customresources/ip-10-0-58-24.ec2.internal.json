@@ -1,0 +1,21 @@
+{
+    "features": {
+        "flags": null,
+        "attributes": {
+            "cpu.topology": {
+                "elements": {
+                    "hardware_multithreading": "true",
+                    "socket_count": "1"
+                }
+            },
+            "system.dmiid": {
+                "elements": {
+                    "product_name": "m6a.xlarge",
+                    "sys_vendor": "Amazon EC2"
+                }
+            }
+        },
+        "instances": null
+    },
+    "labels": null
+}

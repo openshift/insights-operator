@@ -1,0 +1,114 @@
+{
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/imageregistry.operator.openshift.io/v1/configs/cluster",
+    "uid": "4ddaf684-48c8-46aa-95de-5710bd40884c",
+    "resourceVersion": "1782045",
+    "generation": 4,
+    "creationTimestamp": "2021-07-07T11:33:11Z",
+    "finalizers": [
+      "imageregistry.operator.openshift.io/finalizer"
+    ]
+  },
+  "spec": {
+    "logLevel": "Normal",
+    "operatorLogLevel": "Normal",
+    "unsupportedConfigOverrides": null,
+    "observedConfig": null,
+    "managementState": "Managed",
+    "httpSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "proxy": {},
+    "storage": {
+      "emptyDir": {},
+      "managementState": "Managed"
+    },
+    "requests": {
+      "read": {
+        "maxWaitInQueue": "0s"
+      },
+      "write": {
+        "maxWaitInQueue": "0s"
+      }
+    },
+    "replicas": 1,
+    "rolloutStrategy": "RollingUpdate"
+  },
+  "status": {
+    "observedGeneration": 4,
+    "conditions": [
+      {
+        "type": "ImageConfigControllerDegraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:11Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "ImageRegistryCertificatesControllerDegraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:11Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "NodeCADaemonControllerDegraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:11Z",
+        "reason": "AsExpected"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "Ready",
+        "message": "The registry is ready"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-12T21:20:38Z"
+      },
+      {
+        "type": "Removed",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:42:59Z"
+      },
+      {
+        "type": "StorageExists",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:42:58Z",
+        "reason": "Creation Successful",
+        "message": "EmptyDir storage successfully created"
+      }
+    ],
+    "readyReplicas": 0,
+    "generations": [
+      {
+        "group": "apps",
+        "resource": "daemonsets",
+        "namespace": "openshift-image-registry",
+        "name": "node-ca",
+        "lastGeneration": 0,
+        "hash": ""
+      },
+      {
+        "group": "apps",
+        "resource": "deployments",
+        "namespace": "openshift-image-registry",
+        "name": "image-registry",
+        "lastGeneration": 2,
+        "hash": ""
+      }
+    ],
+    "storageManaged": true,
+    "storage": {
+      "emptyDir": {},
+      "managementState": "Managed"
+    }
+  }
+}

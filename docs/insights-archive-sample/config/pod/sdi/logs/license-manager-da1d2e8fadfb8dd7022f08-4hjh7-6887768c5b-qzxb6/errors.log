@@ -1,0 +1,1 @@
+iptables v1.6.2: can't initialize iptables table `nat': Permission denied

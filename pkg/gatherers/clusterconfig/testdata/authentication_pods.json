@@ -1,0 +1,650 @@
+{
+    "metadata": {
+        "selfLink": "/api/v1/namespaces/openshift-authentication/pods",
+        "resourceVersion": "25734"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "oauth-openshift-66cd8c89bd-g9qvd",
+                "generateName": "oauth-openshift-66cd8c89bd-",
+                "namespace": "openshift-authentication",
+                "selfLink": "/api/v1/namespaces/openshift-authentication/pods/oauth-openshift-66cd8c89bd-g9qvd",
+                "uid": "e6b260c7-868a-43b5-a73a-4d4a6e259f15",
+                "resourceVersion": "15227",
+                "creationTimestamp": "2020-04-17T12:13:53Z",
+                "labels": {
+                    "app": "oauth-openshift",
+                    "pod-template-hash": "66cd8c89bd"
+                },
+                "annotations": {
+                    "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.35\"\n    ],\n    \"dns\": {},\n    \"default-route\": [\n        \"10.128.0.1\"\n    ]\n}]",
+                    "openshift.io/scc": "anyuid",
+                    "operator.openshift.io/rvs-hash": "iegLD3MKXZvrwJijchzdPQl1VY5bLCdahnm-XDABnltQ9ukRr7PGerXdKfBnvpsFtDVB-_BAfxakunKByiSXlA"
+                },
+                "ownerReferences": [
+                    {
+                        "apiVersion": "apps/v1",
+                        "kind": "ReplicaSet",
+                        "name": "oauth-openshift-66cd8c89bd",
+                        "uid": "344e37c5-e4b0-429a-8fb9-7b426bba03fa",
+                        "controller": true,
+                        "blockOwnerDeletion": true
+                    }
+                ]
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "v4-0-config-system-session",
+                        "secret": {
+                            "secretName": "v4-0-config-system-session",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-cliconfig",
+                        "configMap": {
+                            "name": "v4-0-config-system-cliconfig",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-serving-cert",
+                        "secret": {
+                            "secretName": "v4-0-config-system-serving-cert",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-service-ca",
+                        "configMap": {
+                            "name": "v4-0-config-system-service-ca",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-router-certs",
+                        "secret": {
+                            "secretName": "v4-0-config-system-router-certs",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-ocp-branding-template",
+                        "secret": {
+                            "secretName": "v4-0-config-system-ocp-branding-template",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-trusted-ca-bundle",
+                        "configMap": {
+                            "name": "v4-0-config-system-trusted-ca-bundle",
+                            "defaultMode": 420,
+                            "optional": true
+                        }
+                    },
+                    {
+                        "name": "oauth-openshift-token-d6rm6",
+                        "secret": {
+                            "secretName": "oauth-openshift-token-d6rm6",
+                            "defaultMode": 420
+                        }
+                    }
+                ],
+                "containers": [
+                    {
+                        "name": "oauth-openshift",
+                        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a59e56bafe2fddb48693cb8ac8206d6b866197e108f7140c42ec814eb5684e38",
+                        "command": [
+                            "/bin/bash",
+                            "-ec"
+                        ],
+                        "args": [
+                            "if [ -s /var/config/system/configmaps/v4-0-config-system-trusted-ca-bundle/ca-bundle.crt ]; then\n    echo \"Copying system trust bundle\"\n    cp -f /var/config/system/configmaps/v4-0-config-system-trusted-ca-bundle/ca-bundle.crt /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem\nfi\nexec oauth-server osinserver \\\n--config=/var/config/system/configmaps/v4-0-config-system-cliconfig/v4-0-config-system-cliconfig \\\n--v=2\n"
+                        ],
+                        "ports": [
+                            {
+                                "name": "https",
+                                "containerPort": 6443,
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "10m",
+                                "memory": "50Mi"
+                            }
+                        },
+                        "volumeMounts": [
+                            {
+                                "name": "v4-0-config-system-session",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-session"
+                            },
+                            {
+                                "name": "v4-0-config-system-cliconfig",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/configmaps/v4-0-config-system-cliconfig"
+                            },
+                            {
+                                "name": "v4-0-config-system-serving-cert",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-serving-cert"
+                            },
+                            {
+                                "name": "v4-0-config-system-service-ca",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/configmaps/v4-0-config-system-service-ca"
+                            },
+                            {
+                                "name": "v4-0-config-system-router-certs",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-router-certs"
+                            },
+                            {
+                                "name": "v4-0-config-system-ocp-branding-template",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template"
+                            },
+                            {
+                                "name": "v4-0-config-system-trusted-ca-bundle",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/configmaps/v4-0-config-system-trusted-ca-bundle"
+                            },
+                            {
+                                "name": "oauth-openshift-token-d6rm6",
+                                "readOnly": true,
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                            }
+                        ],
+                        "livenessProbe": {
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": 6443,
+                                "scheme": "HTTPS"
+                            },
+                            "initialDelaySeconds": 30,
+                            "timeoutSeconds": 1,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "failureThreshold": 3
+                        },
+                        "readinessProbe": {
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": 6443,
+                                "scheme": "HTTPS"
+                            },
+                            "timeoutSeconds": 1,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "failureThreshold": 3
+                        },
+                        "lifecycle": {
+                            "preStop": {
+                                "exec": {
+                                    "command": [
+                                        "sleep",
+                                        "25"
+                                    ]
+                                }
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "FallbackToLogsOnError",
+                        "imagePullPolicy": "IfNotPresent",
+                        "securityContext": {
+                            "capabilities": {
+                                "drop": [
+                                    "MKNOD"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "restartPolicy": "Always",
+                "terminationGracePeriodSeconds": 40,
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "node-role.kubernetes.io/master": ""
+                },
+                "serviceAccountName": "oauth-openshift",
+                "serviceAccount": "oauth-openshift",
+                "nodeName": "ip-10-0-154-246.us-west-1.compute.internal",
+                "securityContext": {
+                    "seLinuxOptions": {
+                        "level": "s0:c3,c2"
+                    }
+                },
+                "imagePullSecrets": [
+                    {
+                        "name": "oauth-openshift-dockercfg-9vmfc"
+                    }
+                ],
+                "affinity": {
+                    "podAntiAffinity": {
+                        "preferredDuringSchedulingIgnoredDuringExecution": [
+                            {
+                                "weight": 100,
+                                "podAffinityTerm": {
+                                    "labelSelector": {
+                                        "matchLabels": {
+                                            "app": "oauth-openshift"
+                                        }
+                                    },
+                                    "topologyKey": "kubernetes.io/hostname"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "schedulerName": "default-scheduler",
+                "tolerations": [
+                    {
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Exists",
+                        "effect": "NoSchedule"
+                    },
+                    {
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "effect": "NoExecute",
+                        "tolerationSeconds": 120
+                    },
+                    {
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "effect": "NoExecute",
+                        "tolerationSeconds": 120
+                    },
+                    {
+                        "key": "node.kubernetes.io/memory-pressure",
+                        "operator": "Exists",
+                        "effect": "NoSchedule"
+                    }
+                ],
+                "priorityClassName": "system-cluster-critical",
+                "priority": 2000000000,
+                "enableServiceLinks": true
+            },
+            "status": {
+                "phase": "Running",
+                "conditions": [
+                    {
+                        "type": "Initialized",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:13:53Z"
+                    },
+                    {
+                        "type": "Ready",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:14:08Z"
+                    },
+                    {
+                        "type": "ContainersReady",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:14:08Z"
+                    },
+                    {
+                        "type": "PodScheduled",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:13:53Z"
+                    }
+                ],
+                "hostIP": "10.0.154.246",
+                "podIP": "10.128.0.35",
+                "podIPs": [
+                    {
+                        "ip": "10.128.0.35"
+                    }
+                ],
+                "startTime": "2020-04-17T12:13:53Z",
+                "containerStatuses": [
+                    {
+                        "name": "oauth-openshift",
+                        "state": {
+                            "running": {
+                                "startedAt": "2020-04-17T12:14:02Z"
+                            }
+                        },
+                        "lastState": {},
+                        "ready": true,
+                        "restartCount": 0,
+                        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a59e56bafe2fddb48693cb8ac8206d6b866197e108f7140c42ec814eb5684e38",
+                        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a59e56bafe2fddb48693cb8ac8206d6b866197e108f7140c42ec814eb5684e38",
+                        "containerID": "cri-o://4c49268fcf33fdc16e55db803c8eb0d1740f915c20dc79384e6967a2609ced03",
+                        "started": true
+                    }
+                ],
+                "qosClass": "Burstable"
+            }
+        },
+        {
+            "metadata": {
+                "name": "oauth-openshift-66cd8c89bd-j8thn",
+                "generateName": "oauth-openshift-66cd8c89bd-",
+                "namespace": "openshift-authentication",
+                "selfLink": "/api/v1/namespaces/openshift-authentication/pods/oauth-openshift-66cd8c89bd-j8thn",
+                "uid": "bc8fda5a-7f2c-460f-914a-667f197eddd3",
+                "resourceVersion": "15187",
+                "creationTimestamp": "2020-04-17T12:13:53Z",
+                "labels": {
+                    "app": "oauth-openshift",
+                    "pod-template-hash": "66cd8c89bd"
+                },
+                "annotations": {
+                    "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"openshift-sdn\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.130.0.25\"\n    ],\n    \"dns\": {},\n    \"default-route\": [\n        \"10.130.0.1\"\n    ]\n}]",
+                    "openshift.io/scc": "anyuid",
+                    "operator.openshift.io/rvs-hash": "iegLD3MKXZvrwJijchzdPQl1VY5bLCdahnm-XDABnltQ9ukRr7PGerXdKfBnvpsFtDVB-_BAfxakunKByiSXlA"
+                },
+                "ownerReferences": [
+                    {
+                        "apiVersion": "apps/v1",
+                        "kind": "ReplicaSet",
+                        "name": "oauth-openshift-66cd8c89bd",
+                        "uid": "344e37c5-e4b0-429a-8fb9-7b426bba03fa",
+                        "controller": true,
+                        "blockOwnerDeletion": true
+                    }
+                ]
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "v4-0-config-system-session",
+                        "secret": {
+                            "secretName": "v4-0-config-system-session",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-cliconfig",
+                        "configMap": {
+                            "name": "v4-0-config-system-cliconfig",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-serving-cert",
+                        "secret": {
+                            "secretName": "v4-0-config-system-serving-cert",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-service-ca",
+                        "configMap": {
+                            "name": "v4-0-config-system-service-ca",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-router-certs",
+                        "secret": {
+                            "secretName": "v4-0-config-system-router-certs",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-ocp-branding-template",
+                        "secret": {
+                            "secretName": "v4-0-config-system-ocp-branding-template",
+                            "defaultMode": 420
+                        }
+                    },
+                    {
+                        "name": "v4-0-config-system-trusted-ca-bundle",
+                        "configMap": {
+                            "name": "v4-0-config-system-trusted-ca-bundle",
+                            "defaultMode": 420,
+                            "optional": true
+                        }
+                    },
+                    {
+                        "name": "oauth-openshift-token-d6rm6",
+                        "secret": {
+                            "secretName": "oauth-openshift-token-d6rm6",
+                            "defaultMode": 420
+                        }
+                    }
+                ],
+                "containers": [
+                    {
+                        "name": "oauth-openshift",
+                        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a59e56bafe2fddb48693cb8ac8206d6b866197e108f7140c42ec814eb5684e38",
+                        "command": [
+                            "/bin/bash",
+                            "-ec"
+                        ],
+                        "args": [
+                            "if [ -s /var/config/system/configmaps/v4-0-config-system-trusted-ca-bundle/ca-bundle.crt ]; then\n    echo \"Copying system trust bundle\"\n    cp -f /var/config/system/configmaps/v4-0-config-system-trusted-ca-bundle/ca-bundle.crt /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem\nfi\nexec oauth-server osinserver \\\n--config=/var/config/system/configmaps/v4-0-config-system-cliconfig/v4-0-config-system-cliconfig \\\n--v=2\n"
+                        ],
+                        "ports": [
+                            {
+                                "name": "https",
+                                "containerPort": 6443,
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "10m",
+                                "memory": "50Mi"
+                            }
+                        },
+                        "volumeMounts": [
+                            {
+                                "name": "v4-0-config-system-session",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-session"
+                            },
+                            {
+                                "name": "v4-0-config-system-cliconfig",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/configmaps/v4-0-config-system-cliconfig"
+                            },
+                            {
+                                "name": "v4-0-config-system-serving-cert",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-serving-cert"
+                            },
+                            {
+                                "name": "v4-0-config-system-service-ca",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/configmaps/v4-0-config-system-service-ca"
+                            },
+                            {
+                                "name": "v4-0-config-system-router-certs",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-router-certs"
+                            },
+                            {
+                                "name": "v4-0-config-system-ocp-branding-template",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/secrets/v4-0-config-system-ocp-branding-template"
+                            },
+                            {
+                                "name": "v4-0-config-system-trusted-ca-bundle",
+                                "readOnly": true,
+                                "mountPath": "/var/config/system/configmaps/v4-0-config-system-trusted-ca-bundle"
+                            },
+                            {
+                                "name": "oauth-openshift-token-d6rm6",
+                                "readOnly": true,
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                            }
+                        ],
+                        "livenessProbe": {
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": 6443,
+                                "scheme": "HTTPS"
+                            },
+                            "initialDelaySeconds": 30,
+                            "timeoutSeconds": 1,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "failureThreshold": 3
+                        },
+                        "readinessProbe": {
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": 6443,
+                                "scheme": "HTTPS"
+                            },
+                            "timeoutSeconds": 1,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "failureThreshold": 3
+                        },
+                        "lifecycle": {
+                            "preStop": {
+                                "exec": {
+                                    "command": [
+                                        "sleep",
+                                        "25"
+                                    ]
+                                }
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "FallbackToLogsOnError",
+                        "imagePullPolicy": "IfNotPresent",
+                        "securityContext": {
+                            "capabilities": {
+                                "drop": [
+                                    "MKNOD"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "restartPolicy": "Always",
+                "terminationGracePeriodSeconds": 40,
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "node-role.kubernetes.io/master": ""
+                },
+                "serviceAccountName": "oauth-openshift",
+                "serviceAccount": "oauth-openshift",
+                "nodeName": "ip-10-0-132-92.us-west-1.compute.internal",
+                "securityContext": {
+                    "seLinuxOptions": {
+                        "level": "s0:c3,c2"
+                    }
+                },
+                "imagePullSecrets": [
+                    {
+                        "name": "oauth-openshift-dockercfg-9vmfc"
+                    }
+                ],
+                "affinity": {
+                    "podAntiAffinity": {
+                        "preferredDuringSchedulingIgnoredDuringExecution": [
+                            {
+                                "weight": 100,
+                                "podAffinityTerm": {
+                                    "labelSelector": {
+                                        "matchLabels": {
+                                            "app": "oauth-openshift"
+                                        }
+                                    },
+                                    "topologyKey": "kubernetes.io/hostname"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "schedulerName": "default-scheduler",
+                "tolerations": [
+                    {
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Exists",
+                        "effect": "NoSchedule"
+                    },
+                    {
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "effect": "NoExecute",
+                        "tolerationSeconds": 120
+                    },
+                    {
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "effect": "NoExecute",
+                        "tolerationSeconds": 120
+                    },
+                    {
+                        "key": "node.kubernetes.io/memory-pressure",
+                        "operator": "Exists",
+                        "effect": "NoSchedule"
+                    }
+                ],
+                "priorityClassName": "system-cluster-critical",
+                "priority": 2000000000,
+                "enableServiceLinks": true
+            },
+            "status": {
+                "phase": "Running",
+                "conditions": [
+                    {
+                        "type": "Initialized",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:13:53Z"
+                    },
+                    {
+                        "type": "Ready",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:14:07Z"
+                    },
+                    {
+                        "type": "ContainersReady",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:14:07Z"
+                    },
+                    {
+                        "type": "PodScheduled",
+                        "status": "True",
+                        "lastProbeTime": null,
+                        "lastTransitionTime": "2020-04-17T12:13:53Z"
+                    }
+                ],
+                "hostIP": "10.0.132.92",
+                "podIP": "10.130.0.25",
+                "podIPs": [
+                    {
+                        "ip": "10.130.0.25"
+                    }
+                ],
+                "startTime": "2020-04-17T12:13:53Z",
+                "containerStatuses": [
+                    {
+                        "name": "oauth-openshift",
+                        "state": {
+                            "running": {
+                                "startedAt": "2020-04-17T12:14:02Z"
+                            }
+                        },
+                        "lastState": {},
+                        "ready": true,
+                        "restartCount": 0,
+                        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a59e56bafe2fddb48693cb8ac8206d6b866197e108f7140c42ec814eb5684e38",
+                        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a59e56bafe2fddb48693cb8ac8206d6b866197e108f7140c42ec814eb5684e38",
+                        "containerID": "cri-o://0eadb57394c3e8c9528cbaf50c094a6145505e3f597c665d3b142d40c3291fb1",
+                        "started": true
+                    }
+                ],
+                "qosClass": "Burstable"
+            }
+        }
+    ]
+}

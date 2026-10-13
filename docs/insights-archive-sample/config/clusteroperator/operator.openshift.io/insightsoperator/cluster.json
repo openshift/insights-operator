@@ -1,0 +1,854 @@
+{
+  "apiVersion": "operator.openshift.io/v1",
+  "kind": "InsightsOperator",
+  "name": "cluster",
+  "spec": {
+    "logLevel": "Normal",
+    "managementState": "Managed",
+    "operatorLogLevel": "Normal"
+  },
+  "status": {
+    "gatherStatus": {
+      "gatherers": [
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "9ms",
+          "name": "clusterconfig/machine_healthchecks"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "28ms",
+          "name": "clusterconfig/mutating_webhook_configurations"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 3 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "48ms",
+          "name": "clusterconfig/version"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "67ms",
+          "name": "clusterconfig/openshift_apiserver_operator_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "38ms",
+          "name": "clusterconfig/image"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "39ms",
+          "name": "clusterconfig/image_registries"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "6ms",
+          "name": "clusterconfig/cost_management_metrics_configs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "72ms",
+          "name": "clusterconfig/ingress"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "17ms",
+          "name": "clusterconfig/sap_config"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "38ms",
+          "name": "clusterconfig/olm_operators"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "28ms",
+          "name": "clusterconfig/active_alerts"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "12ms",
+          "name": "clusterconfig/schedulers"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "34ms",
+          "name": "clusterconfig/feature_gates"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "22ms",
+          "name": "clusterconfig/networks"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 2 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "10ms",
+          "name": "clusterconfig/storage_classes"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "17ms",
+          "name": "clusterconfig/overlapping_namespace_uids"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 2 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "19ms",
+          "name": "clusterconfig/machine_config_pools"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 53 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "3.336s",
+          "name": "clusterconfig/operators"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "299ms",
+          "name": "conditional"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "secrets \"support\" not found",
+              "reason": "GatherError",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "26ms",
+          "name": "clusterconfig/support_secret"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "34ms",
+          "name": "clusterconfig/dvo_metrics"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "96ms",
+          "name": "clusterconfig/operators_pods_and_events"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "137ms",
+          "name": "clusterconfig/openshift_authentication_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "11.246s",
+          "name": "clusterconfig/install_plans"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 10 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "20ms",
+          "name": "clusterconfig/validating_webhook_configurations"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "8ms",
+          "name": "clusterconfig/sap_license_management_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "50ms",
+          "name": "clusterconfig/tsdb_status"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 6 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "13ms",
+          "name": "clusterconfig/nodes"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "16ms",
+          "name": "clusterconfig/openshift_sdn_controller_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "12ms",
+          "name": "clusterconfig/infrastructures"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 20 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "226ms",
+          "name": "clusterconfig/machine_configs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 190 records in the archive. Error: function \"support_secret\" failed with an error,function \"config_maps\" failed with an error,function \"config_maps\" failed with an error",
+              "reason": "GatheredWithError",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "12.013s",
+          "name": "clusterconfig"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "16ms",
+          "name": "clusterconfig/openshift_machine_api_events"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "12ms",
+          "name": "clusterconfig/jaegers"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "35ms",
+          "name": "clusterconfig/container_runtime_configs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "3ms",
+          "name": "clusterconfig/sap_datahubs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 3 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "622ms",
+          "name": "clusterconfig/scheduler_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "12.01s",
+          "name": "clusterconfig/service_accounts"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "4ms",
+          "name": "clusterconfig/ceph_cluster"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "13ms",
+          "name": "clusterconfig/oauths"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 14 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "210ms",
+          "name": "clusterconfig/container_images"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "3ms",
+          "name": "clusterconfig/sap_pods"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "16ms",
+          "name": "clusterconfig/proxies"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 16 records in the archive. Error: configmaps \"gateway-mode-config\" not found,configmaps \"insights-config\" not found",
+              "reason": "GatheredWithError",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "135ms",
+          "name": "clusterconfig/config_maps"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "2ms",
+          "name": "clusterconfig/storage_cluster"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "24ms",
+          "name": "clusterconfig/silenced_alerts"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "105ms",
+          "name": "clusterconfig/pod_network_connectivity_checks"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 21 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "28ms",
+          "name": "clusterconfig/pdbs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "30ms",
+          "name": "clusterconfig/machine_autoscalers"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "36ms",
+          "name": "clusterconfig/image_pruners"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 6 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "43ms",
+          "name": "clusterconfig/machines"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "3ms",
+          "name": "clusterconfig/openshift_logging"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "284ms",
+          "name": "clusterconfig/kube_controller_manager_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "3ms",
+          "name": "clusterconfig/netnamespaces"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "9ms",
+          "name": "clusterconfig/cluster_apiserver"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 4 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "32ms",
+          "name": "clusterconfig/machine_sets"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "3ms",
+          "name": "clusterconfig/host_subnets"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 3 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "506ms",
+          "name": "clusterconfig/node_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "21ms",
+          "name": "clusterconfig/openshift_sdn_logs"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "43ms",
+          "name": "clusterconfig/metrics"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 2 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "48ms",
+          "name": "clusterconfig/monitoring_persistent_volumes"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 1 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "7ms",
+          "name": "clusterconfig/authentication"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "",
+              "reason": "NoData",
+              "status": "False",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "62ms",
+          "name": "clusterconfig/certificate_signing_requests"
+        },
+        {
+          "conditions": [
+            {
+              "lastTransitionTime": "2024-02-21T13:51:26Z",
+              "message": "Created 2 records in the archive.",
+              "reason": "GatheredOK",
+              "status": "True",
+              "type": "DataGathered"
+            }
+          ],
+          "lastGatherDuration": "102ms",
+          "name": "clusterconfig/crds"
+        }
+      ],
+      "lastGatherDuration": "12.323194115s",
+      "lastGatherTime": "2024-02-21T13:51:13Z"
+    },
+    "insightsReport": {
+      "downloadedAt": "2024-02-21T12:03:47Z"
+    },
+    "readyReplicas": 0
+  }
+}

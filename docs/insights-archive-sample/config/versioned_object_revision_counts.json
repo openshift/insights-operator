@@ -1,0 +1,23 @@
+{
+  "openshift-kube-apiserver": {
+    "configmaps": {
+      "bound-sa-token-signing-certs": 609,
+      "config": 609,
+      "etcd-serving-ca": 608,
+      "kube-apiserver-audit-policies": 608,
+      "kube-apiserver-cert-syncer-kubeconfig": 610,
+      "kube-apiserver-pod": 610,
+      "kube-apiserver-server-ca": 608,
+      "kubelet-serving-ca": 604,
+      "oauth-metadata": 608,
+      "sa-token-signing-certs": 608
+    },
+    "secrets": {
+      "encryption-config": 590,
+      "etcd-client": 608,
+      "localhost-recovery-client-token": 607,
+      "localhost-recovery-serving-certkey": 607,
+      "webhook-authenticator": 608
+    }
+  }
+}

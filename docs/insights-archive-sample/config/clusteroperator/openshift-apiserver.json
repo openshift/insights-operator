@@ -1,0 +1,150 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "openshift-apiserver",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-apiserver",
+    "uid": "0475d85f-e6f1-41eb-8a35-27b19467157b",
+    "resourceVersion": "22730",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:28:57Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:43:39Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:44:40Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:26:29Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      },
+      {
+        "name": "openshift-apiserver",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "openshiftapiservers",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-apiserver-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-apiserver"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-etcd-operator"
+      },
+      {
+        "group": "",
+        "resource": "endpoints",
+        "namespace": "openshift-etcd",
+        "name": "host-etcd-2"
+      },
+      {
+        "group": "controlplane.operator.openshift.io",
+        "resource": "podnetworkconnectivitychecks",
+        "namespace": "openshift-apiserver",
+        "name": ""
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.apps.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.authorization.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.build.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.image.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.project.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.quota.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.route.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.security.openshift.io"
+      },
+      {
+        "group": "apiregistration.k8s.io",
+        "resource": "apiservices",
+        "name": "v1.template.openshift.io"
+      }
+    ],
+    "extension": null
+  }
+}

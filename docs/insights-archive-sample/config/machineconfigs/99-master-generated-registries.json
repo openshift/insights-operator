@@ -1,0 +1,45 @@
+{
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "annotations": {
+      "insights.operator.openshift.io/cr-size": "1789",
+      "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
+    },
+    "creationTimestamp": "2021-07-07T11:26:59Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "master"
+    },
+    "name": "99-master-generated-registries",
+    "ownerReferences": [
+      {
+        "apiVersion": "config.openshift.io/v1",
+        "kind": "Image",
+        "name": "cluster",
+        "uid": "b9bec110-098d-4c5c-9cff-0d23a814e4cb"
+      }
+    ],
+    "resourceVersion": "7309",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/99-master-generated-registries",
+    "uid": "a96d0f16-1662-42f0-99d9-97b1d9fb814c"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": ""
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "image-registry",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/image-registry",
+    "uid": "4866d14f-1c27-4e84-973e-c2786edf3d83",
+    "resourceVersion": "1782055",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "Ready",
+        "message": "Available: The registry is ready\nImagePrunerAvailable: Pruner CronJob has been created"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "Ready",
+        "message": "Progressing: The registry is ready"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-12T21:20:38Z",
+        "reason": "AsExpected"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "imageregistry.operator.openshift.io",
+        "resource": "configs",
+        "name": "cluster"
+      },
+      {
+        "group": "imageregistry.operator.openshift.io",
+        "resource": "imagepruners",
+        "name": "cluster"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterroles",
+        "name": "system:registry"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "registry-registry-role"
+      },
+      {
+        "group": "rbac.authorization.k8s.io",
+        "resource": "clusterrolebindings",
+        "name": "openshift-image-registry-pruner"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-image-registry"
+      }
+    ],
+    "extension": null
+  }
+}

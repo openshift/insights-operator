@@ -1,0 +1,70 @@
+{
+    "metadata": {
+        "name": "pvc-99ffaeb3-8ff8-4137-a1fc-0bf72e7209a5",
+        "uid": "17122aab-411b-4a71-ae35-c13caac23492",
+        "resourceVersion": "20098",
+        "creationTimestamp": "2023-02-20T14:44:30Z",
+        "labels": {
+            "topology.kubernetes.io/region": "us-west-2",
+            "topology.kubernetes.io/zone": "us-west-2c"
+        },
+        "annotations": {
+            "kubernetes.io/createdby": "aws-ebs-dynamic-provisioner",
+            "pv.kubernetes.io/bound-by-controller": "yes",
+            "pv.kubernetes.io/provisioned-by": "kubernetes.io/aws-ebs"
+        },
+        "finalizers": [
+            "kubernetes.io/pv-protection"
+        ]
+    },
+    "spec": {
+        "capacity": {
+            "storage": "20Gi"
+        },
+        "awsElasticBlockStore": {
+            "volumeID": "aws://us-west-2c/vol-07ecf570b7adfedda",
+            "fsType": "ext4"
+        },
+        "accessModes": [
+            "ReadWriteOnce"
+        ],
+        "claimRef": {
+            "kind": "PersistentVolumeClaim",
+            "namespace": "openshift-monitoring",
+            "name": "prometheus-data-prometheus-k8s-1",
+            "uid": "99ffaeb3-8ff8-4137-a1fc-0bf72e7209a5",
+            "apiVersion": "v1",
+            "resourceVersion": "19914"
+        },
+        "persistentVolumeReclaimPolicy": "Delete",
+        "storageClassName": "gp2",
+        "volumeMode": "Filesystem",
+        "nodeAffinity": {
+            "required": {
+                "nodeSelectorTerms": [
+                    {
+                        "matchExpressions": [
+                            {
+                                "key": "topology.kubernetes.io/region",
+                                "operator": "In",
+                                "values": [
+                                    "us-west-2"
+                                ]
+                            },
+                            {
+                                "key": "topology.kubernetes.io/zone",
+                                "operator": "In",
+                                "values": [
+                                    "us-west-2c"
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "status": {
+        "phase": "Bound"
+    }
+}

@@ -1,0 +1,237 @@
+{
+  "metadata": {
+    "name": "kube-controller-manager-operator-666b69fd7f-sb86z",
+    "generateName": "kube-controller-manager-operator-666b69fd7f-",
+    "namespace": "openshift-kube-controller-manager-operator",
+    "selfLink": "/api/v1/namespaces/openshift-kube-controller-manager-operator/pods/kube-controller-manager-operator-666b69fd7f-sb86z",
+    "uid": "018cd35a-d5bc-4fe2-a49d-1baa1c4a9c3f",
+    "resourceVersion": "339758",
+    "creationTimestamp": "2021-07-07T11:03:18Z",
+    "labels": {
+      "app": "kube-controller-manager-operator",
+      "pod-template-hash": "666b69fd7f"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.4\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.4\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "kube-controller-manager-operator-666b69fd7f",
+        "uid": "e549d0b3-44de-4a1e-849a-b77c3a17bb2a",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "serving-cert",
+        "secret": {
+          "secretName": "kube-controller-manager-operator-serving-cert",
+          "defaultMode": 420,
+          "optional": true
+        }
+      },
+      {
+        "name": "config",
+        "configMap": {
+          "name": "kube-controller-manager-operator-config",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "kube-controller-manager-operator-token-crsbp",
+        "secret": {
+          "secretName": "kube-controller-manager-operator-token-crsbp",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "kube-controller-manager-operator",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:8c180fe987e113b2e5615a56e28c54343ecac83f9d76f901291fc9dd4ef620ac",
+        "command": [
+          "cluster-kube-controller-manager-operator",
+          "operator"
+        ],
+        "args": [
+          "--config=/var/run/configmaps/config/config.yaml"
+        ],
+        "ports": [
+          {
+            "name": "metrics",
+            "containerPort": 8443,
+            "protocol": "TCP"
+          }
+        ],
+        "env": [
+          {
+            "name": "IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6b8518282d89eac687ce95776cd64a4962e1895f3e7e1901c29704533e75a842"
+          },
+          {
+            "name": "OPERATOR_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:8c180fe987e113b2e5615a56e28c54343ecac83f9d76f901291fc9dd4ef620ac"
+          },
+          {
+            "name": "CLUSTER_POLICY_CONTROLLER_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:93e1480ab43bbc3e009dbb8682a8e51389f976108654992f4e5ac93eaf3249f6"
+          },
+          {
+            "name": "TOOLS_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:fac0ad2da7e61cb33bb500b1c4a5cb817e4ac14db0a2bb55252b6ce4e1033320"
+          },
+          {
+            "name": "OPERATOR_IMAGE_VERSION",
+            "value": "4.7.16"
+          },
+          {
+            "name": "OPERAND_IMAGE_VERSION",
+            "value": "1.20.0-beta.2"
+          },
+          {
+            "name": "POD_NAME",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.name"
+              }
+            }
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "config",
+            "mountPath": "/var/run/configmaps/config"
+          },
+          {
+            "name": "serving-cert",
+            "mountPath": "/var/run/secrets/serving-cert"
+          },
+          {
+            "name": "kube-controller-manager-operator-token-crsbp",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "kube-controller-manager-operator",
+    "serviceAccount": "kube-controller-manager-operator",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {},
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-cluster-critical",
+    "priority": 2000000000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:19Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:19Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.4",
+    "podIPs": [
+      {
+        "ip": "10.128.0.4"
+      }
+    ],
+    "startTime": "2021-07-07T11:26:11Z",
+    "containerStatuses": [
+      {
+        "name": "kube-controller-manager-operator",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T11:00:19Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "message": "58 +0x135\n\ngoroutine 389 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc000e2aea0)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 390 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc000e2af00)\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:58 +0x135\n\ngoroutine 391 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc000e2b020)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 392 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc000e2b080)\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:58 +0x135\n\ngoroutine 393 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc000e2b1a0)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 261 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc001072600)\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:58 +0x135\n\ngoroutine 225 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc001274fc0)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n",
+            "startedAt": "2021-07-08T10:59:32Z",
+            "finishedAt": "2021-07-08T11:00:03Z",
+            "containerID": "cri-o://5f15e7bd5991ce28c41cee94c11fba504088796ab68813e3cbd6197d062a8c47"
+          }
+        },
+        "ready": true,
+        "restartCount": 11,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:8c180fe987e113b2e5615a56e28c54343ecac83f9d76f901291fc9dd4ef620ac",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:8c180fe987e113b2e5615a56e28c54343ecac83f9d76f901291fc9dd4ef620ac",
+        "containerID": "cri-o://29c3bd1fce3ffa2cbb69a135e5e557f990a1a1f333c314b05b5f2dd1eb57c100",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

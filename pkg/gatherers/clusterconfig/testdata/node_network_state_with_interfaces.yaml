@@ -1,0 +1,14 @@
+apiVersion: nmstate.io/v1beta1
+kind: NodeNetworkState
+metadata:
+    name: node-network-state-1
+status:
+    currentState:
+      dnsResolver: {}
+      interfaces: 
+        - identifier: first
+          ipv4: ""
+          controller: br-ex
+        - identifier: second
+          ipv4: ""
+          controller: br-ex

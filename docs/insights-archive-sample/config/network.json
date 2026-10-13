@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/networks/cluster",
+    "uid": "b8d891f1-7e1f-42c8-abba-d2d314a13e01",
+    "resourceVersion": "3955",
+    "generation": 2,
+    "creationTimestamp": "2021-07-07T11:02:52Z"
+  },
+  "spec": {
+    "clusterNetwork": [
+      {
+        "cidr": "10.128.0.0/14",
+        "hostPrefix": 23
+      }
+    ],
+    "serviceNetwork": [
+      "172.30.0.0/16"
+    ],
+    "networkType": "OpenShiftSDN",
+    "externalIP": {
+      "policy": {}
+    }
+  },
+  "status": {
+    "clusterNetwork": [
+      {
+        "cidr": "10.128.0.0/14",
+        "hostPrefix": 23
+      }
+    ],
+    "serviceNetwork": [
+      "172.30.0.0/16"
+    ],
+    "networkType": "OpenShiftSDN",
+    "clusterNetworkMTU": 1450
+  }
+}

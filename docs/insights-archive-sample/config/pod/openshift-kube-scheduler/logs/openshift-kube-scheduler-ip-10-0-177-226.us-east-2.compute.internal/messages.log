@@ -1,0 +1,6 @@
+2021-11-28T16:27:04.380211987Z       kind: PodTopologySpreadArgs
+2021-11-28T16:27:04.380211987Z     name: PodTopologySpread
+2021-11-28T16:27:04.380211987Z       - name: PodTopologySpread
+2021-11-28T16:27:04.380211987Z       - name: PodTopologySpread
+2021-11-28T16:27:04.380211987Z       - name: PodTopologySpread
+2021-11-28T16:27:04.380211987Z       - name: PodTopologySpread

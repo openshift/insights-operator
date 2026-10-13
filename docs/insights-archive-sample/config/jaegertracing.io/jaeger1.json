@@ -1,0 +1,108 @@
+{
+    "apiVersion": "jaegertracing.io/v1",
+    "kind": "Jaeger",
+    "metadata": {
+        "creationTimestamp": "2021-09-17T08:38:13Z",
+        "generation": 3,
+        "labels": {
+            "jaegertracing.io/operated-by": "openshift-operators.jaeger-operator"
+        },
+        "name": "jaeger1",
+        "namespace": "openshift-operators",
+        "resourceVersion": "495267",
+        "uid": "46309f18-3fc3-4071-b739-31664ac7becf"
+    },
+    "spec": {
+        "agent": {
+            "config": {},
+            "options": {},
+            "resources": {}
+        },
+        "allInOne": {
+            "config": {},
+            "options": {},
+            "resources": {}
+        },
+        "collector": {
+            "config": {},
+            "options": {},
+            "resources": {}
+        },
+        "ingester": {
+            "config": {},
+            "options": {},
+            "resources": {}
+        },
+        "ingress": {
+            "openshift": {},
+            "options": {},
+            "resources": {},
+            "security": "oauth-proxy"
+        },
+        "query": {
+            "options": {},
+            "resources": {}
+        },
+        "resources": {},
+        "sampling": {
+            "options": {}
+        },
+        "storage": {
+            "cassandraCreateSchema": {},
+            "dependencies": {
+                "resources": {},
+                "schedule": "55 23 * * *"
+            },
+            "elasticsearch": {
+                "nodeCount": 3,
+                "redundancyPolicy": "SingleRedundancy",
+                "resources": {
+                    "limits": {
+                        "memory": "16Gi"
+                    },
+                    "requests": {
+                        "cpu": "1",
+                        "memory": "16Gi"
+                    }
+                },
+                "storage": {}
+            },
+            "esIndexCleaner": {
+                "numberOfDays": 7,
+                "resources": {},
+                "schedule": "55 23 * * *"
+            },
+            "esRollover": {
+                "resources": {},
+                "schedule": "0 0 * * *"
+            },
+            "options": {},
+            "type": "memory"
+        },
+        "strategy": "allinone",
+        "ui": {
+            "options": {
+                "menu": [
+                    {
+                        "items": [
+                            {
+                                "label": "Documentation",
+                                "url": "https://access.redhat.com/documentation/en-us/openshift_container_platform/4.8/html/jaeger/index"
+                            }
+                        ],
+                        "label": "About"
+                    },
+                    {
+                        "anchorTarget": "_self",
+                        "label": "Log Out",
+                        "url": "/oauth/sign_in"
+                    }
+                ]
+            }
+        }
+    },
+    "status": {
+        "phase": "Running",
+        "version": "1.24.1"
+    }
+}

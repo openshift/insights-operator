@@ -1,0 +1,83 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "service-ca",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/service-ca",
+    "uid": "61f33632-20d6-4846-a72c-3e0cc0f72011",
+    "resourceVersion": "5979",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:26:28Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:26:36Z",
+        "reason": "AsExpected",
+        "message": "Progressing: All service-ca-operator deployments updated"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:26:32Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "Unknown",
+        "lastTransitionTime": "2021-07-07T11:26:28Z",
+        "reason": "NoData"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "servicecas",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-ca-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-service-ca"
+      }
+    ],
+    "extension": null
+  }
+}

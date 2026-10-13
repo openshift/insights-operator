@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "name": "anyuid",
+    "selfLink": "/apis/security.openshift.io/v1/securitycontextconstraints/anyuid",
+    "uid": "67895b85-570c-4b27-b58b-6bc6231f4120",
+    "resourceVersion": "1202",
+    "generation": 1,
+    "creationTimestamp": "2021-01-20T17:14:17Z",
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "kubernetes.io/description": "anyuid provides all features of the restricted SCC but allows users to run with any UID and any GID.",
+      "release.openshift.io/create-only": "true"
+    }
+  },
+  "priority": 10,
+  "allowPrivilegedContainer": false,
+  "defaultAddCapabilities": null,
+  "requiredDropCapabilities": [
+    "MKNOD"
+  ],
+  "allowedCapabilities": null,
+  "allowHostDirVolumePlugin": false,
+  "volumes": [
+    "configMap",
+    "downwardAPI",
+    "emptyDir",
+    "persistentVolumeClaim",
+    "projected",
+    "secret"
+  ],
+  "allowHostNetwork": false,
+  "allowHostPorts": false,
+  "allowHostPID": false,
+  "allowHostIPC": false,
+  "allowPrivilegeEscalation": true,
+  "seLinuxContext": {
+    "type": "MustRunAs"
+  },
+  "runAsUser": {
+    "type": "RunAsAny"
+  },
+  "supplementalGroups": {
+    "type": "RunAsAny"
+  },
+  "fsGroup": {
+    "type": "RunAsAny"
+  },
+  "readOnlyRootFilesystem": false,
+  "users": [],
+  "groups": [
+    "system:cluster-admins"
+  ]
+}

@@ -1,0 +1,62 @@
+[
+    {
+        "annotations": {
+            "description": "Alerts are not configured to be sent to a notification system, meaning that you may not be notified in a timely fashion when important failures occur. Check the OpenShift documentation to learn how to configure notifications with Alertmanager.",
+            "summary": "Receivers (notification integrations) are not configured on Alertmanager"
+        },
+        "endsAt": "2021-11-26T13:13:25.342Z",
+        "fingerprint": "36dc4a4e69cb6fd9",
+        "receivers": [
+            {
+                "name": "Default"
+            }
+        ],
+        "startsAt": "2021-11-26T13:02:25.342Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [
+                "2c5a3bfc-d960-4529-bc7e-cc7ee68bf7b2"
+            ],
+            "state": "suppressed"
+        },
+        "updatedAt": "2021-11-26T13:09:25.410Z",
+        "generatorURL": "https://prometheus-k8s-openshift-monitoring.apps.ci-ln-x65rhk2-72292.origin-ci-int-gce.dev.rhcloud.com/graph?g0.expr=cluster%3Aalertmanager_integrations%3Amax+%3D%3D+0\u0026g0.tab=1",
+        "labels": {
+            "alertname": "AlertmanagerReceiversNotConfigured",
+            "namespace": "openshift-monitoring",
+            "prometheus": "openshift-monitoring/k8s",
+            "severity": "warning"
+        }
+    },
+    {
+        "annotations": {
+            "description": "The API server is burning too much error budget. This alert fires when too many requests are failing with high latency. Use the 'API Performance' monitoring dashboards to narrow down the request states and latency. The 'etcd' monitoring dashboards also provides metrics to help determine etcd stability and performance.",
+            "summary": "The API server is burning too much error budget."
+        },
+        "endsAt": "2021-11-26T13:12:23.886Z",
+        "fingerprint": "4b3356c241bc9026",
+        "receivers": [
+            {
+                "name": "Critical"
+            }
+        ],
+        "startsAt": "2021-11-26T13:08:23.886Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [
+                "cef4c12f-83da-4d50-9c56-e3df6f701878"
+            ],
+            "state": "suppressed"
+        },
+        "updatedAt": "2021-11-26T13:08:23.899Z",
+        "generatorURL": "https://prometheus-k8s-openshift-monitoring.apps.ci-ln-x65rhk2-72292.origin-ci-int-gce.dev.rhcloud.com/graph?g0.expr=sum%28apiserver_request%3Aburnrate6h%29+%3E+%286+%2A+0.01%29+and+sum%28apiserver_request%3Aburnrate30m%29+%3E+%286+%2A+0.01%29\u0026g0.tab=1",
+        "labels": {
+            "alertname": "KubeAPIErrorBudgetBurn",
+            "long": "6h",
+            "namespace": "openshift-kube-apiserver",
+            "prometheus": "openshift-monitoring/k8s",
+            "severity": "critical",
+            "short": "30m"
+        }
+    }
+]

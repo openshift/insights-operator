@@ -1,0 +1,59 @@
+{
+  "metadata": {
+    "name": "privileged",
+    "selfLink": "/apis/security.openshift.io/v1/securitycontextconstraints/privileged",
+    "uid": "304c202a-bcf6-4294-9192-1849ee7c78f6",
+    "resourceVersion": "1582",
+    "generation": 1,
+    "creationTimestamp": "2021-01-20T17:14:27Z",
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "kubernetes.io/description": "privileged allows access to all privileged and host features and the ability to run as any user, any group, any fsGroup, and with any SELinux context.  WARNING: this is the most relaxed SCC and should be used only for cluster administration. Grant with caution.",
+      "release.openshift.io/create-only": "true"
+    }
+  },
+  "priority": null,
+  "allowPrivilegedContainer": true,
+  "defaultAddCapabilities": null,
+  "requiredDropCapabilities": null,
+  "allowedCapabilities": [
+    "*"
+  ],
+  "allowHostDirVolumePlugin": true,
+  "volumes": [
+    "*"
+  ],
+  "allowHostNetwork": true,
+  "allowHostPorts": true,
+  "allowHostPID": true,
+  "allowHostIPC": true,
+  "allowPrivilegeEscalation": true,
+  "seLinuxContext": {
+    "type": "RunAsAny"
+  },
+  "runAsUser": {
+    "type": "RunAsAny"
+  },
+  "supplementalGroups": {
+    "type": "RunAsAny"
+  },
+  "fsGroup": {
+    "type": "RunAsAny"
+  },
+  "readOnlyRootFilesystem": false,
+  "users": [
+    "system:admin",
+    "system:serviceaccount:openshift-infra:build-controller"
+  ],
+  "groups": [
+    "system:cluster-admins",
+    "system:nodes",
+    "system:masters"
+  ],
+  "seccompProfiles": [
+    "*"
+  ],
+  "allowedUnsafeSysctls": [
+    "*"
+  ]
+}

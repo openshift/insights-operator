@@ -1,0 +1,100 @@
+{
+    "metadata": {
+        "selfLink": "/api/v1/namespaces/openshift-config/configmaps",
+        "resourceVersion": "937254"
+    },
+    "items": [
+        {
+            "metadata": {
+                "name": "admin-kubeconfig-client-ca",
+                "namespace": "openshift-config",
+                "selfLink": "/api/v1/namespaces/openshift-config/configmaps/admin-kubeconfig-client-ca",
+                "uid": "0074dad4-763e-45d0-ab07-c24ca70a6c6d",
+                "resourceVersion": "802",
+                "creationTimestamp": "2020-02-14T06:19:43Z"
+            },
+            "data": {
+                "ca-bundle.crt": "-----BEGIN CERTIFICATE-----\nMIIDMDCCAhigAwIBAgIIeuWnedK+PSUwDQYJKoZIhvcNAQELBQAwNjESMBAGA1UE\nCxMJb3BlbnNoaWZ0MSAwHgYDVQQDExdhZG1pbi1rdWJlY29uZmlnLXNpZ25lcjAe\nFw0yMDAyMTQwNTU0NTZaFw0zMDAyMTEwNTU0NTZaMDYxEjAQBgNVBAsTCW9wZW5z\naGlmdDEgMB4GA1UEAxMXYWRtaW4ta3ViZWNvbmZpZy1zaWduZXIwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDbxBbuWqe5Nj+8bFz5TMm+Zp6bkhNof6iR\nmb17V7m4pha8vzwU64UkPm7RpHjmK9QRoyhswy1vZJysc4WZ5ZCy1hvCL1IzTVkg\nU53RPD+7MyN8eGB/GTT12fSegMiL2pI/slM2sUabwULT9earqql7FxslSl9u3Ji7\nxQzaqhQLY4p7k2aKP3Zj+g8fEr0Rm+LDKQYP5INJH/1+zZsu+QOLVh+qtn0tWkcf\nnQqt4AjmRzA1wQjlEQAAQkwaq73cCDF1VMceTKLfdY81zQvbpCDTd5Sm9T5deKo8\nkKCNvsAx+odera5gdn+Usgrn0dIrq7lvjjI5Qpl4mf35nr5Np95PAgMBAAGjQjBA\nMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTHjAcO\nE5zLIIBYNyo2UrwrfXIhKTANBgkqhkiG9w0BAQsFAAOCAQEAqdzayFoaacjiHDD+\nOKZIotRcXWvF4LGk7BSho6mDLszbj2cV3/vrQOm8u+iF+AoXS08p6SbESkxcvQqm\nC6ZcVKoI33jdYihwoEzExAcr5LzZkz03efkjP2CP4g1W3eB5DhPNLE7q/8lrIVtN\nK7DM+CtSd9M05X/6Cd4p2VJf5xsv9/BuilnBORd+aRWskHdasJBEGzmx5HSYIpMG\nN8WFFRcMS4J7B+oXxkvj4FTmrkBqD0UMP/wYtMr+1EhhYAjmo4mSVXXZECcvIcX+\nC2bs4T+XPqgwx2hHctIJoV8BgVyvP4o1uhoVybqk7DJDN6ww2j5XgyJQ0rec/HNb\n/QVYXw==\n-----END CERTIFICATE-----\n"
+            }
+        },
+        {
+            "metadata": {
+                "name": "etcd-ca-bundle",
+                "namespace": "openshift-config",
+                "selfLink": "/api/v1/namespaces/openshift-config/configmaps/etcd-ca-bundle",
+                "uid": "60146049-902e-49e4-a2e9-718c33a16828",
+                "resourceVersion": "816",
+                "creationTimestamp": "2020-02-14T06:19:44Z"
+            },
+            "data": {
+                "ca-bundle.crt": "-----BEGIN CERTIFICATE-----\nMIIDGDCCAgCgAwIBAgIIIwQ+z8ePDIcwDQYJKoZIhvcNAQELBQAwKjESMBAGA1UE\nCxMJb3BlbnNoaWZ0MRQwEgYDVQQDEwtldGNkLXNpZ25lcjAeFw0yMDAyMTQwNTU0\nNTVaFw0zMDAyMTEwNTU0NTVaMCoxEjAQBgNVBAsTCW9wZW5zaGlmdDEUMBIGA1UE\nAxMLZXRjZC1zaWduZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCW\noiJfcqSzfGwZoakV/qMr0JDlB5cl72jvpbL4QQy8KP1szfcqsAAt4eRWeKnP0UOP\nDQo6Lfaeho43cwmZZvpwQflBPb4Rk9DdgG64zuA8M0tT78EMMe8uhn1jL1W6fM0Q\n/9j9zU2E6Ski2Ca8aYEa6KRatGTTcJZ0DgWcOIyDBQLGxmGlKshohmOBjPt6X3ib\ncKcGLyTrQJ8kdY/s3FKtoEovSzfI4UgexJvUxgop+Nko25vIDOpRSygodWccBFLt\n+2T8Badi1Hp8ahOOUIrElz487ieEcWPgu9Gvs6sCKcuqWcbcshZwotMi5Nzfuniz\nLHH1mkcpXTIBmYvNaV1pAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMB\nAf8EBTADAQH/MB0GA1UdDgQWBBTXxSgHdTp//qcMmSGyrpVnHqhV9zANBgkqhkiG\n9w0BAQsFAAOCAQEABnTZcW3W2ELRvKvSvnZVgnP5dqhKn1tz93u1RAJeBOdBjb6x\n3rzNQ6AXaNRQIHkajrZMMmhkVOgOCHwUqWQhzsoPwNEGmgNaBgm1FvEZXg9eUXg5\nCNkqZ4On02XnrwsvHXPIlsBsFJ77g0MJbCH3hHNJsCL07DotSuTAlg5eUJwI0LE8\nhNxP+vqaI0kZmfDyXQKcmoul1ZuJw/bJv6hwFGvelYA/dBMSm5Z+rUMeXoqrwSB7\nUVjqHptMf1oUXyoVcm/hw7tXs0d4CH/q4LmT3zFNK6LSAWgrmU61eX6XuecAiF64\nB+5fPzb3jPJkF6MnXfd9tvN10NlOqne84v0b9w==\n-----END CERTIFICATE-----\n"
+            }
+        },
+        {
+            "metadata": {
+                "name": "etcd-metric-serving-ca",
+                "namespace": "openshift-config",
+                "selfLink": "/api/v1/namespaces/openshift-config/configmaps/etcd-metric-serving-ca",
+                "uid": "4313a6c4-9f6a-47c5-893a-42a6a80da0b0",
+                "resourceVersion": "821",
+                "creationTimestamp": "2020-02-14T06:19:44Z"
+            },
+            "data": {
+                "ca-bundle.crt": "-----BEGIN CERTIFICATE-----\nMIIDJjCCAg6gAwIBAgIIA8VhCplPvkQwDQYJKoZIhvcNAQELBQAwMTESMBAGA1UE\nCxMJb3BlbnNoaWZ0MRswGQYDVQQDExJldGNkLW1ldHJpYy1zaWduZXIwHhcNMjAw\nMjE0MDU1NDU1WhcNMzAwMjExMDU1NDU1WjAxMRIwEAYDVQQLEwlvcGVuc2hpZnQx\nGzAZBgNVBAMTEmV0Y2QtbWV0cmljLXNpZ25lcjCCASIwDQYJKoZIhvcNAQEBBQAD\nggEPADCCAQoCggEBAJoAwLyNLkNv7l+4dogrHM54mLoBGUf/GdFKIsZ6OwMzxmpr\nBqMG/oWTv6nOKtK0I5fs6iOU3H143N2Ibm+1FNgSBkr6r/xq3x6t9KrRUC5n2JM0\naCxlTukcSly37hdJolDeqR0m5S8z3xERI8zGEAVZin8s3N/K+UBHJi90M/HvkJFY\nb+KsxIz6eGVOj+cWU3gBXBaKa2IReEc+gVytcB5mhoCX5J5zZvFDhS5mzbhdYzVu\ng/2h5ShN+H1Pj+TzTBXXXArGc0c1jx+kF4zycVXs2/OzVyAb0pYjcUBfytjdBOcb\ngv+aG6/tNJTDGXkg8QfMTghB9pfJxfFvjF1Lp6MCAwEAAaNCMEAwDgYDVR0PAQH/\nBAQDAgKkMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFEDQndsJ3PiofuKAhdWV\nCTIJrt+CMA0GCSqGSIb3DQEBCwUAA4IBAQAGTJ286Xp6utdf6K6LQfaJwpEpUS+x\nm7bJlcXIJuth1p61ot0/sDXCNEIgP5EHrK+uYnDwEC4w1E2SeevzWy1BgWkmZzol\nGbL7Z4KA5xdI1PHZL2eUjIPOlIw6qmTwLEmDVP4k7UXjaE5ENTg604oQ4c2uCUUU\nAgALVa08X1s3izH9eGdwQf7mq4uodgLkY5uMX34F3OWjMYlZn9OiO9E015NRVEgu\nqMG7zAgfNfPocHmDWwya4/CIrnqu53cytz/cAF3pWkp9H68qxNIndbu5rSYXOsi4\nrzpCsQVpjvHXiKOGgivdX9Q5NpmF7Q5vI8E5Gu74jXqaizeq55VQOA5R\n-----END CERTIFICATE-----\n"
+            }
+        },
+        {
+            "metadata": {
+                "name": "etcd-serving-ca",
+                "namespace": "openshift-config",
+                "selfLink": "/api/v1/namespaces/openshift-config/configmaps/etcd-serving-ca",
+                "uid": "29ed01bb-9067-458f-a46e-3f0445d15c71",
+                "resourceVersion": "825",
+                "creationTimestamp": "2020-02-14T06:19:44Z"
+            },
+            "data": {
+                "ca-bundle.crt": "-----BEGIN CERTIFICATE-----\nMIIDGDCCAgCgAwIBAgIIIwQ+z8ePDIcwDQYJKoZIhvcNAQELBQAwKjESMBAGA1UE\nCxMJb3BlbnNoaWZ0MRQwEgYDVQQDEwtldGNkLXNpZ25lcjAeFw0yMDAyMTQwNTU0\nNTVaFw0zMDAyMTEwNTU0NTVaMCoxEjAQBgNVBAsTCW9wZW5zaGlmdDEUMBIGA1UE\nAxMLZXRjZC1zaWduZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCW\noiJfcqSzfGwZoakV/qMr0JDlB5cl72jvpbL4QQy8KP1szfcqsAAt4eRWeKnP0UOP\nDQo6Lfaeho43cwmZZvpwQflBPb4Rk9DdgG64zuA8M0tT78EMMe8uhn1jL1W6fM0Q\n/9j9zU2E6Ski2Ca8aYEa6KRatGTTcJZ0DgWcOIyDBQLGxmGlKshohmOBjPt6X3ib\ncKcGLyTrQJ8kdY/s3FKtoEovSzfI4UgexJvUxgop+Nko25vIDOpRSygodWccBFLt\n+2T8Badi1Hp8ahOOUIrElz487ieEcWPgu9Gvs6sCKcuqWcbcshZwotMi5Nzfuniz\nLHH1mkcpXTIBmYvNaV1pAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMB\nAf8EBTADAQH/MB0GA1UdDgQWBBTXxSgHdTp//qcMmSGyrpVnHqhV9zANBgkqhkiG\n9w0BAQsFAAOCAQEABnTZcW3W2ELRvKvSvnZVgnP5dqhKn1tz93u1RAJeBOdBjb6x\n3rzNQ6AXaNRQIHkajrZMMmhkVOgOCHwUqWQhzsoPwNEGmgNaBgm1FvEZXg9eUXg5\nCNkqZ4On02XnrwsvHXPIlsBsFJ77g0MJbCH3hHNJsCL07DotSuTAlg5eUJwI0LE8\nhNxP+vqaI0kZmfDyXQKcmoul1ZuJw/bJv6hwFGvelYA/dBMSm5Z+rUMeXoqrwSB7\nUVjqHptMf1oUXyoVcm/hw7tXs0d4CH/q4LmT3zFNK6LSAWgrmU61eX6XuecAiF64\nB+5fPzb3jPJkF6MnXfd9tvN10NlOqne84v0b9w==\n-----END CERTIFICATE-----\n"
+            }
+        },
+        {
+            "metadata": {
+                "name": "initial-kube-apiserver-server-ca",
+                "namespace": "openshift-config",
+                "selfLink": "/api/v1/namespaces/openshift-config/configmaps/initial-kube-apiserver-server-ca",
+                "uid": "e45c18f4-3067-4e2e-adc7-3a8a88867cf0",
+                "resourceVersion": "830",
+                "creationTimestamp": "2020-02-14T06:19:44Z"
+            },
+            "data": {
+                "ca-bundle.crt": "-----BEGIN CERTIFICATE-----\nMIIDMDCCAhigAwIBAgIIeuWnedK+PSUwDQYJKoZIhvcNAQELBQAwNjESMBAGA1UE\nCxMJb3BlbnNoaWZ0MSAwHgYDVQQDExdhZG1pbi1rdWJlY29uZmlnLXNpZ25lcjAe\nFw0yMDAyMTQwNTU0NTZaFw0zMDAyMTEwNTU0NTZaMDYxEjAQBgNVBAsTCW9wZW5z\naGlmdDEgMB4GA1UEAxMXYWRtaW4ta3ViZWNvbmZpZy1zaWduZXIwggEiMA0GCSqG\nSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDbxBbuWqe5Nj+8bFz5TMm+Zp6bkhNof6iR\nmb17V7m4pha8vzwU64UkPm7RpHjmK9QRoyhswy1vZJysc4WZ5ZCy1hvCL1IzTVkg\nU53RPD+7MyN8eGB/GTT12fSegMiL2pI/slM2sUabwULT9earqql7FxslSl9u3Ji7\nxQzaqhQLY4p7k2aKP3Zj+g8fEr0Rm+LDKQYP5INJH/1+zZsu+QOLVh+qtn0tWkcf\nnQqt4AjmRzA1wQjlEQAAQkwaq73cCDF1VMceTKLfdY81zQvbpCDTd5Sm9T5deKo8\nkKCNvsAx+odera5gdn+Usgrn0dIrq7lvjjI5Qpl4mf35nr5Np95PAgMBAAGjQjBA\nMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTHjAcO\nE5zLIIBYNyo2UrwrfXIhKTANBgkqhkiG9w0BAQsFAAOCAQEAqdzayFoaacjiHDD+\nOKZIotRcXWvF4LGk7BSho6mDLszbj2cV3/vrQOm8u+iF+AoXS08p6SbESkxcvQqm\nC6ZcVKoI33jdYihwoEzExAcr5LzZkz03efkjP2CP4g1W3eB5DhPNLE7q/8lrIVtN\nK7DM+CtSd9M05X/6Cd4p2VJf5xsv9/BuilnBORd+aRWskHdasJBEGzmx5HSYIpMG\nN8WFFRcMS4J7B+oXxkvj4FTmrkBqD0UMP/wYtMr+1EhhYAjmo4mSVXXZECcvIcX+\nC2bs4T+XPqgwx2hHctIJoV8BgVyvP4o1uhoVybqk7DJDN6ww2j5XgyJQ0rec/HNb\n/QVYXw==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDHjCCAgagAwIBAgIIKoaYFq6OdSYwDQYJKoZIhvcNAQELBQAwLTESMBAGA1UE\nCxMJb3BlbnNoaWZ0MRcwFQYDVQQDEw5rdWJlbGV0LXNpZ25lcjAeFw0yMDAyMTQw\nNTU1MDJaFw0yMDAyMTUwNTU1MDJaMC0xEjAQBgNVBAsTCW9wZW5zaGlmdDEXMBUG\nA1UEAxMOa3ViZWxldC1zaWduZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\nAoIBAQDKEuuxBehufG8zY7lZGxW+yR3q5h+GemwmtRyWzHVPJWlAev7NQbUfC8em\n3UfODYBVpWXkfxzODMJYG1nGSb0tA6SO+e2405Qp8YKkP60caB1Ll99RnSRsty7D\nm+3WuR67JiQGSerV/qvpHE5UWFfCgkVxTs2n7JayNfUvtSvR2NAXZVJa2JVmG6BU\ndSFkUU/2bR2UkbZEg1HwJIm8G+/DJ/Clp0KqWyratDofC/u/cv8uT0KXbxmEor5n\n2gqSvwlbptjZqWqV23YogNXBldPSydxk//4dJFFt0PZwZ5H500ZwdT3iLLZhDS1c\nxlxxe6ic2LwL4W90VNLoK3xFGjHBAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAP\nBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQ23HJk/lPNb+yk6RB/XLM5hvRXIjAN\nBgkqhkiG9w0BAQsFAAOCAQEAwLw/oWrqLd7Yie+bvREPNrz2OA1SLfOcXTJ6TfyW\npe9WyoBptrtD8RiJKAri5W3zTW9RHxtUu56riaKhozli7ibYr5yYbXARN9FM3dHI\nsFRJuqX3rUEFjXUyUsdEWW+xM6OxmJLaGkrOLitQ4g9EWe2IyEB895sQCv415WdF\n9N0wagbOY/Ua4ynleUyJnUR9f3yiQYeCeC0Iq0epIgQ/Och8VpdOp11z/DCr2NvL\nu4RfvQKw/ltB8jC075d06l/JyMGLOqpXcQLiacxRW5E2qZia/THgTNk5/HtGccxM\nOqF4z//GGZcL5Y4uDp1+4SgwSwWpFQoMB2GzFtXj3cLALw==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDNDCCAhygAwIBAgIIGWK5LOrU0akwDQYJKoZIhvcNAQELBQAwODESMBAGA1UE\nCxMJb3BlbnNoaWZ0MSIwIAYDVQQDExlrdWJlLWNvbnRyb2wtcGxhbmUtc2lnbmVy\nMB4XDTIwMDIxNDA1NTUwM1oXDTIxMDIxMzA1NTUwM1owODESMBAGA1UECxMJb3Bl\nbnNoaWZ0MSIwIAYDVQQDExlrdWJlLWNvbnRyb2wtcGxhbmUtc2lnbmVyMIIBIjAN\nBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs2aaTrIv661vYB1zu+dN7O1+00Zs\nSDszJ2N2ngyKM5aCsDVWqPIC8CHBZkRpKQrQIAcKzMxBVt/TcJAh25s9EXbLz5u2\nvssieQ+Yg6YCZZFKozi9NPksz2W2ZYW1lih1F1/65B9vcLoMNO6c72nTa9G8I+nh\ncXzQy8P57eaj0ecj+KEvZycnizMVRKwWupomAf9eshdfIs/S3iSi28L6hUqFg542\n5rajYvXQ7RWAa14ZMy79Pr+F4YDnTe3vI2+V6KH0fPQfnYimXZKdP14RtMBedsck\npZrSWDJ/xN8I1qWpfsqft6L4Y65IbH1EYFef3fulQg3eAm8l2p8zODWOhwIDAQAB\no0IwQDAOBgNVHQ8BAf8EBAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQU\nPvsSJ0+2DHNDr3+sGKA/FTwJsQEwDQYJKoZIhvcNAQELBQADggEBAB4SJaylKmGq\nmOSArcRJCf7x7B0gnSl2EPW1UjMWZKfqG02uV86tky6TLJGyM1hkr9mTEzvkTH7V\nG4kRdgaj7ZJt+N2pE5tJVlNcVN3XWu6e+5UwI1eLKBn8HrDDa1SycKpRZMrXoZIN\nzrwy4OZ3xnldMTtJzsOIF5zS7ms9fEXLUSaqZNC1ppWmVgJzZGuucp300m0hSLY3\ntu2aZc+neraxUvPBpWO1tSf6AXn4ECW1l84yghRwiMml1/5IAPU9M77Oq+mgq5Yx\nj6Y6SkglV0nlxKb7OkzzAVr3E58mdXjudOXqnk0HVTNjpBS7UpUWpa2X/zxroboQ\n0oJQMrCFeXA=\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDQjCCAiqgAwIBAgIId0UyIohdWygwDQYJKoZIhvcNAQELBQAwPzESMBAGA1UE\nCxMJb3BlbnNoaWZ0MSkwJwYDVQQDEyBrdWJlLWFwaXNlcnZlci10by1rdWJlbGV0\nLXNpZ25lcjAeFw0yMDAyMTQwNTU1MDNaFw0yMTAyMTMwNTU1MDNaMD8xEjAQBgNV\nBAsTCW9wZW5zaGlmdDEpMCcGA1UEAxMga3ViZS1hcGlzZXJ2ZXItdG8ta3ViZWxl\ndC1zaWduZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDOWQCGQlcV\nUeTZiKsNcokQKYugvg0YZUYVlfirxuvGCUhMHRqP25f/d7+6qvtaXnCJJiEI7Us9\nopVO413vVEjGGYvwlGJS50+wkA0qoDU81d1jx7cggfMFddQh21aKJhC0HYqe6YFK\ncTl4lDjhFl7fYv7lTBJDy27jH2UX4BKkOC9haauMra0Mw1ne1G5NyUOUmT4EME+7\nHBmHMxU47KFQu9C7rnawEvugvpMWaRftOVkIRuguR3UIHK2W8BosIs0PLHeuz64m\nAp2Di8eRLhroaXGRgKW23BfgYiBIK2RP2tvcxFvmtVRlBG3dG0I9lntSdPo9KopE\nERMS9G5ePQGLAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTAD\nAQH/MB0GA1UdDgQWBBSuEDSqRlyi0q1BrHzqtnRs0pHKDjANBgkqhkiG9w0BAQsF\nAAOCAQEAZ6mFyFASbsuJCQO3UShG+PECMMYTx7CPvXum56ofW1j0JzvULQb6rOV/\nTSvbUfXLepBSmL+e1UqEmBURvWZ561Qnf6LVOOyw/p7LBRoOi762WCTXA2qZ3B9p\nzGkSx1QomHwVdpFonLQFOD8dHLPwIrO4M6W90LnMN8pejMKGBD60zHxw0KZQ5oJe\nS6P0rQ+9+3+EkfPB6lUYd+Ga5LhUfzcy6NsBW+0WM+BXW+Dgr1MJme3IAEuZzWJv\nRzN29mn2cwPfG/GrwOlbdbkT0gP+vO5XiUjasNRe6EGTQ3MH06p7+kAyAUJQkZzd\n0oFLSJxcLAlyt2cmF0yqqlFfOQjjdg==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDSDCCAjCgAwIBAgIIFcXIqtqvB7swDQYJKoZIhvcNAQELBQAwQjESMBAGA1UE\nCxMJb3BlbnNoaWZ0MSwwKgYDVQQDEyNrdWJlbGV0LWJvb3RzdHJhcC1rdWJlY29u\nZmlnLXNpZ25lcjAeFw0yMDAyMTQwNTU0NThaFw0zMDAyMTEwNTU0NThaMEIxEjAQ\nBgNVBAsTCW9wZW5zaGlmdDEsMCoGA1UEAxMja3ViZWxldC1ib290c3RyYXAta3Vi\nZWNvbmZpZy1zaWduZXIwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDQ\nTrgx2/MqmAP8vVahzbF16Cho/acU5qAZrLp4kkKQKUvCv2uV/bjS/JrvTtPZp0th\nY8Zfvvk6rKcrmoj9ZK+l+Tmz2UFWNPKpJXQD+uHBocR+H4I4mKVAvhqh1Cua+/GN\noGdLygwUITKhwmzMuYI3b1FW7eu6Q5sBCZBQmMW/F76TzlxbojFlyrRKa76RY7Dm\nW9o697RUgtfXs2hDWiO7CXVJisiaQVaV2guoCOKQcYSqYhsbeCVjcLDqLMUb14mu\n9FVjmotZedGBJ+gd+flHjBQR3gI99AnBWa83h3o8VE+RaGcyEEiXuBzMjjyqIEpS\n4AK4aJuaQfVY79tL9Jw3AgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMB\nAf8EBTADAQH/MB0GA1UdDgQWBBTqIrkPC1sY3ntJGWBeQkaV4PKCTDANBgkqhkiG\n9w0BAQsFAAOCAQEAxFE6xKPbQST4NpNV+sX13vNoy9d9lnqSyEIuWmXYCEKALRI8\nPIkq/Zx7tWdPB7X8yB+LaGcyCWZOyku4aiz2g9fprvRies37Vjpx4M2JTDymS/gi\nkTk1FeaUqLlYnlBxaEdi3nSxVgQ1Sy7WFY6r6z606eFJOCEJwacwXXtb1mCfHfAo\nHCGEEoxOtHN9lFh5Yoda1br7F1bp8lWlqCTvPaotIbnZC9EQM+Eh8rU3Iu53+Jo2\nU37HeNp2yS4o9rtze8Mb2csihUZqxWDB0qqOuByLR4/wykAAXNkkTRCso3ntH3Wg\nL/cqq/Gu96cxz/dF6FWHfjMmNfcyrRwUU66XIQ==\n-----END CERTIFICATE-----\n"
+            }
+        },
+        {
+            "metadata": {
+                "name": "openshift-install",
+                "namespace": "openshift-config",
+                "selfLink": "/api/v1/namespaces/openshift-config/configmaps/openshift-install",
+                "uid": "843469bc-e5bf-4233-a489-6bc8d0ec81fd",
+                "resourceVersion": "839",
+                "creationTimestamp": "2020-02-14T06:19:44Z"
+            },
+            "data": {
+                "invoker": "codeReadyContainers",
+                "version": "unreleased-master-2205-g2055609f95b19322ee6cfdd0bea73399297c4a3e"
+            }
+        },
+        {
+            "metadata": {
+                "name": "test-binary",
+                "namespace": "openshift-config",
+                "selfLink": "/api/v1/namespaces/openshift-config/configmaps/test-binary",
+                "uid": "936e0ccd-77df-4ed8-8c14-b23cab9d184a",
+                "resourceVersion": "937169",
+                "creationTimestamp": "2020-04-09T05:40:41Z"
+            },
+            "binaryData": {
+                "ls": "z/rt/gcAAAEDAA=="
+            }
+        }
+    ]
+}

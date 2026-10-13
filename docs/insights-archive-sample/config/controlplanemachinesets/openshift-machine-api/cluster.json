@@ -1,0 +1,70 @@
+{
+    "apiVersion": "machine.openshift.io/v1",
+    "kind": "ControlPlaneMachineSet",
+    "metadata": {
+        "creationTimestamp": "2026-05-27T10:18:50Z",
+        "finalizers": ["controlplanemachineset.machine.openshift.io"],
+        "generation": 1,
+        "labels": {
+            "machine.openshift.io/cluster-api-cluster": "ci-ln-vwyf9k2-76ef8-r5shb"
+        },
+        "name": "cluster",
+        "namespace": "openshift-machine-api",
+        "resourceVersion": "16052",
+        "uid": "00ceb81c-e5c8-49d0-b240-87e997bb3f8c"
+    },
+    "spec": {
+        "replicas": 3,
+        "selector": {
+            "matchLabels": {
+                "machine.openshift.io/cluster-api-cluster": "ci-ln-vwyf9k2-76ef8-r5shb",
+                "machine.openshift.io/cluster-api-machine-role": "master",
+                "machine.openshift.io/cluster-api-machine-type": "master"
+            }
+        },
+        "state": "Active",
+        "strategy": { "type": "RollingUpdate" },
+        "template": null,
+        "templates": null
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2026-05-27T10:22:45Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AsExpected",
+                "status": "False",
+                "type": "Error"
+            },
+            {
+                "lastTransitionTime": "2026-05-27T10:27:53Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AllReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "lastTransitionTime": "2026-05-27T10:27:53Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AsExpected",
+                "status": "False",
+                "type": "Degraded"
+            },
+            {
+                "lastTransitionTime": "2026-05-27T10:26:53Z",
+                "message": "",
+                "observedGeneration": 1,
+                "reason": "AllReplicasUpdated",
+                "status": "False",
+                "type": "Progressing"
+            }
+        ],
+        "observedGeneration": 1,
+        "readyReplicas": 3,
+        "replicas": 3,
+        "updatedReplicas": 3
+    }
+}

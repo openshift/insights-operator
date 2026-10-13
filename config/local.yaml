@@ -1,0 +1,10 @@
+kind: GenericOperatorConfig
+apiVersion: operator.openshift.io/v1alpha1
+leaderElection:
+  disable: true
+interval: "5m"
+storagePath: /tmp/insights-operator
+endpoint: http://[::1]:8081
+conditionalGathererEndpoint: https://console.redhat.com/api/gathering/gathering_rules
+impersonate: system:serviceaccount:openshift-insights:gather
+

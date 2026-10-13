@@ -1,0 +1,19 @@
+{
+    "6c7e03817b27fbe6cc67ae835381df521b8d847dd029fb2df483f1a327b63582": [
+        { "name": "jenkins", "version": "0.0.3", "resources": { "services": 2 } }
+    ],
+    "a085ddf97d8c556fd4f965392f7d3446c4b11df0544848878e06b20c96523064": [
+        {
+            "name": "nodejs",
+            "version": "",
+            "resources": { "deployments": 1, "replicasets": 1, "services": 1 }
+        }
+    ],
+    "e976fcc461dc1b1ad177c083135393e90ded18b3707987d4b6adf78e86e687ed": [
+        {
+            "name": "nodejs",
+            "version": "",
+            "resources": { "deployments": 1, "replicasets": 1, "services": 1 }
+        }
+    ]
+}

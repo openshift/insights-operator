@@ -1,0 +1,92 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "etcd",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/etcd",
+    "uid": "b417f6c6-2380-4d6d-8ee5-79052d85f1d4",
+    "resourceVersion": "340350",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:26:28Z",
+        "reason": "AsExpected",
+        "message": "NodeControllerDegraded: All master nodes are ready\nEtcdMembersDegraded: No unhealthy members found"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:28:21Z",
+        "reason": "AsExpected",
+        "message": "NodeInstallerProgressing: 1 nodes are at revision 2\nEtcdMembersProgressing: No unstarted etcd members found"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:28:21Z",
+        "reason": "AsExpected",
+        "message": "StaticPodsAvailable: 1 nodes are active; 1 nodes are at revision 2\nEtcdMembersAvailable: 1 members are available"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:26:28Z",
+        "reason": "UnsupportedConfigOverrides_UnsupportedConfigOverridesSet",
+        "message": "UnsupportedConfigOverridesUpgradeable: setting: [useUnsupportedUnsafeNonHANonProductionUnstableEtcd]"
+      }
+    ],
+    "versions": [
+      {
+        "name": "raw-internal",
+        "version": "4.7.16"
+      },
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      },
+      {
+        "name": "etcd",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "etcds",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-etcd-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-etcd"
+      }
+    ],
+    "extension": null
+  }
+}

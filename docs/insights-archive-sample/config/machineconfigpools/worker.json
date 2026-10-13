@@ -1,0 +1,134 @@
+{
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfigPool",
+  "metadata": {
+    "creationTimestamp": "2021-07-07T11:26:15Z",
+    "generation": 2,
+    "labels": {
+      "machineconfiguration.openshift.io/mco-built-in": "",
+      "pools.operator.machineconfiguration.openshift.io/worker": ""
+    },
+    "name": "worker",
+    "resourceVersion": "1782281",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigpools/worker",
+    "uid": "f1696051-daa7-4372-ae68-120ae99c92a2"
+  },
+  "spec": {
+    "configuration": {
+      "name": "rendered-worker-39c9df4a2c026c3149a02abe6f88cfc8",
+      "source": [
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "00-worker"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "01-worker-container-runtime"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "01-worker-kubelet"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "99-worker-generated-registries"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "99-worker-ssh"
+        }
+      ]
+    },
+    "machineConfigSelector": {
+      "matchLabels": {
+        "machineconfiguration.openshift.io/role": "worker"
+      }
+    },
+    "nodeSelector": {
+      "matchLabels": {
+        "node-role.kubernetes.io/worker": ""
+      }
+    },
+    "paused": false
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastTransitionTime": "2021-07-07T11:27:03Z",
+        "message": "",
+        "reason": "",
+        "status": "False",
+        "type": "RenderDegraded"
+      },
+      {
+        "lastTransitionTime": "2021-07-07T11:27:08Z",
+        "message": "",
+        "reason": "",
+        "status": "False",
+        "type": "NodeDegraded"
+      },
+      {
+        "lastTransitionTime": "2021-07-07T11:27:08Z",
+        "message": "",
+        "reason": "",
+        "status": "False",
+        "type": "Degraded"
+      },
+      {
+        "lastTransitionTime": "2021-07-12T21:20:49Z",
+        "message": "All nodes are updated with rendered-worker-39c9df4a2c026c3149a02abe6f88cfc8",
+        "reason": "",
+        "status": "True",
+        "type": "Updated"
+      },
+      {
+        "lastTransitionTime": "2021-07-12T21:20:49Z",
+        "message": "",
+        "reason": "",
+        "status": "False",
+        "type": "Updating"
+      }
+    ],
+    "configuration": {
+      "name": "rendered-worker-39c9df4a2c026c3149a02abe6f88cfc8",
+      "source": [
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "00-worker"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "01-worker-container-runtime"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "01-worker-kubelet"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "99-worker-generated-registries"
+        },
+        {
+          "apiVersion": "machineconfiguration.openshift.io/v1",
+          "kind": "MachineConfig",
+          "name": "99-worker-ssh"
+        }
+      ]
+    },
+    "degradedMachineCount": 0,
+    "machineCount": 1,
+    "observedGeneration": 2,
+    "readyMachineCount": 1,
+    "unavailableMachineCount": 0,
+    "updatedMachineCount": 1
+  }
+}

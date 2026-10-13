@@ -1,0 +1,98 @@
+{
+    "TypeMeta": {},
+    "ObjectMeta": {
+        "name": "my-svc.my-namespace",
+        "selfLink": "/apis/certificates.k8s.io/v1beta1/certificatesigningrequests/my-svc.my-namespace",
+        "uid": "16a753e6-3e81-11ea-8a8c-52fdfc072182",
+        "resourceVersion": "187306",
+        "creationTimestamp": "2020-01-24T08:11:13Z"
+    },
+    "Spec": {
+        "UID": "",
+        "Username": "kube:admin",
+        "Groups": [
+            "system:cluster-admins",
+            "system:authenticated"
+        ],
+        "Usages": [
+            "digital signature",
+            "key encipherment",
+            "server auth"
+        ],
+        "Request": {
+            "ValidSignature": true,
+            "SignatureAlgorithm": "SHA256-RSA",
+            "PublicKeyAlgorithm": "RSA",
+            "DNSNames": [],
+            "EmailAddresses": [],
+            "IPAddresses": [],
+            "URIs": [],
+            "Subject": {
+                "Country": [
+                    "xx"
+                ],
+                "Organization": [
+                    "xxxxxxxxxxxxxxxxxxx"
+                ],
+                "OrganizationalUnit": [],
+                "Locality": [
+                    "xxxxxxxxxxxx"
+                ],
+                "Province": [],
+                "StreetAddress": [],
+                "PostalCode": [],
+                "SerialNumber": "",
+                "CommonName": "xx",
+                "Names": null,
+                "ExtraNames": null
+            }
+        }
+    },
+    "Status": {
+        "Conditions": [
+            {
+                "type": "Approved",
+                "reason": "KubectlApprove",
+                "message": "This CSR was approved by kubectl certificate approve.",
+                "lastUpdateTime": "2020-01-24T13:22:22Z"
+            }
+        ],
+        "Cert": {
+            "Verified": true,
+            "Issuer": {
+                "Country": [],
+                "Organization": [],
+                "OrganizationalUnit": [],
+                "Locality": [],
+                "Province": [],
+                "StreetAddress": [],
+                "PostalCode": [],
+                "SerialNumber": "",
+                "CommonName": "xxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "Names": null,
+                "ExtraNames": null
+            },
+            "Subject": {
+                "Country": [
+                    "xx"
+                ],
+                "Organization": [
+                    "xxxxxxxxxxxxxxxxxxx"
+                ],
+                "OrganizationalUnit": [],
+                "Locality": [
+                    "xxxxxxxxxxxx"
+                ],
+                "Province": [],
+                "StreetAddress": [],
+                "PostalCode": [],
+                "SerialNumber": "",
+                "CommonName": "xx",
+                "Names": null,
+                "ExtraNames": null
+            },
+            "NotBefore": "2020-01-24T13:17:00Z",
+            "NotAfter": "2020-02-22T08:23:38Z"
+        }
+    }
+}

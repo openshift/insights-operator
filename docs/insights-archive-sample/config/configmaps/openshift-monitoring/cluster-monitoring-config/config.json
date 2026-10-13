@@ -1,0 +1,5 @@
+{
+  "prometheusK8s": {
+    "retention": "7d"
+  }
+}

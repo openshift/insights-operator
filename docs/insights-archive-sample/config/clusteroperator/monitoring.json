@@ -1,0 +1,98 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "monitoring",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/monitoring",
+    "uid": "8bc3cbe3-86ed-4cb6-aecb-e57ad0cc860f",
+    "resourceVersion": "1916673",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-08T11:01:59Z",
+        "reason": "RollOutDone",
+        "message": "Successfully rolled out the stack."
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-08T11:01:59Z"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-08T11:01:59Z"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2021-07-13T07:15:46Z"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-monitoring"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-user-workload-monitoring"
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "servicemonitors",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "podmonitors",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "prometheusrules",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "alertmanagers",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "prometheuses",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "thanosrulers",
+        "name": ""
+      },
+      {
+        "group": "monitoring.coreos.com",
+        "resource": "alertmanagerconfigs",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

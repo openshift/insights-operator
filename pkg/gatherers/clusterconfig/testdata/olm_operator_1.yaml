@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1
+kind: Operator
+metadata:
+    name: test-olm-operator
+status:
+    components:
+        refs:
+            - apiVersion: operators.coreos.com/v1alpha1
+              kind: ClusterServiceVersion
+              name: test-olm-operator.v1.2.3
+              namespace: test-olm-operator

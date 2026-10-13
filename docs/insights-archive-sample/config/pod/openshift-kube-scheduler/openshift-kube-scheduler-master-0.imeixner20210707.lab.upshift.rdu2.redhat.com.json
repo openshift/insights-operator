@@ -1,0 +1,377 @@
+{
+  "metadata": {
+    "name": "openshift-kube-scheduler-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "namespace": "openshift-kube-scheduler",
+    "selfLink": "/api/v1/namespaces/openshift-kube-scheduler/pods/openshift-kube-scheduler-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "uid": "a41fa289-2c71-4826-ace8-b9eb57a814b0",
+    "resourceVersion": "643340",
+    "creationTimestamp": "2021-07-07T11:34:48Z",
+    "labels": {
+      "app": "openshift-kube-scheduler",
+      "revision": "7",
+      "scheduler": "true"
+    },
+    "annotations": {
+      "kubectl.kubernetes.io/default-logs-container": "kube-scheduler",
+      "kubernetes.io/config.hash": "35f4f810-17b0-4b07-bac5-7b8de3e37726",
+      "kubernetes.io/config.mirror": "35f4f810-17b0-4b07-bac5-7b8de3e37726",
+      "kubernetes.io/config.seen": "2021-07-07T11:34:32.592850902Z",
+      "kubernetes.io/config.source": "file"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "v1",
+        "kind": "Node",
+        "name": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+        "uid": "7b9db4ae-6ec2-45b7-ba44-dd0df8e32466",
+        "controller": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "resource-dir",
+        "hostPath": {
+          "path": "/etc/kubernetes/static-pod-resources/kube-scheduler-pod-7",
+          "type": ""
+        }
+      },
+      {
+        "name": "cert-dir",
+        "hostPath": {
+          "path": "/etc/kubernetes/static-pod-resources/kube-scheduler-certs",
+          "type": ""
+        }
+      }
+    ],
+    "initContainers": [
+      {
+        "name": "wait-for-host-port",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6b8518282d89eac687ce95776cd64a4962e1895f3e7e1901c29704533e75a842",
+        "command": [
+          "/usr/bin/timeout",
+          "30",
+          "/bin/bash",
+          "-c"
+        ],
+        "args": [
+          "echo -n \"Waiting for port :10259 and :10251 to be released.\"\nwhile [ -n \"$(ss -Htan '( sport = 10251 or sport = 10259 )')\" ]; do\n  echo -n \".\"\n  sleep 1\ndone\n"
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "15m",
+            "memory": "50Mi"
+          }
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "containers": [
+      {
+        "name": "kube-scheduler",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6b8518282d89eac687ce95776cd64a4962e1895f3e7e1901c29704533e75a842",
+        "command": [
+          "hyperkube",
+          "kube-scheduler"
+        ],
+        "args": [
+          "--config=/etc/kubernetes/static-pod-resources/configmaps/config/config.yaml",
+          "--cert-dir=/var/run/kubernetes",
+          "--port=0",
+          "--authentication-kubeconfig=/etc/kubernetes/static-pod-resources/configmaps/scheduler-kubeconfig/kubeconfig",
+          "--authorization-kubeconfig=/etc/kubernetes/static-pod-resources/configmaps/scheduler-kubeconfig/kubeconfig",
+          "--feature-gates=APIPriorityAndFairness=true,LegacyNodeRoleBehavior=false,NodeDisruptionExclusion=true,RemoveSelfLink=false,RotateKubeletServerCertificate=true,SCTPSupport=true,ServiceNodeExclusion=true,SupportPodPidsLimit=true",
+          "-v=2",
+          "--tls-cert-file=/etc/kubernetes/static-pod-resources/secrets/serving-cert/tls.crt",
+          "--tls-private-key-file=/etc/kubernetes/static-pod-resources/secrets/serving-cert/tls.key"
+        ],
+        "ports": [
+          {
+            "hostPort": 10259,
+            "containerPort": 10259,
+            "protocol": "TCP"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "15m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "resource-dir",
+            "mountPath": "/etc/kubernetes/static-pod-resources"
+          },
+          {
+            "name": "cert-dir",
+            "mountPath": "/etc/kubernetes/static-pod-certs"
+          }
+        ],
+        "livenessProbe": {
+          "httpGet": {
+            "path": "healthz",
+            "port": 10259,
+            "scheme": "HTTPS"
+          },
+          "initialDelaySeconds": 45,
+          "timeoutSeconds": 1,
+          "periodSeconds": 10,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "readinessProbe": {
+          "httpGet": {
+            "path": "healthz",
+            "port": 10259,
+            "scheme": "HTTPS"
+          },
+          "initialDelaySeconds": 45,
+          "timeoutSeconds": 1,
+          "periodSeconds": 10,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      },
+      {
+        "name": "kube-scheduler-cert-syncer",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47ccc812096de6c666395ad3661145c0d24b890f35fe2e21757640558e6ee11c",
+        "command": [
+          "cluster-kube-scheduler-operator",
+          "cert-syncer"
+        ],
+        "args": [
+          "--kubeconfig=/etc/kubernetes/static-pod-resources/configmaps/kube-scheduler-cert-syncer-kubeconfig/kubeconfig",
+          "--namespace=$(POD_NAMESPACE)",
+          "--destination-dir=/etc/kubernetes/static-pod-certs"
+        ],
+        "env": [
+          {
+            "name": "POD_NAME",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.name"
+              }
+            }
+          },
+          {
+            "name": "POD_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "5m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "resource-dir",
+            "mountPath": "/etc/kubernetes/static-pod-resources"
+          },
+          {
+            "name": "cert-dir",
+            "mountPath": "/etc/kubernetes/static-pod-certs"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      },
+      {
+        "name": "kube-scheduler-recovery-controller",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47ccc812096de6c666395ad3661145c0d24b890f35fe2e21757640558e6ee11c",
+        "command": [
+          "/bin/bash",
+          "-euxo",
+          "pipefail",
+          "-c"
+        ],
+        "args": [
+          "timeout 3m /bin/bash -exuo pipefail -c 'while [ -n \"$(ss -Htanop \\( sport = 11443 \\))\" ]; do sleep 1; done'\n\nexec cluster-kube-scheduler-operator cert-recovery-controller --kubeconfig=/etc/kubernetes/static-pod-resources/configmaps/kube-scheduler-cert-syncer-kubeconfig/kubeconfig  --namespace=${POD_NAMESPACE} --listen=0.0.0.0:11443 -v=2\n"
+        ],
+        "env": [
+          {
+            "name": "POD_NAMESPACE",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+              }
+            }
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "5m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "resource-dir",
+            "mountPath": "/etc/kubernetes/static-pod-resources"
+          },
+          {
+            "name": "cert-dir",
+            "mountPath": "/etc/kubernetes/static-pod-certs"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "hostNetwork": true,
+    "securityContext": {},
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "operator": "Exists"
+      }
+    ],
+    "priorityClassName": "system-node-critical",
+    "priority": 2000001000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:34:49Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-09T09:20:19Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-09T09:20:19Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:27:01Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.0.88.27",
+    "podIPs": [
+      {
+        "ip": "10.0.88.27"
+      }
+    ],
+    "startTime": "2021-07-07T11:27:01Z",
+    "initContainerStatuses": [
+      {
+        "name": "wait-for-host-port",
+        "state": {
+          "terminated": {
+            "exitCode": 0,
+            "reason": "Completed",
+            "startedAt": "2021-07-07T11:34:49Z",
+            "finishedAt": "2021-07-07T11:34:49Z",
+            "containerID": "cri-o://66e4275a33daf1cbac184dd1eec991254361634536325f65c87104722425176a"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6b8518282d89eac687ce95776cd64a4962e1895f3e7e1901c29704533e75a842",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6b8518282d89eac687ce95776cd64a4962e1895f3e7e1901c29704533e75a842",
+        "containerID": "cri-o://66e4275a33daf1cbac184dd1eec991254361634536325f65c87104722425176a"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "name": "kube-scheduler",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-09T09:19:26Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 1,
+            "reason": "Error",
+            "message": "ln\" err=\"0/2 nodes are available: 1 node(s) didn't have free ports for the requested pod ports, 1 node(s) had taint {node-role.kubernetes.io/master: }, that the pod didn't tolerate.\"\nI0709 09:18:07.115601       1 scheduler.go:592] \"Successfully bound pod to node\" pod=\"openshift-marketplace/redhat-operators-5n74x\" node=\"worker-0.imeixner20210707.lab.upshift.rdu2.redhat.com\" evaluatedNodes=2 feasibleNodes=1\nI0709 09:18:25.828887       1 factory.go:321] \"Unable to schedule pod; no fit; waiting\" pod=\"openshift-etcd/etcd-quorum-guard-5f6f5fbc4c-2g24w\" err=\"0/2 nodes are available: 1 node(s) didn't match Pod's node affinity, 1 node(s) didn't match pod affinity/anti-affinity, 1 node(s) didn't match pod anti-affinity rules.\"\nI0709 09:18:25.829620       1 factory.go:321] \"Unable to schedule pod; no fit; waiting\" pod=\"openshift-etcd/etcd-quorum-guard-5f6f5fbc4c-4q86s\" err=\"0/2 nodes are available: 1 node(s) didn't match Pod's node affinity, 1 node(s) didn't match pod affinity/anti-affinity, 1 node(s) didn't match pod anti-affinity rules.\"\nI0709 09:18:25.829771       1 factory.go:321] \"Unable to schedule pod; no fit; waiting\" pod=\"openshift-ingress/router-default-7bbdcfcf9b-7xdln\" err=\"0/2 nodes are available: 1 node(s) didn't have free ports for the requested pod ports, 1 node(s) had taint {node-role.kubernetes.io/master: }, that the pod didn't tolerate.\"\nE0709 09:19:25.234377       1 leaderelection.go:325] error retrieving resource lock openshift-kube-scheduler/kube-scheduler: Get \"https://api-int.imeixner20210707.lab.upshift.rdu2.redhat.com:6443/api/v1/namespaces/openshift-kube-scheduler/configmaps/kube-scheduler?timeout=10s\": net/http: request canceled (Client.Timeout exceeded while awaiting headers)\nI0709 09:19:25.234477       1 leaderelection.go:278] failed to renew lease openshift-kube-scheduler/kube-scheduler: timed out waiting for the condition\nE0709 09:19:25.234532       1 leaderelection.go:301] Failed to release lock: resource name may not be empty\nF0709 09:19:25.235782       1 server.go:217] leaderelection lost\n",
+            "startedAt": "2021-07-08T10:59:04Z",
+            "finishedAt": "2021-07-09T09:19:25Z",
+            "containerID": "cri-o://1ed1ff9c6061cb725c46ba9559925ce9a5fda8465b7e425a62e4145dc82286d5"
+          }
+        },
+        "ready": true,
+        "restartCount": 13,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6b8518282d89eac687ce95776cd64a4962e1895f3e7e1901c29704533e75a842",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:6b8518282d89eac687ce95776cd64a4962e1895f3e7e1901c29704533e75a842",
+        "containerID": "cri-o://a43231671a1ea4101efb3835c68e45afbb6b0827e6023daa38e6fafabb6e4636",
+        "started": true
+      },
+      {
+        "name": "kube-scheduler-cert-syncer",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T11:34:50Z"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47ccc812096de6c666395ad3661145c0d24b890f35fe2e21757640558e6ee11c",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47ccc812096de6c666395ad3661145c0d24b890f35fe2e21757640558e6ee11c",
+        "containerID": "cri-o://21a85b04a47c2a4d0ec58f2c8bb6146b3fef5e13b8881890a21edbbaf3fb414f",
+        "started": true
+      },
+      {
+        "name": "kube-scheduler-recovery-controller",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T10:59:33Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 0,
+            "reason": "Completed",
+            "startedAt": "2021-07-08T06:17:48Z",
+            "finishedAt": "2021-07-08T10:59:31Z",
+            "containerID": "cri-o://318fa73c897013fd43d9a83f9d2840a2f298d4d49faba434cb381de7d9cae18f"
+          }
+        },
+        "ready": true,
+        "restartCount": 6,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47ccc812096de6c666395ad3661145c0d24b890f35fe2e21757640558e6ee11c",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:47ccc812096de6c666395ad3661145c0d24b890f35fe2e21757640558e6ee11c",
+        "containerID": "cri-o://2472dc97b26adf6fb7dcfd259ad50a18943d0fa886cd5abc35ec3e5b2ac1bcda",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

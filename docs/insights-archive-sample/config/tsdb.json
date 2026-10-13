@@ -1,0 +1,180 @@
+{
+    "status": "success",
+    "data": {
+        "headStats": {
+            "numSeries": 244189,
+            "numLabelPairs": 13065,
+            "chunkCount": 248790,
+            "minTime": 1636719873253,
+            "maxTime": 1636721983690
+        },
+        "seriesCountByMetricName": [
+            {
+                "name": "apiserver_request_duration_seconds_bucket",
+                "value": 20892
+            },
+            {
+                "name": "rest_client_request_duration_seconds_bucket",
+                "value": 17369
+            },
+            {
+                "name": "rest_client_rate_limiter_duration_seconds_bucket",
+                "value": 12980
+            },
+            {
+                "name": "etcd_request_duration_seconds_bucket",
+                "value": 11172
+            },
+            {
+                "name": "apiserver_response_sizes_bucket",
+                "value": 7960
+            },
+            {
+                "name": "rest_client_request_latency_seconds_bucket",
+                "value": 7315
+            },
+            {
+                "name": "workqueue_queue_duration_seconds_bucket",
+                "value": 6765
+            },
+            {
+                "name": "workqueue_work_duration_seconds_bucket",
+                "value": 6765
+            },
+            {
+                "name": "apiserver_watch_events_sizes_bucket",
+                "value": 4167
+            },
+            {
+                "name": "grpc_server_handled_total",
+                "value": 2737
+            }
+        ],
+        "labelValueCountByLabelName": [
+            {
+                "name": "__name__",
+                "value": 1824
+            },
+            {
+                "name": "id",
+                "value": 1445
+            },
+            {
+                "name": "name",
+                "value": 1229
+            },
+            {
+                "name": "secret",
+                "value": 1187
+            },
+            {
+                "name": "url",
+                "value": 834
+            },
+            {
+                "name": "container_id",
+                "value": 543
+            },
+            {
+                "name": "resource",
+                "value": 400
+            },
+            {
+                "name": "le",
+                "value": 363
+            },
+            {
+                "name": "configmap",
+                "value": 328
+            },
+            {
+                "name": "type",
+                "value": 314
+            }
+        ],
+        "memoryInBytesByLabelName": [
+            {
+                "name": "id",
+                "value": 236624
+            },
+            {
+                "name": "name",
+                "value": 98232
+            },
+            {
+                "name": "url",
+                "value": 96702
+            },
+            {
+                "name": "__name__",
+                "value": 68630
+            },
+            {
+                "name": "container_id",
+                "value": 39096
+            },
+            {
+                "name": "secret",
+                "value": 31518
+            },
+            {
+                "name": "mountpoint",
+                "value": 27729
+            },
+            {
+                "name": "uid",
+                "value": 10944
+            },
+            {
+                "name": "image_id",
+                "value": 10029
+            },
+            {
+                "name": "type",
+                "value": 9901
+            }
+        ],
+        "seriesCountByLabelValuePair": [
+            {
+                "name": "endpoint=https",
+                "value": 134670
+            },
+            {
+                "name": "namespace=default",
+                "value": 66977
+            },
+            {
+                "name": "service=kubernetes",
+                "value": 66933
+            },
+            {
+                "name": "job=apiserver",
+                "value": 66931
+            },
+            {
+                "name": "apiserver=kube-apiserver",
+                "value": 66930
+            },
+            {
+                "name": "service=kubelet",
+                "value": 56064
+            },
+            {
+                "name": "endpoint=https-metrics",
+                "value": 55158
+            },
+            {
+                "name": "job=kubelet",
+                "value": 54994
+            },
+            {
+                "name": "verb=GET",
+                "value": 46704
+            },
+            {
+                "name": "metrics_path=/metrics/cadvisor",
+                "value": 42953
+            }
+        ]
+    }
+}

@@ -1,0 +1,47 @@
+{
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "annotations": {
+      "insights.operator.openshift.io/cr-size": "2016",
+      "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
+    },
+    "creationTimestamp": "2021-07-07T11:26:59Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "worker"
+    },
+    "name": "01-worker-container-runtime",
+    "ownerReferences": [
+      {
+        "apiVersion": "machineconfiguration.openshift.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ControllerConfig",
+        "name": "machine-config-controller",
+        "uid": "07498a84-c3bf-4eec-9cc3-8cb0ad1e32c2"
+      }
+    ],
+    "resourceVersion": "7297",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/01-worker-container-runtime",
+    "uid": "e67a99d8-8498-413b-972a-94b420add08f"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1c91baf8b4498144cfd87383a712639ebe14639c1dfd163c37c423713c935958"
+  }
+}

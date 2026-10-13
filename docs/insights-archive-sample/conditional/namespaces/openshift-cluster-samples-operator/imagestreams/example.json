@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "name": "example",
+    "namespace": "openshift-cluster-samples-operator",
+    "selfLink": "/apis/image.openshift.io/v1/namespaces/openshift-cluster-samples-operator/imagestreams/example",
+    "uid": "bd11bcb8-b0be-4605-9f11-9697e84897f9",
+    "resourceVersion": "79100",
+    "generation": 1,
+    "creationTimestamp": "2021-05-24T16:40:22Z"
+  },
+  "spec": {
+    "lookupPolicy": {
+      "local": false
+    }
+  },
+  "status": {
+    "dockerImageRepository": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  }
+}

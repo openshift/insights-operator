@@ -1,0 +1,56 @@
+{
+  "apiVersion": "machineconfiguration.openshift.io/v1",
+  "kind": "MachineConfig",
+  "metadata": {
+    "annotations": {
+      "insights.operator.openshift.io/cr-size": "3421",
+      "machineconfiguration.openshift.io/generated-by-controller-version": "3c1fc49624d0a9edbbd4ac20223afbdbd4b5ccf4"
+    },
+    "creationTimestamp": "2021-07-07T11:26:59Z",
+    "generation": 1,
+    "labels": {
+      "machineconfiguration.openshift.io/role": "worker"
+    },
+    "name": "01-worker-kubelet",
+    "ownerReferences": [
+      {
+        "apiVersion": "machineconfiguration.openshift.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "ControllerConfig",
+        "name": "machine-config-controller",
+        "uid": "07498a84-c3bf-4eec-9cc3-8cb0ad1e32c2"
+      }
+    ],
+    "resourceVersion": "7317",
+    "selfLink": "/apis/machineconfiguration.openshift.io/v1/machineconfigs/01-worker-kubelet",
+    "uid": "05c84894-7f6b-4b8f-ae41-a7a76282e5e3"
+  },
+  "spec": {
+    "config": {
+      "ignition": {
+        "version": "3.2.0"
+      },
+      "passwd": {
+        "users": null
+      },
+      "storage": {
+        "files": null
+      },
+      "systemd": {
+        "units": [
+          {
+            "contents": "[Unit]\nDescription=Kubernetes Kubelet\nWants=rpc-statd.service network-online.target crio.service\nAfter=network-online.target crio.service\nAfter=ostree-finalize-staged.service\n\n[Service]\nType=notify\nExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests\nExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state\nEnvironmentFile=/etc/os-release\nEnvironmentFile=-/etc/kubernetes/kubelet-workaround\nEnvironmentFile=-/etc/kubernetes/kubelet-env\n\nExecStart=/usr/bin/hyperkube \\\n    kubelet \\\n      --config=/etc/kubernetes/kubelet.conf \\\n      --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig \\\n      --kubeconfig=/var/lib/kubelet/kubeconfig \\\n      --container-runtime=remote \\\n      --container-runtime-endpoint=/var/run/crio/crio.sock \\\n      --runtime-cgroups=/system.slice/crio.service \\\n      --node-labels=node-role.kubernetes.io/worker,node.openshift.io/os_id=${ID} \\\n      --node-ip=${KUBELET_NODE_IP} \\\n      --minimum-container-ttl-duration=6m0s \\\n      --volume-plugin-dir=/etc/kubernetes/kubelet-plugins/volume/exec \\\n      --cloud-provider= \\\n       \\\n      --pod-infra-container-image=quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:f2cd141d802e4be7d223f16b810522921e8e1ecf020b6b6d6591fcd68617df40 \\\n      --v=${KUBELET_LOG_LEVEL}\n\nRestart=always\nRestartSec=10\n\n[Install]\nWantedBy=multi-user.target\n",
+            "enabled": true,
+            "name": "kubelet.service"
+          }
+        ]
+      }
+    },
+    "extensions": null,
+    "fips": false,
+    "kernelArguments": null,
+    "kernelType": "",
+    "osImageURL": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1c91baf8b4498144cfd87383a712639ebe14639c1dfd163c37c423713c935958"
+  }
+}

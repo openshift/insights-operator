@@ -1,0 +1,20 @@
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: insights-operator
+    from:
+      kind: "DockerImage"
+      name: "quay.io/openshift/origin-insights-operator:latest"
+  - name: insights-runtime-extractor
+    from:
+      kind: "DockerImage"
+      name: "quay.io/openshift/origin-insights-runtime-extractor:latest"
+  - name: insights-runtime-exporter
+    from:
+      kind: "DockerImage"
+      name: "quay.io/openshift/origin-insights-runtime-exporter:latest"
+  - name: kube-rbac-proxy
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-kube-rbac-proxy:latest

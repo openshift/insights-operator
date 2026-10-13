@@ -1,0 +1,19 @@
+{
+    "conditions": [
+        {
+            "lastHeartbeatTime": "2022-11-01T10:26:40Z",
+            "lastTransitionTime": "2022-11-01T10:26:40Z",
+            "message": "Configuring Ceph Mons",
+            "reason": "ClusterProgressing",
+            "status": "True",
+            "type": "Progressing"
+        }
+    ],
+    "message": "Configuring Ceph Mons",
+    "phase": "Progressing",
+    "state": "Creating",
+    "version": {
+        "image": "registry.redhat.io/rhceph/rhceph-5-rhel8@sha256:7892e9da0a70b2d7e3efd98d2cb980e485f07eddff6a0dac6d6bd6c516914f3c",
+        "version": "16.2.8-84"
+    }
+}

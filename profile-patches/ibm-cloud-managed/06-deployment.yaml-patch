@@ -1,0 +1,11 @@
+- op: replace
+  path: /metadata/annotations
+  value:
+    include.release.openshift.io/hypershift: "true"
+    config.openshift.io/inject-proxy: insights-operator
+    include.release.openshift.io/ibm-cloud-managed: "true"
+    capability.openshift.io/name: Insights
+- op: replace
+  path: /spec/template/spec/nodeSelector
+  value:
+    kubernetes.io/os: linux

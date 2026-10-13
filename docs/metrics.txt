@@ -1,0 +1,386 @@
+# HELP apiserver_audit_event_total [ALPHA] Counter of audit events generated and sent to the audit backend.
+# TYPE apiserver_audit_event_total counter
+apiserver_audit_event_total 0
+# HELP apiserver_audit_requests_rejected_total [ALPHA] Counter of apiserver requests rejected due to an error in audit logging backend.
+# TYPE apiserver_audit_requests_rejected_total counter
+apiserver_audit_requests_rejected_total 0
+# HELP apiserver_client_certificate_expiration_seconds [ALPHA] Distribution of the remaining lifetime on the certificate used to authenticate a request.
+# TYPE apiserver_client_certificate_expiration_seconds histogram
+apiserver_client_certificate_expiration_seconds_bucket{le="0"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="1800"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="3600"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="7200"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="21600"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="43200"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="86400"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="172800"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="345600"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="604800"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="2.592e+06"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="7.776e+06"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="1.5552e+07"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="3.1104e+07"} 0
+apiserver_client_certificate_expiration_seconds_bucket{le="+Inf"} 0
+apiserver_client_certificate_expiration_seconds_sum 0
+apiserver_client_certificate_expiration_seconds_count 0
+# HELP apiserver_current_inflight_requests [ALPHA] Maximal number of currently used inflight request limit of this apiserver per request kind in last second.
+# TYPE apiserver_current_inflight_requests gauge
+apiserver_current_inflight_requests{requestKind="mutating"} 0
+apiserver_current_inflight_requests{requestKind="readOnly"} 0
+# HELP apiserver_envelope_encryption_dek_cache_fill_percent [ALPHA] Percent of the cache slots currently occupied by cached DEKs.
+# TYPE apiserver_envelope_encryption_dek_cache_fill_percent gauge
+apiserver_envelope_encryption_dek_cache_fill_percent 0
+# HELP apiserver_storage_data_key_generation_duration_seconds [ALPHA] Latencies in seconds of data encryption key(DEK) generation operations.
+# TYPE apiserver_storage_data_key_generation_duration_seconds histogram
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="5e-06"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="1e-05"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="2e-05"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="4e-05"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="8e-05"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.00016"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.00032"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.00064"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.00128"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.00256"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.00512"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.01024"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.02048"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="0.04096"} 0
+apiserver_storage_data_key_generation_duration_seconds_bucket{le="+Inf"} 0
+apiserver_storage_data_key_generation_duration_seconds_sum 0
+apiserver_storage_data_key_generation_duration_seconds_count 0
+# HELP apiserver_storage_data_key_generation_failures_total [ALPHA] Total number of failed data encryption key(DEK) generation operations.
+# TYPE apiserver_storage_data_key_generation_failures_total counter
+apiserver_storage_data_key_generation_failures_total 0
+# HELP apiserver_storage_envelope_transformation_cache_misses_total [ALPHA] Total number of cache misses while accessing key decryption key(KEK).
+# TYPE apiserver_storage_envelope_transformation_cache_misses_total counter
+apiserver_storage_envelope_transformation_cache_misses_total 0
+# HELP authenticated_user_requests [ALPHA] Counter of authenticated requests broken out by username.
+# TYPE authenticated_user_requests counter
+authenticated_user_requests{username="other"} 431
+# HELP authentication_attempts [ALPHA] Counter of authenticated attempts.
+# TYPE authentication_attempts counter
+authentication_attempts{result="success"} 431
+# HELP authentication_duration_seconds [ALPHA] Authentication duration in seconds broken out by result.
+# TYPE authentication_duration_seconds histogram
+authentication_duration_seconds_bucket{result="success",le="0.001"} 0
+authentication_duration_seconds_bucket{result="success",le="0.002"} 0
+authentication_duration_seconds_bucket{result="success",le="0.004"} 0
+authentication_duration_seconds_bucket{result="success",le="0.008"} 60
+authentication_duration_seconds_bucket{result="success",le="0.016"} 413
+authentication_duration_seconds_bucket{result="success",le="0.032"} 424
+authentication_duration_seconds_bucket{result="success",le="0.064"} 427
+authentication_duration_seconds_bucket{result="success",le="0.128"} 430
+authentication_duration_seconds_bucket{result="success",le="0.256"} 430
+authentication_duration_seconds_bucket{result="success",le="0.512"} 431
+authentication_duration_seconds_bucket{result="success",le="1.024"} 431
+authentication_duration_seconds_bucket{result="success",le="2.048"} 431
+authentication_duration_seconds_bucket{result="success",le="4.096"} 431
+authentication_duration_seconds_bucket{result="success",le="8.192"} 431
+authentication_duration_seconds_bucket{result="success",le="16.384"} 431
+authentication_duration_seconds_bucket{result="success",le="+Inf"} 431
+authentication_duration_seconds_sum{result="success"} 4.842085615000003
+authentication_duration_seconds_count{result="success"} 431
+# HELP authentication_token_cache_active_fetch_count [ALPHA] 
+# TYPE authentication_token_cache_active_fetch_count gauge
+authentication_token_cache_active_fetch_count{status="blocked"} 0
+authentication_token_cache_active_fetch_count{status="in_flight"} 0
+# HELP authentication_token_cache_fetch_total [ALPHA] 
+# TYPE authentication_token_cache_fetch_total counter
+authentication_token_cache_fetch_total{status="ok"} 431
+# HELP authentication_token_cache_request_duration_seconds [ALPHA] 
+# TYPE authentication_token_cache_request_duration_seconds histogram
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="0.005"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="0.01"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="0.025"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="0.05"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="0.1"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="0.25"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="0.5"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="1"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="2.5"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="5"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="10"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="hit",le="+Inf"} 1
+authentication_token_cache_request_duration_seconds_sum{status="hit"} 0
+authentication_token_cache_request_duration_seconds_count{status="hit"} 1
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="0.005"} 394
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="0.01"} 422
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="0.025"} 426
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="0.05"} 427
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="0.1"} 430
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="0.25"} 430
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="0.5"} 431
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="1"} 431
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="2.5"} 431
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="5"} 431
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="10"} 431
+authentication_token_cache_request_duration_seconds_bucket{status="miss",le="+Inf"} 431
+authentication_token_cache_request_duration_seconds_sum{status="miss"} 2.2419999999999876
+authentication_token_cache_request_duration_seconds_count{status="miss"} 431
+# HELP authentication_token_cache_request_total [ALPHA] 
+# TYPE authentication_token_cache_request_total counter
+authentication_token_cache_request_total{status="hit"} 1
+authentication_token_cache_request_total{status="miss"} 431
+# HELP go_gc_duration_seconds A summary of the GC invocation durations.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 5.2223e-05
+go_gc_duration_seconds{quantile="0.25"} 0.000154673
+go_gc_duration_seconds{quantile="0.5"} 0.000208595
+go_gc_duration_seconds{quantile="0.75"} 0.000255495
+go_gc_duration_seconds{quantile="1"} 0.118492528
+go_gc_duration_seconds_sum 0.138714134
+go_gc_duration_seconds_count 87
+# HELP go_goroutines Number of goroutines that currently exist.
+# TYPE go_goroutines gauge
+go_goroutines 82
+# HELP go_info Information about the Go environment.
+# TYPE go_info gauge
+go_info{version="go1.15.0"} 1
+# HELP go_memstats_alloc_bytes Number of bytes allocated and still in use.
+# TYPE go_memstats_alloc_bytes gauge
+go_memstats_alloc_bytes 1.3456496e+07
+# HELP go_memstats_alloc_bytes_total Total number of bytes allocated, even if freed.
+# TYPE go_memstats_alloc_bytes_total counter
+go_memstats_alloc_bytes_total 6.26118416e+08
+# HELP go_memstats_buck_hash_sys_bytes Number of bytes used by the profiling bucket hash table.
+# TYPE go_memstats_buck_hash_sys_bytes gauge
+go_memstats_buck_hash_sys_bytes 1.584249e+06
+# HELP go_memstats_frees_total Total number of frees.
+# TYPE go_memstats_frees_total counter
+go_memstats_frees_total 3.181471e+06
+# HELP go_memstats_gc_cpu_fraction The fraction of this program's available CPU time used by the GC since the program started.
+# TYPE go_memstats_gc_cpu_fraction gauge
+go_memstats_gc_cpu_fraction 6.189388813466055e-05
+# HELP go_memstats_gc_sys_bytes Number of bytes used for garbage collection system metadata.
+# TYPE go_memstats_gc_sys_bytes gauge
+go_memstats_gc_sys_bytes 6.14472e+06
+# HELP go_memstats_heap_alloc_bytes Number of heap bytes allocated and still in use.
+# TYPE go_memstats_heap_alloc_bytes gauge
+go_memstats_heap_alloc_bytes 1.3456496e+07
+# HELP go_memstats_heap_idle_bytes Number of heap bytes waiting to be used.
+# TYPE go_memstats_heap_idle_bytes gauge
+go_memstats_heap_idle_bytes 4.7685632e+07
+# HELP go_memstats_heap_inuse_bytes Number of heap bytes that are in use.
+# TYPE go_memstats_heap_inuse_bytes gauge
+go_memstats_heap_inuse_bytes 1.847296e+07
+# HELP go_memstats_heap_objects Number of allocated objects.
+# TYPE go_memstats_heap_objects gauge
+go_memstats_heap_objects 66468
+# HELP go_memstats_heap_released_bytes Number of heap bytes released to OS.
+# TYPE go_memstats_heap_released_bytes gauge
+go_memstats_heap_released_bytes 4.3696128e+07
+# HELP go_memstats_heap_sys_bytes Number of heap bytes obtained from system.
+# TYPE go_memstats_heap_sys_bytes gauge
+go_memstats_heap_sys_bytes 6.6158592e+07
+# HELP go_memstats_last_gc_time_seconds Number of seconds since 1970 of last garbage collection.
+# TYPE go_memstats_last_gc_time_seconds gauge
+go_memstats_last_gc_time_seconds 1.6031741806513464e+09
+# HELP go_memstats_lookups_total Total number of pointer lookups.
+# TYPE go_memstats_lookups_total counter
+go_memstats_lookups_total 0
+# HELP go_memstats_mallocs_total Total number of mallocs.
+# TYPE go_memstats_mallocs_total counter
+go_memstats_mallocs_total 3.247939e+06
+# HELP go_memstats_mcache_inuse_bytes Number of bytes in use by mcache structures.
+# TYPE go_memstats_mcache_inuse_bytes gauge
+go_memstats_mcache_inuse_bytes 6944
+# HELP go_memstats_mcache_sys_bytes Number of bytes used for mcache structures obtained from system.
+# TYPE go_memstats_mcache_sys_bytes gauge
+go_memstats_mcache_sys_bytes 16384
+# HELP go_memstats_mspan_inuse_bytes Number of bytes in use by mspan structures.
+# TYPE go_memstats_mspan_inuse_bytes gauge
+go_memstats_mspan_inuse_bytes 215016
+# HELP go_memstats_mspan_sys_bytes Number of bytes used for mspan structures obtained from system.
+# TYPE go_memstats_mspan_sys_bytes gauge
+go_memstats_mspan_sys_bytes 360448
+# HELP go_memstats_next_gc_bytes Number of heap bytes when next garbage collection will take place.
+# TYPE go_memstats_next_gc_bytes gauge
+go_memstats_next_gc_bytes 2.3357472e+07
+# HELP go_memstats_other_sys_bytes Number of bytes used for other system allocations.
+# TYPE go_memstats_other_sys_bytes gauge
+go_memstats_other_sys_bytes 627895
+# HELP go_memstats_stack_inuse_bytes Number of bytes in use by the stack allocator.
+# TYPE go_memstats_stack_inuse_bytes gauge
+go_memstats_stack_inuse_bytes 950272
+# HELP go_memstats_stack_sys_bytes Number of bytes obtained from system for stack allocator.
+# TYPE go_memstats_stack_sys_bytes gauge
+go_memstats_stack_sys_bytes 950272
+# HELP go_memstats_sys_bytes Number of bytes obtained from system.
+# TYPE go_memstats_sys_bytes gauge
+go_memstats_sys_bytes 7.584256e+07
+# HELP go_threads Number of OS threads created.
+# TYPE go_threads gauge
+go_threads 9
+# HELP health_statuses_insights [ALPHA] Information about the cluster health status as detected by Insights tooling.
+# TYPE health_statuses_insights gauge
+health_statuses_insights{metric="critical"} 0
+health_statuses_insights{metric="important"} 0
+health_statuses_insights{metric="low"} 1
+health_statuses_insights{metric="moderate"} 1
+health_statuses_insights{metric="total"} 2
+# HELP insightsclient_request_recvreport_total [ALPHA] Tracks the number of reports requested
+# TYPE insightsclient_request_recvreport_total counter
+insightsclient_request_recvreport_total{client="default",status_code="200"} 6
+# HELP insightsclient_request_send_total [ALPHA] Tracks the number of metrics sends
+# TYPE insightsclient_request_send_total counter
+insightsclient_request_send_total{client="default",status_code="202"} 6
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 19.18
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 1.048576e+06
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 13
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 8.6491136e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.60316731481e+09
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 1.311428608e+09
+# HELP process_virtual_memory_max_bytes Maximum amount of virtual memory available in bytes.
+# TYPE process_virtual_memory_max_bytes gauge
+process_virtual_memory_max_bytes -1
+# HELP workqueue_adds_total [ALPHA] Total number of adds handled by workqueue
+# TYPE workqueue_adds_total counter
+workqueue_adds_total{name="DynamicCABundle-serving-cert"} 115
+workqueue_adds_total{name="DynamicConfigMapCABundle-client-ca"} 117
+workqueue_adds_total{name="DynamicServingCertificateController"} 118
+workqueue_adds_total{name="gatherer"} 13
+# HELP workqueue_depth [ALPHA] Current depth of workqueue
+# TYPE workqueue_depth gauge
+workqueue_depth{name="DynamicCABundle-serving-cert"} 0
+workqueue_depth{name="DynamicConfigMapCABundle-client-ca"} 0
+workqueue_depth{name="DynamicServingCertificateController"} 0
+workqueue_depth{name="gatherer"} 0
+# HELP workqueue_longest_running_processor_seconds [ALPHA] How many seconds has the longest running processor for workqueue been running.
+# TYPE workqueue_longest_running_processor_seconds gauge
+workqueue_longest_running_processor_seconds{name="DynamicCABundle-serving-cert"} 0
+workqueue_longest_running_processor_seconds{name="DynamicConfigMapCABundle-client-ca"} 0
+workqueue_longest_running_processor_seconds{name="DynamicServingCertificateController"} 0
+workqueue_longest_running_processor_seconds{name="gatherer"} 0
+# HELP workqueue_queue_duration_seconds [ALPHA] How long in seconds an item stays in workqueue before being requested.
+# TYPE workqueue_queue_duration_seconds histogram
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1e-08"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1e-07"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1e-06"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="9.999999999999999e-06"} 51
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="9.999999999999999e-05"} 114
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="0.001"} 115
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="0.01"} 115
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="0.1"} 115
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1"} 115
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="10"} 115
+workqueue_queue_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="+Inf"} 115
+workqueue_queue_duration_seconds_sum{name="DynamicCABundle-serving-cert"} 0.0019529520000000006
+workqueue_queue_duration_seconds_count{name="DynamicCABundle-serving-cert"} 115
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1e-08"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1e-07"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1e-06"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="9.999999999999999e-06"} 76
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="9.999999999999999e-05"} 114
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="0.001"} 116
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="0.01"} 116
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="0.1"} 117
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1"} 117
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="10"} 117
+workqueue_queue_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="+Inf"} 117
+workqueue_queue_duration_seconds_sum{name="DynamicConfigMapCABundle-client-ca"} 0.09290695100000007
+workqueue_queue_duration_seconds_count{name="DynamicConfigMapCABundle-client-ca"} 117
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="1e-08"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="1e-07"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="1e-06"} 0
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="9.999999999999999e-06"} 19
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="9.999999999999999e-05"} 117
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="0.001"} 118
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="0.01"} 118
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="0.1"} 118
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="1"} 118
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="10"} 118
+workqueue_queue_duration_seconds_bucket{name="DynamicServingCertificateController",le="+Inf"} 118
+workqueue_queue_duration_seconds_sum{name="DynamicServingCertificateController"} 0.0027722009999999997
+workqueue_queue_duration_seconds_count{name="DynamicServingCertificateController"} 118
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="1e-08"} 0
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="1e-07"} 0
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="1e-06"} 0
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="9.999999999999999e-06"} 1
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="9.999999999999999e-05"} 13
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="0.001"} 13
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="0.01"} 13
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="0.1"} 13
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="1"} 13
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="10"} 13
+workqueue_queue_duration_seconds_bucket{name="gatherer",le="+Inf"} 13
+workqueue_queue_duration_seconds_sum{name="gatherer"} 0.000195836
+workqueue_queue_duration_seconds_count{name="gatherer"} 13
+# HELP workqueue_retries_total [ALPHA] Total number of retries handled by workqueue
+# TYPE workqueue_retries_total counter
+workqueue_retries_total{name="DynamicCABundle-serving-cert"} 0
+workqueue_retries_total{name="DynamicConfigMapCABundle-client-ca"} 0
+workqueue_retries_total{name="DynamicServingCertificateController"} 0
+workqueue_retries_total{name="gatherer"} 13
+# HELP workqueue_unfinished_work_seconds [ALPHA] How many seconds of work has done that is in progress and hasn't been observed by work_duration. Large values indicate stuck threads. One can deduce the number of stuck threads by observing the rate at which this increases.
+# TYPE workqueue_unfinished_work_seconds gauge
+workqueue_unfinished_work_seconds{name="DynamicCABundle-serving-cert"} 0
+workqueue_unfinished_work_seconds{name="DynamicConfigMapCABundle-client-ca"} 0
+workqueue_unfinished_work_seconds{name="DynamicServingCertificateController"} 0
+workqueue_unfinished_work_seconds{name="gatherer"} 0
+# HELP workqueue_work_duration_seconds [ALPHA] How long in seconds processing an item from workqueue takes.
+# TYPE workqueue_work_duration_seconds histogram
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1e-08"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1e-07"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1e-06"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="9.999999999999999e-06"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="9.999999999999999e-05"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="0.001"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="0.01"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="0.1"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="1"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="10"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicCABundle-serving-cert",le="+Inf"} 115
+workqueue_work_duration_seconds_sum{name="DynamicCABundle-serving-cert"} 0.04687979499999999
+workqueue_work_duration_seconds_count{name="DynamicCABundle-serving-cert"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1e-08"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1e-07"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1e-06"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="9.999999999999999e-06"} 8
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="9.999999999999999e-05"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="0.001"} 117
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="0.01"} 117
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="0.1"} 117
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="1"} 117
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="10"} 117
+workqueue_work_duration_seconds_bucket{name="DynamicConfigMapCABundle-client-ca",le="+Inf"} 117
+workqueue_work_duration_seconds_sum{name="DynamicConfigMapCABundle-client-ca"} 0.0043756729999999975
+workqueue_work_duration_seconds_count{name="DynamicConfigMapCABundle-client-ca"} 117
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="1e-08"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="1e-07"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="1e-06"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="9.999999999999999e-06"} 0
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="9.999999999999999e-05"} 113
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="0.001"} 115
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="0.01"} 118
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="0.1"} 118
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="1"} 118
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="10"} 118
+workqueue_work_duration_seconds_bucket{name="DynamicServingCertificateController",le="+Inf"} 118
+workqueue_work_duration_seconds_sum{name="DynamicServingCertificateController"} 0.009871749999999997
+workqueue_work_duration_seconds_count{name="DynamicServingCertificateController"} 118
+workqueue_work_duration_seconds_bucket{name="gatherer",le="1e-08"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="1e-07"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="1e-06"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="9.999999999999999e-06"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="9.999999999999999e-05"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="0.001"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="0.01"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="0.1"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="1"} 0
+workqueue_work_duration_seconds_bucket{name="gatherer",le="10"} 3
+workqueue_work_duration_seconds_bucket{name="gatherer",le="+Inf"} 13
+workqueue_work_duration_seconds_sum{name="gatherer"} 236.38745128300002
+workqueue_work_duration_seconds_count{name="gatherer"} 13

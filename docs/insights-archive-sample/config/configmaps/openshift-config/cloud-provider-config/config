@@ -1,0 +1,10 @@
+[global]
+project-id      = openshift-gce-devel-ci
+regional        = true
+multizone       = true
+node-tags       = ci-ln-d53y532-f76d1-2btqq-master
+node-tags       = ci-ln-d53y532-f76d1-2btqq-worker
+node-instance-prefix = ci-ln-d53y532-f76d1-2btqq
+external-instance-groups-prefix = ci-ln-d53y532-f76d1-2btqq
+subnetwork-name = ci-ln-d53y532-f76d1-2btqq-worker-subnet
+

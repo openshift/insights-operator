@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "name": "system:openshift:scc:anyuid",
+    "selfLink": "/apis/authorization.openshift.io/v1/clusterrolebindings/system%3Aopenshift%3Ascc%3Aanyuid",
+    "uid": "f22b605f-fcb3-43c5-8d06-b21bc53543ce",
+    "resourceVersion": "3382727",
+    "creationTimestamp": "2021-01-25T12:25:44Z"
+  },
+  "userNames": null,
+  "groupNames": [
+    "system:serviceaccounts:sdi"
+  ],
+  "subjects": [
+    {
+      "kind": "SystemGroup",
+      "name": "system:serviceaccounts:sdi"
+    }
+  ],
+  "roleRef": {
+    "name": "system:openshift:scc:anyuid"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "marketplace",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/marketplace",
+    "uid": "cf897354-d422-400e-a6e5-d0373bc80aa8",
+    "resourceVersion": "9868",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:28:34Z",
+        "reason": "OperatorAvailable",
+        "message": "Successfully progressed to release version: 4.7.16"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:28:34Z",
+        "reason": "OperatorAvailable",
+        "message": "Available release version: 4.7.16"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:28:34Z",
+        "reason": "OperatorAvailable",
+        "message": "Marketplace is upgradeable"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:27:45Z",
+        "reason": "OperatorAvailable",
+        "message": "Successfully progressed to release version: 4.7.16"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-marketplace"
+      },
+      {
+        "group": "operators.coreos.com",
+        "resource": "catalogsources",
+        "namespace": "openshift-marketplace",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

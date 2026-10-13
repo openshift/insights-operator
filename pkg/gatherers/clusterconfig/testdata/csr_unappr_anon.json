@@ -1,0 +1,55 @@
+{
+    "TypeMeta": {},
+    "ObjectMeta": {
+        "name": "my-svc.my-namespace",
+        "selfLink": "/apis/certificates.k8s.io/v1beta1/certificatesigningrequests/my-svc.my-namespace",
+        "uid": "268679a0-40de-11ea-bb09-52fdfc072182",
+        "resourceVersion": "230169",
+        "creationTimestamp": "2020-01-27T08:22:26Z"
+    },
+    "Spec": {
+        "UID": "",
+        "Username": "kube:admin",
+        "Groups": [
+            "system:cluster-admins",
+            "system:authenticated"
+        ],
+        "Usages": [
+            "digital signature",
+            "key encipherment",
+            "server auth"
+        ],
+        "Request": {
+            "ValidSignature": true,
+            "SignatureAlgorithm": "SHA256-RSA",
+            "PublicKeyAlgorithm": "RSA",
+            "DNSNames": [],
+            "EmailAddresses": [],
+            "IPAddresses": [],
+            "URIs": [],
+            "Subject": {
+                "Country": [
+                    "xx"
+                ],
+                "Organization": [
+                    "xxxxxxxxxxxxxxxxxxx"
+                ],
+                "OrganizationalUnit": [],
+                "Locality": [
+                    "xxxxxxxxxxxx"
+                ],
+                "Province": [],
+                "StreetAddress": [],
+                "PostalCode": [],
+                "SerialNumber": "",
+                "CommonName": "xx",
+                "Names": null,
+                "ExtraNames": null
+            }
+        }
+    },
+    "Status": {
+        "Conditions": null,
+        "Cert": null
+    }
+}

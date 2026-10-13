@@ -1,0 +1,269 @@
+{
+  "metadata": {
+    "name": "etcd-operator-78bb597755-r6lgn",
+    "generateName": "etcd-operator-78bb597755-",
+    "namespace": "openshift-etcd-operator",
+    "selfLink": "/api/v1/namespaces/openshift-etcd-operator/pods/etcd-operator-78bb597755-r6lgn",
+    "uid": "d3c61916-4d2d-44d3-b774-a6654424e54e",
+    "resourceVersion": "339748",
+    "creationTimestamp": "2021-07-07T11:03:30Z",
+    "labels": {
+      "app": "etcd-operator",
+      "pod-template-hash": "78bb597755"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.7\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.7\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "etcd-operator-78bb597755",
+        "uid": "cb0f2d00-f60d-4945-a303-75888a1c3d8e",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "serving-cert",
+        "secret": {
+          "secretName": "etcd-operator-serving-cert",
+          "defaultMode": 420,
+          "optional": true
+        }
+      },
+      {
+        "name": "config",
+        "configMap": {
+          "name": "etcd-operator-config",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "etcd-ca",
+        "configMap": {
+          "name": "etcd-ca-bundle",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "etcd-service-ca",
+        "configMap": {
+          "name": "etcd-service-ca-bundle",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "etcd-client",
+        "secret": {
+          "secretName": "etcd-client",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "etcd-operator-token-mmtpt",
+        "secret": {
+          "secretName": "etcd-operator-token-mmtpt",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "etcd-operator",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4d423e2d8eae673e08fca3865ed7cc8dc2bac5dccd6ec07675aa130c9e74e912",
+        "command": [
+          "cluster-etcd-operator",
+          "operator"
+        ],
+        "args": [
+          "--config=/var/run/configmaps/config/config.yaml",
+          "-v=4",
+          "--terminate-on-files=/var/run/secrets/serving-cert/tls.crt",
+          "--terminate-on-files=/var/run/secrets/serving-cert/tls.key"
+        ],
+        "ports": [
+          {
+            "name": "metrics",
+            "containerPort": 8443,
+            "protocol": "TCP"
+          }
+        ],
+        "env": [
+          {
+            "name": "IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7"
+          },
+          {
+            "name": "OPERATOR_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4d423e2d8eae673e08fca3865ed7cc8dc2bac5dccd6ec07675aa130c9e74e912"
+          },
+          {
+            "name": "OPERATOR_IMAGE_VERSION",
+            "value": "4.7.16"
+          },
+          {
+            "name": "OPERAND_IMAGE_VERSION",
+            "value": "4.7.16"
+          },
+          {
+            "name": "OPENSHIFT_PROFILE",
+            "value": "web"
+          },
+          {
+            "name": "POD_NAME",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.name"
+              }
+            }
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "config",
+            "mountPath": "/var/run/configmaps/config"
+          },
+          {
+            "name": "serving-cert",
+            "mountPath": "/var/run/secrets/serving-cert"
+          },
+          {
+            "name": "etcd-ca",
+            "mountPath": "/var/run/configmaps/etcd-ca"
+          },
+          {
+            "name": "etcd-service-ca",
+            "mountPath": "/var/run/configmaps/etcd-service-ca"
+          },
+          {
+            "name": "etcd-client",
+            "mountPath": "/var/run/secrets/etcd-client"
+          },
+          {
+            "name": "etcd-operator-token-mmtpt",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "etcd-operator",
+    "serviceAccount": "etcd-operator",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {},
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-cluster-critical",
+    "priority": 2000000000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:17Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:17Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.7",
+    "podIPs": [
+      {
+        "ip": "10.128.0.7"
+      }
+    ],
+    "startTime": "2021-07-07T11:26:11Z",
+    "containerStatuses": [
+      {
+        "name": "etcd-operator",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T11:00:17Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "message": "58 +0x135\n\ngoroutine 397 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc0010586c0)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 398 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc001058720)\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:58 +0x135\n\ngoroutine 399 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc001058840)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 375 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc000491560)\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:58 +0x135\n\ngoroutine 376 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc0004919e0)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 377 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc000491a40)\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/queue.go:58 +0x135\n\ngoroutine 378 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc000491c20)\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.1/util/workqueue/delaying_queue.go:68 +0x185\n",
+            "startedAt": "2021-07-08T10:59:33Z",
+            "finishedAt": "2021-07-08T11:00:04Z",
+            "containerID": "cri-o://6df376410075972b51d2dc2341beeca58e672e62ac67d47a6b54d6ac0561a77b"
+          }
+        },
+        "ready": true,
+        "restartCount": 11,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4d423e2d8eae673e08fca3865ed7cc8dc2bac5dccd6ec07675aa130c9e74e912",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:4d423e2d8eae673e08fca3865ed7cc8dc2bac5dccd6ec07675aa130c9e74e912",
+        "containerID": "cri-o://2ca3cc5aa86c6a792bb12b8a66aaeb97c388f20b12824d7e8d2c507985fcd6c4",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

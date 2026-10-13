@@ -1,0 +1,687 @@
+{
+  "metadata": {
+    "name": "etcd-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "namespace": "openshift-etcd",
+    "selfLink": "/api/v1/namespaces/openshift-etcd/pods/etcd-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "uid": "1770220e-f347-45bc-9165-60b6e61d0a6f",
+    "resourceVersion": "9321",
+    "creationTimestamp": "2021-07-07T11:27:06Z",
+    "labels": {
+      "app": "etcd",
+      "etcd": "true",
+      "k8s-app": "etcd",
+      "revision": "2"
+    },
+    "annotations": {
+      "kubernetes.io/config.hash": "ab2e5349-b857-4750-a560-86cdde23ab2c",
+      "kubernetes.io/config.mirror": "ab2e5349-b857-4750-a560-86cdde23ab2c",
+      "kubernetes.io/config.seen": "2021-07-07T11:27:06.340196081Z",
+      "kubernetes.io/config.source": "file"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "v1",
+        "kind": "Node",
+        "name": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+        "uid": "7b9db4ae-6ec2-45b7-ba44-dd0df8e32466",
+        "controller": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "static-pod-dir",
+        "hostPath": {
+          "path": "/etc/kubernetes/manifests",
+          "type": ""
+        }
+      },
+      {
+        "name": "resource-dir",
+        "hostPath": {
+          "path": "/etc/kubernetes/static-pod-resources/etcd-pod-2",
+          "type": ""
+        }
+      },
+      {
+        "name": "cert-dir",
+        "hostPath": {
+          "path": "/etc/kubernetes/static-pod-resources/etcd-certs",
+          "type": ""
+        }
+      },
+      {
+        "name": "data-dir",
+        "hostPath": {
+          "path": "/var/lib/etcd",
+          "type": ""
+        }
+      },
+      {
+        "name": "usr-local-bin",
+        "hostPath": {
+          "path": "/usr/local/bin",
+          "type": ""
+        }
+      }
+    ],
+    "initContainers": [
+      {
+        "name": "etcd-ensure-env-vars",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "command": [
+          "/bin/sh",
+          "-c",
+          "#!/bin/sh\nset -euo pipefail\n\n: \"${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST?not set}\"\n: \"${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_NAME?not set}\"\n: \"${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP?not set}\"\n\n# check for ipv4 addresses as well as ipv6 addresses with extra square brackets\nif [[ \"${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP}\" != \"${NODE_IP}\" && \"${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP}\" != \"[${NODE_IP}]\" ]]; then\n  # echo the error message to stderr\n  echo \"Expected node IP to be ${NODE_IP} got ${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP}\" >&2\n  exit 1\nfi\n\n# check for ipv4 addresses as well as ipv6 addresses with extra square brackets\nif [[ \"${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST}\" != \"${NODE_IP}\" && \"${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST}\" != \"[${NODE_IP}]\" ]]; then\n  # echo the error message to stderr\n  echo \"Expected etcd url host to be ${NODE_IP} got ${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST}\" >&2\n  exit 1\nfi\n"
+        ],
+        "env": [
+          {
+            "name": "ALL_ETCD_ENDPOINTS",
+            "value": "https://10.0.88.27:2379,https://10.0.93.169:2379"
+          },
+          {
+            "name": "ETCDCTL_API",
+            "value": "3"
+          },
+          {
+            "name": "ETCDCTL_CACERT",
+            "value": "/etc/kubernetes/static-pod-certs/configmaps/etcd-serving-ca/ca-bundle.crt"
+          },
+          {
+            "name": "ETCDCTL_CERT",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt"
+          },
+          {
+            "name": "ETCDCTL_ENDPOINTS",
+            "value": "https://10.0.88.27:2379"
+          },
+          {
+            "name": "ETCDCTL_KEY",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key"
+          },
+          {
+            "name": "ETCD_CIPHER_SUITES",
+            "value": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+          },
+          {
+            "name": "ETCD_DATA_DIR",
+            "value": "/var/lib/etcd"
+          },
+          {
+            "name": "ETCD_ELECTION_TIMEOUT",
+            "value": "1000"
+          },
+          {
+            "name": "ETCD_ENABLE_PPROF",
+            "value": "true"
+          },
+          {
+            "name": "ETCD_HEARTBEAT_INTERVAL",
+            "value": "100"
+          },
+          {
+            "name": "ETCD_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7"
+          },
+          {
+            "name": "ETCD_INITIAL_CLUSTER_STATE",
+            "value": "existing"
+          },
+          {
+            "name": "ETCD_QUOTA_BACKEND_BYTES",
+            "value": "7516192768"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_NAME",
+            "value": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST",
+            "value": "10.0.88.27"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP",
+            "value": "10.0.88.27"
+          },
+          {
+            "name": "NODE_IP",
+            "valueFrom": {
+              "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "status.podIP"
+              }
+            }
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "60Mi"
+          }
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "privileged": true
+        }
+      },
+      {
+        "name": "etcd-resources-copy",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "command": [
+          "/bin/sh",
+          "-c",
+          "#!/bin/sh\nset -euo pipefail\n\nrm -f $(grep -l '^### Created by cluster-etcd-operator' /usr/local/bin/*)\ncp -p /etc/kubernetes/static-pod-certs/configmaps/etcd-scripts/*.sh /usr/local/bin\n"
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "60Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "resource-dir",
+            "mountPath": "/etc/kubernetes/static-pod-resources"
+          },
+          {
+            "name": "cert-dir",
+            "mountPath": "/etc/kubernetes/static-pod-certs"
+          },
+          {
+            "name": "usr-local-bin",
+            "mountPath": "/usr/local/bin"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "privileged": true
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "etcdctl",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "command": [
+          "/bin/bash",
+          "-c",
+          "trap TERM INT; sleep infinity & wait"
+        ],
+        "env": [
+          {
+            "name": "ALL_ETCD_ENDPOINTS",
+            "value": "https://10.0.88.27:2379,https://10.0.93.169:2379"
+          },
+          {
+            "name": "ETCDCTL_API",
+            "value": "3"
+          },
+          {
+            "name": "ETCDCTL_CACERT",
+            "value": "/etc/kubernetes/static-pod-certs/configmaps/etcd-serving-ca/ca-bundle.crt"
+          },
+          {
+            "name": "ETCDCTL_CERT",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt"
+          },
+          {
+            "name": "ETCDCTL_ENDPOINTS",
+            "value": "https://10.0.88.27:2379"
+          },
+          {
+            "name": "ETCDCTL_KEY",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key"
+          },
+          {
+            "name": "ETCD_CIPHER_SUITES",
+            "value": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+          },
+          {
+            "name": "ETCD_DATA_DIR",
+            "value": "/var/lib/etcd"
+          },
+          {
+            "name": "ETCD_ELECTION_TIMEOUT",
+            "value": "1000"
+          },
+          {
+            "name": "ETCD_ENABLE_PPROF",
+            "value": "true"
+          },
+          {
+            "name": "ETCD_HEARTBEAT_INTERVAL",
+            "value": "100"
+          },
+          {
+            "name": "ETCD_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7"
+          },
+          {
+            "name": "ETCD_INITIAL_CLUSTER_STATE",
+            "value": "existing"
+          },
+          {
+            "name": "ETCD_QUOTA_BACKEND_BYTES",
+            "value": "7516192768"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_NAME",
+            "value": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST",
+            "value": "10.0.88.27"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP",
+            "value": "10.0.88.27"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "60Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "static-pod-dir",
+            "mountPath": "/etc/kubernetes/manifests"
+          },
+          {
+            "name": "resource-dir",
+            "mountPath": "/etc/kubernetes/static-pod-resources"
+          },
+          {
+            "name": "cert-dir",
+            "mountPath": "/etc/kubernetes/static-pod-certs"
+          },
+          {
+            "name": "data-dir",
+            "mountPath": "/var/lib/etcd/"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent"
+      },
+      {
+        "name": "etcd",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "command": [
+          "/bin/sh",
+          "-c",
+          "#!/bin/sh\nset -euo pipefail\n\netcdctl member list || true\n\n# this has a non-zero return code if the command is non-zero.  If you use an export first, it doesn't and you\n# will succeed when you should fail.\nETCD_INITIAL_CLUSTER=$(discover-etcd-initial-cluster \\\n  --cacert=/etc/kubernetes/static-pod-certs/configmaps/etcd-serving-ca/ca-bundle.crt \\\n  --cert=/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt \\\n  --key=/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key \\\n  --endpoints=${ALL_ETCD_ENDPOINTS} \\\n  --data-dir=/var/lib/etcd \\\n  --target-peer-url-host=${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST} \\\n  --target-name=master-0.imeixner20210707.lab.upshift.rdu2.redhat.com)\n export ETCD_INITIAL_CLUSTER\n\n# we cannot use the \"normal\" port conflict initcontainer because when we upgrade, the existing static pod will never yield,\n# so we do the detection in etcd container itsefl.\necho -n \"Waiting for ports 2379, 2380 and 9978 to be released.\"\nwhile [ -n \"$(ss -Htan '( sport = 2379 or sport = 2380 or sport = 9978 )')\" ]; do\n  echo -n \".\"\n  sleep 1\ndone\n\nexport ETCD_NAME=${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_NAME}\nenv | grep ETCD | grep -v NODE\n\nset -x\n# See https://etcd.io/docs/v3.4.0/tuning/ for why we use ionice\nexec ionice -c2 -n0 etcd \\\n  --log-level=info \\\n  --initial-advertise-peer-urls=https://${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP}:2380 \\\n  --cert-file=/etc/kubernetes/static-pod-certs/secrets/etcd-all-serving/etcd-serving-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt \\\n  --key-file=/etc/kubernetes/static-pod-certs/secrets/etcd-all-serving/etcd-serving-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key \\\n  --trusted-ca-file=/etc/kubernetes/static-pod-certs/configmaps/etcd-serving-ca/ca-bundle.crt \\\n  --client-cert-auth=true \\\n  --peer-cert-file=/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt \\\n  --peer-key-file=/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key \\\n  --peer-trusted-ca-file=/etc/kubernetes/static-pod-certs/configmaps/etcd-peer-client-ca/ca-bundle.crt \\\n  --peer-client-cert-auth=true \\\n  --advertise-client-urls=https://${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP}:2379 \\\n  --listen-client-urls=https://0.0.0.0:2379 \\\n  --listen-peer-urls=https://0.0.0.0:2380 \\\n  --listen-metrics-urls=https://0.0.0.0:9978 ||  mv /etc/kubernetes/etcd-backup-dir/etcd-member.yaml /etc/kubernetes/manifests\n"
+        ],
+        "env": [
+          {
+            "name": "ALL_ETCD_ENDPOINTS",
+            "value": "https://10.0.88.27:2379,https://10.0.93.169:2379"
+          },
+          {
+            "name": "ETCDCTL_API",
+            "value": "3"
+          },
+          {
+            "name": "ETCDCTL_CACERT",
+            "value": "/etc/kubernetes/static-pod-certs/configmaps/etcd-serving-ca/ca-bundle.crt"
+          },
+          {
+            "name": "ETCDCTL_CERT",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt"
+          },
+          {
+            "name": "ETCDCTL_ENDPOINTS",
+            "value": "https://10.0.88.27:2379"
+          },
+          {
+            "name": "ETCDCTL_KEY",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key"
+          },
+          {
+            "name": "ETCD_CIPHER_SUITES",
+            "value": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+          },
+          {
+            "name": "ETCD_DATA_DIR",
+            "value": "/var/lib/etcd"
+          },
+          {
+            "name": "ETCD_ELECTION_TIMEOUT",
+            "value": "1000"
+          },
+          {
+            "name": "ETCD_ENABLE_PPROF",
+            "value": "true"
+          },
+          {
+            "name": "ETCD_HEARTBEAT_INTERVAL",
+            "value": "100"
+          },
+          {
+            "name": "ETCD_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7"
+          },
+          {
+            "name": "ETCD_INITIAL_CLUSTER_STATE",
+            "value": "existing"
+          },
+          {
+            "name": "ETCD_QUOTA_BACKEND_BYTES",
+            "value": "7516192768"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_NAME",
+            "value": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST",
+            "value": "10.0.88.27"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP",
+            "value": "10.0.88.27"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "300m",
+            "memory": "600Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "static-pod-dir",
+            "mountPath": "/etc/kubernetes/manifests"
+          },
+          {
+            "name": "resource-dir",
+            "mountPath": "/etc/kubernetes/static-pod-resources"
+          },
+          {
+            "name": "cert-dir",
+            "mountPath": "/etc/kubernetes/static-pod-certs"
+          },
+          {
+            "name": "data-dir",
+            "mountPath": "/var/lib/etcd/"
+          }
+        ],
+        "readinessProbe": {
+          "tcpSocket": {
+            "port": 2380
+          },
+          "initialDelaySeconds": 3,
+          "timeoutSeconds": 5,
+          "periodSeconds": 5,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "privileged": true
+        }
+      },
+      {
+        "name": "etcd-metrics",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "command": [
+          "/bin/sh",
+          "-c",
+          "#!/bin/sh\nset -euo pipefail\n\nexport ETCD_NAME=${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_NAME}\n\nexec etcd grpc-proxy start \\\n  --endpoints https://${NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST}:9978 \\\n  --metrics-addr https://0.0.0.0:9979 \\\n  --listen-addr 127.0.0.1:9977 \\\n  --key /etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key \\\n  --key-file /etc/kubernetes/static-pod-certs/secrets/etcd-all-serving-metrics/etcd-serving-metrics-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key \\\n  --cert /etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt \\\n  --cert-file /etc/kubernetes/static-pod-certs/secrets/etcd-all-serving-metrics/etcd-serving-metrics-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt \\\n  --cacert /etc/kubernetes/static-pod-certs/configmaps/etcd-peer-client-ca/ca-bundle.crt \\\n  --trusted-ca-file /etc/kubernetes/static-pod-certs/configmaps/etcd-metrics-proxy-serving-ca/ca-bundle.crt\n"
+        ],
+        "env": [
+          {
+            "name": "ALL_ETCD_ENDPOINTS",
+            "value": "https://10.0.88.27:2379,https://10.0.93.169:2379"
+          },
+          {
+            "name": "ETCDCTL_API",
+            "value": "3"
+          },
+          {
+            "name": "ETCDCTL_CACERT",
+            "value": "/etc/kubernetes/static-pod-certs/configmaps/etcd-serving-ca/ca-bundle.crt"
+          },
+          {
+            "name": "ETCDCTL_CERT",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.crt"
+          },
+          {
+            "name": "ETCDCTL_ENDPOINTS",
+            "value": "https://10.0.88.27:2379"
+          },
+          {
+            "name": "ETCDCTL_KEY",
+            "value": "/etc/kubernetes/static-pod-certs/secrets/etcd-all-peer/etcd-peer-master-0.imeixner20210707.lab.upshift.rdu2.redhat.com.key"
+          },
+          {
+            "name": "ETCD_CIPHER_SUITES",
+            "value": "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+          },
+          {
+            "name": "ETCD_DATA_DIR",
+            "value": "/var/lib/etcd"
+          },
+          {
+            "name": "ETCD_ELECTION_TIMEOUT",
+            "value": "1000"
+          },
+          {
+            "name": "ETCD_ENABLE_PPROF",
+            "value": "true"
+          },
+          {
+            "name": "ETCD_HEARTBEAT_INTERVAL",
+            "value": "100"
+          },
+          {
+            "name": "ETCD_IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7"
+          },
+          {
+            "name": "ETCD_INITIAL_CLUSTER_STATE",
+            "value": "existing"
+          },
+          {
+            "name": "ETCD_QUOTA_BACKEND_BYTES",
+            "value": "7516192768"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_NAME",
+            "value": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_ETCD_URL_HOST",
+            "value": "10.0.88.27"
+          },
+          {
+            "name": "NODE_master_0_imeixner20210707_lab_upshift_rdu2_redhat_com_IP",
+            "value": "10.0.88.27"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "40m",
+            "memory": "200Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "resource-dir",
+            "mountPath": "/etc/kubernetes/static-pod-resources"
+          },
+          {
+            "name": "cert-dir",
+            "mountPath": "/etc/kubernetes/static-pod-certs"
+          },
+          {
+            "name": "data-dir",
+            "mountPath": "/var/lib/etcd/"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "privileged": true
+        }
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "hostNetwork": true,
+    "securityContext": {},
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "operator": "Exists"
+      }
+    ],
+    "priorityClassName": "system-node-critical",
+    "priority": 2000001000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:27:14Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:28:09Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:28:09Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:27:06Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.0.88.27",
+    "podIPs": [
+      {
+        "ip": "10.0.88.27"
+      }
+    ],
+    "startTime": "2021-07-07T11:27:06Z",
+    "initContainerStatuses": [
+      {
+        "name": "etcd-ensure-env-vars",
+        "state": {
+          "terminated": {
+            "exitCode": 0,
+            "reason": "Completed",
+            "startedAt": "2021-07-07T11:27:12Z",
+            "finishedAt": "2021-07-07T11:27:12Z",
+            "containerID": "cri-o://7fd19af353b27599b0f3c96720fb8201d58ada2ce6400259f345d48f88bd82bc"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "containerID": "cri-o://7fd19af353b27599b0f3c96720fb8201d58ada2ce6400259f345d48f88bd82bc"
+      },
+      {
+        "name": "etcd-resources-copy",
+        "state": {
+          "terminated": {
+            "exitCode": 0,
+            "reason": "Completed",
+            "startedAt": "2021-07-07T11:27:13Z",
+            "finishedAt": "2021-07-07T11:27:13Z",
+            "containerID": "cri-o://fc8639cd43366b8a50a71a25154e51bd6cfe970497f473fc8a5bcf93beddd2a1"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "containerID": "cri-o://fc8639cd43366b8a50a71a25154e51bd6cfe970497f473fc8a5bcf93beddd2a1"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "name": "etcd",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T11:28:01Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 1,
+            "reason": "Error",
+            "message": "=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\n#### attempt 3\n      member={name=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\n#### attempt 4\n      member={name=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\n#### attempt 5\n      member={name=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\n#### attempt 6\n      member={name=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\n#### attempt 7\n      member={name=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\n#### attempt 8\n      member={name=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\n#### attempt 9\n      member={name=\"etcd-bootstrap\", peerURLs=[https://10.0.93.169:2380}, clientURLs=[https://10.0.93.169:2379]\n      member \"https://10.0.88.27:2380\" not found in member list, check operator logs for possible scaling problems\n#### sleeping...\ntimed out",
+            "startedAt": "2021-07-07T11:27:31Z",
+            "finishedAt": "2021-07-07T11:27:46Z",
+            "containerID": "cri-o://f6218f6a1976625b3576d1bc02b5015f2478986f542ecd6988c8be09e8d56747"
+          }
+        },
+        "ready": true,
+        "restartCount": 2,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "containerID": "cri-o://47e51e5446b2392912df28a0ac2bca207bbda371cc77bc125553020d17d3cc60",
+        "started": true
+      },
+      {
+        "name": "etcd-metrics",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T11:27:15Z"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "containerID": "cri-o://bfc2b749efebeb0d40da53143f20a8effbb72aaf81b62b3570ef1f809428c80a",
+        "started": true
+      },
+      {
+        "name": "etcdctl",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-07T11:27:14Z"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:e547acdeb82a29ae9561b1d04b55525ec78a678d892a0575f8c8c34f93542ae7",
+        "containerID": "cri-o://f360dba90bab9bdfc026c4b7539c6ad99c0a6b4912cdd6ce8dd66eb15c2fb16e",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

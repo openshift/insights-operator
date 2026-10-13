@@ -1,0 +1,118 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "kube-apiserver",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/kube-apiserver",
+    "uid": "807edd74-6789-45ae-ad22-5531ecb3b31a",
+    "resourceVersion": "340594",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "exclude.release.openshift.io/internal-openshift-hosted": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:26:30Z",
+        "reason": "AsExpected",
+        "message": "NodeControllerDegraded: All master nodes are ready"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-08T11:01:57Z",
+        "reason": "AsExpected",
+        "message": "NodeInstallerProgressing: 1 nodes are at revision 10"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:28:24Z",
+        "reason": "AsExpected",
+        "message": "StaticPodsAvailable: 1 nodes are active; 1 nodes are at revision 10"
+      },
+      {
+        "type": "Upgradeable",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:26:30Z",
+        "reason": "AsExpected",
+        "message": "All is well"
+      }
+    ],
+    "versions": [
+      {
+        "name": "raw-internal",
+        "version": "4.7.16"
+      },
+      {
+        "name": "kube-apiserver",
+        "version": "1.20.0-beta.2"
+      },
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "operator.openshift.io",
+        "resource": "kubeapiservers",
+        "name": "cluster"
+      },
+      {
+        "group": "apiextensions.k8s.io",
+        "resource": "customresourcedefinitions",
+        "name": ""
+      },
+      {
+        "group": "security.openshift.io",
+        "resource": "securitycontextconstraints",
+        "name": ""
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-config-managed"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-apiserver-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-kube-apiserver"
+      },
+      {
+        "group": "admissionregistration.k8s.io",
+        "resource": "mutatingwebhookconfigurations",
+        "name": ""
+      },
+      {
+        "group": "admissionregistration.k8s.io",
+        "resource": "validatingwebhookconfigurations",
+        "name": ""
+      },
+      {
+        "group": "controlplane.operator.openshift.io",
+        "resource": "podnetworkconnectivitychecks",
+        "namespace": "openshift-kube-apiserver",
+        "name": ""
+      }
+    ],
+    "extension": null
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "apiVersion": "operators.coreos.com/v1alpha1",
+  "kind": "Subscription",
+  "metadata": {
+    "creationTimestamp": "2026-02-18T08:53:55Z",
+    "generation": 1,
+    "labels": {
+      "operators.coreos.com/community-kubevirt-hyperconverged.kubevirt-hyperconverged": ""
+    },
+    "name": "community-kubevirt-hyperconverged",
+    "namespace": "kubevirt-hyperconverged",
+    "resourceVersion": "12345",
+    "uid": "00000000-0000-0000-0000-000000000000"
+  },
+  "spec": {
+    "channel": "stable",
+    "installPlanApproval": "Automatic",
+    "name": "community-kubevirt-hyperconverged",
+    "source": "community-operators",
+    "sourceNamespace": "openshift-marketplace",
+    "startingCSV": "kubevirt-hyperconverged-operator.v1.16.0"
+  }
+}

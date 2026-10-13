@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/featuregates/cluster",
+    "uid": "226abba6-f53b-4ca7-b35b-748c70c08bc9",
+    "resourceVersion": "1681",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:03:28Z",
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true",
+      "release.openshift.io/create-only": "true"
+    }
+  },
+  "spec": {},
+  "status": {}
+}

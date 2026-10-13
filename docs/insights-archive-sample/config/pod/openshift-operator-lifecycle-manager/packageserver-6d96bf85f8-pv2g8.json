@@ -1,0 +1,275 @@
+{
+  "metadata": {
+    "name": "packageserver-6d96bf85f8-pv2g8",
+    "generateName": "packageserver-6d96bf85f8-",
+    "namespace": "openshift-operator-lifecycle-manager",
+    "selfLink": "/api/v1/namespaces/openshift-operator-lifecycle-manager/pods/packageserver-6d96bf85f8-pv2g8",
+    "uid": "218c65a2-3147-4b0a-b280-d055ea2769f5",
+    "resourceVersion": "340106",
+    "creationTimestamp": "2021-07-07T11:27:22Z",
+    "labels": {
+      "app": "packageserver",
+      "pod-template-hash": "6d96bf85f8"
+    },
+    "annotations": {
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.40\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.40\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "olm.operatorGroup": "olm-operators",
+      "olm.operatorNamespace": "openshift-operator-lifecycle-manager",
+      "olm.targetNamespaces": "openshift-operator-lifecycle-manager",
+      "olmcahash": "a3d6ca684f54e5037cce6f6e00214e015b73e9dbd1cfb7c183bbdd59c59933bb",
+      "openshift.io/scc": "anyuid"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "packageserver-6d96bf85f8",
+        "uid": "94f36afc-f9e5-495d-ad07-1ac54a8814fc",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "tmpfs",
+        "emptyDir": {}
+      },
+      {
+        "name": "apiservice-cert",
+        "secret": {
+          "secretName": "packageserver-service-cert",
+          "items": [
+            {
+              "key": "tls.crt",
+              "path": "apiserver.crt"
+            },
+            {
+              "key": "tls.key",
+              "path": "apiserver.key"
+            }
+          ],
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "webhook-cert",
+        "secret": {
+          "secretName": "packageserver-service-cert",
+          "items": [
+            {
+              "key": "tls.crt",
+              "path": "tls.crt"
+            },
+            {
+              "key": "tls.key",
+              "path": "tls.key"
+            }
+          ],
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "olm-operator-serviceaccount-token-h2dpg",
+        "secret": {
+          "secretName": "olm-operator-serviceaccount-token-h2dpg",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "packageserver",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a82d66bbedea3a8205fba45225893071b7f783cf83d3659ea415a190dc394a03",
+        "command": [
+          "/bin/package-server",
+          "-v=4",
+          "--secure-port",
+          "5443",
+          "--global-namespace",
+          "openshift-marketplace"
+        ],
+        "ports": [
+          {
+            "containerPort": 5443,
+            "protocol": "TCP"
+          }
+        ],
+        "env": [
+          {
+            "name": "OPERATOR_CONDITION_NAME",
+            "value": "packageserver"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "tmpfs",
+            "mountPath": "/tmp"
+          },
+          {
+            "name": "apiservice-cert",
+            "mountPath": "/apiserver.local.config/certificates"
+          },
+          {
+            "name": "webhook-cert",
+            "mountPath": "/tmp/k8s-webhook-server/serving-certs"
+          },
+          {
+            "name": "olm-operator-serviceaccount-token-h2dpg",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "livenessProbe": {
+          "httpGet": {
+            "path": "/healthz",
+            "port": 5443,
+            "scheme": "HTTPS"
+          },
+          "timeoutSeconds": 1,
+          "periodSeconds": 10,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "readinessProbe": {
+          "httpGet": {
+            "path": "/healthz",
+            "port": 5443,
+            "scheme": "HTTPS"
+          },
+          "timeoutSeconds": 1,
+          "periodSeconds": 10,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "MKNOD"
+            ]
+          }
+        }
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "kubernetes.io/os": "linux",
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "olm-operator-serviceaccount",
+    "serviceAccount": "olm-operator-serviceaccount",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {
+      "seLinuxOptions": {
+        "level": "s0:c19,c9"
+      }
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-cluster-critical",
+    "priority": 2000000000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:27:22Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:56Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:56Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:27:22Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.40",
+    "podIPs": [
+      {
+        "ip": "10.128.0.40"
+      }
+    ],
+    "startTime": "2021-07-07T11:27:22Z",
+    "containerStatuses": [
+      {
+        "name": "packageserver",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T11:00:55Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 1,
+            "reason": "Error",
+            "message": "_CHACHA20_POLY1305_SHA256, TLS_RSA_WITH_3DES_EDE_CBC_SHA, TLS_RSA_WITH_AES_128_CBC_SHA, TLS_RSA_WITH_AES_128_GCM_SHA256, TLS_RSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_256_GCM_SHA384. \n                                                                Insecure values: TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, TLS_ECDHE_ECDSA_WITH_RC4_128_SHA, TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, TLS_ECDHE_RSA_WITH_RC4_128_SHA, TLS_RSA_WITH_AES_128_CBC_SHA256, TLS_RSA_WITH_RC4_128_SHA.\n      --tls-min-version string                                  Minimum TLS version supported. Possible values: VersionTLS10, VersionTLS11, VersionTLS12, VersionTLS13\n      --tls-private-key-file string                             File containing the default x509 private key matching --tls-cert-file.\n      --tls-sni-cert-key namedCertKey                           A pair of x509 certificate and private key file paths, optionally suffixed with a list of domain patterns which are fully qualified domain names, possibly with prefixed wildcard segments. The domain patterns also allow IP addresses, but IPs should only be used if the apiserver has visibility to the IP address requested by a client. If no domain patterns are provided, the names of the certificate are extracted. Non-wildcard matches trump over wildcard matches, explicit domain patterns trump over extracted names. For multiple key/certificate pairs, use the --tls-sni-cert-key multiple times. Examples: \"example.crt,example.key\" or \"foo.crt,foo.key:*.foo.com,foo.com\". (default [])\n  -v, --v Level                                                 number for the log level verbosity (default 0)\n      --vmodule moduleSpec                                      comma-separated list of pattern=N settings for file-filtered logging\n\ntime=\"2021-07-08T11:00:12Z\" level=fatal msg=\"unable to load configmap based request-header-client-ca-file: Get \\\"https://172.30.0.1:443/api/v1/namespaces/kube-system/configmaps/extension-apiserver-authentication?timeout=10s\\\": dial tcp 172.30.0.1:443: connect: connection refused\"\n",
+            "startedAt": "2021-07-08T11:00:12Z",
+            "finishedAt": "2021-07-08T11:00:12Z",
+            "containerID": "cri-o://b29434c328c09c36594b2807e565436b0c1c159e1e076057fc52cf157074b5ca"
+          }
+        },
+        "ready": true,
+        "restartCount": 18,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a82d66bbedea3a8205fba45225893071b7f783cf83d3659ea415a190dc394a03",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:a82d66bbedea3a8205fba45225893071b7f783cf83d3659ea415a190dc394a03",
+        "containerID": "cri-o://ea7ad2e4ff12fa04e9d00c515d7b1d9aa0c415a1eac177bdaa9c4092fe169df5",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

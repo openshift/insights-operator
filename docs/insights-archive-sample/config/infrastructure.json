@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/infrastructures/cluster",
+    "uid": "6c9e1a5e-b2da-49cc-b3df-b61a75a743a0",
+    "resourceVersion": "588",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:51Z"
+  },
+  "spec": {
+    "cloudConfig": {
+      "name": ""
+    },
+    "platformSpec": {
+      "type": "None"
+    }
+  },
+  "status": {
+    "infrastructureName": "xxxxxxxxxxxxxxxx-xxxxx",
+    "platform": "None",
+    "platformStatus": {
+      "type": "None"
+    },
+    "etcdDiscoveryDomain": "",
+    "apiServerURL": "https://api.imeixner20210707.lab.upshift.rdu2.redhat.com:6443",
+    "apiServerInternalURI": "https://api-int.imeixner20210707.lab.upshift.rdu2.redhat.com:6443",
+    "controlPlaneTopology": "",
+    "infrastructureTopology": ""
+  }
+}

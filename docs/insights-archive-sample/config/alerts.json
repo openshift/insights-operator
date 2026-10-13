@@ -1,0 +1,203 @@
+[
+    {
+        "labels": {
+            "alertname": "TargetDown",
+            "job": "telemeter-client",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "service": "telemeter-client",
+            "severity": "warning"
+        },
+        "annotations": {
+            "description": "100% of the telemeter-client/telemeter-client targets in openshift-monitoring namespace have been unreachable for more than 15 minutes. This may be a symptom of network connectivity issues, down nodes, or failures within these components. Assess the health of the infrastructure and nodes running these targets and then contact support.",
+            "summary": "Some targets were not reachable from the monitoring server for an extended period of time."
+        },
+        "endsAt": "2022-01-05T09:07:46.565Z",
+        "startsAt": "2022-01-04T10:10:46.565Z",
+        "updatedAt": "2022-01-05T09:03:46.572Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "ClusterVersionOperatorDown",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "severity": "critical"
+        },
+        "annotations": {
+            "description": "The operator may be down or disabled. The cluster will not be kept up to date and upgrades will not be possible. Inspect the openshift-cluster-version namespace for events or changes to the cluster-version-operator deployment or pods to diagnose and repair.  For more information refer to https://console-openshift-console.apps.testing.tremes.03.01.2022.ccxdev.devshift.net/k8s/cluster/projects/openshift-cluster-version.",
+            "summary": "Cluster version operator has disappeared from Prometheus target discovery."
+        },
+        "endsAt": "2022-01-05T09:07:16.272Z",
+        "startsAt": "2022-01-04T14:49:16.272Z",
+        "updatedAt": "2022-01-05T09:03:16.274Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "TargetDown",
+            "job": "grafana",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "service": "grafana",
+            "severity": "warning"
+        },
+        "annotations": {
+            "description": "100% of the grafana/grafana targets in openshift-monitoring namespace have been unreachable for more than 15 minutes. This may be a symptom of network connectivity issues, down nodes, or failures within these components. Assess the health of the infrastructure and nodes running these targets and then contact support.",
+            "summary": "Some targets were not reachable from the monitoring server for an extended period of time."
+        },
+        "endsAt": "2022-01-05T09:07:46.565Z",
+        "startsAt": "2022-01-04T10:10:46.565Z",
+        "updatedAt": "2022-01-05T09:03:46.572Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "TargetDown",
+            "job": "prometheus-k8s-thanos-sidecar",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "service": "prometheus-k8s-thanos-sidecar",
+            "severity": "warning"
+        },
+        "annotations": {
+            "description": "100% of the prometheus-k8s-thanos-sidecar/prometheus-k8s-thanos-sidecar targets in openshift-monitoring namespace have been unreachable for more than 15 minutes. This may be a symptom of network connectivity issues, down nodes, or failures within these components. Assess the health of the infrastructure and nodes running these targets and then contact support.",
+            "summary": "Some targets were not reachable from the monitoring server for an extended period of time."
+        },
+        "endsAt": "2022-01-05T09:07:46.565Z",
+        "startsAt": "2022-01-04T10:10:46.565Z",
+        "updatedAt": "2022-01-05T09:03:46.572Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "TargetDown",
+            "job": "prometheus-k8s",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "service": "prometheus-k8s",
+            "severity": "warning"
+        },
+        "annotations": {
+            "description": "100% of the prometheus-k8s/prometheus-k8s targets in openshift-monitoring namespace have been unreachable for more than 15 minutes. This may be a symptom of network connectivity issues, down nodes, or failures within these components. Assess the health of the infrastructure and nodes running these targets and then contact support.",
+            "summary": "Some targets were not reachable from the monitoring server for an extended period of time."
+        },
+        "endsAt": "2022-01-05T09:07:46.565Z",
+        "startsAt": "2022-01-04T10:10:46.565Z",
+        "updatedAt": "2022-01-05T09:03:46.572Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "Watchdog",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "severity": "none"
+        },
+        "annotations": {
+            "description": "This is an alert meant to ensure that the entire alerting pipeline is functional.\nThis alert is always firing, therefore it should always be firing in Alertmanager\nand always fire against a receiver. There are integrations with various notification\nmechanisms that send a notification when this alert is not firing. For example the\n\"DeadMansSnitch\" integration in PagerDuty.\n",
+            "summary": "An alert that should always be firing to certify that Alertmanager is working properly."
+        },
+        "endsAt": "2022-01-05T09:07:46.042Z",
+        "startsAt": "2022-01-03T10:14:16.042Z",
+        "updatedAt": "2022-01-05T09:03:46.045Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "TargetDown",
+            "job": "alertmanager-main",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "service": "alertmanager-main",
+            "severity": "warning"
+        },
+        "annotations": {
+            "description": "100% of the alertmanager-main/alertmanager-main targets in openshift-monitoring namespace have been unreachable for more than 15 minutes. This may be a symptom of network connectivity issues, down nodes, or failures within these components. Assess the health of the infrastructure and nodes running these targets and then contact support.",
+            "summary": "Some targets were not reachable from the monitoring server for an extended period of time."
+        },
+        "endsAt": "2022-01-05T09:07:16.565Z",
+        "startsAt": "2022-01-04T10:10:46.565Z",
+        "updatedAt": "2022-01-05T09:03:16.571Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "AlertmanagerClusterDown",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "service": "alertmanager-main",
+            "severity": "warning"
+        },
+        "annotations": {
+            "description": "100% of Alertmanager instances within the  cluster have been up for less than half of the last 5m.",
+            "summary": "Half or more of the Alertmanager instances within the same cluster are down."
+        },
+        "endsAt": "2022-01-05T09:07:39.955Z",
+        "startsAt": "2022-01-04T10:03:09.955Z",
+        "updatedAt": "2022-01-05T09:03:39.958Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    },
+    {
+        "labels": {
+            "alertname": "TargetDown",
+            "job": "thanos-querier",
+            "namespace": "openshift-monitoring",
+            "openshift_io_alert_source": "platform",
+            "prometheus": "openshift-monitoring/k8s",
+            "service": "thanos-querier",
+            "severity": "warning"
+        },
+        "annotations": {
+            "description": "100% of the thanos-querier/thanos-querier targets in openshift-monitoring namespace have been unreachable for more than 15 minutes. This may be a symptom of network connectivity issues, down nodes, or failures within these components. Assess the health of the infrastructure and nodes running these targets and then contact support.",
+            "summary": "Some targets were not reachable from the monitoring server for an extended period of time."
+        },
+        "endsAt": "2022-01-05T09:07:46.565Z",
+        "startsAt": "2022-01-04T10:10:46.565Z",
+        "updatedAt": "2022-01-05T09:03:46.570Z",
+        "status": {
+            "inhibitedBy": [],
+            "silencedBy": [],
+            "state": "active"
+        }
+    }
+]

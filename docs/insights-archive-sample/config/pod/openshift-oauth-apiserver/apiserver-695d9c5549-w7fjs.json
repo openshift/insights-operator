@@ -1,0 +1,365 @@
+{
+  "metadata": {
+    "name": "apiserver-695d9c5549-w7fjs",
+    "generateName": "apiserver-695d9c5549-",
+    "namespace": "openshift-oauth-apiserver",
+    "selfLink": "/api/v1/namespaces/openshift-oauth-apiserver/pods/apiserver-695d9c5549-w7fjs",
+    "uid": "4293ad05-c620-480e-b7bd-d46d72568578",
+    "resourceVersion": "339765",
+    "creationTimestamp": "2021-07-07T11:28:33Z",
+    "labels": {
+      "apiserver": "true",
+      "app": "openshift-oauth-apiserver",
+      "oauth-apiserver-anti-affinity": "true",
+      "pod-template-hash": "695d9c5549",
+      "revision": "1"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.51\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.51\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "node-exporter",
+      "operator.openshift.io/dep-openshift-oauth-apiserver.etcd-client.secret": "8cEV_A==",
+      "operator.openshift.io/dep-openshift-oauth-apiserver.etcd-serving-ca.configmap": "xtoDgA=="
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "apiserver-695d9c5549",
+        "uid": "7b0925a1-3591-41aa-8184-b884e9e69eee",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "audit-policies",
+        "configMap": {
+          "name": "audit-1",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "etcd-client",
+        "secret": {
+          "secretName": "etcd-client",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "etcd-serving-ca",
+        "configMap": {
+          "name": "etcd-serving-ca",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "serving-cert",
+        "secret": {
+          "secretName": "serving-cert",
+          "defaultMode": 420
+        }
+      },
+      {
+        "name": "trusted-ca-bundle",
+        "configMap": {
+          "name": "trusted-ca-bundle",
+          "items": [
+            {
+              "key": "ca-bundle.crt",
+              "path": "tls-ca-bundle.pem"
+            }
+          ],
+          "defaultMode": 420,
+          "optional": true
+        }
+      },
+      {
+        "name": "encryption-config",
+        "secret": {
+          "secretName": "encryption-config-1",
+          "defaultMode": 420,
+          "optional": true
+        }
+      },
+      {
+        "name": "audit-dir",
+        "hostPath": {
+          "path": "/var/log/oauth-apiserver",
+          "type": ""
+        }
+      },
+      {
+        "name": "oauth-apiserver-sa-token-ghq9l",
+        "secret": {
+          "secretName": "oauth-apiserver-sa-token-ghq9l",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "initContainers": [
+      {
+        "name": "fix-audit-permissions",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:bf73093ae0c7497d54da40d5acc6aeba596f1190fe2315854d4654e3a868335c",
+        "command": [
+          "sh",
+          "-c",
+          "chmod 0700 /var/log/oauth-apiserver && touch /var/log/oauth-apiserver/audit.log && chmod 0600 /var/log/oauth-apiserver/*"
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "15m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "audit-dir",
+            "mountPath": "/var/log/oauth-apiserver"
+          },
+          {
+            "name": "oauth-apiserver-sa-token-ghq9l",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "privileged": true
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "oauth-apiserver",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:bf73093ae0c7497d54da40d5acc6aeba596f1190fe2315854d4654e3a868335c",
+        "command": [
+          "/bin/bash",
+          "-ec"
+        ],
+        "args": [
+          "if [ -s /var/run/configmaps/trusted-ca-bundle/tls-ca-bundle.pem ]; then\n  echo \"Copying system trust bundle\"\n  cp -f /var/run/configmaps/trusted-ca-bundle/tls-ca-bundle.pem /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem\nfi\nexec oauth-apiserver start \\\n  --secure-port=8443 \\\n  --audit-log-path=/var/log/oauth-apiserver/audit.log \\\n  --audit-log-format=json \\\n  --audit-log-maxsize=100 \\\n  --audit-log-maxbackup=10 \\\n  --etcd-cafile=/var/run/configmaps/etcd-serving-ca/ca-bundle.crt \\\n  --etcd-keyfile=/var/run/secrets/etcd-client/tls.key \\\n  --etcd-certfile=/var/run/secrets/etcd-client/tls.crt \\\n  --shutdown-delay-duration=3s \\\n  --tls-private-key-file=/var/run/secrets/serving-cert/tls.key \\\n  --tls-cert-file=/var/run/secrets/serving-cert/tls.crt \\\n  --audit-policy-file=/var/run/configmaps/audit/secure-oauth-storage-default.yaml \\\n--cors-allowed-origins='//127\\.0\\.0\\.1(:|$)' \\\n--cors-allowed-origins='//localhost(:|$)' \\\n--etcd-servers=https://10.0.88.27:2379 \\\n--tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 \\\n--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 \\\n--tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 \\\n--tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 \\\n--tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 \\\n--tls-cipher-suites=TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 \\\n--tls-min-version=VersionTLS12 \\\n--v=2\n"
+        ],
+        "ports": [
+          {
+            "containerPort": 8443,
+            "protocol": "TCP"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "150m",
+            "memory": "200Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "audit-policies",
+            "mountPath": "/var/run/configmaps/audit"
+          },
+          {
+            "name": "etcd-client",
+            "mountPath": "/var/run/secrets/etcd-client"
+          },
+          {
+            "name": "etcd-serving-ca",
+            "mountPath": "/var/run/configmaps/etcd-serving-ca"
+          },
+          {
+            "name": "trusted-ca-bundle",
+            "mountPath": "/var/run/configmaps/trusted-ca-bundle"
+          },
+          {
+            "name": "serving-cert",
+            "mountPath": "/var/run/secrets/serving-cert"
+          },
+          {
+            "name": "encryption-config",
+            "mountPath": "/var/run/secrets/encryption-config"
+          },
+          {
+            "name": "audit-dir",
+            "mountPath": "/var/log/oauth-apiserver"
+          },
+          {
+            "name": "oauth-apiserver-sa-token-ghq9l",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "livenessProbe": {
+          "httpGet": {
+            "path": "healthz",
+            "port": 8443,
+            "scheme": "HTTPS"
+          },
+          "initialDelaySeconds": 30,
+          "timeoutSeconds": 1,
+          "periodSeconds": 10,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "readinessProbe": {
+          "httpGet": {
+            "path": "readyz",
+            "port": 8443,
+            "scheme": "HTTPS"
+          },
+          "timeoutSeconds": 1,
+          "periodSeconds": 10,
+          "successThreshold": 1,
+          "failureThreshold": 10
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "privileged": true
+        }
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 70,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "oauth-apiserver-sa",
+    "serviceAccount": "oauth-apiserver-sa",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {},
+    "affinity": {
+      "podAntiAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": [
+          {
+            "labelSelector": {
+              "matchLabels": {
+                "apiserver": "true",
+                "app": "openshift-oauth-apiserver",
+                "oauth-apiserver-anti-affinity": "true"
+              }
+            },
+            "topologyKey": "kubernetes.io/hostname"
+          }
+        ]
+      }
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priorityClassName": "system-node-critical",
+    "priority": 2000001000,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:28:40Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:21Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:21Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:28:34Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.51",
+    "podIPs": [
+      {
+        "ip": "10.128.0.51"
+      }
+    ],
+    "startTime": "2021-07-07T11:28:34Z",
+    "initContainerStatuses": [
+      {
+        "name": "fix-audit-permissions",
+        "state": {
+          "terminated": {
+            "exitCode": 0,
+            "reason": "Completed",
+            "startedAt": "2021-07-07T11:28:40Z",
+            "finishedAt": "2021-07-07T11:28:40Z",
+            "containerID": "cri-o://4c38631924907ef7ecdd1658322a3dc169baec421460b0a3e9688784c9600a1b"
+          }
+        },
+        "lastState": {},
+        "ready": true,
+        "restartCount": 0,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:bf73093ae0c7497d54da40d5acc6aeba596f1190fe2315854d4654e3a868335c",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:bf73093ae0c7497d54da40d5acc6aeba596f1190fe2315854d4654e3a868335c",
+        "containerID": "cri-o://4c38631924907ef7ecdd1658322a3dc169baec421460b0a3e9688784c9600a1b"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "name": "oauth-apiserver",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T11:00:14Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 1,
+            "reason": "Error",
+            "message": "oup is omitted for resources of apiVersion v1 (the legacy core API) and included for others, and size is a number. It takes effect when watch-cache is enabled. Some resources (replicationcontrollers, endpoints, nodes, pods, services, apiservices.apiregistration.k8s.io) have system defaults set by heuristics, others default to default-watch-cache-size\n\nGlobal Flags:\n      --add-dir-header                   If true, adds the file directory to the header of the log messages\n      --alsologtostderr                  log to standard error as well as files\n      --log-backtrace-at traceLocation   when logging hits line file:N, emit a stack trace (default :0)\n      --log-dir string                   If non-empty, write log files in this directory\n      --log-file string                  If non-empty, use this log file\n      --log-file-max-size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)\n      --log-flush-frequency duration     Maximum number of seconds between log flushes (default 5s)\n      --logtostderr                      log to standard error instead of files (default true)\n      --one-output                       If true, only write logs to their native severity level (vs also writing to each lower severity level\n      --skip-headers                     If true, avoid header prefixes in the log messages\n      --skip-log-headers                 If true, avoid headers when opening log files\n      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)\n  -v, --v Level                          number for the log level verbosity (default 0)\n      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging\n\nunable to load configmap based request-header-client-ca-file: Get \"https://172.30.0.1:443/api/v1/namespaces/kube-system/configmaps/extension-apiserver-authentication?timeout=10s\": dial tcp 172.30.0.1:443: connect: connection refused\n",
+            "startedAt": "2021-07-08T10:59:55Z",
+            "finishedAt": "2021-07-08T10:59:55Z",
+            "containerID": "cri-o://b560e6da76983978f36f02c86872f02709dee612419401eeb8a963026589bd68"
+          }
+        },
+        "ready": true,
+        "restartCount": 13,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:bf73093ae0c7497d54da40d5acc6aeba596f1190fe2315854d4654e3a868335c",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:bf73093ae0c7497d54da40d5acc6aeba596f1190fe2315854d4654e3a868335c",
+        "containerID": "cri-o://ef950face6eb68c7da982f3f6c419eeb37299b6ba374332ab53cfb170d16cb3f",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

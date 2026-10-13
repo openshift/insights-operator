@@ -1,0 +1,237 @@
+{
+  "metadata": {
+    "name": "openshift-config-operator-7db5898cdf-m9bqf",
+    "generateName": "openshift-config-operator-7db5898cdf-",
+    "namespace": "openshift-config-operator",
+    "selfLink": "/api/v1/namespaces/openshift-config-operator/pods/openshift-config-operator-7db5898cdf-m9bqf",
+    "uid": "c7596821-9a26-4d8d-b15e-59ad3507dee9",
+    "resourceVersion": "339799",
+    "creationTimestamp": "2021-07-07T11:03:30Z",
+    "labels": {
+      "app": "openshift-config-operator",
+      "pod-template-hash": "7db5898cdf"
+    },
+    "annotations": {
+      "k8s.v1.cni.cncf.io/network-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.9\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "k8s.v1.cni.cncf.io/networks-status": "[{\n    \"name\": \"\",\n    \"interface\": \"eth0\",\n    \"ips\": [\n        \"10.128.0.9\"\n    ],\n    \"default\": true,\n    \"dns\": {}\n}]",
+      "openshift.io/scc": "anyuid"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "apps/v1",
+        "kind": "ReplicaSet",
+        "name": "openshift-config-operator-7db5898cdf",
+        "uid": "2dad1fca-8992-4dd1-a609-eb61326f77cb",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "serving-cert",
+        "secret": {
+          "secretName": "config-operator-serving-cert",
+          "defaultMode": 420,
+          "optional": true
+        }
+      },
+      {
+        "name": "openshift-config-operator-token-6b2fk",
+        "secret": {
+          "secretName": "openshift-config-operator-token-6b2fk",
+          "defaultMode": 420
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "openshift-config-operator",
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:00706b91e03f7daa9efcbefc34b41996b4ec9779988a2ae8a80c26c887cdb43f",
+        "command": [
+          "cluster-config-operator",
+          "operator"
+        ],
+        "ports": [
+          {
+            "name": "metrics",
+            "containerPort": 8443,
+            "protocol": "TCP"
+          }
+        ],
+        "env": [
+          {
+            "name": "IMAGE",
+            "value": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:00706b91e03f7daa9efcbefc34b41996b4ec9779988a2ae8a80c26c887cdb43f"
+          },
+          {
+            "name": "OPERATOR_IMAGE_VERSION",
+            "value": "4.7.16"
+          },
+          {
+            "name": "OPERAND_IMAGE_VERSION",
+            "value": "4.7.16"
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "10m",
+            "memory": "50Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "serving-cert",
+            "mountPath": "/var/run/secrets/serving-cert"
+          },
+          {
+            "name": "openshift-config-operator-token-6b2fk",
+            "readOnly": true,
+            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+          }
+        ],
+        "livenessProbe": {
+          "httpGet": {
+            "path": "/healthz",
+            "port": 8443,
+            "scheme": "HTTPS"
+          },
+          "initialDelaySeconds": 3,
+          "timeoutSeconds": 1,
+          "periodSeconds": 3,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "readinessProbe": {
+          "httpGet": {
+            "path": "/healthz",
+            "port": 8443,
+            "scheme": "HTTPS"
+          },
+          "initialDelaySeconds": 3,
+          "timeoutSeconds": 1,
+          "periodSeconds": 3,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        },
+        "terminationMessagePath": "/dev/termination-log",
+        "terminationMessagePolicy": "FallbackToLogsOnError",
+        "imagePullPolicy": "IfNotPresent",
+        "securityContext": {
+          "capabilities": {
+            "drop": [
+              "MKNOD"
+            ]
+          }
+        }
+      }
+    ],
+    "restartPolicy": "Always",
+    "terminationGracePeriodSeconds": 30,
+    "dnsPolicy": "ClusterFirst",
+    "nodeSelector": {
+      "node-role.kubernetes.io/master": ""
+    },
+    "serviceAccountName": "openshift-config-operator",
+    "serviceAccount": "openshift-config-operator",
+    "nodeName": "master-0.imeixner20210707.lab.upshift.rdu2.redhat.com",
+    "securityContext": {
+      "seLinuxOptions": {
+        "level": "s0:c13,c7"
+      }
+    },
+    "schedulerName": "default-scheduler",
+    "tolerations": [
+      {
+        "key": "node-role.kubernetes.io/master",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      },
+      {
+        "key": "node.kubernetes.io/unreachable",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/not-ready",
+        "operator": "Exists",
+        "effect": "NoExecute",
+        "tolerationSeconds": 120
+      },
+      {
+        "key": "node.kubernetes.io/memory-pressure",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+    ],
+    "priority": 0,
+    "enableServiceLinks": true,
+    "preemptionPolicy": "PreemptLowerPriority"
+  },
+  "status": {
+    "phase": "Running",
+    "conditions": [
+      {
+        "type": "Initialized",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      },
+      {
+        "type": "Ready",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:27Z"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-08T11:00:27Z"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "lastProbeTime": null,
+        "lastTransitionTime": "2021-07-07T11:26:11Z"
+      }
+    ],
+    "hostIP": "10.0.88.27",
+    "podIP": "10.128.0.9",
+    "podIPs": [
+      {
+        "ip": "10.128.0.9"
+      }
+    ],
+    "startTime": "2021-07-07T11:26:11Z",
+    "containerStatuses": [
+      {
+        "name": "openshift-config-operator",
+        "state": {
+          "running": {
+            "startedAt": "2021-07-08T11:00:24Z"
+          }
+        },
+        "lastState": {
+          "terminated": {
+            "exitCode": 255,
+            "reason": "Error",
+            "message": "68 +0x185\n\ngoroutine 188 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc0003811a0)\n\tk8s.io/client-go@v0.20.0/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.0/util/workqueue/queue.go:58 +0x135\n\ngoroutine 189 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc0003812c0)\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 190 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc0003816e0)\n\tk8s.io/client-go@v0.20.0/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.0/util/workqueue/queue.go:58 +0x135\n\ngoroutine 191 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc000381800)\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 226 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc0008fd320)\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:68 +0x185\n\ngoroutine 227 [chan receive]:\nk8s.io/client-go/util/workqueue.(*Type).updateUnfinishedWorkLoop(0xc0008fd380)\n\tk8s.io/client-go@v0.20.0/util/workqueue/queue.go:198 +0xac\ncreated by k8s.io/client-go/util/workqueue.newQueue\n\tk8s.io/client-go@v0.20.0/util/workqueue/queue.go:58 +0x135\n\ngoroutine 228 [select]:\nk8s.io/client-go/util/workqueue.(*delayingType).waitingLoop(0xc0008fd4a0)\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:231 +0x405\ncreated by k8s.io/client-go/util/workqueue.newDelayingQueue\n\tk8s.io/client-go@v0.20.0/util/workqueue/delaying_queue.go:68 +0x185\n",
+            "startedAt": "2021-07-08T10:59:46Z",
+            "finishedAt": "2021-07-08T10:59:57Z",
+            "containerID": "cri-o://a752c0d945c19a9e6ce742762854e6fc70555c89b1de3b77a2651d7b1f16089a"
+          }
+        },
+        "ready": true,
+        "restartCount": 14,
+        "image": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:00706b91e03f7daa9efcbefc34b41996b4ec9779988a2ae8a80c26c887cdb43f",
+        "imageID": "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:00706b91e03f7daa9efcbefc34b41996b4ec9779988a2ae8a80c26c887cdb43f",
+        "containerID": "cri-o://10341e93b48dbfa5447f6d85b55675e1066d5471659dc1ff96e904c461b60c03",
+        "started": true
+      }
+    ],
+    "qosClass": "Burstable"
+  }
+}

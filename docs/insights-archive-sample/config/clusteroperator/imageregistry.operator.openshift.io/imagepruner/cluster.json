@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/imageregistry.operator.openshift.io/v1/imagepruners/cluster",
+    "uid": "b30da4e9-9e33-4bf9-9119-1dd367edd8b7",
+    "resourceVersion": "8112",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:27:24Z"
+  },
+  "spec": {
+    "schedule": "",
+    "suspend": false,
+    "keepTagRevisions": 3,
+    "successfulJobsHistoryLimit": 3,
+    "failedJobsHistoryLimit": 3,
+    "ignoreInvalidImageReferences": true,
+    "logLevel": "Normal"
+  },
+  "status": {
+    "observedGeneration": 1,
+    "conditions": [
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "AsExpected",
+        "message": "Pruner CronJob has been created"
+      },
+      {
+        "type": "Failed",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "Complete",
+        "message": "Pruner completed successfully"
+      },
+      {
+        "type": "Scheduled",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "Scheduled",
+        "message": "The pruner job has been scheduled"
+      },
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:27:24Z",
+        "reason": "AsExpected"
+      }
+    ]
+  }
+}

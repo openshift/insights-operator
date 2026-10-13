@@ -1,0 +1,295 @@
+package sca
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubefake "k8s.io/client-go/kubernetes/fake"
+)
+
+const (
+	entitlementPem    = "entitlement.pem"
+	entitlementKeyPem = "entitlement-key.pem"
+	secTestData       = "secret testing data"
+	unexpectedDataErr = "unexpected data in %s secret"
+	notFoundDataErr   = "can't find %s in the %s secret data"
+)
+
+var testingSCACertData = []CertData{
+	{
+		Cert: "testing-cert",
+		Key:  "testing-key",
+		ID:   "testing-id",
+		Metadata: CertMetadata{
+			Arch: "aarch64",
+		},
+		OrgID: "testing-org-id",
+	},
+	{
+		Cert: "testing-cert",
+		Key:  "testing-key",
+		ID:   "testing-id",
+		Metadata: CertMetadata{
+			Arch: "x86_64",
+		},
+		OrgID: "testing-org-id",
+	},
+}
+
+func Test_SCAController_SecretIsCreated(t *testing.T) {
+	kube := kubefake.NewSimpleClientset()
+	coreClient := kube.CoreV1()
+	scaController := New(coreClient, nil, nil)
+
+	testRes := &CertData{
+		Key:  "secret key",
+		Cert: "secret cert",
+	}
+	err := scaController.checkSecret(context.Background(), testRes, secretName)
+	assert.NoError(t, err, "failed to check the secret")
+
+	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
+	assert.NoError(t, err, "can't get secret")
+	assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
+	assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
+	assert.Equal(t, "secret key", string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
+	assert.Equal(t, "secret cert", string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
+}
+
+func Test_SCAController_SecretIsUpdated(t *testing.T) {
+	kube := kubefake.NewSimpleClientset()
+	coreClient := kube.CoreV1()
+
+	existingSec := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: secretName,
+		},
+		Type: v1.SecretTypeTLS,
+		Data: map[string][]byte{
+			v1.TLSCertKey:       []byte(secTestData),
+			v1.TLSPrivateKeyKey: []byte(secTestData),
+		},
+	}
+	_, err := coreClient.Secrets(targetNamespaceName).Create(context.Background(), existingSec, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	scaController := New(coreClient, nil, nil)
+	testRes := &CertData{
+		Key:  "new secret testing key",
+		Cert: "new secret testing cert",
+	}
+	err = scaController.checkSecret(context.Background(), testRes, secretName)
+	assert.NoError(t, err, "failed to check the secret")
+
+	testSecret, err := coreClient.Secrets(targetNamespaceName).Get(context.Background(), secretName, metav1.GetOptions{})
+	assert.NoError(t, err, "can't get secret")
+	assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
+	assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
+	assert.Equal(t, "new secret testing key", string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
+	assert.Equal(t, "new secret testing cert", string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
+}
+
+func Test_SCAController_ProcessResponses(t *testing.T) {
+	kube := kubefake.NewSimpleClientset()
+	coreClient := kube.CoreV1()
+	scaController := New(coreClient, nil, nil)
+
+	testCases := []struct {
+		name                string
+		response            Response
+		controlPlaneArch    string
+		expectedSecretCount int
+	}{
+		{
+			name: "single architecture",
+			response: Response{
+				Items: testingSCACertData[:1],
+				Kind:  "EntitlementCertificatesList",
+				Total: 1,
+			},
+			controlPlaneArch:    "aarch64",
+			expectedSecretCount: 1,
+		},
+		{
+			name: "multiple architectures",
+			response: Response{
+				Items: testingSCACertData,
+				Kind:  "EntitlementCertificatesList",
+				Total: 2,
+			},
+			controlPlaneArch: "aarch64",
+			// one default secret and two arch specific
+			expectedSecretCount: 3,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			err := scaController.processResponses(context.Background(), tt.response, tt.controlPlaneArch)
+			assert.NoError(t, err, "failed to process the response")
+
+			if tt.response.Total > 1 {
+				// Multiple architectures should create a secret with the arch suffix
+				for i, response := range tt.response.Items {
+					testSecretName := fmt.Sprintf(secretArchName, archMapping[response.Metadata.Arch])
+
+					testSecret, err := coreClient.Secrets(targetNamespaceName).Get(
+						context.Background(),
+						testSecretName,
+						metav1.GetOptions{},
+					)
+
+					assert.NoError(t, err, "can't get secret")
+					assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
+					assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
+					assert.Equal(t, tt.response.Items[i].Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
+					assert.Equal(t, tt.response.Items[i].Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
+				}
+			}
+
+			// Default secret must exists in all cases
+			testSecret, err := coreClient.Secrets(targetNamespaceName).Get(
+				context.Background(),
+				secretName,
+				metav1.GetOptions{},
+			)
+
+			assert.NoError(t, err, "can't get secret")
+			assert.Contains(t, testSecret.Data, entitlementKeyPem, notFoundDataErr, entitlementKeyPem, secretName)
+			assert.Contains(t, testSecret.Data, entitlementPem, notFoundDataErr, entitlementPem, secretName)
+
+			// Check the content of default secret
+			defaultCertData := tt.response.getCertDataByName(tt.controlPlaneArch)
+			assert.Equal(t, defaultCertData.Key, string(testSecret.Data[entitlementKeyPem]), unexpectedDataErr, secretName)
+			assert.Equal(t, defaultCertData.Cert, string(testSecret.Data[entitlementPem]), unexpectedDataErr, secretName)
+		})
+	}
+}
+
+func Test_SCAController_ProcessResponse_ErrorWhenControlNodeMissing(t *testing.T) {
+	kube := kubefake.NewSimpleClientset()
+	coreClient := kube.CoreV1()
+	scaController := New(coreClient, nil, nil)
+
+	response := Response{
+		Items: testingSCACertData,
+		Kind:  "EntitlementCertificatesList",
+		Total: 2,
+	}
+
+	err := scaController.processResponses(context.Background(), response, "invalidControlPlaneArch")
+	assert.Error(t, err, "master node architecture not found, defautl secret is not created nor updated")
+}
+
+func Test_Response_getCertDataByName(t *testing.T) {
+	tests := []struct {
+		name         string
+		response     Response
+		archName     string
+		expectedCert *CertData
+	}{
+		{
+			name: "find existing architecture",
+			response: Response{
+				Items: []CertData{
+					{
+						ID:    "cert-1",
+						OrgID: "org-1",
+						Key:   "key-1",
+						Cert:  "cert-1",
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+					{
+						ID:    "cert-2",
+						OrgID: "org-2",
+						Key:   "key-2",
+						Cert:  "cert-2",
+						Metadata: CertMetadata{
+							Arch: "aarch64",
+						},
+					},
+				},
+			},
+			archName: "aarch64",
+			expectedCert: &CertData{
+				ID:    "cert-2",
+				OrgID: "org-2",
+				Key:   "key-2",
+				Cert:  "cert-2",
+				Metadata: CertMetadata{
+					Arch: "aarch64",
+				},
+			},
+		},
+		{
+			name: "architecture not found",
+			response: Response{
+				Items: []CertData{
+					{
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+				},
+			},
+			archName:     "ppc64le",
+			expectedCert: nil,
+		},
+		{
+			name: "empty response items",
+			response: Response{
+				Items: []CertData{},
+			},
+			archName:     "x86_64",
+			expectedCert: nil,
+		},
+		{
+			name: "find first matching architecture",
+			response: Response{
+				Items: []CertData{
+					{
+						ID:    "cert-1",
+						OrgID: "org-1",
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+					{
+						ID:    "cert-2",
+						OrgID: "org-2",
+						Metadata: CertMetadata{
+							Arch: "aarch64",
+						},
+					},
+					{
+						ID:    "cert-3",
+						OrgID: "org-3",
+						Metadata: CertMetadata{
+							Arch: "x86_64",
+						},
+					},
+				},
+			},
+			archName: "x86_64",
+			expectedCert: &CertData{
+				ID:    "cert-1",
+				OrgID: "org-1",
+				Metadata: CertMetadata{
+					Arch: "x86_64",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.response.getCertDataByName(tt.archName)
+			assert.Equal(t, tt.expectedCert, result)
+		})
+	}
+}

@@ -1,0 +1,18 @@
+{
+  "kind": "Scheduler",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "cluster",
+    "uid": "a639356f-72c5-4598-8e2b-d311d4e5366e",
+    "resourceVersion": "673",
+    "generation": 1,
+    "creationTimestamp": "2021-11-28T16:12:03Z"
+  },
+  "spec": {
+    "policy": {
+      "name": ""
+    },
+    "mastersSchedulable": false
+  },
+  "status": {}
+}

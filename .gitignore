@@ -1,0 +1,15 @@
+/*.pprof
+main
+.vscode/
+.idea/
+
+# Ignore DevSpace cache and log folder
+.devspace/
+.dockerignore
+devspace.yaml
+
+cover.out
+_output
+
+# MacOS
+.DS_Store

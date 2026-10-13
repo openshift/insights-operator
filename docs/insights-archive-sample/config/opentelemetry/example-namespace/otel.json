@@ -1,0 +1,98 @@
+{
+    "apiVersion": "opentelemetry.io/v1alpha1",
+    "kind": "OpenTelemetryCollector",
+    "metadata": {
+        "creationTimestamp": "2026-03-04T19:11:20Z",
+        "generation": 1,
+        "name": "otel",
+        "namespace": "openshift-opentelemetry-operator",
+        "resourceVersion": "45208",
+        "uid": "3a3d8225-d567-45a1-b938-1f34b69d43a4"
+    },
+    "spec": {
+        "config": {
+            "service": {
+                "extensions": [
+                    "health_check",
+                    "pprof",
+                    "zpages"
+                ],
+                "pipelines": {
+                    "logs": {
+                        "exporters": [
+                            "otlp_grpc"
+                        ],
+                        "receivers": [
+                            "otlp"
+                        ]
+                    },
+                    "metrics": {
+                        "exporters": [
+                            "otlp_grpc"
+                        ],
+                        "receivers": [
+                            "otlp"
+                        ]
+                    },
+                    "traces": {
+                        "exporters": [
+                            "otlp_grpc"
+                        ],
+                        "receivers": [
+                            "otlp"
+                        ]
+                    }
+                },
+                "telemetry": {
+                    "metrics": {
+                        "readers": [
+                            {
+                                "pull": {
+                                    "exporter": {
+                                        "prometheus": {
+                                            "host": "0.0.0.0",
+                                            "port": 8888
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        "deploymentUpdateStrategy": {},
+        "ingress": {
+            "route": {}
+        },
+        "managementState": "managed",
+        "mode": "deployment",
+        "observability": {
+            "metrics": {}
+        },
+        "replicas": 1,
+        "resources": {},
+        "targetAllocator": {
+            "allocationStrategy": "consistent-hashing",
+            "filterStrategy": "relabel-config",
+            "observability": {
+                "metrics": {}
+            },
+            "prometheusCR": {
+                "scrapeInterval": "30s"
+            },
+            "resources": {}
+        },
+        "updateStrategy": {},
+        "upgradeStrategy": "automatic"
+    },
+    "status": {
+        "image": "registry.redhat.io/rhosdt/opentelemetry-collector-rhel9@sha256:dbdcd0c58e63a312fd7677a5940d07f2269bb5ab24e72b9dc97f102267109a78",
+        "scale": {
+            "replicas": 1,
+            "selector": "app.kubernetes.io/component=opentelemetry-collector,app.kubernetes.io/instance=openshift-opentelemetry-operator.otel,app.kubernetes.io/managed-by=opentelemetry-operator,app.kubernetes.io/name=otel-collector,app.kubernetes.io/part-of=opentelemetry,app.kubernetes.io/version=latest",
+            "statusReplicas": "1/1"
+        },
+        "version": "0.144.0"
+    }
+}

@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "name": "cluster",
+    "selfLink": "/apis/config.openshift.io/v1/ingresses/cluster",
+    "uid": "1209cc5d-6b63-435c-a94c-fdcc039d01fa",
+    "resourceVersion": "591",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:51Z"
+  },
+  "spec": {
+    "domain": "apps.imeixner20210707.lab.upshift.rdu2.redhat.com"
+  },
+  "status": {}
+}

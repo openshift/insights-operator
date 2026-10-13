@@ -1,0 +1,64 @@
+{
+  "kind": "ClusterOperator",
+  "apiVersion": "config.openshift.io/v1",
+  "metadata": {
+    "name": "openshift-samples",
+    "selfLink": "/apis/config.openshift.io/v1/clusteroperators/openshift-samples",
+    "uid": "7c4976f3-99e8-4244-a538-09c4f990b868",
+    "resourceVersion": "16099",
+    "generation": 1,
+    "creationTimestamp": "2021-07-07T11:02:54Z",
+    "annotations": {
+      "include.release.openshift.io/ibm-cloud-managed": "true",
+      "include.release.openshift.io/self-managed-high-availability": "true",
+      "include.release.openshift.io/single-node-developer": "true",
+      "include.release.openshift.io/single-node-production-edge": "true"
+    }
+  },
+  "spec": {},
+  "status": {
+    "conditions": [
+      {
+        "type": "Degraded",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:36Z"
+      },
+      {
+        "type": "Available",
+        "status": "True",
+        "lastTransitionTime": "2021-07-07T11:33:49Z",
+        "message": "Samples installation successful at 4.7.16"
+      },
+      {
+        "type": "Progressing",
+        "status": "False",
+        "lastTransitionTime": "2021-07-07T11:33:49Z",
+        "message": "Samples installation successful at 4.7.16"
+      }
+    ],
+    "versions": [
+      {
+        "name": "operator",
+        "version": "4.7.16"
+      }
+    ],
+    "relatedObjects": [
+      {
+        "group": "samples.operator.openshift.io",
+        "resource": "configs",
+        "name": "cluster"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift-cluster-samples-operator"
+      },
+      {
+        "group": "",
+        "resource": "namespaces",
+        "name": "openshift"
+      }
+    ],
+    "extension": null
+  }
+}
