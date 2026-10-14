@@ -265,7 +265,7 @@ func tokenFromSecret(secret *v1.Secret) (string, error) {
 	if data := secret.Data[".dockerconfigjson"]; len(data) > 0 {
 		var pullSecret serializedAuthMap
 		if err := json.Unmarshal(data, &pullSecret); err != nil {
-			klog.Errorf("Unable to unmarshal cluster pull-secret: %v", err)
+			return "", fmt.Errorf("unable to unmarshal cluster pull-secret: %w", err)
 		}
 		if auth, ok := pullSecret.Auths["cloud.openshift.com"]; ok {
 			token := strings.TrimSpace(auth.Auth)
