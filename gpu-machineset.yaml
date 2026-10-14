@@ -1,0 +1,81 @@
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  annotations:
+    capacity.cluster-autoscaler.kubernetes.io/labels: kubernetes.io/arch=amd64
+    machine.openshift.io/GPU: "0"
+    machine.openshift.io/memoryMb: "16384"
+    machine.openshift.io/vCPU: "4"
+  creationTimestamp: "2026-09-10T06:14:24Z"
+  generation: 1
+  labels:
+    machine.openshift.io/cluster-api-cluster: ci-ln-wfr56nb-76ef8-9zrfr
+  name: opokorny-gpu-worker
+  namespace: openshift-machine-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      machine.openshift.io/cluster-api-cluster: ci-ln-wfr56nb-76ef8-9zrfr
+      machine.openshift.io/cluster-api-machineset: ci-ln-wfr56nb-76ef8-9zrfr-worker-us-east-1b
+  template:
+    metadata:
+      labels:
+        machine.openshift.io/cluster-api-cluster: ci-ln-wfr56nb-76ef8-9zrfr
+        machine.openshift.io/cluster-api-machine-role: worker
+        machine.openshift.io/cluster-api-machine-type: worker
+        machine.openshift.io/cluster-api-machineset: ci-ln-wfr56nb-76ef8-9zrfr-worker-us-east-1b
+    spec:
+      lifecycleHooks: {}
+      metadata: {}
+      providerSpec:
+        value:
+          ami:
+            id: ami-0980843632a1c3a66
+          apiVersion: machine.openshift.io/v1beta1
+          blockDevices:
+            - ebs:
+                encrypted: true
+                iops: 0
+                kmsKey:
+                  arn: ""
+                volumeSize: 120
+                volumeType: gp3
+          capacityReservationId: ""
+          credentialsSecret:
+            name: aws-cloud-credentials
+          deviceIndex: 0
+          iamInstanceProfile:
+            id: ci-ln-wfr56nb-76ef8-9zrfr-worker-profile
+          instanceType: g4dn.4xlarge
+          kind: AWSMachineProviderConfig
+          metadata: {}
+          metadataServiceOptions: {}
+          placement:
+            region: us-east-1
+          securityGroups:
+            - filters:
+                - name: tag:Name
+                  values:
+                    - ci-ln-wfr56nb-76ef8-9zrfr-node
+            - filters:
+                - name: tag:Name
+                  values:
+                    - ci-ln-wfr56nb-76ef8-9zrfr-lb
+          spotMarketOptions: {}
+          subnet:
+            filters:
+              - name: tag:Name
+                values:
+                  - ci-ln-wfr56nb-76ef8-9zrfr-subnet-private-us-east-1b
+          tags:
+            - name: kubernetes.io/cluster/ci-ln-wfr56nb-76ef8-9zrfr
+              value: owned
+            - name: ci-nat-replace
+              value: "true"
+            - name: clusterName
+              value: ci-ln-wfr56nb-76ef8
+            - name: expirationDate
+              value: 2026-09-10T13:59+00:00
+          userDataSecret:
+            name: worker-user-data
