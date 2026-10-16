@@ -54,7 +54,6 @@ func Test_gatherClusterServingRuntimes(t *testing.T) {
 
 		csr := runtimes[0]
 		assert.Equal(t, "vllm-cuda-runtime", csr.Name)
-		assert.Empty(t, csr.Namespace, "ClusterServingRuntime is cluster-scoped")
 		assert.Equal(t, []servingRuntimeFormat{{Name: "vLLM"}}, csr.SupportedModelFormats)
 		assert.Equal(t, &servingRuntimeWorkerSpec{TensorParallelSize: 1, PipelineParallelSize: 2}, csr.WorkerSpec)
 		assert.Len(t, csr.Containers, 1)

@@ -97,15 +97,16 @@ func Test_gatherServingRuntimes(t *testing.T) {
 
 		records, errs := gatherServingRuntimes(context.Background(), client)
 		assert.Empty(t, errs)
-		assert.Len(t, records, 1)
-		assert.Equal(t, "config/serving.kserve.io/servingruntimes", records[0].Name)
+		assert.Len(t, records, 2)
+		// one record per namespace, in a stable order
+		assert.Equal(t, "config/serving.kserve.io/ns-a/servingruntimes", records[0].Name)
+		assert.Equal(t, "config/serving.kserve.io/ns-b/servingruntimes", records[1].Name)
 
 		runtimes, ok := records[0].Item.(record.JSONMarshaller).Object.([]servingRuntime)
 		assert.True(t, ok)
-		assert.Len(t, runtimes, 2)
+		assert.Len(t, runtimes, 1)
 
 		vllm := findServingRuntime(runtimes, "vllm-runtime")
-		assert.Equal(t, "ns-a", vllm.Namespace)
 		assert.Equal(t, []servingRuntimeFormat{{Name: "vLLM"}}, vllm.SupportedModelFormats)
 		assert.NotNil(t, vllm.MultiModel)
 		assert.False(t, *vllm.MultiModel)
@@ -115,8 +116,11 @@ func Test_gatherServingRuntimes(t *testing.T) {
 		assert.Equal(t, "kserve-container", vllm.Containers[0].Name)
 		assert.Equal(t, "registry.redhat.io/rhaii/vllm-cuda-rhel9:latest", vllm.Containers[0].Image)
 
-		ovms := findServingRuntime(runtimes, "ovms-runtime")
-		assert.Equal(t, "ns-b", ovms.Namespace)
+		nsBRuntimes, ok := records[1].Item.(record.JSONMarshaller).Object.([]servingRuntime)
+		assert.True(t, ok)
+		assert.Len(t, nsBRuntimes, 1)
+
+		ovms := findServingRuntime(nsBRuntimes, "ovms-runtime")
 		assert.Equal(t, []string{"v2", "grpc-v2"}, ovms.ProtocolVersions)
 		assert.Equal(t, []servingRuntimeFormat{
 			{Name: "onnx", Version: "1"},
@@ -142,19 +146,35 @@ func Test_gatherServingRuntimes(t *testing.T) {
 		assert.NotContains(t, string(marshaled), "HF_TOKEN")
 	})
 
-	t.Run("limits the number of gathered runtimes", func(t *testing.T) {
+	t.Run("the namespace is not repeated in the record data", func(t *testing.T) {
+		client := newFakeServingRuntimeClient()
+		createServingRuntime(t, client, "ns-a", "vllm-runtime", vllmRuntimeSpec())
+
+		records, errs := gatherServingRuntimes(context.Background(), client)
+		assert.Empty(t, errs)
+
+		marshaled, err := records[0].Item.Marshal()
+		assert.NoError(t, err)
+		assert.NotContains(t, string(marshaled), "namespace")
+	})
+
+	t.Run("limits the number of gathered runtimes across all namespaces", func(t *testing.T) {
 		client := newFakeServingRuntimeClient()
 		for i := 0; i < servingRuntimeRecordsLimit+5; i++ {
-			createServingRuntime(t, client, "ns-a", fmt.Sprintf("runtime-%03d", i), map[string]interface{}{})
+			namespace := fmt.Sprintf("ns-%d", i%2)
+			createServingRuntime(t, client, namespace, fmt.Sprintf("runtime-%03d", i), map[string]interface{}{})
 		}
 
 		records, errs := gatherServingRuntimes(context.Background(), client)
 		assert.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "limiting to 100")
-		assert.Len(t, records, 1)
+		assert.Len(t, records, 2)
 
-		runtimes := records[0].Item.(record.JSONMarshaller).Object.([]servingRuntime)
-		assert.Len(t, runtimes, servingRuntimeRecordsLimit)
+		var gathered int
+		for _, r := range records {
+			gathered += len(r.Item.(record.JSONMarshaller).Object.([]servingRuntime))
+		}
+		assert.Equal(t, servingRuntimeRecordsLimit, gathered)
 	})
 }
 

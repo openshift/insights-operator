@@ -1,6 +1,5 @@
 [
   {
-    "namespace": "kserve-demo",
     "name": "vllm-cuda-runtime",
     "supportedModelFormats": [{ "name": "vLLM" }],
     "containers": [
@@ -35,7 +34,6 @@
     "workerSpec": { "tensorParallelSize": 1, "pipelineParallelSize": 2 }
   },
   {
-    "namespace": "kserve-demo",
     "name": "kserve-mlserver",
     "supportedModelFormats": [{ "name": "onnx", "version": "1" }],
     "containers": [
