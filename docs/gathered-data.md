@@ -2367,10 +2367,10 @@ value looks like a URI, since args may carry tokens or object storage paths.
 - https://kserve.github.io/website/docs/reference/crd-api#servingruntime
 
 ### Sample data
-- [docs/insights-archive-sample/config/serving.kserve.io/servingruntimes.json](./insights-archive-sample/config/serving.kserve.io/servingruntimes.json)
+- [docs/insights-archive-sample/config/serving.kserve.io/kserve-demo/servingruntimes.json](./insights-archive-sample/config/serving.kserve.io/kserve-demo/servingruntimes.json)
 
 ### Location in archive
-- `config/serving.kserve.io/servingruntimes.json`
+- `config/serving.kserve.io/{namespace}/servingruntimes.json`
 
 ### Config ID
 `clusterconfig/serving_runtimes`

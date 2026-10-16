@@ -3,6 +3,7 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -22,8 +23,8 @@ import (
 const servingRuntimeRecordsLimit = 100
 
 type servingRuntime struct {
-	// Namespace is empty for the cluster-scoped ClusterServingRuntime.
-	Namespace             string                    `json:"namespace,omitempty"`
+	// The namespace of a namespaced ServingRuntime is part of the archive path,
+	// so it is not repeated here.
 	Name                  string                    `json:"name"`
 	SupportedModelFormats []servingRuntimeFormat    `json:"supportedModelFormats,omitempty"`
 	Containers            []servingRuntimeContainer `json:"containers,omitempty"`
@@ -61,10 +62,10 @@ type servingRuntimeWorkerSpec struct {
 // - https://kserve.github.io/website/docs/reference/crd-api#servingruntime
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/serving.kserve.io/servingruntimes.json
+// - docs/insights-archive-sample/config/serving.kserve.io/kserve-demo/servingruntimes.json
 //
 // ### Location in archive
-// - `config/serving.kserve.io/servingruntimes.json`
+// - `config/serving.kserve.io/{namespace}/servingruntimes.json`
 //
 // ### Config ID
 // `clusterconfig/serving_runtimes`
@@ -98,12 +99,29 @@ func gatherServingRuntimes(ctx context.Context, dynamicClient dynamic.Interface)
 		return nil, nil
 	}
 
-	runtimes, errs := extractServingRuntimes(list.Items, servingRuntimeGVR)
+	items, errs := limitServingRuntimes(list.Items, servingRuntimeGVR)
 
-	return []record.Record{{
-		Name: "config/serving.kserve.io/servingruntimes",
-		Item: record.JSONMarshaller{Object: runtimes},
-	}}, errs
+	runtimesByNamespace := make(map[string][]servingRuntime)
+	for i := range items {
+		namespace := items[i].GetNamespace()
+		runtimesByNamespace[namespace] = append(runtimesByNamespace[namespace], extractServingRuntime(&items[i]))
+	}
+
+	namespaces := make([]string, 0, len(runtimesByNamespace))
+	for namespace := range runtimesByNamespace {
+		namespaces = append(namespaces, namespace)
+	}
+	sort.Strings(namespaces)
+
+	records := make([]record.Record, 0, len(namespaces))
+	for _, namespace := range namespaces {
+		records = append(records, record.Record{
+			Name: fmt.Sprintf("config/serving.kserve.io/%s/servingruntimes", namespace),
+			Item: record.JSONMarshaller{Object: runtimesByNamespace[namespace]},
+		})
+	}
+
+	return records, errs
 }
 
 // extractServingRuntimes converts the unstructured runtimes into the gathered form,
@@ -111,27 +129,32 @@ func gatherServingRuntimes(ctx context.Context, dynamicClient dynamic.Interface)
 func extractServingRuntimes(items []unstructured.Unstructured,
 	gvr schema.GroupVersionResource,
 ) ([]servingRuntime, []error) {
-	var errs []error
+	limited, errs := limitServingRuntimes(items, gvr)
 
-	limit := len(items)
-	if limit > servingRuntimeRecordsLimit {
-		limit = servingRuntimeRecordsLimit
-		errs = append(errs, fmt.Errorf("found %d %s resources, limiting to %d",
-			len(items), gvr.GroupResource(), servingRuntimeRecordsLimit))
-	}
-
-	runtimes := make([]servingRuntime, 0, limit)
-	for i := range items[:limit] {
-		runtimes = append(runtimes, extractServingRuntime(&items[i]))
+	runtimes := make([]servingRuntime, 0, len(limited))
+	for i := range limited {
+		runtimes = append(runtimes, extractServingRuntime(&limited[i]))
 	}
 
 	return runtimes, errs
 }
 
+// limitServingRuntimes caps the number of gathered runtimes at servingRuntimeRecordsLimit,
+// reporting an error when the limit is exceeded.
+func limitServingRuntimes(items []unstructured.Unstructured,
+	gvr schema.GroupVersionResource,
+) ([]unstructured.Unstructured, []error) {
+	if len(items) <= servingRuntimeRecordsLimit {
+		return items, nil
+	}
+
+	return items[:servingRuntimeRecordsLimit], []error{fmt.Errorf("found %d %s resources, limiting to %d",
+		len(items), gvr.GroupResource(), servingRuntimeRecordsLimit)}
+}
+
 func extractServingRuntime(item *unstructured.Unstructured) servingRuntime {
 	sr := servingRuntime{
-		Namespace: item.GetNamespace(),
-		Name:      item.GetName(),
+		Name: item.GetName(),
 	}
 
 	if formats, err := utils.NestedSliceWrapper(item.Object, "spec", "supportedModelFormats"); err == nil {
