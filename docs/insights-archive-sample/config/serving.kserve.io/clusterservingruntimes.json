@@ -1,0 +1,38 @@
+[
+  {
+    "name": "kserve-sklearnserver",
+    "supportedModelFormats": [
+      { "name": "sklearn", "version": "0" },
+      { "name": "sklearn", "version": "1" }
+    ],
+    "containers": [
+      {
+        "name": "kserve-container",
+        "image": "docker.io/kserve/sklearnserver:latest",
+        "args": [
+          "--model_name={{.Name}}",
+          "--model_dir=/mnt/models",
+          "--http_port=8080"
+        ]
+      }
+    ],
+    "protocolVersions": ["v1", "v2"]
+  },
+  {
+    "name": "kserve-torchserve",
+    "supportedModelFormats": [{ "name": "pytorch", "version": "1" }],
+    "containers": [
+      {
+        "name": "kserve-container",
+        "image": "docker.io/pytorch/torchserve-kfs:0.8.2",
+        "args": [
+          "torchserve",
+          "--start",
+          "--model-store=/mnt/models/model-store",
+          "--ts-config=/mnt/models/config/config.properties"
+        ]
+      }
+    ],
+    "protocolVersions": ["v1", "v2", "grpc-v2"]
+  }
+]
