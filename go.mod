@@ -1,6 +1,6 @@
 module github.com/openshift/insights-operator
 
-go 1.25.8
+go 1.25.10
 
 require (
 	github.com/blang/semver/v4 v4.0.0
