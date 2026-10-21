@@ -45,6 +45,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"image":                            (*Gatherer).GatherClusterImage,
 	"image_pruners":                    (*Gatherer).GatherClusterImagePruner,
 	"image_registries":                 (*Gatherer).GatherClusterImageRegistry,
+	"inference_services":               (*Gatherer).GatherInferenceServices,
 	"infrastructures":                  (*Gatherer).GatherClusterInfrastructure,
 	"ingress":                          (*Gatherer).GatherClusterIngress,
 	"ingress_certificates":             (*Gatherer).GatherClusterIngressCertificates,
