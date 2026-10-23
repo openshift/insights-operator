@@ -1196,10 +1196,10 @@ API keys.
 - https://kserve.github.io/website/docs/reference/crd-api#llminferenceservice
 
 ### Sample data
-- [docs/insights-archive-sample/config/serving.kserve.io/llminferenceservices.json](./insights-archive-sample/config/serving.kserve.io/llminferenceservices.json)
+- [docs/insights-archive-sample/config/serving.kserve.io/llm-demo/llminferenceservices.json](./insights-archive-sample/config/serving.kserve.io/llm-demo/llminferenceservices.json)
 
 ### Location in archive
-- `config/serving.kserve.io/llminferenceservices.json`
+- `config/serving.kserve.io/{namespace}/llminferenceservices.json`
 
 ### Config ID
 `clusterconfig/llm_inference_services`

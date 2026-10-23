@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,10 +88,10 @@ type llmContainer struct {
 // - https://kserve.github.io/website/docs/reference/crd-api#llminferenceservice
 //
 // ### Sample data
-// - docs/insights-archive-sample/config/serving.kserve.io/llminferenceservices.json
+// - docs/insights-archive-sample/config/serving.kserve.io/llm-demo/llminferenceservices.json
 //
 // ### Location in archive
-// - `config/serving.kserve.io/llminferenceservices.json`
+// - `config/serving.kserve.io/{namespace}/llminferenceservices.json`
 //
 // ### Config ID
 // `clusterconfig/llm_inference_services`
@@ -124,36 +125,44 @@ func gatherLLMInferenceServices(ctx context.Context, dynamicClient dynamic.Inter
 		return nil, nil
 	}
 
-	services, errs := extractLLMInferenceServices(list.Items, llmInferenceServiceGVR)
+	items, errs := limitLLMInferenceServices(list.Items, llmInferenceServiceGVR)
 
-	return []record.Record{{
-		Name: "config/serving.kserve.io/llminferenceservices",
-		Item: record.JSONMarshaller{Object: services},
-	}}, errs
-}
-
-// extractLLMInferenceServices converts the unstructured resources into the gathered
-// form, capping the result at llmInferenceServiceRecordsLimit.
-func extractLLMInferenceServices(items []unstructured.Unstructured,
-	gvr schema.GroupVersionResource,
-) ([]llmInferenceService, []error) {
-	var errs []error
-
-	limit := len(items)
-	if limit > llmInferenceServiceRecordsLimit {
-		limit = llmInferenceServiceRecordsLimit
-		errs = append(errs, fmt.Errorf("found %d %s resources, limiting to %d",
-			len(items), gvr.GroupResource(), llmInferenceServiceRecordsLimit))
-	}
-
-	services := make([]llmInferenceService, 0, limit)
-	for i := range items[:limit] {
+	servicesByNamespace := make(map[string][]llmInferenceService)
+	for i := range items {
+		namespace := items[i].GetNamespace()
 		svc, svcErrs := extractLLMInferenceService(&items[i])
 		errs = append(errs, svcErrs...)
-		services = append(services, svc)
+		servicesByNamespace[namespace] = append(servicesByNamespace[namespace], svc)
 	}
 
-	return services, errs
+	namespaces := make([]string, 0, len(servicesByNamespace))
+	for namespace := range servicesByNamespace {
+		namespaces = append(namespaces, namespace)
+	}
+	sort.Strings(namespaces)
+
+	records := make([]record.Record, 0, len(namespaces))
+	for _, namespace := range namespaces {
+		records = append(records, record.Record{
+			Name: fmt.Sprintf("config/serving.kserve.io/%s/llminferenceservices", namespace),
+			Item: record.JSONMarshaller{Object: servicesByNamespace[namespace]},
+		})
+	}
+
+	return records, errs
+}
+
+// limitLLMInferenceServices caps the number of gathered resources at
+// llmInferenceServiceRecordsLimit, reporting an error when the limit is exceeded.
+func limitLLMInferenceServices(items []unstructured.Unstructured,
+	gvr schema.GroupVersionResource,
+) ([]unstructured.Unstructured, []error) {
+	if len(items) <= llmInferenceServiceRecordsLimit {
+		return items, nil
+	}
+
+	return items[:llmInferenceServiceRecordsLimit], []error{fmt.Errorf("found %d %s resources, limiting to %d",
+		len(items), gvr.GroupResource(), llmInferenceServiceRecordsLimit)}
 }
 
 func extractLLMInferenceService(item *unstructured.Unstructured) (llmInferenceService, []error) {

@@ -144,12 +144,14 @@ func Test_gatherLLMInferenceServices(t *testing.T) {
 
 		records, errs := gatherLLMInferenceServices(context.Background(), client)
 		assert.Empty(t, errs)
-		assert.Len(t, records, 1)
-		assert.Equal(t, "config/serving.kserve.io/llminferenceservices", records[0].Name)
+		assert.Len(t, records, 2)
+		// one record per namespace, in a stable order
+		assert.Equal(t, "config/serving.kserve.io/ns-a/llminferenceservices", records[0].Name)
+		assert.Equal(t, "config/serving.kserve.io/ns-b/llminferenceservices", records[1].Name)
 
 		services, ok := records[0].Item.(record.JSONMarshaller).Object.([]llmInferenceService)
 		assert.True(t, ok)
-		assert.Len(t, services, 2)
+		assert.Len(t, services, 1)
 
 		full := findLLMInferenceService(services, "llama-full")
 		assert.Equal(t, "ns-a", full.Namespace)
@@ -173,7 +175,11 @@ func Test_gatherLLMInferenceServices(t *testing.T) {
 		assert.Equal(t, "registry.redhat.io/rhaii/vllm-cuda-rhel9:latest", full.Containers[0].Image)
 		assert.Equal(t, map[string]string{"cpu": "4", "memory": "16Gi", "nvidia.com/gpu": "1"}, full.Containers[0].Resources)
 
-		minimal := findLLMInferenceService(services, "minimal-llm")
+		nsBServices, ok := records[1].Item.(record.JSONMarshaller).Object.([]llmInferenceService)
+		assert.True(t, ok)
+		assert.Len(t, nsBServices, 1)
+
+		minimal := findLLMInferenceService(nsBServices, "minimal-llm")
 		assert.Equal(t, "ns-b", minimal.Namespace)
 		assert.NotNil(t, minimal.Model)
 		assert.Equal(t, "meta-llama/Llama-3-8B", minimal.Model.Name)
@@ -218,19 +224,23 @@ func Test_gatherLLMInferenceServices(t *testing.T) {
 		assert.Equal(t, []interface{}{"least-request"}, inline["plugins"])
 	})
 
-	t.Run("limits the number of gathered services", func(t *testing.T) {
+	t.Run("limits the number of gathered services across all namespaces", func(t *testing.T) {
 		client := newFakeLLMInferenceServiceClient()
 		for i := 0; i < llmInferenceServiceRecordsLimit+5; i++ {
-			createLLMInferenceService(t, client, "ns-a", fmt.Sprintf("llm-%03d", i), map[string]interface{}{})
+			namespace := fmt.Sprintf("ns-%d", i%2)
+			createLLMInferenceService(t, client, namespace, fmt.Sprintf("llm-%03d", i), map[string]interface{}{})
 		}
 
 		records, errs := gatherLLMInferenceServices(context.Background(), client)
 		assert.Len(t, errs, 1)
 		assert.Contains(t, errs[0].Error(), "limiting to 100")
-		assert.Len(t, records, 1)
+		assert.Len(t, records, 2)
 
-		services := records[0].Item.(record.JSONMarshaller).Object.([]llmInferenceService)
-		assert.Len(t, services, llmInferenceServiceRecordsLimit)
+		var gathered int
+		for _, r := range records {
+			gathered += len(r.Item.(record.JSONMarshaller).Object.([]llmInferenceService))
+		}
+		assert.Equal(t, llmInferenceServiceRecordsLimit, gathered)
 	})
 }
 
