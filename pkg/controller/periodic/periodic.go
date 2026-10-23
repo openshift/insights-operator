@@ -36,6 +36,7 @@ import (
 	"github.com/openshift/insights-operator/pkg/recorder"
 	"github.com/openshift/insights-operator/pkg/utils/marshal"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -63,8 +64,10 @@ type Controller struct {
 	dataGatherClient    insightsv1cli.InsightsV1Interface
 	kubeClient          kubernetes.Interface
 	reportRetriever     *insightsreport.Controller
-	image               string
 	jobController       *JobController
+	image               string
+	nodeSelector        map[string]string
+	tolerations         []corev1.Toleration
 	pruneInterval       time.Duration
 	techPreview         bool
 	dgInf               DataGatherInformer
@@ -333,7 +336,7 @@ func (c *Controller) onDemandGather(stopCh <-chan struct{}) {
 				}
 
 				klog.Infof("Starting on-demand data gathering for the %s DataGather resource", dgName)
-				c.runJobAndCheckResults(ctx, dataGather, c.image)
+				c.runJobAndCheckResults(ctx, dataGather)
 			}()
 		}
 	}
@@ -428,13 +431,9 @@ func (c *Controller) prepareDataGatherCRWithImage(ctx context.Context, dgName st
 		return nil, fmt.Errorf("gathering was already run")
 	}
 
-	if c.image == "" {
-		image, err := c.getInsightsImage(ctx)
-		if err != nil {
-			klog.Errorf("Can't get operator image. Gathering will not run: %v", err)
-			return nil, err
-		}
-		c.image = image
+	if err := c.loadGatherJobSpec(ctx); err != nil {
+		klog.Errorf("Can't read the insights-operator deployment. Gathering will not run: %v", err)
+		return nil, err
 	}
 
 	return dataGather, nil
@@ -453,13 +452,11 @@ func (c *Controller) GatherJob() {
 		return
 	}
 
-	if c.image == "" {
-		image, err := c.getInsightsImage(ctx)
-		if err != nil {
-			klog.Errorf("Can't get operator image. Gathering will not run: %v", err)
-			return
-		}
-		c.image = image
+	// read the operator's deployment before creating the DataGather resource, so that a
+	// failure here does not leave an orphaned resource behind
+	if err := c.loadGatherJobSpec(ctx); err != nil {
+		klog.Errorf("Can't read the insights-operator deployment. Gathering will not run: %v", err)
+		return
 	}
 
 	// create a new datagather.insights.openshift.io custom resource
@@ -468,7 +465,7 @@ func (c *Controller) GatherJob() {
 		klog.Errorf("Failed to create a new DataGather resource: %v", err)
 		return
 	}
-	c.runJobAndCheckResults(ctx, dataGatherCR, c.image)
+	c.runJobAndCheckResults(ctx, dataGatherCR)
 }
 
 // runJobAndCheckResults creates a new data gathering job in techpreview
@@ -476,10 +473,10 @@ func (c *Controller) GatherJob() {
 // (in the external data pipeline) by reading the corresponding DataGather status conditions.
 // If the processing was successful, a new Insights analysis report is loaded; if not,
 // it returns with the providing the info in the log message.
-func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1.DataGather, image string) {
+func (c *Controller) runJobAndCheckResults(ctx context.Context, dataGather *insightsv1.DataGather) {
 	// create a new gathering job
 	gj, err := c.jobController.CreateGathererJob(
-		ctx, image, &c.configAggregator.Config().DataReporting, dataGather,
+		ctx, c.image, &c.configAggregator.Config().DataReporting, dataGather, c.nodeSelector, c.tolerations,
 	)
 	if err != nil {
 		klog.Errorf("Failed to create a new job: %v", err)
@@ -745,18 +742,28 @@ func (c *Controller) isGatheringDisabled() bool {
 	return false
 }
 
-// getInsightsImage reads "insights-operator" deployment and gets the image from the first container
-func (c *Controller) getInsightsImage(ctx context.Context) (string, error) {
+// loadGatherJobSpec reads the "insights-operator" deployment and caches the values the
+// gathering jobs reuse - the operator image taken from the first container and the pod
+// placement (node selector and tolerations) of the operator itself.
+func (c *Controller) loadGatherJobSpec(ctx context.Context) error {
+	if c.image != "" {
+		return nil
+	}
+
 	insightsDeployment, err := c.kubeClient.AppsV1().Deployments(insightsNamespace).
 		Get(ctx, "insights-operator", metav1.GetOptions{})
 	if err != nil {
-		return "", err
+		return err
 	}
-	containers := insightsDeployment.Spec.Template.Spec.Containers
-	if len(containers) == 0 {
-		return "", fmt.Errorf("no container defined in the deployment")
+	podSpec := insightsDeployment.Spec.Template.Spec
+	if len(podSpec.Containers) == 0 {
+		return fmt.Errorf("no container defined in the deployment")
 	}
-	return containers[0].Image, nil
+
+	c.image = podSpec.Containers[0].Image
+	c.nodeSelector = podSpec.NodeSelector
+	c.tolerations = podSpec.Tolerations
+	return nil
 }
 
 // PeriodicPrune runs periodically and deletes jobs (including the related pods)
