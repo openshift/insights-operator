@@ -6,12 +6,17 @@ import (
 	"testing"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	kubefake "k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 
 	configv1 "github.com/openshift/api/config/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	configfake "github.com/openshift/client-go/config/clientset/versioned/fake"
+	operatorfake "github.com/openshift/client-go/operator/clientset/versioned/fake"
 	"github.com/openshift/insights-operator/pkg/config"
 	"github.com/openshift/insights-operator/pkg/utils"
 	"github.com/openshift/library-go/pkg/operator/events"
@@ -360,6 +365,79 @@ func Test_checkVersionChanges(t *testing.T) {
 				tt.newVersion, tt.clusterOperatorVersions, majorMinorChanged, tt.expectedMajorMinorChanged)
 		})
 	}
+}
+
+func TestSyncReadyReplicas(t *testing.T) {
+	const (
+		namespace = "openshift-insights"
+		version   = "5.0.0-rc.2"
+	)
+
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      insightsOperatorDeploymentName,
+			Namespace: namespace,
+		},
+		Status: appsv1.DeploymentStatus{
+			Replicas:      1,
+			ReadyReplicas: 1,
+		},
+	}
+	insightsOperator := &operatorv1.InsightsOperator{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: insightsOperatorCRName,
+		},
+		Status: operatorv1.InsightsOperatorStatus{
+			OperatorStatus: operatorv1.OperatorStatus{
+				ReadyReplicas: 0,
+				Version:       version,
+			},
+		},
+	}
+
+	kubeClient := kubefake.NewClientset(deploy)
+	operatorClient := operatorfake.NewClientset(insightsOperator)
+
+	var statusUpdates int
+	operatorClient.PrependReactor("update", "insightsoperators", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		if action.GetSubresource() == "status" {
+			statusUpdates++
+		}
+		return false, nil, nil
+	})
+
+	ctrl := &Controller{
+		namespace:      namespace,
+		kubeClient:     kubeClient,
+		operatorClient: operatorClient.OperatorV1(),
+	}
+
+	ctx := context.Background()
+	ctrl.syncReadyReplicas(ctx)
+
+	updated, err := operatorClient.OperatorV1().InsightsOperators().Get(ctx, insightsOperatorCRName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("get InsightsOperator: %v", err)
+	}
+	if updated.Status.ReadyReplicas != 1 {
+		t.Fatalf("readyReplicas = %d, want 1", updated.Status.ReadyReplicas)
+	}
+	if updated.Status.Version != version {
+		t.Fatalf("version = %q, want other status fields preserved", updated.Status.Version)
+	}
+	if statusUpdates != 1 {
+		t.Fatalf("status updates = %d, want 1", statusUpdates)
+	}
+
+	ctrl.syncReadyReplicas(ctx)
+	if statusUpdates != 1 {
+		t.Fatalf("second sync wrote status again, updates = %d", statusUpdates)
+	}
+}
+
+func TestSyncReadyReplicasSkipsMissingClients(t *testing.T) {
+	ctrl := &Controller{namespace: "openshift-insights"}
+	ctrl.syncReadyReplicas(context.Background())
 }
 
 func getConditionByType(conditions []configv1.ClusterOperatorStatusCondition,
