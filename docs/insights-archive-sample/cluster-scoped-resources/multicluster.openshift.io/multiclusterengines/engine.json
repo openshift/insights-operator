@@ -1,0 +1,436 @@
+{
+    "apiVersion": "multicluster.openshift.io/v1",
+    "kind": "MultiClusterEngine",
+    "metadata": {
+        "annotations": {
+            "installer.multicluster.openshift.io/resource-adoption-policy": "Strict"
+        },
+        "creationTimestamp": "2023-01-01T00:00:00Z",
+        "finalizers": ["finalizer.multicluster.openshift.io"],
+        "generation": 2,
+        "name": "engine",
+        "resourceVersion": "12345",
+        "uid": "00000000-0000-0000-0000-000000000001"
+    },
+    "spec": {
+        "availabilityConfig": "High",
+        "localClusterName": "local-cluster",
+        "overrides": {
+            "components": [
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "assisted-service"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "cluster-lifecycle"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "cluster-manager"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "cluster-permission"
+                },
+                { "configOverrides": {}, "enabled": true, "name": "discovery" },
+                { "configOverrides": {}, "enabled": true, "name": "hive" },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "server-foundation"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "cluster-proxy-addon"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "local-cluster"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "hypershift-local-hosting"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "hypershift"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "managedserviceaccount"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": false,
+                    "name": "cluster-api"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": false,
+                    "name": "cluster-api-provider-aws"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": false,
+                    "name": "cluster-api-provider-azure-preview"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": false,
+                    "name": "cluster-api-provider-metal3"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": false,
+                    "name": "cluster-api-provider-openshift-assisted"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": false,
+                    "name": "image-based-install-operator"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": false,
+                    "name": "maestro-preview"
+                },
+                {
+                    "configOverrides": {},
+                    "enabled": true,
+                    "name": "console-mce"
+                }
+            ]
+        },
+        "targetNamespace": "multicluster-engine"
+    },
+    "status": {
+        "components": [
+            {
+                "kind": "ClusterManagementAddOn",
+                "message": "Resource is present",
+                "name": "managed-serviceaccount",
+                "reason": "ComponentsDeployed",
+                "status": "True",
+                "type": "Present"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "image-based-install-operator",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:02:45Z",
+                "message": "Deployment is available",
+                "name": "hypershift-addon-manager",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "ClusterManagementAddOn",
+                "message": "Resource is present",
+                "name": "hypershift-addon",
+                "reason": "ComponentsDeployed",
+                "status": "True",
+                "type": "Present"
+            },
+            {
+                "kind": "ManagedClusterAddOn",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "hypershift-addon add-on is available.",
+                "name": "hypershift-addon",
+                "reason": "ManagedClusterAddOnLeaseUpdated",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:03:15Z",
+                "message": "Deployment is available",
+                "name": "console-mce-console",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:01:30Z",
+                "message": "Deployment is available",
+                "name": "discovery-operator",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:02:30Z",
+                "message": "Deployment is available",
+                "name": "hive-operator",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:03:15Z",
+                "message": "Deployment is available",
+                "name": "infrastructure-operator",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:01:30Z",
+                "message": "Deployment is available",
+                "name": "cluster-curator-controller",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:01:30Z",
+                "message": "Deployment is available",
+                "name": "clusterclaims-controller",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:01:30Z",
+                "message": "Deployment is available",
+                "name": "provider-credential-controller",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:01:00Z",
+                "message": "Deployment is available",
+                "name": "cluster-image-set-controller",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:02:30Z",
+                "message": "Deployment is available",
+                "name": "clusterlifecycle-state-metrics-v2",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:01:45Z",
+                "message": "Deployment is available",
+                "name": "cluster-manager",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "ClusterManager",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "Components of cluster manager are applied",
+                "name": "cluster-manager",
+                "reason": "ClusterManagerApplied",
+                "status": "True",
+                "type": "Applied"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:02:30Z",
+                "message": "Deployment is available",
+                "name": "cluster-permission",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:01:00Z",
+                "message": "Deployment is available",
+                "name": "ocm-controller",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:02:45Z",
+                "message": "Deployment is available",
+                "name": "ocm-proxyserver",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:02:45Z",
+                "message": "Deployment is available",
+                "name": "ocm-webhook",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:02:45Z",
+                "message": "Deployment is available",
+                "name": "cluster-proxy-addon-manager",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:03:30Z",
+                "message": "Deployment is available",
+                "name": "cluster-proxy-addon-user",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Deployment",
+                "lastTransitionTime": "2023-01-01T00:03:00Z",
+                "message": "Deployment is available",
+                "name": "cluster-proxy",
+                "reason": "MinimumReplicasAvailable",
+                "status": "True",
+                "type": "Available"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "capi-controller-manager",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "capa-controller-manager",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "azureserviceoperator-controller-manager",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "capz-controller-manager",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "mce-capm3-controller-manager",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "capoa-bootstrap-controller-manager",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "capoa-controlplane-controller-manager",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "maestro",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            },
+            {
+                "kind": "local-cluster",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "ManagedCluster is accepted, joined, and available",
+                "name": "local-cluster",
+                "reason": "ManagedClusterImported",
+                "status": "True",
+                "type": "ManagedClusterImportSuccess"
+            },
+            {
+                "kind": "Component",
+                "lastTransitionTime": "2023-01-01T00:05:30Z",
+                "message": "No resources present",
+                "name": "hypershift-removals",
+                "reason": "ComponentDisabled",
+                "status": "True",
+                "type": "NotPresent"
+            }
+        ],
+        "conditions": [
+            {
+                "lastTransitionTime": "2023-01-01T00:00:00Z",
+                "lastUpdateTime": "2023-01-01T00:05:30Z",
+                "message": "All components deployed",
+                "reason": "ComponentsDeployed",
+                "status": "True",
+                "type": "Progressing"
+            },
+            {
+                "lastTransitionTime": "2023-01-01T00:05:00Z",
+                "lastUpdateTime": "2023-01-01T00:05:00Z",
+                "message": "All components available",
+                "reason": "ComponentsAvailable",
+                "status": "True",
+                "type": "Available"
+            }
+        ],
+        "currentVersion": "2.17.1",
+        "desiredVersion": "2.17.1",
+        "phase": "Available"
+    }
+}
