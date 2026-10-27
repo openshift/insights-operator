@@ -256,6 +256,20 @@ func Test_ConfigObserver_ConfigChanged(t *testing.T) {
 	}
 }
 
+func Test_tokenFromSecret_invalidJSON_returnsError(t *testing.T) {
+	secret := &corev1.Secret{
+		Data: map[string][]byte{
+			".dockerconfigjson": []byte("{not-valid-json"),
+		},
+	}
+
+	token, err := tokenFromSecret(secret)
+
+	assert.Empty(t, token)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to unmarshal cluster pull-secret")
+}
+
 func provideSecretMock(kube kubernetes.Interface, secs map[string]*corev1.Secret) {
 	kube.CoreV1().(*corefake.FakeCoreV1).AddReactor("get", "secrets",
 		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
