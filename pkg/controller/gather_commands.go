@@ -200,8 +200,10 @@ func (g *GatherJob) GatherAndUpload(kubeConfig, protoKubeConfig *rest.Config) er
 		return err
 	}
 
+	workloadAnonymizer := anonymization.NewWorkloadAnonymizer(ctx, configAggregator).WithDataPolicies(dataGatherCR.Spec.DataPolicy...)
+
 	// anonymizer is responsible for anonymizing sensitive data, it can be configured to disable specific anonymization
-	anonymizer, err := anonymization.NewAnonymizer(networkAnonymizer)
+	anonymizer, err := anonymization.NewAnonymizer(networkAnonymizer, workloadAnonymizer)
 	if err != nil {
 		return err
 	}
