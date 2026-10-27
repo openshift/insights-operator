@@ -107,11 +107,6 @@ spec:
           securityContext:
             privileged: true
             readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - CAP_SYS_ADMIN
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
