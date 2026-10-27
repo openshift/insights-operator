@@ -1,0 +1,264 @@
+{
+  "apiVersion": "operator.open-cluster-management.io/v1",
+  "kind": "MultiClusterHub",
+  "metadata": {
+    "annotations": {
+      "installer.open-cluster-management.io/resource-adoption-policy": "Strict"
+    },
+    "creationTimestamp": "2024-05-10T08:00:00Z",
+    "finalizers": ["finalizer.operator.open-cluster-management.io"],
+    "generation": 2,
+    "name": "multiclusterhub",
+    "namespace": "open-cluster-management",
+    "resourceVersion": "74472",
+    "uid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  },
+  "spec": {
+    "availabilityConfig": "High",
+    "localClusterName": "local-cluster",
+    "overrides": {
+      "components": [
+        { "configOverrides": {}, "enabled": true, "name": "app-lifecycle" },
+        { "configOverrides": {}, "enabled": true, "name": "cluster-lifecycle" },
+        { "configOverrides": {}, "enabled": true, "name": "console" },
+        { "configOverrides": {}, "enabled": true, "name": "grc" },
+        { "configOverrides": {}, "enabled": true, "name": "insights" },
+        {
+          "configOverrides": {},
+          "enabled": true,
+          "name": "multicluster-engine"
+        },
+        {
+          "configOverrides": {},
+          "enabled": true,
+          "name": "multicluster-observability"
+        },
+        { "configOverrides": {}, "enabled": true, "name": "search" },
+        { "configOverrides": {}, "enabled": true, "name": "submariner-addon" },
+        { "configOverrides": {}, "enabled": true, "name": "volsync" },
+        { "configOverrides": {}, "enabled": false, "name": "cluster-backup" },
+        {
+          "configOverrides": {},
+          "enabled": false,
+          "name": "fine-grained-rbac"
+        },
+        { "configOverrides": {}, "enabled": false, "name": "siteconfig" },
+        {
+          "configOverrides": {},
+          "enabled": false,
+          "name": "cnv-mtv-integrations"
+        }
+      ]
+    }
+  },
+  "status": {
+    "components": {
+      "acm-cli-downloads": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "acm-cli-downloads",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "console-chart-console-v2": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "console-chart-console-v2",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "grc-policy-addon-controller": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "grc-policy-addon-controller",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "grc-policy-propagator": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "grc-policy-propagator",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "insights-client": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "insights-client",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "insights-metrics": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "insights-metrics",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "klusterlet-addon-controller-v2": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "klusterlet-addon-controller-v2",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-engine": {
+        "kind": "MultiClusterEngine",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "message": "All components available",
+        "name": "multiclusterengine",
+        "reason": "ComponentsAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-engine-csv": {
+        "kind": "ClusterServiceVersion",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "message": "install strategy completed with no errors",
+        "name": "multicluster-engine.v2.17.1",
+        "reason": "InstallSucceeded",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-engine-sub": {
+        "kind": "Subscription",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "message": "installPlanApproval: Automatic. installPlan: multicluster-engine/install-gk8ph",
+        "name": "multicluster-engine",
+        "reason": "AtLatestKnown",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-observability-operator": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "multicluster-observability-operator",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-operators-application": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "multicluster-operators-application",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-operators-channel": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "multicluster-operators-channel",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-operators-hub-subscription": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "multicluster-operators-hub-subscription",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-operators-standalone-subscription": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "multicluster-operators-standalone-subscription",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "multicluster-operators-subscription-report": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "multicluster-operators-subscription-report",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "search-api": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "search-api",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "search-collector": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "search-collector",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "search-indexer": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "search-indexer",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "search-postgres": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "search-postgres",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "search-v2-operator-controller-manager": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "search-v2-operator-controller-manager",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "submariner-addon": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "submariner-addon",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      },
+      "volsync-addon-controller": {
+        "kind": "Deployment",
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "name": "volsync-addon-controller",
+        "reason": "MinimumReplicasAvailable",
+        "status": "True",
+        "type": "Available"
+      }
+    },
+    "conditions": [
+      {
+        "lastTransitionTime": "2024-05-10T08:00:00Z",
+        "lastUpdateTime": "2024-05-10T08:00:00Z",
+        "message": "All hub components ready.",
+        "reason": "ComponentsAvailable",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "currentVersion": "2.17.0",
+    "desiredVersion": "2.17.0",
+    "mceVersionCompliance": {
+      "currentVersion": "2.17.1",
+      "isCompliant": true,
+      "message": "MCE version 2.17.1 meets channel stable-2.17 requirements",
+      "requiredChannel": "stable-2.17"
+    },
+    "phase": "Running"
+  }
+}
