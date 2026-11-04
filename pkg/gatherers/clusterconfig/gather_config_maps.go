@@ -56,6 +56,8 @@ import (
 //     namespace since 4.14.0+
 //   - `insights-config` config map from `openshift-insights` namespace
 //     since 4.15.0+
+//   - `user-workload-monitoring-config` config map from
+//     `openshift-user-workload-monitoring` namespace since 5.1.0+
 //
 // ### Anonymization
 // If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
@@ -76,6 +78,12 @@ func (g *Gatherer) GatherConfigMaps(ctx context.Context) ([]record.Record, []err
 	monitoringRec, monitoringErrs := gatherConfigMap(ctx, coreClient, "cluster-monitoring-config", "openshift-monitoring")
 	records = append(records, monitoringRec...)
 	errs = append(errs, monitoringErrs...)
+
+	userWorkloadMonitoringRec, userWorkloadMonitoringErrs := gatherConfigMap(
+		ctx, coreClient, "user-workload-monitoring-config", "openshift-user-workload-monitoring",
+	)
+	records = append(records, userWorkloadMonitoringRec...)
+	errs = append(errs, userWorkloadMonitoringErrs...)
 
 	gateayModeConf, networkErrs := gatherConfigMap(ctx, coreClient, "gateway-mode-config", "openshift-network-operator")
 	records = append(records, gateayModeConf...)
