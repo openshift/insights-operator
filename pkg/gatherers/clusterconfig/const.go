@@ -116,6 +116,7 @@ var (
 	}
 	maasModelRefGVR     = schema.GroupVersionResource{Group: "maas.opendatahub.io", Version: "v1alpha1", Resource: "maasmodelrefs"}
 	inferenceServiceGVR = schema.GroupVersionResource{Group: "serving.kserve.io", Version: "v1beta1", Resource: "inferenceservices"}
+	externalModelGVR    = schema.GroupVersionResource{Group: "maas.opendatahub.io", Version: "v1alpha1", Resource: "externalmodels"}
 )
 
 func init() { //nolint: gochecknoinits
