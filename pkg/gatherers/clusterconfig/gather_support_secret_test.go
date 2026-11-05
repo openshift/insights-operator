@@ -35,3 +35,11 @@ func Test_gatherSupportSecret(t *testing.T) {
 		}},
 	}, records[0])
 }
+
+func Test_gatherSupportSecret_NotFound(t *testing.T) {
+	kubeClient := kubefake.NewClientset()
+
+	records, errs := gatherSupportSecret(context.Background(), kubeClient.CoreV1())
+	assert.Empty(t, errs, "missing optional support secret should not produce errors")
+	assert.Empty(t, records, "missing optional support secret should not produce records")
+}
