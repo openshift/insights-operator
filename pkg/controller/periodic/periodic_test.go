@@ -30,6 +30,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	clienttesting "k8s.io/client-go/testing"
 )
 
 func Test_Controller_CustomPeriodGatherer(t *testing.T) {
@@ -860,12 +861,20 @@ func TestCreateDataGatherAttributeValues_ConfigMapObfuscationPrecedence(t *testi
 	}
 }
 
-func TestGetInsightsImage(t *testing.T) {
+func TestLoadGatherJobSpec(t *testing.T) {
+	masterToleration := v1.Toleration{
+		Key:      "node-role.kubernetes.io/master",
+		Operator: v1.TolerationOpExists,
+		Effect:   v1.TaintEffectNoSchedule,
+	}
+
 	tests := []struct {
-		name              string
-		testDeployment    appsv1.Deployment
-		expectedImageName string
-		expectedError     error
+		name                 string
+		testDeployment       appsv1.Deployment
+		expectedImageName    string
+		expectedNodeSelector map[string]string
+		expectedTolerations  []v1.Toleration
+		expectedError        error
 	}{
 		{
 			name: "Successful image get",
@@ -929,16 +938,87 @@ func TestGetInsightsImage(t *testing.T) {
 			expectedImageName: "testing-image-1:123",
 			expectedError:     nil,
 		},
+		{
+			name: "Node selector and tolerations are copied from the deployment",
+			testDeployment: appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "insights-operator",
+					Namespace: insightsNamespace,
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name:  "test-image",
+									Image: "testing-image:123",
+								},
+							},
+							NodeSelector: map[string]string{
+								"kubernetes.io/os":               "linux",
+								"node-role.kubernetes.io/master": "",
+							},
+							Tolerations: []v1.Toleration{masterToleration},
+						},
+					},
+				},
+			},
+			expectedImageName: "testing-image:123",
+			expectedNodeSelector: map[string]string{
+				"kubernetes.io/os":               "linux",
+				"node-role.kubernetes.io/master": "",
+			},
+			expectedTolerations: []v1.Toleration{masterToleration},
+			expectedError:       nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := kubefake.NewClientset(&tt.testDeployment)
 			mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil, nil, nil, nil)
-			imgName, err := mockController.getInsightsImage(context.Background())
+			err := mockController.loadGatherJobSpec(context.Background())
 			assert.Equal(t, tt.expectedError, err)
-			assert.Equal(t, tt.expectedImageName, imgName)
+
+			assert.Equal(t, tt.expectedImageName, mockController.image)
+			assert.Equal(t, tt.expectedNodeSelector, mockController.nodeSelector)
+			assert.Equal(t, tt.expectedTolerations, mockController.tolerations)
 		})
 	}
+}
+
+// TestLoadGatherJobSpecIsCached verifies that the "insights-operator" deployment is read
+// only once and that later changes to the deployment do not affect the cached values.
+func TestLoadGatherJobSpecIsCached(t *testing.T) {
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "insights-operator",
+			Namespace: insightsNamespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					Containers:   []v1.Container{{Name: "operator", Image: "testing-image:123"}},
+					NodeSelector: map[string]string{"node-role.kubernetes.io/master": ""},
+				},
+			},
+		},
+	}
+	cs := kubefake.NewClientset(deployment)
+
+	var gets int
+	cs.PrependReactor("get", "deployments", func(clienttesting.Action) (bool, runtime.Object, error) {
+		gets++
+		return false, nil, nil
+	})
+
+	mockController := NewWithTechPreview(nil, nil, nil, nil, cs, nil, nil, nil, nil, nil)
+	for i := 0; i < 3; i++ {
+		assert.NoError(t, mockController.loadGatherJobSpec(context.Background()))
+	}
+
+	assert.Equal(t, 1, gets, "the deployment should be read only once")
+	assert.Equal(t, "testing-image:123", mockController.image)
+	assert.Equal(t, map[string]string{"node-role.kubernetes.io/master": ""}, mockController.nodeSelector)
 }
 
 func TestPeriodicPrune(t *testing.T) {

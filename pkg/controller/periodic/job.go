@@ -35,9 +35,15 @@ func NewJobController(kubeClient kubernetes.Interface) *JobController {
 }
 
 // CreateGathererJob creates a new Kubernetes Job with provided image, volume mount path used for storing data archives and name
-// derived from the provided data gather name
+// derived from the provided data gather name. The node selector and tolerations are copied from the
+// operator's own deployment so that the job is scheduled on the same nodes as the operator itself.
 func (j *JobController) CreateGathererJob(
-	ctx context.Context, image string, dataReporting *config.DataReporting, dataGather *insightsv1.DataGather,
+	ctx context.Context,
+	image string,
+	dataReporting *config.DataReporting,
+	dataGather *insightsv1.DataGather,
+	nodeSelector map[string]string,
+	tolerations []corev1.Toleration,
 ) (*batchv1.Job, error) {
 	storage := dataGather.Spec.Storage
 
@@ -66,6 +72,8 @@ func (j *JobController) CreateGathererJob(
 					},
 				},
 				Spec: corev1.PodSpec{
+					NodeSelector:       nodeSelector,
+					Tolerations:        tolerations,
 					PriorityClassName:  "system-cluster-critical",
 					RestartPolicy:      corev1.RestartPolicyNever,
 					ServiceAccountName: "operator",

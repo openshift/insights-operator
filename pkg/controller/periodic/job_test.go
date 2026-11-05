@@ -29,11 +29,19 @@ func TestCreateGathererJob(t *testing.T) {
 	}, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
+	masterToleration := v1.Toleration{
+		Key:      "node-role.kubernetes.io/master",
+		Operator: v1.TolerationOpExists,
+		Effect:   v1.TaintEffectNoSchedule,
+	}
+
 	tests := []struct {
 		name          string
 		dataGather    *insightsv1.DataGather
 		imageName     string
 		dataReporting config.DataReporting
+		nodeSelector  map[string]string
+		tolerations   []v1.Toleration
 	}{
 		{
 			name: "Basic gathering job creation without PVC storage",
@@ -46,6 +54,23 @@ func TestCreateGathererJob(t *testing.T) {
 			dataReporting: config.DataReporting{
 				StoragePath: storagePath,
 			},
+		},
+		{
+			name: "Node selector and tolerations are set on the job pod",
+			dataGather: &insightsv1.DataGather{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "custom-gather-test-placement",
+				},
+			},
+			imageName: "test.io/test/insights-image",
+			dataReporting: config.DataReporting{
+				StoragePath: storagePath,
+			},
+			nodeSelector: map[string]string{
+				"kubernetes.io/os":               "linux",
+				"node-role.kubernetes.io/master": "",
+			},
+			tolerations: []v1.Toleration{masterToleration},
 		},
 		{
 			name: "Basic gathering with PVC storage",
@@ -75,10 +100,14 @@ func TestCreateGathererJob(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			jc := NewJobController(kube)
 
-			createdJob, err := jc.CreateGathererJob(context.Background(), tt.imageName, &tt.dataReporting, tt.dataGather)
+			createdJob, err := jc.CreateGathererJob(
+				context.Background(), tt.imageName, &tt.dataReporting, tt.dataGather, tt.nodeSelector, tt.tolerations,
+			)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.dataGather.Name, createdJob.Name)
 			assert.Equal(t, tt.imageName, createdJob.Spec.Template.Spec.Containers[0].Image)
+			assert.Equal(t, tt.nodeSelector, createdJob.Spec.Template.Spec.NodeSelector)
+			assert.Equal(t, tt.tolerations, createdJob.Spec.Template.Spec.Tolerations)
 
 			if tt.dataGather.Spec.Storage.Type != insightsv1.StorageTypePersistentVolume {
 				// EmptyDir is used when no storage is specified
