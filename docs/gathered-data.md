@@ -1179,6 +1179,41 @@ Collects definitions of Kubeletconfigs
 None
 
 
+## LLMInferenceServices
+
+Collects LLMInferenceService resources from the KServe
+operator (llm-d) across all namespaces. Only selected non-sensitive fields are
+collected: model name and LoRA adapter names/maxAdapters, replica counts,
+parallelism settings, presence of the prefill/router-scheduler/tracing/
+workloads-scheduler blocks, the inline scheduler config (with sensitive keys
+redacted and size capped), scaling bounds, and container image/resource limits.
+
+The lora.adapters[].uri field is explicitly excluded as it may contain storage
+paths, and containers[].env is never collected as it commonly holds tokens and
+API keys.
+
+### API Reference
+- https://kserve.github.io/website/docs/reference/crd-api#llminferenceservice
+
+### Sample data
+- [docs/insights-archive-sample/config/serving.kserve.io/llm-demo/llminferenceservices.json](./insights-archive-sample/config/serving.kserve.io/llm-demo/llminferenceservices.json)
+
+### Location in archive
+- `config/serving.kserve.io/{namespace}/llminferenceservices.json`
+
+### Config ID
+`clusterconfig/llm_inference_services`
+
+### Released version
+- 5.1
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## LogsOfNamespace
 
 Collects logs from pods in the provided namespace.

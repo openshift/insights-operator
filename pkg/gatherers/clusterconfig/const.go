@@ -121,6 +121,7 @@ var (
 	clusterServingRuntimeGVR = schema.GroupVersionResource{
 		Group: "serving.kserve.io", Version: "v1alpha1", Resource: "clusterservingruntimes",
 	}
+	llmInferenceServiceGVR = schema.GroupVersionResource{Group: "serving.kserve.io", Version: "v1alpha1", Resource: "llminferenceservices"}
 )
 
 func init() { //nolint: gochecknoinits
