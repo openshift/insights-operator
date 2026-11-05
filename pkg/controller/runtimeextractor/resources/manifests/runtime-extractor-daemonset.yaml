@@ -35,6 +35,28 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       priorityClassName: openshift-user-critical
+      # Tolerate all taints so this DaemonSet is never blocked from scheduling
+      # by custom taints (e.g. node-role.kubernetes.io/gpu) added by cluster
+      # admins. Which nodes are actually targeted is controlled by the
+      # nodeAffinity below, not by which taints are tolerated.
+      tolerations:
+        - operator: Exists
+      # Run on worker nodes, and on control-plane nodes only when they also
+      # act as workers (e.g. compact or Single Node OpenShift), matching the
+      # DaemonSet's original scheduling footprint now that all taints are
+      # tolerated.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/master
+                    operator: DoesNotExist
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/worker
+                    operator: Exists
       containers:
         - name: kube-rbac-proxy
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
