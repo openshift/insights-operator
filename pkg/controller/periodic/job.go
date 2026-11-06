@@ -66,7 +66,7 @@ func (j *JobController) CreateGathererJob(
 					},
 				},
 				Spec: corev1.PodSpec{
-					PriorityClassName:  "system-cluster-critical",
+					PriorityClassName:  "openshift-user-critical",
 					RestartPolicy:      corev1.RestartPolicyNever,
 					ServiceAccountName: "operator",
 					SecurityContext: &corev1.PodSecurityContext{
