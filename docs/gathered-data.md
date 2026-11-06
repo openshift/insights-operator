@@ -921,6 +921,35 @@ None
 None
 
 
+## GPUNodeTopology
+
+collects GPU-related labels and capacity fields from all nodes.
+Per node it extracts: nvidia.com/gpu.product and amd.com/gpu.product labels,
+and nvidia.com/gpu and amd.com/gpu capacity values.
+Nodes with no GPU data are omitted. If no GPU nodes are found, no record is created.
+
+### API Reference
+- https://kubernetes.io/docs/reference/kubernetes-api/cluster-resources/node-v1/
+
+### Sample data
+- [docs/insights-archive-sample/config/gpu_node_topology.json](./insights-archive-sample/config/gpu_node_topology.json)
+
+### Location in archive
+- `config/gpu_node_topology.json`
+
+### Config ID
+`clusterconfig/gpu_node_topology`
+
+### Released version
+- 5.1
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## HelmInfo
 
 Collects statistics about resources deployed via HelmChart, counting only the resources
