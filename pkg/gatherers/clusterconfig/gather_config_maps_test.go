@@ -194,6 +194,20 @@ func Test_ConfigMap_YAML_Data(t *testing.T) {
 			0,
 			fmt.Errorf("yaml: mapping values are not allowed in this context"),
 		},
+		{
+			"Valid user workload monitoring config map",
+			corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-workload-monitoring-config",
+					Namespace: "openshift-user-workload-monitoring",
+				},
+				Data: map[string]string{
+					"config.yaml": "\"valid\"",
+				},
+			},
+			1,
+			nil,
+		},
 	}
 
 	for _, tt := range cases {
