@@ -99,16 +99,21 @@ func gatherClusterLogForwarder(ctx context.Context, dynamicClient dynamic.Interf
 			continue
 		}
 		anonymizedRecord, err := fillClusterLogForwarderRecord(item)
-		records = append(records, *anonymizedRecord)
 		if err != nil {
 			errs = append(errs, err)
+			continue
 		}
+		records = append(records, *anonymizedRecord)
 	}
 
 	return records, errs
 }
 
 func fillClusterLogForwarderRecord(item unstructured.Unstructured) (*record.Record, error) {
+	annotations := item.GetAnnotations()
+	delete(annotations, "kubectl.kubernetes.io/last-applied-configuration")
+	item.SetAnnotations(annotations)
+
 	if err := anonymizeClusterLogForwarderOutputs(item.Object); err != nil {
 		return nil, err
 	}
@@ -125,7 +130,7 @@ func fillClusterLogForwarderRecord(item unstructured.Unstructured) (*record.Reco
 }
 
 // anonymizeClusterLogForwarderOutputs removes sensitive fields from CLF outputs:
-// URLs, authentication, and TLS configuration.
+// URLs, authentication, TLS configuration, headers, and broker endpoints.
 func anonymizeClusterLogForwarderOutputs(obj map[string]interface{}) error {
 	outputsSlice, ok, err := unstructured.NestedSlice(obj, "spec", "outputs")
 	if err != nil {
@@ -146,13 +151,21 @@ func anonymizeClusterLogForwarderOutputs(obj map[string]interface{}) error {
 
 		for _, outputType := range []string{
 			"azureMonitor", "cloudwatch", "elasticsearch", "googleCloudLogging",
-			"http", "kafka", "loki", "otlp", "splunk", "syslog",
+			"http", "kafka", "loki", "lokiStack", "otlp", "splunk", "syslog",
 		} {
-			outputTypeMap, exists, _ := unstructured.NestedMap(outputMap, outputType)
+			outputTypeMap, exists, err := unstructured.NestedMap(outputMap, outputType)
+			if err != nil {
+				klog.V(2).Infof("Bad structure for output type %s: %v", outputType, err)
+				return err
+			}
 			if !exists {
 				continue
 			}
 			unstructured.RemoveNestedField(outputTypeMap, "url")
+			unstructured.RemoveNestedField(outputTypeMap, "authentication")
+			unstructured.RemoveNestedField(outputTypeMap, "headers")
+			unstructured.RemoveNestedField(outputTypeMap, "proxyURL")
+			unstructured.RemoveNestedField(outputTypeMap, "brokers")
 			if err := unstructured.SetNestedMap(outputMap, outputTypeMap, outputType); err != nil {
 				klog.V(2).Infof("Failed to set anonymized output type %s: %v", outputType, err)
 			}

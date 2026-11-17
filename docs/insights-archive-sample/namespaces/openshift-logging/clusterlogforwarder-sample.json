@@ -19,11 +19,6 @@
           "target": {
             "name": "lokistack-sample",
             "namespace": "openshift-logging"
-          },
-          "authentication": {
-            "token": {
-              "from": "serviceAccount"
-            }
           }
         }
       },
