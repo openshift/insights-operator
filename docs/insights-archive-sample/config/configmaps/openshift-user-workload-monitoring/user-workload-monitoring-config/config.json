@@ -1,0 +1,9 @@
+{
+  "alertmanagerMain": {
+    "enabled": true,
+    "replicas": 2
+  },
+  "prometheus": {
+    "retention": "15d"
+  }
+}

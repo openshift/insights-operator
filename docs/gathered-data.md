@@ -773,6 +773,8 @@ for details).
     namespace since 4.14.0+
   - `insights-config` config map from `openshift-insights` namespace
     since 4.15.0+
+  - `user-workload-monitoring-config` config map from
+    `openshift-user-workload-monitoring` namespace since 5.1.0+
 
 ### Anonymization
 If the content of a `ConfigMap` contains a parseable PEM structure (like a certificate), it removes the inside of
