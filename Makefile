@@ -70,6 +70,34 @@ unit-verbose:
 	VERBOSE=-v make unit
 
 ## --------------------------------------
+## Integration Tests (Ginkgo)
+## --------------------------------------
+
+.PHONY: test-integration
+test-integration: ## Run integration tests against cluster (requires KUBECONFIG)
+	@if [ -z "$$KUBECONFIG" ]; then \
+		echo "Error: KUBECONFIG environment variable must be set"; \
+		exit 1; \
+	fi
+	go test -v ./test/integration/... -ginkgo.v -ginkgo.show-node-events
+
+.PHONY: test-integration-list
+test-integration-list: ## List available integration tests
+	go test -v ./test/integration/... -ginkgo.dry-run
+
+.PHONY: test-integration-focus
+test-integration-focus: ## Run specific test (use FOCUS="test pattern")
+	@if [ -z "$$KUBECONFIG" ]; then \
+		echo "Error: KUBECONFIG environment variable must be set"; \
+		exit 1; \
+	fi
+	@if [ -z "$$FOCUS" ]; then \
+		echo "Error: FOCUS environment variable must be set"; \
+		exit 1; \
+	fi
+	go test -v ./test/integration/... -ginkgo.focus="$(FOCUS)" -ginkgo.v
+
+## --------------------------------------
 ## Linting
 ## --------------------------------------
 
@@ -102,6 +130,11 @@ build: ## Compiles the insights operator
 build-debug: ## Compiles the insights operator in debug mode
 	go build -gcflags="all=-N -l" \
 		-o ./bin/insights-operator ./cmd/insights-operator
+
+.PHONY: build-tests-ext
+build-tests-ext: ## Compiles the statically linked insights-operator-tests (OTE) binary and gzips it
+	CGO_ENABLED=0 GO_COMPLIANCE_POLICY="exempt_all" go build $(BUILD_FLAGS) -o ./bin/insights-operator-tests ./cmd/insights-operator-tests
+	gzip -f ./bin/insights-operator-tests
 
 ## --------------------------------------
 ## Container

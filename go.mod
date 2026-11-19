@@ -6,6 +6,8 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+	github.com/onsi/ginkgo/v2 v2.28.1
+	github.com/onsi/gomega v1.39.1
 	github.com/openshift/api v0.0.0-20260318185450-1f2fa3f09f4e
 	github.com/openshift/build-machinery-go v0.0.0-20250530140348-dc5b2804eeee
 	github.com/openshift/client-go v0.0.0-20260317180604-743f664b82d1
@@ -30,6 +32,13 @@ require (
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	sigs.k8s.io/node-feature-discovery/api/nfd v0.18.0
 	sigs.k8s.io/yaml v1.6.0
+)
+
+require github.com/openshift-eng/openshift-tests-extension v0.0.0-20261026111431-8782e72e5a1f
+
+require (
+	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	golang.org/x/tools v0.44.0 // indirect
 )
 
 require (
@@ -91,7 +100,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nutanix-cloud-native/prism-go-client v0.5.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
-	github.com/onsi/gomega v1.39.1 // indirect
 	github.com/openshift/controller-runtime-common v0.0.0-20260318085703-1812aed6dbd2
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/profile v1.7.0 // indirect
@@ -154,3 +162,8 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
+
+// Required by github.com/openshift-eng/openshift-tests-extension, which depends on
+// ginkgo internals (GetSuite, GetFailer, GetWriter, SetReporterConfig, ...) only
+// exported by this OpenShift fork, not upstream onsi/ginkgo/v2.
+replace github.com/onsi/ginkgo/v2 => github.com/openshift/onsi-ginkgo/v2 v2.6.1-0.20241205171354-8006f302fd12
