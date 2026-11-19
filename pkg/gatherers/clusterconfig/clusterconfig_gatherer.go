@@ -41,6 +41,7 @@ var gatheringFunctions = map[string]gathererFuncPtr{
 	"cost_management_metrics_configs":  (*Gatherer).GatherCostManagementMetricsConfigs,
 	"crds":                             (*Gatherer).GatherCRD,
 	"dvo_metrics":                      (*Gatherer).GatherDVOMetrics,
+	"external_models":                  (*Gatherer).GatherExternalModels,
 	"feature_gates":                    (*Gatherer).GatherClusterFeatureGates,
 	"gpu_node_topology":                (*Gatherer).GatherGPUNodeTopology,
 	"image":                            (*Gatherer).GatherClusterImage,
