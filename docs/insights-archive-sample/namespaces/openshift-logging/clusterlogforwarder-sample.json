@@ -1,0 +1,89 @@
+{
+  "apiVersion": "observability.openshift.io/v1",
+  "kind": "ClusterLogForwarder",
+  "metadata": {
+    "creationTimestamp": "2024-11-18T12:10:40Z",
+    "generation": 1,
+    "name": "collector",
+    "namespace": "openshift-logging",
+    "resourceVersion": "54570",
+    "uid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  "spec": {
+    "managementState": "Managed",
+    "outputs": [
+      {
+        "name": "default-lokistack",
+        "type": "lokiStack",
+        "lokiStack": {
+          "target": {
+            "name": "lokistack-sample",
+            "namespace": "openshift-logging"
+          }
+        }
+      },
+      {
+        "name": "external-es",
+        "type": "elasticsearch",
+        "elasticsearch": {}
+      }
+    ],
+    "pipelines": [
+      {
+        "name": "default-pipeline",
+        "inputRefs": [
+          "application",
+          "infrastructure"
+        ],
+        "outputRefs": [
+          "default-lokistack"
+        ]
+      },
+      {
+        "name": "audit-pipeline",
+        "inputRefs": [
+          "audit"
+        ],
+        "outputRefs": [
+          "external-es"
+        ]
+      }
+    ],
+    "serviceAccount": {
+      "name": "collector"
+    }
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastTransitionTime": "2024-11-18T12:11:00Z",
+        "message": "permitted to collect log types: [application, infrastructure, audit]",
+        "reason": "ValidationSuccess",
+        "status": "True",
+        "type": "Ready"
+      }
+    ],
+    "filterConditions": [],
+    "inputConditions": [],
+    "outputConditions": [
+      {
+        "lastTransitionTime": "2024-11-18T12:11:00Z",
+        "message": "",
+        "name": "default-lokistack",
+        "reason": "ValidationSuccess",
+        "status": "True",
+        "type": "Ready"
+      }
+    ],
+    "pipelineConditions": [
+      {
+        "lastTransitionTime": "2024-11-18T12:11:00Z",
+        "message": "",
+        "name": "default-pipeline",
+        "reason": "ValidationSuccess",
+        "status": "True",
+        "type": "Ready"
+      }
+    ]
+  }
+}

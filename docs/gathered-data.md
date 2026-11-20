@@ -1238,6 +1238,39 @@ None
 None
 
 
+## ClusterLogForwarder
+
+Collects `clusterlogforwarders.observability.openshift.io` resources.
+
+The gatherer will collect up to 20 resources from `openshift-*` namespaces
+and it will report errors if it finds a `ClusterLogForwarder` resource in a different namespace
+or if there are more than 20 `ClusterLogForwarders` in the `openshift-*` namespaces.
+
+Sensitive fields like output URLs, authentication credentials, and TLS configuration
+are removed from the collected data.
+
+### API Reference
+- https://github.com/openshift/cluster-logging-operator/blob/master/api/observability/v1/clusterlogforwarder_types.go
+
+### Sample data
+- [docs/insights-archive-sample/namespaces/openshift-logging/clusterlogforwarder-sample.json](./insights-archive-sample/namespaces/openshift-logging/clusterlogforwarder-sample.json)
+
+### Location in archive
+- `namespace/{namespace}/observability.openshift.io/clusterlogforwarders/{name}.json`
+
+### Config ID
+`clusterconfig/clusterlogforwarders`
+
+### Released version
+- 5.1.0
+
+### Backported versions
+None
+
+### Changes
+None
+
+
 ## MaasModelRefs
 
 Collects MaasModelRef resources from the MaaS (Model as a Service) operator

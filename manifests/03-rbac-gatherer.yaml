@@ -203,6 +203,13 @@ rules:
       - get
       - list
   - apiGroups:
+      - observability.openshift.io
+    resources:
+      - clusterlogforwarders
+    verbs:
+      - get
+      - list
+  - apiGroups:
       - ingress.operator.openshift.io
     resources:
       - dnsrecords
