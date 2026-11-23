@@ -21,8 +21,8 @@
     },
     "source": "openshift:payload:insights-operator",
     "codeLocations": [
-      "github.com/openshift/insights-operator/tests-extension/test/gathering/datagather_pvc.go:29",
-      "github.com/openshift/insights-operator/tests-extension/test/gathering/datagather_pvc.go:30"
+      "github.com/openshift/insights-operator/tests-extension/test/gathering/datagather_pvc.go:23",
+      "github.com/openshift/insights-operator/tests-extension/test/gathering/datagather_pvc.go:24"
     ],
     "lifecycle": "blocking",
     "environmentSelector": {}
