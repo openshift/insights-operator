@@ -1,0 +1,30 @@
+[
+  {
+    "name": "[smoke] Test Framework Verification should always pass",
+    "labels": {},
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:insights-operator",
+    "codeLocations": [
+      "github.com/openshift/insights-operator/tests-extension/test/example.go:8",
+      "github.com/openshift/insights-operator/tests-extension/test/example.go:9"
+    ],
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  },
+  {
+    "name": "[sig-insights][Feature:Gathering] on-demand DataGather with PersistentVolume storage gathers cluster data and writes a readable archive to the configured PVC",
+    "labels": {},
+    "resources": {
+      "isolation": {}
+    },
+    "source": "openshift:payload:insights-operator",
+    "codeLocations": [
+      "github.com/openshift/insights-operator/tests-extension/test/gathering/datagather_pvc.go:29",
+      "github.com/openshift/insights-operator/tests-extension/test/gathering/datagather_pvc.go:30"
+    ],
+    "lifecycle": "blocking",
+    "environmentSelector": {}
+  }
+]

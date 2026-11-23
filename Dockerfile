@@ -3,9 +3,11 @@ WORKDIR /go/src/github.com/openshift/insights-operator
 COPY . .
 ENV GOEXPERIMENT=strictfipsruntime
 RUN make build
+RUN make build-tests-ext
 
 FROM registry.ci.openshift.org/ocp/5.0:base-rhel9
 COPY --from=builder /go/src/github.com/openshift/insights-operator/bin/insights-operator /usr/bin/
+COPY --from=builder /go/src/github.com/openshift/insights-operator/bin/insights-operator-tests.gz /usr/bin/
 COPY config/pod.yaml /etc/insights-operator/server.yaml
 COPY manifests /manifests
 LABEL io.openshift.release.operator=true
