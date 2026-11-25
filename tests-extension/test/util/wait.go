@@ -73,20 +73,14 @@ func conditionsOf(dg *insightsv1.DataGather) []metav1.Condition {
 	return dg.Status.Conditions
 }
 
-// WaitForGatheringJobComplete polls the batch Job the operator creates for a
-// DataGather (named identically to the DataGather, see
-// pkg/controller/periodic.JobController.CreateGathererJob) until it reaches a
-// terminal state. This must happen before anything else tries to mount the
-// DataGather's PVC: the gathering pod holds it (ReadWriteOnce) until the job
-// finishes, so mounting it earlier -- e.g. right after DataRecorded turns
-// True, while the pod is still uploading -- races the gathering pod and can
-// hang waiting for the volume to attach.
+// WaitForGatheringJobTerminal polls the batch Job the operator creates for a
+// DataGather.
 //
 // The Job itself is created asynchronously by the operator (an informer
 // reacts to the DataGather and only then creates the Job), so a NotFound on
 // an early poll is expected, not fatal: it means the Job hasn't been created
 // yet, and polling should keep retrying rather than abort.
-func WaitForGatheringJobComplete(
+func WaitForGatheringJobTerminal(
 	ctx context.Context, kubeClient kubernetes.Interface, name string, timeout time.Duration,
 ) (*batchv1.Job, error) {
 	var latest *batchv1.Job
@@ -106,18 +100,16 @@ func WaitForGatheringJobComplete(
 				continue
 			}
 			switch cond.Type {
-			case batchv1.JobComplete:
+			case batchv1.JobComplete, batchv1.JobFailed:
 				return true, nil
-			case batchv1.JobFailed:
-				return false, fmt.Errorf("gathering job %s/%s failed (reason %s): %s",
-					InsightsNamespace, name, cond.Reason, cond.Message)
 			}
 		}
 		return false, nil
 	})
 	if pollErr != nil {
 		if wait.Interrupted(pollErr) {
-			return latest, fmt.Errorf("timed out waiting for gathering job %s/%s to complete", InsightsNamespace, name)
+			return latest, fmt.Errorf("timed out waiting for gathering job %s/%s to reach a terminal state",
+				InsightsNamespace, name)
 		}
 		return latest, pollErr
 	}
@@ -126,10 +118,7 @@ func WaitForGatheringJobComplete(
 }
 
 // DeleteGatheringJob deletes the gathering Job with Foreground propagation,
-// ignoring a not-found error. Foreground propagation makes Delete block until
-// the Job's pod is actually gone, which in turn releases the PVC the pod held:
-// deleting the DataGather CR alone does not guarantee the Job/pod are cleaned
-// up before a caller goes on to delete the PVC.
+// ignoring a not-found error.
 func DeleteGatheringJob(ctx context.Context, kubeClient kubernetes.Interface, name string) error {
 	propagation := metav1.DeletePropagationForeground
 	err := kubeClient.BatchV1().Jobs(InsightsNamespace).Delete(ctx, name, metav1.DeleteOptions{

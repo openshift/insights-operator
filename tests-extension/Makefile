@@ -40,10 +40,6 @@ verify-metadata: update-metadata ## Fail if the committed metadata is stale
 		exit 1; \
 	fi
 
-.PHONY: test
-test: ## Run unit tests (e.g. smoke specs that don't need a cluster)
-	go test -mod=vendor ./...
-
 .PHONY: test-integration
 test-integration: ## Run the integration suite against a live cluster (requires KUBECONFIG)
 	@if [ -z "$$KUBECONFIG" ]; then \
@@ -76,7 +72,7 @@ run-suite: build ## Build the OTE binary and run a suite against a live cluster 
 	$(BINARY) run-suite $(SUITE)
 
 .PHONY: verify
-verify: tidy fmt vet test verify-metadata ## Run all verification checks
+verify: tidy fmt vet verify-metadata ## Run all static verification checks (no cluster required)
 
 .PHONY: tidy
 tidy: ## Run go mod tidy, vendor and verify

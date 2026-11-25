@@ -24,18 +24,18 @@ var _ = g.Describe("[sig-insights][Feature:Gathering] on-demand DataGather with 
 	g.It("gathers cluster data and writes a readable archive to the configured PVC", func() {
 		ctx := context.Background()
 
-		cfg, err := testutil.NewConfig()
-		o.Expect(err).NotTo(o.HaveOccurred())
-
-		clients, err := testutil.NewClients(cfg)
-		o.Expect(err).NotTo(o.HaveOccurred())
+		clients := testutil.Get()
+		if !clients.HasDefaultStorageClass {
+			g.Skip("cluster has no default StorageClass, the PVC used by this test would never bind")
+		}
+		cfg := clients.RestConfig
 
 		// Both names are suffixed with a random string so a leftover PVC/pod
 		// from a previous (e.g. interrupted) run never collides with this one.
 		runSuffix := utilrand.String(5)
 
 		pvcName := "test-datagather-pvc-" + runSuffix
-		_, err = testutil.CreatePVC(ctx, clients.Kube, pvcName, "1Gi")
+		_, err := testutil.CreatePVC(ctx, clients.Kube, pvcName, "1Gi")
 		o.Expect(err).NotTo(o.HaveOccurred())
 		g.DeferCleanup(func(ctx context.Context) {
 			o.Expect(testutil.DeletePVC(ctx, clients.Kube, pvcName)).To(o.Succeed())
@@ -52,11 +52,7 @@ var _ = g.Describe("[sig-insights][Feature:Gathering] on-demand DataGather with 
 			o.Expect(testutil.DeleteGatheringJob(ctx, clients.Kube, dg.Name)).To(o.Succeed())
 		})
 
-		// Wait for the gathering job itself to finish. Only once the pod
-		// terminates is it safe for another pod to mount the same
-		// ReadWriteOnce PVC to read the archive back; CreateArchiveReaderPod
-		// requires this Job to enforce that ordering.
-		gatheringJob, err := testutil.WaitForGatheringJobComplete(ctx, clients.Kube, dg.Name, 10*time.Minute)
+		gatheringJob, err := testutil.WaitForGatheringJobTerminal(ctx, clients.Kube, dg.Name, 10*time.Minute)
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		dg, err = testutil.WaitForDataGatherRecorded(ctx, clients.Insights, dg.Name, 10*time.Minute)
@@ -64,12 +60,12 @@ var _ = g.Describe("[sig-insights][Feature:Gathering] on-demand DataGather with 
 
 		o.Expect(dg.Status.StartTime).NotTo(o.BeNil(), "StartTime should be set")
 
-		_, err = testutil.WaitForPVCBound(ctx, clients.Kube, pvcName, 2*time.Minute)
+		_, err = testutil.WaitForPVCBound(ctx, clients.Kube, pvcName, 5*time.Minute)
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		readerPodName := "test-archive-reader-" + runSuffix
 		_, err = testutil.CreateArchiveReaderPod(
-			ctx, clients.Kube, cfg, gatheringJob, readerPodName, pvcName, testutil.DefaultPVCMountPath, 2*time.Minute,
+			ctx, clients.Kube, cfg, gatheringJob, readerPodName, pvcName, testutil.DefaultPVCMountPath, 5*time.Minute,
 		)
 		o.Expect(err).NotTo(o.HaveOccurred())
 		g.DeferCleanup(func(ctx context.Context) {

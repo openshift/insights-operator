@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 
 	_ "github.com/openshift/insights-operator/tests-extension/test"
 	_ "github.com/openshift/insights-operator/tests-extension/test/gathering"
+	testutil "github.com/openshift/insights-operator/tests-extension/test/util"
 )
 
 const ownedSpecsQualifier = `name.contains("[sig-insights]") || name.contains("[smoke]")`
@@ -36,6 +38,12 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("couldn't build extension test specs from ginkgo: %+v", err.Error()))
 	}
+
+	specs.AddBeforeAll(func() {
+		if err := testutil.Setup(context.Background()); err != nil {
+			panic(fmt.Sprintf("couldn't set up test clients: %+v", err.Error()))
+		}
+	})
 
 	ext.AddSpecs(specs)
 	registry.Register(ext)

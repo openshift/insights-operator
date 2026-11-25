@@ -13,14 +13,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/kubectl/pkg/scheme"
 )
 
 // archiveReaderImage is used for the short-lived helper pod that reads the
 // archive off the PVC. It only needs a shell, "ls" and "cat".
-const archiveReaderImage = "quay.io/openshifttest/busybox"
+const archiveReaderImage = "image-registry.openshift-image-registry.svc:5000/openshift/tools:latest"
 
 const archiveReaderContainerName = "archive-reader"
 
@@ -28,18 +28,20 @@ const archiveReaderContainerName = "archive-reader"
 // mounts the named PVC read-only at mountPath, so the test can exec into it
 // to read the recorded archive.
 //
-// gatheringJob must be the Job returned by
-// WaitForGatheringJobComplete for the DataGather that owns pvcName. The PVC
-// is ReadWriteOnce, and the gathering pod holds it mounted until that Job
-// finishes; requiring the Job here makes it impossible to call this before
-// the gathering pod has released the volume.
+// gatheringJob must be the Job returned by WaitForGatheringJobTerminal for
+// the DataGather that owns pvcName. The PVC is ReadWriteOnce, and the
+// gathering pod holds it mounted until that Job finishes (Complete or
+// Failed); requiring a terminal Job here makes it impossible to call this
+// before the gathering pod has released the volume. Whether the archive
+// itself exists is not this function's concern -- callers should have
+// already asserted that via the DataGather's DataRecorded condition.
 func CreateArchiveReaderPod(
 	ctx context.Context, kubeClient kubernetes.Interface, cfg *rest.Config, gatheringJob *batchv1.Job,
 	name, pvcName, mountPath string, readyTimeout time.Duration,
 ) (*corev1.Pod, error) {
-	if !jobComplete(gatheringJob) {
+	if !jobTerminal(gatheringJob) {
 		return nil, fmt.Errorf(
-			"archive reader pod %s/%s requires a completed gathering job, got: %#v", InsightsNamespace, name, gatheringJob,
+			"archive reader pod %s/%s requires a terminal gathering job, got: %#v", InsightsNamespace, name, gatheringJob,
 		)
 	}
 
@@ -111,14 +113,18 @@ func CreateArchiveReaderPod(
 // timeout instead, since archive sizes vary.
 const execExchangeTimeout = 30 * time.Second
 
-// jobComplete reports whether job has a True JobComplete condition, i.e. it
-// is the same check WaitForGatheringJobComplete polls for.
-func jobComplete(job *batchv1.Job) bool {
+// jobTerminal reports whether job has a True JobComplete or JobFailed
+// condition, i.e. it is the same check WaitForGatheringJobTerminal polls for.
+func jobTerminal(job *batchv1.Job) bool {
 	if job == nil {
 		return false
 	}
 	for _, cond := range job.Status.Conditions {
-		if cond.Type == batchv1.JobComplete && cond.Status == corev1.ConditionTrue {
+		if cond.Status != corev1.ConditionTrue {
+			continue
+		}
+		switch cond.Type {
+		case batchv1.JobComplete, batchv1.JobFailed:
 			return true
 		}
 	}

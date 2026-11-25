@@ -13,6 +13,24 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// HasDefaultStorageClass reports whether the cluster has a StorageClass
+// marked as default (storageclass.kubernetes.io/is-default-class: "true").
+// Without one, a PVC with no StorageClassName set stays Pending forever, so
+// callers should skip rather than let the test time out.
+func HasDefaultStorageClass(ctx context.Context, kubeClient kubernetes.Interface) (bool, error) {
+	classes, err := kubeClient.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return false, fmt.Errorf("failed to list storage classes: %w", err)
+	}
+
+	for _, class := range classes.Items {
+		if class.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // CreatePVC creates a PersistentVolumeClaim with the given name and size in
 // InsightsNamespace. It does not wait for the PVC to become Bound: with a
 // WaitForFirstConsumer storage class (the common default on AWS/GCP/Azure),
