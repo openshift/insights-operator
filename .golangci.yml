@@ -90,7 +90,6 @@ linters:
         - gosec
         path: cmd
     paths:
-      - tests/integration
       - pkg/insights
       - pkg/dependencymagnet
       - third_party$
@@ -102,7 +101,6 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - tests/integration
       - pkg/insights
       - pkg/dependencymagnet
       - third_party$

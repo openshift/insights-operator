@@ -70,6 +70,33 @@ unit-verbose:
 	VERBOSE=-v make unit
 
 ## --------------------------------------
+## Integration Tests (Ginkgo / OpenShift Tests Extension)
+## --------------------------------------
+
+## tests-extension is its own Go module (separate go.mod/vendor) so that its
+## test-only dependencies never affect the operator's own module graph. All
+## targets below delegate to tests-extension/Makefile rather than operating
+## on ./tests-extension/... from the root module.
+
+.PHONY: test-integration
+test-integration: ## Run integration tests against cluster (requires KUBECONFIG)
+	$(MAKE) -C tests-extension test-integration
+
+.PHONY: test-integration-list
+test-integration-list: build-tests-ext ## List available integration tests
+	$(MAKE) -C tests-extension list-test-names
+
+.PHONY: test-integration-focus
+test-integration-focus: ## Run specific test (use FOCUS="test pattern")
+	$(MAKE) -C tests-extension test-integration-focus
+
+SUITE ?= insights-operator/all
+
+.PHONY: run-integration-suite
+run-integration-suite: ## Build the OTE binary and run-suite against a cluster (requires KUBECONFIG; override SUITE=insights-operator/gathering etc.)
+	$(MAKE) -C tests-extension run-suite SUITE=$(SUITE)
+
+## --------------------------------------
 ## Linting
 ## --------------------------------------
 
@@ -102,6 +129,13 @@ build: ## Compiles the insights operator
 build-debug: ## Compiles the insights operator in debug mode
 	go build -gcflags="all=-N -l" \
 		-o ./bin/insights-operator ./cmd/insights-operator
+
+.PHONY: build-tests-ext
+build-tests-ext: ## Compiles the statically linked insights-operator-tests (OTE) binary and gzips it
+	$(MAKE) -C tests-extension build
+	@mkdir -p ./bin
+	cp tests-extension/bin/insights-operator-tests ./bin/insights-operator-tests
+	gzip -f ./bin/insights-operator-tests
 
 ## --------------------------------------
 ## Container
@@ -136,6 +170,10 @@ vendor: ## Runs tiny, vendor and verify the module
 	go mod tidy
 	go mod vendor
 	go mod verify
+
+.PHONY: vendor-integration
+vendor-integration: ## Runs tidy, vendor and verify for the tests-extension module (separate from the root module)
+	$(MAKE) -C tests-extension tidy
 
 ## --------------------------------------
 ## Checks (mostly "private" targets)
