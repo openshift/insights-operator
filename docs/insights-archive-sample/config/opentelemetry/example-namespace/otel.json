@@ -11,6 +11,11 @@
     },
     "spec": {
         "config": {
+            "exporters": {
+                "otlp_grpc": {
+                    "endpoint": "xxxxx-xxxxxxxxx.xxxxxxx.xxx:xxxx"
+                }
+            },
             "service": {
                 "extensions": [
                     "health_check",

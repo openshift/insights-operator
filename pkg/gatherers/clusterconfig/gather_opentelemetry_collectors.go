@@ -3,8 +3,10 @@ package clusterconfig
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/openshift/insights-operator/pkg/record"
+	"github.com/openshift/insights-operator/pkg/utils/anonymize"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -12,11 +14,17 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// otlpExporterNameRegex matches OTLP exporter config keys, e.g. "otlp", "otlpgrpc",
+// "otlphttp", "otlp_grpc", "otlp_http", and their "/name" variants such as "otlpgrpc/myexporter".
+var otlpExporterNameRegex = regexp.MustCompile(`^otlp_?(grpc|http)?(/.+)?$`)
+
 // GatherOpenTelemetryCollectors collects up to 5 `opentelemetrycollectors.opentelemetry.io` custom resources
 // installed in the cluster.
 //
-// Only the "service" subsection of each resource's spec.config is retained; receivers,
-// exporters, and other pipeline configuration are omitted to avoid collecting sensitive data.
+// Only the "service" subsection of each resource's spec.config is retained, plus the (anonymized)
+// endpoint of any OTLP exporter (keys matching otlp, otlpgrpc, otlphttp, otlp_grpc, otlp_http and
+// their "/name" variants, e.g. otlpgrpc/myexporter). All other exporter/receiver configuration is
+// omitted to avoid collecting sensitive data.
 //
 // ### API Reference
 // - https://github.com/open-telemetry/opentelemetry-operator/blob/main/apis/v1beta1/opentelemetrycollector_types.go
@@ -37,7 +45,7 @@ import (
 // TBD
 //
 // ### Changes
-// None
+// - CCXDEV-16802: added the (anonymized) OTLP exporter endpoint to spec.config.exporters
 func (g *Gatherer) GatherOpenTelemetryCollectors(ctx context.Context) ([]record.Record, []error) {
 	gatherDynamicClient, err := dynamic.NewForConfig(g.gatherKubeConfig)
 	if err != nil {
@@ -49,7 +57,15 @@ func (g *Gatherer) GatherOpenTelemetryCollectors(ctx context.Context) ([]record.
 
 // cleanCollectorSpecConfig function parses the spec.config field
 // and removes any possible private data getting only the "service" configuration
+// and the endpoint of any OTLP exporter (anonymized)
 func cleanCollectorSpecConfig(item *unstructured.Unstructured) error {
+	// the last-applied-configuration annotation holds a full copy of the original spec.config,
+	// including unanonymized OTLP exporter endpoints, so it must be dropped regardless of
+	// whether spec.config itself is present below
+	item.Object = removeFields(item.Object, [][]string{
+		{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
+	})
+
 	specConfig, found, err := unstructured.NestedMap(item.Object, "spec", "config")
 	if err != nil {
 		return err
@@ -64,11 +80,48 @@ func cleanCollectorSpecConfig(item *unstructured.Unstructured) error {
 		cleanConfig["service"] = specConfig["service"]
 	}
 
+	if otlpExporters := otlpExportersEndpoints(specConfig["exporters"]); len(otlpExporters) > 0 {
+		cleanConfig["exporters"] = otlpExporters
+	}
+
 	if err := unstructured.SetNestedField(item.Object, cleanConfig, "spec", "config"); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// otlpExportersEndpoints extracts the (anonymized) endpoint of every OTLP exporter found in the
+// given exporters map, keyed by exporter name (e.g. "otlp", "otlpgrpc/myexporter").
+// Non-OTLP exporters and any field other than "endpoint" are dropped.
+func otlpExportersEndpoints(exporters interface{}) map[string]interface{} {
+	exportersMap, ok := exporters.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	result := make(map[string]interface{})
+	for name, exporterCfg := range exportersMap {
+		if !otlpExporterNameRegex.MatchString(name) {
+			continue
+		}
+
+		cfgMap, ok := exporterCfg.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		endpoint, ok := cfgMap["endpoint"].(string)
+		if !ok {
+			continue
+		}
+
+		result[name] = map[string]interface{}{
+			"endpoint": anonymize.URL(endpoint),
+		}
+	}
+
+	return result
 }
 
 func gatherOpenTelemetryCollectors(ctx context.Context, dynamicClient dynamic.Interface) ([]record.Record, []error) {

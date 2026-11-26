@@ -1882,8 +1882,10 @@ None
 collects up to 5 `opentelemetrycollectors.opentelemetry.io` custom resources
 installed in the cluster.
 
-Only the "service" subsection of each resource's spec.config is retained; receivers,
-exporters, and other pipeline configuration are omitted to avoid collecting sensitive data.
+Only the "service" subsection of each resource's spec.config is retained, plus the (anonymized)
+endpoint of any OTLP exporter (keys matching otlp, otlpgrpc, otlphttp, otlp_grpc, otlp_http and
+their "/name" variants, e.g. otlpgrpc/myexporter). All other exporter/receiver configuration is
+omitted to avoid collecting sensitive data.
 
 ### API Reference
 - https://github.com/open-telemetry/opentelemetry-operator/blob/main/apis/v1beta1/opentelemetrycollector_types.go
@@ -1904,7 +1906,7 @@ exporters, and other pipeline configuration are omitted to avoid collecting sens
 TBD
 
 ### Changes
-None
+- CCXDEV-16802: added the (anonymized) OTLP exporter endpoint to spec.config.exporters
 
 
 ## OpenshiftLogging
