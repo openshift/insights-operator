@@ -64,8 +64,6 @@ metadata:
 allowHostDirVolumePlugin: true
 allowHostPID: true
 allowPrivilegedContainer: true
-allowedCapabilities:
-  - CAP_SYS_ADMIN
 runAsUser:
   type: RunAsAny
 seLinuxContext:
