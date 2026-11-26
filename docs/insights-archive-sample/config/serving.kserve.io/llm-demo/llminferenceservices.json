@@ -1,0 +1,53 @@
+[
+  {
+    "namespace": "llm-demo",
+    "name": "granite-llm",
+    "model": {
+      "name": "ibm-granite/granite-3.0-8b-instruct",
+      "loraAdapterNames": [
+        "finance-adapter",
+        "support-adapter"
+      ],
+      "loraMaxAdapters": 4
+    },
+    "replicas": 2,
+    "prefillPresent": true,
+    "prefillReplicas": 1,
+    "parallelism": {
+      "tensor": 2,
+      "pipeline": 1,
+      "data": 1,
+      "expert": false
+    },
+    "routerSchedulerPresent": true,
+    "routerSchedulerConfigInline": {
+      "plugins": [
+        "least-request"
+      ]
+    },
+    "workloadsSchedulerPresent": true,
+    "scaling": {
+      "minReplicas": 1,
+      "maxReplicas": 4
+    },
+    "tracingPresent": true,
+    "containers": [
+      {
+        "image": "registry.redhat.io/rhaii/vllm-cuda-rhel9:latest",
+        "resourceLimits": {
+          "cpu": "4",
+          "memory": "16Gi",
+          "nvidia.com/gpu": "1"
+        }
+      }
+    ]
+  },
+  {
+    "namespace": "llm-demo",
+    "name": "minimal-llm",
+    "model": {
+      "name": "meta-llama/Llama-3-8B"
+    },
+    "replicas": 1
+  }
+]
