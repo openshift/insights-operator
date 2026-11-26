@@ -35,6 +35,20 @@ spec:
       nodeSelector:
         kubernetes.io/os: linux
       priorityClassName: openshift-user-critical
+      tolerations:
+        - operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/master
+                    operator: DoesNotExist
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/worker
+                    operator: Exists
       containers:
         - name: kube-rbac-proxy
           image: quay.io/openshift/origin-kube-rbac-proxy:latest
